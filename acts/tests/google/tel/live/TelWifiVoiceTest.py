@@ -77,6 +77,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
 from acts.test_utils.tel.tel_test_utils import get_wifi_signal_strength
+from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
@@ -137,6 +138,14 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             0].serial, get_phone_number(self.log, self.android_devices[0])))
         self.android_devices[
             0].droid.telephonyStartTrackingSignalStrengthChange()
+
+        for ad in self.android_devices:
+            if not wait_for_state(
+                ad.droid.imsIsVolteProvisionedOnDevice, True):
+                ad.log.info("VoLTE not Provisioned, Turning it ON")
+                ad.droid.imsSetVolteProvisioning(True)
+            else:
+                ad.log.info("VoLTE Provisioning is Enabled")
 
         # Do WiFi RSSI calibration.
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
@@ -359,6 +368,14 @@ class TelWifiVoiceTest(TelephonyBaseTest):
                 get_wifi_signal_strength(self.android_devices[0])
                 return False
         finally:
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
+            set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                     MAX_RSSI_RESERVED_VALUE)
             ensure_phones_default_state(self.log, [ads[0], ads[1]])
 
         self.log.info("wfc_call_sequence finished, return {}".format(
@@ -3140,17 +3157,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
     def _decrease_wifi_rssi_check_phone_hand_out(self):
         """Private Test utility for hand_out test.
 
-        Decrease WiFi RSSI to WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT in 10s.
-        PhoneA should still be in call.
-        PhoneA should not hand-out, PhoneA should have data on WiFi.
-        Decrease WiFi RSSI to WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT in 10s.
+        Decrease WiFi RSSI to MIN_RSSI_RESERVED_VALUE
         PhoneA should still be in call. PhoneA should hand-out to LTE.
         """
+        time.sleep(30)
         # Decrease WiFi RSSI to MIN_RSSI_RESERVED_VALUE
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G],
-                 self.wifi_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE, 2, 1)
+                 0, MIN_RSSI_RESERVED_VALUE, 5, 1)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
-                 self.wifi_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE, 2, 1)
+                 0, MIN_RSSI_RESERVED_VALUE, 5, 1)
         # Make sure phone hand-out, not drop call
         if not self._phone_wait_for_not_wfc():
             self.log.error("Phone should hand out to LTE.")
@@ -3166,20 +3181,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
 
         return True
 
-    @test_tracker_info(uuid="03fbc3b1-06df-4076-a91b-903a31ae3dae")
+    @test_tracker_info(uuid="2242aa49-474c-496b-be1b-ccd900523a54")
     @TelephonyBaseTest.tel_test_wrap
-    def test_hand_out_wifi_preferred(self):
-        """WiFi Hand-Out Threshold - WiFi Preferred
+    def test_iwlan_lte_handoff_wifi_preferred(self):
+        """VoWiFi to VoLTE In Call Handover Test
 
         PhoneA on LTE, VoLTE enabled, WFC WiFi preferred, WiFi associated.
-        Cellular and WiFi signal strong.
+        Cellular strong, WiFi signal strong.
         Call from PhoneA to PhoneB, PhoneA should be on iwlan.
-        Decrease WiFi RSSI to WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT in 10s.
-        PhoneA should still be in call.
-        PhoneA should not hand-out, PhoneA should have data on WiFi.
-        Decrease WiFi RSSI to WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT in 10s.
-        PhoneA should still be in call. PhoneA should hand-out to LTE.
-        PhoneA should have data on WiFi.
+        Attenuate WiFi
+        PhoneA should still be in call. PhoneA should handover to LTE.
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
@@ -3187,6 +3198,57 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             self._wfc_phone_setup_wifi_preferred, self._phone_idle_iwlan,
             self._is_phone_in_call_iwlan,
             self._decrease_wifi_rssi_check_phone_hand_out, True)
+
+    def _increase_lte_decrease_wifi_rssi_check_phone_hand_out(self):
+        """Private Test utility for hand_out test.
+
+        Attenuate WiFi and Bringup LTE
+        PhoneA should still be in call. PhoneA should hand-out to LTE.
+        """
+        # Increase LTE RSRP to MAX_RSSI_RESERVED_VALUE
+        time.sleep(30)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        time.sleep(30)
+        # Decrease WiFi RSSI to MIN_RSSI_RESERVED_VALUE
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G],
+                 0, MIN_RSSI_RESERVED_VALUE, 5, 1)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G],
+                 0, MIN_RSSI_RESERVED_VALUE, 5, 1)
+        # Make sure phone hand-out, not drop call
+        if not self._phone_wait_for_not_wfc():
+            self.log.error("Phone should hand out to LTE.")
+            get_telephony_signal_strength(self.android_devices[0])
+            get_wifi_signal_strength(self.android_devices[0])
+            return False
+        self.log.info("iWLAN to LTE switch happened at below Signal Strengths")
+        get_telephony_signal_strength(self.android_devices[0])
+        get_wifi_signal_strength(self.android_devices[0])
+        if not self._is_phone_in_call_volte():
+            self.log.error("Phone should be in volte call.")
+            return False
+
+        return True
+
+    @test_tracker_info(uuid="dcd1e8f6-e002-48c3-b1eb-a46df5d66a6a")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_iwlan_lte_handoff_cellular_preferred(self):
+        """VoWiFi to VoLTE In Call Handover Test
+
+        PhoneA on LTE, VoLTE enabled, WFC Cellular preferred, WiFi associated.
+        Cellular absent, WiFi signal strong.
+        Call from PhoneA to PhoneB, PhoneA should be on iwlan.
+        Attenuate WiFi and Bring up LTE
+        PhoneA should still be in call. PhoneA should handover to LTE.
+        """
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]],
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_strong_cell_absent,
+            self._wfc_phone_setup_cellular_preferred, self._phone_idle_iwlan,
+            self._is_phone_in_call_iwlan,
+            self._increase_lte_decrease_wifi_rssi_check_phone_hand_out, True)
 
     def _decrease_wifi_rssi_hand_out_and_increase_wifi_rssi_hand_in(self):
         if not self._decrease_wifi_rssi_check_phone_hand_out():
@@ -3422,15 +3484,15 @@ class TelWifiVoiceTest(TelephonyBaseTest):
     def _decrease_cellular_rssi_check_phone_hand_out(self):
         """Private Test utility for hand_out test.
 
-        Decrease Cellular RSSI to MIN_RSSI_RESERVED_VALUE 1db per sec
+        Decrease Cellular RSSI to MIN_RSSI_RESERVED_VALUE 5db per sec
         PhoneA should still be in call. PhoneA should hand-out to iWLAN.
         """
         time.sleep(60)
         # Decrease Cellular RSSI to MIN_RSSI_RESERVED_VALUE
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G],
-                 self.cell_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G],
-                 self.cell_rssi_with_no_atten, MIN_RSSI_RESERVED_VALUE, 1, 1)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                 MIN_RSSI_RESERVED_VALUE, 5, 1)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                 MIN_RSSI_RESERVED_VALUE, 5, 1)
         # Make sure phone hand-out to iWLAN, not drop call
         if not self._phone_wait_for_wfc():
             self.log.error("Phone should hand out to iWLAN.")
@@ -3447,16 +3509,16 @@ class TelWifiVoiceTest(TelephonyBaseTest):
         time.sleep(30)
         return True
 
-    @test_tracker_info(uuid="2242aa49-474c-496b-be1b-ccd900523a54")
+    @test_tracker_info(uuid="a83734c1-db91-4ea2-9d79-02d7f803905a")
     @TelephonyBaseTest.tel_test_wrap
-    def test_hand_out_cellular_preferred(self):
-        """WiFi Hand-Out Threshold - Cellular Preferred
+    def test_lte_iwlan_handoff_cellular_preferred(self):
+        """VoLTE to VoWiFi In Call Handover Test
 
-        Cellular signal strong, WiFi signal strong.
-        PhoneA VoLTE enabled, WFC Cellular preferred, WiFi associated.
+        PhoneA on LTE, VoLTE enabled, WFC WiFi preferred, WiFi associated.
+        Cellular strong, WiFi signal strong.
         Call from PhoneA to PhoneB, PhoneA should be on LTE.
-        Decrease Cellular RSSI to MIN using 1db every sec
-        PhoneA should still be in call. PhoneA should hand-out to iWLAN.
+        Attenuate LTE
+        PhoneA should still be in call. PhoneA should handover to iWLAN.
         """
         return self._wfc_call_sequence(
             [self.android_devices[0], self.android_devices[1]],
@@ -3464,6 +3526,65 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             self._wfc_phone_setup_cellular_preferred, self._phone_idle_volte,
             self._is_phone_in_call_volte,
             self._decrease_cellular_rssi_check_phone_hand_out, True)
+
+    def _increase_wifi_decrease_cellular_check_phone_hand_out(self):
+        """Private Test utility for hand_out test.
+
+        Increase WiFi RSSI to MAX_RSSI_RESERVED_VALUE
+        Decrease Cellular RSSI to MIN_RSSI_RESERVED_VALUE 5db per sec
+        PhoneA should still be in call. PhoneA should hand-out to iWLAN.
+        """
+        time.sleep(30)
+        # Increase WiFi RSSI to MAX_RSSI_RESERVED_VALUE
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                 MAX_RSSI_RESERVED_VALUE)
+        time.sleep(30)
+        if not ensure_wifi_connected(self.log, self.android_devices[0],
+                                     self.live_network_ssid,
+                                     self.live_network_pwd):
+            self.log.error("{} connect WiFI failed".format(
+                self.android_devices[0].serial))
+            return False
+        # Decrease Cellular RSSI to MIN_RSSI_RESERVED_VALUE
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                 MIN_RSSI_RESERVED_VALUE, 5, 1)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                 MIN_RSSI_RESERVED_VALUE, 5, 1)
+        # Make sure phone hand-out to iWLAN, not drop call
+        if not self._phone_wait_for_wfc():
+            self.log.error("Phone should hand out to iWLAN.")
+            get_telephony_signal_strength(self.android_devices[0])
+            get_wifi_signal_strength(self.android_devices[0])
+            return False
+        self.log.info("LTE to iWLAN switch happened at below Signal Strengths")
+        get_telephony_signal_strength(self.android_devices[0])
+        get_wifi_signal_strength(self.android_devices[0])
+        time.sleep(30)
+        if not self._is_phone_in_call_iwlan():
+            self.log.error("Phone should be in iWLAN call.")
+            return False
+        time.sleep(30)
+        return True
+
+    @test_tracker_info(uuid="6a71f8f5-d348-49b6-8ca6-2464e6387d26")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_lte_iwlan_handoff_wifi_preferred(self):
+        """VoLTE to VoWiFi In Call Handover Test
+
+        PhoneA on LTE, VoLTE enabled, WFC WiFi preferred, WiFi not associated.
+        Cellular strong, WiFi signal absent.
+        Call from PhoneA to PhoneB, PhoneA should be on LTE.
+        Attenuate LTE and Bringup WiFi
+        PhoneA should still be in call. PhoneA should handover to iWLAN.
+        """
+        return self._wfc_call_sequence(
+            [self.android_devices[0], self.android_devices[1]],
+            DIRECTION_MOBILE_ORIGINATED, self._wfc_set_wifi_absent_cell_strong,
+            self._wfc_phone_setup_wifi_absent_wifi_preferred,
+             self._phone_idle_volte, self._is_phone_in_call_volte,
+            self._increase_wifi_decrease_cellular_check_phone_hand_out, True)
 
     def _decrease_wifi_rssi_check_phone_not_hand_out(self):
         """Private Test utility for hand_out test.

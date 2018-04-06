@@ -77,13 +77,14 @@ class TelLabCmasTest(TelephonyBaseTest):
         self.md8475a_ip_address = self.user_params[
             "anritsu_md8475a_ip_address"]
         self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
+        self.md8475_version = self.user_params.get("md8475", "A")
         self.wait_time_between_reg_and_msg = self.user_params.get(
             "wait_time_between_reg_and_msg", WAIT_TIME_BETWEEN_REG_AND_MSG)
 
     def setup_class(self):
         try:
             self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
-                                   self.wlan_option)
+                                   self.wlan_option, self.md8475_version)
         except AnritsuError:
             self.log.error("Error in connecting to Anritsu Simulator")
             return False

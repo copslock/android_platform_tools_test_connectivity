@@ -224,7 +224,7 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
             phone_number = ad.phone_number
     if not phone_number:
         ad.log.error("Failed to find valid phone number for %s", iccid)
-        abort_all_tests("Failed to find valid phone number for %s" % ad.serial)
+        abort_all_tests(ad.log, "Failed to find valid phone number for %s")
     sub_record = {
         'phone_num': phone_number,
         'iccid': get_iccid_by_adb(ad),
@@ -408,6 +408,23 @@ def get_phone_number_by_secret_code(ad, operator):
             else:
                 time.sleep(5)
     return ""
+
+
+def get_user_config_profile(ad):
+    return {
+        "WFC Mode":
+        ad.droid.imsGetWfcMode(),
+        "WFC Enabled":
+        is_wfc_enabled(ad.log, ad),
+        "Airplane Mode":
+        ad.droid.connectivityCheckAirplaneMode(),
+        "Platform Enhanced 4G LTE Mode":
+        ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform(),
+        "User Enhanced 4G LTE Mode":
+        ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser(),
+        "VoLTE Enabled":
+        ad.droid.telephonyIsVolteAvailable()
+    }
 
 
 def get_slot_index_from_subid(log, ad, sub_id):
@@ -693,8 +710,6 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
     timeout_time = time.time() + MAX_WAIT_TIME_AIRPLANEMODE_EVENT
     ad.droid.connectivityToggleAirplaneMode(new_state)
 
-    event = None
-
     try:
         try:
             event = ad.ed.wait_for_event(
@@ -705,17 +720,14 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
                 value_list=service_state_list)
             ad.log.info("Got event %s", event)
         except Empty:
-            pass
-        if event is None:
-            ad.log.error("Did not get expected service state %s",
-                         service_state_list)
-            return False
-        else:
-            ad.log.info("Received event: %s", event)
-    finally:
-        for sub_id in sub_id_list:
-            ad.droid.telephonyStopTrackingServiceStateChangeForSubscription(
-                sub_id)
+            ad.log.warning("Did not get expected service state change to %s",
+                           service_state_list)
+        finally:
+            for sub_id in sub_id_list:
+                ad.droid.telephonyStopTrackingServiceStateChangeForSubscription(
+                    sub_id)
+    except Exception as e:
+        ad.log.error(e)
 
     # APM on (new_state=True) will turn off bluetooth but may not turn it on
     try:
@@ -2060,17 +2072,19 @@ def verify_internet_connection_by_ping(log, ad, retries=1,
                 ad, count=5, timeout=60, loss_tolerance=40, dest_ip=dest)
             if result == expected_state:
                 ad.log.info(
-                    "Internet connection by ping test to %s is %s as expected",
+                    "Internet connection by pinging to %s is %s as expected",
                     dest, expected_state)
                 if dest == ip_addr:
                     ad.log.warning("Suspect dns failure")
                     ad.log.info("DNS config: %s",
-                                ad.adb.shell("getprop | grep dns"))
+                                ad.adb.shell("getprop | grep dns").replace(
+                                    "\n", " "))
+                    return False
                 return True
             else:
                 ad.log.error(
-                    "Internet connection by ping test to %s is not %s as expected",
-                    dest, expected_state)
+                    "Internet connection test by pinging %s is %s, expecting %s",
+                    dest, result, expected_state)
     return False
 
 
@@ -5493,7 +5507,7 @@ def start_adb_tcpdump(ad,
         try:
             start_standing_subprocess(cmd, 10)
         except Exception as e:
-            ad.log.exception(e)
+            ad.log.error(e)
 
 
 def stop_tcpdumps(ads):
@@ -5513,7 +5527,7 @@ def stop_adb_tcpdump(ad, interface="any"):
         try:
             ad.adb.shell("killall -9 tcpdump")
         except Exception as e:
-            ad.log.exception("Killing tcpdump with exception %s", e)
+            ad.log.error("Killing tcpdump with exception %s", e)
     else:
         out = ad.adb.shell("ps -ef | grep tcpdump | grep %s" % interface)
         if "tcpdump -i" in out:
@@ -5591,7 +5605,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     try:
         ad.start_adb_logcat()
     except:
-        ad.log.exception("Failed to start adb logcat!")
+        ad.log.error("Failed to start adb logcat!")
     if skip_setup_wizard:
         ad.exit_setup_wizard()
     if ad.skip_sl4a: return status
@@ -5807,6 +5821,14 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
         ad.fastboot.flash("radio %s" % file_path, timeout=300)
     except Exception as e:
         ad.log.error(e)
+    ad.fastboot.reboot("bootloader")
+    time.sleep(5)
+    output = ad.fastboot.getvar("version-baseband")
+    result = re.search(r"version-baseband: (\S+)", output)
+    if not result:
+        ad.log.error("fastboot getvar version-baseband output = %s", output)
+        abort_all_tests(ad.log, "Radio version-baseband is not provided")
+    fastboot_radio_version_output = result.group(1)
     for _ in range(2):
         try:
             ad.log.info("Reboot in fastboot")
@@ -5816,6 +5838,14 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
         except Exception as e:
             ad.log.error("Exception error %s", e)
     ad.root_adb()
+    adb_radio_version_output = ad.adb.getprop("gsm.version.baseband")
+    ad.log.info("adb getprop gsm.version.baseband = %s",
+                adb_radio_version_output)
+    if adb_radio_version_output != fastboot_radio_version_output:
+        msg = ("fastboot radio version output %s does not match with adb"
+               " radio version output %s" % (fastboot_radio_version_output,
+                                             adb_radio_version_output))
+        abort_all_tests(ad.log, msg)
     if not ad.ensure_screen_on():
         ad.log.error("User window cannot come up")
     ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
@@ -5951,9 +5981,9 @@ def power_on_sim(ad, sim_slot_id=None):
         return False
 
 
-def log_screen_shot(ad, test_name):
+def log_screen_shot(ad, test_name=""):
     file_name = "/sdcard/Pictures/screencap_%s.png" % (
-        utils.get_current_epoch_time())
+        test_name, utils.get_current_epoch_time())
     try:
         ad.adb.shell("screencap -p %s" % file_name)
     except:
@@ -5965,9 +5995,9 @@ def get_screen_shot_log(ad, test_name="", begin_time=None):
     if logs:
         ad.log.info("Pulling %s", logs)
         log_path = os.path.join(ad.log_path, test_name,
-                                "Screenshot_%s" % self.serial)
+                                "Screenshot_%s" % ad.serial)
         utils.create_dir(log_path)
-        self.pull_files(logs, log_path)
+        ad.pull_files(logs, log_path)
     ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
 
 
