@@ -1308,13 +1308,12 @@ class AndroidDevice:
 
     def is_screen_lock_enabled(self):
         """Check if screen lock is enabled"""
-        cmd = ("sqlite3 /data/system/locksettings.db .dump"
-               " | grep lockscreen.password_type | grep -v alternate")
+        cmd = ("sqlite3 /data/system/locksettings.db .dump"" | grep lockscreen.password_type | grep -v alternate")
         out = self.adb.shell(cmd, ignore_status=True)
         if "unable to open" in out:
             self.root_adb()
             out = self.adb.shell(cmd, ignore_status=True)
-        if ",0,'0'" not in out:
+        if ",0,'0'" not in out and out != "":
             self.log.info("Screen lock is enabled")
             return True
         return False
@@ -1327,7 +1326,7 @@ class AndroidDevice:
             self.log.info("Device is in CrpytKeeper window")
             return True
         if "StatusBar" in current_window and (
-            (not current_app) or "FallbackHome" in current_app):
+                (not current_app) or "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
@@ -1355,7 +1354,8 @@ class AndroidDevice:
             self.send_keycode("WAKEUP")
 
     def go_to_sleep(self):
-        self.send_keycode("SLEEP")
+        if self.is_screen_awake():
+            self.send_keycode("SLEEP")
 
     def send_keycode_number_pad(self, number):
         self.send_keycode("NUMPAD_%s" % number)
@@ -1376,19 +1376,31 @@ class AndroidDevice:
             self.send_keycode("BACK")
 
     def exit_setup_wizard(self):
-        self.adb.shell(
-            "am start -n com.google.android.setupwizard/.SetupWizardExitActivity"
-        )
+        if not self.is_user_setup_complete() or self.is_setupwizard_on():
+            self.adb.shell("pm disable %s" % self.get_setupwizard_package_name())
         # Wait up to 5 seconds for user_setup_complete to be updated
         for _ in range(5):
-            if self.is_user_setup_complete():
+            if self.is_user_setup_complete() or not self.is_setupwizard_on():
                 return
             time.sleep(1)
+
         # If fail to exit setup wizard, set local.prop and reboot
-        if not self.is_user_setup_complete():
+        if not self.is_user_setup_complete() and self.is_setupwizard_on():
             self.adb.shell("echo ro.test_harness=1 > /data/local.prop")
             self.adb.shell("chmod 644 /data/local.prop")
             self.reboot(stop_at_lock_screen=True)
+
+    def get_setupwizard_package_name(self):
+        """Finds setupwizard package/.activity
+
+         Returns:
+            packageName/.ActivityName
+         """
+        package = self.adb.shell("pm list packages -f | grep setupwizard | grep com.google.android")
+        wizard_package = re.split("=", package)[1]
+        activity = re.search("wizard/(.*?).apk", package, re.IGNORECASE).groups()[0]
+        self.log.info("%s/.%sActivity" % (wizard_package, activity))
+        return "%s/.%sActivity" % (wizard_package, activity)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
