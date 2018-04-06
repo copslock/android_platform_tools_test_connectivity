@@ -26,6 +26,7 @@ from acts.test_utils.tel import tel_defines
 from acts.test_utils.tel import tel_test_utils as tel_utils
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_AUTO
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 class WifiSoftApTest(base_test.BaseTestClass):
@@ -241,6 +242,18 @@ class WifiSoftApTest(base_test.BaseTestClass):
         """
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G)
 
+    @test_tracker_info(uuid="f76ed37a-519a-48b4-b260-ee3fc5a9cae0")
+    def test_full_tether_startup_auto(self):
+        """Test full startup of wifi tethering in auto-band.
+
+        1. Report current state.
+        2. Switch to AP mode.
+        3. verify SoftAP active.
+        4. Shutdown wifi tethering.
+        5. verify back to previous mode.
+        """
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_AUTO)
+
     @test_tracker_info(uuid="d26ee4df-5dcb-4191-829f-05a10b1218a7")
     def test_full_tether_startup_2G_hidden(self):
         """Test full startup of wifi tethering in 2G band using hidden AP.
@@ -264,6 +277,18 @@ class WifiSoftApTest(base_test.BaseTestClass):
         5. verify back to previous mode.
         """
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G, True)
+
+    @test_tracker_info(uuid="d546a143-6047-4ffd-b3c6-5ec81a38001f")
+    def test_full_tether_startup_auto_hidden(self):
+        """Test full startup of wifi tethering in auto-band using hidden AP.
+
+        1. Report current state.
+        2. Switch to AP mode.
+        3. verify SoftAP active.
+        4. Shutdown wifi tethering.
+        5. verify back to previous mode.
+        """
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_AUTO, True)
 
     """ Tests End """
 
