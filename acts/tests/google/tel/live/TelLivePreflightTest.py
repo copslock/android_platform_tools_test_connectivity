@@ -31,10 +31,11 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_user_config_profile
 from acts.test_utils.tel.tel_test_utils import is_sim_locked
-from acts.test_utils.tel.tel_test_utils import run_multithread_func
+from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
@@ -106,6 +107,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
                 ad.log.error("Expecting Enhanced 4G LTE Setting off")
 
     def _ota_upgrade(self, ad):
+        result = True
         self._set_user_profile_before_ota()
         config_profile_before = get_user_config_profile(ad)
         ad.log.info("Before OTA user config is: %s", config_profile_before)
@@ -118,14 +120,22 @@ class TelLivePreflightTest(TelephonyBaseTest):
             ad.log.info("After OTA, SIM keeps the locked state")
         elif getattr(ad, "is_sim_locked", False):
             ad.log.error("After OTA, SIM loses the locked state")
+            result = False
         if not unlock_sim(ad):
             ad.log.error(ad.log, "unable to unlock SIM")
+        if not ad.droid.connectivityCheckAirplaneMode():
+            if not ensure_phone_subscription(self.log, ad):
+                ad.log.error("Subscription check failed")
+                result = False
         if config_profile_before.get("WFC Enabled", False):
             self._check_wfc_enabled(ad)
+            result = False
         config_profile_after = get_user_config_profile(ad)
         ad.log.info("After OTA user config is: %s", config_profile_after)
         if config_profile_before != config_profile_after:
             ad.log.error("User config profile changed after OTA")
+            result = False
+        return result
 
     """ Tests Begin """
 
@@ -156,7 +166,7 @@ class TelLivePreflightTest(TelephonyBaseTest):
         ota_updater.initialize(self.user_params, self.android_devices)
         tasks = [(self._ota_upgrade, [ad]) for ad in self.android_devices]
         try:
-            run_multithread_func(self.log, tasks)
+            result = multithread_func(self.log, tasks)
         except Exception as err:
             abort_all_tests(self.log, "Unable to do ota upgrade: %s" % err)
         device_info = get_info(self.android_devices)
@@ -168,8 +178,8 @@ class TelLivePreflightTest(TelephonyBaseTest):
             return call_setup_teardown(
                 self.log, caller, callee, caller,
                 self._get_call_verification_function(caller),
-                self._get_call_verification_function(callee))
-        return True
+                self._get_call_verification_function(callee)) and result
+        return result
 
     @test_tracker_info(uuid="8390a2eb-a744-4cda-bade-f94a2cc83f02")
     @TelephonyBaseTest.tel_test_wrap
