@@ -1,4 +1,4 @@
-#/usr/bin/env python3.4
+# /usr/bin/env python3.4
 #
 # Copyright (C) 2016 The Android Open Source Project
 #
@@ -53,6 +53,7 @@ from acts.test_utils.bt.bt_constants import bt_discovery_timeout
 from acts.test_utils.bt.bt_constants import bt_profile_states
 from acts.test_utils.bt.bt_constants import bt_profile_constants
 from acts.test_utils.bt.bt_constants import bt_rfcomm_uuids
+from acts.test_utils.bt.bt_constants import bluetooth_socket_conn_test_uuid
 from acts.test_utils.bt.bt_constants import bt_scan_mode_types
 from acts.test_utils.bt.bt_constants import btsnoop_last_log_path_on_device
 from acts.test_utils.bt.bt_constants import btsnoop_log_path_on_device
@@ -323,6 +324,7 @@ def determine_max_advertisements(android_device):
         "Determining number of maximum concurrent advertisements...")
     advertisement_count = 0
     bt_enabled = False
+    expected_bluetooth_on_event_name = bluetooth_on
     if not android_device.droid.bluetoothCheckState():
         android_device.droid.bluetoothToggleState(True)
     try:
@@ -352,7 +354,7 @@ def determine_max_advertisements(android_device):
 
         regex = "(" + adv_succ.format(
             advertise_callback) + "|" + adv_fail.format(
-                advertise_callback) + ")"
+            advertise_callback) + ")"
         # wait for either success or failure event
         evt = android_device.ed.pop_events(regex, bt_default_timeout,
                                            small_timeout)
@@ -405,7 +407,7 @@ def get_advanced_droid_list(android_devices):
         else:
             max_advertisements = determine_max_advertisements(a)
             max_tries = 3
-            #Retry to calculate max advertisements
+            # Retry to calculate max advertisements
             while max_advertisements == -1 and max_tries > 0:
                 a.log.info(
                     "Attempts left to determine max advertisements: {}".format(
@@ -428,7 +430,7 @@ def get_advanced_droid_list(android_devices):
 def generate_id_by_size(
         size,
         chars=(
-            string.ascii_lowercase + string.ascii_uppercase + string.digits)):
+                string.ascii_lowercase + string.ascii_uppercase + string.digits)):
     """Generate random ascii characters of input size and input char types
 
     Args:
@@ -468,7 +470,7 @@ def cleanup_scanners_and_advertisers(scn_android_device, scn_callback_list,
     except Exception as err:
         adv_android_device.log.debug(
             "Failed to stop LE advertisement... reseting Bluetooth. Error {}".
-            format(err))
+                format(err))
         reset_bluetooth([adv_android_device])
 
 
@@ -834,7 +836,7 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
     paired = False
     for paired_device in pri_ad.droid.bluetoothGetBondedDevices():
         if paired_device['address'] == \
-            sec_ad.droid.bluetoothGetLocalAddress():
+                sec_ad.droid.bluetoothGetLocalAddress():
             paired = True
             break
 
@@ -892,7 +894,7 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
         device_addr = profile_event['data']['addr']
 
         if state == bt_profile_states['connected'] and \
-            device_addr == sec_ad.droid.bluetoothGetLocalAddress():
+                device_addr == sec_ad.droid.bluetoothGetLocalAddress():
             profile_connected.add(profile)
         pri_ad.log.info(
             "Profiles connected until now {}".format(profile_connected))
@@ -940,10 +942,10 @@ def disconnect_pri_from_sec(pri_ad, sec_ad, profiles_list):
     while not profile_disconnected.issuperset(profiles_list):
         try:
             profile_event = pri_ad.ed.pop_event(
-                bluetooth_profile_connection_state_changed, default_timeout)
+                bluetooth_profile_connection_state_changed, bt_default_timeout)
             pri_ad.log.info("Got event {}".format(profile_event))
-        except Exception:
-            pri_ad.log.error("Did not disconnect from Profiles")
+        except Exception as e:
+            pri_ad.log.error("Did not disconnect from Profiles. Reason {}".format(e))
             return False
 
         profile = profile_event['data']['profile']
@@ -951,7 +953,7 @@ def disconnect_pri_from_sec(pri_ad, sec_ad, profiles_list):
         device_addr = profile_event['data']['addr']
 
         if state == bt_profile_states['disconnected'] and \
-            device_addr == sec_ad.droid.bluetoothGetLocalAddress():
+                device_addr == sec_ad.droid.bluetoothGetLocalAddress():
             profile_disconnected.add(profile)
         pri_ad.log.info(
             "Profiles disconnected so far {}".format(profile_disconnected))
