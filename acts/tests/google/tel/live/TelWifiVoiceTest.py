@@ -77,6 +77,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
 from acts.test_utils.tel.tel_test_utils import get_wifi_signal_strength
+from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
@@ -137,6 +138,14 @@ class TelWifiVoiceTest(TelephonyBaseTest):
             0].serial, get_phone_number(self.log, self.android_devices[0])))
         self.android_devices[
             0].droid.telephonyStartTrackingSignalStrengthChange()
+
+        for ad in self.android_devices:
+            if not wait_for_state(
+                ad.droid.imsIsVolteProvisionedOnDevice, True):
+                ad.log.info("VoLTE not Provisioned, Turning it ON")
+                ad.droid.imsSetVolteProvisioning(True)
+            else:
+                ad.log.info("VoLTE Provisioning is Enabled")
 
         # Do WiFi RSSI calibration.
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
