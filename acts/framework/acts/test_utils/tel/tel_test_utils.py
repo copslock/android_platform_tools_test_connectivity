@@ -677,10 +677,9 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
         ad.log.info("Airplane mode already in %s", new_state)
         return True
     elif new_state is None:
-        ad.log.info("APM Current State %s New state %s", cur_state, new_state)
-
-    if new_state is None:
         new_state = not cur_state
+        ad.log.info("Toggle APM mode, from current tate %s to %s", cur_state,
+                    new_state)
 
     sub_id_list = []
     active_sub_info = ad.droid.subscriptionGetAllSubInfoList()
@@ -3262,18 +3261,15 @@ def is_volte_enabled(log, ad):
         Return True if VoLTE feature bit is True and IMS registered.
         Return False if VoLTE feature bit is False or IMS not registered.
     """
-    result = True
-    if not ad.droid.telephonyIsVolteAvailable():
-        ad.log.info("IsVolteCallingAvailble is False")
-        result = False
-    else:
-        ad.log.info("IsVolteCallingAvailble is True")
     if not is_ims_registered(log, ad):
         ad.log.info("IMS is not registered.")
-        result = False
+        return False
+    if not ad.droid.telephonyIsVolteAvailable():
+        ad.log.info("IsVolteCallingAvailble is False")
+        return False
     else:
-        ad.log.info("IMS is registered")
-    return result
+        ad.log.info("IsVolteCallingAvailble is True")
+        return True
 
 
 def is_video_enabled(log, ad):
@@ -3335,15 +3331,14 @@ def is_wfc_enabled(log, ad):
         Return True if WiFi Calling feature bit is True and IMS registered.
         Return False if WiFi Calling feature bit is False or IMS not registered.
     """
+    if not is_ims_registered(log, ad):
+        ad.log.info("IMS is not registered.")
+        return False
     if not ad.droid.telephonyIsWifiCallingAvailable():
         ad.log.info("IsWifiCallingAvailble is False")
         return False
     else:
         ad.log.info("IsWifiCallingAvailble is True")
-        if not is_ims_registered(log, ad):
-            ad.log.info(
-                "WiFi Calling is Available, but IMS is not registered.")
-            return False
         return True
 
 
