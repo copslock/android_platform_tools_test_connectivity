@@ -166,6 +166,7 @@ WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
 WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
 WIFI_CONFIG_APBAND_2G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_2G
 WIFI_CONFIG_APBAND_5G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_5G
+WIFI_CONFIG_APBAND_AUTO = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_AUTO
 log = logging
 STORY_LINE = "+19523521350"
 
@@ -677,10 +678,9 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
         ad.log.info("Airplane mode already in %s", new_state)
         return True
     elif new_state is None:
-        ad.log.info("APM Current State %s New state %s", cur_state, new_state)
-
-    if new_state is None:
         new_state = not cur_state
+        ad.log.info("Toggle APM mode, from current tate %s to %s", cur_state,
+                    new_state)
 
     sub_id_list = []
     active_sub_info = ad.droid.subscriptionGetAllSubInfoList()
@@ -3263,18 +3263,15 @@ def is_volte_enabled(log, ad):
         Return True if VoLTE feature bit is True and IMS registered.
         Return False if VoLTE feature bit is False or IMS not registered.
     """
-    result = True
-    if not ad.droid.telephonyIsVolteAvailable():
-        ad.log.info("IsVolteCallingAvailble is False")
-        result = False
-    else:
-        ad.log.info("IsVolteCallingAvailble is True")
     if not is_ims_registered(log, ad):
         ad.log.info("IMS is not registered.")
-        result = False
+        return False
+    if not ad.droid.telephonyIsVolteAvailable():
+        ad.log.info("IsVolteCallingAvailble is False")
+        return False
     else:
-        ad.log.info("IMS is registered")
-    return result
+        ad.log.info("IsVolteCallingAvailble is True")
+        return True
 
 
 def is_video_enabled(log, ad):
@@ -3336,15 +3333,14 @@ def is_wfc_enabled(log, ad):
         Return True if WiFi Calling feature bit is True and IMS registered.
         Return False if WiFi Calling feature bit is False or IMS not registered.
     """
+    if not is_ims_registered(log, ad):
+        ad.log.info("IMS is not registered.")
+        return False
     if not ad.droid.telephonyIsWifiCallingAvailable():
         ad.log.info("IsWifiCallingAvailble is False")
         return False
     else:
         ad.log.info("IsWifiCallingAvailble is True")
-        if not is_ims_registered(log, ad):
-            ad.log.info(
-                "WiFi Calling is Available, but IMS is not registered.")
-            return False
         return True
 
 
@@ -3888,6 +3884,7 @@ def mms_send_receive_verify_for_subscription(
                 ad.log.info("Create new sl4a session for messaging")
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                 ad.messaging_ed.start()
+        ad.log.info("IsDataEnabled: %s", ad.droid.telephonyIsDataEnabled())
 
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
@@ -4567,10 +4564,10 @@ def ensure_phone_subscription(log, ad):
         return False
     voice_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
     data_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-    if not wait_for_voice_attach_for_subscription(
-            log, ad, voice_sub_id, MAX_WAIT_TIME_NW_SELECTION -
-            duration) and not wait_for_data_attach_for_subscription(
-                log, ad, data_sub_id, MAX_WAIT_TIME_NW_SELECTION - duration):
+    if not wait_for_data_attach_for_subscription(
+            log, ad, data_sub_id, MAX_WAIT_TIME_NW_SELECTION -
+            duration) and not wait_for_voice_attach_for_subscription(
+                log, ad, voice_sub_id, MAX_WAIT_TIME_NW_SELECTION - duration):
         ad.log.error("Did Not Attach For Voice or Data Services")
         return False
     return True
@@ -5575,33 +5572,30 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.log.info("Get sl4a apk from %s", sl4a_apk)
         ad.pull_files([sl4a_apk], "/tmp/")
     ad.stop_services()
-    ad.log.info("Reboot to bootloader")
-    ad.adb.reboot_bootloader(ignore_status=True)
-    ad.log.info("Wipe in fastboot")
-    try:
-        ad.fastboot._w()
-    except Exception as e:
-        ad.log.error(e)
-        status = False
-    time.sleep(30)  #sleep time after fastboot wipe
-    for _ in range(2):
+    attemps = 3
+    for i in range(1, attemps + 1):
         try:
+            ad.log.info("Reboot to bootloader")
+            ad.adb.reboot("bootloader", ignore_status=True)
+            ad.log.info("Wipe in fastboot")
+            ad.fastboot._w(timeout=180)
+            time.sleep(30)
             ad.log.info("Reboot in fastboot")
             ad.fastboot.reboot()
             ad.wait_for_boot_completion()
-            break
-        except Exception as e:
-            ad.log.error("Exception error %s", e)
-    ad.root_adb()
-    if result:
-        # Try to reinstall for three times as the device might not be
-        # ready to apk install shortly after boot complete.
-        for _ in range(3):
+            ad.root_adb()
+            if ad.skip_sl4a:
+                break
             if ad.is_sl4a_installed():
                 break
             ad.log.info("Re-install sl4a")
-            ad.adb.install("-r /tmp/base.apk", ignore_status=True)
+            ad.adb.install("-r /tmp/base.apk")
             time.sleep(10)
+            break
+        except Exception as e:
+            ad.log.warning(e)
+            if i == attemps:
+                raise
     try:
         ad.start_adb_logcat()
     except:
@@ -5621,6 +5615,7 @@ def bring_up_sl4a(ad, attemps=3):
             droid, ed = ad.get_droid()
             ed.start()
             ad.log.info("Broght up new sl4a session")
+            break
         except Exception as e:
             if i < attemps - 1:
                 ad.log.info(e)
