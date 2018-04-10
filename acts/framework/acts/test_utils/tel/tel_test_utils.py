@@ -166,6 +166,7 @@ WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
 WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
 WIFI_CONFIG_APBAND_2G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_2G
 WIFI_CONFIG_APBAND_5G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_5G
+WIFI_CONFIG_APBAND_AUTO = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_AUTO
 log = logging
 STORY_LINE = "+19523521350"
 
