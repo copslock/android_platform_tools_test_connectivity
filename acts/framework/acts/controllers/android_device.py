@@ -379,9 +379,8 @@ class AndroidDevice:
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
         self.log = tracelogger.TraceLogger(
-            AndroidDeviceLoggerAdapter(logging.getLogger(), {
-                'serial': self.serial
-            }))
+            AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                       {'serial': self.serial}))
         self._event_dispatchers = {}
         self.adb_logcat_process = None
         self.adb_logcat_file_path = None
@@ -905,7 +904,7 @@ class AndroidDevice:
             if not out.startswith("OK"):
                 raise AndroidDeviceError("Failed to take bugreport on %s: %s" %
                                          (self.serial, out))
-            br_out_path = out.split(':')[1].strip()
+            br_out_path = out.split(':')[1].strip().split()[0]
             self.adb.pull("%s %s" % (br_out_path, full_out_path))
         else:
             self.adb.bugreport(
