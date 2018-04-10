@@ -802,8 +802,8 @@ def video_call_setup_for_subscription(
     class _CallSequenceException(Exception):
         pass
 
-    caller_number = ad_caller.cfg['subscription'][subid_caller]['phone_num']
-    callee_number = ad_callee.cfg['subscription'][subid_callee]['phone_num']
+    caller_number = ad_caller.telephony['subscription'][subid_caller]['phone_num']
+    callee_number = ad_callee.telephony['subscription'][subid_callee]['phone_num']
 
     log.info("Call from {} to {}".format(caller_number, callee_number))
 
