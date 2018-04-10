@@ -5572,33 +5572,30 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.log.info("Get sl4a apk from %s", sl4a_apk)
         ad.pull_files([sl4a_apk], "/tmp/")
     ad.stop_services()
-    ad.log.info("Reboot to bootloader")
-    ad.adb.reboot("bootloader", ignore_status=True)
-    ad.log.info("Wipe in fastboot")
-    try:
-        ad.fastboot._w()
-    except Exception as e:
-        ad.log.error(e)
-        status = False
-    time.sleep(30)  #sleep time after fastboot wipe
-    for _ in range(2):
+    attemps = 3
+    for i in range(1, attemps + 1):
         try:
+            ad.log.info("Reboot to bootloader")
+            ad.adb.reboot("bootloader", ignore_status=True)
+            ad.log.info("Wipe in fastboot")
+            ad.fastboot._w(timeout=180)
+            time.sleep(30)
             ad.log.info("Reboot in fastboot")
             ad.fastboot.reboot()
             ad.wait_for_boot_completion()
-            break
-        except Exception as e:
-            ad.log.error("Exception error %s", e)
-    ad.root_adb()
-    if result:
-        # Try to reinstall for three times as the device might not be
-        # ready to apk install shortly after boot complete.
-        for _ in range(3):
+            ad.root_adb()
+            if ad.skip_sl4a:
+                break
             if ad.is_sl4a_installed():
                 break
             ad.log.info("Re-install sl4a")
-            ad.adb.install("-r /tmp/base.apk", ignore_status=True)
+            ad.adb.install("-r /tmp/base.apk")
             time.sleep(10)
+            break
+        except Exception as e:
+            ad.log.warning(e)
+            if i == attemps:
+                raise
     try:
         ad.start_adb_logcat()
     except:
@@ -5618,6 +5615,7 @@ def bring_up_sl4a(ad, attemps=3):
             droid, ed = ad.get_droid()
             ed.start()
             ad.log.info("Broght up new sl4a session")
+            break
         except Exception as e:
             if i < attemps - 1:
                 ad.log.info(e)
