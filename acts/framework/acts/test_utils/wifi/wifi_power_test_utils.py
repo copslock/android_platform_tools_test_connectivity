@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import acts
 import json
 import logging
 import os
@@ -94,7 +95,10 @@ def dut_rockbottom(ad):
     utils.disable_doze(ad)
     wutils.reset_wifi(ad)
     wutils.wifi_toggle_state(ad, False)
-    ad.droid.nfcDisable()
+    try:
+        ad.droid.nfcDisable()
+    except acts.controllers.sl4a_lib.rpc_client.Sl4aApiError:
+        ad.log.info('NFC is not available')
     ad.droid.setScreenBrightness(0)
     ad.adb.shell(AOD_OFF)
     ad.droid.setScreenTimeout(2200)
