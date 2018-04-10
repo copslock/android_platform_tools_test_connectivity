@@ -2453,6 +2453,7 @@ def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
     ad.log.info("Set subscriber mobile data usage limit to %s", limit)
+    ad.droid.logV("Setting subscriber mobile data usage limit to %s" % limit)
     ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
 
 
@@ -2460,6 +2461,8 @@ def remove_mobile_data_usage_limit(ad, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
     ad.log.debug("Remove subscriber mobile data usage limit")
+    ad.droid.logV(
+        "Setting subscriber mobile data usage limit to -1, unlimited")
     ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
 
 
@@ -3829,7 +3832,13 @@ def sms_mms_receive_logcat_check(ad, type, begin_time):
         if log_results:
             ad.log.info("Found %s received log message: %s", type,
                         log_results[-1]["log_message"])
-            return True
+        log_results = ad.search_logcat(
+            "ProcessDownloadedMmsAction", begin_time=begin_time)
+        for log_result in log_results:
+            ad.log.info("Found %s", log_result["log_message"])
+            if "status is SUCCEEDED" in log_result["log_message"]:
+                ad.log.info("Download succeed with ProcessDownloadedMmsAction")
+                return True
     return False
 
 
