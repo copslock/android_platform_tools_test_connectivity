@@ -28,35 +28,41 @@ from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
-TEST_TIMEOUT = 10
-EPSILON = 1e-6
-
 
 class WifiRvrTest(base_test.BaseTestClass):
+    TEST_TIMEOUT = 10
+    SHORT_SLEEP = 1
+    MED_SLEEP = 5
+
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
 
     def setup_class(self):
-        self.dut = self.android_devices[0]
-        req_params = ["test_params", "main_network"]
-        opt_params = ["RetailAccessPoints", "golden_files_list"]
+        self.client_dut = self.android_devices[-1]
+        req_params = ["test_params"]
+        opt_params = [
+            "main_network", "RetailAccessPoints", "golden_files_list"
+        ]
         self.unpack_userparams(req_params, opt_params)
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
-        self.access_points = retail_ap.create(self.RetailAccessPoints)
-        self.access_point = self.access_points[0]
+        if hasattr(self, "RetailAccessPoints"):
+            self.access_points = retail_ap.create(self.RetailAccessPoints)
+            self.access_point = self.access_points[0]
+            self.log.info("Access Point Configuration: {}".format(
+                self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, "rvr_results")
         utils.create_dir(self.log_path)
-        self.log.info("Access Point Configuration: {}".format(
-            self.access_point.ap_settings))
         if not hasattr(self, "golden_files_list"):
             self.golden_files_list = [
                 os.path.join(self.test_params["golden_results_path"], file)
                 for file in os.listdir(self.test_params["golden_results_path"])
             ]
         self.testclass_results = []
+
         # Turn WiFi ON
-        wutils.wifi_toggle_state(self.dut, True)
+        for dev in self.android_devices:
+            wutils.wifi_toggle_state(dev, True)
 
     def teardown_test(self):
         self.iperf_server.stop()
@@ -65,7 +71,8 @@ class WifiRvrTest(base_test.BaseTestClass):
         """Saves plot with all test results to enable comparison.
         """
         # Turn WiFi OFF
-        wutils.wifi_toggle_state(self.dut, False)
+        for dev in self.android_devices:
+            wutils.wifi_toggle_state(dev, False)
         # Plot and save all results
         x_data = []
         y_data = []
@@ -112,9 +119,12 @@ class WifiRvrTest(base_test.BaseTestClass):
             file_name for file_name in self.golden_files_list
             if test_name in file_name
         ]
-        golden_path = golden_path[0]
-        throughput_limits = self.compute_throughput_limits(
-            golden_path, rvr_result)
+        try:
+            golden_path = golden_path[0]
+            throughput_limits = self.compute_throughput_limits(
+                golden_path, rvr_result)
+        except:
+            asserts.fail("Test failed: Golden file not found")
 
         failure_count = 0
         for idx, current_throughput in enumerate(
@@ -131,9 +141,8 @@ class WifiRvrTest(base_test.BaseTestClass):
                            throughput_limits["lower_limit"][idx],
                            throughput_limits["upper_limit"][idx]))
         if failure_count >= self.test_params["failure_count_tolerance"]:
-            asserts.fail(
-                "Test failed. Found {} points outside throughput limits.".
-                format(failure_count))
+            asserts.fail("Test failed. Found {} points outside limits.".format(
+                failure_count))
         asserts.explicit_pass(
             "Test passed. Found {} points outside throughput limits.".format(
                 failure_count))
@@ -273,10 +282,11 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.iperf_server.start(tag=str(atten))
             try:
                 client_output = ""
-                client_status, client_output = self.dut.run_iperf_client(
+                client_status, client_output = self.client_dut.run_iperf_client(
                     self.test_params["iperf_server_address"],
                     self.iperf_args,
-                    timeout=self.test_params["iperf_duration"] + TEST_TIMEOUT)
+                    timeout=self.test_params["iperf_duration"] +
+                    self.TEST_TIMEOUT)
             except:
                 self.log.warning("TimeoutError: Iperf measurement timed out.")
             client_output_path = os.path.join(
@@ -295,7 +305,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                 curr_throughput = (math.fsum(iperf_result.instantaneous_rates[
                     self.test_params["iperf_ignored_interval"]:-1]) / len(
                         iperf_result.instantaneous_rates[self.test_params[
-                            "iperf_ignored_interval"]:-1])) * 8
+                            "iperf_ignored_interval"]:-1])) * 8 * (1.024**2)
             except:
                 self.log.warning(
                     "ValueError: Cannot get iperf result. Setting to 0")
@@ -338,10 +348,11 @@ class WifiRvrTest(base_test.BaseTestClass):
         # Set attenuator to 0 dB
         [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
         # Connect DUT to Network
-        wutils.reset_wifi(self.dut)
+        wutils.reset_wifi(self.client_dut)
         self.main_network[band]["channel"] = channel
-        wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
-        time.sleep(5)
+        wutils.wifi_connect(
+            self.client_dut, self.main_network[band], num_of_tries=5)
+        time.sleep(self.MED_SLEEP)
         # Run RvR and log result
         rvr_result["test_name"] = self.current_test_name
         rvr_result["ap_settings"] = self.access_point.ap_settings.copy()
