@@ -3879,6 +3879,7 @@ def mms_send_receive_verify_for_subscription(
                 ad.log.info("Create new sl4a session for messaging")
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                 ad.messaging_ed.start()
+        ad.log.info("IsDataEnabled: %s", ad.droid.telephonyIsDataEnabled())
 
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
@@ -4558,10 +4559,10 @@ def ensure_phone_subscription(log, ad):
         return False
     voice_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
     data_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-    if not wait_for_voice_attach_for_subscription(
-            log, ad, voice_sub_id, MAX_WAIT_TIME_NW_SELECTION -
-            duration) and not wait_for_data_attach_for_subscription(
-                log, ad, data_sub_id, MAX_WAIT_TIME_NW_SELECTION - duration):
+    if not wait_for_data_attach_for_subscription(
+            log, ad, data_sub_id, MAX_WAIT_TIME_NW_SELECTION -
+            duration) and not wait_for_voice_attach_for_subscription(
+                log, ad, voice_sub_id, MAX_WAIT_TIME_NW_SELECTION - duration):
         ad.log.error("Did Not Attach For Voice or Data Services")
         return False
     return True
@@ -5563,7 +5564,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.pull_files([sl4a_apk], "/tmp/")
     ad.stop_services()
     ad.log.info("Reboot to bootloader")
-    ad.adb.reboot_bootloader(ignore_status=True)
+    ad.adb.reboot("bootloader", ignore_status=True)
     ad.log.info("Wipe in fastboot")
     try:
         ad.fastboot._w()
