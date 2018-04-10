@@ -44,6 +44,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.tel.tel_test_utils import is_voice_attached
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
@@ -314,6 +315,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         failure_reasons = set()
+        rat_change = None
         if self.single_phone_test:
             call_setup_result = initiate_call(
                 self.log,
@@ -339,9 +341,15 @@ class TelLiveStressTest(TelephonyBaseTest):
                                                          duration)
                 for ad in ads:
                     if not call_verification_func(self.log, ad):
-                        ad.log.error("Call is NOT in correct %s state at %s",
-                                     call_verification_func.__name__,
-                                     time_message)
+                        ad.log.warning("Call is NOT in correct %s state at %s",
+                                       call_verification_func.__name__,
+                                       time_message)
+                        if call_verification_func.__name__ != "is_phone_in_call":
+                            if is_phone_in_call(self.log, ad):
+                                ad.log.info("Device is still in call")
+                                is_voice_attached(self.log, ad)
+                                rat_change = True
+                                continue
                         failure_reasons.add("Maintenance")
                         reasons = ad.search_logcat(
                             "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
@@ -364,6 +372,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                     failure_reasons.add("Teardown")
                     result = False
         self.result_info["Call Total"] += 1
+        if rat_change:
+            self.result_info["Call RAT Change"] += 1
         if not result:
             self.log.info("%s test failed", log_msg)
             for reason in failure_reasons:
