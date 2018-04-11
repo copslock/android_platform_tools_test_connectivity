@@ -109,6 +109,7 @@ class AttachTest(AwareBaseTest):
     dut.droid.wifiAwareAttach()
     autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACH_FAILED)
 
+  @test_tracker_info(uuid="7dcc4530-c936-4447-9d22-a7c5b315e2ce")
   def test_attach_with_doze(self):
     """Function test case / Attach test cases / attempt to attach with doze on
 
@@ -124,6 +125,7 @@ class AttachTest(AwareBaseTest):
     asserts.assert_true(utils.disable_doze(dut), "Can't disable doze")
     autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
 
+  @test_tracker_info(uuid="2574fd01-8974-4dd0-aeb8-a7194461140e")
   def test_attach_with_location_off(self):
     """Function test case / Attach test cases / attempt to attach with location
     mode off.
