@@ -957,6 +957,7 @@ class DiscoveryTest(AwareBaseTest):
         event["data"][aconsts.SESSION_CB_KEY_MESSAGE_AS_STRING], y_msg,
         "Message on service Y from DUT2 to DUT1 not received correctly")
 
+  @test_tracker_info(uuid="eef80cf3-1fd2-4526-969b-6af2dce785d7")
   def test_multiple_concurrent_services_both_unsolicited_passive(self):
     """Validate multiple concurrent discovery sessions running on both devices.
     - DUT1 & DUT2 running Publish for X
@@ -974,6 +975,7 @@ class DiscoveryTest(AwareBaseTest):
       type_x=[aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE],
       type_y=[aconsts.PUBLISH_TYPE_UNSOLICITED, aconsts.SUBSCRIBE_TYPE_PASSIVE])
 
+  @test_tracker_info(uuid="46739f04-ab2b-4556-b1a4-9aa2774869b5")
   def test_multiple_concurrent_services_both_solicited_active(self):
     """Validate multiple concurrent discovery sessions running on both devices.
     - DUT1 & DUT2 running Publish for X
@@ -991,6 +993,7 @@ class DiscoveryTest(AwareBaseTest):
       type_x=[aconsts.PUBLISH_TYPE_SOLICITED, aconsts.SUBSCRIBE_TYPE_ACTIVE],
       type_y=[aconsts.PUBLISH_TYPE_SOLICITED, aconsts.SUBSCRIBE_TYPE_ACTIVE])
 
+  @test_tracker_info(uuid="5f8f7fd2-4a0e-4cca-8cbb-6d54353f2baa")
   def test_multiple_concurrent_services_mix_unsolicited_solicited(self):
     """Validate multiple concurrent discovery sessions running on both devices.
     - DUT1 & DUT2 running Publish for X
@@ -1011,6 +1014,7 @@ class DiscoveryTest(AwareBaseTest):
 
   #########################################################
 
+  @test_tracker_info(uuid="908ec896-fc7a-4ee4-b633-a2f042b74448")
   def test_upper_lower_service_name_equivalence(self):
     """Validate that Service Name is case-insensitive. Publish a service name
     with mixed case, subscribe to the same service name with alternative case
