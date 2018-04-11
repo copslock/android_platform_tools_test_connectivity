@@ -117,6 +117,8 @@ from acts.test_utils.tel.tel_defines import EventMmsSentFailure
 from acts.test_utils.tel.tel_defines import EventMmsSentSuccess
 from acts.test_utils.tel.tel_defines import EventMmsDownloaded
 from acts.test_utils.tel.tel_defines import EventSmsReceived
+from acts.test_utils.tel.tel_defines import EventSmsDeliverFailure
+from acts.test_utils.tel.tel_defines import EventSmsDeliverSuccess
 from acts.test_utils.tel.tel_defines import EventSmsSentFailure
 from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
 from acts.test_utils.tel.tel_defines import CallStateContainer
@@ -2589,14 +2591,18 @@ def wait_for_cell_data_connection_for_subscription(
     data_state = ad.droid.telephonyGetDataConnectionState()
     if not state and ad.droid.telephonyGetDataConnectionState() == state_str:
         return True
+
     ad.ed.clear_events(EventDataConnectionStateChanged)
     ad.droid.telephonyStartTrackingDataConnectionStateChangeForSubscription(
         sub_id)
     ad.droid.connectivityStartTrackingConnectivityStateChange()
     try:
-        # TODO: b/26293147 There is no framework API to get data connection
-        # state by sub id
+        ad.log.info("User data enabled for sub_id %s: %s", sub_id,
+                    ad.droid.telephonyIsDataEnabledForSubscription(sub_id))
         data_state = ad.droid.telephonyGetDataConnectionState()
+        ad.log.info("Data connection state is %s", data_state)
+        ad.log.info("Network is connected: %s",
+                    ad.droid.connectivityNetworkIsConnected())
         if data_state == state_str:
             return _wait_for_nw_data_connection(
                 log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
@@ -3734,17 +3740,19 @@ def sms_send_receive_verify_for_subscription(
                                                      True)
             try:
                 events = ad_tx.messaging_ed.pop_events(
-                    "(%s|%s)" % (EventSmsSentSuccess,
-                                 EventSmsSentFailure), max_wait_time)
+                    "(%s|%s|%s|%s)" %
+                    (EventSmsSentSuccess, EventSmsSentFailure,
+                     EventSmsDeliverSuccess,
+                     EventSmsDeliverFailure), max_wait_time)
                 for event in events:
                     ad_tx.log.info("Got event %s", event["name"])
-                    if event["name"] == EventSmsSentFailure:
+                    if event["name"] == EventSmsSentFailure or event["name"] == EventSmsDeliverFailure:
                         if event.get("data") and event["data"].get("Reason"):
                             ad_tx.log.error("%s with reason: %s",
                                             event["name"],
                                             event["data"]["Reason"])
                         return False
-                    elif event["name"] == EventSmsSentSuccess:
+                    elif event["name"] == EventSmsSentSuccess or event["name"] == EventSmsDeliverSuccess:
                         break
             except Empty:
                 ad_tx.log.error("No %s or %s event for SMS of length %s.",
