@@ -33,12 +33,10 @@ from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
-from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
-from acts.test_utils.tel.tel_test_utils import is_sim_ready
 from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
@@ -51,6 +49,7 @@ from acts.test_utils.tel.tel_test_utils import start_tcpdumps
 from acts.test_utils.tel.tel_test_utils import stop_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import stop_tcpdumps
 from acts.test_utils.tel.tel_test_utils import unlock_sim
+from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
@@ -77,8 +76,7 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.init_log_path = ad.log_path
             ad.log_path = self.log_path
             print_radio_info(ad)
-            if not unlock_sim(ad):
-                abort_all_tests(ad.log, "unable to unlock SIM")
+            unlock_sim(ad)
             ad.wakeup_screen()
             ad.adb.shell("input keyevent 82")
             ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
@@ -174,13 +172,10 @@ class TelephonyBaseTest(BaseTestClass):
                     self.log.error("Unable to load user config %s ",
                                    sim_conf_file)
 
-        if not self.user_params.get("Attenuator"):
-            ensure_phones_default_state(self.log, self.android_devices)
-        else:
-            ensure_phones_idle(self.log, self.android_devices)
         for ad in self.android_devices:
-            if not is_sim_ready(self.log, ad):
-                continue
+            if not unlock_sim(ad) or not wait_for_sim_ready_by_adb(
+                    self.log, ad):
+                raise signals.TestAbortClass("unable to load the SIM")
             setup_droid_properties(self.log, ad, sim_conf_file)
 
             # Setup VoWiFi MDN for Verizon. b/33187374
@@ -261,12 +256,15 @@ class TelephonyBaseTest(BaseTestClass):
                 self.log.error("Failure with %s", e)
             setattr(ad, "telephony_test_setup", True)
 
+        if not self.user_params.get("Attenuator"):
+            ensure_phones_default_state(self.log, self.android_devices)
+        else:
+            ensure_phones_idle(self.log, self.android_devices)
         return True
 
     def teardown_class(self):
         stop_qxdm_loggers(self.log, self.android_devices)
         try:
-            ensure_phones_default_state(self.log, self.android_devices)
             for ad in self.android_devices:
                 ad.droid.disableDevicePassword()
                 if "enable_wifi_verbose_logging" in self.user_params:
@@ -311,7 +309,6 @@ class TelephonyBaseTest(BaseTestClass):
         self._cleanup_logger_sessions()
 
     def on_fail(self, test_name, begin_time):
-        self._pull_diag_logs(test_name, begin_time)
         self._take_bug_report(test_name, begin_time)
 
     def on_blocked(self, test_name, begin_time):
@@ -389,9 +386,6 @@ class TelephonyBaseTest(BaseTestClass):
             # only gather bug report for the first test case
             if i == 0:
                 self.on_fail(test_name, record.begin_time)
-
-    def on_pass(self, test_name, begin_time):
-        self._cleanup_logger_sessions()
 
     def get_stress_test_number(self):
         """Gets the stress_test_number param from user params.
