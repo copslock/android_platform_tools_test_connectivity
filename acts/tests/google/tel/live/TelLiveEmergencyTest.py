@@ -18,9 +18,13 @@
 """
 
 import time
+from acts import signals
+from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
+from acts.test_utils.tel.tel_defines import SIM_STATE_LOADED
+from acts.test_utils.tel.tel_defines import SIM_STATE_READY
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
 from acts.test_utils.tel.tel_test_utils import get_service_state_by_adb
@@ -37,17 +41,23 @@ from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 class TelLiveEmergencyTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
-
-        self.dut = self.android_devices[0]
         self.number_of_devices = 1
         fake_number = self.user_params.get("fake_emergency_number", "800")
         self.fake_emergency_number = fake_number.strip("+").replace("-", "")
-        self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g")
-        self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g")
+        self.my_devices = self.android_devices[:]
+
+    def setup_class(self):
+        for ad in self.my_devices:
+            if ad.adb.getprop("gsm.sim.state") in (SIM_STATE_READY,
+                                                   SIM_STATE_LOADED):
+                self.dut = ad
+                return True
+        self.log.error("No device meets SIM READY or LOADED requirement")
+        raise signals.TestAbortClass("No device meets SIM requirement")
+
+    def teardown_class(self):
+        self.android_devices = self.my_devices
+        TelephonyBaseTest.teardown_class(self)
 
     def setup_test(self):
         if not unlock_sim(self.dut):
@@ -128,6 +138,11 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
                 result = False
             if result:
                 return True
+            reasons = self.dut.search_logcat(
+                "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
+                self.begin_time)
+            if reasons:
+                self.dut.log.info(reasons[-1]["log_message"])
             ecclist = self.dut.adb.getprop("ril.ecclist")
             self.dut.log.info("ril.ecclist = %s", ecclist)
             if self.fake_emergency_number in ecclist:
