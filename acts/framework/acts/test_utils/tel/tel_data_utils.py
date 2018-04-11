@@ -397,7 +397,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
         log.info("Step1 Airplane Off, Data On.")
         toggle_airplane_mode(log, ad, False)
         ad.droid.telephonyToggleDataConnection(True)
-        if not wait_for_cell_data_connection(log, ad, True):
+        if not wait_for_cell_data_connection(log, ad, True, timeout_value=wait_time):
             ad.log.error("Failed to enable data connection.")
             return False
 
@@ -418,7 +418,7 @@ def data_connectivity_single_bearer(log, ad, nw_gen):
 
         log.info("Step4 Re-enable data.")
         ad.droid.telephonyToggleDataConnection(True)
-        if not wait_for_cell_data_connection(log, ad, True):
+        if not wait_for_cell_data_connection(log, ad, True, timeout_value=wait_time):
             ad.log.error("Step4 failed to re-enable data.")
             return False
         if not verify_internet_connection(log, ad, retries=3):
