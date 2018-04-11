@@ -256,7 +256,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
         except Exception:
             log.warning("Failed to load %s!", sim_filename)
     if not ad.telephony["subscription"]:
-        abort_all_tests(ad.log, "No Valid SIMs found in device")
+        abort_all_tests(ad.log, "No valid subscription")
     result = True
     active_sub_id = get_outgoing_voice_sub_id(ad)
     for sub_id, sub_info in ad.telephony["subscription"].items():
@@ -568,6 +568,7 @@ def is_sim_ready(log, ad, sim_slot_id=None):
 
 def is_sim_ready_by_adb(log, ad):
     state = ad.adb.getprop("gsm.sim.state")
+    ad.log.info("gsm.sim.state = %s", state)
     return state == SIM_STATE_READY or state == SIM_STATE_LOADED
 
 
@@ -5738,6 +5739,11 @@ def get_sim_state(ad):
 
 def is_sim_locked(ad):
     return get_sim_state(ad) == SIM_STATE_PIN_REQUIRED
+
+
+def is_sim_lock_enabled(ad):
+    # TODO: add sl4a fascade to check if sim is locked
+    return getattr(ad, "is_sim_locked", False)
 
 
 def unlock_sim(ad):

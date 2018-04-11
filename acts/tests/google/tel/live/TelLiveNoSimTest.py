@@ -17,11 +17,14 @@
     Test Script for Telephony Pre Check In Sanity
 """
 
+from acts import signals
+from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
 from acts.test_utils.tel.tel_defines import SIM_STATE_ABSENT
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
+from acts.test_utils.tel.tel_test_utils import get_sim_state
 from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from TelLiveEmergencyTest import TelLiveEmergencyTest
@@ -29,17 +32,19 @@ from TelLiveEmergencyTest import TelLiveEmergencyTest
 
 class TelLiveNoSimTest(TelLiveEmergencyTest):
     def setup_class(self):
-        for ad in self.android_devices:
-            if ad.adb.getprop("gsm.sim.state") == SIM_STATE_ABSENT:
+        for ad in self.my_devices:
+            sim_state = get_sim_state(ad)
+            ad.log.info("Sim state is %s", sim_state)
+            if sim_state == SIM_STATE_ABSENT:
                 ad.log.info("Device has no SIM in it, set as DUT")
                 self.dut = ad
+                self.android_devices = [self.dut]
                 return True
-        self.log.error("No device meets no SIM requirement")
-        return False
+        self.log.error("No device meets SIM absent requirement")
+        raise signals.TestAbortClass("No device meets SIM absent requirement")
 
     def setup_test(self):
         self.expected_call_result = False
-        self.android_devices = [self.dut]
 
     """ Tests Begin """
 
