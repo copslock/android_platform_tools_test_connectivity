@@ -1807,6 +1807,7 @@ def call_setup_teardown_for_subscription(
             for new_call_id in new_call_ids:
                 if not wait_for_in_call_active(ad, call_id=new_call_id):
                     result = False
+
             if not ad.droid.telecomCallGetAudioState():
                 ad.log.error("Audio is not in call state")
                 result = False
