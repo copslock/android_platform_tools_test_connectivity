@@ -1185,13 +1185,17 @@ def is_phone_in_call_iwlan(log, ad):
     if not ad.droid.telecomIsInCall():
         ad.log.error("Not in call.")
         return False
+    if not ad.droid.telephonyIsImsRegistered():
+        ad.log.info("IMS is not registered.")
+        return False
+    if not ad.droid.telephonyIsWifiCallingAvailable():
+        ad.log.info("IsWifiCallingAvailble is False")
+        return False
     nw_type = get_network_rat(log, ad, NETWORK_SERVICE_DATA)
     if nw_type != RAT_IWLAN:
         ad.log.error("Data rat on: %s. Expected: iwlan", nw_type)
         return False
-    if not is_wfc_enabled(log, ad):
-        ad.log.error("WiFi Calling feature bit is False.")
-        return False
+    ad.log.info("Call properties: %s", ad.droid.telecomCallGetProperties())
     return True
 
 
