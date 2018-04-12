@@ -16,6 +16,7 @@
 
 from acts import asserts
 from acts import utils
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
@@ -84,16 +85,19 @@ class RttDisableTest(RttBaseTest):
 
   ############################################################################
 
+  @test_tracker_info(uuid="498c49ab-a188-4612-998d-c47b35ff285e")
   def test_disable_wifi(self):
     """Validate that getting expected broadcast when Wi-Fi is disabled and that
     any range requests are rejected."""
     self.run_disable_rtt(self.MODE_DISABLE_WIFI)
 
+  @test_tracker_info(uuid="f71f731f-4aaf-402b-8595-db94b625b544")
   def test_enable_doze(self):
     """Validate that getting expected broadcast when RTT is disabled due to doze
     mode and that any range requests are rejected."""
     self.run_disable_rtt(self.MODE_ENABLE_DOZE)
 
+  @test_tracker_info(uuid="6a1c83a8-9eaf-49db-b547-5131cba0eafe")
   def test_disable_location(self):
     """Validate that getting expected broadcast when locationing is disabled and
     that any range requests are rejected."""
