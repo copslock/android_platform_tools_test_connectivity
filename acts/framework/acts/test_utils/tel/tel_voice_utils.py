@@ -1195,7 +1195,6 @@ def is_phone_in_call_iwlan(log, ad):
     if nw_type != RAT_IWLAN:
         ad.log.error("Data rat on: %s. Expected: iwlan", nw_type)
         return False
-    ad.log.info("Call properties: %s", ad.droid.telecomCallGetProperties())
     return True
 
 

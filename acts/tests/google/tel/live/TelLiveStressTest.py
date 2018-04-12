@@ -106,7 +106,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.max_phone_call_duration = int(
             self.user_params.get("max_phone_call_duration", 600))
         self.min_sleep_time = int(self.user_params.get("min_sleep_time", 10))
-        self.max_sleep_time = int(self.user_params.get("max_sleep_time", 120))
+        self.max_sleep_time = int(self.user_params.get("max_sleep_time", 60))
         self.max_run_time = int(self.user_params.get("max_run_time", 14400))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
         self.max_mms_length = int(self.user_params.get("max_mms_length", 160))
@@ -344,12 +344,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                         ad.log.warning("Call is NOT in correct %s state at %s",
                                        call_verification_func.__name__,
                                        time_message)
-                        if call_verification_func.__name__ != "is_phone_in_call":
+                        if call_verification_func.__name__ == "is_phone_in_call_iwlan":
                             if is_phone_in_call(self.log, ad):
-                                ad.log.info("Device is still in call")
-                                is_voice_attached(self.log, ad)
-                                rat_change = True
-                                continue
+                                if getattr(ad, "data_rat_state_error_count",
+                                           0) < 1:
+                                    setattr(ad, "data_rat_state_error_count",
+                                            1)
+                                    continue
                         failure_reasons.add("Maintenance")
                         reasons = ad.search_logcat(
                             "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
@@ -372,8 +373,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                     failure_reasons.add("Teardown")
                     result = False
         self.result_info["Call Total"] += 1
-        if rat_change:
-            self.result_info["Call RAT Change"] += 1
         if not result:
             self.log.info("%s test failed", log_msg)
             for reason in failure_reasons:
