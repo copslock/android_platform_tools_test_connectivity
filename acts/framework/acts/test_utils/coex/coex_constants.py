@@ -1,4 +1,4 @@
-# /usr/bin/env python3.4
+# /usr/bin/env python3
 #
 # Copyright (C) 2018 The Android Open Source Project
 #
@@ -32,8 +32,20 @@ OFONO_MANAGER = "org.ofono.Manager"
 ADAPTER_INTERFACE = SERVICE_NAME + ".Adapter1"
 DBUS_INTERFACE = "org.freedesktop.DBus.Properties"
 DEVICE_INTERFACE = SERVICE_NAME + ".Device1"
-MEDIA_CONTROL_INTERACE = SERVICE_NAME +".MediaControl1"
+MEDIA_CONTROL_INTERFACE = SERVICE_NAME + ".MediaControl1"
 MEDIA_PLAY_INTERFACE = SERVICE_NAME + ".MediaPlayer1"
+
+CMD_PATH = "/usr/local/bluez/"
+KILL_CMD = "kill -9 "
+CMD_FIND = "ps -elf|grep "
+CMD_HCI = "hciconfig hci0 "
+
+commands = {
+    "dbus": "dbus-1.8.6/bin/dbus-daemon --system --nopidfile",
+    "bluez": "bluez-5.39/libexec/bluetooth/bluetoothd -ndE --compat",
+    "ofonod": "ofono-1.17/sbin/ofonod -nd",
+    "pulseaudio": "pulseaudio-8.0/bin/pulseaudio  -vvv",
+}
 
 bluetooth_profiles = {
     "A2DP_SRC": "0000110a-0000-1000-8000-00805f9b34fb",
