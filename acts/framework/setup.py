@@ -87,7 +87,7 @@ class ActsInstallDependencies(cmd.Command):
 
         for package in required_packages:
             self.announce('Installing %s...' % package, log.INFO)
-            pip.main(['install', package])
+            pip.main(['install', '-v', '--no-cache-dir', package])
 
         self.announce('Dependencies installed.')
 
