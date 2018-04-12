@@ -36,6 +36,7 @@ class PowerscanTest(base_test.BaseTestClass):
 
         self.log = logging.getLogger()
         self.dut = self.android_devices[0]
+        wputils.force_countrycode(self.dut, 'US')
         self.access_point = self.access_points[0]
         req_params = ['scantest_params', 'custom_files']
         self.unpack_userparams(req_params)

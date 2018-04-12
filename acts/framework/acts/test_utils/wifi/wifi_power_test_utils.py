@@ -407,6 +407,52 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     return [plot, dt]
 
 
+def force_countrycode(ad, country_code):
+    """Function to force the country code on Android phone.
+
+    Args:
+        ad: android phone device
+        country_code: country code, such as 'US', '00'
+    """
+    serial = ad.serial
+    rc_file_phone = '/vendor/etc/init/hw/init.sdm845.rc'
+    rc_file_local = 'local_rc_file.rc'
+    rc_pull_cmd = 'adb -s %s pull %s %s' % (serial, rc_file_phone,
+                                            rc_file_local)
+    rc_push_cmd = 'adb -s %s push %s %s' % (serial, rc_file_local,
+                                            rc_file_phone)
+    utils.exe_cmd(rc_pull_cmd)
+    with open(rc_file_local, 'r') as fin:
+        for line in fin:
+            if '    setprop ro.boot.wificountrycode' in line:
+                countrycode_old = line.strip(
+                    '    setprop ro.boot.wificountrycode ').strip('\n')
+    if countrycode_old == country_code:
+        return
+    ad.log.info('Change country code to {}'.format(country_code))
+
+    line_old = '    setprop ro.boot.wificountrycode ' + countrycode_old
+    line_new = '    setprop ro.boot.wificountrycode ' + country_code
+
+    sed_line = 'sed -i \'s/%s/%s/g\' %s' % (line_old, line_new, rc_file_local)
+    utils.exe_cmd(sed_line)
+    utils.exe_cmd('adb -s {} root'.format(serial))
+    cmd_out = utils.exe_cmd('adb -s {} remount'.format(serial))
+    if ('Permission denied').encode() in cmd_out:
+        ad.log.info('Need to disable verity first and reboot')
+        utils.exe_cmd('adb -s {} disable-verity'.format(serial))
+        time.sleep(1)
+        ad.reboot()
+        ad.log.info('Verity disabled and device back from reboot')
+        utils.exe_cmd('adb -s {} root'.format(serial))
+        utils.exe_cmd('adb -s {} remount'.format(serial))
+    time.sleep(1)
+    utils.exe_cmd(rc_push_cmd)
+    ad.log.info('Country code changes checked in and rebooting...')
+    ad.reboot()
+    ad.log.info('Country code updated and device back from reboot')
+
+
 def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=10):
     """Function to change the DTIM setting in the phone.
 
