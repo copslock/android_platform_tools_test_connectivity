@@ -49,6 +49,7 @@ from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_test_utils import call_reject_leave_message
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
@@ -1185,12 +1186,20 @@ def is_phone_in_call_iwlan(log, ad):
     if not ad.droid.telecomIsInCall():
         ad.log.error("Not in call.")
         return False
+    if not ad.droid.telephonyIsImsRegistered():
+        ad.log.info("IMS is not registered.")
+        return False
+    if not ad.droid.telephonyIsWifiCallingAvailable():
+        ad.log.info("IsWifiCallingAvailble is False")
+        return False
+    call_info = dumpsys_telecom_call_info(ad)[-1]
+    if "IMS" not in call_info["callTechnologies"] and "HD wifi" not in call_info["callProperties"]:
+        ad.log.info("dumpsys callTechnologies=%s, callProperties=%s",
+                    call_info["callTechnologies"], call_info["callProperties"])
+        return False
     nw_type = get_network_rat(log, ad, NETWORK_SERVICE_DATA)
     if nw_type != RAT_IWLAN:
         ad.log.error("Data rat on: %s. Expected: iwlan", nw_type)
-        return False
-    if not is_wfc_enabled(log, ad):
-        ad.log.error("WiFi Calling feature bit is False.")
         return False
     return True
 

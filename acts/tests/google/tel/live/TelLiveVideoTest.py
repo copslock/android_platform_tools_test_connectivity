@@ -19,6 +19,7 @@
 
 import time
 from queue import Empty
+from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import AUDIO_ROUTE_EARPIECE
@@ -29,6 +30,7 @@ from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_MANAGE_CONFERENCE
 from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_MERGE_CONFERENCE
 from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_SWAP_CONFERENCE
 from acts.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
+from acts.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VIDEO_SESSION_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import VT_STATE_AUDIO_ONLY
@@ -43,8 +45,11 @@ from acts.test_utils.tel.tel_defines import EVENT_VIDEO_SESSION_EVENT
 from acts.test_utils.tel.tel_defines import EventTelecomVideoCallSessionEvent
 from acts.test_utils.tel.tel_defines import SESSION_EVENT_RX_PAUSE
 from acts.test_utils.tel.tel_defines import SESSION_EVENT_RX_RESUME
+from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import disconnect_call_by_id
+from acts.test_utils.tel.tel_test_utils import get_model_name
+from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
@@ -81,6 +86,17 @@ class TelLiveVideoTest(TelephonyBaseTest):
         self.long_duration_call_total_duration = self.user_params.get(
             "long_duration_call_total_duration",
             DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
+        for ad in self.android_devices:
+            operator = get_operator_name(self.log, ad)
+            model = get_model_name(ad)
+            if CAPABILITY_VT not in operator_capabilities.get(
+                    operator, operator_capabilities["default"]):
+                raise signals.TestAbortClass(
+                        "Video calling support for carrier %s" % operator)
+            if operator == "tmo" and model in (
+                    "angler", "bullhead", "sailfish", "marlin"):
+                raise signals.TestAbortClass(
+                        "Video calling support for tmobile on %s" % model)
 
     """ Tests Begin """
 

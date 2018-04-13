@@ -669,6 +669,7 @@ class DataPathTest(AwareBaseTest):
   # peer using the Aware-provided peer handle (as opposed to a MAC address).
   #######################################
 
+  @test_tracker_info(uuid="e855dd81-45c8-4bb2-a204-7687c48ff843")
   def test_ib_extra_pub_same_unsolicited_passive_open_specific(self):
     """Data-path: in-band, unsolicited/passive, open encryption, specific peer.
 
@@ -685,6 +686,7 @@ class DataPathTest(AwareBaseTest):
         pub_on_both=True,
         pub_on_both_same=True)
 
+  @test_tracker_info(uuid="57fc9d53-32ae-470f-a8b1-2fe37893687d")
   def test_ib_extra_pub_same_unsolicited_passive_open_any(self):
     """Data-path: in-band, unsolicited/passive, open encryption, any peer.
 
@@ -701,6 +703,7 @@ class DataPathTest(AwareBaseTest):
         pub_on_both=True,
         pub_on_both_same=True)
 
+  @test_tracker_info(uuid="7a32f439-d745-4716-a75e-b54109aaaf82")
   def test_ib_extra_pub_diff_unsolicited_passive_open_specific(self):
     """Data-path: in-band, unsolicited/passive, open encryption, specific peer.
 
@@ -717,6 +720,7 @@ class DataPathTest(AwareBaseTest):
         pub_on_both=True,
         pub_on_both_same=False)
 
+  @test_tracker_info(uuid="a14ddc66-88fd-4b49-ab37-225533867c63")
   def test_ib_extra_pub_diff_unsolicited_passive_open_any(self):
     """Data-path: in-band, unsolicited/passive, open encryption, any peer.
 
@@ -809,6 +813,7 @@ class DataPathTest(AwareBaseTest):
         encr_type=self.ENCR_TYPE_PMK,
         use_peer_id=False)
 
+  @test_tracker_info(uuid="dd464f24-b404-4eea-955c-d10c9e8adefc")
   def test_oob_ib_coex_open_specific(self):
     """Data-path: out-of-band, open encryption, specific peer - in-band coex:
     set up a concurrent discovery session to verify no impact. The session
@@ -821,6 +826,7 @@ class DataPathTest(AwareBaseTest):
         use_peer_id=True,
         setup_discovery_sessions=True)
 
+  @test_tracker_info(uuid="088fcd3a-b015-4179-a9a5-91f782b03e3b")
   def test_oob_ib_coex_open_any(self):
     """Data-path: out-of-band, open encryption, any peer - in-band coex:
     set up a concurrent discovery session to verify no impact. The session
@@ -1359,6 +1365,7 @@ class DataPathTest(AwareBaseTest):
     NDIs"""
     self.run_multiple_ndi([self.PMK, self.PMK2])
 
+  @test_tracker_info(uuid="397d380a-8e41-466e-9ccb-cf8f413d83ba")
   def test_multiple_ndi_open_passphrase_flip(self):
     """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (one open, one using passphrase). The result should use two
@@ -1368,6 +1375,7 @@ class DataPathTest(AwareBaseTest):
     """
     self.run_multiple_ndi([None, self.PASSPHRASE], flip_init_resp=True)
 
+  @test_tracker_info(uuid="b3a4300b-1514-4cb8-a814-9c2baa449700")
   def test_multiple_ndi_open_pmk_flip(self):
     """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (one open, one using pmk). The result should use two
@@ -1377,6 +1385,7 @@ class DataPathTest(AwareBaseTest):
     """
     self.run_multiple_ndi([None, self.PMK], flip_init_resp=True)
 
+  @test_tracker_info(uuid="0bfea9e4-e57d-417f-8db4-245741e9bbd5")
   def test_multiple_ndi_passphrase_pmk_flip(self):
     """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (one using passphrase, one using pmk). The result should use
@@ -1386,6 +1395,7 @@ class DataPathTest(AwareBaseTest):
     """
     self.run_multiple_ndi([self.PASSPHRASE, self.PMK], flip_init_resp=True)
 
+  @test_tracker_info(uuid="74023483-5417-431b-a362-991ad4a03ab8")
   def test_multiple_ndi_passphrases_flip(self):
     """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (using different passphrases). The result should use two
@@ -1396,6 +1406,7 @@ class DataPathTest(AwareBaseTest):
     self.run_multiple_ndi([self.PASSPHRASE, self.PASSPHRASE2],
                           flip_init_resp=True)
 
+  @test_tracker_info(uuid="873b2d91-28a1-403f-ae9c-d756bb2f59ee")
   def test_multiple_ndi_pmks_flip(self):
     """Verify that between 2 DUTs can create 2 NDPs with different security
     configuration (using different PMKS). The result should use two different
@@ -1407,6 +1418,7 @@ class DataPathTest(AwareBaseTest):
 
   #######################################
 
+  @test_tracker_info(uuid="2f10a9df-7fbd-490d-a238-3523f47ab54c")
   def test_ib_responder_any_usage(self):
     """Verify that configuring an in-band (Aware discovery) Responder to receive
     an NDP request from any peer is not permitted by current API level. Override
@@ -1434,6 +1446,7 @@ class DataPathTest(AwareBaseTest):
         use_peer_id=False,
         expect_failure=True)
 
+  @test_tracker_info(uuid="5889cd41-0a72-4b7b-ab82-5b9168b9b5b8")
   def test_oob_responder_any_usage(self):
     """Verify that configuring an out-of-band (Aware discovery) Responder to
     receive an NDP request from any peer is not permitted by current API level.
@@ -1496,6 +1509,7 @@ class DataPathTest(AwareBaseTest):
     resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
     init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
 
+  @test_tracker_info(uuid="eff53739-35c5-47a6-81f0-d70b51d89c3b")
   def test_multiple_regulator_domains_ib_us_jp(self):
     """Verify data-path setup across multiple regulator domains.
 
@@ -1506,6 +1520,7 @@ class DataPathTest(AwareBaseTest):
                                          init_domain="US",
                                          resp_domain="JP")
 
+  @test_tracker_info(uuid="19af47cc-3204-40ef-b50f-14cf7b89cf4a")
   def test_multiple_regulator_domains_ib_jp_us(self):
     """Verify data-path setup across multiple regulator domains.
 
@@ -1516,6 +1531,7 @@ class DataPathTest(AwareBaseTest):
                                          init_domain="JP",
                                          resp_domain="US")
 
+  @test_tracker_info(uuid="65285ab3-977f-4dbd-b663-d5a02f4fc663")
   def test_multiple_regulator_domains_oob_us_jp(self):
     """Verify data-path setup across multiple regulator domains.
 
@@ -1526,6 +1542,7 @@ class DataPathTest(AwareBaseTest):
                                          init_domain="US",
                                          resp_domain="JP")
 
+  @test_tracker_info(uuid="8a417e24-aaf6-44b9-a089-a07c3ba8d954")
   def test_multiple_regulator_domains_oob_jp_us(self):
     """Verify data-path setup across multiple regulator domains.
 
@@ -1720,6 +1737,7 @@ class DataPathTest(AwareBaseTest):
     resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
     init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
 
+  @test_tracker_info(uuid="d8a0839d-4ba0-43f2-af93-3cf1382f9f16")
   def test_identical_ndps_mix_ib_oob_ib_first_same_polarity(self):
     """Validate that a single NDP is created for multiple identical requests
     which are issued through either in-band (ib) or out-of-band (oob) APIs.
@@ -1731,6 +1749,7 @@ class DataPathTest(AwareBaseTest):
                         ib_first=True,
                         inits_on_same_dut=True)
 
+  @test_tracker_info(uuid="70bbb811-0bed-4a19-96b3-f2446e777c8a")
   def test_identical_ndps_mix_ib_oob_oob_first_same_polarity(self):
     """Validate that a single NDP is created for multiple identical requests
     which are issued through either in-band (ib) or out-of-band (oob) APIs.
@@ -1742,6 +1761,7 @@ class DataPathTest(AwareBaseTest):
                         ib_first=False,
                         inits_on_same_dut=True)
 
+  @test_tracker_info(uuid="d9796da5-f96a-4a51-be0f-89d6f5bfe3ad")
   def test_identical_ndps_mix_ib_oob_ib_first_diff_polarity(self):
     """Validate that a single NDP is created for multiple identical requests
     which are issued through either in-band (ib) or out-of-band (oob) APIs.
@@ -1753,6 +1773,7 @@ class DataPathTest(AwareBaseTest):
                         ib_first=True,
                         inits_on_same_dut=False)
 
+  @test_tracker_info(uuid="72b16cbf-53ad-4f98-8dcf-a8cc5fa812e3")
   def test_identical_ndps_mix_ib_oob_oob_first_diff_polarity(self):
     """Validate that a single NDP is created for multiple identical requests
     which are issued through either in-band (ib) or out-of-band (oob) APIs.
@@ -1764,6 +1785,7 @@ class DataPathTest(AwareBaseTest):
                         ib_first=False,
                         inits_on_same_dut=False)
 
+  @test_tracker_info(uuid="51f9581e-c5ee-48a7-84d2-adff4876c3d7")
   def test_multiple_ndis_mix_ib_oob_ib_first_same_polarity(self):
     """Validate that multiple NDIs are created for NDPs which are requested with
     different security configurations. Use a mix of in-band and out-of-band APIs
@@ -1776,6 +1798,7 @@ class DataPathTest(AwareBaseTest):
                         ib_first=True,
                         inits_on_same_dut=True)
 
+  @test_tracker_info(uuid="b1e3070e-4d38-4b31-862d-39b82e0f2853")
   def test_multiple_ndis_mix_ib_oob_oob_first_same_polarity(self):
     """Validate that multiple NDIs are created for NDPs which are requested with
     different security configurations. Use a mix of in-band and out-of-band APIs
@@ -1788,6 +1811,7 @@ class DataPathTest(AwareBaseTest):
                         ib_first=False,
                         inits_on_same_dut=True)
 
+  @test_tracker_info(uuid="b1e3070e-4d38-4b31-862d-39b82e0f2853")
   def test_multiple_ndis_mix_ib_oob_ib_first_diff_polarity(self):
     """Validate that multiple NDIs are created for NDPs which are requested with
     different security configurations. Use a mix of in-band and out-of-band APIs

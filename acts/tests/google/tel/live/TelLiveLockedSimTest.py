@@ -18,12 +18,12 @@
 """
 
 import time
-from acts.base_test import BaseTestClass
+from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
-from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
+from acts.test_utils.tel.tel_test_utils import is_sim_lock_enabled
 from acts.test_utils.tel.tel_test_utils import is_sim_locked
 from acts.test_utils.tel.tel_test_utils import is_sim_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import reset_device_password
@@ -31,27 +31,23 @@ from acts.test_utils.tel.tel_test_utils import refresh_sl4a_session
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlocking_device
 from acts.test_utils.tel.tel_test_utils import unlock_sim
-from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from TelLiveEmergencyTest import TelLiveEmergencyTest
 
 EXPECTED_CALL_TEST_RESULT = False
 
 
 class TelLiveLockedSimTest(TelLiveEmergencyTest):
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
-        self.logger_sessions = []
-        fake_number = self.user_params.get("fake_emergency_number", STORY_LINE)
-        self.fake_emergency_number = fake_number.strip("+").replace("-", "")
-        for ad in self.android_devices:
-            if not is_sim_locked(ad):
+    def setup_class(self):
+        for ad in self.my_devices:
+            if not is_sim_lock_enabled(ad):
                 ad.log.info("SIM is not locked")
             else:
                 ad.log.info("SIM is locked")
                 self.dut = ad
-                return
+                self.android_devices = [ad]
+                return True
         #if there is no locked SIM, reboot the device and check again
-        for ad in self.android_devices:
+        for ad in self.my_devices:
             reset_device_password(ad, None)
             ad.reboot(stop_at_lock_screen=True)
             for _ in range(10):
@@ -63,15 +59,12 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
                     self.dut = ad
                     ad.ensure_screen_on()
                     ad.start_services(ad.skip_sl4a)
-                    return
+                    self.android_devices = [ad]
+                    return True
                 else:
                     time.sleep(5)
         self.log.error("There is no locked SIM in this testbed")
-        abort_all_tests(self.log, "There is no locked SIM")
-
-    def setup_class(self):
-        self.android_devices = [self.dut]
-        pass
+        raise signals.TestAbortClass("No device meets locked SIM requirement")
 
     def setup_test(self):
         self.expected_call_result = False

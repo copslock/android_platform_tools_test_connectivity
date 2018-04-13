@@ -33,12 +33,12 @@ from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
-from acts.test_utils.tel.tel_test_utils import abort_all_tests
-from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
+from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
+from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
-from acts.test_utils.tel.tel_test_utils import is_sim_ready
+from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
@@ -51,6 +51,7 @@ from acts.test_utils.tel.tel_test_utils import start_tcpdumps
 from acts.test_utils.tel.tel_test_utils import stop_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import stop_tcpdumps
 from acts.test_utils.tel.tel_test_utils import unlock_sim
+from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
@@ -77,8 +78,7 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.init_log_path = ad.log_path
             ad.log_path = self.log_path
             print_radio_info(ad)
-            if not unlock_sim(ad):
-                abort_all_tests(ad.log, "unable to unlock SIM")
+            unlock_sim(ad)
             ad.wakeup_screen()
             ad.adb.shell("input keyevent 82")
             ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
@@ -169,42 +169,46 @@ class TelephonyBaseTest(BaseTestClass):
             # relative to the config file.
             if not os.path.isfile(sim_conf_file):
                 sim_conf_file = os.path.join(
-                    self.user_params[Config.key_config_path], sim_conf_file)
+                        self.user_params[Config.key_config_path], sim_conf_file)
                 if not os.path.isfile(sim_conf_file):
                     self.log.error("Unable to load user config %s ",
                                    sim_conf_file)
 
-        if not self.user_params.get("Attenuator"):
-            ensure_phones_default_state(self.log, self.android_devices)
-        else:
-            ensure_phones_idle(self.log, self.android_devices)
-        for ad in self.android_devices:
-            if not is_sim_ready(self.log, ad):
-                continue
-            setup_droid_properties(self.log, ad, sim_conf_file)
+        tasks = [(self._setup_device, (ad, sim_conf_file))
+                 for ad in self.android_devices]
+        return multithread_func(self.log, tasks)
 
-            # Setup VoWiFi MDN for Verizon. b/33187374
-            if "vzw" in [
-                    sub["operator"]
-                    for sub in ad.telephony["subscription"].values()
-            ] and ad.is_apk_installed("com.google.android.wfcactivation"):
-                ad.log.info("setup VoWiFi MDN per b/33187374")
-                ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
-                ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
-                             "\"com.google.android.wfcactivation/"
-                             ".VzwEmergencyAddressActivity\"")
-            # Sub ID setup
-            initial_set_up_for_subid_infomation(self.log, ad)
-            if "enable_wifi_verbose_logging" in self.user_params:
-                ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
-            # If device is setup already, skip the following setup procedures
-            if getattr(ad, "telephony_test_setup", None):
-                continue
-            # Disable Emergency alerts
-            # Set chrome browser start with no-first-run verification and
-            # disable-fre. Give permission to read from and write to storage.
-            for cmd in (
-                    "pm disable com.android.cellbroadcastreceiver",
+    def _setup_device(self, ad, sim_conf_file):
+        if not unlock_sim(ad) or not wait_for_sim_ready_by_adb(self.log, ad):
+            raise signals.TestAbortClass("unable to load the SIM")
+
+        if not self.user_params.get("Attenuator"):
+            ensure_phone_default_state(self.log, ad)
+        else:
+            ensure_phone_idle(self.log, ad)
+
+        setup_droid_properties(self.log, ad, sim_conf_file)
+        # Setup VoWiFi MDN for Verizon. b/33187374
+        if get_operator_name(self.log, ad) == "vzw" and ad.is_apk_installed(
+                "com.google.android.wfcactivation"):
+            ad.log.info("setup VoWiFi MDN per b/33187374")
+        ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
+        ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
+                     "\"com.google.android.wfcactivation/"
+                     ".VzwEmergencyAddressActivity\"")
+        # Sub ID setup
+        initial_set_up_for_subid_infomation(self.log, ad)
+        if "enable_wifi_verbose_logging" in self.user_params:
+            ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
+
+        # If device is setup already, skip the following setup procedures
+        if getattr(ad, "telephony_test_setup", None):
+            return True
+
+        # Disable Emergency alerts
+        # Set chrome browser start with no-first-run verification and
+        # disable-fre. Give permission to read from and write to storage.
+        for cmd in ("pm disable com.android.cellbroadcastreceiver",
                     "pm grant com.android.chrome "
                     "android.permission.READ_EXTERNAL_STORAGE",
                     "pm grant com.android.chrome "
@@ -213,60 +217,56 @@ class TelephonyBaseTest(BaseTestClass):
                     "am set-debug-app --persistent com.android.chrome",
                     'echo "chrome --no-default-browser-check --no-first-run '
                     '--disable-fre" > /data/local/tmp/chrome-command-line'):
-                ad.adb.shell(cmd)
+            ad.adb.shell(cmd)
 
-            # Curl for 2016/7 devices
-            if not getattr(ad, "curl_capable", False):
-                try:
-                    out = ad.adb.shell("/data/curl --version")
-                    if not out or "not found" in out:
-                        if int(ad.adb.getprop(
-                                "ro.product.first_api_level")) >= 25:
-                            tel_data = self.user_params.get(
-                                "tel_data", "tel_data")
-                            if isinstance(tel_data, list):
-                                tel_data = tel_data[0]
-                            curl_file_path = os.path.join(tel_data, "curl")
-                            if not os.path.isfile(curl_file_path):
-                                curl_file_path = os.path.join(
-                                    self.user_params[Config.key_config_path],
-                                    curl_file_path)
-                            if os.path.isfile(curl_file_path):
-                                ad.log.info("Pushing Curl to /data dir")
-                                ad.adb.push("%s /data" % (curl_file_path))
-                                ad.adb.shell(
-                                    "chmod 777 /data/curl", ignore_status=True)
-                    else:
-                        setattr(ad, "curl_capable", True)
-                except Exception:
-                    ad.log.info("Failed to push curl on this device")
-
-            # Ensure that a test class starts from a consistent state that
-            # improves chances of valid network selection and facilitates
-            # logging.
+        # Curl for 2016/7 devices
+        if not getattr(ad, "curl_capable", False):
             try:
-                if not set_phone_screen_on(self.log, ad):
-                    self.log.error("Failed to set phone screen-on time.")
-                    return False
-                if not set_phone_silent_mode(self.log, ad):
-                    self.log.error("Failed to set phone silent mode.")
-                    return False
-                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                    PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, True)
-                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                    PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, True)
-                ad.droid.telephonyAdjustPreciseCallStateListenLevel(
-                    PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, True)
-            except Exception as e:
-                self.log.error("Failure with %s", e)
-            setattr(ad, "telephony_test_setup", True)
+                out = ad.adb.shell("/data/curl --version")
+                if not out or "not found" in out:
+                    if int(ad.adb.getprop("ro.product.first_api_level")) >= 25:
+                        tel_data = self.user_params.get("tel_data", "tel_data")
+                        if isinstance(tel_data, list):
+                            tel_data = tel_data[0]
+                        curl_file_path = os.path.join(tel_data, "curl")
+                        if not os.path.isfile(curl_file_path):
+                            curl_file_path = os.path.join(
+                                self.user_params[Config.key_config_path],
+                                curl_file_path)
+                        if os.path.isfile(curl_file_path):
+                            ad.log.info("Pushing Curl to /data dir")
+                            ad.adb.push("%s /data" % (curl_file_path))
+                            ad.adb.shell(
+                                "chmod 777 /data/curl", ignore_status=True)
+                else:
+                    setattr(ad, "curl_capable", True)
+            except Exception:
+                ad.log.info("Failed to push curl on this device")
 
+        # Ensure that a test class starts from a consistent state that
+        # improves chances of valid network selection and facilitates
+        # logging.
+        try:
+            if not set_phone_screen_on(self.log, ad):
+                self.log.error("Failed to set phone screen-on time.")
+                return False
+            if not set_phone_silent_mode(self.log, ad):
+                self.log.error("Failed to set phone silent mode.")
+                return False
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
+                PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND, True)
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
+                PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING, True)
+            ad.droid.telephonyAdjustPreciseCallStateListenLevel(
+                PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND, True)
+        except Exception as e:
+            self.log.error("Failure with %s", e)
+        setattr(ad, "telephony_test_setup", True)
         return True
 
     def teardown_class(self):
         stop_qxdm_loggers(self.log, self.android_devices)
         try:
-            ensure_phones_default_state(self.log, self.android_devices)
             for ad in self.android_devices:
                 ad.droid.disableDevicePassword()
                 if "enable_wifi_verbose_logging" in self.user_params:
@@ -279,14 +279,6 @@ class TelephonyBaseTest(BaseTestClass):
             self.log.error("Failure with %s", e)
 
     def setup_test(self):
-        for ad in self.android_devices:
-            for session in ad._sl4a_manager.sessions.values():
-                ed = session.get_event_dispatcher()
-                ed.clear_all_events()
-            output = ad.adb.logcat("-t 1")
-            match = re.search(r"\d+-\d+\s\d+:\d+:\d+.\d+", output)
-            if match:
-                ad.test_log_begin_time = match.group(0)
         if getattr(self, "qxdm_log", True):
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
         if getattr(self, "tcpdump_log", False):
@@ -299,10 +291,18 @@ class TelephonyBaseTest(BaseTestClass):
                 mask=mask)
         else:
             stop_tcpdumps(self.android_devices)
-        if self.skip_reset_between_cases:
-            ensure_phones_idle(self.log, self.android_devices)
-        else:
-            ensure_phones_default_state(self.log, self.android_devices)
+        for ad in self.android_devices:
+            if self.skip_reset_between_cases:
+                ensure_phone_idle(self.log, ad)
+            else:
+                ensure_phone_default_state(self.log, ad)
+            for session in ad._sl4a_manager.sessions.values():
+                ed = session.get_event_dispatcher()
+                ed.clear_all_events()
+            output = ad.adb.logcat("-t 1")
+            match = re.search(r"\d+-\d+\s\d+:\d+:\d+.\d+", output)
+            if match:
+                ad.test_log_begin_time = match.group(0)
 
     def teardown_test(self):
         stop_tcpdumps(self.android_devices)
@@ -311,7 +311,6 @@ class TelephonyBaseTest(BaseTestClass):
         self._cleanup_logger_sessions()
 
     def on_fail(self, test_name, begin_time):
-        self._pull_diag_logs(test_name, begin_time)
         self._take_bug_report(test_name, begin_time)
 
     def on_blocked(self, test_name, begin_time):
@@ -389,9 +388,6 @@ class TelephonyBaseTest(BaseTestClass):
             # only gather bug report for the first test case
             if i == 0:
                 self.on_fail(test_name, record.begin_time)
-
-    def on_pass(self, test_name, begin_time):
-        self._cleanup_logger_sessions()
 
     def get_stress_test_number(self):
         """Gets the stress_test_number param from user params.

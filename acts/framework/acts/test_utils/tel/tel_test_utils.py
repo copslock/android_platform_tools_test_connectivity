@@ -117,6 +117,8 @@ from acts.test_utils.tel.tel_defines import EventMmsSentFailure
 from acts.test_utils.tel.tel_defines import EventMmsSentSuccess
 from acts.test_utils.tel.tel_defines import EventMmsDownloaded
 from acts.test_utils.tel.tel_defines import EventSmsReceived
+from acts.test_utils.tel.tel_defines import EventSmsDeliverFailure
+from acts.test_utils.tel.tel_defines import EventSmsDeliverSuccess
 from acts.test_utils.tel.tel_defines import EventSmsSentFailure
 from acts.test_utils.tel.tel_defines import EventSmsSentSuccess
 from acts.test_utils.tel.tel_defines import CallStateContainer
@@ -254,7 +256,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
         except Exception:
             log.warning("Failed to load %s!", sim_filename)
     if not ad.telephony["subscription"]:
-        abort_all_tests(ad.log, "No Valid SIMs found in device")
+        abort_all_tests(ad.log, "No valid subscription")
     result = True
     active_sub_id = get_outgoing_voice_sub_id(ad)
     for sub_id, sub_info in ad.telephony["subscription"].items():
@@ -566,6 +568,7 @@ def is_sim_ready(log, ad, sim_slot_id=None):
 
 def is_sim_ready_by_adb(log, ad):
     state = ad.adb.getprop("gsm.sim.state")
+    ad.log.info("gsm.sim.state = %s", state)
     return state == SIM_STATE_READY or state == SIM_STATE_LOADED
 
 
@@ -1805,6 +1808,7 @@ def call_setup_teardown_for_subscription(
             for new_call_id in new_call_ids:
                 if not wait_for_in_call_active(ad, call_id=new_call_id):
                     result = False
+
             if not ad.droid.telecomCallGetAudioState():
                 ad.log.error("Audio is not in call state")
                 result = False
@@ -2454,6 +2458,7 @@ def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
     ad.log.info("Set subscriber mobile data usage limit to %s", limit)
+    ad.droid.logV("Setting subscriber mobile data usage limit to %s" % limit)
     ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
 
 
@@ -2461,6 +2466,8 @@ def remove_mobile_data_usage_limit(ad, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
     ad.log.debug("Remove subscriber mobile data usage limit")
+    ad.droid.logV(
+        "Setting subscriber mobile data usage limit to -1, unlimited")
     ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
 
 
@@ -2586,14 +2593,18 @@ def wait_for_cell_data_connection_for_subscription(
     data_state = ad.droid.telephonyGetDataConnectionState()
     if not state and ad.droid.telephonyGetDataConnectionState() == state_str:
         return True
+
     ad.ed.clear_events(EventDataConnectionStateChanged)
     ad.droid.telephonyStartTrackingDataConnectionStateChangeForSubscription(
         sub_id)
     ad.droid.connectivityStartTrackingConnectivityStateChange()
     try:
-        # TODO: b/26293147 There is no framework API to get data connection
-        # state by sub id
+        ad.log.info("User data enabled for sub_id %s: %s", sub_id,
+                    ad.droid.telephonyIsDataEnabledForSubscription(sub_id))
         data_state = ad.droid.telephonyGetDataConnectionState()
+        ad.log.info("Data connection state is %s", data_state)
+        ad.log.info("Network is connected: %s",
+                    ad.droid.connectivityNetworkIsConnected())
         if data_state == state_str:
             return _wait_for_nw_data_connection(
                 log, ad, state, NETWORK_CONNECTION_TYPE_CELL, timeout_value)
@@ -3731,17 +3742,19 @@ def sms_send_receive_verify_for_subscription(
                                                      True)
             try:
                 events = ad_tx.messaging_ed.pop_events(
-                    "(%s|%s)" % (EventSmsSentSuccess,
-                                 EventSmsSentFailure), max_wait_time)
+                    "(%s|%s|%s|%s)" %
+                    (EventSmsSentSuccess, EventSmsSentFailure,
+                     EventSmsDeliverSuccess,
+                     EventSmsDeliverFailure), max_wait_time)
                 for event in events:
                     ad_tx.log.info("Got event %s", event["name"])
-                    if event["name"] == EventSmsSentFailure:
+                    if event["name"] == EventSmsSentFailure or event["name"] == EventSmsDeliverFailure:
                         if event.get("data") and event["data"].get("Reason"):
                             ad_tx.log.error("%s with reason: %s",
                                             event["name"],
                                             event["data"]["Reason"])
                         return False
-                    elif event["name"] == EventSmsSentSuccess:
+                    elif event["name"] == EventSmsSentSuccess or event["name"] == EventSmsDeliverSuccess:
                         break
             except Empty:
                 ad_tx.log.error("No %s or %s event for SMS of length %s.",
@@ -3834,7 +3847,13 @@ def sms_mms_receive_logcat_check(ad, type, begin_time):
         if log_results:
             ad.log.info("Found %s received log message: %s", type,
                         log_results[-1]["log_message"])
-            return True
+        log_results = ad.search_logcat(
+            "ProcessDownloadedMmsAction", begin_time=begin_time)
+        for log_result in log_results:
+            ad.log.info("Found %s", log_result["log_message"])
+            if "status is SUCCEEDED" in log_result["log_message"]:
+                ad.log.info("Download succeed with ProcessDownloadedMmsAction")
+                return True
     return False
 
 
@@ -5723,6 +5742,11 @@ def get_sim_state(ad):
 
 def is_sim_locked(ad):
     return get_sim_state(ad) == SIM_STATE_PIN_REQUIRED
+
+
+def is_sim_lock_enabled(ad):
+    # TODO: add sl4a fascade to check if sim is locked
+    return getattr(ad, "is_sim_locked", False)
 
 
 def unlock_sim(ad):
