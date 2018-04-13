@@ -1824,6 +1824,7 @@ class DataPathTest(AwareBaseTest):
                         ib_first=True,
                         inits_on_same_dut=False)
 
+  @test_tracker_info(uuid="596caadf-028e-494b-bbce-8304ccec2cbb")
   def test_multiple_ndis_mix_ib_oob_oob_first_diff_polarity(self):
     """Validate that multiple NDIs are created for NDPs which are requested with
     different security configurations. Use a mix of in-band and out-of-band APIs
