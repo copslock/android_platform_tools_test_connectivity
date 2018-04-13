@@ -31,6 +31,7 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 
 SHORT_SLEEP = 1
 MED_SLEEP = 6
+TIME_TO_POLL = 0.13
 STATION_DUMP = "iw wlan0 station dump"
 SCAN = "wpa_cli scan"
 SCAN_RESULTS = "wpa_cli scan_results"
@@ -399,7 +400,8 @@ class WifiRssiTest(base_test.BaseTestClass):
             else:
                 connected_rssi["chain_0_rssi"].append(RSSI_ERROR_VAL)
                 connected_rssi["chain_1_rssi"].append(RSSI_ERROR_VAL)
-            time.sleep(polling_frequency)
+            time.sleep(max(0, polling_frequency - TIME_TO_POLL))
+
         # Compute mean RSSIs. Only average valid readings.
         # Output RSSI_ERROR_VAL if no valid connected readings found.
         for key, val in connected_rssi.copy().items():
