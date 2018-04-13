@@ -963,6 +963,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
 
   #########################################################################
 
+  @test_tracker_info(uuid="6edc47ab-7300-4bff-b7dd-5de83f58928a")
   def test_ranged_discovery_multi_session(self):
     """Verify behavior with multiple concurrent discovery session with different
     configurations:
