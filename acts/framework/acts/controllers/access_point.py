@@ -145,8 +145,11 @@ class AccessPoint(object):
         Bring down hostapd if instance is running, bring down all bridge
         interfaces.
         """
-        # Stop hostapd instance if running
         try:
+            # This is necessary for Gale/Whirlwind flashed with dev channel image
+            # Unused interfaces such as existing hostapd daemon, guest, mesh
+            # interfaces need to be brought down as part of the AP initialization
+            # process, otherwise test would fail.
             try:
                 self.ssh.run('stop hostapd')
             except job.Error:
