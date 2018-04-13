@@ -1,4 +1,4 @@
-# /usr/bin/env python3
+#!/usr/bin/env python3
 #
 # Copyright (C) 2018 The Android Open Source Project
 #
@@ -20,6 +20,7 @@ AUDIO_ROUTE_BLUETOOTH = "BLUETOOTH"
 CALL_WAIT_TIME = 10
 DISCOVERY_TIME = 13
 WAIT_TIME = 3
+PROP_UPDATE_TIME = 5
 
 OBJECT_MANGER = "org.freedesktop.DBus.ObjectManager"
 PROPERTIES = "org.freedesktop.DBus.Properties"
@@ -35,15 +36,20 @@ DEVICE_INTERFACE = SERVICE_NAME + ".Device1"
 MEDIA_CONTROL_INTERFACE = SERVICE_NAME + ".MediaControl1"
 MEDIA_PLAY_INTERFACE = SERVICE_NAME + ".MediaPlayer1"
 
-CMD_PATH = "/usr/local/bluez/"
+A2DP_TEST = "a2dp"
+HFP_TEST = "hfp"
+MULTIPROFILE_TEST = "multiprofile"
+HCI_CONFIG_UP = "up"
+HCI_CONFIG_DOWN = "down"
+BLUEZ_PATH = "/usr/local/bluez/"
 KILL_CMD = "kill -9 "
-CMD_FIND = "ps -elf|grep "
+FIND_PROCESS = "ps -elf|grep "
 CMD_HCI = "hciconfig hci0 "
 
 commands = {
     "dbus": "dbus-1.8.6/bin/dbus-daemon --system --nopidfile",
     "bluez": "bluez-5.39/libexec/bluetooth/bluetoothd -ndE --compat",
-    "ofonod": "ofono-1.17/sbin/ofonod -nd",
+    "ofono": "ofono-1.17/sbin/ofonod -nd",
     "pulseaudio": "pulseaudio-8.0/bin/pulseaudio  -vvv",
 }
 
