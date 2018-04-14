@@ -1738,6 +1738,10 @@ def call_setup_teardown_for_subscription(
     """
     CHECK_INTERVAL = 5
     begin_time = get_current_epoch_time()
+    if not verify_caller_func:
+        verify_caller_func = is_phone_in_call
+    if not verify_callee_func:
+        verify_callee_func = is_phone_in_call
 
     caller_number = ad_caller.telephony['subscription'][subid_caller][
         'phone_num']
@@ -1762,10 +1766,6 @@ def call_setup_teardown_for_subscription(
         else:
             callee_number = callee_dial_number
 
-    if not verify_caller_func:
-        verify_caller_func = is_phone_in_call
-    if not verify_callee_func:
-        verify_callee_func = is_phone_in_call
     result = True
     msg = "Call from %s to %s" % (caller_number, callee_number)
     if ad_hangup:
@@ -1798,7 +1798,8 @@ def call_setup_teardown_for_subscription(
         else:
             ad_callee.log.info("Callee answered the call successfully")
 
-        for ad in (ad_caller, ad_callee):
+        for ad, call_func in zip([ad_caller, ad_callee],
+                                 [verify_caller_func, verify_callee_func]):
             call_ids = ad.droid.telecomCallGetCallIds()
             new_call_ids = set(call_ids) - set(ad.call_ids)
             if not new_call_ids:
@@ -1811,6 +1812,12 @@ def call_setup_teardown_for_subscription(
 
             if not ad.droid.telecomCallGetAudioState():
                 ad.log.error("Audio is not in call state")
+                result = False
+
+            if call_func(log, ad):
+                ad.log.info("Call is in %s state", call_func.__name__)
+            else:
+                ad.log.error("Call is not in %s state", call_func.__name__)
                 result = False
 
         elapsed_time = 0

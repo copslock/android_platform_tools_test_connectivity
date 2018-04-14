@@ -325,7 +325,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
-                self.log, ads[0], ads[1], ad_hangup=None, wait_time_in_call=0)
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=call_verification_func,
+                verify_callee_func=call_verification_func,
+                wait_time_in_call=0)
         if not call_setup_result:
             self.log.error("%s: Setup Call failed.", log_msg)
             failure_reasons.add("Setup")
