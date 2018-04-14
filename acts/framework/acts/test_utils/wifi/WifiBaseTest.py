@@ -13,21 +13,14 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-"""
-    Base Class for Defining Common WiFi Test Functionality
-"""
+"""Base Class for Defining Common WiFi Test Functionality"""
 
 import copy
 import itertools
-import time
-
-import acts.controllers.access_point as ap
 
 from acts import asserts
 from acts import utils
 from acts.base_test import BaseTestClass
-from acts.signals import TestSignal
-from acts.controllers import android_device
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_bss_settings
 from acts.controllers.ap_lib import hostapd_constants
@@ -76,19 +69,19 @@ class WifiBaseTest(BaseTestClass):
         ref_5g_passphrase = utils.rand_ascii_str(passphrase_length_5g)
 
         if hidden:
-           network_dict_2g = {
-              "SSID": ref_2g_ssid,
-              "security": ref_2g_security,
-              "password": ref_2g_passphrase,
-              "hiddenSSID": true
-           }
+            network_dict_2g = {
+                "SSID": ref_2g_ssid,
+                "security": ref_2g_security,
+                "password": ref_2g_passphrase,
+                "hiddenSSID": True
+            }
 
-           network_dict_5g = {
-              "SSID": ref_5g_ssid,
-              "security": ref_5g_security,
-              "password": ref_5g_passphrase,
-              "hiddenSSID": true
-           }
+            network_dict_5g = {
+                "SSID": ref_5g_ssid,
+                "security": ref_5g_security,
+                "password": ref_5g_passphrase,
+                "hiddenSSID": True
+            }
         else:
             network_dict_2g = {
                 "SSID": ref_2g_ssid,
@@ -105,10 +98,8 @@ class WifiBaseTest(BaseTestClass):
         ap = 0
         for ap in range(ap_count):
             self.user_params["reference_networks"].append({
-                "2g":
-                copy.copy(network_dict_2g),
-                "5g":
-                copy.copy(network_dict_5g)
+                "2g": copy.copy(network_dict_2g),
+                "5g": copy.copy(network_dict_5g)
             })
         self.reference_networks = self.user_params["reference_networks"]
         return {"2g": network_dict_2g, "5g": network_dict_5g}
@@ -136,15 +127,15 @@ class WifiBaseTest(BaseTestClass):
         open_5g_ssid = '5g_%s' % utils.rand_ascii_str(ssid_length_5g)
         if hidden:
             network_dict_2g = {
-            "SSID": open_2g_ssid,
-            "security": 'none',
-            "hiddenSSID": true
+                "SSID": open_2g_ssid,
+                "security": 'none',
+                "hiddenSSID": True
             }
 
             network_dict_5g = {
-            "SSID": open_5g_ssid,
-            "security": 'none',
-            "hiddenSSID": true
+                "SSID": open_5g_ssid,
+                "security": 'none',
+                "hiddenSSID": True
             }
         else:
             network_dict_2g = {
@@ -166,21 +157,21 @@ class WifiBaseTest(BaseTestClass):
         self.open_network = self.user_params["open_network"]
         return {"2g": network_dict_2g, "5g": network_dict_5g}
 
-    def populate_bssid(self, ap_instance, ap, networks_5g, networks_2g):
+    def populate_bssid(self, ap_instance, ap, networks_2g, networks_5g):
         """Get bssid for a given SSID and add it to the network dictionary.
 
         Args:
             ap_instance: Accesspoint index that was configured.
             ap: Accesspoint object corresponding to ap_instance.
-            networks_5g: List of 5g networks configured on the APs.
             networks_2g: List of 2g networks configured on the APs.
+            networks_5g: List of 5g networks configured on the APs.
 
         """
 
-        if not (networks_5g or networks_2g):
+        if not (networks_2g or networks_5g):
             return
 
-        for network in itertools.chain(networks_5g, networks_2g):
+        for network in itertools.chain(networks_2g, networks_5g):
             if 'channel' in network:
                 continue
             bssid = ap.get_bssid_from_ssid(network["SSID"])
@@ -189,7 +180,7 @@ class WifiBaseTest(BaseTestClass):
             else:
                 band = hostapd_constants.BAND_5G
             if network["security"] == hostapd_constants.WPA2_STRING:
-                # TODO:(bamahadev) Change all occurances of reference_networks
+                # TODO:(bamahadev) Change all occurrences of reference_networks
                 # to wpa_networks.
                 self.reference_networks[ap_instance][band]["bssid"] = bssid
             else:
@@ -197,21 +188,14 @@ class WifiBaseTest(BaseTestClass):
 
     def legacy_configure_ap_and_start(
             self,
-            channel_5g=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             channel_2g=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            max_2g_networks=hostapd_constants.AP_DEFAULT_MAX_SSIDS_2G,
-            max_5g_networks=hostapd_constants.AP_DEFAULT_MAX_SSIDS_5G,
-            ap_ssid_length_2g=hostapd_constants.AP_SSID_LENGTH_2G,
-            ap_passphrase_length_2g=hostapd_constants.AP_PASSPHRASE_LENGTH_2G,
-            ap_ssid_length_5g=hostapd_constants.AP_SSID_LENGTH_5G,
-            ap_passphrase_length_5g=hostapd_constants.AP_PASSPHRASE_LENGTH_5G,
-            hidden=False,
+            channel_5g=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ap_count=1):
         asserts.assert_true(
             len(self.user_params["AccessPoint"]) == 2,
-            "Exactly two access points must be specified. \
-             Each access point has 2 radios, one each for 2.4GHZ \
-             and 5GHz. A test can choose to use one or both APs.")
+            "Exactly two access points must be specified. "
+            "Each access point has 2 radios, one each for 2.4GHZ "
+            "and 5GHz. A test can choose to use one or both APs.")
         network_list_2g = []
         network_list_5g = []
         network_list_2g.append({"channel": channel_2g})
@@ -234,16 +218,17 @@ class WifiBaseTest(BaseTestClass):
         orig_network_list_5g = copy.copy(network_list_5g)
         orig_network_list_2g = copy.copy(network_list_2g)
 
-        if len(network_list_5g) > 1:
-            self.config_5g = self._generate_legacy_ap_config(network_list_5g)
         if len(network_list_2g) > 1:
             self.config_2g = self._generate_legacy_ap_config(network_list_2g)
+        if len(network_list_5g) > 1:
+            self.config_5g = self._generate_legacy_ap_config(network_list_5g)
         ap = 0
         for ap in range(ap_count):
             self.access_points[ap].start_ap(self.config_2g)
             self.access_points[ap].start_ap(self.config_5g)
-            self.populate_bssid(ap, self.access_points[ap], orig_network_list_5g,
-                                orig_network_list_2g)
+            self.populate_bssid(ap, self.access_points[ap],
+                                orig_network_list_2g,
+                                orig_network_list_5g)
 
     def _generate_legacy_ap_config(self, network_list):
         bss_settings = []
