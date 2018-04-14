@@ -35,6 +35,7 @@ class Config(enum.Enum):
     key_address = "Address"
     key_random = "random"
     key_test_case_iterations = "test_case_iterations"
+    key_test_failure_tracebacks = "test_failure_tracebacks"
     # Config names for controllers packaged in ACTS.
     key_android_device = "AndroidDevice"
     key_chameleon_device = "ChameleonDevice"
