@@ -189,7 +189,7 @@ def orchestrate_coc_connection(
         maxInterval = le_connection_interval / le_connection_interval_time_step
         return_status = client_ad.droid.gattClientRequestLeConnectionParameters(
             bluetooth_gatt_1, minInterval, maxInterval, 0,
-            le_default_supervision_timeout)
+            le_default_supervision_timeout, 0, 0)
         if not return_status:
             client_ad.log.error(
                 "gattClientRequestLeConnectionParameters returns failure")
