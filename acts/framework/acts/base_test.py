@@ -16,14 +16,15 @@
 import logging
 import os
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 
 from acts import asserts
+from acts import keys
 from acts import logger
 from acts import records
 from acts import signals
 from acts import tracelogger
 from acts import utils
-from concurrent.futures import ThreadPoolExecutor
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
@@ -400,7 +401,11 @@ class BaseTestClass(object):
                     tr_record.add_error("teardown_test", e)
                     self._exec_procedure_func(self._on_exception, tr_record)
         except (signals.TestFailure, AssertionError) as e:
-            self.log.error(e)
+            if self.user_params.get(
+                    keys.Config.key_test_failure_tracebacks.value, False):
+                self.log.exception(e)
+            else:
+                self.log.error(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
@@ -500,10 +505,10 @@ class BaseTestClass(object):
 
             if format_args:
                 self.exec_one_testcase(test_name, test_func,
-                                       args + (setting, ), **kwargs)
+                                       args + (setting,), **kwargs)
             else:
                 self.exec_one_testcase(test_name, test_func,
-                                       (setting, ) + args, **kwargs)
+                                       (setting,) + args, **kwargs)
 
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(setting)
