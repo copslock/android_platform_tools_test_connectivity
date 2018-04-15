@@ -25,7 +25,8 @@ from acts import utils
 
 # An environment variable defining the base location for ACTS logs.
 _ENV_ACTS_LOGPATH = 'ACTS_LOGPATH'
-
+# An environment variable that enables test case failures to log stack traces.
+_ENV_TEST_FAILURE_TRACEBACKS = 'ACTS_TEST_FAILURE_TRACEBACKS'
 # An environment variable defining the test search paths for ACTS.
 _ENV_ACTS_TESTPATHS = 'ACTS_TESTPATHS'
 _PATH_SEPARATOR = ':'
@@ -284,6 +285,10 @@ def load_test_config_file(test_config_path,
               (os.environ[_ENV_ACTS_TESTPATHS]))
         configs[keys.Config.key_test_paths.value] = os.environ[
             _ENV_ACTS_TESTPATHS].split(_PATH_SEPARATOR)
+    if (keys.Config.key_test_failure_tracebacks not in configs
+            and _ENV_TEST_FAILURE_TRACEBACKS in os.environ):
+        configs[keys.Config.key_test_failure_tracebacks.value] = os.environ[
+            _ENV_TEST_FAILURE_TRACEBACKS]
 
     # Add the global paths to the global config.
     k_log_path = keys.Config.key_log_path.value
