@@ -80,8 +80,6 @@ class TelLiveVideoTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.stress_test_number = self.get_stress_test_number()
-        self.wifi_network_ssid = self.user_params.get("wifi_network_ssid")
-        self.wifi_network_pass = self.user_params.get("wifi_network_pass")
 
         self.long_duration_call_total_duration = self.user_params.get(
             "long_duration_call_total_duration",
@@ -92,11 +90,11 @@ class TelLiveVideoTest(TelephonyBaseTest):
             if CAPABILITY_VT not in operator_capabilities.get(
                     operator, operator_capabilities["default"]):
                 raise signals.TestAbortClass(
-                        "Video calling support for carrier %s" % operator)
-            if operator == "tmo" and model in (
-                    "angler", "bullhead", "sailfish", "marlin"):
+                    "Video calling support for carrier %s" % operator)
+            if operator == "tmo" and model in ("angler", "bullhead",
+                                               "sailfish", "marlin"):
                 raise signals.TestAbortClass(
-                        "Video calling support for tmobile on %s" % model)
+                    "Video calling support for tmobile on %s" % model)
 
     """ Tests Begin """
 
