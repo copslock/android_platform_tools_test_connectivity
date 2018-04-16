@@ -31,12 +31,11 @@ import traceback
 import zipfile
 
 from acts.controllers import adb
-from acts import tracelogger
+from acts.libs.proc import job
+
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
-from acts.libs.proc import job
-
 MAX_FILENAME_LEN = 255
 
 
@@ -217,7 +216,7 @@ def find_files(paths, file_predicate):
     return file_list
 
 
-def load_config(file_full_path):
+def load_config(file_full_path, log_errors=True):
     """Loads a JSON config file.
 
     Returns:
@@ -225,11 +224,11 @@ def load_config(file_full_path):
     """
     with open(file_full_path, 'r') as f:
         try:
-            conf = json.load(f)
+            return json.load(f)
         except Exception as e:
-            logging.error("Exception error to load %s: %s", f, e)
+            if log_errors:
+                logging.error("Exception error to load %s: %s", f, e)
             raise
-        return conf
 
 
 def load_file_to_base64_str(f_path):
@@ -260,6 +259,37 @@ def dump_string_to_file(content, file_path, mode='w'):
     full_path = abs_path(file_path)
     with open(full_path, mode) as f:
         f.write(content)
+
+
+def list_of_dict_to_dict_of_dict(list_of_dicts, dict_key):
+    """Transforms a list of dicts to a dict of dicts.
+
+    For instance:
+    >>> list_of_dict_to_dict_of_dict([{'a': '1', 'b':'2'},
+    >>>                               {'a': '3', 'b':'4'}],
+    >>>                              'b')
+
+    returns:
+
+    >>> {'2': {'a': '1', 'b':'2'},
+    >>>  '4': {'a': '3', 'b':'4'}}
+
+    Args:
+        list_of_dicts: A list of dictionaries.
+        dict_key: The key in the inner dict to be used as the key for the
+                  outer dict.
+    Returns:
+        A dict of dicts.
+    """
+    return {d[dict_key]: d for d in list_of_dicts}
+
+
+def dict_purge_key_if_value_is_none(dictionary):
+    """Removes all pairs with value None from dictionary."""
+    for k, v in dict(dictionary).items():
+        if v is None:
+            del dictionary[k]
+    return dictionary
 
 
 def find_field(item_list, cond, comparator, target_field):
