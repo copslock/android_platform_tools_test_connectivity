@@ -19,23 +19,37 @@
 
 import time
 from acts import signals
-from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
-from acts.test_utils.tel.tel_defines import SIM_STATE_LOADED
-from acts.test_utils.tel.tel_defines import SIM_STATE_READY
+from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
-from acts.test_utils.tel.tel_test_utils import dumpsys_telecom_call_info
+from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import dumpsys_last_call_info
+from acts.test_utils.tel.tel_test_utils import dumpsys_last_call_number
+from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import get_service_state_by_adb
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.tel.tel_test_utils import is_sim_lock_enabled
 from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by_adb
 from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
+from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
+from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
+
+IMS_FIRST_CMD = (
+    "am broadcast -a com.google.android.carrier.action.LOCAL_OVERRIDE -n "
+    "com.google.android.carrier/.ConfigOverridingReceiver --ez "
+    "carrier_use_ims_first_for_emergency_bool %s")
 
 
 class TelLiveEmergencyTest(TelephonyBaseTest):
@@ -47,11 +61,19 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         self.my_devices = self.android_devices[:]
 
     def setup_class(self):
-        for ad in self.my_devices:
-            if ad.adb.getprop("gsm.sim.state") in (SIM_STATE_READY,
-                                                   SIM_STATE_LOADED):
+        TelephonyBaseTest.setup_class(self)
+        for ad in self.android_devices:
+            if not is_sim_lock_enabled(ad):
                 self.dut = ad
-                return True
+                self.dut_operator = get_operator_name(self.log, ad)
+                if (self.dut.droid.telephonyGetPhoneType() == PHONE_TYPE_CDMA):
+                    self.dut_ecbm = True
+                else:
+                    self.dut_ecbm = False
+                if len(self.my_devices) > 1:
+                    self.android_devices.remove(ad)
+                    self.android_devices.insert(0, ad)
+            return True
         self.log.error("No device meets SIM READY or LOADED requirement")
         raise signals.TestAbortClass("No device meets SIM requirement")
 
@@ -67,8 +89,15 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
     def teardown_test(self):
         self.dut.ensure_screen_on()
         reset_device_password(self.dut, None)
+        self.dut.adb.shell(IMS_FIRST_CMD % "true")
 
     def change_emergency_number_list(self):
+        test_number = "%s:%s" % (self.fake_emergency_number,
+                                 self.fake_emergency_number)
+        output = self.dut.adb.getprop("ril.test.emergencynumber")
+        if output != test_number:
+            self.dut.adb.shell(
+                "setprop ril.test.emergencynumber %s" % test_number)
         for _ in range(5):
             existing = self.dut.adb.getprop("ril.ecclist")
             self.dut.log.info("Existing ril.ecclist is: %s", existing)
@@ -117,18 +146,22 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
                 self.dut.log.error("Unable to add number to ril.ecclist")
                 return False
             time.sleep(1)
-            call_numbers = len(dumpsys_telecom_call_info(self.dut))
+            last_call_number = dumpsys_last_call_number(self.dut)
             dial_result = dialing_func(self.log, self.dut, callee)
+            time.sleep(3)
             hangup_call_by_adb(self.dut)
             self.dut.send_keycode("BACK")
             self.dut.send_keycode("BACK")
-            calls_info = dumpsys_telecom_call_info(self.dut)
-            if len(calls_info) <= call_numbers:
-                self.dut.log.error("New call is not in sysdump telecom")
-                result = False
-            else:
-                self.dut.log.info("New call info = %s", calls_info[-1])
-
+            for i in range(3):
+                if dumpsys_last_call_number(self.dut) > last_call_number:
+                    call_info = dumpsys_last_call_info(self.dut)
+                    self.dut.log.info("New call info = %s", call_info)
+                    break
+                else:
+                    self.dut.log.error("New call is not in sysdump telecom")
+                    if i == 2:
+                        result = False
+                    time.sleep(5)
             if dial_result == self.expected_call_result:
                 self.dut.log.info("Call to %s returns %s as expected", callee,
                                   self.expected_call_result)
@@ -163,6 +196,55 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         self.dut.log.info("fake_emergency_call_test result is %s", result)
         return result
 
+    def check_emergency_call_back_mode(self,
+                                       expected,
+                                       by_emergency_dialer=True):
+        result = True
+        self.log.info("Make fake emergency call and hung up in ringing")
+        if by_emergency_dialer:
+            initiate_emergency_dialer_call_by_adb(
+                self.log, self.dut, self.fake_emergency_number, timeout=0)
+        else:
+            callee = "+%s" % self.fake_emergency_number
+            self.dut.droid.telecomCallNumber(callee)
+        time.sleep(3)
+        hangup_call_by_adb(self.dut)
+        time.sleep(3)
+        last_call_number = dumpsys_last_call_number(self.dut)
+        if len(self.android_devices) > 1:
+            if not call_setup_teardown(
+                    self.log,
+                    self.dut,
+                    self.android_devices[1],
+                    ad_hangup=self.dut):
+                self.dut.log.error("Regular phone call failed")
+                result = False
+                reasons = self.dut.search_logcat(
+                    "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
+                    self.begin_time)
+                if reasons:
+                    self.dut.log.info(reasons[-1]["log_message"])
+        else:
+            initiate_call(self.log, self.dut, "411")
+            time.sleep(3)
+            hangup_call_by_adb(self.dut)
+        for i in range(3):
+            if dumpsys_last_call_number(self.dut) > last_call_number:
+                call_info = dumpsys_last_call_info(self.dut)
+                self.dut.log.info("New call info = %s", call_info)
+                if expected and "ecbm" not in call_info["callProperties"]:
+                    self.dut.log.error(
+                        "New call not in emergency call back mode.")
+                    return False
+                if "ecbm" in call_info["callProperties"] and not expected:
+                    self.dut.log.error("New call is emergency call back mode")
+                    return False
+            elif i == 2:
+                self.dut.log.error("New call not in dumpsys telecom")
+                return False
+            time.sleep(5)
+        return result
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="fe75ba2c-e4ea-4fc1-881b-97e7a9a7f48e")
@@ -179,6 +261,131 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             False if failed.
         """
         return self.fake_emergency_call_test()
+
+    @test_tracker_info(uuid="eb1fa042-518a-4ddb-8e9f-16a6c39c49f1")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_fake_emergency_call_by_emergency_dialer_csfb(self):
+        """Test emergency call with emergency dialer in user account.
+
+        Add system emergency number list with storyline number.
+        Use the emergency dialer to call storyline.
+        Verify DUT has in call activity.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        self.dut.adb.shell(IMS_FIRST_CMD % "false")
+        if not phone_setup_csfb(self.log, self.dut):
+            return False
+        if not self.fake_emergency_call_test():
+            return False
+        return self.check_emergency_call_back_mode(self.dut_ecbm)
+
+    @test_tracker_info(uuid="7a55991a-adc0-432c-b705-8ac9ee249323")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_fake_emergency_call_by_emergency_dialer_3g(self):
+        """Test emergency call with emergency dialer in user account.
+
+        Add a fake emergency number.
+        Use the emergency dialer to call storyline.
+        Verify DUT has in call activity.
+        Verify DUT in emergency call back mode.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        self.dut.adb.shell(IMS_FIRST_CMD % "false")
+        if not phone_setup_voice_3g(self.log, self.dut):
+            return False
+        if not self.fake_emergency_call_test():
+            return False
+        return self.check_emergency_call_back_mode(self.dut_ecbm)
+
+    @test_tracker_info(uuid="cc40611b-6fe5-4952-8bdd-c15d6d995516")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_fake_emergency_call_by_emergency_dialer_2g(self):
+        """Test emergency call with emergency dialer in user account.
+
+        Add system emergency number list with storyline number.
+        Use the emergency dialer to call storyline.
+        Verify DUT has in call activity.
+        Verify DUT in emergency call back mode.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if self.dut_operator != "tmo":
+            raise signals.TestSkip(
+                "2G is not supported for carrier %s" % self.dut_operator)
+        self.dut.adb.shell(IMS_FIRST_CMD % "false")
+        if not phone_setup_voice_2g(self.log, self.dut):
+            return False
+        if not self.fake_emergency_call_test():
+            return False
+        return self.check_emergency_call_back_mode(False)
+
+    @test_tracker_info(uuid="a209864c-93fc-455c-aa81-8d3a83f6ad7c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_fake_emergency_call_by_emergency_dialer_wfc_apm(self):
+        """Test emergency call with emergency dialer in user account.
+
+        Add system emergency number list with storyline number.
+        Use the emergency dialer to call storyline.
+        Verify DUT has in call activity.
+        Verify DUT in emergency call back mode.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if CAPABILITY_WFC not in operator_capabilities.get(
+                self.dut_operator, operator_capabilities["default"]):
+            raise signals.TestSkip(
+                "WFC is not supported for carrier %s" % self.dut_operator)
+        self.dut.adb.shell(IMS_FIRST_CMD % "false")
+        if not phone_setup_iwlan(
+                self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
+                self.wifi_network_ssid, self.wifi_network_pass):
+            self.dut.log.error("Failed to setup WFC.")
+            return False
+        if not self.fake_emergency_call_test():
+            return False
+        return self.check_emergency_call_back_mode(False)
+
+    @test_tracker_info(uuid="be654073-0107-4b67-a5df-f25ebec7d93e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_fake_emergency_call_by_emergency_dialer_wfc_apm_off(self):
+        """Test emergency call with emergency dialer in user account.
+
+        Add system emergency number list with storyline number.
+        Use the emergency dialer to call storyline.
+        Verify DUT has in call activity.
+        Verify DUT in emergency call back mode.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if CAPABILITY_WFC not in operator_capabilities.get(
+                self.dut_operator, operator_capabilities["default"]):
+            raise signals.TestSkip(
+                "WFC is not supported for carrier %s" % self.dut_operator)
+        if self.dut_operator == "tmo":
+            raise signals.TestSkip(
+                "WFC in non-APM is not supported for carrier %s" %
+                self.dut_operator)
+        self.dut.adb.shell(IMS_FIRST_CMD % "false")
+        if not phone_setup_iwlan(
+                self.log, self.dut, False, WFC_MODE_WIFI_PREFERRED,
+                self.wifi_network_ssid, self.wifi_network_pass):
+            self.dut.log.error("Failed to setup WFC.")
+            return False
+        if not self.fake_emergency_call_test():
+            return False
+        return self.check_emergency_call_back_mode(False)
 
     @test_tracker_info(uuid="8a0978a8-d93e-4f6a-99fe-d0e28bf1be2a")
     @TelephonyBaseTest.tel_test_wrap

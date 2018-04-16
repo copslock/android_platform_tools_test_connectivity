@@ -61,10 +61,6 @@ class TelLiveStressCallTest(TelephonyBaseTest):
         self.callee = self.android_devices[1]
         self.number_of_devices = 2
         self.user_params["telephony_auto_rerun"] = 0
-        self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get("wifi_network_ssid_2g")
-        self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get("wifi_network_pass_2g")
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
         self.phone_call_duration = int(
@@ -166,7 +162,8 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             if not video_call_setup(
                     self.log,
                     self.android_devices[0],
-                    self.android_devices[1], ):
+                    self.android_devices[1],
+            ):
                 self.log.error("Failed to setup Video call")
                 return False
         else:

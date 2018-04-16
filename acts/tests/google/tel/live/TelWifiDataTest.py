@@ -49,8 +49,6 @@ class TelWifiDataTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.stress_test_number = self.get_stress_test_number()
-        self.live_network_ssid = self.user_params["wifi_network_ssid"]
-        self.live_network_pwd = self.user_params.get("wifi_network_pass")
 
         self.attens = {}
         for atten in self.attenuators:
@@ -87,8 +85,8 @@ class TelWifiDataTest(TelephonyBaseTest):
                                          NETWORK_SERVICE_DATA):
             return False
 
-        if not ensure_wifi_connected(self.log, ad, self.live_network_ssid,
-                                     self.live_network_pwd):
+        if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                     self.wifi_network_pass):
             ad.log.error("connect WiFi failed")
             return False
         return True

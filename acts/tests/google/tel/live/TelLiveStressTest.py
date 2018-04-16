@@ -95,12 +95,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             self.android_devices = self.android_devices[:2]
         self.user_params["telephony_auto_rerun"] = 0
-        self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g")
-        self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g")
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
         self.max_phone_call_duration = int(
@@ -318,10 +312,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         rat_change = None
         if self.single_phone_test:
             call_setup_result = initiate_call(
-                self.log,
-                self.dut,
-                self.call_server_number,
-                wait_time_betwn_call_initcheck=5) and wait_for_in_call_active(
+                self.log, self.dut,
+                self.call_server_number) and wait_for_in_call_active(
                     self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
