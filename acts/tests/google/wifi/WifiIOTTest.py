@@ -44,17 +44,22 @@ class WifiIOTTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
 
-        req_params = [ "iot_networks", "open_network", "iperf_server_address" ]
-        self.unpack_userparams(req_param_names=req_params)
+        req_params = [ "iot_networks", ]
+        opt_params = [ "open_network", "iperf_server_address" ]
+        self.unpack_userparams(req_param_names=req_params,
+                               opt_param_names=opt_params)
 
         asserts.assert_true(
             len(self.iot_networks) > 0,
             "Need at least one iot network with psk.")
-        self.iot_networks.append(self.open_network)
+
+        if self.open_network:
+            self.iot_networks.append(self.open_network)
 
         wutils.wifi_toggle_state(self.dut, True)
         if "iperf_server_address" in self.user_params:
             self.iperf_server = self.iperf_servers[0]
+            self.iperf_server.start()
 
         # create hashmap for testcase name and SSIDs
         self.iot_test_prefix = "test_iot_connection_to_"
@@ -62,7 +67,6 @@ class WifiIOTTest(WifiBaseTest):
         for network in self.iot_networks:
             SSID = network['SSID'].replace('-','_')
             self.ssid_map[SSID] = network
-        self.iperf_server.start()
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
@@ -74,7 +78,8 @@ class WifiIOTTest(WifiBaseTest):
         wutils.reset_wifi(self.dut)
 
     def teardown_class(self):
-        self.iperf_server.stop()
+        if "iperf_server_address" in self.user_params:
+            self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
