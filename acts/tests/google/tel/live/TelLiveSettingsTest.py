@@ -88,11 +88,6 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.ad = self.android_devices[0]
-        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
-        try:
-            self.wifi_network_pass = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.wifi_network_pass = None
         self.number_of_devices = 1
         self.stress_test_number = self.get_stress_test_number()
 

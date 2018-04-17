@@ -88,12 +88,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
         self.stress_test_number = int(
             self.user_params.get("stress_test_number", 10))
-        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
         self.skip_reset_between_cases = False
-        try:
-            self.wifi_network_pass = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.wifi_network_pass = None
 
         self.dut = self.android_devices[0]
         self.ad_reference = self.android_devices[1] if len(

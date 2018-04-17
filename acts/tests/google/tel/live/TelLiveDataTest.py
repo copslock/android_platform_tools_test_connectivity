@@ -116,12 +116,6 @@ class TelLiveDataTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.stress_test_number = self.get_stress_test_number()
-        self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g")
-        self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g")
         self.provider = self.android_devices[0]
         self.clients = self.android_devices[1:]
 
