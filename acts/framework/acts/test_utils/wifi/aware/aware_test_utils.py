@@ -404,6 +404,18 @@ def configure_power_setting(device, mode, name, value):
   device.adb.shell(
     "cmd wifiaware native_api set-power %s %s %d" % (mode, name, value))
 
+def configure_mac_random_interval(device, interval_sec):
+  """Use the command-line API to configure the MAC address randomization
+  interval.
+
+  Args:
+    device: Device on which to perform configuration
+    interval_sec: The MAC randomization interval in seconds. A value of 0
+                  disables all randomization.
+  """
+  device.adb.shell(
+    "cmd wifiaware native_api set mac_random_interval_sec %d" % interval_sec)
+
 def configure_ndp_allow_any_override(device, override_api_check):
   """Use the command-line API to configure whether an NDP Responder may be
   configured to accept an NDP request from ANY peer.

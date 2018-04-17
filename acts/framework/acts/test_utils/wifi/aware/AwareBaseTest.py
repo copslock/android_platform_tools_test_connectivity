@@ -56,6 +56,9 @@ class AwareBaseTest(BaseTestClass):
       self.set_power_mode_parameters(ad)
       utils.set_regulatory_domain(ad, "US")
       autils.configure_ndp_allow_any_override(ad, True)
+      # set randomization interval to 0 (disable) to reduce likelihood of
+      # interference in tests
+      autils.configure_mac_random_interval(ad, 0)
 
   def teardown_test(self):
     for ad in self.android_devices:
