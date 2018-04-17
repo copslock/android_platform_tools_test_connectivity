@@ -32,9 +32,11 @@ small_timeout = 0.0001
 l2cap_max_inactivity_delay_after_disconnect = 5
 
 # LE specifications related constants
-le_connection_interval_time_step = 1.25
+le_connection_interval_time_step_ms = 1.25
 le_default_supervision_timeout = 2000
 default_le_data_length = 23
+default_le_connection_interval_ms = 30
+le_connection_event_time_step_ms = 0.625
 
 # Headers of LE L2CAP Connection-oriented Channels. See section 3.4, Vol 3, Part A, Version 5.0.
 l2cap_header_size = 4
