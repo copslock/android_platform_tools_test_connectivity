@@ -506,13 +506,18 @@ def toggle_airplane_mode(log, ad, new_state=None, strict_checking=True):
 
 
 def get_telephony_signal_strength(ad):
-    signal_strength = ad.droid.telephonyGetSignalStrength()
     #{'evdoEcio': -1, 'asuLevel': 28, 'lteSignalStrength': 14, 'gsmLevel': 0,
     # 'cdmaAsuLevel': 99, 'evdoDbm': -120, 'gsmDbm': -1, 'cdmaEcio': -160,
     # 'level': 2, 'lteLevel': 2, 'cdmaDbm': -120, 'dbm': -112, 'cdmaLevel': 0,
     # 'lteAsuLevel': 28, 'gsmAsuLevel': 99, 'gsmBitErrorRate': 0,
     # 'lteDbm': -112, 'gsmSignalStrength': 99}
-    if not signal_strength: signal_strength = {}
+    try:
+        signal_strength = ad.droid.telephonyGetSignalStrength()
+        if not signal_strength:
+            signal_strength = {}
+    except Exception as e:
+        ad.log.error(e)
+        signal_strength = {}
     out = ad.adb.shell("dumpsys telephony.registry | grep -i signalstrength")
     signals = re.findall(r"(-*\d+)", out)
     for i, val in enumerate(
@@ -1207,8 +1212,7 @@ def initiate_call(log,
                   callee_number,
                   emergency=False,
                   timeout=MAX_WAIT_TIME_CALL_INITIATION,
-                  checking_interval=5,
-                  wait_time_betwn_call_initcheck=0):
+                  checking_interval=5):
     """Make phone call from caller to callee.
 
     Args:
@@ -1231,9 +1235,6 @@ def initiate_call(log,
             ad.droid.telecomCallEmergencyNumber(callee_number)
         else:
             ad.droid.telecomCallNumber(callee_number)
-
-        # Sleep time for stress test b/64915613
-        time.sleep(wait_time_betwn_call_initcheck)
 
         # Verify OFFHOOK event
         checking_retries = int(timeout / checking_interval)
@@ -1331,6 +1332,7 @@ def initiate_emergency_dialer_call_by_adb(
         ad.adb.shell(
             "am start -a android.intent.action.CALL_EMERGENCY -d tel:%s" %
             callee_number)
+        if not timeout: return True
         ad.log.info("Check call state")
         # Verify Call State
         elapsed_time = 0
@@ -1360,7 +1362,7 @@ def hangup_call_by_adb(ad):
     ad.send_keycode("ENDCALL")
 
 
-def dumpsys_telecom_call_info(ad):
+def dumpsys_all_call_info(ad):
     """ Get call information by dumpsys telecom. """
     output = ad.adb.shell("dumpsys telecom")
     calls = re.findall("Call TC@\d+: {(.*?)}", output, re.DOTALL)
@@ -1377,6 +1379,34 @@ def dumpsys_telecom_call_info(ad):
         calls_info.append(call_info)
     ad.log.debug("calls_info = %s", calls_info)
     return calls_info
+
+
+def dumpsys_last_call_info(ad):
+    """ Get call information by dumpsys telecom. """
+    num = dumpsys_last_call_number(ad)
+    output = ad.adb.shell("dumpsys telecom")
+    result = re.search(r"Call TC@%s: {(.*?)}" % num, output, re.DOTALL)
+    call_info = {}
+    if result:
+        result = result.group(1)
+        for attr in ("startTime", "endTime", "direction", "isInterrupted",
+                     "callTechnologies", "callTerminationsReason",
+                     "connectionService", "isVedeoCall", "callProperties"):
+            match = re.search(r"%s: (.*)" % attr, result)
+            if match:
+                call_info[attr] = match.group(1)
+        call_info["inCallServices"] = re.findall(r"name: (.*)", result)
+    ad.log.debug("call_info = %s", call_info)
+    return call_info
+
+
+def dumpsys_last_call_number(ad):
+    output = ad.adb.shell("dumpsys telecom")
+    call_nums = re.findall("Call TC@(\d+):", output)
+    if not call_nums:
+        return 0
+    else:
+        return int(call_nums[-1])
 
 
 def call_reject(log, ad_caller, ad_callee, reject=True):
@@ -1657,7 +1687,6 @@ def call_setup_teardown(log,
                         verify_callee_func=None,
                         wait_time_in_call=WAIT_TIME_IN_CALL,
                         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-                        extra_sleep=0,
                         dialing_number_length=None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
@@ -1679,7 +1708,6 @@ def call_setup_teardown(log,
             if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
             if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
             else, do nothing.
-        extra_sleep: for stress test only - b/64915613
 
     Returns:
         True if call process without any error.
@@ -1691,7 +1719,7 @@ def call_setup_teardown(log,
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
-        incall_ui_display, extra_sleep, dialing_number_length)
+        incall_ui_display, dialing_number_length)
 
 
 def call_setup_teardown_for_subscription(
@@ -1705,7 +1733,6 @@ def call_setup_teardown_for_subscription(
         verify_callee_func=None,
         wait_time_in_call=WAIT_TIME_IN_CALL,
         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-        extra_sleep=0,
         dialing_number_length=None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on specified subscription
@@ -1729,7 +1756,6 @@ def call_setup_teardown_for_subscription(
             if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
             if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
             else, do nothing.
-        extra_sleep: for stress test only - b/64915613
 
     Returns:
         True if call process without any error.
@@ -1777,11 +1803,7 @@ def call_setup_teardown_for_subscription(
         setattr(ad, "call_ids", call_ids)
         ad.log.info("Before making call, existing phone calls %s", call_ids)
     try:
-        if not initiate_call(
-                log,
-                ad_caller,
-                callee_number,
-                wait_time_betwn_call_initcheck=extra_sleep):
+        if not initiate_call(log, ad_caller, callee_number):
             ad_caller.log.error("Initiate call failed.")
             return False
         else:
@@ -5805,6 +5827,20 @@ def send_dialer_secret_code(ad, secret_code):
     ad.droid.sendBroadcastIntent(intent)
 
 
+def enable_radio_log_on(ad):
+    if ad.adb.getprop(" persist.vendor.radio.adb_log_on") != "1":
+        adb_disable_verity(ad)
+        ad.adb.shell("setprop persist.vendor.radio.adb_log_on 1")
+        reboot_device(ad)
+
+
+def adb_disable_verity(ad):
+    if ad.adb.getprop("ro.boot.veritymode") == "enforcing":
+        ad.adb.disable_verity()
+        reboot_device(ad)
+        ad.adb.remount()
+
+
 def system_file_push(ad, src_file_path, dst_file_path):
     """Push system file on a device.
 
@@ -5815,9 +5851,7 @@ def system_file_push(ad, src_file_path, dst_file_path):
     skip_sl4a = True if "sl4a.apk" in src_file_path else False
     if "Read-only file system" in out:
         ad.log.info("Change read-only file system")
-        ad.adb.disable_verity()
-        ad.reboot(skip_sl4a)
-        ad.adb.remount()
+        adb_disable_verity(ad)
         out = ad.adb.push(cmd, timeout=300, ignore_status=True)
         if "Read-only file system" in out:
             ad.reboot(skip_sl4a)

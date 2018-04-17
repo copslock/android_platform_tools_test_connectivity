@@ -72,17 +72,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
     # So even if test cases passed, does not necessarily means
     # conference call functionality is working.
     # Need to add code to check for voice.
-
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
-
-        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
-
-        try:
-            self.wifi_network_pass = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.wifi_network_pass = None
-
     """ Private Test Utils """
 
     def _get_expected_call_state(self, ad):
