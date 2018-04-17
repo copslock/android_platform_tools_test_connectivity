@@ -37,8 +37,7 @@ class TelLiveNoSimTest(TelLiveEmergencyTest):
             ad.log.info("Sim state is %s", sim_state)
             if sim_state == SIM_STATE_ABSENT:
                 ad.log.info("Device has no SIM in it, set as DUT")
-                self.dut = ad
-                self.android_devices = [self.dut]
+                self.setup_dut(ad)
                 return True
         self.log.error("No device meets SIM absent requirement")
         raise signals.TestAbortClass("No device meets SIM absent requirement")

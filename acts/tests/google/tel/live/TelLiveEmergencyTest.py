@@ -40,6 +40,7 @@ from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by
 from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlock_sim
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
@@ -56,7 +57,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
         self.number_of_devices = 1
-        fake_number = self.user_params.get("fake_emergency_number", "800")
+        fake_number = self.user_params.get("fake_emergency_number", "411")
         self.fake_emergency_number = fake_number.strip("+").replace("-", "")
         self.my_devices = self.android_devices[:]
 
@@ -64,18 +65,27 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         TelephonyBaseTest.setup_class(self)
         for ad in self.android_devices:
             if not is_sim_lock_enabled(ad):
-                self.dut = ad
-                self.dut_operator = get_operator_name(self.log, ad)
-                if (self.dut.droid.telephonyGetPhoneType() == PHONE_TYPE_CDMA):
-                    self.dut_ecbm = True
-                else:
-                    self.dut_ecbm = False
-                if len(self.my_devices) > 1:
-                    self.android_devices.remove(ad)
-                    self.android_devices.insert(0, ad)
-            return True
+                self.setup_dut(ad)
+                return True
         self.log.error("No device meets SIM READY or LOADED requirement")
         raise signals.TestAbortClass("No device meets SIM requirement")
+
+    def setup_dut(self, ad):
+        self.dut = ad
+        self.dut_operator = get_operator_name(self.log, ad)
+        if self.dut_operator == "tmo":
+            self.fake_emergency_number = "611"
+        elif self.dut_operator == "vzw":
+            self.fake_emergency_number = "922"
+        elif self.dut_operator == "spt":
+            self.fake_emergency_number = "526"
+        if (self.dut.droid.telephonyGetPhoneType() == PHONE_TYPE_CDMA):
+            self.dut_ecbm = True
+        else:
+            self.dut_ecbm = False
+        if len(self.my_devices) > 1:
+            self.android_devices.remove(ad)
+            self.android_devices.insert(0, ad)
 
     def teardown_class(self):
         self.android_devices = self.my_devices
@@ -232,13 +242,32 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             if dumpsys_last_call_number(self.dut) > last_call_number:
                 call_info = dumpsys_last_call_info(self.dut)
                 self.dut.log.info("New call info = %s", call_info)
-                if expected and "ecbm" not in call_info["callProperties"]:
-                    self.dut.log.error(
-                        "New call not in emergency call back mode.")
-                    return False
-                if "ecbm" in call_info["callProperties"] and not expected:
-                    self.dut.log.error("New call is emergency call back mode")
-                    return False
+                if expected:
+                    if "ecbm" not in call_info["callProperties"]:
+                        self.dut.log.error(
+                            "New call not in emergency call back mode.")
+                        result = False
+                    if verify_internet_connection(
+                            self.log, self.dut, expected_state=False):
+                        self.dut.log.info("Data connection is off in ECB mode")
+                        time.sleep(360)
+                        if verify_internet_connection(self.log, self.dut):
+                            self.dut.log.info("Data connection comes back "
+                                              "after getting out of ECB")
+                    else:
+                        self.dut.log.error(
+                            "Data connection is not off in ECB mode")
+                        result = False
+                if not expected:
+                    if "ecbm" in call_info["callProperties"]:
+                        self.dut.log.error(
+                            "New call is in emergency call back mode")
+                        result = False
+                    if not verify_internet_connection(
+                            self.log, self.dut, expected_state=True):
+                        self.dut.log.error("Data connection is off")
+                        result = False
+                return result
             elif i == 2:
                 self.dut.log.error("New call not in dumpsys telecom")
                 return False
