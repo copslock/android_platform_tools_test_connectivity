@@ -402,7 +402,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
                 self.dut_operator, operator_capabilities["default"]):
             raise signals.TestSkip(
                 "WFC is not supported for carrier %s" % self.dut_operator)
-        if self.dut_operator == "tmo":
+        if self.dut_operator != "tmo":
             raise signals.TestSkip(
                 "WFC in non-APM is not supported for carrier %s" %
                 self.dut_operator)
