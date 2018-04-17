@@ -89,14 +89,6 @@ class ActionTypeId(object):
 class TelLiveProjectFiTest(TelephonyBaseTest):
     def setup_class(self):
         self.activation_attemps = self.user_params.get("activation_attemps", 2)
-        self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g") or self.user_params.get(
-                    "wifi_network_ssid_5g")
-        self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g") or self.user_params.get(
-                    "wifi_network_ssid_5g")
 
     def _add_google_account(self, ad, retries=3):
         for _ in range(3):

@@ -100,8 +100,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
 
         self.stress_test_number = self.get_stress_test_number()
-        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
-        self.wifi_network_pass = self.user_params.get("wifi_network_pass")
         self.long_duration_call_total_duration = self.user_params.get(
             "long_duration_call_total_duration",
             DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
@@ -3811,8 +3809,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ads = self.android_devices
         result = True
         tasks = [(phone_setup_iwlan,
-                 (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
-                  self.wifi_network_ssid, self.wifi_network_pass)),
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                   self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1]))]
 
         if not multithread_func(self.log, tasks):

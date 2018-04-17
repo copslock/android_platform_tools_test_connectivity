@@ -23,7 +23,6 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
-from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
@@ -71,10 +70,6 @@ class TelLiveSmsTest(TelephonyBaseTest):
     def __init__(self, controllers):
         TelephonyBaseTest.__init__(self, controllers)
 
-        # The path for "sim config file" should be set
-        # in "testbed.config" entry "sim_conf_file".
-        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
-        self.wifi_network_pass = self.user_params.get("wifi_network_pass")
         # Try to put SMS and call on different help device
         # If it is a three phone test bed, use the first one as dut,
         # use the second one as sms/mms help device, use the third one
