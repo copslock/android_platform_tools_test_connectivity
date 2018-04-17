@@ -33,6 +33,7 @@ from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
+from acts.test_utils.tel.tel_test_utils import enable_radio_log_on
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts.test_utils.tel.tel_test_utils import get_operator_name
@@ -46,9 +47,10 @@ from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
 from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_command
+from acts.test_utils.tel.tel_test_utils import start_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import start_tcpdumps
-from acts.test_utils.tel.tel_test_utils import stop_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import stop_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import stop_tcpdumps
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
@@ -63,43 +65,27 @@ class TelephonyBaseTest(BaseTestClass):
     def __init__(self, controllers):
 
         BaseTestClass.__init__(self, controllers)
-        self.logger_sessions = []
+        self.wifi_network_ssid = self.user_params.get(
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
+        self.wifi_network_pass = self.user_params.get(
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
 
         self.log_path = getattr(logging, "log_path", None)
         self.qxdm_log = self.user_params.get("qxdm_log", True)
+        self.enable_radio_log_on = self.user_params.get(
+            "enable_radio_log_on", True)
         qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
         if isinstance(qxdm_log_mask_cfg, list):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
         if qxdm_log_mask_cfg and "dev/null" in qxdm_log_mask_cfg:
             qxdm_log_mask_cfg = None
-        stop_qxdm_loggers(self.log, self.android_devices)
-        for ad in self.android_devices:
-            if not hasattr(ad, "init_log_path"):
-                ad.init_log_path = ad.log_path
-            ad.log_path = self.log_path
-            print_radio_info(ad)
-            unlock_sim(ad)
-            ad.wakeup_screen()
-            ad.adb.shell("input keyevent 82")
-            ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
-            if ad.qxdm_log:
-                qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
-                if qxdm_log_mask_cfg:
-                    qxdm_mask_path = DEFAULT_QXDM_LOG_PATH
-                    ad.adb.shell("mkdir %s" % qxdm_mask_path)
-                    ad.log.info("Push %s to %s", qxdm_log_mask_cfg,
-                                qxdm_mask_path)
-                    ad.adb.push("%s %s" % (qxdm_log_mask_cfg, qxdm_mask_path))
-                    mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
-                    qxdm_log_mask = os.path.join(qxdm_mask_path,
-                                                 mask_file_name)
-                set_qxdm_logger_command(ad, mask=qxdm_log_mask)
-                ad.adb.pull(
-                    "/firmware/image/qdsp6m.qdb %s" % ad.init_log_path,
-                    ignore_status=True)
-
-        start_qxdm_loggers(self.log, self.android_devices,
-                           utils.get_current_epoch_time())
+        tasks = [(self._init_device, (ad, qxdm_log_mask_cfg))
+                 for ad in self.android_devices]
+        multithread_func(self.log, tasks)
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
 
@@ -169,7 +155,7 @@ class TelephonyBaseTest(BaseTestClass):
             # relative to the config file.
             if not os.path.isfile(sim_conf_file):
                 sim_conf_file = os.path.join(
-                        self.user_params[Config.key_config_path], sim_conf_file)
+                    self.user_params[Config.key_config_path], sim_conf_file)
                 if not os.path.isfile(sim_conf_file):
                     self.log.error("Unable to load user config %s ",
                                    sim_conf_file)
@@ -177,6 +163,33 @@ class TelephonyBaseTest(BaseTestClass):
         tasks = [(self._setup_device, (ad, sim_conf_file))
                  for ad in self.android_devices]
         return multithread_func(self.log, tasks)
+
+    def _init_device(self, ad, qxdm_log_mask_cfg=None):
+        if self.enable_radio_log_on:
+            enable_radio_log_on(ad)
+        if not hasattr(ad, "init_log_path"):
+            ad.init_log_path = ad.log_path
+        ad.log_path = self.log_path
+        print_radio_info(ad)
+        unlock_sim(ad)
+        ad.wakeup_screen()
+        ad.adb.shell("input keyevent 82")
+        ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
+        stop_qxdm_logger(ad)
+        if ad.qxdm_log:
+            qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
+            if qxdm_log_mask_cfg:
+                qxdm_mask_path = DEFAULT_QXDM_LOG_PATH
+                ad.adb.shell("mkdir %s" % qxdm_mask_path)
+                ad.log.info("Push %s to %s", qxdm_log_mask_cfg, qxdm_mask_path)
+                ad.adb.push("%s %s" % (qxdm_log_mask_cfg, qxdm_mask_path))
+                mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
+                qxdm_log_mask = os.path.join(qxdm_mask_path, mask_file_name)
+            set_qxdm_logger_command(ad, mask=qxdm_log_mask)
+            ad.adb.pull(
+                "/firmware/image/qdsp6m.qdb %s" % ad.init_log_path,
+                ignore_status=True)
+        start_qxdm_logger(ad, utils.get_current_epoch_time())
 
     def _setup_device(self, ad, sim_conf_file):
         if not unlock_sim(ad) or not wait_for_sim_ready_by_adb(self.log, ad):
@@ -265,9 +278,9 @@ class TelephonyBaseTest(BaseTestClass):
         return True
 
     def teardown_class(self):
-        stop_qxdm_loggers(self.log, self.android_devices)
         try:
             for ad in self.android_devices:
+                stop_qxdm_logger(ad)
                 ad.droid.disableDevicePassword()
                 if "enable_wifi_verbose_logging" in self.user_params:
                     ad.droid.wifiEnableVerboseLogging(
@@ -306,9 +319,6 @@ class TelephonyBaseTest(BaseTestClass):
 
     def teardown_test(self):
         stop_tcpdumps(self.android_devices)
-
-    def on_exception(self, test_name, begin_time):
-        self._cleanup_logger_sessions()
 
     def on_fail(self, test_name, begin_time):
         self._take_bug_report(test_name, begin_time)
