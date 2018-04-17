@@ -24,8 +24,7 @@ from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import is_sim_lock_enabled
-from acts.test_utils.tel.tel_test_utils import is_sim_locked
-from acts.test_utils.tel.tel_test_utils import is_sim_ready_by_adb
+from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import refresh_sl4a_session
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
@@ -43,26 +42,18 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
                 ad.log.info("SIM is not locked")
             else:
                 ad.log.info("SIM is locked")
-                self.dut = ad
-                self.android_devices = [ad]
+                self.setup_dut(ad)
                 return True
         #if there is no locked SIM, reboot the device and check again
         for ad in self.my_devices:
+            reboot_device(ad)
             reset_device_password(ad, None)
-            ad.reboot(stop_at_lock_screen=True)
-            for _ in range(10):
-                if is_sim_ready_by_adb(self.log, ad):
-                    ad.log.info("SIM is not locked")
-                    break
-                elif is_sim_locked(ad):
-                    ad.log.info("SIM is locked")
-                    self.dut = ad
-                    ad.ensure_screen_on()
-                    ad.start_services(ad.skip_sl4a)
-                    self.android_devices = [ad]
-                    return True
-                else:
-                    time.sleep(5)
+            if not is_sim_lock_enabled(ad):
+                ad.log.info("SIM is not locked")
+            else:
+                ad.log.info("SIM is locked")
+                self.setup_dut(ad)
+                return True
         self.log.error("There is no locked SIM in this testbed")
         raise signals.TestAbortClass("No device meets locked SIM requirement")
 
