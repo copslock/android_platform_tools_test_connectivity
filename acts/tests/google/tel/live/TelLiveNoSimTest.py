@@ -18,11 +18,11 @@
 """
 
 from acts import signals
-from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DEFAULT_DEVICE_PASSWORD
 from acts.test_utils.tel.tel_defines import SIM_STATE_ABSENT
+from acts.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import get_sim_state
 from acts.test_utils.tel.tel_test_utils import reset_device_password
@@ -35,12 +35,13 @@ class TelLiveNoSimTest(TelLiveEmergencyTest):
         for ad in self.my_devices:
             sim_state = get_sim_state(ad)
             ad.log.info("Sim state is %s", sim_state)
-            if sim_state == SIM_STATE_ABSENT:
-                ad.log.info("Device has no SIM in it, set as DUT")
+            if sim_state in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
+                ad.log.info("Device has no or unknown SIM in it, set as DUT")
                 self.setup_dut(ad)
                 return True
-        self.log.error("No device meets SIM absent requirement")
-        raise signals.TestAbortClass("No device meets SIM absent requirement")
+        self.log.error("No device meets SIM absent or unknown requirement")
+        raise signals.TestAbortClass(
+                "No device meets SIM absent or unknown requirement")
 
     def setup_test(self):
         self.expected_call_result = False
