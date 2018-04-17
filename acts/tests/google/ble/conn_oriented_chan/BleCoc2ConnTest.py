@@ -27,8 +27,10 @@ from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_coc_test_utils import orchestrate_coc_connection
 from acts.test_utils.bt.bt_coc_test_utils import do_multi_connection_throughput
 from acts.test_utils.bt.bt_constants import default_le_data_length
+from acts.test_utils.bt.bt_constants import default_bluetooth_socket_timeout_ms
 from acts.test_utils.bt.bt_constants import l2cap_coc_header_size
 from acts.test_utils.bt.bt_constants import l2cap_max_inactivity_delay_after_disconnect
+from acts.test_utils.bt.bt_constants import le_connection_event_time_step_ms
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import kill_bluetooth_process
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
@@ -58,12 +60,22 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         # Give sufficient time for the physical LE link to be disconnected.
         time.sleep(l2cap_max_inactivity_delay_after_disconnect)
 
+    # This utility function calculates the max and min connection event (ce) time.
+    # The formula is that the min/max ce time should be less than half the connection
+    # interval and must be multiples of the le_connection_event_time_step.
+    def _calc_min_max_ce_time(self, le_connection_interval):
+        conn_event_time_steps = int((le_connection_interval/2)/le_connection_event_time_step_ms)
+        conn_event_time_steps -= 1
+        return (le_connection_event_time_step_ms * conn_event_time_steps)
+
     def _run_coc_connection_throughput_2_conn(
             self,
             is_secured,
             buffer_size,
             le_connection_interval=0,
-            le_tx_data_length=default_le_data_length):
+            le_tx_data_length=default_le_data_length,
+            min_ce_len=0,
+            max_ce_len=0):
 
         # The num_iterations is that number of repetitions of each
         # set of buffers r/w.
@@ -72,8 +84,6 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         # buffer_size is the number of bytes per L2CAP data buffer.
         num_iterations = 10
         number_buffers = 100
-        # Note: A 117 octets buffer size would fix nicely to a 123 bytes Data Length
-        buffer_size = 117
 
         # Make sure at least 3 phones are setup
         if len(self.android_devices) <= 2:
@@ -83,17 +93,19 @@ class BleCoc2ConnTest(BluetoothBaseTest):
 
         self.log.info(
             "_run_coc_connection_throughput_2_conn: is_secured={}, Interval={}, buffer_size={}, "
-            "le_tx_data_length={}".format(is_secured, le_connection_interval,
-                                          buffer_size, le_tx_data_length))
+            "le_tx_data_length={}, min_ce_len={}".format(is_secured, le_connection_interval,
+                                          buffer_size, le_tx_data_length, min_ce_len))
         status, client_conn_id1, server_conn_id1 = orchestrate_coc_connection(
             self.client_ad, self.server_ad, True, is_secured,
-            le_connection_interval, le_tx_data_length)
+            le_connection_interval, le_tx_data_length, default_bluetooth_socket_timeout_ms,
+            min_ce_len, max_ce_len)
         if not status:
             return False
 
         status, client_conn_id2, server_conn_id2 = orchestrate_coc_connection(
             self.client_ad, self.server2_ad, True, is_secured,
-            le_connection_interval, le_tx_data_length)
+            le_connection_interval, le_tx_data_length, default_bluetooth_socket_timeout_ms,
+            min_ce_len, max_ce_len)
         if not status:
             return False
 
@@ -225,8 +237,11 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         le_connection_interval = 10
         buffer_size = 60
         le_tx_data_length = buffer_size + l2cap_coc_header_size
+
         status = self._run_coc_connection_throughput_2_conn(
-            is_secured, buffer_size, le_connection_interval, le_tx_data_length)
+            is_secured, buffer_size, le_connection_interval, le_tx_data_length,
+            self._calc_min_max_ce_time(le_connection_interval),
+            self._calc_min_max_ce_time(le_connection_interval))
         return status
 
     @BluetoothBaseTest.bt_test_wrap
@@ -268,7 +283,9 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         buffer_size = 80
         le_tx_data_length = buffer_size + l2cap_coc_header_size
         status = self._run_coc_connection_throughput_2_conn(
-            is_secured, buffer_size, le_connection_interval, le_tx_data_length)
+            is_secured, buffer_size, le_connection_interval, le_tx_data_length,
+            self._calc_min_max_ce_time(le_connection_interval),
+            self._calc_min_max_ce_time(le_connection_interval))
         return status
 
     @BluetoothBaseTest.bt_test_wrap
@@ -310,7 +327,9 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         buffer_size = 120
         le_tx_data_length = buffer_size + l2cap_coc_header_size
         status = self._run_coc_connection_throughput_2_conn(
-            is_secured, buffer_size, le_connection_interval, le_tx_data_length)
+            is_secured, buffer_size, le_connection_interval, le_tx_data_length,
+            self._calc_min_max_ce_time(le_connection_interval),
+            self._calc_min_max_ce_time(le_connection_interval))
         return status
 
     @BluetoothBaseTest.bt_test_wrap
@@ -352,7 +371,9 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         buffer_size = 120
         le_tx_data_length = buffer_size + l2cap_coc_header_size
         status = self._run_coc_connection_throughput_2_conn(
-            is_secured, buffer_size, le_connection_interval, le_tx_data_length)
+            is_secured, buffer_size, le_connection_interval, le_tx_data_length,
+            self._calc_min_max_ce_time(le_connection_interval),
+            self._calc_min_max_ce_time(le_connection_interval))
         return status
 
     @BluetoothBaseTest.bt_test_wrap
@@ -394,7 +415,9 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         buffer_size = 180
         le_tx_data_length = buffer_size + l2cap_coc_header_size
         status = self._run_coc_connection_throughput_2_conn(
-            is_secured, buffer_size, le_connection_interval, le_tx_data_length)
+            is_secured, buffer_size, le_connection_interval, le_tx_data_length,
+            self._calc_min_max_ce_time(le_connection_interval),
+            self._calc_min_max_ce_time(le_connection_interval))
         return status
 
     @BluetoothBaseTest.bt_test_wrap
@@ -436,7 +459,9 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         buffer_size = 240
         le_tx_data_length = buffer_size + l2cap_coc_header_size
         status = self._run_coc_connection_throughput_2_conn(
-            is_secured, buffer_size, le_connection_interval, le_tx_data_length)
+            is_secured, buffer_size, le_connection_interval, le_tx_data_length,
+            self._calc_min_max_ce_time(le_connection_interval),
+            self._calc_min_max_ce_time(le_connection_interval))
         return status
 
     @BluetoothBaseTest.bt_test_wrap
@@ -478,5 +503,7 @@ class BleCoc2ConnTest(BluetoothBaseTest):
         buffer_size = 240
         le_tx_data_length = buffer_size + l2cap_coc_header_size
         status = self._run_coc_connection_throughput_2_conn(
-            is_secured, buffer_size, le_connection_interval, le_tx_data_length)
+            is_secured, buffer_size, le_connection_interval, le_tx_data_length,
+            self._calc_min_max_ce_time(le_connection_interval),
+            self._calc_min_max_ce_time(le_connection_interval))
         return status
