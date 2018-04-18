@@ -38,6 +38,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import get_screen_shot_log
+from acts.test_utils.tel.tel_test_utils import get_sim_state
 from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import print_radio_info
@@ -57,6 +58,8 @@ from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_RINGING
+from acts.test_utils.tel.tel_defines import SIM_STATE_ABSENT
+from acts.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
 
@@ -179,7 +182,8 @@ class TelephonyBaseTest(BaseTestClass):
         if ad.qxdm_log:
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
             if qxdm_log_mask_cfg:
-                qxdm_mask_path = DEFAULT_QXDM_LOG_PATH
+                qxdm_mask_path = self.user_params.get("qxdm_log_path",
+                                                      DEFAULT_QXDM_LOG_PATH)
                 ad.adb.shell("mkdir %s" % qxdm_mask_path)
                 ad.log.info("Push %s to %s", qxdm_log_mask_cfg, qxdm_mask_path)
                 ad.adb.push("%s %s" % (qxdm_log_mask_cfg, qxdm_mask_path))
@@ -192,15 +196,22 @@ class TelephonyBaseTest(BaseTestClass):
         start_qxdm_logger(ad, utils.get_current_epoch_time())
 
     def _setup_device(self, ad, sim_conf_file):
-        if not unlock_sim(ad) or not wait_for_sim_ready_by_adb(self.log, ad):
-            raise signals.TestAbortClass("unable to load the SIM")
+        if not unlock_sim(ad):
+            raise signals.TestAbortClass("unable to unlock the SIM")
 
-        if not self.user_params.get("Attenuator"):
-            ensure_phone_default_state(self.log, ad)
-        else:
+        if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
+            ad.log.info("Device has no or unknown SIM in it")
             ensure_phone_idle(self.log, ad)
+        elif self.user_params.get("Attenuator"):
+            ad.log.info("Device in chamber room")
+            ensure_phone_idle(self.log, ad)
+            setup_droid_properties(self.log, ad, sim_conf_file)
+        else:
+            if not wait_for_sim_ready_by_adb(self.log, ad):
+                raise signals.TestAbortClass("unable to load the SIM")
+            ensure_phone_default_state(self.log, ad)
+            setup_droid_properties(self.log, ad, sim_conf_file)
 
-        setup_droid_properties(self.log, ad, sim_conf_file)
         # Setup VoWiFi MDN for Verizon. b/33187374
         if get_operator_name(self.log, ad) == "vzw" and ad.is_apk_installed(
                 "com.google.android.wfcactivation"):
@@ -211,12 +222,13 @@ class TelephonyBaseTest(BaseTestClass):
                      ".VzwEmergencyAddressActivity\"")
         # Sub ID setup
         initial_set_up_for_subid_infomation(self.log, ad)
-        if "enable_wifi_verbose_logging" in self.user_params:
-            ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
 
         # If device is setup already, skip the following setup procedures
         if getattr(ad, "telephony_test_setup", None):
             return True
+
+        if "enable_wifi_verbose_logging" in self.user_params:
+            ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
 
         # Disable Emergency alerts
         # Set chrome browser start with no-first-run verification and
