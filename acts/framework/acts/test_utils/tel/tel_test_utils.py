@@ -302,6 +302,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
     data_roaming = getattr(ad, 'roaming', False)
     if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
         set_cell_data_roaming_state_by_adb(ad, data_roaming)
+        # Setup VoWiFi MDN for Verizon. b/33187374
     if not result:
         abort_all_tests(ad.log, "Failed to find valid phone number")
 
@@ -1371,10 +1372,14 @@ def dumpsys_all_call_info(ad):
         call_info = {}
         for attr in ("startTime", "endTime", "direction", "isInterrupted",
                      "callTechnologies", "callTerminationsReason",
-                     "connectionService", "isVedeoCall", "callProperties"):
+                     "connectionService", "isVideoCall", "callProperties"):
             match = re.search(r"%s: (.*)" % attr, call)
             if match:
-                call_info[attr] = match.group(1)
+                if attr in ("startTime", "endTime"):
+                    call_info[attr] = epoch_to_log_line_timestamp(
+                        int(match.group(1)))
+                else:
+                    call_info[attr] = match.group(1)
         call_info["inCallServices"] = re.findall(r"name: (.*)", call)
         calls_info.append(call_info)
     ad.log.debug("calls_info = %s", calls_info)
@@ -1386,16 +1391,19 @@ def dumpsys_last_call_info(ad):
     num = dumpsys_last_call_number(ad)
     output = ad.adb.shell("dumpsys telecom")
     result = re.search(r"Call TC@%s: {(.*?)}" % num, output, re.DOTALL)
-    call_info = {}
+    call_info = {"TC": num}
     if result:
         result = result.group(1)
         for attr in ("startTime", "endTime", "direction", "isInterrupted",
                      "callTechnologies", "callTerminationsReason",
-                     "connectionService", "isVedeoCall", "callProperties"):
+                     "isVideoCall", "callProperties"):
             match = re.search(r"%s: (.*)" % attr, result)
             if match:
-                call_info[attr] = match.group(1)
-        call_info["inCallServices"] = re.findall(r"name: (.*)", result)
+                if attr in ("startTime", "endTime"):
+                    call_info[attr] = epoch_to_log_line_timestamp(
+                        int(match.group(1)))
+                else:
+                    call_info[attr] = match.group(1)
     ad.log.debug("call_info = %s", call_info)
     return call_info
 
@@ -5305,17 +5313,18 @@ def find_qxdm_log_mask(ad, mask="default.cfg"):
                 "find %s -type f -iname %s" % (path, mask), ignore_status=True)
             if out and "No such" not in out and "Permission denied" not in out:
                 if path.startswith("/vendor/"):
-                    ad.qxdm_log_path = DEFAULT_QXDM_LOG_PATH
+                    setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
                 else:
-                    ad.qxdm_log_path = path
+                    setattr(ad, "qxdm_log_path", path)
                 return out.split("\n")[0]
         if mask in ad.adb.shell("ls /vendor/etc/mdlog/"):
-            ad.qxdm_log_path = DEFAULT_QXDM_LOG_PATH
+            setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
             return "%s/%s" % ("/vendor/etc/mdlog/", mask)
     else:
         out = ad.adb.shell("ls %s" % mask, ignore_status=True)
         if out and "No such" not in out:
-            ad.qxdm_log_path = "/data/vendor/radio/diag_logs"
+            qxdm_log_path, cfg_name = os.path.split(mask)
+            setattr(ad, "qxdm_log_path", qxdm_log_path)
             return mask
     ad.log.warning("Could NOT find QXDM logger mask path for %s", mask)
 
@@ -5653,7 +5662,14 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     if ad.skip_sl4a: return status
     start_qxdm_logger(ad)
     bring_up_sl4a(ad)
-
+    # Setup VoWiFi MDN for Verizon. b/33187374
+    if get_operator_name(ad.log, ad) == "vzw" and ad.is_apk_installed(
+            "com.google.android.wfcactivation"):
+        ad.log.info("setup VoWiFi MDN per b/33187374")
+    ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
+    ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
+                 "\"com.google.android.wfcactivation/"
+                 ".VzwEmergencyAddressActivity\"")
     return status
 
 
