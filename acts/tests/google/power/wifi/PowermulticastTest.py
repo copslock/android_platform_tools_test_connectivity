@@ -66,6 +66,8 @@ class PowermulticastTest(base_test.BaseTestClass):
                                                       self.TAG)
         self.networks = wputils.unpack_custom_file(self.network_file)
         self.main_network = self.networks['main_network']
+        self.tests = self._get_all_test_names()
+        self.mon_offset = self.mon_info['offset']
 
     def unpack_testparams(self, bulk_params):
         """Unpack all the test specific parameters.
@@ -108,6 +110,11 @@ class PowermulticastTest(base_test.BaseTestClass):
             screen_status: screen on or off
             network: network selection, 2g/5g
         """
+        # Add more offset to the first tests to ensure system collapse
+        if self.current_test_name == self.tests[0]:
+            self.mon_info['offset'] = self.mon_offset + 300
+        else:
+            self.mon_info['offset'] = self.mon_offset
         # Change DTIMx1 on the phone to receive all Multicast packets
         wputils.change_dtim(
             self.dut, gEnableModulatedDTIM=1, gMaxLIModulatedDTIM=10)

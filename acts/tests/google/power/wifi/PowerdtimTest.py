@@ -34,6 +34,7 @@ class PowerdtimTest(base_test.BaseTestClass):
 
         self.log = logging.getLogger()
         self.dut = self.android_devices[0]
+        wputils.force_countrycode(self.dut, 'US')
         self.access_point = self.access_points[0]
         req_params = ['dtimtest_params', 'custom_files']
         self.unpack_userparams(req_params)
@@ -58,6 +59,8 @@ class PowerdtimTest(base_test.BaseTestClass):
                                                       self.TAG)
         self.networks = wputils.unpack_custom_file(self.network_file)
         self.main_network = self.networks['main_network']
+        self.tests = self._get_all_test_names()
+        self.mon_offset = self.mon_info['offset']
 
     def teardown_test(self):
         """Tear down necessary objects after test case is finished.
@@ -93,6 +96,11 @@ class PowerdtimTest(base_test.BaseTestClass):
             screen_status: screen on or off
             network: a dict of information for the network to connect
         """
+        # Add more offset to the first tests to ensure system collapse
+        if self.current_test_name == self.tests[0]:
+            self.mon_info['offset'] = self.mon_offset + 300
+        else:
+            self.mon_info['offset'] = self.mon_offset
         # Initialize the dut to rock-bottom state
         wputils.change_dtim(
             self.dut, gEnableModulatedDTIM=dtim, gMaxLIModulatedDTIM=dtim_max)

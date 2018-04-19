@@ -37,6 +37,7 @@ class PowerCoexScanTest(base_test.BaseTestClass):
 
         self.log = logging.getLogger()
         self.dut = self.android_devices[0]
+        wputils.force_countrycode(self.dut, 'US')
         self.access_point = self.access_points[0]
         req_params = ['coexscan_params', 'custom_files']
         self.unpack_userparams(req_params)
@@ -66,6 +67,8 @@ class PowerCoexScanTest(base_test.BaseTestClass):
         self.log.info('Start PMC app...')
         self.dut.adb.shell(btutils.START_PMC_CMD)
         self.dut.adb.shell(btutils.PMC_VERBOSE_CMD)
+        self.tests = self._get_all_test_names()
+        self.mon_offset = self.mon_info['offset']
 
     def setup_test(self):
 
@@ -108,6 +111,11 @@ class PowerCoexScanTest(base_test.BaseTestClass):
         """Measures current consumption and evaluates pass/fail criteria
 
         """
+        # Add more offset to the first tests to ensure system collapse
+        if self.current_test_name == self.tests[0]:
+            self.mon_info['offset'] = self.mon_offset + 180
+        else:
+            self.mon_info['offset'] = self.mon_offset
         # Measure current and plot
         begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(
