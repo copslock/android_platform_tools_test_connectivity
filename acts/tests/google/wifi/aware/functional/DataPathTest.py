@@ -1836,3 +1836,71 @@ class DataPathTest(AwareBaseTest):
     self.run_mix_ib_oob(same_request=False,
                         ib_first=False,
                         inits_on_same_dut=False)
+
+  ########################################################################
+
+  def test_ndp_loop(self):
+    """Validate that can create a loop (chain) of N NDPs between N devices,
+    where N >= 3, e.g.
+
+    A - B
+    B - C
+    C - A
+
+    The NDPs are all OPEN (no encryption).
+    """
+    asserts.assert_true(len(self.android_devices) >= 3,
+                        'A minimum of 3 devices is needed to run the test, have %d' %
+                        len(self.android_devices))
+
+    duts = self.android_devices
+    loop_len = len(duts)
+    ids = []
+    macs = []
+    reqs = [[], [], []]
+    ifs = [[], [], []]
+    ipv6s = [[], [], []]
+
+    for i in range(loop_len):
+      duts[i].pretty_name = chr(ord("A") + i)
+
+    # start-up 3 devices (attach w/ identity)
+    for i in range(loop_len):
+      ids.append(duts[i].droid.wifiAwareAttach(True))
+      autils.wait_for_event(duts[i], aconsts.EVENT_CB_ON_ATTACHED)
+      ident_event = autils.wait_for_event(duts[i],
+                                          aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+      macs.append(ident_event['data']['mac'])
+
+    # wait for for devices to synchronize with each other - there are no other
+    # mechanisms to make sure this happens for OOB discovery (except retrying
+    # to execute the data-path request)
+    time.sleep(autils.WAIT_FOR_CLUSTER)
+
+    # create the N NDPs: i to (i+1) % N
+    for i in range(loop_len):
+      peer_device = (i + 1) % loop_len
+
+      (init_req_key, resp_req_key, init_aware_if,
+       resp_aware_if, init_ipv6, resp_ipv6) = autils.create_oob_ndp_on_sessions(
+          duts[i], duts[peer_device],
+          ids[i], macs[i], ids[peer_device], macs[peer_device])
+
+      reqs[i].append(init_req_key)
+      reqs[peer_device].append(resp_req_key)
+      ifs[i].append(init_aware_if)
+      ifs[peer_device].append(resp_aware_if)
+      ipv6s[i].append(init_ipv6)
+      ipv6s[peer_device].append(resp_ipv6)
+
+    # clean-up
+    for i in range(loop_len):
+      for req in reqs[i]:
+        duts[i].droid.connectivityUnregisterNetworkCallback(req)
+
+    # info
+    self.log.info("MACs: %s", macs)
+    self.log.info("Interface names: %s", ifs)
+    self.log.info("IPv6 addresses: %s", ipv6s)
+    asserts.explicit_pass("NDP loop test",
+                          extras={"macs": macs, "ifs": ifs, "ipv6s": ipv6s})
