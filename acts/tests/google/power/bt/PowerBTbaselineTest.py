@@ -52,6 +52,8 @@ class PowerBTbaselineTest(base_test.BaseTestClass):
         # Reset BT to factory defaults
         self.dut.droid.bluetoothFactoryReset()
         time.sleep(2)
+        self.tests = self._get_all_test_names()
+        self.mon_offset = self.mon_info['offset']
 
     def teardown_class(self):
         """Clean up the test class after all tests finish running
@@ -73,6 +75,11 @@ class PowerBTbaselineTest(base_test.BaseTestClass):
         """Measures current consumption and evaluates pass/fail criteria
 
         """
+        # Add more offset to the first tests to ensure system collapse
+        if self.current_test_name == self.tests[0]:
+            self.mon_info['offset'] = self.mon_offset + 180
+        else:
+            self.mon_info['offset'] = self.mon_offset
         # Measure current and plot
         begin_time = utils.get_current_epoch_time()
         file_path, avg_current = wputils.monsoon_data_collect_save(

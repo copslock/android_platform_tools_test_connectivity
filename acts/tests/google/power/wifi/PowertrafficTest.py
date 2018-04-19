@@ -65,6 +65,8 @@ class PowertrafficTest(base_test.BaseTestClass):
                                                       self.TAG)
         self.networks = wputils.unpack_custom_file(self.network_file)
         self.main_network = self.networks['main_network']
+        self.tests = self._get_all_test_names()
+        self.mon_offset = self.mon_info['offset']
 
     def teardown_test(self):
         """Tear down necessary objects after test case is finished.
@@ -103,6 +105,11 @@ class PowertrafficTest(base_test.BaseTestClass):
             screen_status: screen ON or OFF
             band: desired band for AP to operate on
         """
+        # Add more offset to the first tests to ensure system collapse
+        if self.current_test_name == self.tests[0]:
+            self.mon_info['offset'] = self.mon_offset + 180
+        else:
+            self.mon_info['offset'] = self.mon_offset
         # Decode test parameters for the current test
         test_params = self.current_test_name.split('_')
         screen_status = test_params[2][6:]
