@@ -53,7 +53,7 @@ class PowertrafficTest(base_test.BaseTestClass):
         self.access_point = self.access_points[0]
         self.pkt_sender = self.packet_senders[0]
         for file in self.custom_files:
-            if 'pass_fail_threshold_' + self.dut.model in file:
+            if 'pass_fail_threshold' in file:
                 self.threshold_file = file
             elif 'attenuator_setting' in file:
                 self.attenuation_file = file
