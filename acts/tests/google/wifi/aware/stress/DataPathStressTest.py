@@ -75,6 +75,12 @@ class DataPathStressTest(AwareBaseTest):
             resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
                 resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, None))
 
+        # Wait a minimal amount of time to let the Responder configure itself
+        # and be ready for the request. While calling it first may be sufficient
+        # there are no guarantees that a glitch may slow the Responder slightly
+        # enough to invert the setup order.
+        time.sleep(1)
+
         # Initiator: request network
         init_req_key = autils.request_network(
             init_dut,
