@@ -47,7 +47,7 @@ class PowerbaselineTest(base_test.BaseTestClass):
         self.mon.attach_device(self.dut)
         self.mon_info = wputils.create_monsoon_info(self)
         for file in self.custom_files:
-            if 'pass_fail_threshold' in file:
+            if 'pass_fail_threshold_' + self.dut.model in file:
                 self.threshold_file = file
         self.threshold = wputils.unpack_custom_file(self.threshold_file,
                                                     self.TAG)
