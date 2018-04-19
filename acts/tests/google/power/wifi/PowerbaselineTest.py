@@ -37,7 +37,6 @@ class PowerbaselineTest(base_test.BaseTestClass):
 
         self.log = logging.getLogger()
         self.dut = self.android_devices[0]
-        wputils.force_countrycode(self.dut, 'US')
         req_params = ['baselinetest_params', 'custom_files']
         self.unpack_userparams(req_params)
         self.unpack_testparams(self.baselinetest_params)
@@ -52,8 +51,6 @@ class PowerbaselineTest(base_test.BaseTestClass):
                 self.threshold_file = file
         self.threshold = wputils.unpack_custom_file(self.threshold_file,
                                                     self.TAG)
-        self.tests = self._get_all_test_names()
-        self.mon_offset = self.mon_info['offset']
 
     def teardown_class(self):
         """Tearing down the entire test class.
@@ -85,11 +82,6 @@ class PowerbaselineTest(base_test.BaseTestClass):
             screen_status: screen on or off
             wifi_status: wifi enable or disable, on/off, not connected even on
         """
-        # Add more offset to the first tests to ensure system collapse
-        if self.current_test_name == self.tests[0]:
-            self.mon_info['offset'] = self.mon_offset + 300
-        else:
-            self.mon_info['offset'] = self.mon_offset
         # Initialize the dut to rock-bottom state
         wputils.dut_rockbottom(self.dut)
         if wifi_status == 'ON':
