@@ -3595,8 +3595,12 @@ def sms_send_receive_verify(log,
     """
     subid_tx = get_outgoing_message_sub_id(ad_tx)
     subid_rx = get_incoming_message_sub_id(ad_rx)
-    return sms_send_receive_verify_for_subscription(
+    result = sms_send_receive_verify_for_subscription(
         log, ad_tx, ad_rx, subid_tx, subid_rx, array_message, max_wait_time)
+    if not result:
+        log_messaging_screen_shot(ad_tx, test_name="sms_tx")
+        log_messaging_screen_shot(ad_rx, test_name="sms_rx")
+    return result
 
 
 def wait_for_matching_sms(log,
@@ -3837,9 +3841,13 @@ def mms_send_receive_verify(log,
         ad_rx: Receiver's Android Device Object
         array_message: the array of message to send/receive
     """
-    return mms_send_receive_verify_for_subscription(
+    result = mms_send_receive_verify_for_subscription(
         log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
         get_incoming_message_sub_id(ad_rx), array_message, max_wait_time)
+    if not result:
+        log_messaging_screen_shot(ad_tx, test_name="mms_tx")
+        log_messaging_screen_shot(ad_rx, test_name="mms_rx")
+    return result
 
 
 def sms_mms_send_logcat_check(ad, type, begin_time):
@@ -6057,9 +6065,22 @@ def power_on_sim(ad, sim_slot_id=None):
         return False
 
 
+def log_messaging_screen_shot(ad, test_name=""):
+    ad.adb.shell(
+        "am start -n com.google.android.apps.messaging/.ui.ConversationListActivity"
+    )
+    log_screen_shot(ad, test_name)
+    ad.send_keycode("ENTER")
+    ad.send_keycode("ENTER")
+    log_screen_shot(ad, test_name)
+    ad.send_keycode("HOME")
+
+
 def log_screen_shot(ad, test_name=""):
-    file_name = "/sdcard/Pictures/screencap_%s.png" % (
-        test_name, utils.get_current_epoch_time())
+    file_name = "/sdcard/Pictures/screencap"
+    if test_name:
+        file_name = "%s_%s" % (file_name, test_name)
+    file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
     try:
         ad.adb.shell("screencap -p %s" % file_name)
     except:
