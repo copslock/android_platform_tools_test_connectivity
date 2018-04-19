@@ -238,9 +238,22 @@ def orchestrate_coc_connection(
         server_ad.log.info("Error CoC client_ad Connection Inactive")
         client_ad.log.info("Error CoC client_ad Connection Inactive")
 
-    # Get the conn_id
-    client_conn_id = client_ad.droid.bluetoothGetLastConnId()
-    server_conn_id = server_ad.droid.bluetoothGetLastConnId()
+    # Wait for the client to be ready
+    client_conn_id = None
+    while (client_conn_id == None):
+        client_conn_id = client_ad.droid.bluetoothGetLastConnId()
+        if (client_conn_id != None):
+            break
+        time.sleep(1)
+
+    # Wait for the server to be ready
+    server_conn_id = None
+    while (server_conn_id == None):
+        server_conn_id = server_ad.droid.bluetoothGetLastConnId()
+        if (server_conn_id != None):
+            break
+        time.sleep(1)
+
     client_ad.log.info(
         "orchestrate_coc_connection: client conn id={}, server conn id={}".
         format(client_conn_id, server_conn_id))
