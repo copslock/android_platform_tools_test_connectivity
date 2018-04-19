@@ -58,8 +58,6 @@ class PowerBTscanTest(base_test.BaseTestClass):
         # Reset BT to factory defaults
         self.dut.droid.bluetoothFactoryReset()
         time.sleep(2)
-        self.tests = self._get_all_test_names()
-        self.mon_offset = self.mon_info['offset']
 
     def teardown_test(self):
         """Tear down necessary objects/settings after test finishes
@@ -96,11 +94,6 @@ class PowerBTscanTest(base_test.BaseTestClass):
         Args:
             scan_mode: BLE scan type (e.g., low_power)
         """
-        # Add more offset to the first tests to ensure system collapse
-        if self.current_test_name == self.tests[0]:
-            self.mon_info['offset'] = self.mon_offset + 180
-        else:
-            self.mon_info['offset'] = self.mon_offset
         # Start BLE scan
         btutils.start_pmc_ble_scan(self.dut, scan_mode,
                                    self.mon_info['offset'],
