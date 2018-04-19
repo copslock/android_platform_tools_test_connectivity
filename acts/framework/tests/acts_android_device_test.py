@@ -70,11 +70,12 @@ class MockAdbProxy(object):
                  serial,
                  fail_br=False,
                  fail_br_before_N=False,
-                 build_id=MOCK_RELEASE_BUILD_ID):
+                 build_id=MOCK_RELEASE_BUILD_ID,
+                 return_value=None):
         self.serial = serial
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
-        self.return_value = None
+        self.return_value = return_value
         self.return_multiple = False
         self.build_id = build_id
 
