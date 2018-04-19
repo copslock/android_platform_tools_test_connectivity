@@ -46,7 +46,7 @@ class PowerdtimTest(base_test.BaseTestClass):
         self.mon_info = wputils.create_monsoon_info(self)
         self.num_atten = self.attenuators[0].instrument.num_atten
         for file in self.custom_files:
-            if 'pass_fail_threshold' in file:
+            if 'pass_fail_threshold_' + self.dut.model in file:
                 self.threshold_file = file
             elif 'attenuator_setting' in file:
                 self.attenuation_file = file
