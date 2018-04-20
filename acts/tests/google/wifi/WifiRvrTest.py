@@ -39,11 +39,12 @@ class WifiRvrTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.client_dut = self.android_devices[-1]
-        req_params = ["test_params"]
+        req_params = ["rvr_test_params"]
         opt_params = [
             "main_network", "RetailAccessPoints", "golden_files_list"
         ]
         self.unpack_userparams(req_params, opt_params)
+        self.test_params = self.rvr_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
         if hasattr(self, "RetailAccessPoints"):
