@@ -204,8 +204,9 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.adb.shell("setprop persist.radio.multisim.config ssss")
                 reboot_device(ad)
                 # Workaround for b/77814510
-                ad.adb.shell("rm /data/user_de/0/com.android.providers.telephony"
-                             "/databases/telephony.db")
+                ad.adb.shell(
+                    "rm /data/user_de/0/com.android.providers.telephony"
+                    "/databases/telephony.db")
                 reboot_device(ad)
 
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
@@ -313,6 +314,10 @@ class TelephonyBaseTest(BaseTestClass):
             self.log.error("Failure with %s", e)
 
     def setup_test(self):
+        if "wfc" in self.test_name and not self.user_params.get(
+                "qxdm_log_mask_cfg", None):
+            for ad in self.android_devices:
+                set_qxdm_logger_command(ad, "IMS_DS_CNE_LnX_Golden.cfg")
         if getattr(self, "qxdm_log", True):
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
         if getattr(self, "tcpdump_log", False) or "wfc" in self.test_name:
@@ -340,6 +345,10 @@ class TelephonyBaseTest(BaseTestClass):
 
     def teardown_test(self):
         stop_tcpdumps(self.android_devices)
+        if "wfc" in self.test_name and not self.user_params.get(
+                "qxdm_log_mask_cfg", None):
+            for ad in self.android_devices:
+                set_qxdm_logger_command(ad, None)
 
     def on_fail(self, test_name, begin_time):
         self._take_bug_report(test_name, begin_time)
