@@ -315,9 +315,9 @@ class TelephonyBaseTest(BaseTestClass):
     def setup_test(self):
         if getattr(self, "qxdm_log", True):
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
-        if getattr(self, "tcpdump_log", False):
-            mask = getattr(self, "tcpdump_mask", "ims")
-            interface = getattr(self, "tcpdump_interface", "any")
+        if getattr(self, "tcpdump_log", False) or "wfc" in self.test_name:
+            mask = getattr(self, "tcpdump_mask", "all")
+            interface = getattr(self, "tcpdump_interface", "wlan0")
             start_tcpdumps(
                 self.android_devices,
                 begin_time=self.begin_time,
@@ -363,8 +363,11 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.log.error("Failed to get QXDM log for %s with error %s",
                              test_name, e)
                 result = False
+
+        # get tcpdump and screen shot log
         get_tcpdump_log(ad, test_name, begin_time)
         get_screen_shot_log(ad, test_name, begin_time)
+
         try:
             ad.check_crash_report(test_name, begin_time, log_crash_report=True)
         except Exception as e:

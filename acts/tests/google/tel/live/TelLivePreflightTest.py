@@ -124,6 +124,8 @@ class TelLivePreflightTest(TelephonyBaseTest):
         config_profile_after = get_user_config_profile(ad)
         ad.log.info("After OTA user config is: %s", config_profile_after)
         if config_profile_before != config_profile_after:
+            ad.log.error("Before: %s, After: %s", config_profile_before,
+                         config_profile_after)
             ad.log.error("User config profile changed after OTA")
             result = False
         return result
