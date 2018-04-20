@@ -35,7 +35,6 @@ class PowerroamingTest(base_test.BaseTestClass):
 
         self.log = logging.getLogger()
         self.dut = self.android_devices[0]
-        wputils.force_countrycode(self.dut, 'US')
         self.access_point_main = self.access_points[0]
         self.access_point_aux = self.access_points[1]
         req_params = ['roamingtest_params', 'custom_files']
