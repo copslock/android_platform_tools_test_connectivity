@@ -186,7 +186,6 @@ class BaseTestClass(object):
             self.log.warning(
                 'Unable to send BEGIN log command to all devices.')
             self.log.warning('Error: %s' % e)
-            pass
         return self.setup_test()
 
     def setup_test(self):
@@ -205,12 +204,14 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of teardown_test
         is called.
         """
+        self.log.debug('Tearing down test %s' % test_name)
         try:
             # Write test end token to adb log if android device is attached.
             for ad in self.android_devices:
                 ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
-        except:
-            pass
+        except Exception as e:
+            self.log.warning('Unable to send END log command to all devices.')
+            self.log.warning('Error: %s' % e)
         try:
             self.teardown_test()
         finally:
