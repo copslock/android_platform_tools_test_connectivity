@@ -5383,7 +5383,6 @@ def stop_qxdm_logger(ad):
         ad.log.debug("Kill the existing qxdm process")
         ad.adb.shell(cmd, ignore_status=True)
         time.sleep(5)
-    setattr(ad, "qxdm_process_start_time", None)
 
 
 def start_qxdm_logger(ad, begin_time=None):
@@ -5423,23 +5422,41 @@ def start_qxdm_logger(ad, begin_time=None):
                 stop_qxdm_logger(ad)
             ad.log.info("Start QXDM logger")
             ad.adb.shell_nb(ad.qxdm_logger_command)
-            setattr(ad, "qxdm_process_start_time", current_time)
+            time.sleep(10)
         else:
+            run_time = check_qxdm_logger_run_time(ad)
+            if run_time < 600:
+                # the last diag_mdlog started within 10 minutes ago
+                # no need to restart
+                return True
             if ad.search_logcat(
                     "Diag_Lib: diag: In delete_log",
-                    begin_time=getattr(
-                        ad, "qxdm_process_start_time",
-                        current_time - 300000)) or not ad.get_file_names(
-                            ad.qxdm_log_path,
-                            begin_time=current_time - 60000,
-                            match_string="*.qmdl"):
+                    begin_time=current_time -
+                    run_time) or not ad.get_file_names(
+                        ad.qxdm_log_path,
+                        begin_time=current_time - 600000,
+                        match_string="*.qmdl"):
                 # diag_mdlog starts deleting files or no qmdl logs were
-                # modified in the past 60 seconds
+                # modified in the past 10 minutes
                 ad.log.debug("Quit existing diag_mdlog and start a new one")
                 stop_qxdm_logger(ad)
                 ad.adb.shell_nb(ad.qxdm_logger_command)
-                setattr(ad, "qxdm_process_start_time", current_time)
+                time.sleep(10)
         return True
+
+
+def check_qxdm_logger_run_time(ad):
+    output = ad.adb.shell("ps -eo etime,cmd | grep diag_mdlog")
+    result = re.search(r"(\d+):(\d+):(\d+) diag_mdlog", output)
+    if result:
+        return int(result.group(1)) * 60 * 60 + int(
+            result.group(2)) * 60 + int(result.group(3))
+    else:
+        result = re.search(r"(\d+):(\d+) diag_mdlog", output)
+        if result:
+            return int(result.group(1)) * 60 + int(result.group(2))
+        else:
+            return 0
 
 
 def start_qxdm_loggers(log, ads, begin_time=None):
