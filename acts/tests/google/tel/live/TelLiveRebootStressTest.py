@@ -100,6 +100,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 self.dut_model, device_capabilities["default"])) & set(
                     operator_capabilities.get(
                         self.dut_operator, operator_capabilities["default"]))
+        self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         self.user_params["check_crash"] = False
         self.skip_reset_between_cases = False
 
@@ -113,7 +114,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             try:
                 check_result = func()
             except Exception as e:
-                self.log.error("%s failed with %s", method, e)
+                self.dut.log.error("%s failed with %s", method, e)
                 check_result = False
             self.dut.log.info("%s is %s before tests start", method,
                               check_result)
@@ -268,11 +269,15 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         return True
 
     def _check_volte(self):
-        self._set_volte_provisioning()
-        if not self._check_volte_provisioning():
-            return False
         if CAPABILITY_VOLTE in self.dut_capabilities:
+            self._set_volte_provisioning()
+            if not self._check_volte_provisioning():
+                return False
             self.log.info("Check VoLTE")
+            if not wait_for_state(self.dut.droid.imsIsVolteProvisionedOnDevice,
+                                  True):
+                self.dut.log.error("VoLTE provisioning is disabled.")
+                return False
             if not phone_setup_volte(self.log, self.dut):
                 self.log.error("Failed to setup VoLTE.")
                 return False
@@ -283,6 +288,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 return False
             if not self._check_lte_data():
                 return False
+        else:
+            self.dut.log.info("VoLTE is not supported")
+            return False
         return True
 
     def _check_csfb(self):
@@ -805,7 +813,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         func_names = ["_check_volte_enabled"]
         if "_check_vt" in self.default_testing_func_names:
             func_names.append("_check_vt_enabled")
-        return self._reboot_stress_test(**kwargs)
+        return self._reboot_stress_test(*func_names)
 
     @test_tracker_info(uuid="3dace255-01a6-46ba-87e0-35396d406c95")
     @TelephonyBaseTest.tel_test_wrap
