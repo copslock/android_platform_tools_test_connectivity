@@ -53,7 +53,7 @@ class WifiIOTTest(WifiBaseTest):
             len(self.iot_networks) > 0,
             "Need at least one iot network with psk.")
 
-        if self.open_network:
+        if hasattr(self, 'open_network'):
             self.iot_networks.append(self.open_network)
 
         wutils.wifi_toggle_state(self.dut, True)
