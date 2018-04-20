@@ -93,9 +93,10 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        req_params = ["test_params", "main_network"]
+        req_params = ["throughput_stability_test_params", "main_network"]
         opt_params = ["RetailAccessPoints"]
         self.unpack_userparams(req_params, opt_params)
+        self.test_params = self.throughput_stability_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
         self.access_points = retail_ap.create(self.RetailAccessPoints)
