@@ -124,6 +124,8 @@ class TelLivePreflightTest(TelephonyBaseTest):
         config_profile_after = get_user_config_profile(ad)
         ad.log.info("After OTA user config is: %s", config_profile_after)
         if config_profile_before != config_profile_after:
+            ad.log.error("Before: %s, After: %s", config_profile_before,
+                         config_profile_after)
             ad.log.error("User config profile changed after OTA")
             result = False
         return result
@@ -179,7 +181,6 @@ class TelLivePreflightTest(TelephonyBaseTest):
         # Check WiFi environment.
         # 1. Connect to WiFi.
         # 2. Check WiFi have Internet access.
-        toggle_airplane_mode(self.log, ad, False, strict_checking=False)
         try:
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):

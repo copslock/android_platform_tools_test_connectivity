@@ -302,6 +302,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
     data_roaming = getattr(ad, 'roaming', False)
     if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
         set_cell_data_roaming_state_by_adb(ad, data_roaming)
+        # Setup VoWiFi MDN for Verizon. b/33187374
     if not result:
         abort_all_tests(ad.log, "Failed to find valid phone number")
 
@@ -1371,10 +1372,14 @@ def dumpsys_all_call_info(ad):
         call_info = {}
         for attr in ("startTime", "endTime", "direction", "isInterrupted",
                      "callTechnologies", "callTerminationsReason",
-                     "connectionService", "isVedeoCall", "callProperties"):
+                     "connectionService", "isVideoCall", "callProperties"):
             match = re.search(r"%s: (.*)" % attr, call)
             if match:
-                call_info[attr] = match.group(1)
+                if attr in ("startTime", "endTime"):
+                    call_info[attr] = epoch_to_log_line_timestamp(
+                        int(match.group(1)))
+                else:
+                    call_info[attr] = match.group(1)
         call_info["inCallServices"] = re.findall(r"name: (.*)", call)
         calls_info.append(call_info)
     ad.log.debug("calls_info = %s", calls_info)
@@ -1386,16 +1391,19 @@ def dumpsys_last_call_info(ad):
     num = dumpsys_last_call_number(ad)
     output = ad.adb.shell("dumpsys telecom")
     result = re.search(r"Call TC@%s: {(.*?)}" % num, output, re.DOTALL)
-    call_info = {}
+    call_info = {"TC": num}
     if result:
         result = result.group(1)
         for attr in ("startTime", "endTime", "direction", "isInterrupted",
                      "callTechnologies", "callTerminationsReason",
-                     "connectionService", "isVedeoCall", "callProperties"):
+                     "isVideoCall", "callProperties"):
             match = re.search(r"%s: (.*)" % attr, result)
             if match:
-                call_info[attr] = match.group(1)
-        call_info["inCallServices"] = re.findall(r"name: (.*)", result)
+                if attr in ("startTime", "endTime"):
+                    call_info[attr] = epoch_to_log_line_timestamp(
+                        int(match.group(1)))
+                else:
+                    call_info[attr] = match.group(1)
     ad.log.debug("call_info = %s", call_info)
     return call_info
 
@@ -2970,7 +2978,7 @@ def set_wfc_mode(log, ad, wfc_mode):
     try:
         ad.log.info("Set wfc mode to %s", wfc_mode)
         if wfc_mode != WFC_MODE_DISABLED:
-            start_adb_tcpdump(ad, interface="wlan0", mask="ims")
+            start_adb_tcpdump(ad, interface="wlan0", mask="all")
         if not ad.droid.imsIsWfcEnabledByPlatform():
             if wfc_mode == WFC_MODE_DISABLED:
                 return True
@@ -3587,8 +3595,12 @@ def sms_send_receive_verify(log,
     """
     subid_tx = get_outgoing_message_sub_id(ad_tx)
     subid_rx = get_incoming_message_sub_id(ad_rx)
-    return sms_send_receive_verify_for_subscription(
+    result = sms_send_receive_verify_for_subscription(
         log, ad_tx, ad_rx, subid_tx, subid_rx, array_message, max_wait_time)
+    if not result:
+        log_messaging_screen_shot(ad_tx, test_name="sms_tx")
+        log_messaging_screen_shot(ad_rx, test_name="sms_rx")
+    return result
 
 
 def wait_for_matching_sms(log,
@@ -3829,9 +3841,13 @@ def mms_send_receive_verify(log,
         ad_rx: Receiver's Android Device Object
         array_message: the array of message to send/receive
     """
-    return mms_send_receive_verify_for_subscription(
+    result = mms_send_receive_verify_for_subscription(
         log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
         get_incoming_message_sub_id(ad_rx), array_message, max_wait_time)
+    if not result:
+        log_messaging_screen_shot(ad_tx, test_name="mms_tx")
+        log_messaging_screen_shot(ad_rx, test_name="mms_rx")
+    return result
 
 
 def sms_mms_send_logcat_check(ad, type, begin_time):
@@ -5305,17 +5321,18 @@ def find_qxdm_log_mask(ad, mask="default.cfg"):
                 "find %s -type f -iname %s" % (path, mask), ignore_status=True)
             if out and "No such" not in out and "Permission denied" not in out:
                 if path.startswith("/vendor/"):
-                    ad.qxdm_log_path = DEFAULT_QXDM_LOG_PATH
+                    setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
                 else:
-                    ad.qxdm_log_path = path
+                    setattr(ad, "qxdm_log_path", path)
                 return out.split("\n")[0]
         if mask in ad.adb.shell("ls /vendor/etc/mdlog/"):
-            ad.qxdm_log_path = DEFAULT_QXDM_LOG_PATH
+            setattr(ad, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
             return "%s/%s" % ("/vendor/etc/mdlog/", mask)
     else:
         out = ad.adb.shell("ls %s" % mask, ignore_status=True)
         if out and "No such" not in out:
-            ad.qxdm_log_path = "/data/vendor/radio/diag_logs"
+            qxdm_log_path, cfg_name = os.path.split(mask)
+            setattr(ad, "qxdm_log_path", qxdm_log_path)
             return mask
     ad.log.warning("Could NOT find QXDM logger mask path for %s", mask)
 
@@ -5368,7 +5385,6 @@ def stop_qxdm_logger(ad):
         ad.log.debug("Kill the existing qxdm process")
         ad.adb.shell(cmd, ignore_status=True)
         time.sleep(5)
-    setattr(ad, "qxdm_process_start_time", None)
 
 
 def start_qxdm_logger(ad, begin_time=None):
@@ -5408,23 +5424,41 @@ def start_qxdm_logger(ad, begin_time=None):
                 stop_qxdm_logger(ad)
             ad.log.info("Start QXDM logger")
             ad.adb.shell_nb(ad.qxdm_logger_command)
-            setattr(ad, "qxdm_process_start_time", current_time)
+            time.sleep(10)
         else:
+            run_time = check_qxdm_logger_run_time(ad)
+            if run_time < 600:
+                # the last diag_mdlog started within 10 minutes ago
+                # no need to restart
+                return True
             if ad.search_logcat(
                     "Diag_Lib: diag: In delete_log",
-                    begin_time=getattr(
-                        ad, "qxdm_process_start_time",
-                        current_time - 300000)) or not ad.get_file_names(
-                            ad.qxdm_log_path,
-                            begin_time=current_time - 60000,
-                            match_string="*.qmdl"):
+                    begin_time=current_time -
+                    run_time) or not ad.get_file_names(
+                        ad.qxdm_log_path,
+                        begin_time=current_time - 600000,
+                        match_string="*.qmdl"):
                 # diag_mdlog starts deleting files or no qmdl logs were
-                # modified in the past 60 seconds
+                # modified in the past 10 minutes
                 ad.log.debug("Quit existing diag_mdlog and start a new one")
                 stop_qxdm_logger(ad)
                 ad.adb.shell_nb(ad.qxdm_logger_command)
-                setattr(ad, "qxdm_process_start_time", current_time)
+                time.sleep(10)
         return True
+
+
+def check_qxdm_logger_run_time(ad):
+    output = ad.adb.shell("ps -eo etime,cmd | grep diag_mdlog")
+    result = re.search(r"(\d+):(\d+):(\d+) diag_mdlog", output)
+    if result:
+        return int(result.group(1)) * 60 * 60 + int(
+            result.group(2)) * 60 + int(result.group(3))
+    else:
+        result = re.search(r"(\d+):(\d+) diag_mdlog", output)
+        if result:
+            return int(result.group(1)) * 60 + int(result.group(2))
+        else:
+            return 0
 
 
 def start_qxdm_loggers(log, ads, begin_time=None):
@@ -5491,7 +5525,7 @@ def start_tcpdumps(ads,
                    test_name="",
                    begin_time=None,
                    interface="any",
-                   mask="ims"):
+                   mask="all"):
     for ad in ads:
         start_adb_tcpdump(
             ad,
@@ -5505,7 +5539,7 @@ def start_adb_tcpdump(ad,
                       test_name="",
                       begin_time=None,
                       interface="any",
-                      mask="ims"):
+                      mask="all"):
     """Start tcpdump on any iface
 
     Args:
@@ -5523,7 +5557,7 @@ def start_adb_tcpdump(ad,
         begin_time = get_current_epoch_time()
 
     out = ad.adb.shell("ifconfig | grep encap")
-    if interface == "any" or interface not in out:
+    if interface in ("any", "all"):
         intfs = [
             intf for intf in ("wlan0", "rmnet_data0", "rmnet_data6")
             if intf in out
@@ -5538,7 +5572,7 @@ def start_adb_tcpdump(ad,
             ad.log.info("tcpdump on interface %s is already running", intf)
             continue
         else:
-            log_file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s%s.pcap" % (
+            log_file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s_%s.pcap" % (
                 ad.serial, intf, test_name, begin_time)
             if mask == "ims":
                 cmds.append(
@@ -5653,7 +5687,14 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     if ad.skip_sl4a: return status
     start_qxdm_logger(ad)
     bring_up_sl4a(ad)
-
+    # Setup VoWiFi MDN for Verizon. b/33187374
+    if get_operator_name(ad.log, ad) == "vzw" and ad.is_apk_installed(
+            "com.google.android.wfcactivation"):
+        ad.log.info("setup VoWiFi MDN per b/33187374")
+    ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
+    ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
+                 "\"com.google.android.wfcactivation/"
+                 ".VzwEmergencyAddressActivity\"")
     return status
 
 
@@ -6041,9 +6082,22 @@ def power_on_sim(ad, sim_slot_id=None):
         return False
 
 
+def log_messaging_screen_shot(ad, test_name=""):
+    ad.adb.shell(
+        "am start -n com.google.android.apps.messaging/.ui.ConversationListActivity"
+    )
+    log_screen_shot(ad, test_name)
+    ad.send_keycode("ENTER")
+    ad.send_keycode("ENTER")
+    log_screen_shot(ad, test_name)
+    ad.send_keycode("HOME")
+
+
 def log_screen_shot(ad, test_name=""):
-    file_name = "/sdcard/Pictures/screencap_%s.png" % (
-        test_name, utils.get_current_epoch_time())
+    file_name = "/sdcard/Pictures/screencap"
+    if test_name:
+        file_name = "%s_%s" % (file_name, test_name)
+    file_name = "%s_%s.png" % (file_name, utils.get_current_epoch_time())
     try:
         ad.adb.shell("screencap -p %s" % file_name)
     except:

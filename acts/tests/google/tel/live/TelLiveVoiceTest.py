@@ -3793,10 +3793,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="8a853186-cdff-4078-930a-6c619ea89183")
     @TelephonyBaseTest.tel_test_wrap
-    def test_vowifi_in_call_wifi_toggling(self):
+    def test_wfc_in_call_wifi_toggling(self):
         """ General voice to voice call. TMO Only Test
 
-        1. Make Sure PhoneA in VoWiFi.
+        1. Make Sure PhoneA in wfc with APM off.
         2. Make Sure PhoneB in Voice Capable.
         3. Call from PhoneA to PhoneB.
         4. Toggling Wifi connnection in call.

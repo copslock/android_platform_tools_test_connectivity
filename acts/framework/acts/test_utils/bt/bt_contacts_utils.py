@@ -1,4 +1,4 @@
-#/usr/bin/env python3.4
+# /usr/bin/env python3.4
 #
 # Copyright (C) 2016 The Android Open Source Project
 #
@@ -24,7 +24,7 @@ import logging
 import re
 import random
 import string
-
+from time import sleep
 from acts.utils import exe_cmd
 import queue
 
@@ -283,6 +283,10 @@ def import_device_contacts_from_vcf(device, destination_path, vcf_file):
     phone_phonebook_path = "{}{}".format(STORAGE_PATH, vcf_file)
     device.adb.push("{} {}".format(local_phonebook_path, phone_phonebook_path))
     device.droid.importVcf("file://{}{}".format(STORAGE_PATH, vcf_file))
+    # keyevent to allow contacts import from vcf file
+    sleep(1)
+    for key in ["ENTER", "DPAD_RIGHT", "ENTER"]:
+        device.adb.shell("input keyevent KEYCODE_{}".format(key))
     if wait_for_phone_number_update_complete(device, number_count):
         return number_count
     else:
@@ -297,6 +301,15 @@ def export_device_contacts_to_vcf(device, destination_path, vcf_file):
     # Download and then remove file from device
     device.adb.pull("{} {}".format(path_on_phone, destination_path))
     return True
+
+
+def delete_vcf_files(device):
+    """Deletes all files with .vcf extension
+    """
+    files = device.adb.shell("ls {}".format(STORAGE_PATH))
+    for file_name in files.split():
+        if ".vcf" in file_name:
+            device.adb.shell("rm -f {}{}".format(STORAGE_PATH, file_name))
 
 
 def erase_contacts(device):
@@ -379,8 +392,8 @@ def compare_call_logs(pse_call_log, pce_call_log):
         for i in range(len(pse_call_log)):
             # Compare the phone number
             if normalize_phonenumber(pse_call_log[i][
-                    "number"]) != normalize_phonenumber(pce_call_log[i][
-                        "number"]):
+                                         "number"]) != normalize_phonenumber(pce_call_log[i][
+                                                                                 "number"]):
                 log.warning("Call Log numbers differ")
                 call_logs_match = False
 
@@ -391,7 +404,7 @@ def compare_call_logs(pse_call_log, pce_call_log):
 
             # Compare time to truncated second.
             if int(pse_call_log[i]["date"]) // 1000 != int(pce_call_log[i][
-                    "date"]) // 1000:
+                                                               "date"]) // 1000:
                 log.warning("Call log times don't match, check timezone.")
                 call_logs_match = False
 
