@@ -5540,7 +5540,7 @@ def start_adb_tcpdump(ad,
         begin_time = get_current_epoch_time()
 
     out = ad.adb.shell("ifconfig | grep encap")
-    if interface == "any" or interface not in out:
+    if interface in ("any", "all"):
         intfs = [
             intf for intf in ("wlan0", "rmnet_data0", "rmnet_data6")
             if intf in out
