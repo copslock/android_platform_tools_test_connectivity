@@ -72,6 +72,7 @@ from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import \
     wait_for_data_attach_for_subscription
+from acts.test_utils.tel.tel_test_utils import wait_for_enhanced_4g_lte_setting
 from acts.test_utils.tel.tel_test_utils import wait_for_network_generation
 from acts.test_utils.tel.tel_test_utils import \
     wait_for_network_generation_for_subscription
@@ -614,6 +615,9 @@ def phone_setup_volte_for_subscription(log, ad, sub_id):
     """
     if not phone_setup_4g_for_subscription(log, ad, sub_id):
         ad.log.error("Failed to set to 4G data.")
+        return False
+    if not wait_for_enhanced_4g_lte_setting(log, ad):
+        ad.log.error("Enhanced 4G LTE setting is not available")
         return False
     toggle_volte_for_subscription(log, ad, sub_id, True)
     return phone_idle_volte_for_subscription(log, ad, sub_id)

@@ -136,6 +136,8 @@ from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_check_number
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_delete_digit
 from acts.test_utils.tel.tel_lookup_tables import \
     network_preference_for_generation
+from acts.test_utils.tel.tel_lookup_tables import \
+    operator_name_from_network_name
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
 from acts.test_utils.tel.tel_lookup_tables import \
     rat_families_for_network_preference
@@ -2940,14 +2942,11 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
             True for enable, False for disable.
             If None, opposite of the current state.
 
-    Raises:
-        TelTestUtilsError if platform does not support VoLTE.
     """
     # TODO: b/26293960 No framework API available to set IMS by SubId.
     if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
-        ad.log.info("VoLTE not supported by platform.")
-        raise TelTestUtilsError(
-            "VoLTE not supported by platform %s." % ad.serial)
+        ad.log.info("Enhanced 4G Lte Mode Setting is not enabled by platform.")
+        return False
     current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
     if new_state is None:
         new_state = not current_state
@@ -2955,6 +2954,26 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
         ad.log.info("Toggle Enhanced 4G LTE Mode")
         ad.droid.imsSetEnhanced4gMode(new_state)
     return True
+
+
+def wait_for_enhanced_4g_lte_setting(log,
+                                     ad,
+                                     max_time=MAX_WAIT_TIME_FOR_STATE_CHANGE):
+    """Wait for android device to enable enhance 4G LTE setting.
+
+    Args:
+        log: log object.
+        ad:  android device.
+        max_time: maximal wait time.
+
+    Returns:
+        Return True if device report VoLTE enabled bit true within max_time.
+        Return False if timeout.
+    """
+    return wait_for_state(
+        ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform,
+        True,
+        max_wait_time=max_time)
 
 
 def set_wfc_mode(log, ad, wfc_mode):
@@ -3513,6 +3532,8 @@ def get_operator_name(log, ad, subId=None):
                     sub_id)
             else:
                 result = ad.droid.telephonyGetNetworkOperatorName()
+            ad.log.info("result = %s", result)
+            result = operator_name_from_network_name(result)
         except Exception:
             result = CARRIER_UNKNOWN
     return result
@@ -4611,25 +4632,48 @@ def ensure_phone_subscription(log, ad):
             ad.log.debug("Find valid subcription %s", subInfo)
             break
         else:
-            ad.log.info("Did not find a valid subscription")
+            ad.log.info("Did not find any subscription")
             time.sleep(5)
             duration += 5
     else:
-        ad.log.error("Unable to find A valid subscription!")
+        ad.log.error("Unable to find a valid subscription!")
         return False
-    if ad.droid.subscriptionGetDefaultDataSubId() <= INVALID_SUB_ID and (
-            ad.droid.subscriptionGetDefaultVoiceSubId() <= INVALID_SUB_ID):
-        ad.log.error("No Valid Voice or Data Sub ID")
+    while duration < MAX_WAIT_TIME_NW_SELECTION:
+        data_sub_id = ad.droid.subscriptionGetDefaultDataSubId()
+        voice_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        if data_sub_id > INVALID_SUB_ID or voice_sub_id > INVALID_SUB_ID:
+            ad.log.debug("Find valid voice or data sub id")
+            break
+        else:
+            ad.log.info("Did not find valid data or voice sub id")
+            time.sleep(5)
+            duration += 5
+    else:
+        ad.log.error("Unable to find valid data or voice sub id")
         return False
-    voice_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-    data_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
-    if not wait_for_data_attach_for_subscription(
-            log, ad, data_sub_id, MAX_WAIT_TIME_NW_SELECTION -
-            duration) and not wait_for_voice_attach_for_subscription(
-                log, ad, voice_sub_id, MAX_WAIT_TIME_NW_SELECTION - duration):
-        ad.log.error("Did Not Attach For Voice or Data Services")
+    while duration < MAX_WAIT_TIME_NW_SELECTION:
+        data_sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        if data_sub_id > INVALID_SUB_ID:
+            data_rat = get_network_rat_for_subscription(
+                log, ad, data_sub_id, NETWORK_SERVICE_DATA)
+        else:
+            data_rat = RAT_UNKNOWN
+        if voice_sub_id > INVALID_SUB_ID:
+            voice_rat = get_network_rat_for_subscription(
+                log, ad, voice_sub_id, NETWORK_SERVICE_VOICE)
+        else:
+            voice_rat = RAT_UNKNOWN
+        if data_rat != RAT_UNKNOWN or voice_rat != RAT_UNKNOWN:
+            ad.log.info("Data sub_id %s in %s, voice sub_id %s in %s",
+                        data_sub_id, data_rat, voice_sub_id, voice_rat)
+            return True
+        else:
+            ad.log.info("Did not attach for data or voice service")
+            time.sleep(5)
+            duration += 5
+    else:
+        ad.log.error("Did not attach for voice or data service")
         return False
-    return True
 
 
 def ensure_phone_default_state(log, ad, check_subscription=True):

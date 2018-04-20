@@ -52,6 +52,10 @@ def operator_name_from_plmn_id(plmn_id):
     return _TelTables.operator_id_to_name[plmn_id]
 
 
+def operator_name_from_network_name(name):
+    return _TelTables.operator_name_tbl.get("name", name)
+
+
 def is_valid_rat(rat_type):
     return True if rat_type in _TelTables.technology_tbl else False
 
@@ -141,6 +145,13 @@ class _TelTables():
     # Reference: Pages 43-50 in
     # https://www.itu.int/dms_pub/itu-t/opb/sp/T-SP-E.212B-2013-PDF-E.pdf [2013]
 
+    operator_name_tbl = {
+        "T-Mobile": tel_defines.CARRIER_TMO,
+        "AT&T": tel_defines.CARRIER_ATT,
+        "Verizon": tel_defines.CARRIER_VZW,
+        "Verizon Wireless": tel_defines.CARRIER_VZW,
+        "Sprint": tel_defines.CARRIER_SPT
+    }
     operator_id_to_name = {
 
         #VZW (Verizon Wireless)
@@ -225,7 +236,6 @@ class _TelTables():
 
         #USCC
         '311580': tel_defines.CARRIER_USCC,
-        '31000': tel_defines.CARRIER_USCC,
 
         #Vodafone (Germany)
         '26202': tel_defines.CARRIER_GMBH,
