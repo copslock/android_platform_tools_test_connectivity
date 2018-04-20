@@ -49,6 +49,7 @@ from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import start_tcpdumps
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
@@ -307,9 +308,15 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.ed.start()
             ad.droid.logI(log_msg)
         begin_time = get_current_epoch_time()
+        if "wfc" in self.test_name:
+            start_tcpdumps(
+                self.android_devices,
+                "%s_call_No_%s" % (self.test_name, the_number),
+                begin_time,
+                interface="wlan0",
+                mask=None)
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         failure_reasons = set()
-        rat_change = None
         if self.single_phone_test:
             call_setup_result = initiate_call(
                 self.log, self.dut,
@@ -602,7 +609,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         if setup_func and not setup_func():
             msg = "Test setup %s failed" % setup_func.__name__
             self.log.error(msg)
-            fail(msg)
+            self._take_bug_report("%s%s" % (self.test_name,
+                                            setup_func.__name__),
+                                  self.begin_time)
+            return False
         if not call_verification_func:
             call_verification_func = is_phone_in_call
         self.finishing_time = time.time() + self.max_run_time

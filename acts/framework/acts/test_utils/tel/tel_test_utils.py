@@ -2978,7 +2978,7 @@ def set_wfc_mode(log, ad, wfc_mode):
     try:
         ad.log.info("Set wfc mode to %s", wfc_mode)
         if wfc_mode != WFC_MODE_DISABLED:
-            start_adb_tcpdump(ad, interface="wlan0", mask="ims")
+            start_adb_tcpdump(ad, interface="wlan0", mask="all")
         if not ad.droid.imsIsWfcEnabledByPlatform():
             if wfc_mode == WFC_MODE_DISABLED:
                 return True
@@ -5508,7 +5508,7 @@ def start_tcpdumps(ads,
                    test_name="",
                    begin_time=None,
                    interface="any",
-                   mask="ims"):
+                   mask="all"):
     for ad in ads:
         start_adb_tcpdump(
             ad,
@@ -5522,7 +5522,7 @@ def start_adb_tcpdump(ad,
                       test_name="",
                       begin_time=None,
                       interface="any",
-                      mask="ims"):
+                      mask="all"):
     """Start tcpdump on any iface
 
     Args:
@@ -5555,7 +5555,7 @@ def start_adb_tcpdump(ad,
             ad.log.info("tcpdump on interface %s is already running", intf)
             continue
         else:
-            log_file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s%s.pcap" % (
+            log_file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s_%s.pcap" % (
                 ad.serial, intf, test_name, begin_time)
             if mask == "ims":
                 cmds.append(
