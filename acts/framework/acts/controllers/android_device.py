@@ -378,15 +378,19 @@ class AndroidDevice:
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
+        utils.create_dir(self.log_path)
         self.log = tracelogger.TraceLogger(
             AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                       {'serial': self.serial}))
+                                       {'serial': serial}))
         self._event_dispatchers = {}
         self.adb_logcat_process = None
-        self.adb_logcat_file_path = None
         self.adb = adb.AdbProxy(serial, ssh_connection=ssh_connection)
         self.fastboot = fastboot.FastbootProxy(
             serial, ssh_connection=ssh_connection)
+        self.adb_logcat_file_path = os.path.join(log_path_base,
+                                                 'AndroidDevice%s' % serial,
+                                                 "adblog,{},{}.txt".format(
+                                                     self.model, serial))
         if not self.is_bootloader:
             self.root_adb()
         self._ssh_connection = ssh_connection
@@ -670,7 +674,7 @@ class AndroidDevice:
                                                         target) >= 0
         return low and high
 
-    def cat_adb_log(self, tag, begin_time):
+    def cat_adb_log(self, tag, begin_time, dest_path="AdbLogExcerpts"):
         """Takes an excerpt of the adb logcat log from a certain time point to
         current time.
 
@@ -679,13 +683,9 @@ class AndroidDevice:
             begin_time: Epoch time of the beginning of the time period.
         """
         log_begin_time = acts_logger.epoch_to_log_line_timestamp(begin_time)
-        if not self.adb_logcat_file_path:
-            raise AndroidDeviceError(
-                ("Attempting to cat adb log when none has"
-                 " been collected on Android device %s.") % self.serial)
         log_end_time = acts_logger.get_log_line_timestamp()
         self.log.debug("Extracting adb log from logcat.")
-        adb_excerpt_path = os.path.join(self.log_path, "AdbLogExcerpts")
+        adb_excerpt_path = os.path.join(self.log_path, dest_path)
         utils.create_dir(adb_excerpt_path)
         f_name = os.path.basename(self.adb_logcat_file_path)
         out_name = f_name.replace("adblog,", "").replace(".txt", "")
@@ -719,7 +719,7 @@ class AndroidDevice:
                         if in_range:
                             break
 
-    def start_adb_logcat(self, cont_logcat_file=False):
+    def start_adb_logcat(self):
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
 
@@ -737,16 +737,6 @@ class AndroidDevice:
         # because 'start' doesn't support --clear option before Android N.
         self.adb.shell("logpersist.stop --clear")
         self.adb.shell("logpersist.start")
-        if cont_logcat_file:
-            if self.droid:
-                self.droid.logI('Restarting logcat')
-            self.log.info(
-                'Restarting logcat on file %s' % self.adb_logcat_file_path)
-            logcat_file_path = self.adb_logcat_file_path
-        else:
-            f_name = "adblog,{},{}.txt".format(self.model, self.serial)
-            utils.create_dir(self.log_path)
-            logcat_file_path = os.path.join(self.log_path, f_name)
         if hasattr(self, 'adb_logcat_param'):
             extra_params = self.adb_logcat_param
         else:
@@ -757,9 +747,8 @@ class AndroidDevice:
             begin_at = '-T 1'
         # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
         cmd = "adb -s {} logcat {} -v year {} >> {}".format(
-            self.serial, begin_at, extra_params, logcat_file_path)
+            self.serial, begin_at, extra_params, self.adb_logcat_file_path)
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
-        self.adb_logcat_file_path = logcat_file_path
 
     def stop_adb_logcat(self):
         """Stops the adb logcat collection subprocess.

@@ -384,7 +384,7 @@ class BaseTestClass(object):
                 if hasattr(self, 'android_devices'):
                     for ad in self.android_devices:
                         if not ad.is_adb_logcat_on:
-                            ad.start_adb_logcat(cont_logcat_file=True)
+                            ad.start_adb_logcat()
                 ret = self._setup_test(self.test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
@@ -506,10 +506,10 @@ class BaseTestClass(object):
 
             if format_args:
                 self.exec_one_testcase(test_name, test_func,
-                                       args + (setting,), **kwargs)
+                                       args + (setting, ), **kwargs)
             else:
                 self.exec_one_testcase(test_name, test_func,
-                                       (setting,) + args, **kwargs)
+                                       (setting, ) + args, **kwargs)
 
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(setting)
