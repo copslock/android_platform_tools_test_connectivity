@@ -45,9 +45,10 @@ class WifiRssiTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        req_params = ["test_params", "main_network"]
+        req_params = ["rssi_test_params", "main_network"]
         opt_params = ["RetailAccessPoints"]
         self.unpack_userparams(req_params, opt_params)
+        self.test_params = self.rssi_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
         self.access_points = retail_ap.create(self.RetailAccessPoints)
@@ -370,6 +371,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             "chain_1_rssi": []
         }
         for idx in range(num_measurements):
+            measurement_start_time = time.time()
             # Get signal poll RSSI
             signal_poll_output = self.dut.adb.shell(SIGNAL_POLL)
             match = re.search("RSSI=.*", signal_poll_output)
@@ -399,7 +401,9 @@ class WifiRssiTest(base_test.BaseTestClass):
             else:
                 connected_rssi["chain_0_rssi"].append(RSSI_ERROR_VAL)
                 connected_rssi["chain_1_rssi"].append(RSSI_ERROR_VAL)
-            time.sleep(polling_frequency)
+            measurement_elapsed_time = time.time() - measurement_start_time
+            time.sleep(max(0, polling_frequency - measurement_elapsed_time))
+
         # Compute mean RSSIs. Only average valid readings.
         # Output RSSI_ERROR_VAL if no valid connected readings found.
         for key, val in connected_rssi.copy().items():

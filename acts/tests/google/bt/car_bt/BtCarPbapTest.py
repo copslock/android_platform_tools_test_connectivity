@@ -1,4 +1,4 @@
-#/usr/bin/env python3.4
+# /usr/bin/env python3.4
 #
 # Copyright (C) 2016 The Android Open Source Project
 #
@@ -55,12 +55,10 @@ class BtCarPbapTest(BluetoothBaseTest):
             "android.permission.WRITE_CONTACTS",
             "android.permission.READ_EXTERNAL_STORAGE"
         ]
-        for permission in permissions_list:
-            self.pse.adb.shell(
-                "pm grant com.google.android.contacts {}".format(permission))
-        for permission in permissions_list:
-            self.pce.adb.shell("pm grant com.android.contacts {}".format(
-                permission))
+        for device in [self.pce, self.pse, self.pse2]:
+            for permission in permissions_list:
+                device.adb.shell(
+                    "pm grant com.google.android.contacts {}".format(permission))
 
         # Pair the devices.
         # This call may block until some specified timeout in bt_test_utils.py.
@@ -115,6 +113,9 @@ class BtCarPbapTest(BluetoothBaseTest):
     def teardown_test(self):
         if not super(BtCarPbapTest, self).teardown_test():
             return False
+        for device in [self.pce, self.pse, self.pse2]:
+            bt_contacts_utils.delete_vcf_files(device)
+
         self.pce.droid.bluetoothPbapClientDisconnect(
             self.pse.droid.bluetoothGetLocalAddress())
         bt_contacts_utils.erase_contacts(self.pse)
@@ -214,6 +215,8 @@ class BtCarPbapTest(BluetoothBaseTest):
                                                 PSE_CONTACTS_FILE, 100)
         phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
             self.pse, self.contacts_destination_path, PSE_CONTACTS_FILE)
+
+        bt_test_utils.reset_bluetooth([self.pce])
         bt_test_utils.connect_pri_to_sec(
             self.pce, self.pse,
             set([BtEnum.BluetoothProfile.PBAP_CLIENT.value]))
@@ -249,6 +252,7 @@ class BtCarPbapTest(BluetoothBaseTest):
                                                 PSE_CONTACTS_FILE, 100)
         phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
             self.pse, self.contacts_destination_path, PSE_CONTACTS_FILE)
+        bt_test_utils.reset_bluetooth([self.pce])
         if not self.connect_and_verify(phone_numbers_added):
             return False
 
@@ -257,6 +261,7 @@ class BtCarPbapTest(BluetoothBaseTest):
                                                 PSE_CONTACTS_FILE, 110, 2)
         phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
             self.pse, self.contacts_destination_path, PSE_CONTACTS_FILE)
+        bt_test_utils.reset_bluetooth([self.pce])
         return self.connect_and_verify(phone_numbers_added)
 
     @test_tracker_info(uuid='bbe31bf5-51e8-4175-b266-1c7750e44f5b')
@@ -330,7 +335,7 @@ class BtCarPbapTest(BluetoothBaseTest):
 
         phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
             self.pse, self.contacts_destination_path, PSE_CONTACTS_FILE)
-
+        bt_test_utils.reset_bluetooth([self.pce])
         return self.connect_and_verify(phone_numbers_added)
 
     @test_tracker_info(uuid='2aa2bd00-86cc-4f39-a06a-90b17ea5b320')
@@ -432,13 +437,16 @@ class BtCarPbapTest(BluetoothBaseTest):
 
         bt_contacts_utils.generate_contact_list(self.contacts_destination_path,
                                                 PSE1_CONTACTS_FILE, 100)
-        phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
-            self.pse, self.contacts_destination_path, PSE1_CONTACTS_FILE)
+        phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(self.pse,
+                                                                                self.contacts_destination_path,
+                                                                                PSE1_CONTACTS_FILE)
         bt_contacts_utils.generate_contact_list(self.contacts_destination_path,
                                                 PSE2_CONTACTS_FILE, 100)
-        phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(
-            self.pse2, self.contacts_destination_path, PSE2_CONTACTS_FILE)
+        phone_numbers_added = bt_contacts_utils.import_device_contacts_from_vcf(self.pse2,
+                                                                                self.contacts_destination_path,
+                                                                                PSE2_CONTACTS_FILE)
 
+        bt_test_utils.reset_bluetooth([self.pce])
         self.pce.droid.bluetoothPbapClientDisconnect(
             self.pse.droid.bluetoothGetLocalAddress())
         self.pce.droid.bluetoothPbapClientDisconnect(

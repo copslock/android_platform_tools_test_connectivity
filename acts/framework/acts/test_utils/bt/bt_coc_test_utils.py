@@ -20,11 +20,13 @@ from acts import utils
 
 from acts.test_utils.bt.bt_constants import bt_default_timeout
 from acts.test_utils.bt.bt_constants import default_bluetooth_socket_timeout_ms
+from acts.test_utils.bt.bt_constants import default_le_connection_interval_ms
 from acts.test_utils.bt.bt_constants import default_le_data_length
 from acts.test_utils.bt.bt_constants import gatt_phy
 from acts.test_utils.bt.bt_constants import gatt_transport
 from acts.test_utils.bt.bt_constants import l2cap_coc_header_size
-from acts.test_utils.bt.bt_constants import le_connection_interval_time_step
+from acts.test_utils.bt.bt_constants import le_connection_event_time_step_ms
+from acts.test_utils.bt.bt_constants import le_connection_interval_time_step_ms
 from acts.test_utils.bt.bt_constants import le_default_supervision_timeout
 from acts.test_utils.bt.bt_test_utils import get_mac_address_of_generic_advertisement
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
@@ -130,7 +132,9 @@ def orchestrate_coc_connection(
         secured_conn=False,
         le_connection_interval=0,
         le_tx_data_length=default_le_data_length,
-        accept_timeout_ms=default_bluetooth_socket_timeout_ms):
+        accept_timeout_ms=default_bluetooth_socket_timeout_ms,
+        le_min_ce_len=0,
+        le_max_ce_len=0):
     """Sets up the CoC connection between two Android devices.
 
     Args:
@@ -171,9 +175,11 @@ def orchestrate_coc_connection(
     # Adjust the Connection Interval (if necessary)
     bluetooth_gatt_1 = -1
     gatt_callback_1 = -1
-    if (le_connection_interval != 0) and is_ble:
+    gatt_connected = False
+    if is_ble and (le_connection_interval != 0 or le_min_ce_len != 0 or le_max_ce_len != 0):
         client_ad.log.info(
-            "Adjusting connection interval={}".format(le_connection_interval))
+            "Adjusting connection interval={}, le_min_ce_len={}, le_max_ce_len={}"
+            .format(le_connection_interval, le_min_ce_len, le_max_ce_len))
         try:
             bluetooth_gatt_1, gatt_callback_1 = setup_gatt_connection(
                 client_ad,
@@ -185,11 +191,20 @@ def orchestrate_coc_connection(
             client_ad.log.error(err)
             return False, None, None
         client_ad.log.info("setup_gatt_connection returns success")
-        minInterval = le_connection_interval / le_connection_interval_time_step
-        maxInterval = le_connection_interval / le_connection_interval_time_step
+        if (le_connection_interval != 0):
+            minInterval = le_connection_interval / le_connection_interval_time_step_ms
+            maxInterval = le_connection_interval / le_connection_interval_time_step_ms
+        else:
+            minInterval = default_le_connection_interval_ms / le_connection_interval_time_step_ms
+            maxInterval = default_le_connection_interval_ms / le_connection_interval_time_step_ms
+        if (le_min_ce_len != 0):
+            le_min_ce_len = le_min_ce_len / le_connection_event_time_step_ms
+        if (le_max_ce_len != 0):
+            le_max_ce_len = le_max_ce_len / le_connection_event_time_step_ms
+
         return_status = client_ad.droid.gattClientRequestLeConnectionParameters(
             bluetooth_gatt_1, minInterval, maxInterval, 0,
-            le_default_supervision_timeout, 0, 0)
+            le_default_supervision_timeout, le_min_ce_len, le_max_ce_len)
         if not return_status:
             client_ad.log.error(
                 "gattClientRequestLeConnectionParameters returns failure")
@@ -197,6 +212,7 @@ def orchestrate_coc_connection(
         client_ad.log.info(
             "gattClientRequestLeConnectionParameters returns success. Interval={}"
             .format(minInterval))
+        gatt_connected = True
         # For now, we will only test with 1 Mbit Phy.
         # TODO: Add explicit tests with 2 MBit Phy.
         client_ad.droid.gattClientSetPreferredPhy(
@@ -238,14 +254,27 @@ def orchestrate_coc_connection(
         server_ad.log.info("Error CoC client_ad Connection Inactive")
         client_ad.log.info("Error CoC client_ad Connection Inactive")
 
-    # Get the conn_id
-    client_conn_id = client_ad.droid.bluetoothGetLastConnId()
-    server_conn_id = server_ad.droid.bluetoothGetLastConnId()
+    # Wait for the client to be ready
+    client_conn_id = None
+    while (client_conn_id == None):
+        client_conn_id = client_ad.droid.bluetoothGetLastConnId()
+        if (client_conn_id != None):
+            break
+        time.sleep(1)
+
+    # Wait for the server to be ready
+    server_conn_id = None
+    while (server_conn_id == None):
+        server_conn_id = server_ad.droid.bluetoothGetLastConnId()
+        if (server_conn_id != None):
+            break
+        time.sleep(1)
+
     client_ad.log.info(
         "orchestrate_coc_connection: client conn id={}, server conn id={}".
         format(client_conn_id, server_conn_id))
 
-    if (le_connection_interval != 0) and is_ble:
+    if gatt_connected:
         disconnect_gatt_connection(client_ad, bluetooth_gatt_1,
                                    gatt_callback_1)
         client_ad.droid.gattClientClose(bluetooth_gatt_1)
