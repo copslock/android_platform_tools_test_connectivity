@@ -222,7 +222,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.log.info("Create new sl4a session for messaging")
                     ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                     ad.messaging_ed.start()
-            ad.messaging_droid.logI("%s begin", log_msg)
+            ad.messaging_droid.logI("%s begin" % log_msg)
         text = "%s: " % log_msg
         text_length = len(text)
         if length < text_length:
@@ -242,7 +242,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                              max_wait_time)
         self.log.info("%s end", log_msg)
         for ad in self.android_devices:
-            ad.messaging_droid.logI("%s end", log_msg)
+            ad.messaging_droid.logI("%s end" % log_msg)
         if not result:
             self.result_info["%s Total" % message_type] += 1
             if message_type == "SMS":
@@ -600,7 +600,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def parallel_tests(self, setup_func=None, call_verification_func=None):
         self.log.info(self._get_result_message())
         if setup_func and not setup_func():
-            msg = "Test setup %s failed" % setup_func.__name__
+            msg = "%s setup %s failed" % (self.test_name, setup_func.__name__)
             self.log.error(msg)
             self._take_bug_report("%s%s" % (self.test_name,
                                             setup_func.__name__),
