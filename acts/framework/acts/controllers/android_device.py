@@ -469,16 +469,18 @@ class AndroidDevice:
             return
 
         build_id = self.adb.getprop("ro.build.id")
+        incremental_build_id = self.adb.getprop("ro.build.version.incremental")
         valid_build_id = False
         for regex in RELEASE_ID_REGEXES:
             if re.match(regex, build_id):
                 valid_build_id = True
                 break
         if not valid_build_id:
-            build_id = self.adb.getprop("ro.build.version.incremental")
+            build_id = incremental_build_id
 
         info = {
             "build_id": build_id,
+            "incremental_build_id": incremental_build_id,
             "build_type": self.adb.getprop("ro.build.type")
         }
         return info
