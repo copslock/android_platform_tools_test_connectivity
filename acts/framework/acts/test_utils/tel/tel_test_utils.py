@@ -6127,7 +6127,7 @@ def extract_test_log(log, src_file, dst_file, test_tag):
     cmd = "grep -n '%s' %s" % (test_tag, src_file)
     result = job.run(cmd, ignore_status=True)
     if not result.stdout or result.exit_status == 1:
-        log.info.error("Command %s returns %s", cmd, result)
+        log.warning("Command %s returns %s", cmd, result)
         return
     line_nums = re.findall(r"(\d+).*", result.stdout)
     if line_nums:
