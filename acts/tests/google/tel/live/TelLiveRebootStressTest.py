@@ -511,10 +511,14 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         test_result = True
 
         for i in range(1, self.stress_test_number + 1):
+            begin_time = get_current_epoch_time()
+            test_name = "%s_iteration_%s" % (self.test_name, i)
+            log_msg = "[Test Case] %s" % test_name
+            self.log.info("%s begin", log_msg)
+            self.dut.droid.logI("%s begin" % log_msg)
             test_msg = "Reboot Stress Test %s Iteration <%s> / <%s>" % (
                 self.test_name, i, self.stress_test_number)
-            self.log.info("%s: started", test_msg)
-            begin_time = get_current_epoch_time()
+            self.log.info(test_msg)
             reboot_device(self.dut)
             self.log.info("{} wait {}s for radio up.".format(
                 self.dut.serial, WAIT_TIME_AFTER_REBOOT))
@@ -532,11 +536,12 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if failed_tests or crash_report:
                 self.log.error("%s FAIL with %s and crashes %s", test_msg,
                                failed_tests, crash_report)
-                self._take_bug_report("%s_%s" % (self.test_name, i),
-                                      begin_time)
+                self._take_bug_report(test_name, begin_time)
             else:
                 self.log.info("%s PASS", test_msg)
             self.log.info("Total failure count: %s", dict(fail_count))
+            self.log.info("%s end", log_msg)
+            self.dut.droid.logI("%s end" % log_msg)
 
         for failure, count in fail_count.items():
             if count:
@@ -725,7 +730,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                     fail_count[tel_state] += 1
 
         ad.log.info("Bootup Time Dict: %s", keyword_time_dict)
-        ad.log.info("fail_count: %s", fail_count)
+        ad.log.info("fail_count: %s", dict(fail_count))
         for failure, count in fail_count.items():
             if count:
                 ad.log.error("%s %s failures in %s iterations", count, failure,
