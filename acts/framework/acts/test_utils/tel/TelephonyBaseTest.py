@@ -36,6 +36,7 @@ from acts.test_utils.tel.tel_subscription_utils import \
 from acts.test_utils.tel.tel_test_utils import enable_radio_log_on
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
+from acts.test_utils.tel.tel_test_utils import extract_test_log
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts.test_utils.tel.tel_test_utils import get_sim_state
@@ -91,6 +92,7 @@ class TelephonyBaseTest(BaseTestClass):
         multithread_func(self.log, tasks)
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
+        self.log_path = getattr(logging, "log_path", None)
 
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
@@ -170,8 +172,6 @@ class TelephonyBaseTest(BaseTestClass):
     def _init_device(self, ad, qxdm_log_mask_cfg=None):
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
-        if not hasattr(ad, "init_log_path"):
-            ad.init_log_path = ad.log_path
         ad.log_path = self.log_path
         print_radio_info(ad)
         unlock_sim(ad)
@@ -190,9 +190,6 @@ class TelephonyBaseTest(BaseTestClass):
                 mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
                 qxdm_log_mask = os.path.join(qxdm_mask_path, mask_file_name)
             set_qxdm_logger_command(ad, mask=qxdm_log_mask)
-            ad.adb.pull(
-                "/firmware/image/qdsp6m.qdb %s" % ad.init_log_path,
-                ignore_status=True)
         start_qxdm_logger(ad, utils.get_current_epoch_time())
 
     def _setup_device(self, ad, sim_conf_file):
@@ -307,8 +304,6 @@ class TelephonyBaseTest(BaseTestClass):
                 if "enable_wifi_verbose_logging" in self.user_params:
                     ad.droid.wifiEnableVerboseLogging(
                         WIFI_VERBOSE_LOGGING_DISABLED)
-                if hasattr(ad, "init_log_path"):
-                    ad.log_path = ad.init_log_path
             return True
         except Exception as e:
             self.log.error("Failure with %s", e)
@@ -356,6 +351,9 @@ class TelephonyBaseTest(BaseTestClass):
     def on_blocked(self, test_name, begin_time):
         self.on_fail(test_name, begin_time)
 
+    def get_test_case_log(self, begin_time, test_name):
+        pass
+
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
         extra_qxdm_logs_in_seconds = self.user_params.get(
             "extra_qxdm_logs_in_seconds", 60 * 3)
@@ -384,18 +382,10 @@ class TelephonyBaseTest(BaseTestClass):
                          test_name, e)
             result = False
 
-        log_begin_time = getattr(
-            ad, "test_log_begin_time", None
-        ) or acts_logger.epoch_to_log_line_timestamp(begin_time - 1000 * 60)
-        log_path = os.path.join(self.log_path, test_name,
-                                "%s_%s.logcat" % (ad.serial, begin_time))
-        try:
-            ad.adb.logcat(
-                'b all -d -v year -t "%s" > %s' % (log_begin_time, log_path),
-                timeout=120)
-        except Exception as e:
-            ad.log.error("Failed to get logcat with error %s", e)
-            result = False
+        extract_test_log(self.log, ad.adb_logcat_file_path,
+                         os.path.join(self.log_path, test_name,
+                                      "%s_%s.logcat" % (ad.serial, test_name)),
+                         test_name)
         return result
 
     def _take_bug_report(self, test_name, begin_time):
@@ -412,6 +402,14 @@ class TelephonyBaseTest(BaseTestClass):
             if getattr(ad, "reboot_to_recover", False):
                 reboot_device(ad)
                 ad.reboot_to_recover = False
+        # Extract test_run_info.txt, test_run_detail.txt
+        for file_name in ("test_run_info.txt", "test_run_details.txt"):
+            extract_test_log(self.log, os.path.join(self.log_path, file_name),
+                             os.path.join(self.log_path, test_name,
+                                          "%s_%s" % (test_name, file_name)),
+                             "\[Test Case\] %s" % test_name)
+
+        # Zip log folder
         if not self.user_params.get("zip_log", False): return
         src_dir = os.path.join(self.log_path, test_name)
         file_name = "%s_%s" % (src_dir, begin_time)

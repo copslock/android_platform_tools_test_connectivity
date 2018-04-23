@@ -32,7 +32,7 @@ from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
-from acts.controllers.sl4a_lib.event_dispatcher import EventDispatcher
+from acts.libs.proc import job
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
 from acts.test_utils.tel.tel_defines import CARD_POWER_UP
@@ -3968,7 +3968,6 @@ def mms_send_receive_verify_for_subscription(
                 ad.log.info("Create new sl4a session for messaging")
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                 ad.messaging_ed.start()
-        ad.log.info("IsDataEnabled: %s", ad.droid.telephonyIsDataEnabled())
 
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
@@ -6122,6 +6121,22 @@ def power_on_sim(ad, sim_slot_id=None):
     else:
         ad.log.error("Fail to power on SIM slot")
         return False
+
+
+def extract_test_log(log, src_file, dst_file, test_tag):
+    cmd = "grep -n '%s' %s" % (test_tag, src_file)
+    result = job.run(cmd, ignore_status=True)
+    if not result.stdout or result.exit_status == 1:
+        log.info.error("Command %s returns %s", cmd, result)
+        return
+    line_nums = re.findall(r"(\d+).*", result.stdout)
+    if line_nums:
+        begin_line = line_nums[0]
+        end_line = line_nums[-1]
+        log.info("Extract %s from line %s to line %s to %s", src_file,
+                 begin_line, end_line, dst_file)
+        job.run("awk 'NR >= %s && NR <= %s' %s > %s" % (begin_line, end_line,
+                                                        src_file, dst_file))
 
 
 def log_messaging_screen_shot(ad, test_name=""):

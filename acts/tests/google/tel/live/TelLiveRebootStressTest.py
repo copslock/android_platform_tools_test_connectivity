@@ -724,10 +724,11 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                                  tel_state, self.stress_test_number, avg_time)
                     fail_count[tel_state] += 1
 
-        ad.log.info("Bootup Time Dict {}".format(keyword_time_dict))
+        ad.log.info("Bootup Time Dict: %s", keyword_time_dict)
+        ad.log.info("fail_count: %s", fail_count)
         for failure, count in fail_count.items():
             if count:
-                ad.log.error("%d %d failures in %d iterations", count, failure,
+                ad.log.error("%s %s failures in %s iterations", count, failure,
                              self.stress_test_number)
                 test_result = False
         return test_result
