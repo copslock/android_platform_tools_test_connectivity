@@ -24,7 +24,7 @@ import random
 import time
 
 from acts import utils
-from acts.asserts import fail
+from acts.libs.proc import job
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
@@ -376,6 +376,14 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("%s end", log_msg)
         if not result:
             self.log.info("%s failed", log_msg)
+            if self.user_params.get("gps_log_file", None)
+                gps_info = job.run("tail %s" % self.user_params["gps_log_file"],
+                                   ignore_status=True)
+                if gps_info.stdout:
+                    self.log.info("gps log:\n%s", gps_info.stdout)
+                else:
+                    self.log.warning("Fail to get gps log %s",
+                                     self.user_params["gps_log_file"])
             for reason in failure_reasons:
                 self.result_info["Call %s Failure" % reason] += 1
             for ad in ads:
