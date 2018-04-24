@@ -116,7 +116,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             False if failed.
         """
         toggle_airplane_mode_by_adb(self.log, self.dut, False)
-        return self.fake_emergency_call_test()
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="a0b3e7dd-93e0-40e2-99a9-5564d34712fc")
     @TelephonyBaseTest.tel_test_wrap
@@ -139,7 +139,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         self.dut.droid.telephonySetPreferredNetworkTypes(network_preference)
         self.dut.adb.shell(IMS_FIRST_OFF)
 
-        return self.fake_emergency_call_test()
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="b5a5b550-49e6-4026-902a-b155d1209f6d")
     @TelephonyBaseTest.tel_test_wrap
@@ -162,7 +162,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         self.dut.log.info("Set network preference to %s", network_preference)
         self.dut.droid.telephonySetPreferredNetworkTypes(network_preference)
         self.dut.adb.shell(IMS_FIRST_OFF)
-        return self.fake_emergency_call_test()
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="5f083fa7-ddea-44de-8479-4da88d53da65")
     @TelephonyBaseTest.tel_test_wrap
@@ -185,7 +185,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         self.dut.log.info("Set network preference to %s", network_preference)
         self.dut.droid.telephonySetPreferredNetworkTypes(network_preference)
         self.dut.adb.shell(IMS_FIRST_OFF)
-        return self.fake_emergency_call_test()
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="e01870d7-89a6-4641-84c6-8e71142773f8")
     @TelephonyBaseTest.tel_test_wrap
@@ -204,7 +204,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             False if failed.
         """
         self.dut.adb.shell(IMS_FIRST_OFF)
-        return self.fake_emergency_call_test()
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="b2c3de31-79ec-457a-a947-50c28caec214")
     @TelephonyBaseTest.tel_test_wrap
@@ -223,7 +223,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             False if failed.
         """
         self.dut.adb.shell(IMS_FIRST_OFF)
-        return self.fake_emergency_call_test()
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="669cf1d9-9513-4f90-b0fd-2f0e8f1cc941")
     @TelephonyBaseTest.tel_test_wrap
@@ -240,7 +240,8 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             False if failed.
         """
         toggle_airplane_mode_by_adb(self.log, self.dut, False)
-        return self.fake_emergency_call_test(by_emergency_dialer=True)
+        return self.fake_emergency_call_test(
+            by_emergency_dialer=True) and self.check_normal_call()
 
     @test_tracker_info(uuid="1990f166-66a7-4092-b448-c179a9194371")
     @TelephonyBaseTest.tel_test_wrap
@@ -259,7 +260,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         """
         try:
             toggle_airplane_mode_by_adb(self.log, self.dut, True)
-            if self.fake_emergency_call_test():
+            if self.fake_emergency_call_test() and self.check_normal_call():
                 return True
             else:
                 return False
@@ -287,7 +288,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
         self.dut.log.info("Reboot device to screen lock screen")
         self.dut.reboot(stop_at_lock_screen=True)
-        if self.fake_emergency_call_test():
+        if self.fake_emergency_call_test() and self.check_normal_call():
             return True
         else:
             return False
@@ -313,7 +314,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
         self.dut.log.info("Reboot device to screen lock screen")
         self.dut.reboot(stop_at_lock_screen=True)
-        if self.fake_emergency_call_test():
+        if self.fake_emergency_call_test() and self.check_normal_call():
             return True
         else:
             return False
@@ -336,7 +337,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         try:
             if not fastboot_wipe(self.dut, skip_setup_wizard=False):
                 return False
-            if self.fake_emergency_call_test():
+            if self.fake_emergency_call_test() and self.check_normal_call():
                 return True
             else:
                 return False
