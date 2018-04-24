@@ -1836,6 +1836,8 @@ def call_setup_teardown_for_subscription(
             if not new_call_ids:
                 ad.log.error(
                     "No new call ids are found after call establishment")
+                ad.log.error("telecomCallGetCallIds returns %s",
+                             ad.droid.telecomCallGetCallIds())
                 result = False
             for new_call_id in new_call_ids:
                 if not wait_for_in_call_active(ad, call_id=new_call_id):
@@ -5718,9 +5720,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.log.error("Failed to start adb logcat!")
     if skip_setup_wizard:
         ad.exit_setup_wizard()
-    if ad.skip_sl4a: return status
     start_qxdm_logger(ad)
-    bring_up_sl4a(ad)
     # Setup VoWiFi MDN for Verizon. b/33187374
     if get_operator_name(ad.log, ad) == "vzw" and ad.is_apk_installed(
             "com.google.android.wfcactivation"):
@@ -5729,6 +5729,8 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
                  "\"com.google.android.wfcactivation/"
                  ".VzwEmergencyAddressActivity\"")
+    if ad.skip_sl4a: return status
+    bring_up_sl4a(ad)
     return status
 
 
