@@ -260,7 +260,6 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         self.assertEqual(ad.serial, 1)
         self.assertEqual(ad.model, "fakemodel")
         self.assertIsNone(ad.adb_logcat_process)
-        self.assertIsNone(ad.adb_logcat_file_path)
         expected_lp = os.path.join(logging.log_path,
                                    "AndroidDevice%s" % MOCK_SERIAL)
         self.assertEqual(ad.log_path, expected_lp)
