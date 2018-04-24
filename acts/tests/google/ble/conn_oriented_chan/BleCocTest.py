@@ -59,7 +59,6 @@ class BleCocTest(BluetoothBaseTest):
     def teardown_test(self):
         self.client_ad.droid.bluetoothSocketConnStop()
         self.server_ad.droid.bluetoothSocketConnStop()
-        self.server_ad.droid.bleAdvertiseClearAll()
         # Give sufficient time for the physical LE link to be disconnected.
         time.sleep(l2cap_max_inactivity_delay_after_disconnect)
 

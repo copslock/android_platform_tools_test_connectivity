@@ -190,6 +190,8 @@ def orchestrate_coc_connection(
             client_ad.droid.bleStopBleScan(scan_callback)
         except GattTestUtilsError as err:
             client_ad.log.error(err)
+            if (adv_callback != None):
+                server_ad.droid.bleStopBleAdvertising(adv_callback)
             return False, None, None
         client_ad.log.info("setup_gatt_connection returns success")
         if (le_connection_interval != 0):
@@ -209,6 +211,8 @@ def orchestrate_coc_connection(
         if not return_status:
             client_ad.log.error(
                 "gattClientRequestLeConnectionParameters returns failure")
+            if (adv_callback != None):
+                server_ad.droid.bleStopBleAdvertising(adv_callback)
             return False, None, None
         client_ad.log.info(
             "gattClientRequestLeConnectionParameters returns success. Interval={}"
@@ -243,9 +247,13 @@ def orchestrate_coc_connection(
                 test_result = True
                 break
         time.sleep(1)
+
+    if (adv_callback != None):
+        server_ad.droid.bleStopBleAdvertising(adv_callback)
+
     if not test_result:
         client_ad.log.error("Failed to establish an CoC connection")
-        return False, None
+        return False, None, None
 
     if len(client_ad.droid.bluetoothSocketConnActiveConnections()) > 0:
         server_ad.log.info(

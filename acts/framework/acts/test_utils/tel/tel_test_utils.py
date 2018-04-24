@@ -32,7 +32,7 @@ from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
-from acts.controllers.sl4a_lib.event_dispatcher import EventDispatcher
+from acts.libs.proc import job
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
 from acts.test_utils.tel.tel_defines import CARD_POWER_UP
@@ -1837,6 +1837,8 @@ def call_setup_teardown_for_subscription(
             if not new_call_ids:
                 ad.log.error(
                     "No new call ids are found after call establishment")
+                ad.log.error("telecomCallGetCallIds returns %s",
+                             ad.droid.telecomCallGetCallIds())
                 result = False
             for new_call_id in new_call_ids:
                 if not wait_for_in_call_active(ad, call_id=new_call_id):
@@ -3969,7 +3971,6 @@ def mms_send_receive_verify_for_subscription(
                 ad.log.info("Create new sl4a session for messaging")
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                 ad.messaging_ed.start()
-        ad.log.info("IsDataEnabled: %s", ad.droid.telephonyIsDataEnabled())
 
     for subject, message, filename in array_payload:
         begin_time = get_current_epoch_time()
@@ -5728,9 +5729,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.log.error("Failed to start adb logcat!")
     if skip_setup_wizard:
         ad.exit_setup_wizard()
-    if ad.skip_sl4a: return status
     start_qxdm_logger(ad)
-    bring_up_sl4a(ad)
     # Setup VoWiFi MDN for Verizon. b/33187374
     if get_operator_name(ad.log, ad) == "vzw" and ad.is_apk_installed(
             "com.google.android.wfcactivation"):
@@ -5739,6 +5738,8 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
                  "\"com.google.android.wfcactivation/"
                  ".VzwEmergencyAddressActivity\"")
+    if ad.skip_sl4a: return status
+    bring_up_sl4a(ad)
     return status
 
 
@@ -6124,6 +6125,22 @@ def power_on_sim(ad, sim_slot_id=None):
     else:
         ad.log.error("Fail to power on SIM slot")
         return False
+
+
+def extract_test_log(log, src_file, dst_file, test_tag):
+    cmd = "grep -n '%s' %s" % (test_tag, src_file)
+    result = job.run(cmd, ignore_status=True)
+    if not result.stdout or result.exit_status == 1:
+        log.warning("Command %s returns %s", cmd, result)
+        return
+    line_nums = re.findall(r"(\d+).*", result.stdout)
+    if line_nums:
+        begin_line = line_nums[0]
+        end_line = line_nums[-1]
+        log.info("Extract %s from line %s to line %s to %s", src_file,
+                 begin_line, end_line, dst_file)
+        job.run("awk 'NR >= %s && NR <= %s' %s > %s" % (begin_line, end_line,
+                                                        src_file, dst_file))
 
 
 def log_messaging_screen_shot(ad, test_name=""):

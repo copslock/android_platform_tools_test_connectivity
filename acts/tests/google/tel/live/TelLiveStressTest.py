@@ -203,10 +203,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         message_type = message_type_map[selection]
         the_number = self.result_info["%s Total" % message_type] + 1
         begin_time = get_current_epoch_time()
+        test_name = "%s_No_%s_%s" % (self.test_name, the_number, message_type)
         start_qxdm_loggers(self.log, self.android_devices)
-        log_msg = "The %s-th %s test: of length %s from %s to %s" % (
-            the_number, message_type, length, ads[0].serial, ads[1].serial)
-        self.log.info(log_msg)
+        log_msg = "[Test Case] %s" % test_name
+        self.log.info("%s begin", log_msg)
         for ad in self.android_devices:
             if not getattr(ad, "messaging_droid", None):
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
@@ -222,7 +222,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.log.info("Create new sl4a session for messaging")
                     ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                     ad.messaging_ed.start()
-            ad.messaging_droid.logI(log_msg)
+            ad.messaging_droid.logI("%s begin" % log_msg)
         text = "%s: " % log_msg
         text_length = len(text)
         if length < text_length:
@@ -237,19 +237,17 @@ class TelLiveStressTest(TelephonyBaseTest):
                 incall_non_ims = True
                 break
 
-        if not message_func_map[selection](self.log, ads[0], ads[1],
-                                           message_content_map[selection],
-                                           max_wait_time):
+        result = message_func_map[selection](self.log, ads[0], ads[1],
+                                             message_content_map[selection],
+                                             max_wait_time)
+        self.log.info("%s end", log_msg)
+        for ad in self.android_devices:
+            ad.messaging_droid.logI("%s end" % log_msg)
+        if not result:
             self.result_info["%s Total" % message_type] += 1
             if message_type == "SMS":
                 self.log.error("%s fails", log_msg)
                 self.result_info["%s Failure" % message_type] += 1
-                try:
-                    self._take_bug_report("%s_%s_No_%s_failure" %
-                                          (self.test_name, message_type,
-                                           the_number), begin_time)
-                except Exception as e:
-                    self.log.exception(e)
             else:
                 if incall_non_ims:
                     self.log.info(
@@ -259,14 +257,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 else:
                     self.log.error("%s fails", log_msg)
                     self.result_info["MMS Failure"] += 1
-                    if self.result_info["MMS Failure"] == 1:
-                        try:
-                            self._take_bug_report("%s_%s_No_%s_failure" %
-                                                  (self.test_name,
-                                                   message_type, the_number),
-                                                  begin_time)
-                        except Exception as e:
-                            self.log.exception(e)
+            try:
+                self._take_bug_report(test_name, begin_time)
+            except Exception as e:
+                self.log.exception(e)
             return False
         else:
             self.result_info["%s Total" % message_type] += 1
@@ -284,13 +278,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         duration = random.randrange(self.min_phone_call_duration,
                                     self.max_phone_call_duration)
         result = True
-        if self.single_phone_test:
-            log_msg = "The %s-th phone call test for %ssec duration" % (
-                the_number, duration)
-        else:
-            log_msg = "The %s-th phone call test from %s to %s for %ssec" % (
-                the_number, ads[0].serial, ads[1].serial, duration)
-        self.log.info(log_msg)
+        test_name = "%s_No_%s_phone_call" % (self.test_name, the_number)
+        log_msg = "[Test Case] %s" % test_name
+        self.log.info("%s begin", log_msg)
         for ad in self.android_devices:
             if not getattr(ad, "droid", None):
                 ad.droid, ad.ed = ad.get_droid()
@@ -306,7 +296,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.log.info("Create new sl4a session for phone call")
                     ad.droid, ad.ed = ad.get_droid()
                     ad.ed.start()
-            ad.droid.logI(log_msg)
+            ad.droid.logI("%s begin" % log_msg)
         begin_time = get_current_epoch_time()
         if "wfc" in self.test_name:
             start_tcpdumps(
@@ -378,12 +368,16 @@ class TelLiveStressTest(TelephonyBaseTest):
                     failure_reasons.add("Teardown")
                     result = False
         self.result_info["Call Total"] += 1
+        for ad in self.android_devices:
+            try:
+                ad.droid.logI("%s end" % log_msg)
+            except:
+                pass
+        self.log.info("%s end", log_msg)
         if not result:
-            self.log.info("%s test failed", log_msg)
+            self.log.info("%s failed", log_msg)
             for reason in failure_reasons:
                 self.result_info["Call %s Failure" % reason] += 1
-            test_name = "%s_call_No_%s_%s_failure" % (
-                self.test_name, the_number, "_".join(failure_reasons))
             for ad in ads:
                 log_path = os.path.join(self.log_path, test_name,
                                         "%s_binder_logs" % ad.serial)
@@ -397,10 +391,9 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.log.info("%s test succeed", log_msg)
             self.result_info["Call Success"] += 1
             if self.get_binder_logs and self.result_info["Call Total"] % 50 == 0:
-                test_name = "%s_call_No_%s_success_binder_logs" % (
-                    self.test_name, the_number)
                 for ad in ads:
-                    log_path = os.path.join(self.log_path, test_name,
+                    log_path = os.path.join(self.log_path,
+                                            "%s_binder_logs" % test_name,
                                             "%s_binder_logs" % ad.serial)
                     utils.create_dir(log_path)
                     ad.pull_files(BINDER_LOGS, log_path)
@@ -543,9 +536,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def _data_download(self):
+    def _data_download(self,
+                       file_names=["5MB", "10MB", "20MB", "50MB", "200MB"]):
         #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
-        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB"]
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
         self.dut.log.info(dict(self.result_info))
@@ -607,7 +600,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def parallel_tests(self, setup_func=None, call_verification_func=None):
         self.log.info(self._get_result_message())
         if setup_func and not setup_func():
-            msg = "Test setup %s failed" % setup_func.__name__
+            msg = "%s setup %s failed" % (self.test_name, setup_func.__name__)
             self.log.error(msg)
             self._take_bug_report("%s%s" % (self.test_name,
                                             setup_func.__name__),
@@ -632,7 +625,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 run_multithread_func(
                     self.log,
-                    [(self._data_download, []),
+                    [(self._data_download, [["5MB"]]),
                      (self._make_phone_call, [is_phone_in_call_volte]),
                      (self._send_message, [])])
                 self._prefnetwork_mode_change(sub_id)
