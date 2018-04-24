@@ -316,6 +316,24 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             time.sleep(5)
         return result
 
+    def check_normal_call(self):
+        toggle_airplane_mode_by_adb(self.log, self.dut, False)
+        self.dut.ensure_screen_on()
+        self.dut.exit_setup_wizard()
+        reset_device_password(self.dut, None)
+        begin_time = get_current_epoch_time()
+        if not call_setup_teardown(
+                self.log, self.dut, self.android_devices[1],
+                ad_hangup=self.dut):
+            self.dut.log.error("Regular phone call fails")
+            reasons = self.dut.search_logcat(
+                "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
+                begin_time)
+            if reasons:
+                self.dut.log.info(reasons[-1]["log_message"])
+            return False
+        return True
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="fe75ba2c-e4ea-4fc1-881b-97e7a9a7f48e")
@@ -332,7 +350,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             False if failed.
         """
         toggle_airplane_mode_by_adb(self.log, self.dut, False)
-        return self.fake_emergency_call_test()
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="eb1fa042-518a-4ddb-8e9f-16a6c39c49f1")
     @TelephonyBaseTest.tel_test_wrap
@@ -519,7 +537,8 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        return self.fake_emergency_call_test(by_emergency_dialer=False)
+        return self.fake_emergency_call_test(
+            by_emergency_dialer=False) and self.check_normal_call()
 
     @test_tracker_info(uuid="2e6fcc75-ff9e-47b1-9ae8-ed6f9966d0f5")
     @TelephonyBaseTest.tel_test_wrap
@@ -537,7 +556,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
         """
         try:
             toggle_airplane_mode_by_adb(self.log, self.dut, True)
-            if self.fake_emergency_call_test():
+            if self.fake_emergency_call_test() and self.check_normal_call():
                 return True
             else:
                 return False
@@ -564,7 +583,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             self.dut.log.error("SIM is not ready")
             return False
         self.dut.reboot(stop_at_lock_screen=True)
-        if self.fake_emergency_call_test():
+        if self.fake_emergency_call_test() and self.check_normal_call():
             return True
         else:
             return False
@@ -590,7 +609,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             if not wait_for_sim_ready_by_adb(self.log, self.dut):
                 self.dut.log.error("SIM is not ready")
                 return False
-            if self.fake_emergency_call_test():
+            if self.fake_emergency_call_test() and self.check_normal_call():
                 return True
             else:
                 return False
@@ -617,7 +636,7 @@ class TelLiveEmergencyTest(TelephonyBaseTest):
             if not wait_for_sim_ready_by_adb(self.log, self.dut):
                 self.dut.log.error("SIM is not ready")
                 return False
-            if self.fake_emergency_call_test():
+            if self.fake_emergency_call_test() and self.check_normal_call():
                 return True
             else:
                 return False
