@@ -977,6 +977,8 @@ class AndroidDevice:
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
+            self.adb.pull("/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
+                          timeout=PULL_TIMEOUT, ignore_status=True)
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
