@@ -1126,6 +1126,10 @@ class AndroidDevice:
         self.wait_for_boot_completion()
         self.root_adb()
         if stop_at_lock_screen:
+            try:
+                self.start_adb_logcat()
+            except:
+                self.log.error("Failed to start adb logcat!")
             return
         if not self.ensure_screen_on():
             self.log.error("User window cannot come up")
