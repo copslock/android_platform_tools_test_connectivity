@@ -1852,7 +1852,8 @@ def call_setup_teardown_for_subscription(
             else:
                 ad.log.error("Call is not in %s state", call_func.__name__)
                 result = False
-
+        if not result:
+            return False
         elapsed_time = 0
         while (elapsed_time < wait_time_in_call):
             CHECK_INTERVAL = min(CHECK_INTERVAL,
@@ -1875,7 +1876,7 @@ def call_setup_teardown_for_subscription(
                                  time_message)
                     result = False
                 if not result:
-                    break
+                    return False
         if ad_hangup and not hangup_call(log, ad_hangup):
             ad_hangup.log.info("Failed to hang up the call")
             result = False
@@ -1980,17 +1981,15 @@ def verify_http_connection(log,
             http_response = ad.droid.httpPing(url)
         except:
             http_response = None
+        ad.log.info("Http ping response for %s is %s, expecting %s",
+                    url, http_response, expected_state)
         if (expected_state and http_response) or (not expected_state
                                                   and not http_response):
-            ad.log.info("Verify http connection to %s is %s as expected", url,
-                        expected_state)
             return True
         if i < retry:
-            ad.log.info("Verify http connection to %s is %s failed. Try again",
-                        url, expected_state)
             time.sleep(retry_interval)
-    ad.log.info("Verify http connection to %s is %s failed after %s second",
-                url, expected_state, i * retry_interval)
+    ad.log.error("Http ping to %s is %s after %s second, expecting %s",
+                url, http_response, i * retry_interval, expected_state)
     return False
 
 
