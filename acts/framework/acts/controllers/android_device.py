@@ -445,6 +445,7 @@ class AndroidDevice:
                 self.stop_adb_logcat()
         finally:
             self.terminate_all_sessions()
+            self._sl4a_manager.stop_service()
             self.stop_sl4a()
 
     def is_connected(self):
@@ -857,6 +858,7 @@ class AndroidDevice:
             self.log.warn("Fail to stop package %s: %s", package_name, e)
 
     def stop_sl4a(self):
+        # TODO(markdr): Move this into sl4a_manager.
         return self.force_stop_apk(SL4A_APK_NAME)
 
     def start_sl4a(self):
