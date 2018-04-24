@@ -279,6 +279,10 @@ class Sl4aManager(object):
         self.sessions[session.uid] = session
         return session
 
+    def stop_service(self):
+        """Stops The SL4A Service."""
+        self._started = False
+
     def terminate_all_sessions(self):
         """Terminates all SL4A sessions gracefully."""
         self.error_reporter.finalize_reports()
