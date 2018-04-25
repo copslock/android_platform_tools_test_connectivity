@@ -240,12 +240,12 @@ class HidDeviceTest(BluetoothBaseTest):
         self.log.info("Host bonded: {}".format(
                 self.host_ad.droid.bluetoothGetBondedDevices()))
 
-        if not self.device_ad.droid.bluetoothGetBondedDevices():
-            self.log.error("HID device unbonded host on virtual_cable_unplug")
+        if self.device_ad.droid.bluetoothGetBondedDevices():
+            self.log.error("HID device didn't unbond on virtual_cable_unplug")
             test_result = False
 
-        if not self.host_ad.droid.bluetoothGetBondedDevices():
-            self.log.error("HID host unbonded device on virtual_cable_unplug")
+        if self.host_ad.droid.bluetoothGetBondedDevices():
+            self.log.error("HID host didn't unbond on virtual_cable_unplug")
             test_result = False
 
         return test_result
