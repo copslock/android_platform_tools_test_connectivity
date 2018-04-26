@@ -351,9 +351,6 @@ class TelephonyBaseTest(BaseTestClass):
     def on_blocked(self, test_name, begin_time):
         self.on_fail(test_name, begin_time)
 
-    def get_test_case_log(self, begin_time, test_name):
-        pass
-
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
         extra_qxdm_logs_in_seconds = self.user_params.get(
             "extra_qxdm_logs_in_seconds", 60 * 3)
