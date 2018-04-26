@@ -376,9 +376,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("%s end", log_msg)
         if not result:
             self.log.info("%s failed", log_msg)
-            if self.user_params.get("gps_log_file", None)
-                gps_info = job.run("tail %s" % self.user_params["gps_log_file"],
-                                   ignore_status=True)
+            if self.user_params.get("gps_log_file", None):
+                gps_info = job.run(
+                    "tail %s" % self.user_params["gps_log_file"],
+                    ignore_status=True)
                 if gps_info.stdout:
                     self.log.info("gps log:\n%s", gps_info.stdout)
                 else:
