@@ -37,9 +37,19 @@ class DataPathStressTest(AwareBaseTest):
 
   ################################################################
 
-  def test_oob_ndp_stress(self):
+  def run_oob_ndp_stress(self, attach_iterations, ndp_iterations,
+      trigger_failure_on_index=None):
     """Run NDP (NAN data-path) stress test creating and destroying Aware
-    attach sessions, discovery sessions, and NDPs."""
+    attach sessions, discovery sessions, and NDPs.
+
+    Args:
+      attach_iterations: Number of attach sessions.
+      ndp_iterations: Number of NDP to be attempted per attach session.
+      trigger_failure_on_index: Trigger a failure on this NDP iteration (the
+                                mechanism is to request NDP on Initiator
+                                before issuing the requeest on the Responder).
+                                If None then no artificial failure triggered.
+    """
     init_dut = self.android_devices[0]
     init_dut.pretty_name = 'Initiator'
     resp_dut = self.android_devices[1]
@@ -50,7 +60,7 @@ class DataPathStressTest(AwareBaseTest):
     ndp_resp_setup_success = 0
     ndp_resp_setup_failures = 0
 
-    for attach_iter in range(self.ATTACH_ITERATIONS):
+    for attach_iter in range(attach_iterations):
       init_id = init_dut.droid.wifiAwareAttach(True)
       autils.wait_for_event(init_dut, aconsts.EVENT_CB_ON_ATTACHED)
       init_ident_event = autils.wait_for_event(
@@ -68,24 +78,41 @@ class DataPathStressTest(AwareBaseTest):
       # to execute the data-path request)
       time.sleep(autils.WAIT_FOR_CLUSTER)
 
-      for ndp_iteration in range(self.NDP_ITERATIONS):
-        # Responder: request network
-        resp_req_key = autils.request_network(
-            resp_dut,
-            resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-                resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, None))
+      for ndp_iteration in range(ndp_iterations):
+        if trigger_failure_on_index != ndp_iteration:
+          # Responder: request network
+          resp_req_key = autils.request_network(
+              resp_dut,
+              resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+                  resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, None))
 
-        # Wait a minimal amount of time to let the Responder configure itself
-        # and be ready for the request. While calling it first may be sufficient
-        # there are no guarantees that a glitch may slow the Responder slightly
-        # enough to invert the setup order.
-        time.sleep(1)
+          # Wait a minimal amount of time to let the Responder configure itself
+          # and be ready for the request. While calling it first may be sufficient
+          # there are no guarantees that a glitch may slow the Responder slightly
+          # enough to invert the setup order.
+          time.sleep(1)
 
-        # Initiator: request network
-        init_req_key = autils.request_network(
-            init_dut,
-            init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
-                init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, None))
+          # Initiator: request network
+          init_req_key = autils.request_network(
+              init_dut,
+              init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+                  init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, None))
+        else:
+          # Initiator: request network
+          init_req_key = autils.request_network(
+              init_dut,
+              init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+                  init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, None))
+
+          # Wait a minimal amount of time to let the Initiator configure itself
+          # to guarantee failure!
+          time.sleep(1)
+
+          # Responder: request network
+          resp_req_key = autils.request_network(
+              resp_dut,
+              resp_dut.droid.wifiAwareCreateNetworkSpecifierOob(
+                  resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, None))
 
         # Initiator: wait for network formation
         got_on_available = False
@@ -150,3 +177,17 @@ class DataPathStressTest(AwareBaseTest):
         'test_oob_ndp_stress finished',
         extras=results)
     asserts.explicit_pass("test_oob_ndp_stress done", extras=results)
+
+  def test_oob_ndp_stress(self):
+    """Run NDP (NAN data-path) stress test creating and destroying Aware
+    attach sessions, discovery sessions, and NDPs."""
+    self.run_oob_ndp_stress(self.ATTACH_ITERATIONS, self.NDP_ITERATIONS)
+
+  def test_oob_ndp_stress_failure_case(self):
+    """Run NDP (NAN data-path) stress test creating and destroying Aware
+    attach sessions, discovery sessions, and NDPs.
+
+    Verify recovery from failure by triggering an artifical failure and
+    verifying that all subsequent iterations succeed.
+    """
+    self.run_oob_ndp_stress(1, 3, 0)
