@@ -517,9 +517,9 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
             self):
         """Test opportunistic scan result from secondary scan filter.
 
-        Tests opportunistic scan where the secondary scan instance does not find
-        an advertisement but the scan instance with scan mode set to
-        opportunistic scan will find an advertisement.
+        Tests opportunistic scan where the filtered scan instance does not find
+        an advertisement and the scan instance with scan mode set to
+        opportunistic scan will also not find an advertisement.
 
         Steps:
         1. Initialize advertiser and start advertisement on dut1 (make sure the
@@ -532,6 +532,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         6. Pop onScanResults from the second scanner
         7. Expect no events
         8. Pop onScanResults from the first scanner
+        9. Expect no events
 
         Expected Result:
         Opportunistic scan instance finds an advertisement.
@@ -566,11 +567,7 @@ class BleOpportunisticScanTest(BluetoothBaseTest):
         if not self._verify_no_events_found(
                 scan_result.format(scan_callback2)):
             return False
-        try:
-            self.scn_ad.ed.pop_event(
-                scan_result.format(scan_callback), self.default_timeout)
-        except Empty:
-            self.log.error("Opportunistic scan found no scan results.")
+        if not self._verify_no_events_found(scan_result.format(scan_callback)):
             return False
         return True
 
