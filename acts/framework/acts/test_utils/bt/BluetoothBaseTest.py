@@ -89,7 +89,7 @@ class BluetoothBaseTest(BaseTestClass):
             except Exception as e:
                 self.log.error(traceback.format_exc())
                 self.log.error(str(e))
-                return False
+                raise
             return fn(self, *args, **kwargs)
 
         return _safe_wrap_test_case
