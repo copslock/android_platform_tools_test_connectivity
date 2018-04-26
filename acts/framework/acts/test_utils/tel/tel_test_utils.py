@@ -1127,11 +1127,14 @@ def hangup_call(log, ad):
             value=TELEPHONY_STATE_IDLE)
     except Empty:
         if ad.droid.telecomIsInCall():
-            log.error("Hangup call failed.")
+            ad.log.error("Telecom is in call, hangup call failed.")
             return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChange()
-    return not ad.droid.telecomIsInCall()
+    if not wait_for_state(ad.droid.telecomIsInCall, False, 15, 1):
+        ad.log.error("Telecom is in call, hangup call failed.")
+        return False
+    return True
 
 
 def disconnect_call_by_id(log, ad, call_id):
@@ -1417,6 +1420,18 @@ def dumpsys_last_call_number(ad):
         return 0
     else:
         return int(call_nums[-1])
+
+
+def dumpsys_new_call_info(ad, last_tc_number, retries=3, interval=5):
+    for i in range(retries):
+        if dumpsys_last_call_number(ad) > last_tc_number:
+            call_info = dumpsys_last_call_info(ad)
+            ad.log.info("New call info = %s", sorted(call_info.items()))
+            return call_info
+        else:
+            time.sleep(interval)
+    ad.log.error("New call is not in sysdump telecom")
+    return {}
 
 
 def call_reject(log, ad_caller, ad_callee, reject=True):
@@ -1878,9 +1893,17 @@ def call_setup_teardown_for_subscription(
                     result = False
                 if not result:
                     return False
-        if ad_hangup and not hangup_call(log, ad_hangup):
-            ad_hangup.log.info("Failed to hang up the call")
-            result = False
+        if ad_hangup:
+            ad_callee_ids = ad_callee.droid.telecomCallGetCallIds()
+            ad_caller_ids = ad_caller.droid.telecomCallGetCallIds()
+            if not hangup_call(log, ad_hangup):
+                ad_hangup.log.info("Failed to hang up the call")
+                result = False
+            else:
+                if not wait_for_call_id_clearing(ad_caller, ad_caller_ids):
+                    result = False
+                if not wait_for_call_id_clearing(ad_callee, ad_callee_ids):
+                    result = False
         return result
     finally:
         if not result:
@@ -1892,9 +1915,22 @@ def call_setup_teardown_for_subscription(
                     ad.log.info(reasons[-1]["log_message"])
                 try:
                     if ad.droid.telecomIsInCall():
+                        ad.log.info("In call. End now.")
                         ad.droid.telecomEndCall()
                 except Exception as e:
                     log.error(str(e))
+
+
+def wait_for_call_id_clearing(ad, previous_ids, timeout=MAX_WAIT_TIME_CALL_DROP):
+    while timeout > 0:
+        new_call_ids = ad.droid.telecomCallGetCallIds()
+        if len(new_call_ids) < len(previous_ids):
+            return True
+        time.sleep(5)
+        timeout = timeout - 5
+    ad.log.error("There is no call id clearing: %s vs. %s",
+                 previous_ids, new_call_ids)
+    return False
 
 
 def phone_number_formatter(input_string, formatter=None):
@@ -2150,7 +2186,7 @@ def verify_internet_connection(log, ad, retries=3, expected_state=True):
             return True
     ad.log.info("DNS config: %s", " ".join(
         ad.adb.shell("getprop | grep dns").split()))
-    ad.log.info("Interface info: %s", ad.adb.shell("ifconfig"))
+    ad.log.info("Interface info:\n%s", ad.adb.shell("ifconfig"))
     ad.log.info("NetworkAgentInfo: %s",
                 ad.adb.shell("dumpsys connectivity | grep NetworkAgentInfo"))
     return False
@@ -2540,7 +2576,7 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
         ad.log.info(reasons[-1]["log_message"])
         return True
     else:
-        ad.log.info("Modem crash is not triggered successfully")
+        ad.log.warning("There is no modem subsystem failure reason logcat")
         return False
 
 
@@ -4317,7 +4353,7 @@ def ensure_network_generation_for_subscription(
             ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(
                 sub_id)))
     if not result:
-        ad.log.info("singal strength = %s", get_telephony_signal_strength(ad))
+        get_telephony_signal_strength(ad)
     return result
 
 
@@ -5730,7 +5766,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.exit_setup_wizard()
     start_qxdm_logger(ad)
     # Setup VoWiFi MDN for Verizon. b/33187374
-    if get_operator_name(ad.log, ad) == "vzw" and ad.is_apk_installed(
+    if "Verizon" in ad.adb.getprop("gsm.sim.operator.alpha") and ad.is_apk_installed(
             "com.google.android.wfcactivation"):
         ad.log.info("setup VoWiFi MDN per b/33187374")
     ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
@@ -5788,7 +5824,7 @@ def refresh_sl4a_session(ad):
         ad.log.debug("Existing sl4a session is active")
         return True
     except Exception as e:
-        ad.log.error("Existing sl4a session is NOT active: %s", e)
+        ad.log.warning("Existing sl4a session is NOT active: %s", e)
     try:
         ad.terminate_all_sessions()
     except Exception as e:
