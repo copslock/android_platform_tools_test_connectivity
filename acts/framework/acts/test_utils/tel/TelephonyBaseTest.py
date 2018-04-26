@@ -54,6 +54,7 @@ from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import start_tcpdumps
 from acts.test_utils.tel.tel_test_utils import stop_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import stop_tcpdumps
+from acts.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
@@ -172,6 +173,7 @@ class TelephonyBaseTest(BaseTestClass):
     def _init_device(self, ad, qxdm_log_mask_cfg=None):
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
+        synchronize_device_time(ad)
         ad.log_path = self.log_path
         print_radio_info(ad)
         unlock_sim(ad)
