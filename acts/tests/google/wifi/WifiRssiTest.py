@@ -45,7 +45,7 @@ class WifiRssiTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        req_params = ["rssi_test_params", "main_network"]
+        req_params = ["rssi_test_params", "testbed_params", "main_network"]
         opt_params = ["RetailAccessPoints"]
         self.unpack_userparams(req_params, opt_params)
         self.test_params = self.rssi_test_params
@@ -447,7 +447,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         if self.iperf_traffic:
             self.iperf_server.start(tag=0)
             self.dut.run_iperf_client_nb(
-                self.test_params["iperf_server_address"],
+                self.testbed_params["iperf_server_address"],
                 self.iperf_args,
                 timeout=3600)
         for atten in self.rssi_atten_range:
@@ -465,8 +465,8 @@ class WifiRssiTest(base_test.BaseTestClass):
                 bssids, scan_measurements)
             rssi_result.append(current_rssi)
             self.log.info("Connected RSSI at {0:.2f} dB is {1:.2f} dB".format(
-                atten, current_rssi["connected_rssi"][
-                    "mean_signal_poll_rssi"]))
+                atten,
+                current_rssi["connected_rssi"]["mean_signal_poll_rssi"]))
         # Stop iperf traffic if needed
         if self.iperf_traffic:
             self.iperf_server.stop()
@@ -509,9 +509,14 @@ class WifiRssiTest(base_test.BaseTestClass):
         rssi_result["ap_settings"] = self.access_point.ap_settings.copy()
         rssi_result["attenuation"] = list(self.rssi_atten_range)
         rssi_result["connected_bssid"] = self.main_network[band]["BSSID"]
-        rssi_result["ap_tx_power"] = self.test_params["ap_tx_power"][str(
-            self.channel)]
-        rssi_result["fixed_attenuation"] = self.test_params[
+        if "{}_{}".format(str(self.channel),
+                          self.mode) in self.testbed_params["ap_tx_power"]:
+            rssi_result["ap_tx_power"] = self.testbed_params["ap_tx_power"][
+                "{}_{}".format(str(self.channel), self.mode)]
+        else:
+            rssi_result["ap_tx_power"] = self.testbed_params["ap_tx_power"][
+                str(self.channel)]
+        rssi_result["fixed_attenuation"] = self.testbed_params[
             "fixed_attenuation"][str(self.channel)]
         rssi_result["rssi_result"] = self.rssi_test(
             iperf_traffic, connected_measurements, scan_measurements, bssids,
@@ -541,9 +546,9 @@ class WifiRssiTest(base_test.BaseTestClass):
         ]
         rssi_result = self.rssi_test_func(
             self.iperf_traffic, self.test_params["connected_measurements"],
-            self.test_params["scan_measurements"], [
-                self.main_network[band]["BSSID"]
-            ], self.test_params["polling_frequency"])
+            self.test_params["scan_measurements"],
+            [self.main_network[band]["BSSID"]],
+            self.test_params["polling_frequency"])
         postprocessed_results = self.post_process_rssi_vs_attenuation(
             rssi_result)
         self.pass_fail_check_rssi_vs_attenuation(postprocessed_results)
@@ -565,9 +570,9 @@ class WifiRssiTest(base_test.BaseTestClass):
             self.test_params["stability_test_duration"] /
             self.test_params["polling_frequency"])
         rssi_result = self.rssi_test_func(
-            self.iperf_traffic, connected_measurements, 0, [
-                self.main_network[band]["BSSID"]
-            ], self.test_params["polling_frequency"])
+            self.iperf_traffic, connected_measurements, 0,
+            [self.main_network[band]["BSSID"]],
+            self.test_params["polling_frequency"])
         self.pass_fail_check_rssi_stability(rssi_result)
 
     @test_tracker_info(uuid='519689b8-0a3c-4fd9-9227-fd7962d0f1a0')
@@ -668,7 +673,7 @@ class WifiRssiTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid='4b74dd46-4190-4556-8ad8-c55808e9e847')
     def test_rssi_stability_ch161_VHT20_ActiveTraffic(self):
-        self._test_rssi_vs_atten()
+        self._test_rssi_stability()
 
     @test_tracker_info(uuid='ae54b7cc-d76d-4460-8dcc-2c439265c7c9')
     def test_rssi_vs_atten_ch1_VHT20_ActiveTraffic(self):
