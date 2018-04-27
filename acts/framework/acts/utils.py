@@ -728,16 +728,6 @@ def set_mobile_data_always_on(ad, new_state):
         1 if new_state else 0))
 
 
-def set_regulatory_domain(ad, domain):
-    """Set the Wi-Fi regulatory domain
-
-    Args:
-      ad: android device object.
-      domain: regulatory domain
-    """
-    ad.adb.shell("iw reg set %s" % domain)
-
-
 def bypass_setup_wizard(ad, bypass_wait_time=3):
     """Bypass the setup wizard on an input Android device
 
