@@ -39,7 +39,7 @@ class WifiRvrTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.client_dut = self.android_devices[-1]
-        req_params = ["rvr_test_params"]
+        req_params = ["rvr_test_params", "testbed_params"]
         opt_params = [
             "main_network", "RetailAccessPoints", "golden_files_list"
         ]
@@ -56,8 +56,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         utils.create_dir(self.log_path)
         if not hasattr(self, "golden_files_list"):
             self.golden_files_list = [
-                os.path.join(self.test_params["golden_results_path"], file)
-                for file in os.listdir(self.test_params["golden_results_path"])
+                os.path.join(self.testbed_params["golden_results_path"],
+                             file) for file in os.listdir(
+                                 self.testbed_params["golden_results_path"])
             ]
         self.testclass_results = []
 
@@ -284,7 +285,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             try:
                 client_output = ""
                 client_status, client_output = self.client_dut.run_iperf_client(
-                    self.test_params["iperf_server_address"],
+                    self.testbed_params["iperf_server_address"],
                     self.iperf_args,
                     timeout=self.test_params["iperf_duration"] +
                     self.TEST_TIMEOUT)
@@ -358,7 +359,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result["test_name"] = self.current_test_name
         rvr_result["ap_settings"] = self.access_point.ap_settings.copy()
         rvr_result["attenuation"] = list(self.rvr_atten_range)
-        rvr_result["fixed_attenuation"] = self.test_params[
+        rvr_result["fixed_attenuation"] = self.testbed_params[
             "fixed_attenuation"][str(channel)]
         rvr_result["throughput_receive"] = self.rvr_test()
         self.testclass_results.append(rvr_result)
