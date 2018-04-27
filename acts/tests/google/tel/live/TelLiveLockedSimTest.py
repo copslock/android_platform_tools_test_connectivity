@@ -42,12 +42,12 @@ from acts.test_utils.tel.tel_test_utils import unlocking_device
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from TelLiveEmergencyTest import IMS_FIRST_OFF
-from TelLiveEmergencyTest import TelLiveEmergencyTest
+from TelLiveEmergencyBase import TelLiveEmergencyBase
 
 EXPECTED_CALL_TEST_RESULT = False
 
 
-class TelLiveLockedSimTest(TelLiveEmergencyTest):
+class TelLiveLockedSimTest(TelLiveEmergencyBase):
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
         for ad in self.my_devices:
@@ -96,14 +96,18 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
                     return False
         if not is_sim_locked(self.dut):
             self.dut.reboot(stop_at_lock_screen=True)
-            self.dut.start_services()
+            try:
+                droid, ed = self.dut.get_droid()
+                ed.start()
+            except:
+                self.dut.log.warning("Failed to start sl4a!")
         self.dut.log.info("SIM at state %s", get_sim_state(self.dut))
 
     """ Tests Begin """
 
     @test_tracker_info(uuid="fd7fb69c-6fd4-4874-a4ca-769353b9db25")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer(self):
+    def test_fake_emergency_call_by_emergency_dialer_locked_sim(self):
         """Test emergency call with emergency dialer in user account.
 
         Enable SIM lock on the SIM. Reboot device to SIM pin request page.
@@ -120,7 +124,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
 
     @test_tracker_info(uuid="a0b3e7dd-93e0-40e2-99a9-5564d34712fc")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_csfb(self):
+    def test_fake_emergency_call_by_emergency_dialer_csfb_locked_sim(self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in CSFB
@@ -143,7 +147,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
 
     @test_tracker_info(uuid="b5a5b550-49e6-4026-902a-b155d1209f6d")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_3g(self):
+    def test_fake_emergency_call_by_emergency_dialer_3g_locked_sim(self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in 3G
@@ -166,7 +170,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
 
     @test_tracker_info(uuid="5f083fa7-ddea-44de-8479-4da88d53da65")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_2g(self):
+    def test_fake_emergency_call_by_emergency_dialer_2g_locked_sim(self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in 2G
@@ -189,7 +193,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
 
     @test_tracker_info(uuid="e01870d7-89a6-4641-84c6-8e71142773f8")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_wfc_apm(self):
+    def test_fake_emergency_call_by_emergency_dialer_wfc_apm_locked_sim(self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in WFC APM on.
@@ -208,7 +212,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
 
     @test_tracker_info(uuid="b2c3de31-79ec-457a-a947-50c28caec214")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_wfc_apm_off(self):
+    def test_fake_emergency_call_by_emergency_dialer_wfc_apm_off_locked_sim(self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in WFC APM off.
@@ -227,7 +231,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
 
     @test_tracker_info(uuid="669cf1d9-9513-4f90-b0fd-2f0e8f1cc941")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_dialer(self):
+    def test_fake_emergency_call_by_dialer_locked_sim(self):
         """Test emergency call with dialer.
 
         Enable SIM lock on the SIM. Reboot device to SIM pin request page.
@@ -245,7 +249,7 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
 
     @test_tracker_info(uuid="1990f166-66a7-4092-b448-c179a9194371")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_in_apm(self):
+    def test_fake_emergency_call_in_apm_locked_sim(self):
         """Test emergency call with emergency dialer in airplane mode.
 
         Enable airplane mode.
@@ -258,18 +262,12 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             True if success.
             False if failed.
         """
-        try:
-            toggle_airplane_mode_by_adb(self.log, self.dut, True)
-            if self.fake_emergency_call_test() and self.check_normal_call():
-                return True
-            else:
-                return False
-        finally:
-            toggle_airplane_mode_by_adb(self.log, self.dut, False)
+        toggle_airplane_mode_by_adb(self.log, self.dut, True)
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="7ffdad34-b8fb-41b0-b0fd-2def5adc67bc")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_in_screen_lock(self):
+    def test_fake_emergency_call_in_screen_lock_locked_sim(self):
         """Test emergency call with emergency dialer in screen lock phase.
 
         Enable SIM lock on the SIM.
@@ -282,20 +280,15 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             True if success.
             False if failed.
         """
-        self.dut.log.info("Turn off airplane mode")
-        toggle_airplane_mode_by_adb(self.log, self.dut, False)
         self.dut.log.info("Set screen lock pin")
         reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
         self.dut.log.info("Reboot device to screen lock screen")
         self.dut.reboot(stop_at_lock_screen=True)
-        if self.fake_emergency_call_test() and self.check_normal_call():
-            return True
-        else:
-            return False
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="12dc1eb6-50ed-4ad9-b195-5d96c6b6952e")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_in_screen_lock_apm(self):
+    def test_fake_emergency_call_in_screen_lock_apm_locked_sim(self):
         """Test emergency call with emergency dialer in screen lock phase.
 
         Enable device password and airplane mode
@@ -314,14 +307,11 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
         reset_device_password(self.dut, DEFAULT_DEVICE_PASSWORD)
         self.dut.log.info("Reboot device to screen lock screen")
         self.dut.reboot(stop_at_lock_screen=True)
-        if self.fake_emergency_call_test() and self.check_normal_call():
-            return True
-        else:
-            return False
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="1e01927a-a077-466d-8bf8-52dca87ab87c")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_in_setupwizard(self):
+    def test_fake_emergency_call_in_setupwizard_locked_sim(self):
         """Test emergency call with emergency dialer in setupwizard.
 
         Enable SIM lock on the SIM.
@@ -334,15 +324,9 @@ class TelLiveLockedSimTest(TelLiveEmergencyTest):
             True if success.
             False if failed.
         """
-        try:
-            if not fastboot_wipe(self.dut, skip_setup_wizard=False):
-                return False
-            if self.fake_emergency_call_test() and self.check_normal_call():
-                return True
-            else:
-                return False
-        finally:
-            self.dut.exit_setup_wizard()
+        if not fastboot_wipe(self.dut, skip_setup_wizard=False):
+            return False
+        return self.fake_emergency_call_test() and self.check_normal_call()
 
 
 """ Tests End """

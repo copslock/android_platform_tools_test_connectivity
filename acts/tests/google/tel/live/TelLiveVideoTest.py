@@ -1277,10 +1277,9 @@ class TelLiveVideoTest(TelephonyBaseTest):
         ads[0].droid.telecomCallHold(call_id_voice)
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         for ad in [ads[0], ads[1]]:
-            if get_audio_route(self.log, ad) != AUDIO_ROUTE_SPEAKER:
-                self.log.error("{} Audio is not on speaker.".format(ad.serial))
+            if get_audio_route(self.log, ad) != AUDIO_ROUTE_EARPIECE:
+                self.log.error("{} Audio is not on earpiece.".format(ad.serial))
                 # TODO: b/26337892 Define expected audio route behavior.
-            set_audio_route(self.log, ad, AUDIO_ROUTE_EARPIECE)
 
         time.sleep(WAIT_TIME_IN_CALL)
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):

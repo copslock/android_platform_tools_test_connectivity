@@ -1127,11 +1127,14 @@ def hangup_call(log, ad):
             value=TELEPHONY_STATE_IDLE)
     except Empty:
         if ad.droid.telecomIsInCall():
-            log.error("Hangup call failed.")
+            ad.log.error("Telecom is in call, hangup call failed.")
             return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChange()
-    return not ad.droid.telecomIsInCall()
+    if not wait_for_state(ad.droid.telecomIsInCall, False, 15, 1):
+        ad.log.error("Telecom is in call, hangup call failed.")
+        return False
+    return True
 
 
 def disconnect_call_by_id(log, ad, call_id):
@@ -1417,6 +1420,18 @@ def dumpsys_last_call_number(ad):
         return 0
     else:
         return int(call_nums[-1])
+
+
+def dumpsys_new_call_info(ad, last_tc_number, retries=3, interval=5):
+    for i in range(retries):
+        if dumpsys_last_call_number(ad) > last_tc_number:
+            call_info = dumpsys_last_call_info(ad)
+            ad.log.info("New call info = %s", sorted(call_info.items()))
+            return call_info
+        else:
+            time.sleep(interval)
+    ad.log.error("New call is not in sysdump telecom")
+    return {}
 
 
 def call_reject(log, ad_caller, ad_callee, reject=True):
@@ -1853,7 +1868,8 @@ def call_setup_teardown_for_subscription(
             else:
                 ad.log.error("Call is not in %s state", call_func.__name__)
                 result = False
-
+        if not result:
+            return False
         elapsed_time = 0
         while (elapsed_time < wait_time_in_call):
             CHECK_INTERVAL = min(CHECK_INTERVAL,
@@ -1876,10 +1892,18 @@ def call_setup_teardown_for_subscription(
                                  time_message)
                     result = False
                 if not result:
-                    break
-        if ad_hangup and not hangup_call(log, ad_hangup):
-            ad_hangup.log.info("Failed to hang up the call")
-            result = False
+                    return False
+        if ad_hangup:
+            ad_callee_ids = ad_callee.droid.telecomCallGetCallIds()
+            ad_caller_ids = ad_caller.droid.telecomCallGetCallIds()
+            if not hangup_call(log, ad_hangup):
+                ad_hangup.log.info("Failed to hang up the call")
+                result = False
+            else:
+                if not wait_for_call_id_clearing(ad_caller, ad_caller_ids):
+                    result = False
+                if not wait_for_call_id_clearing(ad_callee, ad_callee_ids):
+                    result = False
         return result
     finally:
         if not result:
@@ -1891,9 +1915,24 @@ def call_setup_teardown_for_subscription(
                     ad.log.info(reasons[-1]["log_message"])
                 try:
                     if ad.droid.telecomIsInCall():
+                        ad.log.info("In call. End now.")
                         ad.droid.telecomEndCall()
                 except Exception as e:
                     log.error(str(e))
+
+
+def wait_for_call_id_clearing(ad,
+                              previous_ids,
+                              timeout=MAX_WAIT_TIME_CALL_DROP):
+    while timeout > 0:
+        new_call_ids = ad.droid.telecomCallGetCallIds()
+        if len(new_call_ids) < len(previous_ids):
+            return True
+        time.sleep(5)
+        timeout = timeout - 5
+    ad.log.error("There is no call id clearing: %s vs. %s", previous_ids,
+                 new_call_ids)
+    return False
 
 
 def phone_number_formatter(input_string, formatter=None):
@@ -1981,17 +2020,15 @@ def verify_http_connection(log,
             http_response = ad.droid.httpPing(url)
         except:
             http_response = None
+        ad.log.info("Http ping response for %s is %s, expecting %s", url,
+                    http_response, expected_state)
         if (expected_state and http_response) or (not expected_state
                                                   and not http_response):
-            ad.log.info("Verify http connection to %s is %s as expected", url,
-                        expected_state)
             return True
         if i < retry:
-            ad.log.info("Verify http connection to %s is %s failed. Try again",
-                        url, expected_state)
             time.sleep(retry_interval)
-    ad.log.info("Verify http connection to %s is %s failed after %s second",
-                url, expected_state, i * retry_interval)
+    ad.log.error("Http ping to %s is %s after %s second, expecting %s", url,
+                 http_response, i * retry_interval, expected_state)
     return False
 
 
@@ -2151,7 +2188,7 @@ def verify_internet_connection(log, ad, retries=3, expected_state=True):
             return True
     ad.log.info("DNS config: %s", " ".join(
         ad.adb.shell("getprop | grep dns").split()))
-    ad.log.info("Interface info: %s", ad.adb.shell("ifconfig"))
+    ad.log.info("Interface info:\n%s", ad.adb.shell("ifconfig"))
     ad.log.info("NetworkAgentInfo: %s",
                 ad.adb.shell("dumpsys connectivity | grep NetworkAgentInfo"))
     return False
@@ -2541,7 +2578,7 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
         ad.log.info(reasons[-1]["log_message"])
         return True
     else:
-        ad.log.info("Modem crash is not triggered successfully")
+        ad.log.warning("There is no modem subsystem failure reason logcat")
         return False
 
 
@@ -4318,7 +4355,7 @@ def ensure_network_generation_for_subscription(
             ad.droid.telephonyGetCurrentDataNetworkTypeForSubscription(
                 sub_id)))
     if not result:
-        ad.log.info("singal strength = %s", get_telephony_signal_strength(ad))
+        get_telephony_signal_strength(ad)
     return result
 
 
@@ -5408,16 +5445,20 @@ def set_qxdm_logger_command(ad, mask=None):
         output_path = os.path.join(ad.qxdm_log_path, "logs")
         ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 50 -c" %
                                   (mask_path, output_path))
-        conf_path = os.path.join(ad.qxdm_log_path, "diag.conf")
-        # Enable qxdm always on so that after device reboot, qxdm will be
-        # turned on automatically
-        ad.adb.shell('echo "%s" > %s' % (ad.qxdm_logger_command, conf_path))
-        ad.adb.shell(
-            "setprop persist.vendor.sys.modem.diag.mdlog true",
-            ignore_status=True)
-        # Legacy pixels use persist.sys.modem.diag.mdlog.
-        ad.adb.shell(
-            "setprop persist.sys.modem.diag.mdlog true", ignore_status=True)
+        for prop in ("persist.sys.modem.diag.mdlog",
+                     "persist.vendor.sys.modem.diag.mdlog"):
+            if ad.adb.getprop(prop):
+                # Enable qxdm always on if supported
+                for conf_path in ("/data/vendor/radio/diag_logs",
+                                  "/vendor/etc/mdlog"):
+                    if "diag.conf" in ad.adb.shell(
+                            "ls %s" % conf_path, ignore_status=True):
+                        conf_path = "%s/diag.conf" % conf_path
+                        ad.adb.shell('echo "%s" > %s' %
+                                     (ad.qxdm_logger_command, conf_path))
+                        break
+                ad.adb.shell("%s true" % prop, ignore_status=True)
+                break
         return True
 
 
@@ -5731,8 +5772,9 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.exit_setup_wizard()
     start_qxdm_logger(ad)
     # Setup VoWiFi MDN for Verizon. b/33187374
-    if get_operator_name(ad.log, ad) == "vzw" and ad.is_apk_installed(
-            "com.google.android.wfcactivation"):
+    if "Verizon" in ad.adb.getprop(
+            "gsm.sim.operator.alpha") and ad.is_apk_installed(
+                "com.google.android.wfcactivation"):
         ad.log.info("setup VoWiFi MDN per b/33187374")
     ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
     ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
@@ -5789,7 +5831,7 @@ def refresh_sl4a_session(ad):
         ad.log.debug("Existing sl4a session is active")
         return True
     except Exception as e:
-        ad.log.error("Existing sl4a session is NOT active: %s", e)
+        ad.log.warning("Existing sl4a session is NOT active: %s", e)
     try:
         ad.terminate_all_sessions()
     except Exception as e:
@@ -6141,6 +6183,15 @@ def extract_test_log(log, src_file, dst_file, test_tag):
                  begin_line, end_line, dst_file)
         job.run("awk 'NR >= %s && NR <= %s' %s > %s" % (begin_line, end_line,
                                                         src_file, dst_file))
+
+
+def get_device_epoch_time(ad):
+    return int(1000 * float(ad.adb.shell("date +%s.%N")))
+
+
+def synchronize_device_time(ad):
+    ad.adb.shell("put global auto_time 0; date `date +%m%d%H%M%G.%S` ; "
+                 "am broadcast -a android.intent.action.TIME_SET")
 
 
 def log_messaging_screen_shot(ad, test_name=""):

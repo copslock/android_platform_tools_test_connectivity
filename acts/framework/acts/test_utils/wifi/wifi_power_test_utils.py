@@ -71,6 +71,8 @@ MONSOON_RETRY_INTERVAL = 300
 MEASUREMENT_RETRY_COUNT = 3
 RECOVER_MONSOON_RETRY_COUNT = 3
 MIN_PERCENT_SAMPLE = 95
+ENABLED_MODULATED_DTIM = 'gEnableModulatedDTIM='
+MAX_MODULATED_DTIM = 'gMaxLIModulatedDTIM='
 
 
 def dut_rockbottom(ad):
@@ -120,6 +122,7 @@ def dut_rockbottom(ad):
     ad.adb.shell(AUTO_TIMEZONE_OFF)
     ad.adb.shell(FORCE_YOUTUBE_STOP)
     ad.adb.shell(FORCE_DIALER_STOP)
+    ad.droid.wifiSetCountryCode('US')
     ad.droid.wakeUpNow()
     ad.log.info('Device has been set to Rockbottom state')
     ad.log.info('Screen is ON')
@@ -415,52 +418,63 @@ def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=10):
         gEnableModulatedDTIM: Modulated DTIM, int
         gMaxLIModulatedDTIM: Maximum modulated DTIM, int
     """
-    serial = ad.serial
-    ini_file_phone = 'vendor/firmware/wlan/qca_cld/WCNSS_qcom_cfg.ini'
-    ini_file_local = 'local_ini_file.ini'
-    ini_pull_cmd = 'adb -s %s pull %s %s' % (serial, ini_file_phone,
-                                             ini_file_local)
-    ini_push_cmd = 'adb -s %s push %s %s' % (serial, ini_file_local,
-                                             ini_file_phone)
-    utils.exe_cmd(ini_pull_cmd)
+    # First trying to find the ini file with DTIM settings
+    ini_file_phone = ad.adb.shell('ls /vendor/firmware/wlan/*/*.ini')
+    ini_file_local = ini_file_phone.split('/')[-1]
+
+    # Pull the file and change the DTIM to desired value
+    ad.adb.pull('{} {}'.format(ini_file_phone, ini_file_local))
 
     with open(ini_file_local, 'r') as fin:
         for line in fin:
-            if 'gEnableModulatedDTIM=' in line:
-                gEDTIM_old = line.strip('gEnableModulatedDTIM=').strip('\n')
-            if 'gMaxLIModulatedDTIM=' in line:
-                gMDTIM_old = line.strip('gMaxLIModulatedDTIM=').strip('\n')
+            if ENABLED_MODULATED_DTIM in line:
+                gE_old = line.strip('\n')
+                gEDTIM_old = line.strip(ENABLED_MODULATED_DTIM).strip('\n')
+            if MAX_MODULATED_DTIM in line:
+                gM_old = line.strip('\n')
+                gMDTIM_old = line.strip(MAX_MODULATED_DTIM).strip('\n')
+    fin.close()
     if int(gEDTIM_old) == gEnableModulatedDTIM and int(
             gMDTIM_old) == gMaxLIModulatedDTIM:
         ad.log.info('Current DTIM is already the desired value,'
                     'no need to reset it')
         return
 
-    gE_old = 'gEnableModulatedDTIM=' + gEDTIM_old
-    gM_old = 'gMaxLIModulatedDTIM=' + gMDTIM_old
-    gE_new = 'gEnableModulatedDTIM=' + str(gEnableModulatedDTIM)
-    gM_new = 'gMaxLIModulatedDTIM=' + str(gMaxLIModulatedDTIM)
+    gE_new = ENABLED_MODULATED_DTIM + str(gEnableModulatedDTIM)
+    gM_new = MAX_MODULATED_DTIM + str(gMaxLIModulatedDTIM)
 
-    sed_gE = 'sed -i \'s/%s/%s/g\' %s' % (gE_old, gE_new, ini_file_local)
-    sed_gM = 'sed -i \'s/%s/%s/g\' %s' % (gM_old, gM_new, ini_file_local)
-    utils.exe_cmd(sed_gE)
-    utils.exe_cmd(sed_gM)
+    sed_gE = 'sed -i \'s/{}/{}/g\' {}'.format(gE_old, gE_new, ini_file_local)
+    sed_gM = 'sed -i \'s/{}/{}/g\' {}'.format(gM_old, gM_new, ini_file_local)
+    job.run(sed_gE)
+    job.run(sed_gM)
 
-    utils.exe_cmd('adb -s {} root'.format(serial))
-    cmd_out = utils.exe_cmd('adb -s {} remount'.format(serial))
-    if ("Permission denied").encode() in cmd_out:
+    # Push the file to the phone
+    push_file_to_phone(ad, ini_file_local, ini_file_phone)
+    ad.log.info('DTIM changes checked in and rebooting...')
+    ad.reboot()
+    ad.log.info('DTIM updated and device back from reboot')
+
+
+def push_file_to_phone(ad, file_local, file_phone):
+    """Function to push local file to android phone.
+
+    Args:
+        ad: the target android device
+        file_local: the locla file to push
+        file_phone: the file/directory on the phone to be pushed
+    """
+    ad.adb.root()
+    cmd_out = ad.adb.remount()
+    if 'Permission denied' in cmd_out:
         ad.log.info('Need to disable verity first and reboot')
-        utils.exe_cmd('adb -s {} disable-verity'.format(serial))
+        ad.adb.disable_verity()
         time.sleep(1)
         ad.reboot()
         ad.log.info('Verity disabled and device back from reboot')
-        utils.exe_cmd('adb -s {} root'.format(serial))
-        utils.exe_cmd('adb -s {} remount'.format(serial))
+        ad.adb.root()
+        ad.adb.remount()
     time.sleep(1)
-    utils.exe_cmd(ini_push_cmd)
-    ad.log.info('ini file changes checked in and rebooting...')
-    ad.reboot()
-    ad.log.info('DTIM updated and device back from reboot')
+    ad.adb.push('{} {}'.format(file_local, file_phone))
 
 
 def ap_setup(ap, network, bandwidth=80):

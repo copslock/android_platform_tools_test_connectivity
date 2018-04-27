@@ -225,10 +225,10 @@ class TelLiveSmsTest(TelephonyBaseTest):
         return self._long_mms_test([ads[1], ads[0]])
 
     def _mms_test_mo_after_call_hangup(self, ads):
-        return self._long_mms_test_after_call_hangup([ads[0], ads[1]])
+        return self._mms_test_after_call_hangup([ads[0], ads[1]])
 
     def _mms_test_mt_after_call_hangup(self, ads):
-        return self._long_mms_test_after_call_hangup([ads[1], ads[0]])
+        return self._mms_test_after_call_hangup([ads[1], ads[0]])
 
     def _mo_sms_in_3g_call(self, ads):
         self.log.info("Begin In Call SMS Test.")

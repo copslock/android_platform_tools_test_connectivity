@@ -445,6 +445,7 @@ class AndroidDevice:
                 self.stop_adb_logcat()
         finally:
             self.terminate_all_sessions()
+            self._sl4a_manager.stop_service()
             self.stop_sl4a()
 
     def is_connected(self):
@@ -857,6 +858,7 @@ class AndroidDevice:
             self.log.warn("Fail to stop package %s: %s", package_name, e)
 
     def stop_sl4a(self):
+        # TODO(markdr): Move this into sl4a_manager.
         return self.force_stop_apk(SL4A_APK_NAME)
 
     def start_sl4a(self):
@@ -975,6 +977,8 @@ class AndroidDevice:
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
+            self.adb.pull("/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
+                          timeout=PULL_TIMEOUT, ignore_status=True)
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
@@ -1124,6 +1128,10 @@ class AndroidDevice:
         self.wait_for_boot_completion()
         self.root_adb()
         if stop_at_lock_screen:
+            try:
+                self.start_adb_logcat()
+            except:
+                self.log.error("Failed to start adb logcat!")
             return
         if not self.ensure_screen_on():
             self.log.error("User window cannot come up")
