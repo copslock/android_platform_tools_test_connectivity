@@ -6176,6 +6176,15 @@ def extract_test_log(log, src_file, dst_file, test_tag):
                                                         src_file, dst_file))
 
 
+def get_device_epoch_time(ad):
+    return int(1000 * float(ad.adb.shell("date +%s.%N")))
+
+
+def synchronize_device_time(ad):
+    ad.adb.shell("put global auto_time 0; date `date +%m%d%H%M%G.%S` ; "
+                 "am broadcast -a android.intent.action.TIME_SET")
+
+
 def log_messaging_screen_shot(ad, test_name=""):
     ad.adb.shell(
         "am start -n com.google.android.apps.messaging/.ui.ConversationListActivity"
