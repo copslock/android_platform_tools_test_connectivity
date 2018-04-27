@@ -1921,15 +1921,17 @@ def call_setup_teardown_for_subscription(
                     log.error(str(e))
 
 
-def wait_for_call_id_clearing(ad, previous_ids, timeout=MAX_WAIT_TIME_CALL_DROP):
+def wait_for_call_id_clearing(ad,
+                              previous_ids,
+                              timeout=MAX_WAIT_TIME_CALL_DROP):
     while timeout > 0:
         new_call_ids = ad.droid.telecomCallGetCallIds()
         if len(new_call_ids) < len(previous_ids):
             return True
         time.sleep(5)
         timeout = timeout - 5
-    ad.log.error("There is no call id clearing: %s vs. %s",
-                 previous_ids, new_call_ids)
+    ad.log.error("There is no call id clearing: %s vs. %s", previous_ids,
+                 new_call_ids)
     return False
 
 
@@ -2018,15 +2020,15 @@ def verify_http_connection(log,
             http_response = ad.droid.httpPing(url)
         except:
             http_response = None
-        ad.log.info("Http ping response for %s is %s, expecting %s",
-                    url, http_response, expected_state)
+        ad.log.info("Http ping response for %s is %s, expecting %s", url,
+                    http_response, expected_state)
         if (expected_state and http_response) or (not expected_state
                                                   and not http_response):
             return True
         if i < retry:
             time.sleep(retry_interval)
-    ad.log.error("Http ping to %s is %s after %s second, expecting %s",
-                url, http_response, i * retry_interval, expected_state)
+    ad.log.error("Http ping to %s is %s after %s second, expecting %s", url,
+                 http_response, i * retry_interval, expected_state)
     return False
 
 
@@ -5443,16 +5445,20 @@ def set_qxdm_logger_command(ad, mask=None):
         output_path = os.path.join(ad.qxdm_log_path, "logs")
         ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 50 -c" %
                                   (mask_path, output_path))
-        conf_path = os.path.join(ad.qxdm_log_path, "diag.conf")
-        # Enable qxdm always on so that after device reboot, qxdm will be
-        # turned on automatically
-        ad.adb.shell('echo "%s" > %s' % (ad.qxdm_logger_command, conf_path))
-        ad.adb.shell(
-            "setprop persist.vendor.sys.modem.diag.mdlog true",
-            ignore_status=True)
-        # Legacy pixels use persist.sys.modem.diag.mdlog.
-        ad.adb.shell(
-            "setprop persist.sys.modem.diag.mdlog true", ignore_status=True)
+        for prop in ("persist.sys.modem.diag.mdlog",
+                     "persist.vendor.sys.modem.diag.mdlog"):
+            if ad.adb.getprop(prop):
+                # Enable qxdm always on if supported
+                for conf_path in ("/data/vendor/radio/diag_logs",
+                                  "/vendor/etc/mdlog"):
+                    if "diag.conf" in ad.adb.shell(
+                            "ls %s" % conf_path, ignore_status=True):
+                        conf_path = "%s/diag.conf" % conf_path
+                        ad.adb.shell('echo "%s" > %s' %
+                                     (ad.qxdm_logger_command, conf_path))
+                        break
+                ad.adb.shell("%s true" % prop, ignore_status=True)
+                break
         return True
 
 
@@ -5766,8 +5772,9 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.exit_setup_wizard()
     start_qxdm_logger(ad)
     # Setup VoWiFi MDN for Verizon. b/33187374
-    if "Verizon" in ad.adb.getprop("gsm.sim.operator.alpha") and ad.is_apk_installed(
-            "com.google.android.wfcactivation"):
+    if "Verizon" in ad.adb.getprop(
+            "gsm.sim.operator.alpha") and ad.is_apk_installed(
+                "com.google.android.wfcactivation"):
         ad.log.info("setup VoWiFi MDN per b/33187374")
     ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
     ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
