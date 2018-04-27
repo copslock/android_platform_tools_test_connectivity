@@ -93,7 +93,10 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        req_params = ["throughput_stability_test_params", "main_network"]
+        req_params = [
+            "throughput_stability_test_params", "testbed_params",
+            "main_network"
+        ]
         opt_params = ["RetailAccessPoints"]
         self.unpack_userparams(req_params, opt_params)
         self.test_params = self.throughput_stability_test_params
@@ -107,8 +110,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             self.access_point.ap_settings))
         if not hasattr(self, "golden_files_list"):
             self.golden_files_list = [
-                os.path.join(self.test_params["golden_results_path"], file)
-                for file in os.listdir(self.test_params["golden_results_path"])
+                os.path.join(self.testbed_params["golden_results_path"],
+                             file) for file in os.listdir(
+                                 self.testbed_params["golden_results_path"])
             ]
 
     def teardown_test(self):
@@ -170,9 +174,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_result_dict["ap_settings"] = test_result["ap_settings"].copy()
         test_result_dict["attenuation"] = self.atten_level
         instantaneous_rates_Mbps = [
-            rate * 8
-            for rate in test_result["iperf_result"].instantaneous_rates[
-                self.test_params["iperf_ignored_interval"]:-1]
+            rate * 8 * (1.024**2) for rate in test_result["iperf_result"]
+            .instantaneous_rates[self.test_params["iperf_ignored_interval"]:-1]
         ]
         test_result_dict["iperf_results"] = {
             "instantaneous_rates":
@@ -238,7 +241,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         ]
         # Connect DUT to Network
         self.main_network[band]["channel"] = channel
-        wutils.toggle_wifi_off_and_on(self.dut)
+        wutils.reset_wifi(self.dut)
         wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
         time.sleep(5)
         # Run test and log result
@@ -248,14 +251,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         try:
             client_output = ""
             client_status, client_output = self.dut.run_iperf_client(
-                self.test_params["iperf_server_address"],
+                self.testbed_params["iperf_server_address"],
                 self.iperf_args,
                 timeout=self.test_params["iperf_duration"] + TEST_TIMEOUT)
         except:
             self.log.warning("TimeoutError: Iperf measurement timed out.")
-        client_output_path = os.path.join(
-            self.iperf_server.log_path,
-            "iperf_client_output_{}".format(self.current_test_name))
+        client_output_path = os.path.join(self.iperf_server.log_path,
+                                          "iperf_client_output_{}".format(
+                                              self.current_test_name))
         with open(client_output_path, 'w') as out_file:
             out_file.write("\n".join(client_output))
         self.iperf_server.stop()
