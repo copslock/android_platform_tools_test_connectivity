@@ -22,9 +22,10 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
-class RangeApNonSupporting11McTest(RttBaseTest):
+class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
   """Test class for RTT ranging to Access Points which do not support IEEE
   802.11mc"""
 
@@ -35,7 +36,10 @@ class RangeApNonSupporting11McTest(RttBaseTest):
   TIME_BETWEEN_ITERATIONS = 0
 
   def __init__(self, controllers):
+    WifiBaseTest.__init__(self, controllers)
     RttBaseTest.__init__(self, controllers)
+    if "AccessPoint" in self.user_params:
+      self.legacy_configure_ap_and_start()
 
   #############################################################################
 
