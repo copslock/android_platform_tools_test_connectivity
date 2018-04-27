@@ -45,6 +45,7 @@ class RangeApNonSupporting11McTest(RttBaseTest):
     dut = self.android_devices[0]
     non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
+    asserts.assert_true(len(non_rtt_aps) > 0, "Need at least one AP!")
     events = rutils.run_ranging(dut, non_rtt_aps, self.NUM_ITER,
                                 self.TIME_BETWEEN_ITERATIONS)
     stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
@@ -81,6 +82,7 @@ class RangeApNonSupporting11McTest(RttBaseTest):
     rutils.config_privilege_override(dut, True)
     non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
+    asserts.assert_true(len(non_rtt_aps) > 0, "Need at least one AP!")
     events = rutils.run_ranging(dut, non_rtt_aps, self.NUM_ITER,
                                 self.TIME_BETWEEN_ITERATIONS)
     stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
@@ -109,6 +111,8 @@ class RangeApNonSupporting11McTest(RttBaseTest):
     """
     dut = self.android_devices[0]
     non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
+    dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
+    asserts.assert_true(len(non_rtt_aps) > 0, "Need at least one AP!")
     non_rtt_aps = non_rtt_aps[0:1] # pick first
     non_rtt_aps[0][rconsts.SCAN_RESULT_KEY_RTT_RESPONDER] = True # falsify
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
