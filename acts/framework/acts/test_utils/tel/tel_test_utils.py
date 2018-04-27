@@ -4303,32 +4303,9 @@ def ensure_network_generation_for_subscription(
                      ad.telephony["subscription"][sub_id], e)
         return False
 
-    current_network_preference = \
-            ad.droid.telephonyGetPreferredNetworkTypesForSubscription(
-                sub_id)
-    for _ in range(3):
-        if current_network_preference == network_preference:
-            break
-        if not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
-                network_preference, sub_id):
-            ad.log.info(
-                "Network preference is %s. Set Preferred Networks to %s failed.",
-                current_network_preference, network_preference)
-            reasons = ad.search_logcat(
-                "REQUEST_SET_PREFERRED_NETWORK_TYPE error")
-            if reasons:
-                reason_log = reasons[-1]["log_message"]
-                ad.log.info(reason_log)
-                if "DEVICE_IN_USE" in reason_log:
-                    time.sleep(5)
-                else:
-                    ad.log.error("Failed to set Preferred Networks to %s",
-                                 network_preference)
-                    return False
-            else:
-                ad.log.error("Failed to set Preferred Networks to %s",
-                             network_preference)
-                return False
+    if not set_preferred_network_mode_pref(log, ad, sub_id,
+                                           network_preference):
+        return False
 
     if is_droid_in_network_generation_for_subscription(
             log, ad, sub_id, generation, voice_or_data):
@@ -5120,7 +5097,11 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     return silent_mode == ad.droid.checkRingerSilentMode()
 
 
-def set_preferred_network_mode_pref(log, ad, sub_id, network_preference):
+def set_preferred_network_mode_pref(log,
+                                    ad,
+                                    sub_id,
+                                    network_preference,
+                                    timeout=WAIT_TIME_ANDROID_STATE_SETTLING):
     """Set Preferred Network Mode for Sub_id
     Args:
         log: Log object.
@@ -5128,14 +5109,32 @@ def set_preferred_network_mode_pref(log, ad, sub_id, network_preference):
         sub_id: Subscription ID.
         network_preference: Network Mode Type
     """
+    begin_time = get_device_epoch_time(ad)
+    if ad.droid.telephonyGetPreferredNetworkTypesForSubscription(
+            sub_id) == network_preference:
+        ad.log.info("Current ModePref for Sub %s is in %s", sub_id,
+                    network_preference)
+        return True
     ad.log.info("Setting ModePref to %s for Sub %s", network_preference,
                 sub_id)
-    if not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
-            network_preference, sub_id):
-        ad.log.error("Set sub_id %s PreferredNetworkType %s failed", sub_id,
-                     network_preference)
-        return False
-    return True
+    while timeout >= 0:
+        if ad.droid.telephonySetPreferredNetworkTypesForSubscription(
+                network_preference, sub_id):
+            return True
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+        timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
+    error_msg = "Failed to set sub_id %s PreferredNetworkType to %s" % (
+        sub_id, network_preference)
+    search_results = ad.search_logcat(
+        "REQUEST_SET_PREFERRED_NETWORK_TYPE error", begin_time=begin_time)
+    if search_results:
+        log_message = search_results[-1]["log_message"]
+        if "DEVICE_IN_USE" in log_message:
+            error_msg = "%s due to DEVICE_IN_USE" % error_msg
+        else:
+            error_msg = "%s due to %s" % (error_msg, log_message)
+    ad.log.error(error_msg)
+    return False
 
 
 def set_preferred_subid_for_sms(log, ad, sub_id):
