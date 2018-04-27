@@ -184,6 +184,10 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         # Modem SSR
         self.user_params["check_crash"] = False
         self.dut.log.info("Triggering ModemSSR")
+        try:
+            self.dut.droid.logI("======== Trigger modem crash ========")
+        except Exception:
+            pass
         if (not self.dut.is_apk_installed("com.google.mdstest")
             ) or self.dut.adb.getprop("ro.build.version.release")[0] in (
                 "8", "O", "7", "N") or self.dut.model in ("angler", "bullhead",
@@ -368,7 +372,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         call_data_summary_after = self._parsing_call_summary()
 
         for counter in checking_counters:
-            if call_data_summary_after[counter] != call_data_summary_before.get(
+            if call_data_summary_after.get(counter, 0) != call_data_summary_before.get(
                     counter, 0) + 1:
                 self.dut.log.error("Counter %s did not increase", counter)
                 result = False
