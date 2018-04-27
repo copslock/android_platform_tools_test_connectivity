@@ -54,7 +54,7 @@ class RttBaseTest(BaseTestClass):
           rutils.wait_for_event(ad, rconsts.BROADCAST_WIFI_RTT_AVAILABLE)
       ad.ed.clear_all_events()
       rutils.config_privilege_override(ad, False)
-      utils.set_regulatory_domain(ad, "US")
+      ad.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
 
   def teardown_test(self):
     for ad in self.android_devices:
