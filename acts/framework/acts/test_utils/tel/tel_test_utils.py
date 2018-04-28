@@ -2341,8 +2341,8 @@ def http_file_download_by_chrome(ad,
             ad, None, chrome_apk)
     }
     ad.log.info("Before downloading: %s", data_accounting)
-    ad.ensure_screen_on()
     ad.log.info("Download %s with timeout %s", url, timeout)
+    ad.ensure_screen_on()
     open_url_by_adb(ad, url)
     elapse_time = 0
     result = True
