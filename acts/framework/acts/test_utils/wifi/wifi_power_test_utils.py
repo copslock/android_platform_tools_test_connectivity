@@ -14,12 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import acts
-import json
 import logging
-import os
 import time
-from acts import asserts
 from acts import utils
 from acts.controllers import monsoon
 from acts.libs.proc import job
@@ -32,259 +28,15 @@ from bokeh.models.widgets import DataTable, TableColumn
 from bokeh.plotting import figure, output_file, save
 from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.ap_lib import hostapd_ap_preset
-from acts.test_utils.bt.bt_test_utils import enable_bluetooth
-from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 
 # http://www.secdev.org/projects/scapy/
 # On ubuntu, sudo pip3 install scapy-python3
 import scapy.all as scapy
 
-SETTINGS_PAGE = "am start -n com.android.settings/.Settings"
-SCROLL_BOTTOM = "input swipe 0 2000 0 0"
-UNLOCK_SCREEN = "input keyevent 82"
-SCREENON_USB_DISABLE = "dumpsys battery unplug"
-RESET_BATTERY_STATS = "dumpsys batterystats --reset"
-AOD_OFF = "settings put secure doze_always_on 0"
-MUSIC_IQ_OFF = "pm disable-user com.google.intelligence.sense"
-# Command to disable gestures
-LIFT = "settings put secure doze_pulse_on_pick_up 0"
-DOUBLE_TAP = "settings put secure doze_pulse_on_double_tap 0"
-JUMP_TO_CAMERA = "settings put secure camera_double_tap_power_gesture_disabled 1"
-RAISE_TO_CAMERA = "settings put secure camera_lift_trigger_enabled 0"
-FLIP_CAMERA = "settings put secure camera_double_twist_to_flip_enabled 0"
-ASSIST_GESTURE = "settings put secure assist_gesture_enabled 0"
-ASSIST_GESTURE_ALERT = "settings put secure assist_gesture_silence_alerts_enabled 0"
-ASSIST_GESTURE_WAKE = "settings put secure assist_gesture_wake_enabled 0"
-SYSTEM_NAVI = "settings put secure system_navigation_keys_enabled 0"
-# End of command to disable gestures
-AUTO_TIME_OFF = "settings put global auto_time 0"
-AUTO_TIMEZONE_OFF = "settings put global auto_time_zone 0"
-FORCE_YOUTUBE_STOP = "am force-stop com.google.android.youtube"
-FORCE_DIALER_STOP = "am force-stop com.google.android.dialer"
-IPERF_TIMEOUT = 180
-THRESHOLD_TOLERANCE = 0.2
 GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
-PHONE_BATTERY_VOLTAGE = 4.2
-MONSOON_MAX_CURRENT = 8.0
-MONSOON_RETRY_INTERVAL = 300
-MEASUREMENT_RETRY_COUNT = 3
-RECOVER_MONSOON_RETRY_COUNT = 3
-MIN_PERCENT_SAMPLE = 95
 ENABLED_MODULATED_DTIM = 'gEnableModulatedDTIM='
 MAX_MODULATED_DTIM = 'gMaxLIModulatedDTIM='
-
-
-def dut_rockbottom(ad):
-    """Set the phone into Rock-bottom state.
-
-    Args:
-        ad: the target android device, AndroidDevice object
-
-    """
-    ad.log.info("Now set the device to Rockbottom State")
-    utils.require_sl4a((ad, ))
-    ad.droid.connectivityToggleAirplaneMode(False)
-    time.sleep(5)
-    ad.droid.connectivityToggleAirplaneMode(True)
-    utils.set_ambient_display(ad, False)
-    utils.set_auto_rotate(ad, False)
-    utils.set_adaptive_brightness(ad, False)
-    utils.sync_device_time(ad)
-    utils.set_location_service(ad, False)
-    utils.set_mobile_data_always_on(ad, False)
-    utils.disable_doze_light(ad)
-    utils.disable_doze(ad)
-    wutils.reset_wifi(ad)
-    wutils.wifi_toggle_state(ad, False)
-    try:
-        ad.droid.nfcDisable()
-    except acts.controllers.sl4a_lib.rpc_client.Sl4aApiError:
-        ad.log.info('NFC is not available')
-    ad.droid.setScreenBrightness(0)
-    ad.adb.shell(AOD_OFF)
-    ad.droid.setScreenTimeout(2200)
-    ad.droid.wakeUpNow()
-    ad.adb.shell(LIFT)
-    ad.adb.shell(DOUBLE_TAP)
-    ad.adb.shell(JUMP_TO_CAMERA)
-    ad.adb.shell(RAISE_TO_CAMERA)
-    ad.adb.shell(FLIP_CAMERA)
-    ad.adb.shell(ASSIST_GESTURE)
-    ad.adb.shell(ASSIST_GESTURE_ALERT)
-    ad.adb.shell(ASSIST_GESTURE_WAKE)
-    ad.adb.shell(SCREENON_USB_DISABLE)
-    ad.adb.shell(UNLOCK_SCREEN)
-    ad.adb.shell(SETTINGS_PAGE)
-    ad.adb.shell(SCROLL_BOTTOM)
-    ad.adb.shell(MUSIC_IQ_OFF)
-    ad.adb.shell(AUTO_TIME_OFF)
-    ad.adb.shell(AUTO_TIMEZONE_OFF)
-    ad.adb.shell(FORCE_YOUTUBE_STOP)
-    ad.adb.shell(FORCE_DIALER_STOP)
-    ad.droid.wifiSetCountryCode('US')
-    ad.droid.wakeUpNow()
-    ad.log.info('Device has been set to Rockbottom state')
-    ad.log.info('Screen is ON')
-
-
-def unpack_custom_file(file, test_class=None):
-    """Unpack the pass_fail_thresholds from a common file.
-
-    Args:
-        file: the common file containing pass fail threshold.
-    """
-    with open(file, 'r') as f:
-        params = json.load(f)
-    if test_class:
-        return params[test_class]
-    else:
-        return params
-
-
-def pass_fail_check(test_class, test_result):
-    """Check the test result and decide if it passed or failed.
-    The threshold is provided in the config file
-
-    Args:
-        test_class: the specific test class where test is running
-        test_result: the average current as the test result
-    """
-    test_name = test_class.current_test_name
-    current_threshold = test_class.threshold[test_name]
-    if test_result:
-        asserts.assert_true(
-            abs(test_result - current_threshold) / current_threshold <
-            THRESHOLD_TOLERANCE,
-            ("Measured average current in [%s]: %s, which is "
-             "more than %d percent off than acceptable threshold %.2fmA") %
-            (test_name, test_result, test_class.pass_fail_tolerance * 100,
-             current_threshold))
-        asserts.explicit_pass("Measurement finished for %s." % test_name)
-    else:
-        asserts.fail(
-            "Something happened, measurement is not complete, test failed")
-
-
-def monsoon_recover(mon):
-    """Test loop to wait for monsoon recover from unexpected error.
-
-    Wait for a certain time duration, then quit.0
-    Args:
-        mon: monsoon object
-    """
-    try:
-        mon.reconnect_monsoon()
-        time.sleep(2)
-        mon.usb('on')
-        logging.info("Monsoon recovered from unexpected error")
-        time.sleep(2)
-        return True
-    except monsoon.MonsoonError:
-        logging.info(mon.mon.ser.in_waiting)
-        logging.warning("Unable to recover monsoon from unexpected error")
-        return False
-
-
-def monsoon_data_collect_save(ad, mon_info, test_name):
-    """Current measurement and save the log file.
-
-    Collect current data using Monsoon box and return the path of the
-    log file. Take bug report if requested.
-
-    Args:
-        ad: the android device under test
-        mon_info: dict with information of monsoon measurement, including
-                  monsoon device object, measurement frequency, duration and
-                  offset etc.
-        test_name: current test name, used to contruct the result file name
-        bug_report: indicator to take bug report or not, 0 or 1
-    Returns:
-        data_path: the absolute path to the log file of monsoon current
-                   measurement
-        avg_current: the average current of the test
-    """
-
-    log = logging.getLogger()
-    tag = (test_name + '_' + ad.model + '_' + ad.build_info['build_id'])
-    data_path = os.path.join(mon_info['data_path'], "%s.txt" % tag)
-    total_expected_samples = mon_info['freq'] * (
-        mon_info['duration'] + mon_info['offset'])
-    min_required_samples = total_expected_samples * MIN_PERCENT_SAMPLE / 100
-    # Retry counter for monsoon data aquisition
-    retry_measure = 1
-    # Indicator that need to re-collect data
-    need_collect_data = 1
-    result = None
-    while retry_measure <= MEASUREMENT_RETRY_COUNT:
-        try:
-            # If need to retake data
-            if need_collect_data == 1:
-                #Resets the battery status right before the test started
-                ad.adb.shell(RESET_BATTERY_STATS)
-                log.info(
-                    "Starting power measurement with monsoon box, try #{}".
-                    format(retry_measure))
-                #Start the power measurement using monsoon
-                mon_info['dut'].monsoon_usb_auto()
-                result = mon_info['dut'].measure_power(
-                    mon_info['freq'],
-                    mon_info['duration'],
-                    tag=tag,
-                    offset=mon_info['offset'])
-                mon_info['dut'].reconnect_dut()
-            # Reconnect to dut
-            else:
-                mon_info['dut'].reconnect_dut()
-            # Reconnect and return measurement results if no error happens
-            avg_current = result.average_current
-            monsoon.MonsoonData.save_to_text_file([result], data_path)
-            log.info(
-                "Power measurement done within {} try".format(retry_measure))
-            return data_path, avg_current
-        # Catch monsoon errors during measurement
-        except monsoon.MonsoonError:
-            log.info(mon_info['dut'].mon.ser.in_waiting)
-            # Break early if it's one count away from limit
-            if retry_measure == MEASUREMENT_RETRY_COUNT:
-                log.error('Test failed after maximum measurement retry')
-                break
-
-            log.warning('Monsoon error happened, now try to recover')
-            # Retry loop to recover monsoon from error
-            retry_monsoon = 1
-            while retry_monsoon <= RECOVER_MONSOON_RETRY_COUNT:
-                mon_status = monsoon_recover(mon_info['dut'])
-                if mon_status:
-                    break
-                else:
-                    retry_monsoon += 1
-                    log.warning('Wait for {} second then try again'.format(
-                        MONSOON_RETRY_INTERVAL))
-                    time.sleep(MONSOON_RETRY_INTERVAL)
-
-            # Break the loop to end test if failed to recover monsoon
-            if not mon_status:
-                log.error('Tried our best, still failed to recover monsoon')
-                break
-            else:
-                # If there is no data or captured samples are less than min
-                # required, re-take
-                if not result:
-                    log.warning('No data taken, need to remeasure')
-                elif len(result._data_points) <= min_required_samples:
-                    log.warning(
-                        'More than {} percent of samples are missing due to monsoon error. Need to remeasure'.
-                        format(100 - MIN_PERCENT_SAMPLE))
-                else:
-                    need_collect_data = 0
-                    log.warning(
-                        'Data collected is valid, try reconnect to DUT to finish test'
-                    )
-                retry_measure += 1
-
-    if retry_measure > MEASUREMENT_RETRY_COUNT:
-        log.error('Test failed after maximum measurement retry')
 
 
 def monsoon_data_plot(mon_info, file_path, tag=""):
@@ -297,7 +49,7 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     https://drive.google.com/open?id=0Bwp8Cq841VnpT2dGUUxLYWZvVjA
 
     Args:
-        mon_info: dict with information of monsoon measurement, including
+        mon_info: obj with information of monsoon measurement, including
                   monsoon device object, measurement frequency, duration and
                   offset etc.
         file_path: the path to the monsoon log file with current data
@@ -319,7 +71,7 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     voltage = results[0].voltage
     [current_data.extend(x.data_points) for x in results]
     [timestamps.extend(x.timestamps) for x in results]
-    period = 1 / float(mon_info['freq'])
+    period = 1 / float(mon_info.freq)
     time_relative = [x * period for x in range(len(current_data))]
     #Calculate the average current for the test
     current_data = [x * 1000 for x in current_data]
@@ -331,11 +83,11 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
         data=dict(x0=time_relative, y0=current_data, color=color))
     s2 = ColumnDataSource(
         data=dict(
-            z0=[mon_info['duration']],
+            z0=[mon_info.duration],
             y0=[round(avg_current, 2)],
             x0=[round(avg_current * voltage, 2)],
-            z1=[round(avg_current * voltage * mon_info['duration'], 2)],
-            z2=[round(avg_current * mon_info['duration'], 2)]))
+            z1=[round(avg_current * voltage * mon_info.duration, 2)],
+            z2=[round(avg_current * mon_info.duration, 2)]))
     #Setting up data table for the output
     columns = [
         TableColumn(field='z0', title='Total Duration (s)'),
@@ -348,7 +100,7 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
         source=s2, columns=columns, width=1300, height=60, editable=True)
 
     plot_title = file_path[file_path.rfind('/') + 1:-4] + tag
-    output_file("%s/%s.html" % (mon_info['data_path'], plot_title))
+    output_file("%s/%s.html" % (mon_info.data_path, plot_title))
     TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
     # Create a new plot with the datatable above
     plot = figure(
@@ -748,87 +500,3 @@ def create_pkt_config(test_class):
         'gw_ipv4': ipv4_gw
     }
     return pkt_gen_config
-
-
-def create_monsoon_info(test_class):
-    """Creates the config dictionary for monsoon
-
-    Args:
-        test_class: object with all the parameters
-
-    Returns:
-        Dictionary with the monsoon packet config
-    """
-    mon_info = {
-        'dut': test_class.mon,
-        'freq': test_class.mon_freq,
-        'duration': test_class.mon_duration,
-        'offset': test_class.mon_offset,
-        'data_path': test_class.mon_data_path
-    }
-    return mon_info
-
-
-def setup_phone_wireless(test_class,
-                         bt_on,
-                         wifi_on,
-                         screen_status,
-                         network=None,
-                         regular_mode=False):
-    """Sets the phone in rock-bottom and in the desired wireless mode
-
-    Args:
-        test_class: the specific test class where test is running
-        bt_on: Enable/Disable BT
-        wifi_on: Enable/Disable WiFi
-        screen_status: screen ON or OFF
-        network: a dict of information for the WiFi network to connect
-        regular_mode: enable cellular data (i.e., disable airplane mode)
-    """
-    # Initialize the dut to rock-bottom state
-    dut_rockbottom(test_class.dut)
-    brconfigs = None
-    time.sleep(1)
-
-    if regular_mode:
-        test_class.dut.droid.connectivityToggleAirplaneMode(False)
-        utils.set_mobile_data_always_on(test_class.dut, True)
-        time.sleep(2)
-
-    # Turn ON/OFF BT
-    if bt_on == 'ON':
-        enable_bluetooth(test_class.dut.droid, test_class.dut.ed)
-        test_class.dut.log.info('BT is ON')
-    else:
-        disable_bluetooth(test_class.dut.droid)
-        test_class.dut.droid.bluetoothDisableBLE()
-        test_class.dut.log.info('BT is OFF')
-    time.sleep(2)
-
-    # Turn ON/OFF Wifi
-    if wifi_on == 'ON':
-        wutils.wifi_toggle_state(test_class.dut, True)
-        test_class.dut.log.info('WiFi is ON')
-        if network:
-            # Set attenuation and connect to AP
-            for attn in range(test_class.num_atten):
-                test_class.attenuators[attn].set_atten(
-                    test_class.atten_level['zero_atten'][attn])
-            test_class.log.info('Set attenuation level to all zero')
-            brconfigs = ap_setup(test_class.access_point, network)
-            wutils.wifi_connect(test_class.dut, network)
-    else:
-        wutils.wifi_toggle_state(test_class.dut, False)
-        test_class.dut.log.info('WiFi is OFF')
-    time.sleep(1)
-
-    # Set the desired screen status
-    if screen_status == 'OFF':
-        test_class.dut.droid.goToSleepNow()
-        test_class.dut.log.info('Screen is OFF')
-    time.sleep(1)
-
-    if brconfigs:
-        return brconfigs
-    else:
-        return None
