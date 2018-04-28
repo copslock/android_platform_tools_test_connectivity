@@ -86,6 +86,7 @@ from acts.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_MAPPING
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
+from acts.test_utils.tel.tel_defines import SIM_STATE_ABSENT
 from acts.test_utils.tel.tel_defines import SIM_STATE_LOADED
 from acts.test_utils.tel.tel_defines import SIM_STATE_NOT_READY
 from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
@@ -3575,7 +3576,6 @@ def get_operator_name(log, ad, subId=None):
                     sub_id)
             else:
                 result = ad.droid.telephonyGetNetworkOperatorName()
-            ad.log.info("result = %s", result)
             result = operator_name_from_network_name(result)
         except Exception:
             result = CARRIER_UNKNOWN
@@ -6116,7 +6116,8 @@ def wait_for_state(state_check_func,
     return False
 
 
-def power_off_sim(ad, sim_slot_id=None):
+def power_off_sim(ad, sim_slot_id=None,
+                  timeout=MAX_WAIT_TIME_FOR_STATE_CHANGE):
     try:
         if sim_slot_id is None:
             ad.droid.telephonySetSimPowerState(CARD_POWER_DOWN)
@@ -6130,15 +6131,16 @@ def power_off_sim(ad, sim_slot_id=None):
     except Exception as e:
         ad.log.error(e)
         return False
-    if wait_for_state(verify_func, SIM_STATE_UNKNOWN,
-                      MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                      WAIT_TIME_BETWEEN_STATE_CHECK, *verify_args):
-        ad.log.info("SIM slot is powered off, SIM state is UNKNOWN")
-        return True
-    else:
-        ad.log.info("SIM state = %s", verify_func(*verify_args))
-        ad.log.warning("Fail to power off SIM slot")
-        return False
+    while timeout > 0:
+        sim_state = verify_func(*verify_args)
+        if sim_state in (SIM_STATE_UNKNOWN, SIM_STATE_ABSENT):
+            ad.log.info("SIM slot is powered off, SIM state is %s", sim_state)
+            return True
+        timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+    ad.log.warning("Fail to power off SIM slot, sim_state=%s",
+                   verify_func(*verify_args))
+    return False
 
 
 def power_on_sim(ad, sim_slot_id=None):
