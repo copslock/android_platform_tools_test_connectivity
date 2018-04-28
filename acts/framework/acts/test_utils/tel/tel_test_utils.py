@@ -86,6 +86,7 @@ from acts.test_utils.tel.tel_defines import SERVICE_STATE_IN_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_MAPPING
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_OUT_OF_SERVICE
 from acts.test_utils.tel.tel_defines import SERVICE_STATE_POWER_OFF
+from acts.test_utils.tel.tel_defines import SIM_STATE_ABSENT
 from acts.test_utils.tel.tel_defines import SIM_STATE_LOADED
 from acts.test_utils.tel.tel_defines import SIM_STATE_NOT_READY
 from acts.test_utils.tel.tel_defines import SIM_STATE_PIN_REQUIRED
@@ -2342,8 +2343,8 @@ def http_file_download_by_chrome(ad,
             ad, None, chrome_apk)
     }
     ad.log.info("Before downloading: %s", data_accounting)
-    ad.ensure_screen_on()
     ad.log.info("Download %s with timeout %s", url, timeout)
+    ad.ensure_screen_on()
     open_url_by_adb(ad, url)
     elapse_time = 0
     result = True
@@ -3576,7 +3577,6 @@ def get_operator_name(log, ad, subId=None):
                     sub_id)
             else:
                 result = ad.droid.telephonyGetNetworkOperatorName()
-            ad.log.info("result = %s", result)
             result = operator_name_from_network_name(result)
         except Exception:
             result = CARRIER_UNKNOWN
@@ -4303,32 +4303,9 @@ def ensure_network_generation_for_subscription(
                      ad.telephony["subscription"][sub_id], e)
         return False
 
-    current_network_preference = \
-            ad.droid.telephonyGetPreferredNetworkTypesForSubscription(
-                sub_id)
-    for _ in range(3):
-        if current_network_preference == network_preference:
-            break
-        if not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
-                network_preference, sub_id):
-            ad.log.info(
-                "Network preference is %s. Set Preferred Networks to %s failed.",
-                current_network_preference, network_preference)
-            reasons = ad.search_logcat(
-                "REQUEST_SET_PREFERRED_NETWORK_TYPE error")
-            if reasons:
-                reason_log = reasons[-1]["log_message"]
-                ad.log.info(reason_log)
-                if "DEVICE_IN_USE" in reason_log:
-                    time.sleep(5)
-                else:
-                    ad.log.error("Failed to set Preferred Networks to %s",
-                                 network_preference)
-                    return False
-            else:
-                ad.log.error("Failed to set Preferred Networks to %s",
-                             network_preference)
-                return False
+    if not set_preferred_network_mode_pref(log, ad, sub_id,
+                                           network_preference):
+        return False
 
     if is_droid_in_network_generation_for_subscription(
             log, ad, sub_id, generation, voice_or_data):
@@ -5120,7 +5097,11 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     return silent_mode == ad.droid.checkRingerSilentMode()
 
 
-def set_preferred_network_mode_pref(log, ad, sub_id, network_preference):
+def set_preferred_network_mode_pref(log,
+                                    ad,
+                                    sub_id,
+                                    network_preference,
+                                    timeout=WAIT_TIME_ANDROID_STATE_SETTLING):
     """Set Preferred Network Mode for Sub_id
     Args:
         log: Log object.
@@ -5128,14 +5109,32 @@ def set_preferred_network_mode_pref(log, ad, sub_id, network_preference):
         sub_id: Subscription ID.
         network_preference: Network Mode Type
     """
+    begin_time = get_device_epoch_time(ad)
+    if ad.droid.telephonyGetPreferredNetworkTypesForSubscription(
+            sub_id) == network_preference:
+        ad.log.info("Current ModePref for Sub %s is in %s", sub_id,
+                    network_preference)
+        return True
     ad.log.info("Setting ModePref to %s for Sub %s", network_preference,
                 sub_id)
-    if not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
-            network_preference, sub_id):
-        ad.log.error("Set sub_id %s PreferredNetworkType %s failed", sub_id,
-                     network_preference)
-        return False
-    return True
+    while timeout >= 0:
+        if ad.droid.telephonySetPreferredNetworkTypesForSubscription(
+                network_preference, sub_id):
+            return True
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+        timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
+    error_msg = "Failed to set sub_id %s PreferredNetworkType to %s" % (
+        sub_id, network_preference)
+    search_results = ad.search_logcat(
+        "REQUEST_SET_PREFERRED_NETWORK_TYPE error", begin_time=begin_time)
+    if search_results:
+        log_message = search_results[-1]["log_message"]
+        if "DEVICE_IN_USE" in log_message:
+            error_msg = "%s due to DEVICE_IN_USE" % error_msg
+        else:
+            error_msg = "%s due to %s" % (error_msg, log_message)
+    ad.log.error(error_msg)
+    return False
 
 
 def set_preferred_subid_for_sms(log, ad, sub_id):
@@ -6118,7 +6117,8 @@ def wait_for_state(state_check_func,
     return False
 
 
-def power_off_sim(ad, sim_slot_id=None):
+def power_off_sim(ad, sim_slot_id=None,
+                  timeout=MAX_WAIT_TIME_FOR_STATE_CHANGE):
     try:
         if sim_slot_id is None:
             ad.droid.telephonySetSimPowerState(CARD_POWER_DOWN)
@@ -6132,15 +6132,16 @@ def power_off_sim(ad, sim_slot_id=None):
     except Exception as e:
         ad.log.error(e)
         return False
-    if wait_for_state(verify_func, SIM_STATE_UNKNOWN,
-                      MAX_WAIT_TIME_FOR_STATE_CHANGE,
-                      WAIT_TIME_BETWEEN_STATE_CHECK, *verify_args):
-        ad.log.info("SIM slot is powered off, SIM state is UNKNOWN")
-        return True
-    else:
-        ad.log.info("SIM state = %s", verify_func(*verify_args))
-        ad.log.warning("Fail to power off SIM slot")
-        return False
+    while timeout > 0:
+        sim_state = verify_func(*verify_args)
+        if sim_state in (SIM_STATE_UNKNOWN, SIM_STATE_ABSENT):
+            ad.log.info("SIM slot is powered off, SIM state is %s", sim_state)
+            return True
+        timeout = timeout - WAIT_TIME_BETWEEN_STATE_CHECK
+        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
+    ad.log.warning("Fail to power off SIM slot, sim_state=%s",
+                   verify_func(*verify_args))
+    return False
 
 
 def power_on_sim(ad, sim_slot_id=None):

@@ -32,12 +32,10 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
-from TelLiveEmergencyBase import IMS_FIRST_OFF
 from TelLiveEmergencyBase import TelLiveEmergencyBase
 
 
 class TelLiveEmergencyTest(TelLiveEmergencyBase):
-
     """ Tests Begin """
 
     @test_tracker_info(uuid="fe75ba2c-e4ea-4fc1-881b-97e7a9a7f48e")
@@ -76,7 +74,7 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         """
         if not phone_setup_csfb(self.log, self.dut):
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
+        self.set_ims_first("false")
         return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="7a55991a-adc0-432c-b705-8ac9ee249323")
@@ -97,7 +95,7 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         """
         if not phone_setup_voice_3g(self.log, self.dut):
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
+        self.set_ims_first("false")
         return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="cc40611b-6fe5-4952-8bdd-c15d6d995516")
@@ -121,7 +119,7 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
                 "2G is not supported for carrier %s" % self.dut_operator)
         if not phone_setup_voice_2g(self.log, self.dut):
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
+        self.set_ims_first("false")
         return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="a209864c-93fc-455c-aa81-8d3a83f6ad7c")
@@ -179,7 +177,7 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
                 self.wifi_network_ssid, self.wifi_network_pass):
             self.dut.log.error("Failed to setup WFC.")
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
+        self.set_ims_first("false")
         return self.fake_emergency_call_test() and self.check_normal_call()
 
     @test_tracker_info(uuid="8a0978a8-d93e-4f6a-99fe-d0e28bf1be2a")
@@ -197,7 +195,8 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
             False if failed.
         """
         return self.fake_emergency_call_test(
-            by_emergency_dialer=False) and self.check_emergency_call_back_mode(by_emergency_dialer=False)
+            by_emergency_dialer=False) and self.check_emergency_call_back_mode(
+                by_emergency_dialer=False)
 
     @test_tracker_info(uuid="2e6fcc75-ff9e-47b1-9ae8-ed6f9966d0f5")
     @TelephonyBaseTest.tel_test_wrap
@@ -263,7 +262,6 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
             return False
         return self.fake_emergency_call_test() and self.check_normal_call()
 
-
     @test_tracker_info(uuid="ccea13ae-6951-4790-a5f7-b5b7a2451c6c")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_setupwizard(self):
@@ -321,7 +319,7 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         """
         if not phone_setup_csfb(self.log, self.dut):
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
+        self.set_ims_first("false")
         return self.check_emergency_call_back_mode()
 
     @test_tracker_info(uuid="8199eab0-3656-4fc3-8e9c-7063c24f72c9")
@@ -342,7 +340,7 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         """
         if not phone_setup_voice_3g(self.log, self.dut):
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
+        self.set_ims_first("false")
         return self.check_emergency_call_back_mode()
 
     @test_tracker_info(uuid="6a8ff7e6-29d0-48db-8d27-a7b39aaf4470")
@@ -363,10 +361,10 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         """
         if self.dut_operator != "tmo":
             raise signals.TestSkip(
-                    "2G is not supported for carrier %s" % self.dut_operator)
+                "2G is not supported for carrier %s" % self.dut_operator)
         if not phone_setup_voice_2g(self.log, self.dut):
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
+        self.set_ims_first("false")
         return self.check_emergency_call_back_mode()
 
     @test_tracker_info(uuid="583b89c8-be9d-407b-9491-7cc44b4a9d9a")
@@ -388,7 +386,7 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         if CAPABILITY_WFC not in operator_capabilities.get(
                 self.dut_operator, operator_capabilities["default"]):
             raise signals.TestSkip(
-                    "WFC is not supported for carrier %s" % self.dut_operator)
+                "WFC is not supported for carrier %s" % self.dut_operator)
         if not phone_setup_iwlan(
                 self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
                 self.wifi_network_ssid, self.wifi_network_pass):
@@ -414,17 +412,17 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         if CAPABILITY_WFC not in operator_capabilities.get(
                 self.dut_operator, operator_capabilities["default"]):
             raise signals.TestSkip(
-                    "WFC is not supported for carrier %s" % self.dut_operator)
+                "WFC is not supported for carrier %s" % self.dut_operator)
         if self.dut_operator != "tmo":
             raise signals.TestSkip(
-                    "WFC in non-APM is not supported for carrier %s" %
-                    self.dut_operator)
+                "WFC in non-APM is not supported for carrier %s" %
+                self.dut_operator)
         if not phone_setup_iwlan(
                 self.log, self.dut, False, WFC_MODE_WIFI_PREFERRED,
                 self.wifi_network_ssid, self.wifi_network_pass):
             self.dut.log.error("Failed to setup WFC.")
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
+        self.set_ims_first("false")
         return self.check_emergency_call_back_mode()
 
     @test_tracker_info(uuid="1469db59-36f4-4b01-a05a-35ee60be22bc")
@@ -508,7 +506,6 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
             return False
         return self.check_emergency_call_back_mode()
 
-
     @test_tracker_info(uuid="ccb9ce63-f04f-480e-8c19-43d2a8c3d60f")
     @TelephonyBaseTest.tel_test_wrap
     def test_fake_emergency_call_in_setupwizard_ecbm(self):
@@ -533,7 +530,8 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
 
     @test_tracker_info(uuid="e0fd7a16-7b3a-4cd9-ab5f-b7e49a531232")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_with_ecbm_call_block(self):
+    def test_fake_emergency_call_by_emergency_dialer_with_ecbm_call_block(
+            self):
         """Test emergency call with emergency dialer in user account.
 
         Add system emergency number list with fake emergency number.
@@ -547,11 +545,13 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
             False if failed.
         """
         toggle_airplane_mode_by_adb(self.log, self.dut, False)
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="d08daf23-5efc-43ed-8530-e54fc141f555")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_csfb_with_ecbm_call_block(self):
+    def test_fake_emergency_call_by_emergency_dialer_csfb_with_ecbm_call_block(
+            self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in CSFB
@@ -568,12 +568,14 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         """
         if not phone_setup_csfb(self.log, self.dut):
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
+        self.set_ims_first("false")
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="4ea2f8bb-ce0f-4c7a-b4b2-07259a5c371a")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_3g_with_ecbm_call_block(self):
+    def test_fake_emergency_call_by_emergency_dialer_3g_with_ecbm_call_block(
+            self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in 3G
@@ -590,12 +592,14 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         """
         if not phone_setup_voice_3g(self.log, self.dut):
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
+        self.set_ims_first("false")
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="ff11b2cb-0425-4a0b-8748-7ecff0148fe4")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_2g_with_ecbm_call_block(self):
+    def test_fake_emergency_call_by_emergency_dialer_2g_with_ecbm_call_block(
+            self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in 2G
@@ -612,15 +616,17 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         """
         if self.dut_operator != "tmo":
             raise signals.TestSkip(
-                    "2G is not supported for carrier %s" % self.dut_operator)
+                "2G is not supported for carrier %s" % self.dut_operator)
         if not phone_setup_voice_2g(self.log, self.dut):
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
+        self.set_ims_first("false")
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="13296bdc-4d56-47d3-9d97-00474ca13608")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_wfc_apm_with_ecbm_call_block(self):
+    def test_fake_emergency_call_by_emergency_dialer_wfc_apm_with_ecbm_call_block(
+            self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in WFC APM on.
@@ -638,17 +644,19 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         if CAPABILITY_WFC not in operator_capabilities.get(
                 self.dut_operator, operator_capabilities["default"]):
             raise signals.TestSkip(
-                    "WFC is not supported for carrier %s" % self.dut_operator)
+                "WFC is not supported for carrier %s" % self.dut_operator)
         if not phone_setup_iwlan(
                 self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
                 self.wifi_network_ssid, self.wifi_network_pass):
             self.dut.log.error("Failed to setup WFC.")
             return False
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="9179e64a-9236-4b79-b7b3-c5127dd3c21a")
     @TelephonyBaseTest.tel_test_wrap
-    def test_fake_emergency_call_by_emergency_dialer_wfc_apm_off_with_ecbm_call_block(self):
+    def test_fake_emergency_call_by_emergency_dialer_wfc_apm_off_with_ecbm_call_block(
+            self):
         """Test emergency call with emergency dialer in user account.
 
         Configure DUT in WFC APM off.
@@ -665,18 +673,19 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         if CAPABILITY_WFC not in operator_capabilities.get(
                 self.dut_operator, operator_capabilities["default"]):
             raise signals.TestSkip(
-                    "WFC is not supported for carrier %s" % self.dut_operator)
+                "WFC is not supported for carrier %s" % self.dut_operator)
         if self.dut_operator != "tmo":
             raise signals.TestSkip(
-                    "WFC in non-APM is not supported for carrier %s" %
-                    self.dut_operator)
+                "WFC in non-APM is not supported for carrier %s" %
+                self.dut_operator)
         if not phone_setup_iwlan(
                 self.log, self.dut, False, WFC_MODE_WIFI_PREFERRED,
                 self.wifi_network_ssid, self.wifi_network_pass):
             self.dut.log.error("Failed to setup WFC.")
             return False
-        self.dut.adb.shell(IMS_FIRST_OFF)
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
+        self.set_ims_first("false")
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="8deea62b-a7e8-4747-91c6-9abe3317d0d9")
     @TelephonyBaseTest.tel_test_wrap
@@ -693,7 +702,8 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
             True if success.
             False if failed.
         """
-        return self.check_emergency_call_back_mode(by_emergency_dialer=False, non_emergency_call_allowed=False)
+        return self.check_emergency_call_back_mode(
+            by_emergency_dialer=False, non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="561d0a61-84c8-40e3-b2d7-72e221ccf83e")
     @TelephonyBaseTest.tel_test_wrap
@@ -712,7 +722,8 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
             False if failed.
         """
         toggle_airplane_mode_by_adb(self.log, self.dut, True)
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="7b8dc0ae-9e2f-456a-bc88-3c920ba0ca71")
     @TelephonyBaseTest.tel_test_wrap
@@ -736,7 +747,8 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
             self.dut.log.error("SIM is not ready")
             return False
         self.dut.reboot(stop_at_lock_screen=True)
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="fcdc1510-f60c-4f4e-9be1-a6123365b8ae")
     @TelephonyBaseTest.tel_test_wrap
@@ -760,8 +772,8 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         if not wait_for_sim_ready_by_adb(self.log, self.dut):
             self.dut.log.error("SIM is not ready")
             return False
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
-
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
 
     @test_tracker_info(uuid="85300bba-055c-4ca7-b011-bf1023ffda72")
     @TelephonyBaseTest.tel_test_wrap
@@ -784,5 +796,8 @@ class TelLiveEmergencyTest(TelLiveEmergencyBase):
         if not wait_for_sim_ready_by_adb(self.log, self.dut):
             self.dut.log.error("SIM is not ready")
             return False
-        return self.check_emergency_call_back_mode(non_emergency_call_allowed=False)
+        return self.check_emergency_call_back_mode(
+            non_emergency_call_allowed=False)
+
+
 """ Tests End """
