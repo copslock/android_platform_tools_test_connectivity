@@ -17,6 +17,7 @@
     Test Script for Telephony Pre Check In Sanity
 """
 
+import re
 import time
 from acts import signals
 from acts.test_decorators import test_tracker_info
@@ -56,14 +57,9 @@ CARRIER_OVERRIDE_CMD = (
     "com.google.android.carrier/.ConfigOverridingReceiver --ez")
 IMS_FIRST = "carrier_use_ims_first_for_emergency_bool"
 ALLOW_NON_EMERGENCY_CALL = "allow_non_emergency_calls_in_ecm_bool"
-IMS_FIRST_ON = " ".join([CARRIER_OVERRIDE_CMD, IMS_FIRST, "true"])
-IMS_FIRST_OFF = " ".join([CARRIER_OVERRIDE_CMD, IMS_FIRST, "false"])
-ALLOW_NON_EMERGENCY_CALL_ON = " ".join(
-    [CARRIER_OVERRIDE_CMD, ALLOW_NON_EMERGENCY_CALL, "true"])
-ALLOW_NON_EMERGENCY_CALL_OFF = " ".join(
-    [CARRIER_OVERRIDE_CMD, ALLOW_NON_EMERGENCY_CALL, "false"])
 BLOCK_DURATION_CMD = "duration_blocking_disabled_after_emergency_int"
 BLOCK_DURATION = 300
+
 
 class TelLiveEmergencyBase(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -84,8 +80,18 @@ class TelLiveEmergencyBase(TelephonyBaseTest):
 
     def setup_dut(self, ad):
         self.dut = ad
-        self.dut.adb.shell(" ".join([CARRIER_OVERRIDE_CMD, BLOCK_DURATION_CMD,
-                                     "%s" % BLOCK_DURATION]))
+        output = self.dut.adb.shell("dumpsys carrier_config")
+        self.default_settings = {}
+        for setting in (IMS_FIRST, ALLOW_NON_EMERGENCY_CALL,
+                        BLOCK_DURATION_CMD):
+            values = re.findall(r"%s = (\S+)" % setting, output)
+            if values:
+                self.default_settings[setting] = values[-1]
+            else:
+                self.default_settings[setting] = ""
+        self.dut.adb.shell(" ".join(
+            [CARRIER_OVERRIDE_CMD, BLOCK_DURATION_CMD,
+             "%s" % BLOCK_DURATION]))
         self.dut_operator = get_operator_name(self.log, ad)
         if self.dut_operator == "tmo":
             self.fake_emergency_number = "611"
@@ -110,8 +116,12 @@ class TelLiveEmergencyBase(TelephonyBaseTest):
         self.dut.ensure_screen_on()
         self.dut.exit_setup_wizard()
         reset_device_password(self.dut, None)
-        self.dut.adb.shell(IMS_FIRST_ON)
-        self.dut.adb.shell(ALLOW_NON_EMERGENCY_CALL_ON)
+        output = self.dut.adb.shell("dumpsys carrier_config")
+        for setting, state in self.default_settings.items():
+            values = re.findall(r"%s = (\S+)" % setting, output)
+            if values and values[-1] != state:
+                self.dut.adb.shell(" ".join(
+                    [CARRIER_OVERRIDE_CMD, setting, state]))
         ensure_phone_default_state(self.log, self.dut)
 
     def change_emergency_number_list(self):
@@ -214,27 +224,39 @@ class TelLiveEmergencyBase(TelephonyBaseTest):
         self.dut.log.info("fake_emergency_call_test result is %s", result)
         return result
 
-    def set_allow_non_emergency_call(self, state):
+    def set_ims_first(self, state):
         output = self.dut.adb.shell(
-                "dumpsys carrier_config | grep %s | tail -1" %
-                ALLOW_NON_EMERGENCY_CALL)
+            "dumpsys carrier_config | grep %s | tail -1" % IMS_FIRST)
         self.dut.log.info(output)
         if state in output: return
-        cmd = " ".join([CARRIER_OVERRIDE_CMD, ALLOW_NON_EMERGENCY_CALL,
-                        state])
+        cmd = " ".join([CARRIER_OVERRIDE_CMD, IMS_FIRST, state])
         self.dut.log.info(cmd)
         self.dut.adb.shell(cmd)
-        self.dut.log.info(self.dut.adb.shell(
-                "dumpsys carrier_config | grep %s | tail -1" %
-                ALLOW_NON_EMERGENCY_CALL))
+        self.dut.log.info(
+            self.dut.adb.shell(
+                "dumpsys carrier_config | grep %s | tail -1" % IMS_FIRST))
 
+    def set_allow_non_emergency_call(self, state):
+        output = self.dut.adb.shell(
+            "dumpsys carrier_config | grep %s | tail -1" %
+            ALLOW_NON_EMERGENCY_CALL)
+        self.dut.log.info(output)
+        if state in output: return
+        cmd = " ".join([CARRIER_OVERRIDE_CMD, ALLOW_NON_EMERGENCY_CALL, state])
+        self.dut.log.info(cmd)
+        self.dut.adb.shell(cmd)
+        self.dut.log.info(
+            self.dut.adb.shell("dumpsys carrier_config | grep %s | tail -1" %
+                               ALLOW_NON_EMERGENCY_CALL))
 
-    def check_emergency_call_back_mode(self, by_emergency_dialer=True,
-            non_emergency_call_allowed=True, attemps=3):
+    def check_emergency_call_back_mode(self,
+                                       by_emergency_dialer=True,
+                                       non_emergency_call_allowed=True,
+                                       attemps=3):
         state = "true" if non_emergency_call_allowed else "false"
         self.set_allow_non_emergency_call(state)
         result = True
-        for _ in range (attemps):
+        for _ in range(attemps):
             if not self.change_emergency_number_list():
                 self.dut.log.error("Unable to add number to ril.ecclist")
                 return False
@@ -274,13 +296,10 @@ class TelLiveEmergencyBase(TelephonyBaseTest):
         self.dut.exit_setup_wizard()
         reset_device_password(self.dut, None)
         call_check = call_setup_teardown(
-                self.log,
-                self.dut,
-                self.android_devices[1],
-                ad_hangup=self.dut)
-        if  call_check != expected_call:
+            self.log, self.dut, self.android_devices[1], ad_hangup=self.dut)
+        if call_check != expected_call:
             self.dut.log.error("Regular phone call is %s, expecting %s",
-                                call_check, non_emergency_call_allowed)
+                               call_check, expected_call)
             result = False
         call_info = dumpsys_new_call_info(self.dut, last_call_number)
         if not call_info:
@@ -305,14 +324,16 @@ class TelLiveEmergencyBase(TelephonyBaseTest):
                 if not wait_for_cell_data_connection(self.log, self.dut, True,
                                                      400):
                     self.dut.log.error(
-                            "Data connection didn't come back after 5 minutes")
+                        "Data connection didn't come back after 5 minutes")
                     result = False
                 #if not self.dut.droid.telephonyGetDataConnectionState():
                 #    self.dut.log.error(
                 #        "Data connection is not coming back")
                 #    result = False
                 elif not verify_internet_connection(self.log, self.dut):
-                    self.dut.log.error("Internet connection check failed after getting out of ECB")
+                    self.dut.log.error(
+                        "Internet connection check failed after getting out of ECB"
+                    )
                     result = False
 
             else:
@@ -331,14 +352,12 @@ class TelLiveEmergencyBase(TelephonyBaseTest):
                 result = False
         if expected_call:
             return result
-        elapsed_time = (get_current_epoch_time() - begin_time)/1000
+        elapsed_time = (get_current_epoch_time() - begin_time) / 1000
         if elapsed_time < BLOCK_DURATION:
             time.sleep(BLOCK_DURATION - elapsed_time + 10)
         if not call_setup_teardown(
-                    self.log,
-                    self.dut,
-                    self.android_devices[1],
-                    ad_hangup=self.dut):
+                self.log, self.dut, self.android_devices[1],
+                ad_hangup=self.dut):
             self.dut.log.error("Regular phone call failed after out of ecbm")
             result = False
         return result
@@ -352,15 +371,19 @@ class TelLiveEmergencyBase(TelephonyBaseTest):
         reset_device_password(self.dut, None)
         begin_time = get_current_epoch_time()
         if not call_setup_teardown(
-                self.log, self.android_devices[1], self.dut,
+                self.log,
+                self.android_devices[1],
+                self.dut,
                 ad_hangup=self.android_devices[1]):
             self.dut.log.error("Regular MT phone call fails")
-            self.dut.log.info("call_info = %s", dumpsys_last_call_info(self.dut))
+            self.dut.log.info("call_info = %s", dumpsys_last_call_info(
+                self.dut))
             result = False
         if not call_setup_teardown(
                 self.log, self.dut, self.android_devices[1],
                 ad_hangup=self.dut):
             self.dut.log.error("Regular MO phone call fails")
-            self.dut.log.info("call_info = %s", dumpsys_last_call_info(self.dut))
+            self.dut.log.info("call_info = %s", dumpsys_last_call_info(
+                self.dut))
             result = False
         return result
