@@ -17,9 +17,9 @@
 import time
 
 from acts import asserts
-from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import connectivity_const as cconsts
+from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -1499,8 +1499,8 @@ class DataPathTest(AwareBaseTest):
     init_dut = self.android_devices[0]
     resp_dut = self.android_devices[1]
 
-    utils.set_regulatory_domain(init_dut, init_domain)
-    utils.set_regulatory_domain(resp_dut, resp_domain)
+    init_dut.droid.wifiSetCountryCode(init_domain)
+    resp_dut.droid.wifiSetCountryCode(resp_domain)
 
     if use_ib:
       (resp_req_key, init_req_key, resp_aware_if, init_aware_if, resp_ipv6,
@@ -1531,9 +1531,10 @@ class DataPathTest(AwareBaseTest):
     - Uses in-band discovery
     - Subscriber=US, Publisher=JP
     """
-    self.run_multiple_regulatory_domains(use_ib=True,
-                                         init_domain="US",
-                                         resp_domain="JP")
+    self.run_multiple_regulatory_domains(
+        use_ib=True,
+        init_domain=wutils.WifiEnums.CountryCode.US,
+        resp_domain=wutils.WifiEnums.CountryCode.JAPAN)
 
   @test_tracker_info(uuid="19af47cc-3204-40ef-b50f-14cf7b89cf4a")
   def test_multiple_regulator_domains_ib_jp_us(self):
@@ -1542,9 +1543,10 @@ class DataPathTest(AwareBaseTest):
     - Uses in-band discovery
     - Subscriber=JP, Publisher=US
     """
-    self.run_multiple_regulatory_domains(use_ib=True,
-                                         init_domain="JP",
-                                         resp_domain="US")
+    self.run_multiple_regulatory_domains(
+        use_ib=True,
+        init_domain=wutils.WifiEnums.CountryCode.JAPAN,
+        resp_domain=wutils.WifiEnums.CountryCode.US)
 
   @test_tracker_info(uuid="65285ab3-977f-4dbd-b663-d5a02f4fc663")
   def test_multiple_regulator_domains_oob_us_jp(self):
@@ -1553,9 +1555,10 @@ class DataPathTest(AwareBaseTest):
     - Uses out-f-band discovery
     - Initiator=US, Responder=JP
     """
-    self.run_multiple_regulatory_domains(use_ib=False,
-                                         init_domain="US",
-                                         resp_domain="JP")
+    self.run_multiple_regulatory_domains(
+        use_ib=False,
+        init_domain=wutils.WifiEnums.CountryCode.US,
+        resp_domain=wutils.WifiEnums.CountryCode.JAPAN)
 
   @test_tracker_info(uuid="8a417e24-aaf6-44b9-a089-a07c3ba8d954")
   def test_multiple_regulator_domains_oob_jp_us(self):
@@ -1564,9 +1567,10 @@ class DataPathTest(AwareBaseTest):
     - Uses out-of-band discovery
     - Initiator=JP, Responder=US
     """
-    self.run_multiple_regulatory_domains(use_ib=False,
-                                         init_domain="JP",
-                                         resp_domain="US")
+    self.run_multiple_regulatory_domains(
+        use_ib=False,
+        init_domain=wutils.WifiEnums.CountryCode.JAPAN,
+        resp_domain=wutils.WifiEnums.CountryCode.US)
 
   ########################################################################
 
