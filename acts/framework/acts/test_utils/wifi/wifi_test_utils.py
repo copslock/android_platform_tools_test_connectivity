@@ -1032,7 +1032,8 @@ def wait_for_disconnect(ad):
         raise signals.TestFailure("Device did not disconnect from the network")
 
 
-def connect_to_wifi_network(ad, network, assert_on_fail=True):
+def connect_to_wifi_network(ad, network, assert_on_fail=True,
+        check_connectivity=True):
     """Connection logic for open and psk wifi networks.
 
     Args:
@@ -1046,7 +1047,8 @@ def connect_to_wifi_network(ad, network, assert_on_fail=True):
     wifi_connect(ad,
                  network,
                  num_of_tries=3,
-                 assert_on_fail=assert_on_fail)
+                 assert_on_fail=assert_on_fail,
+                 check_connectivity=check_connectivity)
 
 
 def connect_to_wifi_network_with_id(ad, network_id, network_ssid):
@@ -1071,7 +1073,8 @@ def connect_to_wifi_network_with_id(ad, network_id, network_ssid):
     return True
 
 
-def wifi_connect(ad, network, num_of_tries=1, assert_on_fail=True):
+def wifi_connect(ad, network, num_of_tries=1, assert_on_fail=True,
+        check_connectivity=True):
     """Connect an Android device to a wifi network.
 
     Initiate connection to a wifi network, wait for the "connected" event, then
@@ -1093,10 +1096,11 @@ def wifi_connect(ad, network, num_of_tries=1, assert_on_fail=True):
         Returns True if the connection was successful, False otherwise.
     """
     return _assert_on_fail_handler(
-        _wifi_connect, assert_on_fail, ad, network, num_of_tries=num_of_tries)
+        _wifi_connect, assert_on_fail, ad, network, num_of_tries=num_of_tries,
+          check_connectivity=check_connectivity)
 
 
-def _wifi_connect(ad, network, num_of_tries=1):
+def _wifi_connect(ad, network, num_of_tries=1, check_connectivity=True):
     """Connect an Android device to a wifi network.
 
     Initiate connection to a wifi network, wait for the "connected" event, then
@@ -1134,10 +1138,11 @@ def _wifi_connect(ad, network, num_of_tries=1):
         # Wait for data connection to stabilize.
         time.sleep(5)
 
-        internet = validate_connection(ad, DEFAULT_PING_ADDR)
-        if not internet:
-            raise signals.TestFailure("Failed to connect to internet on %s" %
-                                      expected_ssid)
+        if check_connectivity:
+            internet = validate_connection(ad, DEFAULT_PING_ADDR)
+            if not internet:
+                raise signals.TestFailure("Failed to connect to internet on %s" %
+                                          expected_ssid)
     except Empty:
         asserts.fail("Failed to start connection process to %s on %s" %
                      (network, ad.serial))
