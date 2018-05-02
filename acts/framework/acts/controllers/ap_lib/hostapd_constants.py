@@ -59,12 +59,12 @@ CHANNEL_MAP = {
     2457: 10,
     2462: 11,
     # 12, 13 are only legitimate outside the US.
-    2467: 12,
-    2472: 13,
+    # 2467: 12,
+    # 2472: 13,
     # 14 is for Japan, DSSS and CCK only.
-    2484: 14,
+    # 2484: 14,
     # 34 valid in Japan.
-    5170: 34,
+    # 5170: 34,
     # 36-116 valid in the US, except 38, 42, and 46, which have
     # mixed international support.
     5180: 36,
@@ -74,6 +74,7 @@ CHANNEL_MAP = {
     5220: 44,
     5230: 46,
     5240: 48,
+    # DFS channels.
     5260: 52,
     5280: 56,
     5300: 60,
@@ -94,8 +95,12 @@ CHANNEL_MAP = {
     # 144 is supported by a subset of WiFi chips
     # (e.g. bcm4354, but not ath9k).
     5720: 144,
+    # End DFS channels.
     5745: 149,
+    5755: 151,
     5765: 153,
+    5775: 155,
+    5795: 159,
     5785: 157,
     5805: 161,
     5825: 165
