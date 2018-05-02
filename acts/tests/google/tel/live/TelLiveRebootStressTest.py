@@ -643,100 +643,6 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def _telephony_bootup_time_test(self):
-        """Telephony Bootup Perf Test
-
-        Arguments:
-            check_lte_data: whether to check the LTE data.
-            check_volte: whether to check Voice over LTE.
-            check_wfc: whether to check Wifi Calling.
-
-        Expected Results:
-            Time
-
-        Returns:
-            True is pass, False if fail.
-        """
-        self.number_of_devices = 1
-        ad = self.dut
-        toggle_airplane_mode(self.log, ad, False)
-        if not phone_setup_volte(self.log, ad):
-            ad.log.error("Failed to setup VoLTE.")
-            return False
-        fail_count = collections.defaultdict(int)
-        test_result = True
-        keyword_time_dict = {}
-
-        text_search_mapping = {
-            'boot_complete': "processing action (sys.boot_completed=1)",
-            'Voice_Reg': "< VOICE_REGISTRATION_STATE {.regState = REG_HOME",
-            'Data_Reg': "< DATA_REGISTRATION_STATE {.regState = REG_HOME",
-            'Data_Call_Up': "onSetupConnectionCompleted result=SUCCESS",
-            'VoLTE_Enabled': "isVolteEnabled=true",
-        }
-
-        text_obj_mapping = {
-            "boot_complete": None,
-            "Voice_Reg": None,
-            "Data_Reg": None,
-            "Data_Call_Up": None,
-            "VoLTE_Enabled": None,
-        }
-        blocked_for_calculate = ["boot_complete"]
-        for i in range(1, self.stress_test_number + 1):
-            ad.log.info("Telephony Bootup Time Test %s Iteration: %d / %d",
-                        self.test_name, i, self.stress_test_number)
-            ad.log.info("reboot!")
-            reboot_device(ad)
-            iteration_result = "pass"
-
-            time.sleep(30)
-
-            for tel_state in text_search_mapping:
-                dict_match = ad.search_logcat(text_search_mapping[tel_state])
-                if len(dict_match) != 0:
-                    text_obj_mapping[tel_state] = dict_match[0]['datetime_obj']
-                else:
-                    ad.log.error("Cannot Find Text %s in logcat",
-                                 text_search_mapping[tel_state])
-                    blocked_for_calculate.append(tel_state)
-
-            for tel_state in text_search_mapping:
-                if tel_state not in blocked_for_calculate:
-                    time_diff = text_obj_mapping[tel_state] - \
-                                text_obj_mapping['boot_complete']
-                    if time_diff.seconds > 100:
-                        continue
-                    if tel_state in keyword_time_dict:
-                        keyword_time_dict[tel_state].append(time_diff.seconds)
-                    else:
-                        keyword_time_dict[tel_state] = [
-                            time_diff.seconds,
-                        ]
-
-            ad.log.info("Telephony Bootup Time Test %s Iteration: %d / %d %s",
-                        self.test_name, i, self.stress_test_number,
-                        iteration_result)
-
-        for tel_state in text_search_mapping:
-            if tel_state not in blocked_for_calculate:
-                avg_time = self._get_list_average(keyword_time_dict[tel_state])
-                if avg_time < 12.0:
-                    ad.log.info("Average %s for %d iterations = %.2f seconds",
-                                tel_state, self.stress_test_number, avg_time)
-                else:
-                    ad.log.error("Average %s for %d iterations = %.2f seconds",
-                                 tel_state, self.stress_test_number, avg_time)
-                    fail_count[tel_state] += 1
-
-        ad.log.info("Bootup Time Dict: %s", keyword_time_dict)
-        ad.log.info("fail_count: %s", dict(fail_count))
-        for failure, count in fail_count.items():
-            if count:
-                ad.log.error("%s %s failures in %s iterations", count, failure,
-                             self.stress_test_number)
-                test_result = False
-        return test_result
 
     """ Tests Begin """
 
@@ -935,36 +841,6 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             self.dut.log.error("WFC test failed before reboot test")
             return False
         return self._reboot_stress_test(*func_names)
-
-    @test_tracker_info(uuid="109d59ff-a488-4a68-87fd-2d8d0c035326")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_bootup_optimized_stress(self):
-        """Bootup Optimized Reliability Test
-
-        Steps:
-            1. Reboot DUT.
-            2. Check Provisioning bit (if support provisioning)
-            3. Wait for DUT to camp on LTE, Verify Data.
-            4. Enable VoLTE, check IMS registration. Wait for DUT report VoLTE
-                enabled, make VoLTE call. And verify VoLTE SMS.
-                (if support VoLTE)
-            5. Connect WiFi, enable WiFi Calling, wait for DUT report WiFi
-                Calling enabled and make a WFC call and verify SMS.
-                Disconnect WiFi. (if support WFC)
-            6. Wait for DUT to camp on 3G, Verify Data.
-            7. Make CS call and verify SMS.
-            8. Verify Tethering Entitlement Check and Verify WiFi Tethering.
-            9. Check crashes.
-            10. Repeat Step 1~9 for N times. (before reboot, clear Provisioning
-                bit if provisioning is supported)
-
-        Expected Results:
-            No crash happens in stress test.
-
-        Returns:
-            True is pass, False if fail.
-        """
-        return self._telephony_bootup_time_test()
 
     @test_tracker_info(uuid="08752fac-dbdb-4d5b-91f6-4ffc3a3ac6d6")
     @TelephonyBaseTest.tel_test_wrap

@@ -192,7 +192,7 @@ class TelephonyBaseTest(BaseTestClass):
                 mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
                 qxdm_log_mask = os.path.join(qxdm_mask_path, mask_file_name)
             set_qxdm_logger_command(ad, mask=qxdm_log_mask)
-        start_qxdm_logger(ad, utils.get_current_epoch_time())
+            start_qxdm_logger(ad, utils.get_current_epoch_time())
 
     def _setup_device(self, ad, sim_conf_file):
         if not unlock_sim(ad):
