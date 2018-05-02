@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import time
+
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_atten_utils import set_rssi
@@ -32,6 +34,7 @@ from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
 from acts.test_utils.tel.tel_test_utils import get_wifi_signal_strength
+from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.utils import adb_shell_ping
 
 # Attenuator name
@@ -136,6 +139,16 @@ class TelWifiDataTest(TelephonyBaseTest):
                  MAX_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
                  MAX_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
+
+    def _atten_setup_no_service(self):
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
+        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
+                 MIN_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
                  MIN_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
@@ -425,6 +438,97 @@ class TelWifiDataTest(TelephonyBaseTest):
             get_telephony_signal_strength(ad)
             get_wifi_signal_strength(ad)
             return False
+        return True
+
+    @test_tracker_info(uuid="c5581e04-4589-4f32-b1f9-76f0b16666ce")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_modem_power_poor_coverage(self):
+        """Connectivity Monitor reports Poor Coverage to User
+
+        Steps:
+        1. Set WiFi, Cellular atten to MAX
+        2. Wait for X amount of time
+        3. Verify if the user gets a notification on UI
+
+        Expected Results:
+        1. User gets notification "Cellular battery issue: Poor coverage"
+
+        Returns:
+        True if Pass. False if fail.
+        """
+        ad = self.android_devices[0]
+        # Ensure apk is installed
+        monitor_apk = None
+        for apk in ("com.google.telephonymonitor",
+                    "com.google.android.connectivitymonitor"):
+            if ad.is_apk_installed(apk):
+                ad.log.info("apk %s is installed", apk)
+                monitor_apk = apk
+                break
+        if not monitor_apk:
+            ad.log.info(
+                "ConnectivityMonitor|TelephonyMonitor is not installed")
+            return False
+
+        # Ensure apk is running
+        ad.adb.shell(
+            "am start -n com.android.settings/.DevelopmentSettings",
+            ignore_status=True)
+        for cmd in ("setprop persist.radio.enable_tel_mon user_enabled",
+                    "setprop persist.radio.con_mon_hbeat 15000"):
+            ad.log.info(cmd)
+            ad.adb.shell(cmd)
+        ad.log.info("reboot to bring up %s", monitor_apk)
+        reboot_device(ad)
+        for i in range(30):
+            if ad.is_apk_running(monitor_apk):
+                ad.log.info("%s is running after reboot", monitor_apk)
+                break
+            elif i == 19:
+                ad.log.error("%s is not running after reboot",
+                                 monitor_apk)
+                return False
+            else:
+                ad.log.info(
+                    "%s is not running after reboot. Wait and check again",
+                    monitor_apk)
+                time.sleep(30)
+
+        # Setup all Notify Poor Coverage params
+        for cmd in ("am broadcast -a "
+            "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+            "-e \"ce.cm.bi.c.notify_poor_coverage\" \"true\"",
+            "am broadcast -a "
+            "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+            "-e \"ce.cm.bi.c.max_time_lowest_signal_strength_level_ms\" \"1\"",
+            "am broadcast -a "
+            "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+            "-e \"ce.cm.bi.c.max_temperature_c\" \"1\"",
+            "dumpsys battery set usb 0"):
+            time.sleep(1)
+            ad.log.info(cmd)
+            ad.adb.shell(cmd)
+
+        # Make Chamber ready for test
+        self._atten_setup_no_service()
+        ad.log.info("Waiting 1 min for attens to settle")
+        time.sleep(60)
+        if (wait_for_cell_data_connection(self.log, ad, True) or
+                wait_for_wifi_data_connection(self.log, ad, True)):
+            ad.log.error("Data is available, Expecting no Cellular/WiFi Signal")
+            get_telephony_signal_strength(ad)
+            get_wifi_signal_strength(ad)
+            return False
+        ad.log.info("Wait time for 2 CM Heart Beats")
+        time.sleep(60)
+        ad.log.info("dumpsys battery set usb 1")
+        ad.adb.shell("dumpsys battery set usb 1")
+        if ad.search_logcat(
+            "Bugreport notification title Cellular battery drain"):
+            ad.log.info("User got Poor coverage notification")
+        else:
+            ad.log.error("User didn't get Poor coverage notification")
+            result = False
         return True
 
 
