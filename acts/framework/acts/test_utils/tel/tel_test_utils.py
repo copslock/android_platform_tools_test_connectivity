@@ -33,9 +33,17 @@ from acts.controllers.adb import AdbError
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.libs.proc import job
+from acts.test_utils.tel.tel_defines import CarrierConfigs
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
 from acts.test_utils.tel.tel_defines import CARD_POWER_UP
+from acts.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
+from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
+from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE_PROVISIONING
+from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING
+from acts.test_utils.tel.tel_defines import CAPABILITY_VT
+from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
+from acts.test_utils.tel.tel_defines import CAPABILITY_WFC_MODE_CHANGE
 from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
 from acts.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
@@ -64,6 +72,7 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_SENT_SUCCESS
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TELECOM_RINGING
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOICE_MAIL_COUNT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_DISABLED
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
@@ -106,6 +115,9 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_LEAVE_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_REJECT_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
+from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
+from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import TYPE_MOBILE
 from acts.test_utils.tel.tel_defines import TYPE_WIFI
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
@@ -302,6 +314,7 @@ def setup_droid_properties(log, ad, sim_filename=None):
             ad.log.info("roaming is not enabled, enable it")
             setattr(ad, 'roaming', True)
         ad.log.info("SubId %s info: %s", sub_id, sorted(sub_info.items()))
+    get_phone_capability(ad)
     data_roaming = getattr(ad, 'roaming', False)
     if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
         set_cell_data_roaming_state_by_adb(ad, data_roaming)
@@ -419,18 +432,30 @@ def get_phone_number_by_secret_code(ad, operator):
 
 def get_user_config_profile(ad):
     return {
-        "WFC Mode":
-        ad.droid.imsGetWfcMode(),
-        "WFC Enabled":
-        is_wfc_enabled(ad.log, ad),
         "Airplane Mode":
         ad.droid.connectivityCheckAirplaneMode(),
-        "Platform Enhanced 4G LTE Mode":
+        "IMS Registered":
+        ad.droid.telephonyIsImsRegistered(),
+        "VoLTE Platform Enabled":
         ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform(),
-        "User Enhanced 4G LTE Mode":
-        ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser(),
         "VoLTE Enabled":
-        ad.droid.telephonyIsVolteAvailable()
+        ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser(),
+        "VoLTE Available":
+        ad.droid.telephonyIsVolteAvailable(),
+        "VT Available":
+        ad.droid.telephonyIsVideoCallingAvailable(),
+        "VT Enabled":
+        ad.droid.imsIsVtEnabledByUser(),
+        "VT Platform Enabled":
+        ad.droid.imsIsVtEnabledByPlatform(),
+        "WFC Available":
+        ad.droid.telephonyIsWifiCallingAvailable(),
+        "WFC Enabled":
+        ad.droid.imsIsWfcEnabledByUser(),
+        "WFC Platform Enabled":
+        ad.droid.imsIsWfcEnabledByPlatform(),
+        "WFC Mode":
+        ad.droid.imsGetWfcMode()
     }
 
 
@@ -483,7 +508,7 @@ def toggle_airplane_mode_by_adb(log, ad, new_state=None):
         return True
     elif new_state is None:
         new_state = not cur_state
-
+    ad.log.info("Change airplane mode from %s to %s", cur_state, new_state)
     ad.adb.shell("settings put global airplane_mode_on %s" % int(new_state))
     ad.adb.shell("am broadcast -a android.intent.action.AIRPLANE_MODE")
     return True
@@ -1435,6 +1460,61 @@ def dumpsys_new_call_info(ad, last_tc_number, retries=3, interval=5):
     return {}
 
 
+def dumpsys_carrier_config(ad):
+    output = ad.adb.shell("dumpsys carrier_config")
+    configs = {}
+    attrs = [attr for attr in dir(CarrierConfigs) if not attr.startswith("__")]
+    for attr in attrs:
+        attr_string = getattr(CarrierConfigs, attr)
+        values = re.findall(r"%s = (\S+)" % attr_string, output)
+        if values:
+            value = values[-1]
+            if value == "true":
+                configs[attr_string] = True
+            elif value == "false":
+                configs[attr_string] = False
+            elif attr_string == CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT:
+                if value == "0":
+                    configs[attr_string] = WFC_MODE_WIFI_ONLY
+                elif value == "1":
+                    configs[attr_string] = WFC_MODE_CELLULAR_PREFERRED
+                elif value == "2":
+                    configs[attr_string] = WFC_MODE_WIFI_PREFERRED
+            else:
+                try:
+                    configs[attr_string] = int(value)
+                except Exception:
+                    configs[attr_string] = value
+        else:
+            configs[attr_string] = None
+    return configs
+
+
+def get_phone_capability(ad):
+    # TODO: add sub_id based carrier_config:
+    carrier_configs = dumpsys_carrier_config(ad)
+    capabilities = []
+    if carrier_configs[CarrierConfigs.VOLTE_AVAILABLE_BOOL]:
+        capabilities.append(CAPABILITY_VOLTE)
+    if carrier_configs[CarrierConfigs.WFC_IMS_AVAILABLE_BOOL]:
+        capabilities.append(CAPABILITY_WFC)
+    if carrier_configs[CarrierConfigs.EDITABLE_WFC_MODE_BOOL]:
+        capabilities.append(CAPABILITY_WFC_MODE_CHANGE)
+    if carrier_configs[CarrierConfigs.SUPPORT_CONFERENCE_CALL_BOOL]:
+        capabilities.append(CAPABILITY_CONFERENCE)
+    if carrier_configs[CarrierConfigs.VT_AVAILABLE_BOOL]:
+        capabilities.append(CAPABILITY_VT)
+    if carrier_configs[CarrierConfigs.VOLTE_PROVISIONED_BOOL]:
+        capabilities.append(CAPABILITY_VOLTE_PROVISIONING)
+    if carrier_configs[CarrierConfigs.VOLTE_OVERRIDE_WFC_BOOL]:
+        capabilities.append(CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING)
+    ad.log.info("Capabilities: %s", capabilities)
+    if not getattr(ad, 'telephony', {}):
+        setattr(ad, 'telephony', {"capabilities": capabilities})
+    else:
+        ad.telephony["capabilities"] = capabilities
+
+
 def call_reject(log, ad_caller, ad_callee, reject=True):
     """Caller call Callee, then reject on callee.
 
@@ -1859,6 +1939,9 @@ def call_setup_teardown_for_subscription(
             for new_call_id in new_call_ids:
                 if not wait_for_in_call_active(ad, call_id=new_call_id):
                     result = False
+                else:
+                    ad.log.info("callProperties = %s",
+                                ad.droid.telecomCallGetProperties(new_call_id))
 
             if not ad.droid.telecomCallGetAudioState():
                 ad.log.error("Audio is not in call state")
@@ -2138,8 +2221,11 @@ def active_file_download_test(log, ad, file_name="5MB", method="sl4a"):
     return task[0](*task[1])
 
 
-def verify_internet_connection_by_ping(log, ad, retries=1,
-                                       expected_state=True):
+def verify_internet_connection_by_ping(log,
+                                       ad,
+                                       retries=1,
+                                       expected_state=True,
+                                       timeout=60):
     """Verify internet connection by ping test.
 
     Args:
@@ -2147,12 +2233,13 @@ def verify_internet_connection_by_ping(log, ad, retries=1,
         ad: Android Device Object.
 
     """
+    begin_time = get_current_epoch_time()
     ip_addr = "54.230.144.105"
     for dest in ("www.google.com", "www.amazon.com", ip_addr):
         for i in range(retries):
             ad.log.info("Ping %s - attempt %d", dest, i + 1)
             result = adb_shell_ping(
-                ad, count=5, timeout=60, loss_tolerance=40, dest_ip=dest)
+                ad, count=5, timeout=timeout, loss_tolerance=40, dest_ip=dest)
             if result == expected_state:
                 ad.log.info(
                     "Internet connection by pinging to %s is %s as expected",
@@ -2165,9 +2252,12 @@ def verify_internet_connection_by_ping(log, ad, retries=1,
                     return False
                 return True
             else:
-                ad.log.error(
+                ad.log.warning(
                     "Internet connection test by pinging %s is %s, expecting %s",
                     dest, result, expected_state)
+                if get_current_epoch_time() - begin_time < timeout * 1000:
+                    time.sleep(5)
+    ad.log.error("Ping test doesn't meet expected %s", expected_state)
     return False
 
 
@@ -2995,8 +3085,24 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
     if new_state is None:
         new_state = not current_state
     if new_state != current_state:
-        ad.log.info("Toggle Enhanced 4G LTE Mode")
+        ad.log.info("Toggle Enhanced 4G LTE Mode from %s to %s", current_state,
+                    new_state)
         ad.droid.imsSetEnhanced4gMode(new_state)
+    return True
+
+
+def toggle_wfc(log, ad, new_state=None):
+    """ Toggle WFC enable/disable"""
+    if not ad.droid.imsIsWfcEnabledByPlatform():
+        ad.log.info("WFC is not enabled by platform")
+        return False
+    current_state = ad.droid.imsIsWfcEnabledByUser()
+    if current_state == None:
+        new_state = not current_state
+    if new_state != current_state:
+        ad.log.info("Toggle WFC user enabled from %s to %s", current_state,
+                    new_state)
+        ad.droid.imsSetWfcSetting(new_state)
     return True
 
 
@@ -3343,7 +3449,7 @@ def is_ims_registered(log, ad):
     return ad.droid.telephonyIsImsRegistered()
 
 
-def wait_for_ims_registered(log, ad, max_time):
+def wait_for_ims_registered(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
     """Wait for android device to register on ims.
 
     Args:
@@ -3373,10 +3479,10 @@ def is_volte_enabled(log, ad):
         ad.log.info("IMS is not registered.")
         return False
     if not ad.droid.telephonyIsVolteAvailable():
-        ad.log.info("IsVolteCallingAvailble is False")
+        ad.log.info("IMS is registered, IsVolteCallingAvailble is False")
         return False
     else:
-        ad.log.info("IsVolteCallingAvailble is True")
+        ad.log.info("IMS is registered, IsVolteCallingAvailble is True")
         return True
 
 
@@ -3393,12 +3499,13 @@ def is_video_enabled(log, ad):
     """
     video_status = ad.droid.telephonyIsVideoCallingAvailable()
     if video_status is True and is_ims_registered(log, ad) is False:
-        log.error("Error! Video Call is Available, but IMS is not registered.")
+        ad.log.error(
+            "Error! Video Call is Available, but IMS is not registered.")
         return False
     return video_status
 
 
-def wait_for_volte_enabled(log, ad, max_time):
+def wait_for_volte_enabled(log, ad, max_time=MAX_WAIT_TIME_VOLTE_ENABLED):
     """Wait for android device to report VoLTE enabled bit true.
 
     Args:
@@ -3413,7 +3520,7 @@ def wait_for_volte_enabled(log, ad, max_time):
     return _wait_for_droid_in_state(log, ad, max_time, is_volte_enabled)
 
 
-def wait_for_video_enabled(log, ad, max_time):
+def wait_for_video_enabled(log, ad, max_time=MAX_WAIT_TIME_VOLTE_ENABLED):
     """Wait for android device to report Video Telephony enabled bit true.
 
     Args:
@@ -3443,10 +3550,10 @@ def is_wfc_enabled(log, ad):
         ad.log.info("IMS is not registered.")
         return False
     if not ad.droid.telephonyIsWifiCallingAvailable():
-        ad.log.info("IsWifiCallingAvailble is False")
+        ad.log.info("IMS is registered, IsWifiCallingAvailble is False")
         return False
     else:
-        ad.log.info("IsWifiCallingAvailble is True")
+        ad.log.info("IMS is registered, IsWifiCallingAvailble is True")
         return True
 
 
@@ -5579,6 +5686,7 @@ def start_nexuslogger(ad):
                      (qxdm_logger_apk, perm))
     time.sleep(2)
     for i in range(3):
+        ad.ensure_screen_on()
         ad.log.info("Start %s Attempt %d" % (qxdm_logger_apk, i + 1))
         ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
         time.sleep(5)
@@ -5647,6 +5755,7 @@ def start_adb_tcpdump(ad,
             if intf in out
         ]
     else:
+        if interface not in out: return
         intfs = [interface]
 
     out = ad.adb.shell("ps -ef | grep tcpdump")
@@ -5768,6 +5877,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.log.error("Failed to start adb logcat!")
     if skip_setup_wizard:
         ad.exit_setup_wizard()
+    set_qxdm_logger_command(ad, mask=getattr(ad, "qxdm_log_mask", None))
     start_qxdm_logger(ad)
     # Setup VoWiFi MDN for Verizon. b/33187374
     if "Verizon" in ad.adb.getprop(
@@ -5954,7 +6064,8 @@ def send_dialer_secret_code(ad, secret_code):
 
 
 def enable_radio_log_on(ad):
-    if ad.adb.getprop(" persist.vendor.radio.adb_log_on") != "1":
+    if ad.adb.getprop("persist.vendor.radio.adb_log_on") != "1":
+        ad.log.info("Enable radio adb_log_on and reboot")
         adb_disable_verity(ad)
         ad.adb.shell("setprop persist.vendor.radio.adb_log_on 1")
         reboot_device(ad)
@@ -6170,7 +6281,7 @@ def power_on_sim(ad, sim_slot_id=None):
 
 
 def extract_test_log(log, src_file, dst_file, test_tag):
-    cmd = "grep -n '%s' %s" % (test_tag, src_file)
+    cmd = "grep -n '%s ' %s" % (test_tag, src_file)
     result = job.run(cmd, ignore_status=True)
     if not result.stdout or result.exit_status == 1:
         log.warning("Command %s returns %s", cmd, result)
@@ -6192,6 +6303,60 @@ def get_device_epoch_time(ad):
 def synchronize_device_time(ad):
     ad.adb.shell("put global auto_time 0; date `date +%m%d%H%M%G.%S` ; "
                  "am broadcast -a android.intent.action.TIME_SET")
+
+
+def revert_default_telephony_setting(ad):
+    toggle_airplane_mode_by_adb(ad.log, ad, True)
+    default_data_roaming = int(
+        ad.adb.getprop("ro.com.android.dataroaming") == 'true')
+    default_network_preference = int(
+        ad.adb.getprop("ro.telephony.default_network"))
+    ad.log.info("Default data roaming %s, network preference %s",
+                default_data_roaming, default_network_preference)
+    new_data_roaming = abs(default_data_roaming - 1)
+    new_network_preference = abs(default_network_preference - 1)
+    ad.log.info(
+        "Set data roaming = %s, mobile data = 0, network preference = %s",
+        new_data_roaming, new_network_preference)
+    ad.adb.shell("settings put global mobile_data 0")
+    ad.adb.shell("settings put global data_roaming %s" % new_data_roaming)
+    ad.adb.shell("settings put global preferred_network_mode %s" %
+                 new_network_preference)
+
+
+def verify_default_telephony_setting(ad):
+    ad.log.info("carrier_config: %s", dumpsys_carrier_config(ad))
+    default_data_roaming = int(
+        ad.adb.getprop("ro.com.android.dataroaming") == 'true')
+    default_network_preference = int(
+        ad.adb.getprop("ro.telephony.default_network"))
+    ad.log.info("Default data roaming %s, network preference %s",
+                default_data_roaming, default_network_preference)
+    data_roaming = int(ad.adb.shell("settings get global data_roaming"))
+    mobile_data = int(ad.adb.shell("settings get global mobile_data"))
+    network_preference = int(
+        ad.adb.shell("settings get global preferred_network_mode"))
+    airplane_mode = int(ad.adb.shell("settings get global airplane_mode_on"))
+    result = True
+    self.dut.log.info("data_roaming = %s, mobile_data = %s, "
+                      "network_perference = %s, airplane_mode = %s",
+                      data_roaming, mobile_data, network_preference,
+                      airplane_mode)
+    if airplane_mode:
+        ad.log.error("Airplane mode is on")
+        result = False
+    if data_roaming != default_data_roaming:
+        ad.log.error("Data roaming is %s, expecting %s", data_roaming,
+                     default_data_roaming)
+        result = False
+    if not mobile_data:
+        ad.log.error("Mobile data is off")
+        result = False
+    if network_preference != default_network_preference:
+        ad.log.error("preferred_network_mode is %s, expecting %s",
+                     network_preference, default_network_preference)
+        result = False
+    return result
 
 
 def log_messaging_screen_shot(ad, test_name=""):
