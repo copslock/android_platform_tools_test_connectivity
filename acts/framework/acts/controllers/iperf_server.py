@@ -291,13 +291,14 @@ class IPerfServerOverSsh():
         """
         if not self.started:
             return
-        self.ssh_session.run_async("kill {}".format(str(self.iperf_process)))
+        self.ssh_session.run_async("kill -9 {}".format(
+            str(self.iperf_process)))
         iperf_result = self.ssh_session.run(
             "cat iperf_server_port{}.log".format(self.port))
         with open(self.full_out_path, 'w') as f:
             f.write(iperf_result.stdout)
-        self.ssh_session.run_async(
-            "rm iperf_server_port{}.log".format(self.port))
+        self.ssh_session.run_async("rm iperf_server_port{}.log".format(
+            self.port))
         self.started = False
 
 
@@ -350,7 +351,7 @@ class IPerfServerOverAdb():
         """
         if not self.started:
             return
-        self.adb_device.adb.shell("kill {}".format(self.iperf_process))
+        self.adb_device.adb.shell("kill -9 {}".format(self.iperf_process))
         iperf_result = self.adb_device.adb.shell(
             "cat {}/iperf_server_port{}.log".format(self.adb_log_path,
                                                     self.port))
