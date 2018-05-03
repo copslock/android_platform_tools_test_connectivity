@@ -930,7 +930,10 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
 
         wait_for_not_network_rat(
-            self.log, ad, RAT_FAMILY_WLAN, voice_or_data=NETWORK_SERVICE_DATA)
+            self.log,
+            self.dut,
+            RAT_FAMILY_WLAN,
+            voice_or_data=NETWORK_SERVICE_DATA)
 
         self.dut.log.info("\n\n------------------summary-----------------")
         self.dut.log.info("WiFi Enabled After %.2f seconds",
