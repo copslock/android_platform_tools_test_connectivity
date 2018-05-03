@@ -2000,8 +2000,13 @@ def call_setup_teardown_for_subscription(
                 reasons = ad.search_logcat(
                     "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
                     begin_time)
+                ad.log.info("\n".join(
+                    [reason["log_message"] for reason in reasons]))
+                reasons = ad.search_logcat(
+                    "ACTION_FORBIDDEN_NO_SERVICE_AUTHORIZATION", begin_time)
                 if reasons:
-                    ad.log.info(reasons[-1]["log_message"])
+                    ad.log.warning(
+                        "ACTION_FORBIDDEN_NO_SERVICE_AUTHORIZATION is seen")
                 try:
                     if ad.droid.telecomIsInCall():
                         ad.log.info("In call. End now.")
