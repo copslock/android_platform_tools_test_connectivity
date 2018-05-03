@@ -16,16 +16,18 @@
 
 import collections
 import ipaddress
+import logging
 import time
 
-from acts import logger
 from acts.controllers.ap_lib import ap_get_interface
 from acts.controllers.ap_lib import bridge_interface
 from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.ap_lib import dhcp_server
 from acts.controllers.ap_lib import hostapd
+from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.utils_lib.commands import ip
 from acts.controllers.utils_lib.commands import route
+from acts.controllers.utils_lib.commands import shell
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.libs.proc import job
@@ -104,9 +106,6 @@ class AccessPoint(object):
             configs: configs for the access point from config file.
         """
         self.ssh_settings = settings.from_config(configs['ssh_config'])
-        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' % (
-            self.ssh_settings.hostname, msg))
-
         if 'ap_subnet' in configs:
             self._AP_2G_SUBNET_STR = configs['ap_subnet']['2g']
             self._AP_5G_SUBNET_STR = configs['ap_subnet']['5g']
@@ -131,7 +130,7 @@ class AccessPoint(object):
         self.bridge = bridge_interface.BridgeInterface(self)
         self.interfaces = ap_get_interface.ApInterfaces(self)
 
-        # Get needed interface names and initialize the unnecessary ones.
+        # Get needed interface names and initialize the unneccessary ones.
         self.wan = self.interfaces.get_wan_interface()
         self.wlan = self.interfaces.get_wlan_interface()
         self.wlan_2g = self.wlan[0]
@@ -145,40 +144,26 @@ class AccessPoint(object):
         Bring down hostapd if instance is running, bring down all bridge
         interfaces.
         """
+        # This is necessary for Gale/Whirlwind flashed with dev channel image
+        # Unused interfaces such as existing hostapd daemon, guest, mesh
+        # interfaces need to be brought down as part of the AP initialization
+        # process, otherwise test would fail.
         try:
-            # This is necessary for Gale/Whirlwind flashed with dev channel image
-            # Unused interfaces such as existing hostapd daemon, guest, mesh
-            # interfaces need to be brought down as part of the AP initialization
-            # process, otherwise test would fail.
-            try:
-                self.ssh.run('stop hostapd')
-            except job.Error:
-                self.log.debug('No hostapd running')
-            # Bring down all wireless interfaces
-            for iface in self.wlan:
-                WLAN_DOWN = 'ifconfig {} down'.format(iface)
-                self.ssh.run(WLAN_DOWN)
-            # Bring down all bridge interfaces
-            bridge_interfaces = self.interfaces.get_bridge_interface()
-            if bridge_interfaces:
-                for iface in bridge_interfaces:
-                    BRIDGE_DOWN = 'ifconfig {} down'.format(iface)
-                    BRIDGE_DEL = 'brctl delbr {}'.format(iface)
-                    self.ssh.run(BRIDGE_DOWN)
-                    self.ssh.run(BRIDGE_DEL)
-        except Exception:
-            # TODO(b/76101464): APs may not clean up properly from previous
-            # runs. Rebooting the AP can put them back into the correct state.
-            self.log.exception('Unable to bring down hostapd. Rebooting.')
-            # Reboot the AP.
-            try:
-                self.ssh.run('reboot')
-                # This sleep ensures the device had time to go down.
-                time.sleep(10)
-                self.ssh.run('echo connected', timeout=300)
-            except Exception as e:
-                self.log.exception("Error in rebooting AP: %s", e)
-                raise
+            self.ssh.run('stop hostapd')
+        except job.Error:
+            self.log.debug('No hostapd running')
+        # Bring down all wireless interfaces
+        for iface in self.wlan:
+            WLAN_DOWN = 'ifconfig {} down'.format(iface)
+            self.ssh.run(WLAN_DOWN)
+        # Bring down all bridge interfaces
+        bridge_interfaces = self.interfaces.get_bridge_interface()
+        if bridge_interfaces:
+            for iface in bridge_interfaces:
+                BRIDGE_DOWN = 'ifconfig {} down'.format(iface)
+                BRIDGE_DEL = 'brctl delbr {}'.format(iface)
+                self.ssh.run(BRIDGE_DOWN)
+                self.ssh.run(BRIDGE_DEL)
 
     def start_ap(self, hostapd_config, additional_parameters=None):
         """Starts as an ap using a set of configurations.
@@ -254,8 +239,9 @@ class AccessPoint(object):
             counter = 1
             for bss in hostapd_config.bss_lookup:
                 if interface_mac_orig:
-                    hostapd_config.bss_lookup[bss].bssid = (
-                            interface_mac_orig.stdout[:-1] + str(counter))
+                    hostapd_config.bss_lookup[
+                        bss].bssid = interface_mac_orig.stdout[:-1] + str(
+                            counter)
                 self._route_cmd.clear_routes(net_interface=str(bss))
                 if interface is self.wlan_2g:
                     starting_ip_range = self._AP_2G_SUBNET_STR
