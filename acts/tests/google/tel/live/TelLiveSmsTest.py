@@ -137,7 +137,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
                       self.message_lengths)
         return True
 
-    def _mms_test(self, ads):
+    def _mms_test(self, ads, expected_result=True):
         """Test MMS between two phones.
 
         Returns:
@@ -146,8 +146,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         for length in self.message_lengths:
             message_array = [("Test Message", rand_ascii_str(length), None)]
-            if not mms_send_receive_verify(self.log, ads[0], ads[1],
-                                           message_array):
+            if not mms_send_receive_verify(
+                    self.log,
+                    ads[0],
+                    ads[1],
+                    message_array,
+                    expected_result=expected_result):
                 self.log.warning("MMS of body length %s test failed", length)
                 return False
             else:
@@ -206,11 +210,13 @@ class TelLiveSmsTest(TelephonyBaseTest):
     def _sms_test_mt(self, ads):
         return self._sms_test([ads[1], ads[0]])
 
-    def _mms_test_mo(self, ads):
-        return self._mms_test([ads[0], ads[1]])
+    def _mms_test_mo(self, ads, expected_result=True):
+        return self._mms_test(
+            [ads[0], ads[1]], expected_result=expected_result)
 
-    def _mms_test_mt(self, ads):
-        return self._mms_test([ads[1], ads[0]])
+    def _mms_test_mt(self, ads, expected_result=True):
+        return self._mms_test(
+            [ads[1], ads[0]], expected_result=expected_result)
 
     def _long_sms_test_mo(self, ads):
         return self._long_sms_test([ads[0], ads[1]])
@@ -2864,21 +2870,22 @@ class TelLiveSmsTest(TelephonyBaseTest):
             expected_result = True
 
         try:
-            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
-            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
-            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
-
             tasks = [(phone_setup_voice_general, (self.log, ads[0])),
                      (phone_setup_voice_general, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
-            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-            test_result = self._mms_test_mo(ads)
-            ads[0].log.info("Mms test %s, expecting %s", "succeed"
-                            if test_result else "fail", "succeed"
-                            if expected_result else "fail")
-            return test_result == expected_result
+            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
+            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
+            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
+            log_msg = "expecting successful mms receive" if (
+                expected_result) else "expecting mms receive failure"
+            if not self._mms_test_mo(ads, expected_result=expected_result):
+                ads[0].log.error("Mms test failed, %s", log_msg)
+                return False
+            else:
+                ads[0].log.info("Mms test succeeded, %s", log_msg)
+                return True
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
 
@@ -2901,16 +2908,21 @@ class TelLiveSmsTest(TelephonyBaseTest):
         if get_operator_name(self.log, ads[0]) == "vzw":
             expected_result = True
         try:
-            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
-            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
-            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
-
             tasks = [(phone_setup_voice_general, (self.log, ads[0])),
                      (phone_setup_voice_general, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
                 return False
-            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-            return self._mms_test_mt(ads) == expected_result
+            subscriber_id = ads[0].droid.telephonyGetSubscriberId()
+            data_usage = get_mobile_data_usage(ads[0], subscriber_id)
+            set_mobile_data_usage_limit(ads[0], data_usage, subscriber_id)
+            log_msg = "expecting successful mms receive" if (
+                expected_result) else "expecting mms receive failure"
+            if not self._mms_test_mt(ads, expected_result=expected_result):
+                ads[0].log.error("Mms test failed, %s", log_msg)
+                return False
+            else:
+                ads[0].log.info("Mms test succeeded, %s", log_msg)
+                return True
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
