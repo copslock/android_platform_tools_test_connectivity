@@ -49,6 +49,32 @@ def detroy(objs):
     return
 
 
+def visit_config_page(browser, url, page_load_timeout, num_tries):
+    """ Method to visit Netgear AP webpages
+
+    This function visits a web page and checks the the resulting URL matches
+    the intended URL, i.e. no redirects have happened
+
+    Args:
+        browser: the splinter browser object that will visit the URL
+        url: the intended url
+        num_tries: number of tries before url is declared unreachable
+    """
+    browser.driver.set_page_load_timeout(page_load_timeout)
+    for idx in range(num_tries):
+        try:
+            browser.visit(url)
+        except:
+            raise TimeoutError(
+                "Page load timout. Could be due to connectivity or alerts.")
+        if browser.url.split("/")[-1] == url.split("/")[-1]:
+            break
+        if idx == num_tries - 1:
+            print(browser.url)
+            print(url)
+            raise RuntimeError("URL was unreachable.")
+
+
 class WifiRetailAP(object):
     """ Base class implementation for retail ap.
 
@@ -202,13 +228,16 @@ class NetgearR7000AP(WifiRetailAP):
 
     def __init__(self, ap_settings):
         self.ap_settings = ap_settings.copy()
-        self.CONFIG_PAGE = "http://{}:{}@{}/WLG_wireless_dual_band_r10.htm".format(
-            self.ap_settings["admin_username"],
-            self.ap_settings["admin_password"], self.ap_settings["ip_address"])
-        self.CONFIG_PAGE_NOLOGIN = "http://{}/WLG_wireless_dual_band_r10.htm".format(
-            self.ap_settings["ip_address"])
-        self.CONFIG_PAGE_ADVANCED = "http://{}/WLG_adv_dual_band2.htm".format(
-            self.ap_settings["ip_address"])
+        self.CONFIG_PAGE = "{}://{}:{}@{}:{}/WLG_wireless_dual_band_r10.htm".format(
+            self.ap_settings["protocol"], self.ap_settings["admin_username"],
+            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
+            self.ap_settings["port"])
+        self.CONFIG_PAGE_NOLOGIN = "{}://{}:{}/WLG_wireless_dual_band_r10.htm".format(
+            self.ap_settings["protocol"], self.ap_settings["ip_address"],
+            self.ap_settings["port"])
+        self.CONFIG_PAGE_ADVANCED = "{}://{}:{}/WLG_adv_dual_band2.htm".format(
+            self.ap_settings["protocol"], self.ap_settings["ip_address"],
+            self.ap_settings["port"])
         self.CHROME_OPTIONS = splinter.driver.webdriver.chrome.Options()
         self.CHROME_OPTIONS.add_argument("--no-proxy-server")
         self.CHROME_OPTIONS.add_argument("--no-sandbox")
@@ -271,6 +300,8 @@ class NetgearR7000AP(WifiRetailAP):
             self.update_ap_settings(ap_settings)
 
     def read_ap_settings(self):
+        """ Function to read ap settings.
+        """
         BW_MODE_VALUES = {
             "g and b": "11g",
             "145Mbps": "VHT20",
@@ -281,23 +312,25 @@ class NetgearR7000AP(WifiRetailAP):
 
         with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
             # Visit URL
-            browser.visit(self.CONFIG_PAGE)
-            sleep(BROWSER_WAIT_SHORT)
-            browser.visit(self.CONFIG_PAGE_NOLOGIN)
-            sleep(BROWSER_WAIT_SHORT)
+            visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
+            visit_config_page(browser, self.CONFIG_PAGE_NOLOGIN,
+                              BROWSER_WAIT_MED, 10)
 
             for key, value in self.CONFIG_PAGE_FIELDS.items():
                 if "status" in key:
-                    browser.visit(self.CONFIG_PAGE_ADVANCED)
+                    visit_config_page(browser, self.CONFIG_PAGE_ADVANCED,
+                                      BROWSER_WAIT_MED, 10)
                     config_item = browser.find_by_name(value)
                     self.ap_settings["{}_{}".format(key[1], key[0])] = int(
                         config_item.first.checked)
-                    browser.visit(self.CONFIG_PAGE_NOLOGIN)
+                    visit_config_page(browser, self.CONFIG_PAGE_NOLOGIN,
+                                      BROWSER_WAIT_MED, 10)
                 else:
                     config_item = browser.find_by_name(value)
                     if "bandwidth" in key:
-                        self.ap_settings["{}_{}".format(key[1], key[
-                            0])] = BW_MODE_VALUES[config_item.first.value]
+                        self.ap_settings["{}_{}".format(
+                            key[1],
+                            key[0])] = BW_MODE_VALUES[config_item.first.value]
                     elif "power" in key:
                         self.ap_settings["{}_{}".format(key[1], key[
                             0])] = POWER_MODE_VALUES[config_item.first.value]
@@ -311,11 +344,27 @@ class NetgearR7000AP(WifiRetailAP):
                                     key[1], key[0])] = item.value
                     else:
                         config_item = browser.find_by_name(value)
-                        self.ap_settings["{}_{}".format(key[1], key[
-                            0])] = config_item.first.value
+                        self.ap_settings["{}_{}".format(
+                            key[1], key[0])] = config_item.first.value
         return self.ap_settings.copy()
 
+    def validate_ap_settings(self):
+        """ Function to validate ap settings
+
+        This function compares the actual ap settings read from the web GUI
+        with the assumed settings saved in the AP object. When called after AP
+        configuration, this method helps ensure that our configuration was
+        successful.
+        """
+        assumed_ap_settings = self.ap_settings.copy()
+        actual_ap_settings = self.read_ap_settings()
+        if assumed_ap_settings != actual_ap_settings:
+            raise ValueError(
+                "Discrepancy in AP settings. Potential configuration error.")
+
     def configure_ap(self):
+        """ Function to configure ap wireless settings
+        """
         BW_MODE_TEXT = {
             "11g": "Up to 54 Mbps",
             "VHT20": "Up to 289 Mbps",
@@ -327,36 +376,35 @@ class NetgearR7000AP(WifiRetailAP):
         # Configure radios
         with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
             # Visit URL
-            browser.visit(self.CONFIG_PAGE)
-            sleep(BROWSER_WAIT_SHORT)
-            browser.visit(self.CONFIG_PAGE_NOLOGIN)
-            sleep(BROWSER_WAIT_SHORT)
+            visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
+            visit_config_page(browser, self.CONFIG_PAGE_NOLOGIN,
+                              BROWSER_WAIT_MED, 10)
 
             # Update region, and power/bandwidth for each network
             for key, value in self.CONFIG_PAGE_FIELDS.items():
                 if "power" in key:
                     config_item = browser.find_by_name(value).first
-                    config_item.select_by_text(
-                        self.ap_settings["{}_{}".format(key[1], key[0])])
+                    config_item.select_by_text(self.ap_settings["{}_{}".format(
+                        key[1], key[0])])
                 elif "region" in key:
                     config_item = browser.find_by_name(value).first
                     config_item.select_by_text(self.ap_settings["region"])
                 elif "bandwidth" in key:
                     config_item = browser.find_by_name(value).first
-                    config_item.select_by_text(BW_MODE_TEXT[self.ap_settings[
-                        "{}_{}".format(key[1], key[0])]])
+                    config_item.select_by_text(
+                        BW_MODE_TEXT[self.ap_settings["{}_{}".format(
+                            key[1], key[0])]])
 
             # Update security settings (passwords updated only if applicable)
             for key, value in self.CONFIG_PAGE_FIELDS.items():
                 if "security_type" in key:
-                    browser.choose(
-                        value,
-                        self.ap_settings["{}_{}".format(key[1], key[0])])
-                    if self.ap_settings["{}_{}".format(key[1], key[
-                            0])] == "WPA2-PSK":
+                    browser.choose(value, self.ap_settings["{}_{}".format(
+                        key[1], key[0])])
+                    if self.ap_settings["{}_{}".format(key[1],
+                                                       key[0])] == "WPA2-PSK":
                         config_item = browser.find_by_name(
-                            self.CONFIG_PAGE_FIELDS[(key[0], "password"
-                                                     )]).first
+                            self.CONFIG_PAGE_FIELDS[(key[0],
+                                                     "password")]).first
                         config_item.fill(self.ap_settings["{}_{}".format(
                             "password", key[0])])
 
@@ -368,12 +416,12 @@ class NetgearR7000AP(WifiRetailAP):
             for key, value in self.CONFIG_PAGE_FIELDS.items():
                 if "ssid" in key:
                     config_item = browser.find_by_name(value).first
-                    config_item.fill(
-                        self.ap_settings["{}_{}".format(key[1], key[0])])
+                    config_item.fill(self.ap_settings["{}_{}".format(
+                        key[1], key[0])])
                 elif "channel" in key:
                     config_item = browser.find_by_name(value).first
-                    config_item.select(
-                        self.ap_settings["{}_{}".format(key[1], key[0])])
+                    config_item.select(self.ap_settings["{}_{}".format(
+                        key[1], key[0])])
                     sleep(BROWSER_WAIT_SHORT)
                     try:
                         alert = browser.get_alert()
@@ -390,15 +438,18 @@ class NetgearR7000AP(WifiRetailAP):
                 sleep(BROWSER_WAIT_SHORT)
             except:
                 sleep(BROWSER_WAIT_SHORT)
-            browser.visit(self.CONFIG_PAGE)
+            visit_config_page(browser, self.CONFIG_PAGE,
+                              BROWSER_WAIT_EXTRA_LONG, 10)
+            self.validate_ap_settings()
 
     def configure_radio_on_off(self):
+        """ Helper configuration function to turn radios on/off
+        """
         with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
             # Visit URL
-            browser.visit(self.CONFIG_PAGE)
-            sleep(BROWSER_WAIT_SHORT)
-            browser.visit(self.CONFIG_PAGE_ADVANCED)
-            sleep(BROWSER_WAIT_SHORT)
+            visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
+            visit_config_page(browser, self.CONFIG_PAGE_ADVANCED,
+                              BROWSER_WAIT_MED, 10)
 
             # Turn radios on or off
             status_toggled = False
@@ -418,7 +469,8 @@ class NetgearR7000AP(WifiRetailAP):
                 sleep(BROWSER_WAIT_SHORT)
                 browser.find_by_name("Apply").first.click()
                 sleep(BROWSER_WAIT_EXTRA_LONG)
-                browser.visit(self.CONFIG_PAGE)
+                visit_config_page(browser, self.CONFIG_PAGE,
+                                  BROWSER_WAIT_EXTRA_LONG, 10)
 
 
 class NetgearR7500AP(WifiRetailAP):
@@ -497,6 +549,8 @@ class NetgearR7500AP(WifiRetailAP):
             self.update_ap_settings(ap_settings)
 
     def read_ap_settings(self):
+        """ Function to read ap wireless settings
+        """
         BW_MODE_VALUES = {
             "1": "11g",
             "2": "VHT20",
@@ -510,10 +564,8 @@ class NetgearR7500AP(WifiRetailAP):
         # Get radio configuration. Note that if both radios are off, the below
         # code will result in an error
         with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
-            browser.visit(self.CONFIG_PAGE)
-            sleep(BROWSER_WAIT_SHORT)
-            browser.visit(self.CONFIG_PAGE)
-            sleep(BROWSER_WAIT_SHORT)
+            visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
+            visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             wireless_button = browser.find_by_id("wireless").first
             wireless_button.click()
             sleep(BROWSER_WAIT_SHORT)
@@ -522,8 +574,9 @@ class NetgearR7500AP(WifiRetailAP):
                 for key, value in self.CONFIG_PAGE_FIELDS.items():
                     if "bandwidth" in key:
                         config_item = iframe.find_by_name(value).first
-                        self.ap_settings["{}_{}".format(key[1], key[
-                            0])] = BW_MODE_VALUES[config_item.value]
+                        self.ap_settings["{}_{}".format(
+                            key[1],
+                            key[0])] = BW_MODE_VALUES[config_item.value]
                     elif "region" in key:
                         config_item = iframe.find_by_name(value).first
                         self.ap_settings["region"] = self.REGION_MAP[
@@ -531,24 +584,26 @@ class NetgearR7500AP(WifiRetailAP):
                     elif "password" in key:
                         try:
                             config_item = iframe.find_by_name(value).first
-                            self.ap_settings["{}_{}".format(key[1], key[
-                                0])] = config_item.value
+                            self.ap_settings["{}_{}".format(
+                                key[1], key[0])] = config_item.value
                             self.ap_settings["{}_{}".format(
                                 "security_type", key[0])] = "WPA2-PSK"
                         except:
-                            self.ap_settings["{}_{}".format(key[1], key[
-                                0])] = "defaultpassword"
+                            self.ap_settings["{}_{}".format(
+                                key[1], key[0])] = "defaultpassword"
                             self.ap_settings["{}_{}".format(
                                 "security_type", key[0])] = "Disable"
                     elif ("channel" in key) or ("ssid" in key):
                         config_item = iframe.find_by_name(value).first
-                        self.ap_settings["{}_{}".format(key[1], key[
-                            0])] = config_item.value
+                        self.ap_settings["{}_{}".format(
+                            key[1], key[0])] = config_item.value
                     else:
                         pass
         return self.ap_settings.copy()
 
     def configure_ap(self):
+        """ Function to configure ap wireless settings
+        """
         BW_MODE_TEXT_2G = {
             "11g": "Up to 54 Mbps",
             "VHT20": "Up to 289 Mbps",
@@ -564,10 +619,8 @@ class NetgearR7500AP(WifiRetailAP):
         self.configure_radio_on_off()
         # Configure radios
         with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
-            browser.visit(self.CONFIG_PAGE)
-            sleep(BROWSER_WAIT_SHORT)
-            browser.visit(self.CONFIG_PAGE)
-            sleep(BROWSER_WAIT_SHORT)
+            visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
+            visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             wireless_button = browser.find_by_id("wireless").first
             wireless_button.click()
             sleep(BROWSER_WAIT_MED)
@@ -582,8 +635,8 @@ class NetgearR7500AP(WifiRetailAP):
                 for key, value in self.CONFIG_PAGE_FIELDS.items():
                     if "ssid" in key:
                         config_item = iframe.find_by_name(value).first
-                        config_item.fill(
-                            self.ap_settings["{}_{}".format(key[1], key[0])])
+                        config_item.fill(self.ap_settings["{}_{}".format(
+                            key[1], key[0])])
                     elif "channel" in key:
                         channel_string = "0" * (int(
                             self.ap_settings["{}_{}".format(key[1], key[0])]
@@ -608,14 +661,13 @@ class NetgearR7500AP(WifiRetailAP):
                 # (Must be done after security type is selected)
                 for key, value in self.CONFIG_PAGE_FIELDS.items():
                     if "security_type" in key:
-                        iframe.choose(
-                            value,
-                            self.ap_settings["{}_{}".format(key[1], key[0])])
-                        if self.ap_settings["{}_{}".format(key[1], key[
-                                0])] == "WPA2-PSK":
+                        iframe.choose(value, self.ap_settings["{}_{}".format(
+                            key[1], key[0])])
+                        if self.ap_settings["{}_{}".format(
+                                key[1], key[0])] == "WPA2-PSK":
                             config_item = iframe.find_by_name(
-                                self.CONFIG_PAGE_FIELDS[(key[0], "password"
-                                                         )]).first
+                                self.CONFIG_PAGE_FIELDS[(key[0],
+                                                         "password")]).first
                             config_item.fill(self.ap_settings["{}_{}".format(
                                 "password", key[0])])
 
@@ -634,15 +686,17 @@ class NetgearR7500AP(WifiRetailAP):
                 except:
                     pass
                 sleep(BROWSER_WAIT_SHORT)
-            browser.visit(self.CONFIG_PAGE)
+            visit_config_page(browser, self.CONFIG_PAGE,
+                              BROWSER_WAIT_EXTRA_LONG, 10)
             sleep(BROWSER_WAIT_LONG)
 
     def configure_radio_on_off(self):
+        """ Helper configuration function to turn radios on/off
+        """
         with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
-            browser.visit(self.CONFIG_PAGE)
-            sleep(BROWSER_WAIT_SHORT)
-            browser.visit(self.CONFIG_PAGE_ADVANCED)
-            sleep(BROWSER_WAIT_SHORT)
+            visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
+            visit_config_page(browser, self.CONFIG_PAGE_ADVANCED,
+                              BROWSER_WAIT_MED, 10)
             wireless_button = browser.find_by_id("advanced_bt").first
             wireless_button.click()
             sleep(BROWSER_WAIT_SHORT)
@@ -660,8 +714,8 @@ class NetgearR7500AP(WifiRetailAP):
                         if current_status != self.ap_settings["{}_{}".format(
                                 key[1], key[0])]:
                             status_toggled = True
-                            if self.ap_settings["{}_{}".format(key[1], key[
-                                    0])]:
+                            if self.ap_settings["{}_{}".format(key[1],
+                                                               key[0])]:
                                 config_item.check()
                             else:
                                 config_item.uncheck()
@@ -670,14 +724,16 @@ class NetgearR7500AP(WifiRetailAP):
                     sleep(BROWSER_WAIT_SHORT)
                     browser.find_by_name("Apply").first.click()
                     sleep(BROWSER_WAIT_EXTRA_LONG)
-                    browser.visit(self.CONFIG_PAGE)
+                    visit_config_page(browser, self.CONFIG_PAGE,
+                                      BROWSER_WAIT_EXTRA_LONG, 10)
 
     def read_radio_on_off(self):
+        """ Helper configuration function to read radio status
+        """
         with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
-            browser.visit(self.CONFIG_PAGE)
-            sleep(BROWSER_WAIT_SHORT)
-            browser.visit(self.CONFIG_PAGE_ADVANCED)
-            sleep(BROWSER_WAIT_SHORT)
+            visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
+            visit_config_page(browser, self.CONFIG_PAGE_ADVANCED,
+                              BROWSER_WAIT_MED, 10)
             wireless_button = browser.find_by_id("advanced_bt").first
             wireless_button.click()
             sleep(BROWSER_WAIT_SHORT)
