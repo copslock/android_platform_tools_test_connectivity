@@ -6297,8 +6297,13 @@ def get_device_epoch_time(ad):
 
 
 def synchronize_device_time(ad):
-    ad.adb.shell("put global auto_time 0; date `date +%m%d%H%M%G.%S` ; "
-                 "am broadcast -a android.intent.action.TIME_SET")
+    ad.adb.shell("put global auto_time 0", ignore_status=True)
+    try:
+        ad.adb.shell("date `date +%m%d%H%M%G.%S`")
+    except Exception:
+        ad.adb.droid.setTime(get_current_epoch_time())
+    ad.adb.shell(
+        "am broadcast -a android.intent.action.TIME_SET", ignore_status=True)
 
 
 def revert_default_telephony_setting(ad):
@@ -6334,10 +6339,9 @@ def verify_default_telephony_setting(ad):
         ad.adb.shell("settings get global preferred_network_mode"))
     airplane_mode = int(ad.adb.shell("settings get global airplane_mode_on"))
     result = True
-    self.dut.log.info("data_roaming = %s, mobile_data = %s, "
-                      "network_perference = %s, airplane_mode = %s",
-                      data_roaming, mobile_data, network_preference,
-                      airplane_mode)
+    ad.log.info("data_roaming = %s, mobile_data = %s, "
+                "network_perference = %s, airplane_mode = %s", data_roaming,
+                mobile_data, network_preference, airplane_mode)
     if airplane_mode:
         ad.log.error("Airplane mode is on")
         result = False
