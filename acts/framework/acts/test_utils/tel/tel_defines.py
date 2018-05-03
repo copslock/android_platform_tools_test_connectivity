@@ -279,7 +279,7 @@ CAPABILITY_OMADM = 'omadm'
 CAPABILITY_WFC_MODE_CHANGE = 'wfc_mode_change'
 CAPABILITY_CONFERENCE = 'conference'
 CAPABILITY_VOLTE_PROVISIONING = 'volte_provisioning'
-CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING = 'volte_over_wfc_provisioning'
+CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING = 'volte_override_wfc_provisioning'
 
 # Constant for operation direction
 DIRECTION_MOBILE_ORIGINATED = "MO"
