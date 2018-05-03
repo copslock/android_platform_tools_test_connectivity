@@ -1195,7 +1195,7 @@ def is_phone_in_call_iwlan(log, ad, call_id=None):
         return False
     if not call_id:
         call_ids = ad.droid.telecomCallGetCallIds()
-        if call_id:
+        if call_ids:
             call_id = call_ids[-1]
     if not call_id:
         ad.log.error("Failed to get call id")
