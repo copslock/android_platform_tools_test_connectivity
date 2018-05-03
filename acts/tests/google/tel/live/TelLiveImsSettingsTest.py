@@ -41,7 +41,6 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import dumpsys_carrier_config
-from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
@@ -77,7 +76,7 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         TelephonyBaseTest.setup_class(self)
         self.dut = self.android_devices[0]
         self.number_of_devices = 1
-        self.stress_test_number = self.get_stress_test_number()
+        self.skip_reset_between_cases = False
         self.carrier_configs = dumpsys_carrier_config(self.dut)
         self.dut_capabilities = self.dut.telephony.get("capabilities", [])
         self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
@@ -390,8 +389,6 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         3. DUT WiFi Calling feature bit return True, network rat is iwlan.
         4. DUT WiFi Calling feature bit return False, network rat is not iwlan.
         """
-        ensure_network_generation(
-            self.log, self.dut, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA)
         if not self.change_ims_setting(True, True, True, True,
                                        self.default_wfc_mode):
             return False
@@ -493,8 +490,6 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         3. DUT WiFi Calling feature bit return True, network rat is iwlan.
         4. DUT WiFi Calling feature bit return False, network rat is not iwlan.
         """
-        ensure_network_generation(
-            self.log, self.dut, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA)
         if not self.change_ims_setting(True, True, True, True,
                                        self.default_wfc_mode):
             return False
@@ -650,8 +645,6 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         if WFC_MODE_CELLULAR_PREFERRED not in self.dut_wfc_modes:
             raise signals.TestSkip(
                 "WFC_MODE_CELLULAR_PREFERRED is not supported")
-        ensure_network_generation(
-            self.log, self.dut, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA)
         if not self.change_ims_setting(True, True, True, True,
                                        WFC_MODE_WIFI_PREFERRED):
             return False
@@ -774,8 +767,6 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         if WFC_MODE_CELLULAR_PREFERRED not in self.dut_wfc_modes:
             raise signals.TestSkip(
                 "WFC_MODE_CELLULAR_PREFERRED is not supported")
-        ensure_network_generation(
-            self.log, self.dut, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA)
         if not self.change_ims_setting(True, True, True, True,
                                        WFC_MODE_CELLULAR_PREFERRED):
             return False
@@ -799,8 +790,6 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         3. DUT WiFi Calling feature bit return True, network rat is iwlan.
         5. DUT WiFI Calling feature bit return True, network rat is iwlan.
         """
-        ensure_network_generation(
-            self.log, self.dut, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA)
         if not self.change_ims_setting(True, True, True, True,
                                        WFC_MODE_WIFI_PREFERRED):
             return False
@@ -823,8 +812,6 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         3. DUT WiFi Calling feature bit return True, network rat is iwlan.
         5. DUT WiFI Calling feature bit return False, network rat is not iwlan.
         """
-        ensure_network_generation(
-            self.log, self.dut, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA)
         if not self.change_ims_setting(True, True, True, True,
                                        WFC_MODE_CELLULAR_PREFERRED):
             return False
