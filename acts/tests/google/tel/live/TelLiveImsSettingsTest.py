@@ -56,6 +56,8 @@ from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_ims_registered
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
 from acts.test_utils.tel.tel_test_utils import wait_for_not_network_rat
+from acts.test_utils.tel.tel_test_utils import wait_for_state
+from acts.test_utils.tel.tel_test_utils import wait_for_voice_attach
 from acts.test_utils.tel.tel_test_utils import wait_for_volte_enabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
@@ -114,8 +116,11 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         result = True
         if not call_setup_teardown(self.log, self.android_devices[1], self.dut,
                                    self.dut, None, is_phone_in_call_iwlan):
-            self.dut.log.error("MT WFC call failed")
-            result = False
+            if not call_setup_teardown(self.log, self.android_devices[1],
+                                       self.dut, self.dut, None,
+                                       is_phone_in_call_iwlan):
+                self.dut.log.error("MT WFC call failed")
+                result = False
         if not call_setup_teardown(self.log, self.dut, self.android_devices[1],
                                    self.dut, is_phone_in_call_iwlan):
             self.dut.log.error("MO WFC call failed")
@@ -126,8 +131,11 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         result = True
         if not call_setup_teardown(self.log, self.android_devices[1], self.dut,
                                    self.dut, None, is_phone_in_call_volte):
-            self.dut.log.error("MT VoLTE call failed")
-            result = False
+            if not call_setup_teardown(self.log, self.android_devices[1],
+                                       self.dut, self.dut, None,
+                                       is_phone_in_call_volte):
+                self.dut.log.error("MT VoLTE call failed")
+                result = False
         if not call_setup_teardown(self.log, self.dut, self.android_devices[1],
                                    self.dut, is_phone_in_call_volte):
             self.dut.log.error("MO VoLTE call failed")
@@ -138,8 +146,10 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         result = True
         if not call_setup_teardown(self.log, self.android_devices[1], self.dut,
                                    self.dut):
-            self.dut.log.error("MT call failed")
-            result = False
+            if not call_setup_teardown(self.log, self.android_devices[1],
+                                       self.dut, self.dut):
+                self.dut.log.error("MT call failed")
+                result = False
         if not call_setup_teardown(self.log, self.dut, self.android_devices[1],
                                    self.dut):
             self.dut.log.error("MO call failed")
@@ -181,15 +191,18 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
                                                               and wfc_enabled):
                 if not wait_for_wfc_enabled(self.log, self.dut):
                     result = False
-                if not self.check_call_in_wfc():
+                elif not self.check_call_in_wfc():
                     result = False
             else:
-                if not wait_for_network_rat(
-                        self.log,
-                        self.dut,
-                        RAT_UNKNOWN,
-                        voice_or_data=NETWORK_SERVICE_VOICE):
+                if not wait_for_state(
+                        self.dut.droid.telephonyGetCurrentVoiceNetworkType,
+                        RAT_UNKNOWN):
+                    self.dut.log.error(
+                        "Voice RAT is %s not UNKNOWN",
+                        self.dut.droid.telephonyGetCurrentVoiceNetworkType())
                     result = False
+                else:
+                    self.dut.log.info("Voice RAT is in UNKKNOWN")
         else:
             if (wifi_enabled and wfc_enabled) and (
                     wfc_mode == WFC_MODE_WIFI_PREFERRED) and (
@@ -200,6 +213,7 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
                     result = False
             else:
                 if not wait_for_wfc_disabled(self.log, self.dut):
+                    self.dut.log.error("WFC is not disabled")
                     result = False
                 if volte_enabled and CAPABILITY_VOLTE in self.dut_capabilities:
                     if not wait_for_volte_enabled(self.log, self.dut):
@@ -207,16 +221,18 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
                     if not self.check_call_in_volte():
                         result = False
                 else:
-                    wait_for_not_network_rat(
-                        self.log,
-                        self.dut,
-                        RAT_LTE,
-                        voice_or_data=NETWORK_SERVICE_VOICE)
-                    wait_for_not_network_rat(
-                        self.log,
-                        self.dut,
-                        RAT_UNKNOWN,
-                        voice_or_data=NETWORK_SERVICE_VOICE)
+                    if not wait_for_not_network_rat(
+                            self.log,
+                            self.dut,
+                            RAT_LTE,
+                            voice_or_data=NETWORK_SERVICE_VOICE):
+                        self.dut.log.error(
+                            "Voice RAT is %s",
+                            self.dut.droid.telephonyGetCurrentVoiceNetworkType(
+                            ))
+                        result = False
+                    if not wait_for_voice_attach(self.log, self.dut):
+                        result = False
                     if not self.check_call():
                         result = False
         user_config_profile = get_user_config_profile(self.dut)
@@ -927,7 +943,7 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
             "Wifi Calling Feature Enabled After %ss",
             time_values['wfc_enabled'] - time_values['ims_registered'])
 
-        set_wfc_mode(self.log, ad, WFC_MODE_DISABLED)
+        set_wfc_mode(self.log, self.dut, WFC_MODE_DISABLED)
 
         wait_for_not_network_rat(
             self.log,
