@@ -30,7 +30,10 @@ class DataPathStressTest(AwareBaseTest):
   ATTACH_ITERATIONS = 2
 
   # Number of iterations on create/destroy NDP in each discovery session.
-  NDP_ITERATIONS = 20
+  NDP_ITERATIONS = 50
+
+  # Maximum percentage of NDP setup failures over all iterations
+  MAX_FAILURE_PERCENTAGE = 1
 
   def __init__(self, controllers):
     AwareBaseTest.__init__(self, controllers)
@@ -87,9 +90,9 @@ class DataPathStressTest(AwareBaseTest):
                   resp_id, aconsts.DATA_PATH_RESPONDER, init_mac, None))
 
           # Wait a minimal amount of time to let the Responder configure itself
-          # and be ready for the request. While calling it first may be sufficient
-          # there are no guarantees that a glitch may slow the Responder slightly
-          # enough to invert the setup order.
+          # and be ready for the request. While calling it first may be
+          # sufficient there are no guarantees that a glitch may slow the
+          # Responder slightly enough to invert the setup order.
           time.sleep(1)
 
           # Initiator: request network
@@ -106,7 +109,7 @@ class DataPathStressTest(AwareBaseTest):
 
           # Wait a minimal amount of time to let the Initiator configure itself
           # to guarantee failure!
-          time.sleep(1)
+          time.sleep(2)
 
           # Responder: request network
           resp_req_key = autils.request_network(
@@ -171,12 +174,16 @@ class DataPathStressTest(AwareBaseTest):
     results['ndp_init_setup_failures'] = ndp_init_setup_failures
     results['ndp_resp_setup_success'] = ndp_resp_setup_success
     results['ndp_resp_setup_failures'] = ndp_resp_setup_failures
-    asserts.assert_equal(
-        ndp_init_setup_failures + ndp_resp_setup_failures,
-        0,
-        'test_oob_ndp_stress finished',
-        extras=results)
-    asserts.explicit_pass("test_oob_ndp_stress done", extras=results)
+    max_failures = (
+        self.MAX_FAILURE_PERCENTAGE * attach_iterations * ndp_iterations / 100)
+    if max_failures == 0:
+      max_failures = 1
+    if trigger_failure_on_index is not None:
+      max_failures = max_failures + 1 # for the triggered failure
+    asserts.assert_true(
+      (ndp_init_setup_failures + ndp_resp_setup_failures) < (2 * max_failures),
+      'NDP setup failure rate exceeds threshold', extras=results)
+    asserts.explicit_pass("test_oob_ndp_stress* done", extras=results)
 
   def test_oob_ndp_stress(self):
     """Run NDP (NAN data-path) stress test creating and destroying Aware
@@ -190,4 +197,6 @@ class DataPathStressTest(AwareBaseTest):
     Verify recovery from failure by triggering an artifical failure and
     verifying that all subsequent iterations succeed.
     """
-    self.run_oob_ndp_stress(1, 3, 0)
+    self.run_oob_ndp_stress(attach_iterations=1,
+                            ndp_iterations=10,
+                            trigger_failure_on_index=3)

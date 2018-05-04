@@ -1194,11 +1194,17 @@ def is_phone_in_call_iwlan(log, ad, call_id=None):
         ad.log.info("IsWifiCallingAvailble is False")
         return False
     if not call_id:
-        call_id = ad.droid.telecomCallGetCallIds()[-1]
-    call_prop = ad.droid.telecomCallGetProperties(call_id)
-    if "WIFI" not in call_prop:
-        ad.log.info("callProperties = %s, expecting WIFI", call_prop)
+        call_ids = ad.droid.telecomCallGetCallIds()
+        if call_ids:
+            call_id = call_ids[-1]
+    if not call_id:
+        ad.log.error("Failed to get call id")
         return False
+    else:
+        call_prop = ad.droid.telecomCallGetProperties(call_id)
+        if "WIFI" not in call_prop:
+            ad.log.info("callProperties = %s, expecting WIFI", call_prop)
+            return False
     nw_type = get_network_rat(log, ad, NETWORK_SERVICE_DATA)
     if nw_type != RAT_IWLAN:
         ad.log.error("Data rat on: %s. Expected: iwlan", nw_type)

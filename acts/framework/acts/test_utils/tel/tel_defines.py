@@ -276,6 +276,10 @@ CAPABILITY_VT = 'vt'
 CAPABILITY_WFC = 'wfc'
 CAPABILITY_MSIM = 'msim'
 CAPABILITY_OMADM = 'omadm'
+CAPABILITY_WFC_MODE_CHANGE = 'wfc_mode_change'
+CAPABILITY_CONFERENCE = 'conference'
+CAPABILITY_VOLTE_PROVISIONING = 'volte_provisioning'
+CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING = 'volte_override_wfc_provisioning'
 
 # Constant for operation direction
 DIRECTION_MOBILE_ORIGINATED = "MO"
@@ -699,6 +703,28 @@ class NetworkCallbackContainer:
     NETWORK_CALLBACK_EVENT = "networkCallbackEvent"
     MAX_MS_TO_LIVE = "maxMsToLive"
     RSSI = "rssi"
+
+
+class CarrierConfigs:
+    NAME_STRING = "carrier_name_string"
+    SUPPORT_CONFERENCE_CALL_BOOL = "support_conference_call_bool"
+    VOLTE_AVAILABLE_BOOL = "carrier_volte_available_bool"
+    VOLTE_PROVISIONED_BOOL = "carrier_volte_provisioned_bool"
+    VOLTE_PROVISIONING_REQUIRED_BOOL = "carrier_volte_provisioning_required_bool"
+    VOLTE_OVERRIDE_WFC_BOOL = "carrier_volte_override_wfc_provisioning_bool"
+    VT_AVAILABLE_BOOL = "carrier_vt_available_bool"
+    ENHANCED_4G_LTE_ON_BY_DEFAULT_BOOL = "enhanced_4g_lte_on_by_default_bool"
+    WFC_IMS_AVAILABLE_BOOL = "carrier_wfc_ims_available_bool"
+    WFC_SUPPORTS_WIFI_ONLY_BOOL = "carrier_wfc_supports_wifi_only_bool"
+    EDITABLE_ENHANCED_4G_LTE_BOOL = "editable_enhanced_4g_lte_bool"
+    EDITABLE_WFC_MODE_BOOL = "editable_wfc_mode_bool"
+    EDITABLE_WFC_ROAMING_MODE_BOOL = "editable_wfc_roaming_mode_bool"
+    DEFAULT_DATA_ROAMING_ENABLED_BOOL = "carrier_default_data_roaming_enabled_bool"
+    DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL = "carrier_default_wfc_ims_roaming_enabled_bool"
+    DEFAULT_WFC_IMS_ENABLED_BOOL = "carrier_default_wfc_ims_enabled_bool"
+    DEFAULT_WFC_IMS_MODE_INT = "carrier_default_wfc_ims_mode_int"
+    DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL = "carrier_default_wfc_ims_roaming_enabled_bool"
+    DEFAULT_WFC_IMS_ROAMING_MODE_INT = "carrier_default_wfc_ims_roaming_mode_int"
 
 
 """

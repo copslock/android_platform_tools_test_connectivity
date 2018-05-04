@@ -192,7 +192,7 @@ class TelephonyBaseTest(BaseTestClass):
                 mask_file_name = os.path.split(qxdm_log_mask_cfg)[-1]
                 qxdm_log_mask = os.path.join(qxdm_mask_path, mask_file_name)
             set_qxdm_logger_command(ad, mask=qxdm_log_mask)
-        start_qxdm_logger(ad, utils.get_current_epoch_time())
+            start_qxdm_logger(ad, utils.get_current_epoch_time())
 
     def _setup_device(self, ad, sim_conf_file):
         if not unlock_sim(ad):
@@ -311,10 +311,18 @@ class TelephonyBaseTest(BaseTestClass):
             self.log.error("Failure with %s", e)
 
     def setup_test(self):
-        if "wfc" in self.test_name and not self.user_params.get(
-                "qxdm_log_mask_cfg", None):
-            for ad in self.android_devices:
-                set_qxdm_logger_command(ad, "IMS_DS_CNE_LnX_Golden.cfg")
+        if not self.user_params.get("qxdm_log_mask_cfg", None):
+            if "wfc" in self.test_name:
+                for ad in self.android_devices:
+                    if "IMS_DS_CNE_LnX_Golden.cfg" not in getattr(
+                            ad, "qxdm_logger_command", ""):
+                        set_qxdm_logger_command(ad,
+                                                "IMS_DS_CNE_LnX_Golden.cfg")
+            else:
+                for ad in self.android_devices:
+                    if "IMS_DS_CNE_LnX_Golden.cfg" in getattr(
+                            ad, "qxdm_logger_command", ""):
+                        set_qxdm_logger_command(ad, None)
         if getattr(self, "qxdm_log", True):
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
         if getattr(self, "tcpdump_log", False) or "wfc" in self.test_name:
@@ -342,10 +350,6 @@ class TelephonyBaseTest(BaseTestClass):
 
     def teardown_test(self):
         stop_tcpdumps(self.android_devices)
-        if "wfc" in self.test_name and not self.user_params.get(
-                "qxdm_log_mask_cfg", None):
-            for ad in self.android_devices:
-                set_qxdm_logger_command(ad, None)
 
     def on_fail(self, test_name, begin_time):
         self._take_bug_report(test_name, begin_time)
@@ -354,6 +358,7 @@ class TelephonyBaseTest(BaseTestClass):
         self.on_fail(test_name, begin_time)
 
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
+        ad.adb.wait_for_device()
         extra_qxdm_logs_in_seconds = self.user_params.get(
             "extra_qxdm_logs_in_seconds", 60 * 3)
         result = True
@@ -384,10 +389,18 @@ class TelephonyBaseTest(BaseTestClass):
         extract_test_log(self.log, ad.adb_logcat_file_path,
                          os.path.join(self.log_path, test_name,
                                       "%s_%s.logcat" % (ad.serial, test_name)),
-                         test_name)
+                         "%s\"" % test_name)
         return result
 
     def _take_bug_report(self, test_name, begin_time):
+        test_log_path = os.path.join(self.log_path, test_name)
+        utils.create_dir(test_log_path)
+        # Extract test_run_info.txt, test_run_detail.txt
+        for file_name in ("test_run_info.txt", "test_run_details.txt"):
+            extract_test_log(self.log, os.path.join(self.log_path, file_name),
+                             os.path.join(test_log_path,
+                                          "%s_%s" % (test_name, file_name)),
+                             "\[Test Case\] %s " % test_name)
         if self._skip_bug_report():
             return
         dev_num = getattr(self, "number_of_devices", None) or len(
@@ -401,13 +414,6 @@ class TelephonyBaseTest(BaseTestClass):
             if getattr(ad, "reboot_to_recover", False):
                 reboot_device(ad)
                 ad.reboot_to_recover = False
-        # Extract test_run_info.txt, test_run_detail.txt
-        for file_name in ("test_run_info.txt", "test_run_details.txt"):
-            extract_test_log(self.log, os.path.join(self.log_path, file_name),
-                             os.path.join(self.log_path, test_name,
-                                          "%s_%s" % (test_name, file_name)),
-                             "\[Test Case\] %s" % test_name)
-
         # Zip log folder
         if not self.user_params.get("zip_log", False): return
         src_dir = os.path.join(self.log_path, test_name)

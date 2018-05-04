@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.4
 #
 #   Copyright 2016 - Google, Inc.
 #
@@ -104,8 +104,11 @@ class AccessPoint(object):
             configs: configs for the access point from config file.
         """
         self.ssh_settings = settings.from_config(configs['ssh_config'])
+        self.ssh = connection.SshConnection(self.ssh_settings)
         self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' % (
             self.ssh_settings.hostname, msg))
+
+        self.check_state()
 
         if 'ap_subnet' in configs:
             self._AP_2G_SUBNET_STR = configs['ap_subnet']['2g']
@@ -118,8 +121,6 @@ class AccessPoint(object):
             ipaddress.ip_network(self._AP_2G_SUBNET_STR))
         self._AP_5G_SUBNET = dhcp_config.Subnet(
             ipaddress.ip_network(self._AP_5G_SUBNET_STR))
-
-        self.ssh = connection.SshConnection(self.ssh_settings)
 
         # Singleton utilities for running various commands.
         self._ip_cmd = ip.LinuxIpCommand(self.ssh)
@@ -139,46 +140,56 @@ class AccessPoint(object):
         self.lan = self.interfaces.get_lan_interface()
         self.__initial_ap()
 
+    def check_state(self):
+        """Check what state the AP is in and reboot if required.
+
+        Check if the AP already has stale interfaces from the previous run.
+        If "yes", then reboot the AP and continue AP initialization.
+
+        """
+        self.log.debug("Checking AP state")
+        self.interfaces = ap_get_interface.ApInterfaces(self)
+        # Check if the AP has any virtual interfaces created.
+        interfaces = self.ssh.run('iw dev | grep -i "type ap" || true')
+        self.log.debug("AP interfaces = %s" % interfaces)
+        # The virtual interface will be of type "AP".
+        if 'AP' in interfaces.stdout:
+            self.log.debug("Found AP in stale state. Rebooting.")
+            try:
+                self.ssh.run('reboot')
+                # Wait for AP to shut down.
+                time.sleep(10)
+                self.ssh.run('echo connected', timeout=300)
+            except Exception as e:
+                self.log.exception("Error in rebooting AP: %s", e)
+                raise
+
     def __initial_ap(self):
         """Initial AP interfaces.
 
         Bring down hostapd if instance is running, bring down all bridge
         interfaces.
         """
+        # This is necessary for Gale/Whirlwind flashed with dev channel image
+        # Unused interfaces such as existing hostapd daemon, guest, mesh
+        # interfaces need to be brought down as part of the AP initialization
+        # process, otherwise test would fail.
         try:
-            # This is necessary for Gale/Whirlwind flashed with dev channel image
-            # Unused interfaces such as existing hostapd daemon, guest, mesh
-            # interfaces need to be brought down as part of the AP initialization
-            # process, otherwise test would fail.
-            try:
-                self.ssh.run('stop hostapd')
-            except job.Error:
-                self.log.debug('No hostapd running')
-            # Bring down all wireless interfaces
-            for iface in self.wlan:
-                WLAN_DOWN = 'ifconfig {} down'.format(iface)
-                self.ssh.run(WLAN_DOWN)
-            # Bring down all bridge interfaces
-            bridge_interfaces = self.interfaces.get_bridge_interface()
-            if bridge_interfaces:
-                for iface in bridge_interfaces:
-                    BRIDGE_DOWN = 'ifconfig {} down'.format(iface)
-                    BRIDGE_DEL = 'brctl delbr {}'.format(iface)
-                    self.ssh.run(BRIDGE_DOWN)
-                    self.ssh.run(BRIDGE_DEL)
-        except Exception:
-            # TODO(b/76101464): APs may not clean up properly from previous
-            # runs. Rebooting the AP can put them back into the correct state.
-            self.log.exception('Unable to bring down hostapd. Rebooting.')
-            # Reboot the AP.
-            try:
-                self.ssh.run('reboot')
-                # This sleep ensures the device had time to go down.
-                time.sleep(10)
-                self.ssh.run('echo connected', timeout=300)
-            except Exception as e:
-                self.log.exception("Error in rebooting AP: %s", e)
-                raise
+            self.ssh.run('stop hostapd')
+        except job.Error:
+            self.log.debug('No hostapd running')
+        # Bring down all wireless interfaces
+        for iface in self.wlan:
+            WLAN_DOWN = 'ifconfig {} down'.format(iface)
+            self.ssh.run(WLAN_DOWN)
+        # Bring down all bridge interfaces
+        bridge_interfaces = self.interfaces.get_bridge_interface()
+        if bridge_interfaces:
+            for iface in bridge_interfaces:
+                BRIDGE_DOWN = 'ifconfig {} down'.format(iface)
+                BRIDGE_DEL = 'brctl delbr {}'.format(iface)
+                self.ssh.run(BRIDGE_DOWN)
+                self.ssh.run(BRIDGE_DEL)
 
     def start_ap(self, hostapd_config, additional_parameters=None):
         """Starts as an ap using a set of configurations.

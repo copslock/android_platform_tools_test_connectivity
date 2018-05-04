@@ -19,6 +19,7 @@ import time
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -29,6 +30,16 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
   """Set of tests for Wi-Fi Aware discovery configured with ranging (RTT)."""
 
   SERVICE_NAME = "GoogleTestServiceRRRRR"
+
+  # Flag indicating whether the device has a limitation that does not allow it
+  # to execute Aware-based Ranging (whether direct or as part of discovery)
+  # whenever NDP is enabled.
+  RANGING_NDP_CONCURRENCY_LIMITATION = True
+
+  # Flag indicating whether the device has a limitation that does not allow it
+  # to execute Aware-based Ranging (whether direct or as part of discovery)
+  # for both Initiators and Responders. Only the first mode works.
+  RANGING_INITIATOR_RESPONDER_CONCURRENCY_LIMITATION = True
 
   def __init__(self, controllers):
     AwareBaseTest.__init__(self, controllers)
@@ -1085,3 +1096,379 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     time.sleep(autils.EVENT_TIMEOUT)
     autils.verify_no_more_events(p_dut, timeout=0)
     autils.verify_no_more_events(s_dut, timeout=0)
+
+  #########################################################################
+
+  def test_ndp_concurrency(self):
+    """Verify the behavior of Wi-Fi Aware Ranging whenever an NDP is created -
+    for those devices that have a concurrency limitation that does not allow
+    Aware Ranging, whether direct or as part of discovery.
+
+    Publisher: start 3 services
+      AA w/o ranging
+      BB w/ ranging
+      CC w/ ranging
+      DD w/ ranging
+    Subscriber: start 2 services
+      AA w/o ranging
+      BB w/ ranging out-of-range
+      (do not start CC!)
+      DD w/ ranging in-range
+    Expect AA discovery, DD discovery w/range, but no BB
+    Start NDP in context of AA
+    IF NDP_CONCURRENCY_LIMITATION:
+      Verify discovery on BB w/o range
+    Start EE w/ranging out-of-range
+    Start FF w/ranging in-range
+    IF NDP_CONCURRENCY_LIMITATION:
+      Verify discovery on EE w/o range
+      Verify discovery on FF w/o range
+    Else:
+      Verify discovery on FF w/ range
+    Tear down NDP
+    Subscriber
+      Start CC w/ ranging out-of-range
+      Wait to verify that do not get match
+      Update configuration to be in-range
+      Verify that get match with ranging information
+    Verify no extra events! (no spurious discoveries)
+    """
+    p_dut = self.android_devices[0]
+    p_dut.pretty_name = "Publisher"
+    s_dut = self.android_devices[1]
+    s_dut.pretty_name = "Subscriber"
+
+    # Publisher+Subscriber: attach and wait for confirmation
+    p_id = p_dut.droid.wifiAwareAttach(False)
+    autils.wait_for_event(p_dut, aconsts.EVENT_CB_ON_ATTACHED)
+    time.sleep(self.device_startup_offset)
+    s_id = s_dut.droid.wifiAwareAttach(False)
+    autils.wait_for_event(s_dut, aconsts.EVENT_CB_ON_ATTACHED)
+
+    # Publisher: AA w/o ranging, BB w/ ranging, CC w/ ranging, DD w/ ranging
+    aa_p_id = p_dut.droid.wifiAwarePublish(p_id,
+        autils.create_discovery_config("AA", aconsts.PUBLISH_TYPE_SOLICITED),
+                                           True)
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, aa_p_id))
+    bb_p_id = p_dut.droid.wifiAwarePublish(p_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("BB", aconsts.PUBLISH_TYPE_UNSOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, bb_p_id))
+    cc_p_id = p_dut.droid.wifiAwarePublish(p_id, autils.add_ranging_to_pub(
+      autils.create_discovery_config("CC", aconsts.PUBLISH_TYPE_UNSOLICITED),
+      enable_ranging=True), True)
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, cc_p_id))
+    dd_p_id = p_dut.droid.wifiAwarePublish(p_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("DD", aconsts.PUBLISH_TYPE_UNSOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, dd_p_id))
+
+    # Subscriber: AA w/o ranging, BB w/ranging out-of-range,
+    #             DD w /ranging in-range
+    aa_s_id = s_dut.droid.wifiAwareSubscribe(s_id,
+        autils.create_discovery_config("AA", aconsts.SUBSCRIBE_TYPE_ACTIVE),
+                                             True)
+    autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, aa_s_id))
+    bb_s_id = s_dut.droid.wifiAwareSubscribe(s_id, autils.add_ranging_to_sub(
+      autils.create_discovery_config("BB", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+      min_distance_mm=1000000, max_distance_mm=1000001), True)
+    autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, bb_s_id))
+    dd_s_id = s_dut.droid.wifiAwareSubscribe(s_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("DD", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        min_distance_mm=None, max_distance_mm=1000000), True)
+    autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, dd_s_id))
+
+    # verify: AA discovered, BB not discovered, DD discovery w/range
+    event = autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, aa_s_id))
+    asserts.assert_false(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                         "Discovery with ranging for AA NOT expected!")
+    aa_peer_id_on_sub = event['data'][aconsts.SESSION_CB_KEY_PEER_ID]
+    autils.fail_on_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, bb_s_id))
+    event = autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, dd_s_id))
+    asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                        "Discovery with ranging for DD expected!")
+
+    # start NDP in context of AA:
+
+    # Publisher: request network (from ANY)
+    p_req_key = autils.request_network(p_dut,
+        p_dut.droid.wifiAwareCreateNetworkSpecifier(aa_p_id, None))
+
+    # Subscriber: request network
+    s_req_key = autils.request_network(s_dut,
+        s_dut.droid.wifiAwareCreateNetworkSpecifier(aa_s_id, aa_peer_id_on_sub))
+
+    # Publisher & Subscriber: wait for network formation
+    p_net_event = autils.wait_for_event_with_keys(p_dut,
+                                    cconsts.EVENT_NETWORK_CALLBACK,
+                                    autils.EVENT_TIMEOUT, (
+                                    cconsts.NETWORK_CB_KEY_EVENT,
+                                    cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+                                    (cconsts.NETWORK_CB_KEY_ID,
+                                     p_req_key))
+    s_net_event = autils.wait_for_event_with_keys(s_dut,
+                                    cconsts.EVENT_NETWORK_CALLBACK,
+                                    autils.EVENT_TIMEOUT, (
+                                    cconsts.NETWORK_CB_KEY_EVENT,
+                                    cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
+                                    (cconsts.NETWORK_CB_KEY_ID,
+                                     s_req_key))
+
+    p_aware_if = p_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    s_aware_if = s_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+
+    p_ipv6 = p_dut.droid.connectivityGetLinkLocalIpv6Address(p_aware_if).split(
+        "%")[0]
+    s_ipv6 = s_dut.droid.connectivityGetLinkLocalIpv6Address(s_aware_if).split(
+        "%")[0]
+
+    self.log.info("AA NDP Interface names: P=%s, S=%s", p_aware_if, s_aware_if)
+    self.log.info("AA NDP Interface addresses (IPv6): P=%s, S=%s", p_ipv6,
+                  s_ipv6)
+
+    if self.RANGING_NDP_CONCURRENCY_LIMITATION:
+      # Expect BB to now discover w/o ranging
+      event = autils.wait_for_event(s_dut, autils.decorate_event(
+          aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, bb_s_id))
+      asserts.assert_false(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                           "Discovery with ranging for BB NOT expected!")
+
+    # Publishers: EE, FF w/ ranging
+    ee_p_id = p_dut.droid.wifiAwarePublish(p_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("EE", aconsts.PUBLISH_TYPE_SOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, ee_p_id))
+    ff_p_id = p_dut.droid.wifiAwarePublish(p_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("FF", aconsts.PUBLISH_TYPE_UNSOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(p_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, ff_p_id))
+
+    # Subscribers: EE out-of-range, FF in-range
+    ee_s_id = s_dut.droid.wifiAwareSubscribe(s_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("EE", aconsts.SUBSCRIBE_TYPE_ACTIVE),
+        min_distance_mm=1000000, max_distance_mm=1000001), True)
+    autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, ee_s_id))
+    ff_s_id = s_dut.droid.wifiAwareSubscribe(s_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("FF", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        min_distance_mm=None, max_distance_mm=1000000), True)
+    autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, ff_s_id))
+
+    if self.RANGING_NDP_CONCURRENCY_LIMITATION:
+      # Expect EE & FF discovery w/o range
+      event = autils.wait_for_event(s_dut, autils.decorate_event(
+          aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, ee_s_id))
+      asserts.assert_false(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                           "Discovery with ranging for EE NOT expected!")
+      event = autils.wait_for_event(s_dut, autils.decorate_event(
+          aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, ff_s_id))
+      asserts.assert_false(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                           "Discovery with ranging for FF NOT expected!")
+    else:
+      event = autils.wait_for_event(s_dut, autils.decorate_event(
+          aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, ff_s_id))
+      asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                           "Discovery with ranging for FF expected!")
+
+    # tear down NDP
+    p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
+    s_dut.droid.connectivityUnregisterNetworkCallback(s_req_key)
+
+    time.sleep(5) # give time for NDP termination to finish
+
+    # Subscriber: start CC out-of-range - no discovery expected!
+    cc_s_id = s_dut.droid.wifiAwareSubscribe(s_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("CC", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        min_distance_mm=1000000, max_distance_mm=1000001), True)
+    autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, cc_s_id))
+    autils.fail_on_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, cc_s_id))
+
+    # Subscriber: modify CC to in-range - expect discovery w/ range
+    s_dut.droid.wifiAwareUpdateSubscribe(cc_s_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("CC", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        min_distance_mm=None, max_distance_mm=1000001))
+    autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SESSION_CONFIG_UPDATED, cc_s_id))
+    event = autils.wait_for_event(s_dut, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, cc_s_id))
+    asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                        "Discovery with ranging for CC expected!")
+
+    # No further important events (no spurious discovery - but ignore
+    # connectivity events)
+    # TODO: may have to debug this - not sure which events may happen by now!?
+    p_dut.ed.pop_events(cconsts.EVENT_NETWORK_CALLBACK, 0)
+    s_dut.ed.pop_events(cconsts.EVENT_NETWORK_CALLBACK, 0)
+
+    # sleep for timeout period and then verify all 'fail_on_event' together
+    time.sleep(autils.EVENT_TIMEOUT)
+
+    # verify that there were no other events
+    autils.verify_no_more_events(p_dut, timeout=0)
+    autils.verify_no_more_events(s_dut, timeout=0)
+
+  def test_role_concurrency(self):
+    """Verify the behavior of Wi-Fi Aware Ranging (in the context of discovery)
+     when the device has concurrency limitations which do not permit concurrent
+     Initiator and Responder roles on the same device. In such case it is
+     expected that normal discovery without ranging is executed AND that ranging
+     is restored whenever the concurrency constraints are removed.
+
+     Note: all Subscribers are in-range.
+
+     DUT1: start multiple services
+      Publish AA w/ ranging (unsolicited)
+      Subscribe BB w/ ranging (active)
+      Publish CC w/ ranging (unsolicited)
+      Publish DD w/o ranging (solicited)
+      Subscribe EE w/ ranging (passive)
+      Subscribe FF w/ ranging (active)
+     DUT2: start multiple services
+      Subscribe AA w/ ranging (passive)
+      Publish BB w/ ranging (solicited)
+      Subscribe DD w/o ranging (active)
+     Expect
+      DUT2: AA match w/ range information
+      DUT1: BB match w/o range information (concurrency disables ranging)
+      DUT2: DD match w/o range information
+     DUT1: Terminate AA
+     DUT2:
+      Terminate AA
+      Start Publish EE w/ ranging (unsolicited)
+     DUT1: expect EE w/o ranging
+     DUT1: Terminate CC
+     DUT2: Start Publish FF w/ ranging (solicited)
+     DUT1: expect FF w/ ranging information - should finally be back up
+     """
+    dut1 = self.android_devices[0]
+    dut1.pretty_name = "DUT1"
+    dut2 = self.android_devices[1]
+    dut2.pretty_name = "DUT2"
+
+    # Publisher+Subscriber: attach and wait for confirmation
+    dut1_id = dut1.droid.wifiAwareAttach(False)
+    autils.wait_for_event(dut1, aconsts.EVENT_CB_ON_ATTACHED)
+    time.sleep(self.device_startup_offset)
+    dut2_id = dut2.droid.wifiAwareAttach(False)
+    autils.wait_for_event(dut2, aconsts.EVENT_CB_ON_ATTACHED)
+
+    # DUT1: initial service bringup
+    aa_p_id = dut1.droid.wifiAwarePublish(dut1_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("AA", aconsts.PUBLISH_TYPE_UNSOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, aa_p_id))
+    bb_s_id = dut1.droid.wifiAwareSubscribe(dut1_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("BB", aconsts.SUBSCRIBE_TYPE_ACTIVE),
+        min_distance_mm=None, max_distance_mm=1000000), True)
+    autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, bb_s_id))
+    cc_p_id = dut1.droid.wifiAwarePublish(dut1_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("CC", aconsts.PUBLISH_TYPE_UNSOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, cc_p_id))
+    dd_p_id = dut1.droid.wifiAwarePublish(dut1_id,
+      autils.create_discovery_config("DD", aconsts.PUBLISH_TYPE_SOLICITED),
+                                           True)
+    autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, dd_p_id))
+    ee_s_id = dut1.droid.wifiAwareSubscribe(dut1_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("EE", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        min_distance_mm=None, max_distance_mm=1000000), True)
+    autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, ee_s_id))
+    ff_s_id = dut1.droid.wifiAwareSubscribe(dut1_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("FF", aconsts.SUBSCRIBE_TYPE_ACTIVE),
+        min_distance_mm=None, max_distance_mm=1000000), True)
+    autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, ff_s_id))
+
+    # DUT2: initial service bringup
+    aa_s_id = dut2.droid.wifiAwareSubscribe(dut2_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("AA", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        min_distance_mm=None, max_distance_mm=1000000), True)
+    autils.wait_for_event(dut2, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, aa_s_id))
+    bb_p_id = dut2.droid.wifiAwarePublish(dut2_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("BB", aconsts.PUBLISH_TYPE_SOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(dut2, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, bb_p_id))
+    dd_s_id = dut2.droid.wifiAwareSubscribe(dut2_id,
+        autils.create_discovery_config("AA", aconsts.SUBSCRIBE_TYPE_ACTIVE),
+        True)
+    autils.wait_for_event(dut2, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, dd_s_id))
+
+    # Initial set of discovery events for AA, BB, and DD (which are up)
+    event = autils.wait_for_event(dut2, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, aa_s_id))
+    asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                        "Discovery with ranging for AA expected!")
+    event = autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, bb_s_id))
+    if self.RANGING_INITIATOR_RESPONDER_CONCURRENCY_LIMITATION:
+      asserts.assert_false(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                           "Discovery with ranging for BB NOT expected!")
+    else:
+      asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                           "Discovery with ranging for BB expected!")
+    event = autils.wait_for_event(dut2, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, dd_s_id))
+    asserts.assert_false(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                         "Discovery with ranging for DD NOT expected!")
+
+    # DUT1/DUT2: terminate AA
+    dut1.droid.wifiAwareDestroyDiscoverySession(aa_p_id)
+    dut2.droid.wifiAwareDestroyDiscoverySession(aa_s_id)
+
+    time.sleep(5) # guarantee that session terminated (and host recovered?)
+
+    # DUT2: try EE service - ranging still disabled
+    ee_p_id = dut2.droid.wifiAwarePublish(dut2_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("EE", aconsts.PUBLISH_TYPE_UNSOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(dut2, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, ee_p_id))
+
+    event = autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, ee_s_id))
+    if self.RANGING_INITIATOR_RESPONDER_CONCURRENCY_LIMITATION:
+      asserts.assert_false(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                           "Discovery with ranging for EE NOT expected!")
+    else:
+      asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                          "Discovery with ranging for EE expected!")
+
+    # DUT1: terminate CC - last publish w/ ranging on DUT!
+    dut1.droid.wifiAwareDestroyDiscoverySession(cc_p_id)
+
+    time.sleep(5) # guarantee that session terminated (and host recovered?)
+
+    # DUT2: try FF service - ranging should now function
+    ff_p_id = dut2.droid.wifiAwarePublish(dut2_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("FF", aconsts.PUBLISH_TYPE_SOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(dut2, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, ff_p_id))
+
+    event = autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, ff_s_id))
+    asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                        "Discovery with ranging for FF expected!")
