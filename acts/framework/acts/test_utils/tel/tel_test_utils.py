@@ -30,6 +30,8 @@ from acts import utils
 from queue import Empty
 from acts.asserts import abort_all
 from acts.controllers.adb import AdbError
+from acts.controllers.android_device import list_adb_devices
+from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.libs.proc import job
@@ -3366,7 +3368,7 @@ def is_voice_attached(log, ad):
         log, ad, ad.droid.subscriptionGetDefaultSubId(), NETWORK_SERVICE_VOICE)
 
 
-def wait_for_voice_attach(log, ad, max_time):
+def wait_for_voice_attach(log, ad, max_time=MAX_WAIT_TIME_NW_SELECTION):
     """Wait for android device to attach on voice.
 
     Args:
@@ -3382,7 +3384,8 @@ def wait_for_voice_attach(log, ad, max_time):
                                     NETWORK_SERVICE_VOICE)
 
 
-def wait_for_voice_attach_for_subscription(log, ad, sub_id, max_time):
+def wait_for_voice_attach_for_subscription(
+        log, ad, sub_id, max_time=MAX_WAIT_TIME_NW_SELECTION):
     """Wait for android device to attach on voice in subscription id.
 
     Args:
@@ -5827,13 +5830,16 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     attemps = 3
     for i in range(1, attemps + 1):
         try:
-            ad.log.info("Reboot to bootloader")
-            ad.adb.reboot("bootloader", ignore_status=True)
-            ad.log.info("Wipe in fastboot")
-            ad.fastboot._w(timeout=180)
-            time.sleep(30)
-            ad.log.info("Reboot in fastboot")
-            ad.fastboot.reboot()
+            if ad.serial in list_adb_devices():
+                ad.log.info("Reboot to bootloader")
+                ad.adb.reboot("bootloader", ignore_status=True)
+                time.sleep(10)
+            if ad.serial in list_fastboot_devices():
+                ad.log.info("Wipe in fastboot")
+                ad.fastboot._w(timeout=300)
+                time.sleep(30)
+                ad.log.info("Reboot in fastboot")
+                ad.fastboot.reboot()
             ad.wait_for_boot_completion()
             ad.root_adb()
             if ad.skip_sl4a:
@@ -5841,13 +5847,15 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
             if ad.is_sl4a_installed():
                 break
             ad.log.info("Re-install sl4a")
+            ad.adb.shell("settings put global package_verifier_enable 0")
             ad.adb.install("-r /tmp/base.apk")
             time.sleep(10)
             break
         except Exception as e:
             ad.log.warning(e)
             if i == attemps:
-                raise
+                abort_all_tests(log, str(e))
+            time.sleep(5)
     try:
         ad.start_adb_logcat()
     except:
@@ -5867,6 +5875,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
                  ".VzwEmergencyAddressActivity\"")
     if ad.skip_sl4a: return status
     bring_up_sl4a(ad)
+    synchronize_device_time(ad)
     return status
 
 
@@ -6258,7 +6267,7 @@ def power_on_sim(ad, sim_slot_id=None):
 
 
 def extract_test_log(log, src_file, dst_file, test_tag):
-    cmd = "grep -n '%s ' %s" % (test_tag, src_file)
+    cmd = "grep -n '%s' %s" % (test_tag, src_file)
     result = job.run(cmd, ignore_status=True)
     if not result.stdout or result.exit_status == 1:
         log.warning("Command %s returns %s", cmd, result)

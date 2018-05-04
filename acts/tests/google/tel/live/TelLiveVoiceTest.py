@@ -579,8 +579,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.info("ICMP transfer succeeded with parallel phone call.")
         else:
             self.log.error("ICMP transfer failed with parallel phone call.")
-        result = all(results)
-        return result
+        return all(results)
 
     @test_tracker_info(uuid="a4a043c0-f4ba-4405-9262-42c752cc4487")
     @TelephonyBaseTest.tel_test_wrap
@@ -640,10 +639,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        result = two_phone_call_short_seq(
+        return two_phone_call_short_seq(
             self.log, ads[0], None, is_phone_in_call_not_iwlan, ads[1], None,
             is_phone_in_call_not_iwlan, None, WAIT_TIME_IN_CALL_FOR_IMS)
-        return result
 
     @test_tracker_info(uuid="0d63c250-d9e7-490c-8c48-0a6afbad5f88")
     @TelephonyBaseTest.tel_test_wrap
@@ -710,14 +708,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_volte, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return result
+            return False
 
         return two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
@@ -738,14 +735,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_volte, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return result
+            return False
 
         return two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
@@ -766,14 +762,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         ads = self.android_devices
-        result = True
         tasks = [(phone_setup_iwlan,
                   (self.log, ads[0], True, WFC_MODE_WIFI_ONLY,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_volte, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return result
+            return False
 
         return two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
@@ -800,7 +795,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_volte, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return result
+            return False
 
         return two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
@@ -829,7 +824,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_csfb, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return result
+            return False
 
         return two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
@@ -857,7 +852,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_csfb, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return result
+            return False
 
         return two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
@@ -885,7 +880,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_csfb, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return result
+            return False
 
         return two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
@@ -913,7 +908,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_csfb, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return result
+            return False
 
         return two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
@@ -941,7 +936,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return result
+            return False
 
         return two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
