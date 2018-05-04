@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import splinter
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from time import sleep
 
 BROWSER_WAIT_SHORT = 1
@@ -241,6 +242,11 @@ class NetgearR7000AP(WifiRetailAP):
         self.CHROME_OPTIONS = splinter.driver.webdriver.chrome.Options()
         self.CHROME_OPTIONS.add_argument("--no-proxy-server")
         self.CHROME_OPTIONS.add_argument("--no-sandbox")
+        self.CHROME_OPTIONS.add_argument("--allow-running-insecure-content")
+        self.CHROME_OPTIONS.add_argument("--ignore-certificate-errors")
+        self.CHROME_CAPABILITIES = DesiredCapabilities.CHROME.copy()
+        self.CHROME_CAPABILITIES['acceptSslCerts'] = True
+        self.CHROME_CAPABILITIES['acceptInsecureCerts'] = True
         if self.ap_settings["headless_browser"]:
             self.CHROME_OPTIONS.add_argument("--headless")
             self.CHROME_OPTIONS.add_argument("--disable-gpu")
@@ -310,7 +316,10 @@ class NetgearR7000AP(WifiRetailAP):
         }
         POWER_MODE_VALUES = {"1": "100%", "2": "75%", "3": "50%", "4": "25%"}
 
-        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
+        with splinter.Browser(
+                "chrome",
+                options=self.CHROME_OPTIONS,
+                desired_capabilities=self.CHROME_CAPABILITIES) as browser:
             # Visit URL
             visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             visit_config_page(browser, self.CONFIG_PAGE_NOLOGIN,
@@ -374,7 +383,10 @@ class NetgearR7000AP(WifiRetailAP):
         # Turn radios on or off
         self.configure_radio_on_off()
         # Configure radios
-        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
+        with splinter.Browser(
+                "chrome",
+                options=self.CHROME_OPTIONS,
+                desired_capabilities=self.CHROME_CAPABILITIES) as browser:
             # Visit URL
             visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             visit_config_page(browser, self.CONFIG_PAGE_NOLOGIN,
@@ -445,7 +457,10 @@ class NetgearR7000AP(WifiRetailAP):
     def configure_radio_on_off(self):
         """ Helper configuration function to turn radios on/off
         """
-        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
+        with splinter.Browser(
+                "chrome",
+                options=self.CHROME_OPTIONS,
+                desired_capabilities=self.CHROME_CAPABILITIES) as browser:
             # Visit URL
             visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             visit_config_page(browser, self.CONFIG_PAGE_ADVANCED,
@@ -492,6 +507,11 @@ class NetgearR7500AP(WifiRetailAP):
         self.CHROME_OPTIONS = splinter.driver.webdriver.chrome.Options()
         self.CHROME_OPTIONS.add_argument("--no-proxy-server")
         self.CHROME_OPTIONS.add_argument("--no-sandbox")
+        self.CHROME_OPTIONS.add_argument("--allow-running-insecure-content")
+        self.CHROME_OPTIONS.add_argument("--ignore-certificate-errors")
+        self.CHROME_CAPABILITIES = DesiredCapabilities.CHROME.copy()
+        self.CHROME_CAPABILITIES['acceptSslCerts'] = True
+        self.CHROME_CAPABILITIES['acceptInsecureCerts'] = True
         if self.ap_settings["headless_browser"]:
             self.CHROME_OPTIONS.add_argument("--headless")
             self.CHROME_OPTIONS.add_argument("--disable-gpu")
@@ -563,7 +583,10 @@ class NetgearR7500AP(WifiRetailAP):
         self.read_radio_on_off()
         # Get radio configuration. Note that if both radios are off, the below
         # code will result in an error
-        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
+        with splinter.Browser(
+                "chrome",
+                options=self.CHROME_OPTIONS,
+                desired_capabilities=self.CHROME_CAPABILITIES) as browser:
             visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             wireless_button = browser.find_by_id("wireless").first
@@ -618,7 +641,10 @@ class NetgearR7500AP(WifiRetailAP):
         # Turn radios on or off
         self.configure_radio_on_off()
         # Configure radios
-        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
+        with splinter.Browser(
+                "chrome",
+                options=self.CHROME_OPTIONS,
+                desired_capabilities=self.CHROME_CAPABILITIES) as browser:
             visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             wireless_button = browser.find_by_id("wireless").first
@@ -693,7 +719,10 @@ class NetgearR7500AP(WifiRetailAP):
     def configure_radio_on_off(self):
         """ Helper configuration function to turn radios on/off
         """
-        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
+        with splinter.Browser(
+                "chrome",
+                options=self.CHROME_OPTIONS,
+                desired_capabilities=self.CHROME_CAPABILITIES) as browser:
             visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             visit_config_page(browser, self.CONFIG_PAGE_ADVANCED,
                               BROWSER_WAIT_MED, 10)
@@ -730,7 +759,10 @@ class NetgearR7500AP(WifiRetailAP):
     def read_radio_on_off(self):
         """ Helper configuration function to read radio status
         """
-        with splinter.Browser("chrome", self.CHROME_OPTIONS) as browser:
+        with splinter.Browser(
+                "chrome",
+                options=self.CHROME_OPTIONS,
+                desired_capabilities=self.CHROME_CAPABILITIES) as browser:
             visit_config_page(browser, self.CONFIG_PAGE, BROWSER_WAIT_MED, 10)
             visit_config_page(browser, self.CONFIG_PAGE_ADVANCED,
                               BROWSER_WAIT_MED, 10)
