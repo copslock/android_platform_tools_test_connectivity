@@ -123,7 +123,7 @@ class WifiStressTest(WifiBaseTest):
 
     """Tests"""
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="cd0016c6-58cf-4361-b551-821c0b8d2554")
     def test_stress_toggle_wifi_state(self):
         """Toggle WiFi state ON and OFF for N times."""
         for count in range(self.stress_count):
@@ -136,7 +136,7 @@ class WifiStressTest(WifiBaseTest):
             startup_time = time.time() - startTime
             self.log.debug("WiFi was enabled on the device in %s s." % startup_time)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="49e3916a-9580-4bf7-a60d-a0f2545dcdde")
     def test_stress_connect_traffic_disconnect_5g(self):
         """Test to connect and disconnect from a network for N times.
 
@@ -164,7 +164,7 @@ class WifiStressTest(WifiBaseTest):
                 raise signals.TestFailure("Error occurred in iPerf traffic. Current"
                     " WiFi state = %d" % self.dut.droid.wifiCheckState())
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="e9827dff-0755-43ec-8b50-1f9756958460")
     def test_stress_connect_long_traffic_5g(self):
         """Test to connect to network and hold connection for few hours.
 
@@ -188,7 +188,7 @@ class WifiStressTest(WifiBaseTest):
             raise signals.TestFailure("Error occurred in iPerf traffic. Current"
                 " WiFi state = %d" % self.dut.droid.wifiCheckState())
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d367c83e-5b00-4028-9ed8-f7b875997d13")
     def test_stress_wifi_failover(self):
         """This test does aggressive failover to several networks in list.
 
@@ -227,7 +227,7 @@ class WifiStressTest(WifiBaseTest):
                 raise signals.TestFailure("All the network configurations were not "
                         "removed. Configured networks = %s" % network_config)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="2c19e8d1-ac16-4d7e-b309-795144e6b956")
     def test_stress_softAP_startup_and_stop_5g(self):
         """Test to bring up softAP and down for N times.
 
@@ -261,3 +261,21 @@ class WifiStressTest(WifiBaseTest):
             if initial_wifi_state != cur_wifi_state:
                 raise signals.TestFailure("Wifi state was %d before softAP and %d now!" %
                     (initial_wifi_state, cur_wifi_state))
+
+    @test_tracker_info(uuid="eb22e26b-95d1-4580-8c76-85dfe6a42a0f")
+    def test_stress_wifi_roaming(self):
+        AP1_network = self.reference_networks[0]["5g"]
+        AP2_network = self.reference_networks[1]["5g"]
+        wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
+        wutils.wifi_connect(self.dut, AP1_network)
+        # Reduce iteration to half because each iteration does two roams.
+        for count in range(self.stress_count/2):
+            self.log.info("Roaming iteration %d, from %s to %s", count,
+                           AP1_network, AP2_network)
+            wutils.trigger_roaming_and_validate(self.dut, self.attenuators,
+                "AP1_off_AP2_on", AP2_network)
+            self.log.info("Roaming iteration %d, from %s to %s", count,
+                           AP2_network, AP1_network)
+            wutils.trigger_roaming_and_validate(self.dut, self.attenuators,
+                "AP1_on_AP2_off", AP1_network)
+
