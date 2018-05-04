@@ -576,14 +576,15 @@ def _wifi_toggle_state(ad, new_state=None):
         return
     ad.droid.wifiStartTrackingStateChange()
     ad.log.info("Setting Wi-Fi state to %s.", new_state)
+    ad.ed.clear_all_events()
     # Setting wifi state.
     ad.droid.wifiToggleState(new_state)
     fail_msg = "Failed to set Wi-Fi state to %s on %s." % (new_state,
                                                            ad.serial)
     try:
-        event = ad.ed.pop_event(wifi_constants.SUPPLICANT_CON_CHANGED,
-                                SHORT_TIMEOUT)
-        asserts.assert_equal(event['data']['Connected'], new_state, fail_msg)
+        ad.ed.wait_for_event(wifi_constants.WIFI_STATE_CHANGED,
+                             lambda x: x["data"]["enabled"] == new_state,
+                             SHORT_TIMEOUT)
     except Empty:
         # Supplicant connection event is not always reliable. We double check
         # here and call it a success as long as the new state equals the
