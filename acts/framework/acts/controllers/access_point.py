@@ -104,8 +104,11 @@ class AccessPoint(object):
             configs: configs for the access point from config file.
         """
         self.ssh_settings = settings.from_config(configs['ssh_config'])
+        self.ssh = connection.SshConnection(self.ssh_settings)
         self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' % (
             self.ssh_settings.hostname, msg))
+
+        self.check_state()
 
         if 'ap_subnet' in configs:
             self._AP_2G_SUBNET_STR = configs['ap_subnet']['2g']
@@ -138,6 +141,30 @@ class AccessPoint(object):
         self.wlan_5g = self.wlan[1]
         self.lan = self.interfaces.get_lan_interface()
         self.__initial_ap()
+
+    def check_state(self):
+        """Check what state the AP is in and reboot if required.
+
+        Check if the AP already has stale interfaces from the previous run.
+        If "yes", then reboot the AP and continue AP initialization.
+
+        """
+        self.log.debug("Checking AP state")
+        self.interfaces = ap_get_interface.ApInterfaces(self)
+        # Check if the AP has any virtual interfaces created.
+        interfaces = self.ssh.run('iw dev | grep -i "type ap" || true')
+        self.log.debug("AP interfaces = %s" % interfaces)
+        # The virtual interface will be of type "AP".
+        if 'AP' in interfaces.stdout:
+            self.log.debug("Found AP in stale state. Rebooting.")
+            try:
+                self.ssh.run('reboot')
+                # Wait for AP to shut down.
+                time.sleep(10)
+                self.ssh.run('echo connected', timeout=300)
+            except Exception as e:
+                self.log.exception("Error in rebooting AP: %s", e)
+                raise
 
     def __initial_ap(self):
         """Initial AP interfaces.
