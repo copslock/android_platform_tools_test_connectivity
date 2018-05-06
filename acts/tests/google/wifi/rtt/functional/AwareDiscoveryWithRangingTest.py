@@ -1131,7 +1131,6 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
       Wait to verify that do not get match
       Update configuration to be in-range
       Verify that get match with ranging information
-    Verify no extra events! (no spurious discoveries)
     """
     p_dut = self.android_devices[0]
     p_dut.pretty_name = "Publisher"
@@ -1308,19 +1307,6 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
         aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, cc_s_id))
     asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
                         "Discovery with ranging for CC expected!")
-
-    # No further important events (no spurious discovery - but ignore
-    # connectivity events)
-    # TODO: may have to debug this - not sure which events may happen by now!?
-    p_dut.ed.pop_events(cconsts.EVENT_NETWORK_CALLBACK, 0)
-    s_dut.ed.pop_events(cconsts.EVENT_NETWORK_CALLBACK, 0)
-
-    # sleep for timeout period and then verify all 'fail_on_event' together
-    time.sleep(autils.EVENT_TIMEOUT)
-
-    # verify that there were no other events
-    autils.verify_no_more_events(p_dut, timeout=0)
-    autils.verify_no_more_events(s_dut, timeout=0)
 
   def test_role_concurrency(self):
     """Verify the behavior of Wi-Fi Aware Ranging (in the context of discovery)
