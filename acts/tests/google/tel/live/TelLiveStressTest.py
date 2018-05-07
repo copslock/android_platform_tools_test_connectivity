@@ -223,13 +223,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                     ad.messaging_ed.start()
             ad.messaging_droid.logI("%s begin" % log_msg)
-        text = "%s: " % log_msg
+        text = "%s: " % test_name
         text_length = len(text)
         if length < text_length:
             text = text[:length]
         else:
             text += rand_ascii_str(length - text_length)
-        message_content_map = {0: [text], 1: [(log_msg, text, None)]}
+        message_content_map = {0: [text], 1: [(test_name, text, None)]}
         incall_non_ims = False
         for ad in self.android_devices:
             if ad.droid.telecomIsInCall() and (
