@@ -27,12 +27,11 @@ from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
+from acts.test_utils.tel.tel_defines import CAPABILITY_WFC_MODE_CHANGE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
 from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
-from acts.test_utils.tel.tel_lookup_tables import device_capabilities
-from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import bring_up_connectivity_monitor
 from acts.test_utils.tel.tel_test_utils import toggle_connectivity_monitor_setting
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
@@ -60,28 +59,16 @@ from acts.test_utils.tel.tel_video_utils import \
 
 
 class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
-
-        self.stress_test_number = int(
-            self.user_params.get("stress_test_number", 10))
-        self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
-        self.skip_reset_between_cases = False
-        try:
-            self.wifi_network_pass = self.user_params["wifi_network_pass"]
-        except KeyError:
-            self.wifi_network_pass = None
-
+    def setup_class(self):
+        TelephonyBaseTest.setup_class(self)
         self.dut = self.android_devices[0]
-        self.ad_reference = self.android_devices[1] if len(
-            self.android_devices) > 1 else None
+        self.ad_reference = self.android_devices[1]
         self.dut_model = get_model_name(self.dut)
         self.dut_operator = get_operator_name(self.log, self.dut)
-        self.dut_capabilities = set(
-            device_capabilities.get(
-                self.dut_model, device_capabilities["default"])) & set(
-                    operator_capabilities.get(
-                        self.dut_operator, operator_capabilities["default"]))
+        self.dut_capabilities = self.dut.telephony.get("capabilities", [])
+        self.reference_capabilities = self.ad_reference.telephony.get(
+            "capabilities", [])
+        self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         self.skip_reset_between_cases = False
         self.user_params["telephony_auto_rerun"] = 0
 
@@ -90,39 +77,37 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         bring_up_connectivity_monitor(self.dut)
 
     def _setup_wfc_non_apm(self):
-        if CAPABILITY_WFC in self.dut_capabilities and (
-                self.dut_operator == "tmo"):
-            if not phone_setup_iwlan(
-                    self.log, self.dut, False, WFC_MODE_WIFI_PREFERRED,
-                    self.wifi_network_ssid, self.wifi_network_pass):
-                self.dut.log.error("Failed to setup WFC.")
-                return False
-            self.dut.log.info("Phone is in WFC enabled state.")
-            return True
-        else:
-            raise signals.TestSkip("WFC is not supported, abort test.")
+        if CAPABILITY_WFC not in self.dut_capabilities and (
+                CAPABILITY_WFC_MODE_CHANGE not in self.dut_capabilities):
+            raise signals.TestSkip(
+                "WFC in non-APM is not supported, abort test.")
+        if not phone_setup_iwlan(
+                self.log, self.dut, False, WFC_MODE_WIFI_PREFERRED,
+                self.wifi_network_ssid, self.wifi_network_pass):
+            self.dut.log.error("Failed to setup WFC.")
+            return False
+        self.dut.log.info("Phone is in WFC enabled state.")
+        return True
 
     def _setup_wfc_apm(self):
-        if CAPABILITY_WFC in self.dut_capabilities:
-            if not phone_setup_iwlan(
-                    self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
-                    self.wifi_network_ssid, self.wifi_network_pass):
-                self.dut.log.error("Failed to setup WFC.")
-                return False
-            self.dut.log.info("Phone is in WFC enabled state.")
-            return True
-        else:
+        if CAPABILITY_WFC not in self.dut_capabilities:
             raise signals.TestSkip("WFC is not supported, abort test.")
+        if not phone_setup_iwlan(
+                self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
+                self.wifi_network_ssid, self.wifi_network_pass):
+            self.dut.log.error("Failed to setup WFC.")
+            return False
+        self.dut.log.info("Phone is in WFC enabled state.")
+        return True
 
     def _setup_volte(self):
-        if CAPABILITY_VOLTE in self.dut_capabilities:
-            if not phone_setup_volte(self.log, self.dut):
-                self.dut.log.error("Phone failed to enable VoLTE.")
-                return False
-            self.dut.log.info("Phone VOLTE is enabled successfully.")
-            return True
-        else:
+        if CAPABILITY_VOLTE not in self.dut_capabilities:
             raise signals.TestSkip("VoLTE is not supported, abort test.")
+        if not phone_setup_volte(self.log, self.dut):
+            self.dut.log.error("Phone failed to enable VoLTE.")
+            return False
+        self.dut.log.info("Phone VOLTE is enabled successfully.")
+        return True
 
     def _setup_csfb(self):
         if not phone_setup_csfb(self.log, self.dut):
@@ -139,7 +124,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
 
     def _setup_2g(self):
         if self.dut_operator not in ("tmo", "uk_ee"):
-            raise signals.TestSkip("WFC is not supported, abort test.")
+            raise signals.TestSkip("2G is not supported, abort test.")
         if not phone_setup_voice_2g(self.log, self.dut):
             self.dut.log.error("Phone failed to setup 2g.")
             return False
@@ -147,14 +132,14 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         return True
 
     def _setup_vt(self):
-        if CAPABILITY_VT in self.dut_capabilities:
-            for ad in (self.dut, self.ad_reference):
-                if not phone_setup_video(self.log, ad):
-                    ad.log.error("Failed to setup VT.")
-                    return False
-            return True
-        else:
+        if CAPABILITY_VT not in self.dut_capabilities or (
+                CAPABILITY_VT not in self.reference_capabilities):
             raise signals.TestSkip("VT is not supported, abort test.")
+        for ad in (self.dut, self.ad_reference):
+            if not phone_setup_video(self.log, ad):
+                ad.log.error("Failed to setup VT.")
+                return False
+            return True
 
     def _check_tethering(self):
         self.log.info("Check tethering")
@@ -283,7 +268,10 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
             True is pass, False if fail.
         """
         call_verification_function = None
-        checking_counters = ["Calls", "Calls_dropped"]
+        if trigger and trigger != "toggling_apm":
+            checking_counters = ["Calls", "Calls_dropped"]
+        else:
+            checking_counters = ["Calls"]
         checking_reasons = []
         result = True
         if setup:
@@ -297,18 +285,18 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
                 if setup in ("wfc_apm", "wfc_non_apm"):
                     call_verification_function = is_phone_in_call_iwlan
                     checking_counters.append("VOWIFI")
-                    if trigger:
+                    if trigger and trigger != "toggling_apm":
                         checking_counters.append("VOWIFI_dropped")
                         checking_reasons.append("VOWIFI_failure_reason")
                 elif setup == "volte":
                     call_verification_function = is_phone_in_call_volte
                     checking_counters.append("VOLTE")
-                    if trigger:
+                    if trigger and trigger != "toggling_apm":
                         checking_counters.append("VOLTE_dropped")
                         checking_reasons.append("VOLTE_failure_reason")
                 elif setup in ("csfb", "3g", "2g"):
                     checking_counters.append("CS")
-                    if trigger:
+                    if trigger and trigger != "toggling_apm":
                         checking_counters.append("CS_dropped")
                         checking_reasons.append("CS_failure_reason")
                     if setup == "csfb":
@@ -372,8 +360,9 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         call_data_summary_after = self._parsing_call_summary()
 
         for counter in checking_counters:
-            if call_data_summary_after.get(counter, 0) != call_data_summary_before.get(
-                    counter, 0) + 1:
+            if call_data_summary_after.get(
+                    counter,
+                    0) != call_data_summary_before.get(counter, 0) + 1:
                 self.dut.log.error("Counter %s did not increase", counter)
                 result = False
         for reason_key in checking_reasons:
@@ -391,7 +380,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
                                    reason_key)
                 result = False
 
-        if not trigger:
+        if not trigger or trigger == "toggling_apm":
             return result
         # Parse logcat for UI notification only for the first failure
         if self.dut.search_logcat("Bugreport notification title Call Drop:",
@@ -453,7 +442,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         Steps:
             1. Verify Connectivity Monitor is on
             2. Force Trigger a call drop : media timeout and ensure it is
-               notified by Connectivity Monitor
+               not counted as call drop by Connectivity Monitor
 
         Expected Results:
             feature work fine, and does report to User about Call Drop
