@@ -25,7 +25,6 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
-ROAMING_TIMEOUT = 30
 
 class WifiRoamingTest(WifiBaseTest):
 
@@ -81,54 +80,6 @@ class WifiRoamingTest(WifiBaseTest):
         self.dut.cat_adb_log(test_name, begin_time)
         self.dut.take_bug_report(test_name, begin_time)
 
-    def set_attns(self, attn_val_name):
-        """Sets attenuation values on attenuators used in this test.
-
-        Args:
-            attn_val_name: Name of the attenuation value pair to use.
-        """
-        self.log.info("Set attenuation values to %s",
-                      self.roaming_attn[attn_val_name])
-        try:
-            self.attenuators[0].set_atten(self.roaming_attn[attn_val_name][0])
-            self.attenuators[1].set_atten(self.roaming_attn[attn_val_name][1])
-            self.attenuators[2].set_atten(self.roaming_attn[attn_val_name][2])
-            self.attenuators[3].set_atten(self.roaming_attn[attn_val_name][3])
-        except:
-            self.log.exception("Failed to set attenuation values %s.",
-                           attn_val_name)
-            raise
-
-    def trigger_roaming_and_validate(self, attn_val_name, expected_con):
-        """Sets attenuators to trigger roaming and validate the DUT connected
-        to the BSSID expected.
-
-        Args:
-            attn_val_name: Name of the attenuation value pair to use.
-            expected_con: The network information of the expected network.
-        """
-        expected_con = {
-            WifiEnums.SSID_KEY: expected_con[WifiEnums.SSID_KEY],
-            WifiEnums.BSSID_KEY: expected_con["bssid"],
-        }
-        self.set_attns(attn_val_name)
-        self.log.info("Wait %ss for roaming to finish.", ROAMING_TIMEOUT)
-        time.sleep(ROAMING_TIMEOUT)
-        try:
-            # Wakeup device and verify connection.
-            self.dut.droid.wakeLockAcquireBright()
-            self.dut.droid.wakeUpNow()
-            cur_con = self.dut.droid.wifiGetConnectionInfo()
-            wutils.verify_wifi_connection_info(self.dut, expected_con)
-            expected_bssid = expected_con[WifiEnums.BSSID_KEY]
-            self.log.info("Roamed to %s successfully", expected_bssid)
-            if not wutils.validate_connection(self.dut):
-                raise signals.TestFailure("Fail to connect to internet on %s" %
-                                          expected_ssid)
-        finally:
-            self.dut.droid.wifiLockRelease()
-            self.dut.droid.goToSleepNow()
-
     def roaming_from_AP1_and_AP2(self, AP1_network, AP2_network):
         """Test roaming between two APs.
 
@@ -143,10 +94,11 @@ class WifiRoamingTest(WifiBaseTest):
         4. Expect DUT to roam to AP2.
         5. Validate connection information and ping.
         """
-        self.set_attns("AP1_on_AP2_off")
+        wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
         wutils.wifi_connect(self.dut, AP1_network)
         self.log.info("Roaming from %s to %s", AP1_network, AP2_network)
-        self.trigger_roaming_and_validate("AP1_off_AP2_on", AP2_network)
+        wutils.trigger_roaming_and_validate(self.dut, self.attenuators,
+            "AP1_off_AP2_on", AP2_network)
 
     """ Tests Begin.
 
