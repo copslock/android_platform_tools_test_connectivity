@@ -108,3 +108,8 @@ class AwareBaseTest(BaseTestClass):
     """
     self.msg_id = self.msg_id + 1
     return self.msg_id
+
+  def on_fail(self, test_name, begin_time):
+    for ad in self.android_devices:
+      ad.take_bug_report(test_name, begin_time)
+      ad.cat_adb_log(test_name, begin_time)
