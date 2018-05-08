@@ -35,6 +35,7 @@ from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts.test_utils.tel.tel_test_utils import bring_up_connectivity_monitor
 from acts.test_utils.tel.tel_test_utils import toggle_connectivity_monitor_setting
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import get_model_name
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import hangup_call
@@ -71,6 +72,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         self.skip_reset_between_cases = False
         self.user_params["telephony_auto_rerun"] = 0
+        self.number_of_devices = 1
 
     def setup_test(self):
         TelephonyBaseTest.setup_test(self)
@@ -268,6 +270,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
             True is pass, False if fail.
         """
         call_verification_function = None
+        begin_time = get_device_epoch_time(self.dut)
         if trigger and trigger != "toggling_apm":
             checking_counters = ["Calls", "Calls_dropped"]
         else:
@@ -339,11 +342,11 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         expected_reason = None
         try:
             if self.dut.droid.telecomIsInCall():
-                hangup_call(self.log, self.dut)
                 if trigger:
                     self.dut.log.info("Still in call after trigger %s",
                                       trigger)
                     result = False
+                hangup_call(self.log, self.dut)
             else:
                 self.dut.log.info("Not in call anymore, there is call drop")
                 reasons = self.dut.search_logcat(
@@ -384,13 +387,13 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
             return result
         # Parse logcat for UI notification only for the first failure
         if self.dut.search_logcat("Bugreport notification title Call Drop:",
-                                  self.begin_time):
-            self.dut.log.info("User got the Call Drop Notification with "
-                              "TelephonyMonitor/ConnectivityMonitor on")
+                                  begin_time):
+            self.dut.log.info(
+                "Bugreport notification title Call Drop is seen in logcat")
             return result
         else:
-            self.dut.log.warning("User didn't get Call Drop Notify with "
-                                 "TelephonyMonitor/ConnectivityMonitor on")
+            self.dut.log.warning(
+                "Bugreport notification title Call Drop is not seen in logcat")
             if call_data_summary_after.get("Calls_dropped", 0) > 1:
                 return result
             else:
