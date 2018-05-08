@@ -1,4 +1,4 @@
-# /usr/bin/env python3.4
+# /usr/bin/env python3
 #
 # Copyright (C) 2018 The Android Open Source Project
 #
@@ -13,41 +13,66 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""
+Test suite to check Wlan performance with A2DP.
+
+Test Setup:
+
+One Android deivce.
+One A2DP Headset connected to Relay.
+"""
+import time
 
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
-from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
+from acts.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
+from acts.test_utils.coex.coex_test_utils import AudioCapture
 from acts.test_utils.coex.coex_test_utils import music_play_and_check
-from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
 from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
 
 
-class WlanWithA2dpPerformanceTest(CoexBaseTest):
+class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
 
     def __init__(self, controllers):
-        CoexBaseTest.__init__(self, controllers)
+        CoexPerformanceBaseTest.__init__(self, controllers)
+
+    def setup_class(self):
+        super().setup_class()
+        req_params = ["audio_params", "music_file"]
+        self.unpack_userparams(req_params)
+        if hasattr(self, "music_file"):
+            self.push_music_to_android_device(self.pri_ad)
 
     def setup_test(self):
-        CoexBaseTest.setup_test(self)
+        super().setup_test()
+        self.audio_receiver.power_on()
         self.audio_receiver.pairing_mode()
+        time.sleep(5)
         if not pair_and_connect_headset(
                 self.pri_ad, self.audio_receiver.mac_address,
                 set([BtEnum.BluetoothProfile.A2DP.value])):
             self.log.error("Failed to pair and connect to headset")
             return False
+        self.audio = AudioCapture(self.pri_ad, self.audio_params)
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
-        CoexBaseTest.teardown_test(self)
+        self.audio.terminate_pyaudio()
         self.audio_receiver.clean_up()
+        super().teardown_test()
 
     def initiate_music_streaming_to_headset_with_iperf(self):
         """Initiate music streaming to headset and start iperf traffic."""
-        self.run_iperf_and_get_result()
-        if not music_play_and_check(
-                self.pri_ad, self.audio_receiver.mac_address,
-                self.music_file_to_play, self.iperf["duration"]):
+        tasks = [(self.audio.capture_audio,
+                  (self.audio_params["record_duration"],
+                   self.current_test_name)),
+                 (music_play_and_check,
+                  (self.pri_ad, self.audio_receiver.mac_address,
+                   self.music_file_to_play,
+                   self.audio_params["music_play_time"])),
+                 (self.run_iperf_and_get_result, ())]
+        if not self.set_attenuation_and_run_iperf(tasks):
             return False
         return self.teardown_result()
 
@@ -55,8 +80,10 @@ class WlanWithA2dpPerformanceTest(CoexBaseTest):
         """Starts iperf traffic based on test and perform bluetooth classic
         discovery.
         """
-        self.run_iperf_and_get_result()
-        if not perform_classic_discovery(self.pri_ad):
+        tasks = [(self.run_iperf_and_get_result, ()),
+                 (perform_classic_discovery,
+                  (self.pri_ad, self.iperf["duration"]))]
+        if not self.set_attenuation_and_run_iperf(tasks):
             return False
         return self.teardown_result()
 
@@ -64,12 +91,15 @@ class WlanWithA2dpPerformanceTest(CoexBaseTest):
         """Starts iperf traffic based on test and initiate music streaming and
         check for avrcp controls.
         """
-        self.run_iperf_and_get_result()
-        tasks = [(music_play_and_check,
+        tasks = [(self.audio.capture_audio,
+                  (self.audio_params["record_duration"],
+                   self.current_test_name)),
+                 (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
-                   self.music_file_to_play, self.iperf["duration"])),
-                 (self.avrcp_actions, ())]
-        if not multithread_func(self.log, tasks):
+                   self.music_file_to_play,
+                   self.audio_params["music_play_time"])),
+                 (self.run_iperf_and_get_result, ()), (self.avrcp_actions, ())]
+        if not self.set_attenuation_and_run_iperf(tasks):
             return False
         return self.teardown_result()
 
@@ -240,6 +270,7 @@ class WlanWithA2dpPerformanceTest(CoexBaseTest):
         android device and test the wlan throughput when perfroming a2dp music
         streaming and avrcp controls.
 
+        Steps:
         1. Start TCP-uplink traffic.
         2. Start media streaming to a2dp headset.
         3. Check all avrcp related controls.
@@ -260,6 +291,7 @@ class WlanWithA2dpPerformanceTest(CoexBaseTest):
         android device and test the wlan throughput when perfroming a2dp music
         streaming and avrcp controls.
 
+        Steps:
         1. Start TCP-downlink traffic.
         2. Start media streaming to a2dp headset.
         3. Check all avrcp related controls.
@@ -280,6 +312,7 @@ class WlanWithA2dpPerformanceTest(CoexBaseTest):
         android device and test the wlan throughput when perfroming a2dp music
         streaming and avrcp controls.
 
+        Steps:
         1. Start UDP-uplink traffic.
         2. Start media streaming to a2dp headset.
         3. Check all avrcp related controls.
@@ -300,6 +333,7 @@ class WlanWithA2dpPerformanceTest(CoexBaseTest):
         android device and test the wlan throughput when perfroming a2dp music
         streaming and avrcp controls.
 
+        Steps:
         1. Start UDP-downlink traffic.
         2. Start media streaming to a2dp headset.
         3. Check all avrcp related controls.

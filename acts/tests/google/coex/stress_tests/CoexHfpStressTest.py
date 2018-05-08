@@ -91,7 +91,7 @@ class CoexHfpStressTest(CoexBaseTest):
             if not self.audio_receiver.initiate_call_from_hf():
                 self.log.error("Failed to initiate call.")
                 return False
-            time.sleep(5)
+            time.sleep(5) #Wait time for intiating call.
             if not hangup_call(self.log, self.pri_ad):
                 self.log.error("Failed to hang up the call.")
                 return False
