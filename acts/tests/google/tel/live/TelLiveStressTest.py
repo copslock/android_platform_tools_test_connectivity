@@ -44,7 +44,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
-from acts.test_utils.tel.tel_test_utils import is_voice_attached
+from acts.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
@@ -347,11 +347,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                             1)
                                     continue
                         failure_reasons.add("Maintenance")
-                        reasons = ad.search_logcat(
-                            "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
-                            begin_time)
-                        if reasons:
-                            ad.log.info(reasons[-1]["log_message"])
+                        last_call_drop_reason(ad, begin_time)
                         hangup_call(self.log, ads[0])
                         result = False
                     else:

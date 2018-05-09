@@ -40,6 +40,7 @@ from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import is_sim_lock_enabled
 from acts.test_utils.tel.tel_test_utils import initiate_emergency_dialer_call_by_adb
+from acts.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts.test_utils.tel.tel_test_utils import reset_device_password
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import unlock_sim
@@ -186,11 +187,7 @@ class TelLiveEmergencyBase(TelephonyBaseTest):
             time.sleep(3)
             hangup_call_by_adb(self.dut)
             if not call_result:
-                reasons = self.dut.search_logcat(
-                    "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
-                    begin_time)
-                if reasons:
-                    self.dut.log.info(reasons[-1]["log_message"])
+                last_call_drop_reason(self.dut, begin_time)
             self.dut.send_keycode("BACK")
             self.dut.send_keycode("BACK")
             if not dumpsys_new_call_info(self.dut, last_call_number):
