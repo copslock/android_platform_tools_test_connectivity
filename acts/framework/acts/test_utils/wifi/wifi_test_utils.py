@@ -540,6 +540,47 @@ def match_networks(target_params, networks):
             results.append(n)
     return results
 
+def wait_for_wifi_state(ad, state, assert_on_fail=True):
+    """Waits for the device to transition to the specified wifi state
+
+    Args:
+        ad: An AndroidDevice object.
+        state: Wifi state to wait for.
+        assert_on_fail: If True, error checks in this function will raise test
+                        failure signals.
+
+    Returns:
+        If assert_on_fail is False, function returns True if the device transitions
+        to the specified state, False otherwise. If assert_on_fail is True, no return value.
+    """
+    return _assert_on_fail_handler(
+        _wait_for_wifi_state, assert_on_fail, ad, state=state)
+
+
+def _wait_for_wifi_state(ad, state):
+    """Toggles the state of wifi.
+
+    TestFailure signals are raised when something goes wrong.
+
+    Args:
+        ad: An AndroidDevice object.
+        state: Wifi state to wait for.
+    """
+    if state == ad.droid.wifiCheckState():
+        # Check if the state is already achieved, so we don't wait for the
+        # state change event by mistake.
+        return
+    ad.droid.wifiStartTrackingStateChange()
+    fail_msg = "Device did not transition to Wi-Fi state to %s on %s." % (state,
+                                                           ad.serial)
+    try:
+        ad.ed.wait_for_event(wifi_constants.WIFI_STATE_CHANGED,
+                             lambda x: x["data"]["enabled"] == state,
+                             SHORT_TIMEOUT)
+    except Empty:
+        asserts.assert_equal(state, ad.droid.wifiCheckState(), fail_msg)
+    finally:
+        ad.droid.wifiStopTrackingStateChange()
 
 def wifi_toggle_state(ad, new_state=None, assert_on_fail=True):
     """Toggles the state of wifi.
@@ -586,10 +627,6 @@ def _wifi_toggle_state(ad, new_state=None):
                              lambda x: x["data"]["enabled"] == new_state,
                              SHORT_TIMEOUT)
     except Empty:
-        # Supplicant connection event is not always reliable. We double check
-        # here and call it a success as long as the new state equals the
-        # expected state.
-        time.sleep(5)
         asserts.assert_equal(new_state, ad.droid.wifiCheckState(), fail_msg)
     finally:
         ad.droid.wifiStopTrackingStateChange()
