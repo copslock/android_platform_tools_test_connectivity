@@ -209,6 +209,12 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
                         CAPABILITY_WFC in self.dut_capabilities):
                 if not wait_for_wfc_enabled(self.log, self.dut):
                     result = False
+                if not wait_for_state(
+                        self.dut.droid.telephonyGetCurrentVoiceNetworkType,
+                        RAT_UNKNOWN):
+                    self.dut.log.error(
+                        "Voice RAT is %s, not UNKNOWN",
+                        self.dut.droid.telephonyGetCurrentVoiceNetworkType())
                 if not self.check_call_in_wfc():
                     result = False
             else:

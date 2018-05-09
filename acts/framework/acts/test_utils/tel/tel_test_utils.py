@@ -1262,8 +1262,8 @@ def initiate_call(log,
     """
     ad.ed.clear_events(EventCallStateChanged)
     sub_id = get_outgoing_voice_sub_id(ad)
+    begin_time = get_device_epoch_time(ad)
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-
     try:
         # Make a Call
         ad.log.info("Make a phone call to %s", callee_number)
@@ -1286,7 +1286,8 @@ def initiate_call(log,
             " Telephony State:%s", callee_number, ad.droid.telecomIsInCall(),
             ad.droid.telephonyGetCallState(), ad.droid.telecomGetCallState())
         reasons = ad.search_logcat(
-            "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause")
+            "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
+            begin_time)
         if reasons:
             ad.log.info(reasons[-1]["log_message"])
         return False
@@ -1957,7 +1958,9 @@ def call_setup_teardown_for_subscription(
             if call_func(log, ad):
                 ad.log.info("Call is in %s state", call_func.__name__)
             else:
-                ad.log.error("Call is not in %s state", call_func.__name__)
+                ad.log.error("Call is not in %s state, voice in RAT %s",
+                             call_func.__name__,
+                             ad.droid.telephonyGetCurrentVoiceNetworkType())
                 result = False
         if not result:
             return False
@@ -1972,8 +1975,10 @@ def call_setup_teardown_for_subscription(
             for ad, call_func in [(ad_caller, verify_caller_func),
                                   (ad_callee, verify_callee_func)]:
                 if not call_func(log, ad):
-                    ad.log.error("NOT in correct %s state at %s",
-                                 call_func.__name__, time_message)
+                    ad.log.error(
+                        "NOT in correct %s state at %s, voice in RAT %s",
+                        call_func.__name__, time_message,
+                        ad.droid.telephonyGetCurrentVoiceNetworkType())
                     result = False
                 else:
                     ad.log.info("In correct %s state at %s",
@@ -1982,39 +1987,29 @@ def call_setup_teardown_for_subscription(
                     ad.log.error("Audio is not in call state at %s",
                                  time_message)
                     result = False
-                if not result:
-                    return False
+            if not result:
+                return False
         if ad_hangup:
-            ad_callee_ids = ad_callee.droid.telecomCallGetCallIds()
-            ad_caller_ids = ad_caller.droid.telecomCallGetCallIds()
             if not hangup_call(log, ad_hangup):
                 ad_hangup.log.info("Failed to hang up the call")
                 result = False
-            else:
-                if not wait_for_call_id_clearing(ad_caller, ad_caller_ids):
-                    result = False
-                if not wait_for_call_id_clearing(ad_callee, ad_callee_ids):
-                    result = False
-        return result
+                return False
     finally:
         if not result:
-            for ad in [ad_caller, ad_callee]:
-                reasons = ad.search_logcat(
-                    "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
-                    begin_time)
-                ad.log.info("\n".join(
-                    [reason["log_message"] for reason in reasons]))
-                reasons = ad.search_logcat(
-                    "ACTION_FORBIDDEN_NO_SERVICE_AUTHORIZATION", begin_time)
-                if reasons:
-                    ad.log.warning(
-                        "ACTION_FORBIDDEN_NO_SERVICE_AUTHORIZATION is seen")
+            for ad in (ad_caller, ad_callee):
+                last_call_drop_reason(ad, begin_time)
                 try:
                     if ad.droid.telecomIsInCall():
                         ad.log.info("In call. End now.")
                         ad.droid.telecomEndCall()
                 except Exception as e:
                     log.error(str(e))
+        if ad_hangup or not result:
+            for ad in (ad_caller, ad_callee):
+                if not wait_for_call_id_clearing(
+                        ad, getattr(ad, "caller_ids", [])):
+                    result = False
+    return result
 
 
 def wait_for_call_id_clearing(ad,
@@ -2022,13 +2017,29 @@ def wait_for_call_id_clearing(ad,
                               timeout=MAX_WAIT_TIME_CALL_DROP):
     while timeout > 0:
         new_call_ids = ad.droid.telecomCallGetCallIds()
-        if len(new_call_ids) < len(previous_ids):
+        if len(new_call_ids) <= len(previous_ids):
             return True
         time.sleep(5)
         timeout = timeout - 5
-    ad.log.error("There is no call id clearing: %s vs. %s", previous_ids,
-                 new_call_ids)
+    ad.log.error("Call id clearing failed. Before: %s; After: %s",
+                 previous_ids, new_call_ids)
     return False
+
+
+def last_call_drop_reason(ad, begin_time=None):
+    reasons = ad.search_logcat(
+        "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause", begin_time)
+    if reasons:
+        log_msg = "Logcat call drop reasons:"
+        log_msg = "%s\n\t\t%s" % (log_msg, (
+            "\n\t\t".join([reason["log_message"] for reason in reasons])))
+        ad.log.info(log_msg)
+    reasons = ad.search_logcat("ACTION_FORBIDDEN_NO_SERVICE_AUTHORIZATION",
+                               begin_time)
+    if reasons:
+        ad.log.warning("ACTION_FORBIDDEN_NO_SERVICE_AUTHORIZATION is seen")
+    ad.log.info("last call dumpsys: %s",
+                sorted(dumpsys_last_call_info(ad).items()))
 
 
 def phone_number_formatter(input_string, formatter=None):
