@@ -17,6 +17,7 @@
 import queue
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -196,6 +197,7 @@ class MessagesStressTest(AwareBaseTest):
 
   #######################################################################
 
+  @test_tracker_info(uuid="e88c060f-4ca7-41c1-935a-d3d62878ec0b")
   def test_stress_message(self):
     """Stress test for bi-directional message transmission and reception."""
     p_dut = self.android_devices[0]
@@ -281,8 +283,6 @@ class MessagesStressTest(AwareBaseTest):
     asserts.assert_equal(results["rx_count_fail_tx_indication"], 0,
                          "Message received but Tx didn't get ACK", results)
 
-    asserts.explicit_pass("test_stress_message done", extras=results)
-
     # permissible failures based on thresholds
     asserts.assert_true(results["tx_count_fail"] <= (
           self.MAX_TX_FAILURE_PERCENTAGE * self.NUM_ITERATIONS / 100),
@@ -292,3 +292,5 @@ class MessagesStressTest(AwareBaseTest):
         self.MAX_DUPLICATE_RX_PERCENTAGE * self.NUM_ITERATIONS / 100),
                         "Number of duplicate Rx exceeds threshold",
                         extras=results)
+
+    asserts.explicit_pass("test_stress_message done", extras=results)
