@@ -27,6 +27,7 @@ from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
@@ -207,11 +208,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
                 if network_check_func and not network_check_func(
                         self.log, self.caller):
                     fail_count["caller_network_check"] += 1
-                    reasons = self.caller.search_logcat(
-                        "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
-                        begin_time)
-                    if reasons:
-                        self.caller.log.info(reasons[-1]["log_message"])
+                    last_call_drop_reason(self.caller, begin_time)
                     iteration_result = False
                     self.log.error("%s network check %s failure.", msg,
                                    network_check_func.__name__)
@@ -219,11 +216,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
                 if network_check_func and not network_check_func(
                         self.log, self.callee):
                     fail_count["callee_network_check"] += 1
-                    reasons = self.callee.search_logcat(
-                        "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
-                        begin_time)
-                    if reasons:
-                        self.callee.log.info(reasons[-1]["log_message"])
+                    last_call_drop_reason(self.callee, begin_time)
                     iteration_result = False
                     self.log.error("%s network check failure.", msg)
 
