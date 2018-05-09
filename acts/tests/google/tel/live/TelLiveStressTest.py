@@ -27,6 +27,7 @@ from acts import utils
 from acts.libs.proc import job
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GLOBAL
@@ -309,9 +310,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         failure_reasons = set()
         if self.single_phone_test:
             call_setup_result = initiate_call(
-                self.log, self.dut,
-                self.call_server_number) and wait_for_in_call_active(
-                    self.dut, 60, 3)
+                    self.log, self.dut, self.call_server_number,
+                    incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND
+            ) and wait_for_in_call_active(self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
                 self.log,
@@ -320,7 +321,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 ad_hangup=None,
                 verify_caller_func=call_verification_func,
                 verify_callee_func=call_verification_func,
-                wait_time_in_call=0)
+                wait_time_in_call=0,
+                incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND)
         if not call_setup_result:
             self.log.error("%s: Setup Call failed.", log_msg)
             failure_reasons.add("Setup")
