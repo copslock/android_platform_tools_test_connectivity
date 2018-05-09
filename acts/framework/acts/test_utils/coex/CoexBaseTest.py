@@ -60,8 +60,8 @@ class CoexBaseTest(BaseTestClass):
         if not setup_multiple_devices_for_bt_test(self.android_devices):
             self.log.error("Failed to setup devices for bluetooth test")
             return False
-        req_params = ["network", "iperf","headset_mac_address"]
-        opt_params = ["AccessPoints", "RetailAccessPoints", "RelayDevice"]
+        req_params = ["network", "iperf"]
+        opt_params = ["AccessPoint", "RetailAccessPoints", "RelayDevice"]
         self.unpack_userparams(req_params, opt_params)
         if hasattr(self, "RelayDevice"):
             self.audio_receiver = self.relay_devices[0]
@@ -69,7 +69,7 @@ class CoexBaseTest(BaseTestClass):
         else:
             self.log.warning("Missing Relay config file.")
         self.path = self.pri_ad.log_path
-        if hasattr(self, "AccessPoints"):
+        if hasattr(self, "AccessPoint"):
             self.ap = self.access_points[0]
             configure_and_start_ap(self.ap, self.network)
         elif hasattr(self, "RetailAccessPoints"):
@@ -101,7 +101,7 @@ class CoexBaseTest(BaseTestClass):
         self.teardown_thread()
 
     def teardown_class(self):
-        if hasattr(self, "AccessPoints"):
+        if hasattr(self, "AccessPoint"):
             self.ap.close()
         reset_wifi(self.pri_ad)
         wifi_toggle_state(self.pri_ad, False)
