@@ -1248,7 +1248,8 @@ def initiate_call(log,
                   callee_number,
                   emergency=False,
                   timeout=MAX_WAIT_TIME_CALL_INITIATION,
-                  checking_interval=5):
+                  checking_interval=5,
+                  incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
     """Make phone call from caller to callee.
 
     Args:
@@ -1256,6 +1257,7 @@ def initiate_call(log,
         callee_number: Callee phone number.
         emergency : specify the call is emergency.
             Optional. Default value is False.
+        incall_ui_display: show the dialer UI foreground or backgroud
 
     Returns:
         result: if phone call is placed successfully.
@@ -1293,6 +1295,10 @@ def initiate_call(log,
         return False
     finally:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
+        if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
+            ad.droid.telecomShowInCallScreen()
+        elif incall_ui_display == INCALL_UI_DISPLAY_BACKGROUND:
+            ad.droid.showHomeScreen()
 
 
 def dial_phone_number(ad, callee_number):
@@ -1915,7 +1921,8 @@ def call_setup_teardown_for_subscription(
         setattr(ad, "call_ids", call_ids)
         ad.log.info("Before making call, existing phone calls %s", call_ids)
     try:
-        if not initiate_call(log, ad_caller, callee_number):
+        if not initiate_call(log, ad_caller, callee_number,
+                             incall_ui_display=incall_ui_display):
             ad_caller.log.error("Initiate call failed.")
             result = False
             return False
@@ -6365,6 +6372,7 @@ def verify_default_telephony_setting(ad):
 
 
 def log_messaging_screen_shot(ad, test_name=""):
+    ad.send_keycode("HOME")
     ad.adb.shell(
         "am start -n com.google.android.apps.messaging/.ui.ConversationListActivity"
     )
