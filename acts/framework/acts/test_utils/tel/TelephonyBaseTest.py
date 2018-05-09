@@ -202,11 +202,6 @@ class TelephonyBaseTest(BaseTestClass):
             if ad.adb.getprop("persist.radio.multisim.config") != "ssss":
                 ad.adb.shell("setprop persist.radio.multisim.config ssss")
                 reboot_device(ad)
-                # Workaround for b/77814510
-                ad.adb.shell(
-                    "rm /data/user_de/0/com.android.providers.telephony"
-                    "/databases/telephony.db")
-                reboot_device(ad)
 
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
             ad.log.info("Device has no or unknown SIM in it")
