@@ -69,43 +69,6 @@ class WifiSoftApTest(base_test.BaseTestClass):
         self.dut_client.take_bug_report(test_name, begin_time)
 
     """ Helper Functions """
-    def verify_return_to_wifi_enabled(self):
-        """Verifies that wifi is enabled
-
-        We consider wifi as enabled if two things have happened.  First, supplicant
-        is started correctly (seen with the supplicant connection change).  Second,
-        supplicant should initially enter the disconnected state.
-        """
-        curr_state = "waiting for supplicant to come back up"
-        try:
-            self.dut.droid.wifiStartTrackingStateChange()
-            event = self.dut.ed.pop_event("SupplicantConnectionChanged", 10)
-        except queue.Empty:
-            self.log.exception("Failed to restart wifi: current state = %s",
-                               curr_state)
-            asserts.fail(curr_state)
-        finally:
-            self.dut.droid.wifiStopTrackingStateChange()
-
-        #TODO(silberst): uncomment and remove loop below when b/30037819 is fixed
-        #curr_state = "waiting for wifi to go back into connect mode"
-        #try:
-        #    self.dut.droid.wifiStartTrackingStateChange()
-        #    event = self.dut.ed.pop_event("WifiNetworkDisconnected", 10)
-        #    self.dut.droid.wifiStopTrackingStateChange()
-        #except queue.Empty:
-        #    self.log.exception("Failed to restart wifi: current state = %s",                                                                                 curr_state)
-        #    asserts.fail(curr_state)
-        attempt_count = 0
-        max_attempts = 3
-        while attempt_count < max_attempts:
-            if not self.dut.droid.wifiCheckState():
-                attempt_count += 1
-                time.sleep(5)
-            else:
-                return
-        asserts.fail("failed waiting for wifi to return to connect mode")
-
     def create_softap_config(self):
         """Create a softap config with ssid and password."""
         ap_ssid = "softap_" + utils.rand_ascii_str(8)
@@ -182,7 +145,7 @@ class WifiSoftApTest(base_test.BaseTestClass):
         asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
                              "SoftAp is still reported as running")
         if initial_wifi_state:
-            self.verify_return_to_wifi_enabled()
+            wutils.wait_for_wifi_state(self.dut, True)
         elif self.dut.droid.wifiCheckState():
             asserts.fail("Wifi was disabled before softap and now it is enabled")
 
