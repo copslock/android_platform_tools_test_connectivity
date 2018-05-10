@@ -48,7 +48,7 @@ class CoexBtMultiProfileFunctionalityTest(CoexBaseTest):
 
     def setup_test(self):
         super().setup_test()
-        self.audio_receiver.pairing_mode()
+        self.audio_receiver.enter_pairing_mode()
         if not pair_and_connect_headset(
                 self.pri_ad, self.audio_receiver.mac_address,
                 set([BtEnum.BluetoothProfile.HEADSET.value]) and
