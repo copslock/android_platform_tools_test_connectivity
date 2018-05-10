@@ -84,7 +84,7 @@ class WifiCrashTest(WifiBaseTest):
     """Helper Functions"""
 
     """Tests"""
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b87fd23f-9bfc-406b-a5b2-17ce6be6c780")
     def test_wifi_framework_crash_reconnect(self):
         """Connect to a network, crash framework, then ensure
         we connect back to the previously connected network.
@@ -107,7 +107,7 @@ class WifiCrashTest(WifiBaseTest):
             raise signals.TestFailure("Device did not connect to the"
                                       " network after crashing framework.")
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="33f9e4f6-29b8-4116-8f9b-5b13d93b4bcb")
     def test_wifi_cond_crash_reconnect(self):
         """Connect to a network, crash wificond, then ensure
         we connect back to the previously connected network.
@@ -130,7 +130,7 @@ class WifiCrashTest(WifiBaseTest):
             raise signals.TestFailure("Device did not connect to the"
                                       " network after crashing wificond.")
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="463e3d7b-b0b7-4843-b83b-5613a71ae2ac")
     def test_wifi_vendorhal_crash_reconnect(self):
         """Connect to a network, crash wifi HAL, then ensure
         we connect back to the previously connected network.
@@ -153,7 +153,7 @@ class WifiCrashTest(WifiBaseTest):
             raise signals.TestFailure("Device did not connect to the"
                                       " network after crashing wifi HAL.")
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="7c5cd1fc-8f8d-494c-beaf-4eb61b48917b")
     def test_wpa_supplicant_crash_reconnect(self):
         """Connect to a network, crash wpa_supplicant, then ensure
         we connect back to the previously connected network.
