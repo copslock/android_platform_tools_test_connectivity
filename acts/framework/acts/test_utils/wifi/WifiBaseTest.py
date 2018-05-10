@@ -80,14 +80,14 @@ class WifiBaseTest(BaseTestClass):
               "SSID": ref_2g_ssid,
               "security": ref_2g_security,
               "password": ref_2g_passphrase,
-              "hiddenSSID": true
+              "hiddenSSID": True
            }
 
            network_dict_5g = {
               "SSID": ref_5g_ssid,
               "security": ref_5g_security,
               "password": ref_5g_passphrase,
-              "hiddenSSID": true
+              "hiddenSSID": True
            }
         else:
             network_dict_2g = {
@@ -138,13 +138,13 @@ class WifiBaseTest(BaseTestClass):
             network_dict_2g = {
             "SSID": open_2g_ssid,
             "security": 'none',
-            "hiddenSSID": true
+            "hiddenSSID": True
             }
 
             network_dict_5g = {
             "SSID": open_5g_ssid,
             "security": 'none',
-            "hiddenSSID": true
+            "hiddenSSID": True
             }
         else:
             network_dict_2g = {
@@ -220,14 +220,16 @@ class WifiBaseTest(BaseTestClass):
         if "reference_networks" in self.user_params:
             pass
         else:
-            networks_dict = self.get_wpa2_network(ap_count=ap_count)
+            networks_dict = self.get_wpa2_network(hidden=hidden,
+                ap_count=ap_count)
             network_list_2g.append(networks_dict["2g"])
             network_list_5g.append(networks_dict["5g"])
 
         if "open_network" in self.user_params:
             pass
         else:
-            networks_dict = self.get_open_network(ap_count=ap_count)
+            networks_dict = self.get_open_network(hidden=hidden,
+                ap_count=ap_count)
             network_list_2g.append(networks_dict["2g"])
             network_list_5g.append(networks_dict["5g"])
 
