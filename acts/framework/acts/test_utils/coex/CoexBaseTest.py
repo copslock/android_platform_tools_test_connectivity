@@ -315,13 +315,13 @@ class CoexBaseTest(BaseTestClass):
         Returns: True if successful, otherwise False.
         """
         #TODO: Validate the success state of functionalities performed.
-        self.audio_receiver.volume_up()
+        self.audio_receiver.press_volume_up()
         time.sleep(2)
-        self.audio_receiver.volume_down()
+        self.audio_receiver.press_volume_down()
         time.sleep(2)
-        self.audio_receiver.skip_next()
+        self.audio_receiver.press_next()
         time.sleep(2)
-        self.audio_receiver.skip_previous()
+        self.audio_receiver.press_previous()
         time.sleep(2)
         return True
 
@@ -330,8 +330,8 @@ class CoexBaseTest(BaseTestClass):
 
         Returns: True if successful, otherwise False.
         """
-        self.audio_receiver.volume_up()
+        self.audio_receiver.press_volume_up()
         time.sleep(2)
-        self.audio_receiver.volume_down()
+        self.audio_receiver.press_volume_down()
         time.sleep(2)
         return True

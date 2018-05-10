@@ -403,7 +403,7 @@ def initiate_disconnect_from_hf(audio_receiver, pri_ad, sec_ad, duration):
     Returns:
         True if successful, False otherwise.
     """
-    audio_receiver.initiate_call_from_hf()
+    audio_receiver.press_initiate_call()
     time.sleep(2)
     flag = True
     flag &= wait_for_dialing(logging, pri_ad)

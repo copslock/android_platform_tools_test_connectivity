@@ -36,10 +36,10 @@ class CoexBtMultiProfileStressTest(CoexBaseTest):
 
     def setup_test(self):
         CoexBaseTest.setup_test(self)
-        self.audio_receiver.pairing_mode()
+        self.audio_receiver.enter_pairing_mode()
         self.receiver.setup()
         self.receiver.power_on()
-        self.receiver.pairing_mode()
+        self.receiver.enter_pairing_mode()
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
