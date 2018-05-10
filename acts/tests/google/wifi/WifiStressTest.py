@@ -147,22 +147,22 @@ class WifiStressTest(WifiBaseTest):
                4. Repeat 1-3.
 
         """
-        net_id = self.dut.droid.wifiAddNetwork(self.wpa_5g)
-        asserts.assert_true(net_id != -1, "Add network %r failed" % self.wpa_5g)
-        self.dut.droid.wifiEnableNetwork(net_id, 0)
         for count in range(self.stress_count):
+            net_id = self.dut.droid.wifiAddNetwork(self.wpa_5g)
+            asserts.assert_true(net_id != -1, "Add network %r failed" % self.wpa_5g)
+            self.dut.droid.wifiEnableNetwork(net_id, 0)
             self.scan_and_connect_by_id(self.wpa_5g, net_id)
             # Start IPerf traffic from phone to server.
             # Upload data for 10s.
             args = "-p {} -t {}".format(self.iperf_server.port, 10)
             self.log.info("Running iperf client {}".format(args))
             result, data = self.dut.run_iperf_client(self.iperf_server_address, args)
-            self.dut.droid.wifiDisconnect()
-            time.sleep(WAIT_BEFORE_CONNECTION)
             if not result:
                 self.log.debug("Error occurred in iPerf traffic.")
                 raise signals.TestFailure("Error occurred in iPerf traffic. Current"
                     " WiFi state = %d" % self.dut.droid.wifiCheckState())
+            wutils.wifi_forget_network(self.dut,self.wpa_5g[WifiEnums.SSID_KEY])
+            time.sleep(WAIT_BEFORE_CONNECTION)
 
     @test_tracker_info(uuid="e9827dff-0755-43ec-8b50-1f9756958460")
     def test_stress_connect_long_traffic_5g(self):
@@ -211,18 +211,21 @@ class WifiStressTest(WifiBaseTest):
             time.sleep(WAIT_FOR_AUTO_CONNECT)
             cur_network = self.dut.droid.wifiGetConnectionInfo()
             cur_ssid = cur_network[WifiEnums.SSID_KEY]
+            self.log.debug("Cur_ssid = %s" % cur_ssid)
             for count in range(0,len(self.networks)):
                 self.log.debug("Forget network %s" % cur_ssid)
                 wutils.wifi_forget_network(self.dut, cur_ssid)
                 time.sleep(WAIT_FOR_AUTO_CONNECT)
                 cur_network = self.dut.droid.wifiGetConnectionInfo()
                 cur_ssid = cur_network[WifiEnums.SSID_KEY]
+                self.log.debug("Cur_ssid = %s" % cur_ssid)
                 if count == len(self.networks) - 1:
                     break
                 if cur_ssid not in ssids:
                     raise signals.TestFailure("Device did not failover to the "
                         "expected network. SSID = %s" % cur_ssid)
             network_config = self.dut.droid.wifiGetConfiguredNetworks()
+            self.log.debug("Network Config = %s" % network_config)
             if len(network_config):
                 raise signals.TestFailure("All the network configurations were not "
                         "removed. Configured networks = %s" % network_config)
