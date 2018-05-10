@@ -32,6 +32,11 @@ from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
 
+# Channels to configure the AP for various test scenarios.
+WIFI_NETWORK_AP_CHANNEL_2G = 1
+WIFI_NETWORK_AP_CHANNEL_5G = 36
+WIFI_NETWORK_AP_CHANNEL_5G_DFS = 132
+
 class WifiStaApConcurrencyTest(WifiBaseTest):
     """Tests for STA + AP concurrency scenarions.
 
@@ -48,6 +53,10 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
+        if self.dut.model not in self.dbs_supported_models:
+            asserts.skip(
+                ("Device %s does not support dual interfaces.")
+                % self.dut.model)
         # Do a simple version of init - mainly just sync the time and enable
         # verbose logging.  This test will fail if the DUT has a sim and cell
         # data is disabled.  We would also like to test with phones in less
@@ -67,36 +76,24 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         asserts.assert_equal(self.dut_client.droid.wifiGetVerboseLoggingLevel(), 1,
             "Failed to enable WiFi verbose logging on the client dut.")
 
-        req_params = ["reference_networks"]
+        req_params = ["AccessPoint"]
         opt_param = ["iperf_server_address"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
-        if "AccessPoint" in self.user_params:
-            self.legacy_configure_ap_and_start()
-
-        asserts.assert_true(
-            len(self.reference_networks) >= 1,
-            "Need at least 1 reference network with psk.")
-        asserts.assert_true(
-            self.reference_networks[0]["2g"],
-            "Need at least 1 2.4Ghz reference network with psk.")
-        asserts.assert_true(
-            self.reference_networks[0]["5g"],
-            "Need at least 1 5Ghz reference network with psk.")
         if "iperf_server_address" in self.user_params:
             self.iperf_server = self.iperf_servers[0]
-        self.wpapsk_2g = self.reference_networks[0]["2g"]
-        self.wpapsk_5g = self.reference_networks[0]["5g"]
         if hasattr(self, 'iperf_server'):
             self.iperf_server.start()
+
+        # Set the client wifi state to on before the test begins.
+        wutils.wifi_toggle_state(self.dut_client, True)
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
         self.turn_location_off_and_scan_toggle_off()
         wutils.wifi_toggle_state(self.dut, False)
-        wutils.wifi_toggle_state(self.dut_client, False)
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
@@ -104,6 +101,9 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         wutils.stop_wifi_tethering(self.dut)
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
+        self.access_points[0].close()
+        del self.user_params["reference_networks"]
+        del self.user_params["open_network"]
 
     def teardown_class(self):
         if hasattr(self, 'iperf_server'):
@@ -113,12 +113,25 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
 
-    def teardown_class(self):
-        if "AccessPoint" in self.user_params:
-            del self.user_params["reference_networks"]
-            del self.user_params["open_network"]
-
     """Helper Functions"""
+    def configure_ap(self, channel_2g=None, channel_5g=None):
+        """Configure and bring up AP on required channel.
+
+        Args:
+            channel_2g: The channel number to use for 2GHz network.
+            channel_5g: The channel number to use for 5GHz network.
+
+        """
+        if not channel_2g:
+            self.legacy_configure_ap_and_start(channel_5g=channel_5g)
+        elif not channel_5g:
+            self.legacy_configure_ap_and_start(channel_2g=channel_2g)
+        else:
+            self.legacy_configure_ap_and_start(channel_2g=channel_2g,
+                channel_5g=chanel_5g)
+        self.wpapsk_2g = self.reference_networks[0]["2g"]
+        self.wpapsk_5g = self.reference_networks[0]["5g"]
+
     def turn_location_on_and_scan_toggle_on(self):
         """ Turns on wifi location scans.
         """
@@ -195,7 +208,6 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         wutils.start_wifi_tethering(self.dut,
                                     config[wutils.WifiEnums.SSID_KEY],
                                     config[wutils.WifiEnums.PWD_KEY], band)
-        wutils.wifi_toggle_state(self.dut_client, True)
         self.confirm_softap_in_scan_results(config[wutils.WifiEnums.SSID_KEY])
 
     def connect_to_wifi_network_and_start_softap(self, nw_params, softap_band):
@@ -243,80 +255,122 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         asserts.assert_true(self.dut.droid.wifiCheckState(),
                             "Wifi is not reported as running");
-        asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
+        asserts.assert_true(self.dut.droid.wifiIsApEnabled(),
                              "SoftAp is not reported as running")
 
     """Tests"""
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="c396e7ac-cf22-4736-a623-aa6d3c50193a")
     def test_wifi_connection_2G_softap_2G(self):
         """Tests connection to 2G network followed by bringing up SoftAp on 2G.
         """
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
         self.connect_to_wifi_network_and_start_softap(
             self.wpapsk_2g, WIFI_CONFIG_APBAND_2G)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="1cd6120d-3db4-4624-9bae-55c976533a48")
     def test_wifi_connection_5G_softap_5G(self):
         """Tests connection to 5G network followed by bringing up SoftAp on 5G.
         """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.connect_to_wifi_network_and_start_softap(
             self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="5f980007-3490-413e-b94e-7700ffab8534")
+    def test_wifi_connection_5G_DFS_softap_5G(self):
+        """Tests connection to 5G DFS network followed by bringing up SoftAp on 5G.
+        """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_DFS)
+        self.connect_to_wifi_network_and_start_softap(
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
+
+    @test_tracker_info(uuid="d05d5d44-c738-4372-9f01-ce2a640a2f25")
     def test_wifi_connection_5G_softap_2G(self):
         """Tests connection to 5G network followed by bringing up SoftAp on 2G.
         """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.connect_to_wifi_network_and_start_softap(
             self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="909ac713-1ad3-4dad-9be3-ad60f00ed25e")
+    def test_wifi_connection_5G_DFS_softap_2G(self):
+        """Tests connection to 5G DFS network followed by bringing up SoftAp on 2G.
+        """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_DFS)
+        self.connect_to_wifi_network_and_start_softap(
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
+
+    @test_tracker_info(uuid="e8de724a-25d3-4801-94cc-22e9e0ecc8d1")
     def test_wifi_connection_2G_softap_5G(self):
         """Tests connection to 2G network followed by bringing up SoftAp on 5G.
         """
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
         self.connect_to_wifi_network_and_start_softap(
             self.wpapsk_2g, WIFI_CONFIG_APBAND_5G)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="647f4e17-5c7a-4249-98af-f791d163a39f")
     def test_wifi_connection_5G_softap_2G_with_location_scan_on(self):
         """Tests connection to 5G network followed by bringing up SoftAp on 2G
         with location scans turned on.
         """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.turn_location_on_and_scan_toggle_on()
         self.connect_to_wifi_network_and_start_softap(
             self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="4aa56c11-e5bc-480b-bd61-4b4ee577a5da")
     def test_softap_2G_wifi_connection_2G(self):
         """Tests bringing up SoftAp on 2G followed by connection to 2G network.
         """
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
         self.start_softap_and_connect_to_wifi_network(
             self.wpapsk_2g, WIFI_CONFIG_APBAND_2G)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="5f954957-ad20-4de1-b20c-6c97d0463bdd")
     def test_softap_5G_wifi_connection_5G(self):
         """Tests bringing up SoftAp on 5G followed by connection to 5G network.
         """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.start_softap_and_connect_to_wifi_network(
             self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="1306aafc-a07e-4654-ba78-674f90cf748e")
+    def test_softap_5G_wifi_connection_5G_DFS(self):
+        """Tests bringing up SoftAp on 5G followed by connection to 5G DFS network.
+        """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_DFS)
+        self.start_softap_and_connect_to_wifi_network(
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
+
+    @test_tracker_info(uuid="5e28e8b5-3faa-4cff-a782-13a796d7f572")
     def test_softap_5G_wifi_connection_2G(self):
         """Tests bringing up SoftAp on 5G followed by connection to 2G network.
         """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.start_softap_and_connect_to_wifi_network(
             self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="a2c62bc6-9ccd-4bc4-8a23-9a1b5d0b4b5c")
     def test_softap_2G_wifi_connection_5G(self):
         """Tests bringing up SoftAp on 2G followed by connection to 5G network.
         """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_2g, WIFI_CONFIG_APBAND_5G)
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="a2c62bc6-9ccd-4bc4-8a23-9a1b5d0b4b5c")
+    def test_softap_2G_wifi_connection_5G_DFS(self):
+        """Tests bringing up SoftAp on 2G followed by connection to 5G DFS network.
+        """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_DFS)
+        self.start_softap_and_connect_to_wifi_network(
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
+
+    @test_tracker_info(uuid="aa23a3fc-31a1-4d5c-8cf5-2eb9fdf9e7ce")
     def test_softap_5G_wifi_connection_2G_with_location_scan_on(self):
         """Tests bringing up SoftAp on 5G followed by connection to 2G network
         with location scans turned on.
         """
+        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.turn_location_on_and_scan_toggle_on()
         self.start_softap_and_connect_to_wifi_network(
             self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)

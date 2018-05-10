@@ -18,6 +18,7 @@ import queue
 import time
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
@@ -185,11 +186,13 @@ class DataPathStressTest(AwareBaseTest):
       'NDP setup failure rate exceeds threshold', extras=results)
     asserts.explicit_pass("test_oob_ndp_stress* done", extras=results)
 
+  @test_tracker_info(uuid="a20a96ba-e71f-4d31-b850-b88a75381981")
   def test_oob_ndp_stress(self):
     """Run NDP (NAN data-path) stress test creating and destroying Aware
     attach sessions, discovery sessions, and NDPs."""
     self.run_oob_ndp_stress(self.ATTACH_ITERATIONS, self.NDP_ITERATIONS)
 
+  @test_tracker_info(uuid="1fb4a383-bf1a-411a-a904-489dd9e29c6a")
   def test_oob_ndp_stress_failure_case(self):
     """Run NDP (NAN data-path) stress test creating and destroying Aware
     attach sessions, discovery sessions, and NDPs.
