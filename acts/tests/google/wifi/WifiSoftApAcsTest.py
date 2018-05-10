@@ -90,6 +90,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
                 del self.user_params["open_network"]
         except:
             pass
+        self.access_points[0].close()
 
     def teardown_class(self):
         if hasattr(self, 'iperf_server'):
@@ -149,7 +150,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
         softap_info = self.dut_client.droid.wifiGetConnectionInfo()
         self.log.debug("DUT is connected to softAP %s with details: %s" %
                        (softap[wutils.WifiEnums.SSID_KEY], softap_info))
-        frequency = softap_info['link_speed']
+        frequency = softap_info['frequency']
         return hostapd_constants.CHANNEL_MAP[frequency]
 
     def configure_ap(self, channel_2g=None, channel_5g=None):
