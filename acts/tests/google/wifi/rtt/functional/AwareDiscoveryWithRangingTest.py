@@ -1099,6 +1099,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
 
   #########################################################################
 
+  @test_tracker_info(uuid="deede47f-a54c-46d9-88bb-f4482fbd8470")
   def test_ndp_concurrency(self):
     """Verify the behavior of Wi-Fi Aware Ranging whenever an NDP is created -
     for those devices that have a concurrency limitation that does not allow
@@ -1308,6 +1309,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
                         "Discovery with ranging for CC expected!")
 
+  @test_tracker_info(uuid="d94dac91-4090-4c03-a867-6dfac6558ba3")
   def test_role_concurrency(self):
     """Verify the behavior of Wi-Fi Aware Ranging (in the context of discovery)
      when the device has concurrency limitations which do not permit concurrent

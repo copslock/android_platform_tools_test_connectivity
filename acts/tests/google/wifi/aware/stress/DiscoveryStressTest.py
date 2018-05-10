@@ -17,6 +17,7 @@
 import queue
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
@@ -36,6 +37,7 @@ class DiscoveryStressTest(AwareBaseTest):
 
   ####################################################################
 
+  @test_tracker_info(uuid="783791e5-7726-44e0-ac5b-98c1dbf493cb")
   def test_discovery_stress(self):
     """Create and destroy a random array of discovery sessions, up to the
     limit of capabilities."""
