@@ -40,7 +40,7 @@ class WlanWithHfpPerformanceTest(CoexPerformanceBaseTest):
 
     def setup_test(self):
         CoexPerformanceBaseTest.setup_test(self)
-        self.audio_receiver.pairing_mode()
+        self.audio_receiver.enter_pairing_mode()
         if not pair_and_connect_headset(
                 self.pri_ad, self.audio_receiver.mac_address,
                 set([BtEnum.BluetoothProfile.HEADSET.value])):
@@ -69,12 +69,12 @@ class WlanWithHfpPerformanceTest(CoexPerformanceBaseTest):
             self.log.error("Failed to initiate call")
             return False
         time.sleep(5)  # Wait until initiate call.
-        if not self.audio_receiver.accept_call():
+        if not self.audio_receiver.press_accept_call():
             self.log.error("Failed to answer call from HF.")
             return False
-        self.audio_receiver.volume_up()
+        self.audio_receiver.press_volume_up()
         time.sleep(2) #Wait until volume changes.
-        self.audio_receiver.volume_down()
+        self.audio_receiver.press_volume_down()
         time.sleep(self.iperf["duration"])
         if not hangup_call(self.log, self.pri_ad):
             self.log.error("Failed to hangup call.")

@@ -47,7 +47,7 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
     def setup_test(self):
         super().setup_test()
         self.audio_receiver.power_on()
-        self.audio_receiver.pairing_mode()
+        self.audio_receiver.enter_pairing_mode()
         time.sleep(5)
         if not pair_and_connect_headset(
                 self.pri_ad, self.audio_receiver.mac_address,
