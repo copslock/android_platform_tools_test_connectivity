@@ -47,7 +47,7 @@ class WlanWithHfpFunctionalityTest(CoexBaseTest):
 
     def setup_test(self):
         CoexBaseTest.setup_test(self)
-        self.audio_receiver.pairing_mode()
+        self.audio_receiver.enter_pairing_mode()
         if not pair_and_connect_headset(
                 self.pri_ad, self.audio_receiver.mac_address,
                 set([BtEnum.BluetoothProfile.HEADSET.value])):
@@ -74,7 +74,7 @@ class WlanWithHfpFunctionalityTest(CoexBaseTest):
         if not initiate_call(self.log, self.sec_ad, self.ag_phone_number):
             self.log.error("Failed to initiate call")
             return False
-        if not self.audio_receiver.accept_call():
+        if not self.audio_receiver.press_accept_call():
             self.log.error("Failed to answer call from HF.")
             return False
         if not hangup_call(self.log, self.pri_ad):

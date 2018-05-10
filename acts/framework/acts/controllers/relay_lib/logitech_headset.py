@@ -28,8 +28,8 @@ MISSING_RELAY_MSG = 'Relay config for logitech Headset "%s" missing relay "%s".'
 
 
 class Buttons(enum.Enum):
-    Power = "Power"
-    Pair = "Pair"
+    POWER = "Power"
+    PAIR = "Pair"
 
 
 class LogitechAudioReceiver(GenericRelayDevice):
@@ -59,8 +59,8 @@ class LogitechAudioReceiver(GenericRelayDevice):
 
     def power_on(self):
         """Power on relay."""
-        self.relays[Buttons.Power.value].set_nc()
+        self.relays[Buttons.POWER.value].set_nc()
 
-    def pairing_mode(self):
+    def enter_pairing_mode(self):
         """Sets relay in paring mode."""
-        self.relays[Buttons.Pair.value].set_nc()
+        self.relays[Buttons.PAIR.value].set_nc()
