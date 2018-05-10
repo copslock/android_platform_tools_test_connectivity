@@ -1921,8 +1921,9 @@ def call_setup_teardown_for_subscription(
         setattr(ad, "call_ids", call_ids)
         ad.log.info("Before making call, existing phone calls %s", call_ids)
     try:
-        if not initiate_call(log, ad_caller, callee_number,
-                             incall_ui_display=incall_ui_display):
+        if not initiate_call(
+                log, ad_caller, callee_number,
+                incall_ui_display=incall_ui_display):
             ad_caller.log.error("Initiate call failed.")
             result = False
             return False
@@ -6372,13 +6373,14 @@ def verify_default_telephony_setting(ad):
 
 
 def log_messaging_screen_shot(ad, test_name=""):
+    ad.ensure_screen_on()
     ad.send_keycode("HOME")
-    ad.adb.shell(
-        "am start -n com.google.android.apps.messaging/.ui.ConversationListActivity"
-    )
+    ad.adb.shell("am start -n com.google.android.apps.messaging/.ui."
+                 "ConversationListActivity")
     log_screen_shot(ad, test_name)
-    ad.send_keycode("ENTER")
-    ad.send_keycode("ENTER")
+    ad.adb.shell("am start -n com.google.android.apps.messaging/com.google."
+                 "android.apps.messaging.ui.conversation.ConversationActivity"
+                 " -e conversation_id 1")
     log_screen_shot(ad, test_name)
     ad.send_keycode("HOME")
 
