@@ -16,7 +16,6 @@
 
 from acts import signals
 
-
 def test_info(predicate=None, **keyed_info):
     """Adds info about test.
 
@@ -96,14 +95,14 @@ class _TestInfoDecoratorFunc(object):
                 new_signal = signals.TestPass('')
             else:
                 new_signal = signals.TestFailure('')
-        except signals.TestSignal as signal:
+        except Exception as signal:
             new_signal = signal
 
-        if not isinstance(new_signal.extras, dict) and new_signal.extras:
+        if getattr(new_signal, "extras", None) is None:
+            setattr(new_signal, "extras", {})
+        if not isinstance(new_signal.extras, dict):
             raise ValueError('test_info can only append to signal data '
                              'that has a dict as the extra value.')
-        elif not new_signal.extras:
-            new_signal.extras = {}
 
         gathered_extras = self._gather_local_info(None, *args, **kwargs)
         for k, v in gathered_extras.items():
