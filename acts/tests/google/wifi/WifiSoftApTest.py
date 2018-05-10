@@ -20,7 +20,6 @@ import time
 
 from acts import asserts
 from acts import utils
-from acts import base_test
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel import tel_defines
 from acts.test_utils.tel import tel_test_utils as tel_utils
@@ -28,8 +27,9 @@ from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_AUTO
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
-class WifiSoftApTest(base_test.BaseTestClass):
+class WifiSoftApTest(WifiBaseTest):
 
     def setup_class(self):
         """It will setup the required dependencies from config file and configure
@@ -40,6 +40,13 @@ class WifiSoftApTest(base_test.BaseTestClass):
         """
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
+        req_params = []
+        opt_param = ["open_network"]
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_param)
+        if "AccessPoint" in self.user_params:
+            self.legacy_configure_ap_and_start()
+        self.open_network = self.open_network[0]["2g"]
         # Do a simple version of init - mainly just sync the time and enable
         # verbose logging.  This test will fail if the DUT has a sim and cell
         # data is disabled.  We would also like to test with phones in less
@@ -63,6 +70,9 @@ class WifiSoftApTest(base_test.BaseTestClass):
         wutils.stop_wifi_tethering(self.dut)
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
+        if "AccessPoint" in self.user_params:
+            del self.user_params["reference_networks"]
+            del self.user_params["open_network"]
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
@@ -252,6 +262,32 @@ class WifiSoftApTest(base_test.BaseTestClass):
         5. verify back to previous mode.
         """
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_AUTO, True)
+
+    @test_tracker_info(uuid="b2f75330-bf33-4cdd-851a-de390f891ef7")
+    def test_tether_startup_while_connected_to_a_network(self):
+        """Test full startup of wifi tethering in auto-band while the device
+        is connected to a network.
+
+        1. Connect to an open network.
+        2. Turn on AP mode (in auto band).
+        3. Verify SoftAP active.
+        4. Make a client connect to the AP.
+        5. Shutdown wifi tethering.
+        6. Ensure that the client disconnected.
+        """
+        wutils.wifi_toggle_state(self.dut, True)
+        wutils.wifi_connect(self.dut, self.open_network)
+        config = self.create_softap_config()
+        wutils.start_wifi_tethering(self.dut,
+                                    config[wutils.WifiEnums.SSID_KEY],
+                                    config[wutils.WifiEnums.PWD_KEY],
+                                    WIFI_CONFIG_APBAND_AUTO)
+        asserts.assert_true(self.dut.droid.wifiIsApEnabled(),
+                             "SoftAp is not reported as running")
+        # local hotspot may not have internet connectivity
+        wutils.wifi_connect(self.dut_client, config, check_connectivity=False)
+        wutils.stop_wifi_tethering(self.dut)
+        wutils.wait_for_disconnect(self.dut_client)
 
     """ Tests End """
 
