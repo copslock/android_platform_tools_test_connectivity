@@ -15,6 +15,7 @@
 # the License.
 
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
+from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
 from acts.test_utils.coex.coex_test_utils import toggle_bluetooth
 from acts.test_utils.coex.coex_test_utils import start_fping
@@ -237,11 +238,11 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_070
         """
-        args = [lambda: start_fping(self.pri_ad, self.iperf["duration"])]
-        self.run_thread(args)
-        if not self.toogle_bluetooth_with_iperf():
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+                 (toggle_bluetooth, (self.pri_ad, self.iperf["duration"]))]
+        if not multithread_func(self.log, tasks):
             return False
-        return self.teardown_thread()
+        return True
 
     def test_bluetooth_discovery_with_fping(self):
         """Starts fping, along with bluetooth discovery.
@@ -260,8 +261,9 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_071
         """
-        args = [lambda: start_fping(self.pri_ad, self.iperf["duration"])]
-        self.run_thread(args)
-        if not self.start_discovery_with_iperf():
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+                 (perform_classic_discovery, (
+                     self.pri_ad, self.iperf["duration"]))]
+        if not multithread_func(self.log, tasks):
             return False
-        return self.teardown_thread()
+        return True
