@@ -5723,12 +5723,15 @@ def start_tcpdumps(ads,
                    interface="any",
                    mask="all"):
     for ad in ads:
-        start_adb_tcpdump(
-            ad,
-            test_name=test_name,
-            begin_time=begin_time,
-            interface=interface,
-            mask=mask)
+        try:
+            start_adb_tcpdump(
+                ad,
+                test_name=test_name,
+                begin_time=begin_time,
+                interface=interface,
+                mask=mask)
+        except Exception as e:
+            ad.log.warning("Fail to start tcpdump due to %s", e)
 
 
 def start_adb_tcpdump(ad,
@@ -5752,7 +5755,8 @@ def start_adb_tcpdump(ad,
     if not begin_time:
         begin_time = get_current_epoch_time()
 
-    out = ad.adb.shell("ifconfig | grep encap")
+    out = ad.adb.shell(
+        "ifconfig | grep encap", ignore_status=True, timeout=180)
     if interface in ("any", "all"):
         intfs = [
             intf for intf in ("wlan0", "rmnet_data0", "rmnet_data6")
@@ -6313,11 +6317,18 @@ def get_device_epoch_time(ad):
 def synchronize_device_time(ad):
     ad.adb.shell("put global auto_time 0", ignore_status=True)
     try:
-        ad.adb.shell("date `date +%m%d%H%M%G.%S`")
-    except Exception:
         ad.adb.droid.setTime(get_current_epoch_time())
-    ad.adb.shell(
-        "am broadcast -a android.intent.action.TIME_SET", ignore_status=True)
+    except Exception:
+        try:
+            ad.adb.shell("date `date +%m%d%H%M%G.%S`")
+        except Exception:
+            pass
+    try:
+        ad.adb.shell(
+            "am broadcast -a android.intent.action.TIME_SET",
+            ignore_status=True)
+    except Exception:
+        pass
 
 
 def revert_default_telephony_setting(ad):
