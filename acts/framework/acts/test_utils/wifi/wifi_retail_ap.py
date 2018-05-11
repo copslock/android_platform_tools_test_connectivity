@@ -67,13 +67,10 @@ def visit_config_page(browser, url, page_load_timeout, num_tries):
         try:
             browser.visit(url)
         except:
-            raise TimeoutError(
-                "Page load timout. Could be due to connectivity or alerts.")
+            browser.visit("https://www.google.com/")
         if browser.url.split("/")[-1] == url.split("/")[-1]:
             break
         if idx == num_tries - 1:
-            print(browser.url)
-            print(url)
             raise RuntimeError("URL was unreachable.")
 
 
