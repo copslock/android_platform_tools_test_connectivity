@@ -27,9 +27,12 @@ class Config(enum.Enum):
     # These keys define the wording of test configs and their internal
     # references.
     key_log_path = "logpath"
+    key_testbeds_under_test = 'testbeds_under_test'
     key_testbed = "testbed"
     key_testbed_name = "name"
+    # configpath is the directory. key_config_full_path is the file path.
     key_config_path = "configpath"
+    key_config_full_path = 'config_full_path'
     key_test_paths = "testpaths"
     key_port = "Port"
     key_address = "Address"
@@ -95,13 +98,6 @@ def get_name_by_value(value):
         if member.value == value:
             return name
     return None
-
-
-def get_internal_value(external_value):
-    """Translates the value of an external key to the value of its
-    corresponding internal key.
-    """
-    return value_to_value(external_value, "i%s")
 
 
 def get_module_name(name_in_config):

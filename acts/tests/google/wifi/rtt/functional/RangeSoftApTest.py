@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 from acts import asserts
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
@@ -39,6 +40,7 @@ class RangeSoftApTest(RttBaseTest):
 
   #########################################################################
 
+  @test_tracker_info(uuid="578f0725-31e3-4e60-ad62-0212d93cf5b8")
   def test_rtt_to_soft_ap(self):
     """Set up a Soft AP on one device and try performing an RTT ranging to it
     from another device. The attempt must fail - RTT on Soft AP must be

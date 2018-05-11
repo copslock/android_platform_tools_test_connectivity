@@ -35,6 +35,7 @@ from acts.controllers import fastboot
 from acts.controllers.sl4a_lib import sl4a_manager
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+from acts.libs.proc import job
 
 ACTS_CONTROLLER_CONFIG_NAME = "AndroidDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "android_devices"
@@ -977,8 +978,10 @@ class AndroidDevice:
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
-            self.adb.pull("/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
-                          timeout=PULL_TIMEOUT, ignore_status=True)
+            self.adb.pull(
+                "/firmware/image/qdsp6m.qdb %s" % qxdm_log_path,
+                timeout=PULL_TIMEOUT,
+                ignore_status=True)
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
@@ -1169,21 +1172,23 @@ class AndroidDevice:
               "time_stamp": "2017-05-03 17:39:29.898",
               "datetime_obj": datetime object}]
         """
-        cmd_option = '-b all -v year -d'
+        output = job.run(
+            "grep '%s' %s" % (matching_string, self.adb_logcat_file_path),
+            ignore_status=True)
+        if not output.stdout or output.exit_status == 1:
+            return []
         if begin_time:
             log_begin_time = acts_logger.epoch_to_log_line_timestamp(
                 begin_time)
-            cmd_option = '%s -t "%s"' % (cmd_option, log_begin_time)
-        out = self.adb.logcat(
-            '%s | grep "%s"' % (cmd_option, matching_string),
-            ignore_status=True)
-        if not out: return []
+            begin_time = datetime.strptime(log_begin_time,
+                                           "%Y-%m-%d %H:%M:%S.%f")
         result = []
-        logs = re.findall(r'(\S+\s\S+)(.*%s.*)' % re.escape(matching_string),
-                          out)
+        logs = re.findall(r'(\S+\s\S+)(.*)', output.stdout)
         for log in logs:
             time_stamp = log[0]
             time_obj = datetime.strptime(time_stamp, "%Y-%m-%d %H:%M:%S.%f")
+            if begin_time and time_obj < begin_time:
+                continue
             result.append({
                 "log_message": "".join(log),
                 "time_stamp": time_stamp,

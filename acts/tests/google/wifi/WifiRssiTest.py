@@ -244,7 +244,8 @@ class WifiRssiTest(base_test.BaseTestClass):
             json.dump(rssi_result, results_file, indent=4)
         # Plot and save
         total_attenuation = [
-            att + rssi_result["fixed_attenuation"]
+            att + rssi_result["fixed_attenuation"] +
+            rssi_result["dut_front_end_loss"]
             for att in rssi_result["attenuation"]
         ]
         # Compile results into arrays of RSSIs suitable for plotting
@@ -518,6 +519,8 @@ class WifiRssiTest(base_test.BaseTestClass):
                 str(self.channel)]
         rssi_result["fixed_attenuation"] = self.testbed_params[
             "fixed_attenuation"][str(self.channel)]
+        rssi_result["dut_front_end_loss"] = self.testbed_params[
+            "dut_front_end_loss"][str(self.channel)]
         rssi_result["rssi_result"] = self.rssi_test(
             iperf_traffic, connected_measurements, scan_measurements, bssids,
             polling_frequency)

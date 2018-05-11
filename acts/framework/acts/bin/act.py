@@ -13,7 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import logging
 from builtins import str
 
 import argparse
@@ -26,6 +26,7 @@ from acts import config_parser
 from acts import keys
 from acts import signals
 from acts import test_runner
+from acts.config.config_generator import ConfigGenerator
 
 
 def _run_test(parsed_config, test_identifiers, repeat=1):
@@ -239,6 +240,21 @@ def main(argv):
     parsed_configs = config_parser.load_test_config_file(
         args.config[0], args.testbed, args.testpaths, args.logpath,
         args.test_args, args.random, args.test_case_iterations)
+
+    try:
+        new_parsed_args = ConfigGenerator().generate_configs()
+
+        for old_config, new_config in zip(parsed_configs, new_parsed_args):
+            if not old_config.items() <= new_config.items():
+                logging.warning('Backward compat broken:\n%s\n%s' % (
+                    old_config, new_config))
+    except SystemExit as e:
+        logging.warning('Unable to parse command line flags: %s' %
+                        traceback.format_exc(e))
+    except Exception as e:
+        logging.warning('Failed to generate configs through the new system: '
+                        '%s' % traceback.format_exc(e))
+
     # Prepare args for test runs
     test_identifiers = config_parser.parse_test_list(test_list)
 

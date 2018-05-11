@@ -27,6 +27,7 @@ from acts import utils
 from acts.libs.proc import job
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GLOBAL
@@ -44,7 +45,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
-from acts.test_utils.tel.tel_test_utils import is_voice_attached
+from acts.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
@@ -309,9 +310,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         failure_reasons = set()
         if self.single_phone_test:
             call_setup_result = initiate_call(
-                self.log, self.dut,
-                self.call_server_number) and wait_for_in_call_active(
-                    self.dut, 60, 3)
+                    self.log, self.dut, self.call_server_number,
+                    incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND
+            ) and wait_for_in_call_active(self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
                 self.log,
@@ -320,7 +321,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 ad_hangup=None,
                 verify_caller_func=call_verification_func,
                 verify_callee_func=call_verification_func,
-                wait_time_in_call=0)
+                wait_time_in_call=0,
+                incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND)
         if not call_setup_result:
             self.log.error("%s: Setup Call failed.", log_msg)
             failure_reasons.add("Setup")
@@ -347,11 +349,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                             1)
                                     continue
                         failure_reasons.add("Maintenance")
-                        reasons = ad.search_logcat(
-                            "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
-                            begin_time)
-                        if reasons:
-                            ad.log.info(reasons[-1]["log_message"])
+                        last_call_drop_reason(ad, begin_time)
                         hangup_call(self.log, ads[0])
                         result = False
                     else:

@@ -54,6 +54,9 @@ BLACKLIST = [
     'acts/controllers/packet_sender.py',
     'acts/test_utils/wifi/wifi_retail_ap.py',
     'acts/test_utils/bt/bt_power_test_utils.py',
+    'acts/test_utils/coex/coex_test_utils.py',
+    'acts/framework/acts/test_utils/coex/CoexBaseTest.py',
+    'acts/framework/acts/test_utils/coex/CoexPerformanceBaseTest.py',
 ]
 
 
