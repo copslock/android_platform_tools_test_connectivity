@@ -661,13 +661,13 @@ class WlanWithHfpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_078
         """
-        args = [lambda: start_fping(self.pri_ad, self.iperf["duration"])]
-        self.run_thread(args)
-        if not initiate_disconnect_from_hf(
-                self.audio_receiver,self.pri_ad, self.sec_ad,
-                self.iperf["duration"]):
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+                 (initiate_disconnect_from_hf, (
+                     self.audio_receiver,self.pri_ad, self.sec_ad,
+                     self.iperf["duration"]))]
+        if not multithread_func(self.log, tasks):
             return False
-        return self.teardown_thread()
+        return True
 
     def test_hfp_call_toggle_screen_state_with_fping(self):
         """Starts fping with hfp call connection.
