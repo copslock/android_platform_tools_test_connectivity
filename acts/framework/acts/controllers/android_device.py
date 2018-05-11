@@ -1141,6 +1141,23 @@ class AndroidDevice:
             raise AndroidDeviceError("User window cannot come up")
         self.start_services(self.skip_sl4a)
 
+    def restart_runtime(self):
+        """Restarts android runtime.
+
+        Terminate all sl4a sessions, restarts runtime, wait for framework
+        complete restart, and restart an sl4a session if restart_sl4a is True.
+        """
+        self.stop_services()
+        self.log.info("Restarting android runtime")
+        self.adb.shell("stop")
+        self.adb.shell("start")
+        self.wait_for_boot_completion()
+        self.root_adb()
+        if not self.ensure_screen_on():
+            self.log.error("User window cannot come up")
+            raise AndroidDeviceError("User window cannot come up")
+        self.start_services(self.skip_sl4a)
+
     def search_logcat(self, matching_string, begin_time=None):
         """Search logcat message with given string.
 

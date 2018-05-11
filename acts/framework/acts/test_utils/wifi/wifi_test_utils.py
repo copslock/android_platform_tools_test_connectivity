@@ -71,9 +71,11 @@ class WifiEnums():
     PWD_KEY = "password"
     frequency_key = "frequency"
     APBAND_KEY = "apBand"
+    HIDDEN_KEY = "hiddenSSID"
 
     WIFI_CONFIG_APBAND_2G = 0
     WIFI_CONFIG_APBAND_5G = 1
+    WIFI_CONFIG_APBAND_AUTO = -1
 
     WIFI_WPS_INFO_PBC = 0
     WIFI_WPS_INFO_DISPLAY = 1
@@ -534,6 +536,47 @@ def match_networks(target_params, networks):
             results.append(n)
     return results
 
+def wait_for_wifi_state(ad, state, assert_on_fail=True):
+    """Waits for the device to transition to the specified wifi state
+
+    Args:
+        ad: An AndroidDevice object.
+        state: Wifi state to wait for.
+        assert_on_fail: If True, error checks in this function will raise test
+                        failure signals.
+
+    Returns:
+        If assert_on_fail is False, function returns True if the device transitions
+        to the specified state, False otherwise. If assert_on_fail is True, no return value.
+    """
+    return _assert_on_fail_handler(
+        _wait_for_wifi_state, assert_on_fail, ad, state=state)
+
+
+def _wait_for_wifi_state(ad, state):
+    """Toggles the state of wifi.
+
+    TestFailure signals are raised when something goes wrong.
+
+    Args:
+        ad: An AndroidDevice object.
+        state: Wifi state to wait for.
+    """
+    if state == ad.droid.wifiCheckState():
+        # Check if the state is already achieved, so we don't wait for the
+        # state change event by mistake.
+        return
+    ad.droid.wifiStartTrackingStateChange()
+    fail_msg = "Device did not transition to Wi-Fi state to %s on %s." % (state,
+                                                           ad.serial)
+    try:
+        ad.ed.wait_for_event(wifi_constants.WIFI_STATE_CHANGED,
+                             lambda x: x["data"]["enabled"] == state,
+                             SHORT_TIMEOUT)
+    except Empty:
+        asserts.assert_equal(state, ad.droid.wifiCheckState(), fail_msg)
+    finally:
+        ad.droid.wifiStopTrackingStateChange()
 
 def wifi_toggle_state(ad, new_state=None, assert_on_fail=True):
     """Toggles the state of wifi.
@@ -570,19 +613,16 @@ def _wifi_toggle_state(ad, new_state=None):
         return
     ad.droid.wifiStartTrackingStateChange()
     ad.log.info("Setting Wi-Fi state to %s.", new_state)
+    ad.ed.clear_all_events()
     # Setting wifi state.
     ad.droid.wifiToggleState(new_state)
     fail_msg = "Failed to set Wi-Fi state to %s on %s." % (new_state,
                                                            ad.serial)
     try:
-        event = ad.ed.pop_event(wifi_constants.SUPPLICANT_CON_CHANGED,
-                                SHORT_TIMEOUT)
-        asserts.assert_equal(event['data']['Connected'], new_state, fail_msg)
+        ad.ed.wait_for_event(wifi_constants.WIFI_STATE_CHANGED,
+                             lambda x: x["data"]["enabled"] == new_state,
+                             SHORT_TIMEOUT)
     except Empty:
-        # Supplicant connection event is not always reliable. We double check
-        # here and call it a success as long as the new state equals the
-        # expected state.
-        time.sleep(5)
         asserts.assert_equal(new_state, ad.droid.wifiCheckState(), fail_msg)
     finally:
         ad.droid.wifiStopTrackingStateChange()
@@ -709,11 +749,105 @@ def start_wifi_connection_scan(ad):
     Args:
         ad: An AndroidDevice object.
     """
+    ad.ed.clear_all_events()
     ad.droid.wifiStartScan()
     try:
         ad.ed.pop_event("WifiManagerScanResultsAvailable", 60)
     except Empty:
         asserts.fail("Wi-Fi results did not become available within 60s.")
+
+
+def start_wifi_connection_scan_and_return_status(ad):
+    """
+    Starts a wifi connection scan and wait for results to become available
+    or a scan failure to be reported.
+
+    Args:
+        ad: An AndroidDevice object.
+    Returns:
+        True: if scan succeeded & results are available
+        False: if scan failed
+    """
+    ad.ed.clear_all_events()
+    ad.droid.wifiStartScan()
+    try:
+        events = ad.ed.pop_events(
+            "WifiManagerScan(ResultsAvailable|Failure)", 60)
+    except Empty:
+        asserts.fail(
+            "Wi-Fi scan results/failure did not become available within 60s.")
+    # If there are multiple matches, we check for atleast one success.
+    for event in events:
+        if event["name"] == "WifiManagerScanResultsAvailable":
+            return True
+        elif event["name"] == "WifiManagerScanFailure":
+            ad.log.debug("Scan failure received")
+    return False
+
+
+def start_wifi_connection_scan_and_check_for_network(ad, network_ssid,
+                                                     max_tries=3):
+    """
+    Start connectivity scans & checks if the |network_ssid| is seen in
+    scan results. The method performs a max of |max_tries| connectivity scans
+    to find the network.
+
+    Args:
+        ad: An AndroidDevice object.
+        network_ssid: SSID of the network we are looking for.
+        max_tries: Number of scans to try.
+    Returns:
+        True: if network_ssid is found in scan results.
+        False: if network_ssid is not found in scan results.
+    """
+    for num_tries in range(max_tries):
+        if start_wifi_connection_scan_and_return_status(ad):
+            scan_results = ad.droid.wifiGetScanResults()
+            match_results = match_networks(
+                {WifiEnums.SSID_KEY: network_ssid}, scan_results)
+            if len(match_results) > 0:
+                return True
+    return False
+
+
+def start_wifi_connection_scan_and_ensure_network_found(ad, network_ssid,
+                                                        max_tries=3):
+    """
+    Start connectivity scans & ensure the |network_ssid| is seen in
+    scan results. The method performs a max of |max_tries| connectivity scans
+    to find the network.
+    This method asserts on failure!
+
+    Args:
+        ad: An AndroidDevice object.
+        network_ssid: SSID of the network we are looking for.
+        max_tries: Number of scans to try.
+    """
+    ad.log.info("Starting scans to ensure %s is present", network_ssid)
+    assert_msg = "Failed to find " + network_ssid + " in scan results" \
+        " after " + str(max_tries) + " tries"
+    asserts.assert_true(start_wifi_connection_scan_and_check_for_network(
+        ad, network_ssid, max_tries), assert_msg)
+
+
+def start_wifi_connection_scan_and_ensure_network_not_found(ad, network_ssid,
+                                                            max_tries=3):
+    """
+    Start connectivity scans & ensure the |network_ssid| is not seen in
+    scan results. The method performs a max of |max_tries| connectivity scans
+    to find the network.
+    This method asserts on failure!
+
+    Args:
+        ad: An AndroidDevice object.
+        network_ssid: SSID of the network we are looking for.
+        max_tries: Number of scans to try.
+    """
+    ad.log.info("Starting scans to ensure %s is not present", network_ssid)
+    assert_msg = "Found " + network_ssid + " in scan results" \
+        " after " + str(max_tries) + " tries"
+    asserts.assert_false(start_wifi_connection_scan_and_check_for_network(
+        ad, network_ssid, max_tries), assert_msg)
 
 
 def start_wifi_background_scan(ad, scan_setting):
@@ -732,7 +866,7 @@ def start_wifi_background_scan(ad, scan_setting):
     return event['data']
 
 
-def start_wifi_tethering(ad, ssid, password, band=None):
+def start_wifi_tethering(ad, ssid, password, band=None, hidden=None):
     """Starts wifi tethering on an android_device.
 
     Args:
@@ -741,6 +875,7 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         password: The password the soft AP should use.
         band: The band the soft AP should be set on. It should be either
             WifiEnums.WIFI_CONFIG_APBAND_2G or WifiEnums.WIFI_CONFIG_APBAND_5G.
+        hidden: boolean to indicate if the AP needs to be hidden or not.
 
     Returns:
         No return value. Error checks in this function will raise test failure signals
@@ -750,6 +885,8 @@ def start_wifi_tethering(ad, ssid, password, band=None):
         config[WifiEnums.PWD_KEY] = password
     if band:
         config[WifiEnums.APBAND_KEY] = band
+    if hidden:
+      config[WifiEnums.HIDDEN_KEY] = hidden
     asserts.assert_true(
         ad.droid.wifiSetWifiApConfiguration(config),
         "Failed to update WifiAp Configuration")
@@ -946,7 +1083,7 @@ def wait_for_disconnect(ad):
         ad.droid.wifiStartTrackingStateChange()
         event = ad.ed.pop_event("WifiNetworkDisconnected", 10)
         ad.droid.wifiStopTrackingStateChange()
-    except queue.Empty:
+    except Empty:
         raise signals.TestFailure("Device did not disconnect from the network")
 
 
