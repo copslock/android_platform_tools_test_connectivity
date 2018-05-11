@@ -58,7 +58,7 @@ class WifiStressTest(WifiBaseTest):
             req_param_names=req_params, opt_param_names=opt_param)
 
         if "AccessPoint" in self.user_params:
-            self.legacy_configure_ap_and_start()
+            self.legacy_configure_ap_and_start(ap_count=2)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
