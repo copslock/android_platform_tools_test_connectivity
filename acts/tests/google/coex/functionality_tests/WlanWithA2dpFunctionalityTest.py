@@ -739,11 +739,11 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_076
         """
-        args = [lambda: start_fping(self.pri_ad, self.iperf["duration"])]
-        self.run_thread(args)
-        if not self.connect_disconnect_headset():
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+                 (self.connect_disconnect_headset, ())]
+        if not multithread_func(self.log, tasks):
             return False
-        return self.teardown_thread()
+        return True
 
     def test_a2dp_streaming_with_fping(self):
         """Starts fping along with a2dp streaming.
@@ -760,13 +760,13 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_077
         """
-        args = [lambda: start_fping(self.pri_ad, self.iperf["duration"])]
-        self.run_thread(args)
-        if not music_play_and_check(
-                self.pri_ad, self.audio_receiver.mac_address,
-                self.music_file_to_play, self.iperf["duration"]):
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+                 (self.music_play_and_check, (
+                     self.pri_ad, self.audio_receiver.mac_address,
+                     self.music_file_to_play, self.iperf["duration"]))]
+        if not multithread_func(self.log, tasks):
             return False
-        return self.teardown_thread()
+        return True
 
     def test_connect_disconnect_headset_toggle_screen_state_with_fping(self):
         """Starts fping along with connection and disconnection of the headset.
@@ -791,7 +791,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
                  (toggle_screen_state, (self.pri_ad, self.iterations))]
         if not multithread_func(self.log, tasks):
             return False
-        return self.teardown_thread()
+        return True
 
     def test_a2dp_streaming_toggle_screen_state_with_fping(self):
         """Starts fping along with a2dp streaming.
@@ -817,7 +817,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
                  (toggle_screen_state, (self.pri_ad, self.iterations))]
         if not multithread_func(self.log, tasks):
             return False
-        return self.teardown_thread()
+        return True
 
     def test_a2dp_streaming_ble_connection_with_tcp_ul(self):
         """Starts TCP-uplink traffic with a2dp streaming and ble connection.
