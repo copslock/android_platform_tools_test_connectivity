@@ -54,6 +54,7 @@ from acts.test_utils.tel.tel_test_utils import start_tcpdumps
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
 from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -101,7 +102,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.user_params.get("phone_call_iteration", 500))
         self.max_phone_call_duration = int(
             self.user_params.get("max_phone_call_duration", 600))
-        self.min_sleep_time = int(self.user_params.get("min_sleep_time", 10))
+        self.min_sleep_time = int(self.user_params.get("min_sleep_time", 30))
         self.max_sleep_time = int(self.user_params.get("max_sleep_time", 60))
         self.max_run_time = int(self.user_params.get("max_run_time", 14400))
         self.max_sms_length = int(self.user_params.get("max_sms_length", 1000))
@@ -273,8 +274,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         ads = self.android_devices[:]
         if not self.single_phone_test:
             random.shuffle(ads)
-        for ad in ads:
-            hangup_call_by_adb(ad)
         the_number = self.result_info["Call Total"] + 1
         duration = random.randrange(self.min_phone_call_duration,
                                     self.max_phone_call_duration)
@@ -310,8 +309,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         failure_reasons = set()
         if self.single_phone_test:
             call_setup_result = initiate_call(
-                    self.log, self.dut, self.call_server_number,
-                    incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND
+                self.log,
+                self.dut,
+                self.call_server_number,
+                incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND
             ) and wait_for_in_call_active(self.dut, 60, 3)
         else:
             call_setup_result = call_setup_teardown(
@@ -359,12 +360,14 @@ class TelLiveStressTest(TelephonyBaseTest):
                 if not result:
                     break
         if not hangup_call(self.log, ads[0]):
-            time.sleep(10)
-            for ad in ads:
-                if ad.droid.telecomIsInCall():
-                    ad.log.error("Still in call after hungup")
-                    failure_reasons.add("Teardown")
-                    result = False
+            failure_reasons.add("Teardown")
+            result = False
+        for ad in ads:
+            if not wait_for_call_id_clearing(ad,
+                                             []) or ad.droid.telecomIsInCall():
+                ad.log.error("Fail to hang up call")
+                failure_reasons.add("Teardown")
+                result = False
         self.result_info["Call Total"] += 1
         for ad in self.android_devices:
             try:
@@ -394,6 +397,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self._take_bug_report(test_name, begin_time)
             except Exception as e:
                 self.log.exception(e)
+            for ad in ads:
+                hangup_call_by_adb(ad)
         else:
             self.log.info("%s test succeed", log_msg)
             self.result_info["Call Success"] += 1

@@ -844,18 +844,28 @@ def start_fping(pri_ad, duration):
     Returns:
         True if successful, False otherwise.
     """
-    out_file_name = "{}".format("fping.txt")
-    full_out_path = os.path.join(pri_ad.log_path, out_file_name)
+    counter = 0
+    fping_path = ''.join((pri_ad.log_path, "/Fping"))
+    create_dir(fping_path)
+    while os.path.isfile(fping_path + "/fping_%s.txt" % counter):
+        counter += 1
+    out_file_name = "{}".format("fping_%s.txt" % counter)
+
+    full_out_path = os.path.join(fping_path, out_file_name)
     cmd = "fping {} -D -c {}".format(get_phone_ip(pri_ad), duration)
     cmd = cmd.split()
     with open(full_out_path, "w") as f:
-        subprocess.call(cmd, stdout=f)
-    f = open(full_out_path, "r")
-    for lines in f:
-        l = re.split("[:/=]", lines)
-        if l[len(l) - 1] != "0%":
-            logging.error("Packet drop observed")
-            return False
+        subprocess.call(cmd, stderr=f, stdout=f)
+    result_file = open(full_out_path, "r")
+    lines = result_file.readlines()
+    res_line = lines[-1]
+    # Ex: res_line = "192.168.186.224 : xmt/rcv/%loss = 10/10/0%,
+    # min/avg/max = 36.7/251/1272"
+    loss_percent = re.split("[:/=,]", res_line)
+    # %loss will be in 7th index of the list
+    if loss_percent[-7] != "0%":
+        logging.error("Packet drop observed")
+        return False
     return True
 
 
