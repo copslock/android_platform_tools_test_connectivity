@@ -185,7 +185,8 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         else:
             if self.dut.adb.shell("getprop vendor.radio.call_end_reason"
                                   ) != str(override_code):
-                cmd = "setprop vendor.radio.call_end_reason %s" % override_code
+                cmd = "======= setprop vendor.radio.call_end_reason %s ======="\
+                      % override_code
                 self.dut.log.info(cmd)
                 self.dut.adb.shell(cmd)
 
@@ -254,11 +255,36 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         toggle_airplane_mode(self.log, self.dut, new_state=None)
         time.sleep(5)
 
+    def _clearn_up_bugreport_database(self):
+        self.dut.adb.shell(
+            "rm /data/data/com.google.android.connectivitymonitor/"
+            "shared_prefs/ConnectivityMonitor_BugReport.xml")
+
+    def _clearn_up_troubleshooter_database(self):
+        self.dut.adb.shell(
+            "rm /data/data/com.google.android.connectivitymonitor/"
+            "shared_prefs/ConnectivityMonitor_TroubleshooterResult.xml")
+
+    def _parsing_troubleshooter_database(self):
+        output = self.dut.adb.shell(
+            "cat /data/data/com.google.android.connectivitymonitor/"
+            "shared_prefs/ConnectivityMonitor_TroubleshooterResult.xml")
+        results = re.findall(r"name=\"(\S+)\">(\S+)<", output)
+        troubleshooter_database = {}
+        for result in results:
+            if "count" in result[0] or "num_calls" in result[0]:
+                troubleshooter_database[result[0]] = int(result[1])
+            else:
+                troubleshooter_database[result[0]] = result[1]
+        self.dut.log.info("TroubleshooterResult=%s",
+                          sorted(troubleshooter_database.items()))
+        return troubleshooter_database
+
     def _parsing_call_summary(self):
         call_summary = self.dut.adb.shell(
             "dumpsys activity service com.google.android.connectivitymonitor/"
             ".ConnectivityMonitorService")
-        self.dut.log.info(call_summary)
+        #self.dut.log.info(call_summary)
         call_summary_info = {}
         results = re.findall(
             r"(\S+): (\d+) out of (\d+) calls dropped, percentage=(\S+)",
@@ -272,6 +298,8 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
                              call_summary)
         for result in results:
             call_summary_info["%s_failure_reason" % result[0]] = result[1]
+        self.dut.log.info("call summary dumpsys = %s",
+                          sorted(call_summary_info.items()))
         return call_summary_info
 
     def _parsing_call_statistics(self):
@@ -279,12 +307,15 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         call_statistics = self.dut.adb.shell(
             "content query --uri content://com.google.android."
             "connectivitymonitor.troubleshooterprovider/call_statistics")
-        self.dut.log.info("troubleshooterprovider call_statistics:\n%s",
-                          call_statistics)
+        #self.dut.log.info("troubleshooterprovider call_statistics:\n%s",
+        #                  call_statistics)
         results = re.findall(r"KEY=(\S+), VALUE=(\S+)", call_statistics)
         for result in results:
-            if "count" in result[0] or "num_calls" in result[0]:
-                call_statistics_info[result[0]] = int(result[1])
+            if ("count" in result[0] or "num_calls" in result[0]):
+                if result[1] == "NULL":
+                    call_statistics_info[result[0]] = 0
+                else:
+                    call_statistics_info[result[0]] = int(result[1])
             else:
                 call_statistics_info[result[0]] = result[1]
         self.dut.log.info("troubleshooterprovider call_statistics: %s",
@@ -296,8 +327,8 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         diagnostics = self.dut.adb.shell(
             "content query --uri content://com.google.android."
             "connectivitymonitor.troubleshooterprovider/diagnostics")
-        self.dut.log.info("troubleshooterprovider diagnostics:\n%s",
-                          diagnostics)
+        #self.dut.log.info("troubleshooterprovider diagnostics:\n%s",
+        #                  diagnostics)
         results = re.findall(r"KEY=(\S+), VALUE=(\S+)", diagnostics)
         for result in results:
             diagnostics_info[result[0]] = result[1]
@@ -314,11 +345,13 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
                 raise signals.TestSkip(
                     "Abort as override call end reason is not supported.")
 
+        self._clearn_up_bugreport_database()
         call_verification_function = None
         begin_time = get_device_epoch_time(self.dut)
         call_data_summary_before = self._parsing_call_summary()
         call_statistics_before = self._parsing_call_statistics()
-        diagnostics_before = self._parsing_diagnostics()
+        self._parsing_diagnostics()
+        self._parsing_troubleshooter_database()
 
         checking_counters = ["Calls"]
         checking_reasons = []
@@ -407,6 +440,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
         call_data_summary_after = self._parsing_call_summary()
         call_statistics_after = self._parsing_call_statistics()
         diagnostics_after = self._parsing_diagnostics()
+        ts_database_after = self._parsing_troubleshooter_database()
 
         for counter in checking_counters:
             if call_data_summary_after.get(
@@ -482,6 +516,7 @@ class TelLiveConnectivityMonitorTest(TelephonyBaseTest):
 
     def call_drop_troubleshooter_test(self, setup=None):
         result = True
+        self._clearn_up_troubleshooter_database()
         for iter, override_code in enumerate(self.call_drop_override_codes):
             self.set_drop_reason_override(override_code=override_code)
             if not self._call_drop_with_connectivity_monitor(
