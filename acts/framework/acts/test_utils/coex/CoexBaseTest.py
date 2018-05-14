@@ -1,4 +1,4 @@
-#/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright (C) 2018 The Android Open Source Project
 #
@@ -14,6 +14,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import json
 import os
 import threading
 import time
@@ -23,6 +24,9 @@ from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
+from acts.test_utils.coex.coex_test_utils import a2dp_dumpsys_parser
+from acts.test_utils.coex.coex_test_utils import (
+    collect_bluetooth_manager_dumpsys_logs)
 from acts.test_utils.coex.coex_test_utils import configure_and_start_ap
 from acts.test_utils.coex.coex_test_utils import iperf_result
 from acts.test_utils.coex.coex_test_utils import get_phone_ip
@@ -84,9 +88,12 @@ class CoexBaseTest(BaseTestClass):
         wifi_connect(self.pri_ad, self.network)
 
     def setup_test(self):
+        self.result = {}
         self.received = []
         for a in self.android_devices:
             a.ed.clear_all_events()
+        self.json_file = "{}/{}.json".format(self.pri_ad.log_path,
+                                             self.current_test_name)
         if not wifi_connection_check(self.pri_ad, self.network["SSID"]):
             self.log.error("Wifi connection does not exist")
             return False
@@ -95,6 +102,13 @@ class CoexBaseTest(BaseTestClass):
             return False
 
     def teardown_test(self):
+        if "a2dp_streaming" in self.current_test_name:
+            if not collect_bluetooth_manager_dumpsys_logs(
+                    self.pri_ad, self.current_test_name):
+                return False
+            self.result["a2dp_packet_drop"] = a2dp_dumpsys_parser()
+        with open(self.json_file, 'w+') as results_file:
+            json.dump(self.result, results_file, indent=4)
         if not disable_bluetooth(self.pri_ad.droid):
             self.log.info("Failed to disable bluetooth")
             return False
