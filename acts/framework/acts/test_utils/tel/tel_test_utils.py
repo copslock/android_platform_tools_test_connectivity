@@ -190,10 +190,6 @@ log = logging
 STORY_LINE = "+19523521350"
 
 
-class _CallSequenceException(Exception):
-    pass
-
-
 class TelTestUtilsError(Exception):
     pass
 
@@ -798,7 +794,8 @@ def wait_and_answer_call(log,
                          ad,
                          incoming_number=None,
                          incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-                         caller=None):
+                         caller=None,
+                         video_state=None):
     """Wait for an incoming call on default voice subscription and
        accepts the call.
 
@@ -822,7 +819,8 @@ def wait_and_answer_call(log,
         get_incoming_voice_sub_id(ad),
         incoming_number,
         incall_ui_display=incall_ui_display,
-        caller=caller)
+        caller=caller,
+        video_state=video_state)
 
 
 def wait_for_ringing_event(log, ad, wait_time):
@@ -921,7 +919,7 @@ def wait_for_ringing_call_for_subscription(
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
     if caller and not caller.droid.telecomIsInCall():
         caller.log.error("Caller not in call state")
-        raise _CallSequenceException("Caller not in call state")
+        return False
     if not incoming_number:
         return True
 
@@ -982,7 +980,8 @@ def wait_and_answer_call_for_subscription(
         incoming_number=None,
         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
         timeout=MAX_WAIT_TIME_CALLEE_RINGING,
-        caller=None):
+        caller=None,
+        video_state=None):
     """Wait for an incoming call on specified subscription and
        accepts the call.
 
@@ -1019,7 +1018,7 @@ def wait_and_answer_call_for_subscription(
             return False
         time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
         ad.log.info("Accept the ring call")
-        ad.droid.telecomAcceptRingingCall()
+        ad.droid.telecomAcceptRingingCall(video_state)
 
         if ad.droid.telecomIsInCall() or wait_for_call_offhook_event(
                 log, ad, sub_id, event_tracking_started=True,
@@ -1249,7 +1248,8 @@ def initiate_call(log,
                   emergency=False,
                   timeout=MAX_WAIT_TIME_CALL_INITIATION,
                   checking_interval=5,
-                  incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND):
+                  incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+                  video=False):
     """Make phone call from caller to callee.
 
     Args:
@@ -1258,6 +1258,7 @@ def initiate_call(log,
         emergency : specify the call is emergency.
             Optional. Default value is False.
         incall_ui_display: show the dialer UI foreground or backgroud
+        video: whether to initiate as video call
 
     Returns:
         result: if phone call is placed successfully.
@@ -1272,7 +1273,7 @@ def initiate_call(log,
         if emergency:
             ad.droid.telecomCallEmergencyNumber(callee_number)
         else:
-            ad.droid.telecomCallNumber(callee_number)
+            ad.droid.telecomCallNumber(callee_number, video)
 
         # Verify OFFHOOK event
         checking_retries = int(timeout / checking_interval)
@@ -1554,23 +1555,22 @@ def call_reject_for_subscription(log,
         'phone_num']
 
     ad_caller.log.info("Call from %s to %s", caller_number, callee_number)
-    try:
-        if not initiate_call(log, ad_caller, callee_number):
-            raise _CallSequenceException("Initiate call failed.")
-
-        if not wait_and_reject_call_for_subscription(
-                log, ad_callee, subid_callee, caller_number,
-                WAIT_TIME_REJECT_CALL, reject):
-            raise _CallSequenceException("Reject call fail.")
-        # Check if incoming call is cleared on callee or not.
-        if ad_callee.droid.telephonyGetCallStateForSubscription(
-                subid_callee) == TELEPHONY_STATE_RINGING:
-            raise _CallSequenceException("Incoming call is not cleared.")
-        # Hangup on caller
-        hangup_call(log, ad_caller)
-    except _CallSequenceException as e:
-        log.error(e)
+    if not initiate_call(log, ad_caller, callee_number):
+        ad_caller.log.error("Initiate call failed")
         return False
+
+    if not wait_and_reject_call_for_subscription(
+            log, ad_callee, subid_callee, caller_number, WAIT_TIME_REJECT_CALL,
+            reject):
+        ad_callee.log.error("Reject call fail.")
+        return False
+    # Check if incoming call is cleared on callee or not.
+    if ad_callee.droid.telephonyGetCallStateForSubscription(
+            subid_callee) == TELEPHONY_STATE_RINGING:
+        ad_callee.log.error("Incoming call is not cleared")
+        return False
+    # Hangup on caller
+    hangup_call(log, ad_caller)
     return True
 
 
@@ -1658,11 +1658,13 @@ def call_reject_leave_message_for_subscription(
             log.warning("--Pending new Voice Mail, please clear on phone.--")
 
         if not initiate_call(log, ad_caller, callee_number):
-            raise _CallSequenceException("Initiate call failed.")
+            ad_caller.log.error("Initiate call failed.")
+            return False
 
         if not wait_and_reject_call_for_subscription(
                 log, ad_callee, subid_callee, incoming_number=caller_number):
-            raise _CallSequenceException("Reject call fail.")
+            ad_callee.log.error("Reject call fail.")
+            return False
 
         ad_callee.droid.telephonyStartTrackingVoiceMailStateChangeForSubscription(
             subid_callee)
@@ -1672,7 +1674,8 @@ def call_reject_leave_message_for_subscription(
         ad_callee.ed.ad.ed.clear_events(EventCallStateChanged)
 
         if verify_caller_func and not verify_caller_func(log, ad_caller):
-            raise _CallSequenceException("Caller not in correct state!")
+            ad_caller.log.error("Caller not in correct state!")
+            return False
 
         # TODO: b/26293512 Need to play some sound to leave message.
         # Otherwise carrier voice mail server may drop this voice mail.
@@ -1683,14 +1686,14 @@ def call_reject_leave_message_for_subscription(
         else:
             caller_state_result = verify_caller_func(log, ad_caller)
         if not caller_state_result:
-            raise _CallSequenceException(
-                "Caller %s not in correct state after %s seconds" %
-                (ad_caller.serial, wait_time_in_call))
+            ad_caller.log.error("Caller not in correct state after %s seconds",
+                                wait_time_in_call)
 
         if not hangup_call(log, ad_caller):
-            raise _CallSequenceException("Error in Hanging-Up Call")
+            ad_caller.log.error("Error in Hanging-Up Call")
+            return False
 
-        log.info("Wait for voice mail indicator on callee.")
+        ad_callee.log.info("Wait for voice mail indicator on callee.")
         try:
             event = ad_callee.ed.wait_for_event(
                 EventMessageWaitingIndicatorChanged,
@@ -1699,8 +1702,7 @@ def call_reject_leave_message_for_subscription(
         except Empty:
             ad_callee.log.warning("No expected event %s",
                                   EventMessageWaitingIndicatorChanged)
-            raise _CallSequenceException("No expected event {}.".format(
-                EventMessageWaitingIndicatorChanged))
+            return False
         voice_mail_count_after = ad_callee.droid.telephonyGetVoiceMailCountForSubscription(
             subid_callee)
         ad_callee.log.info(
@@ -1715,10 +1717,6 @@ def call_reject_leave_message_for_subscription(
                                       voice_mail_count_after):
             log.error("before and after voice mail count is not incorrect.")
             return False
-
-    except _CallSequenceException as e:
-        log.error(e)
-        return False
     finally:
         ad_callee.droid.telephonyStopTrackingVoiceMailStateChangeForSubscription(
             subid_callee)
@@ -1804,7 +1802,8 @@ def call_setup_teardown(log,
                         verify_callee_func=None,
                         wait_time_in_call=WAIT_TIME_IN_CALL,
                         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-                        dialing_number_length=None):
+                        dialing_number_length=None,
+                        video_state=None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
 
@@ -1837,7 +1836,7 @@ def call_setup_teardown(log,
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
-        incall_ui_display, dialing_number_length)
+        incall_ui_display, dialing_number_length, video_state)
 
 
 def call_setup_teardown_for_subscription(
@@ -1851,7 +1850,8 @@ def call_setup_teardown_for_subscription(
         verify_callee_func=None,
         wait_time_in_call=WAIT_TIME_IN_CALL,
         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
-        dialing_number_length=None):
+        dialing_number_length=None,
+        video_state=None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on specified subscription
 
@@ -1912,6 +1912,11 @@ def call_setup_teardown_for_subscription(
 
     result = True
     msg = "Call from %s to %s" % (caller_number, callee_number)
+    if video_state:
+        msg = "Video %s" % msg
+        video = True
+    else:
+        video = False
     if ad_hangup:
         msg = "%s for duration of %s seconds" % (msg, wait_time_in_call)
     ad_caller.log.info(msg)
@@ -1922,8 +1927,11 @@ def call_setup_teardown_for_subscription(
         ad.log.info("Before making call, existing phone calls %s", call_ids)
     try:
         if not initiate_call(
-                log, ad_caller, callee_number,
-                incall_ui_display=incall_ui_display):
+                log,
+                ad_caller,
+                callee_number,
+                incall_ui_display=incall_ui_display,
+                video=video):
             ad_caller.log.error("Initiate call failed.")
             result = False
             return False
@@ -1935,7 +1943,8 @@ def call_setup_teardown_for_subscription(
                 subid_callee,
                 incoming_number=caller_number,
                 caller=ad_caller,
-                incall_ui_display=incall_ui_display):
+                incall_ui_display=incall_ui_display,
+                video_state=video_state):
             ad_callee.log.error("Answer call fail.")
             result = False
             return False
