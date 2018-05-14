@@ -27,10 +27,10 @@ from acts.test_utils.coex.coex_test_utils import multithread_func
 class WlanWithA2dpPerformanceSlaveTest(CoexBluezBaseTest):
 
     def __init__(self, controllers):
-        super().__init__(controllers)
+        super().__init__(controllers, A2DP_TEST)
 
     def setup_class(self):
-        super().setup_class(A2DP_TEST)
+        super().setup_class()
         if not self.bluez_flag:
             return False
         req_params = ["iterations", "music_file"]
