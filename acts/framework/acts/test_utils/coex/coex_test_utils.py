@@ -185,8 +185,10 @@ def configure_and_start_ap(ap, network):
         ap: An access point object.
         network: A dictionary with wifi network details.
     """
-    hostapd_sec = hostapd_security.Security(
-        security_mode=network["security"], password=network["password"])
+    hostapd_sec = None
+    if network["security"] == "wpa2":
+        hostapd_sec = hostapd_security.Security(
+            security_mode=network["security"], password=network["password"])
 
     config = hostapd_config.HostapdConfig(
         n_capabilities=[hostapd_constants.N_CAPABILITY_HT40_MINUS],
