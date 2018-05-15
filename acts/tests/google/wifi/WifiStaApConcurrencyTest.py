@@ -53,10 +53,6 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
-        if self.dut.model not in self.dbs_supported_models:
-            asserts.skip(
-                ("Device %s does not support dual interfaces.")
-                % self.dut.model)
         # Do a simple version of init - mainly just sync the time and enable
         # verbose logging.  This test will fail if the DUT has a sim and cell
         # data is disabled.  We would also like to test with phones in less
@@ -76,10 +72,15 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         asserts.assert_equal(self.dut_client.droid.wifiGetVerboseLoggingLevel(), 1,
             "Failed to enable WiFi verbose logging on the client dut.")
 
-        req_params = ["AccessPoint"]
+        req_params = ["AccessPoint", "dbs_supported_models"]
         opt_param = ["iperf_server_address"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
+
+        if self.dut.model not in self.dbs_supported_models:
+            asserts.skip(
+                ("Device %s does not support dual interfaces.")
+                % self.dut.model)
 
         if "iperf_server_address" in self.user_params:
             self.iperf_server = self.iperf_servers[0]
