@@ -1525,6 +1525,22 @@ def get_phone_capability(ad):
         setattr(ad, 'telephony', {"capabilities": capabilities})
     else:
         ad.telephony["capabilities"] = capabilities
+    if CAPABILITY_WFC not in capabilities:
+        wfc_modes = []
+    else:
+        if carrier_configs.get(CarrierConfigs.EDITABLE_WFC_MODE_BOOL, False):
+            wfc_modes = [WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED]
+        else:
+            wfc_modes = [
+                carrier_configs.get(CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT,
+                                    WFC_MODE_CELLULAR_PREFERRED)
+            ]
+    if carrier_configs.get(CarrierConfigs.WFC_SUPPORTS_WIFI_ONLY_BOOL,
+                           False) and WFC_MODE_WIFI_ONLY not in wfc_modes:
+        wfc_modes.append(WFC_MODE_WIFI_ONLY)
+    ad.telephony["wfc_modes"] = wfc_modes
+    if wfc_modes:
+        ad.log.info("Supported WFC modes: %s", wfc_modes)
 
 
 def call_reject(log, ad_caller, ad_callee, reject=True):
