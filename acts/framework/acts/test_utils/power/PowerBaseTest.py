@@ -24,7 +24,6 @@ from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import monsoon
-from acts.test_utils.tel import tel_test_utils as telutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
@@ -132,7 +131,7 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         # Onetime task for each test class
         # Temporary fix for b/77873679
-        telutils.adb_disable_verity(self.dut)
+        self.adb_disable_verity()
         self.dut.adb.shell('mv /vendor/bin/chre /vendor/bin/chre_renamed')
         self.dut.adb.shell('pkill chre')
 
@@ -484,3 +483,14 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.log.warning('Cannot get iperf result. Setting to 0')
             throughput = 0
         return throughput
+
+    # TODO(@qijiang)Merge with tel_test_utils.py
+    def adb_disable_verity(self):
+        """Disable verity on the device.
+
+        """
+        if self.dut.adb.getprop("ro.boot.veritymode") == "enforcing":
+            self.dut.adb.disable_verity()
+            self.dut.reboot()
+            self.dut.adb.root()
+            self.dut.adb.remount()
