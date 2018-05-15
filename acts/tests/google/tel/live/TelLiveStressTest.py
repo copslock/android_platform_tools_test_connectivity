@@ -113,7 +113,6 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.user_params.get("min_phone_call_duration", 10))
         self.crash_check_interval = int(
             self.user_params.get("crash_check_interval", 300))
-
         return True
 
     def setup_test(self):
@@ -280,7 +279,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         result = True
         test_name = "%s_No_%s_phone_call" % (self.test_name, the_number)
         log_msg = "[Test Case] %s" % test_name
-        self.log.info("%s begin", log_msg)
+        self.log.info("%s for %s seconds begin", log_msg, duration)
         for ad in self.android_devices:
             if not getattr(ad, "droid", None):
                 ad.droid, ad.ed = ad.get_droid()
@@ -609,6 +608,24 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
+    def check_incall_data(self):
+        if self.single_phone_test:
+            call_setup_result = initiate_call(
+                self.log, self.dut,
+                self.call_server_number) and wait_for_in_call_active(
+                    self.dut, 60, 3)
+            incall_data = verify_internet_connection(self.log, self.dut)
+        else:
+            ads = self.android_devices
+            call_setup_result = call_setup_teardown(
+                self.log, ads[0], ads[1], ad_hangup=None)
+            incall_data = verify_internet_connection(
+                self.log, ads[0]) and verify_internet_connection(
+                    self.log, ads[1])
+        self.log.info("***** Incall data capability is %s *****", incall_data)
+        hangup_call_by_adb(self.dut)
+        return call_setup_result and incall_data
+
     def parallel_tests(self, setup_func=None, call_verification_func=None):
         self.log.info(self._get_result_message())
         if setup_func and not setup_func():
@@ -618,18 +635,51 @@ class TelLiveStressTest(TelephonyBaseTest):
                                             setup_func.__name__),
                                   self.begin_time)
             return False
+        in_call_data = self.check_incall_data()
         if not call_verification_func:
             call_verification_func = is_phone_in_call
         self.finishing_time = time.time() + self.max_run_time
-        results = run_multithread_func(
-            self.log, [(self.call_test, [call_verification_func]),
-                       (self.message_test, []), (self.data_test, []),
-                       (self.crash_check_test, [])])
+        if in_call_data:
+            results = run_multithread_func(
+                self.log, [(self.call_test, [call_verification_func]),
+                           (self.message_test, []), (self.data_test, []),
+                           (self.crash_check_test, [])])
+        else:
+            results = run_multithread_func(
+                self.log, [(self.sequential_tests, [call_verification_func]),
+                           (self.crash_check_test, [])])
         result_message = self._get_result_message()
         self.log.info(result_message)
         self._update_perf_json()
         self.result_detail = result_message
         return all(results)
+
+    def sequential_tests(self, call_verification_func):
+        funcs = [(self._make_phone_call, [call_verification_func]),
+                 (self._send_message, []), (self._data_download, [["5MB"]])]
+        while time.time() < self.finishing_time:
+            selection = random.randrange(0, 3)
+            try:
+                funcs[selection][0](*funcs[selection][1])
+            except Exception as e:
+                self.log.error("Exception error %s", str(e))
+                self.result_info["Exception Errors"] += 1
+            self.log.info("%s", dict(self.result_info))
+            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
+                self.log.error("Too many exception errors, quit test")
+                return False
+            time.sleep(
+                random.randrange(self.min_sleep_time, self.max_sleep_time))
+        if any([
+                self.result_info["Call Setup Failure"],
+                self.result_info["Call Maintenance Failure"],
+                self.result_info["Call Teardown Failure"],
+                self.result_info["SMS Failure"],
+                self.result_info["MMS Failure"],
+                self.result_info["Internet Connection Check Failure"]
+        ]):
+            return False
+        return True
 
     def volte_modechange_volte_test(self):
         sub_id = self.dut.droid.subscriptionGetDefaultSubId()

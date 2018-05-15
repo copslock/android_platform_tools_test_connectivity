@@ -2006,6 +2006,7 @@ def call_setup_teardown_for_subscription(
                     result = False
             if not result:
                 return False
+
         if ad_hangup:
             if not hangup_call(log, ad_hangup):
                 ad_hangup.log.info("Failed to hang up the call")
@@ -2309,6 +2310,10 @@ def verify_internet_connection(log, ad, retries=3, expected_state=True):
         ad: Android Device Object.
 
     """
+    if ad.droid.connectivityNetworkIsConnected() != expected_state:
+        ad.log.info("NetworkIsConnected = %s, expecting %s",
+                    not expected_state, expected_state)
+        return False
     if verify_internet_connection_by_ping(
             log, ad, retries=retries, expected_state=expected_state):
         return True
