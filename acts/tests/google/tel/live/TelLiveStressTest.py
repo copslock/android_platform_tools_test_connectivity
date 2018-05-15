@@ -23,10 +23,13 @@ import os
 import random
 import time
 
+from acts import signals
 from acts import utils
 from acts.libs.proc import job
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
+from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
@@ -36,7 +39,9 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_TDSCDMA_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
+from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_lookup_tables import is_rat_svd_capable
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
@@ -113,6 +118,9 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.user_params.get("min_phone_call_duration", 10))
         self.crash_check_interval = int(
             self.user_params.get("crash_check_interval", 300))
+        self.dut_incall = False
+        self.dut_capabilities = self.dut.telephony.get("capabilities", [])
+        self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
         return True
 
     def setup_test(self):
@@ -147,7 +155,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def _setup_wfc_apm(self):
         for ad in self.android_devices:
             if not phone_setup_iwlan(
-                    self.log, ad, True, WFC_MODE_WIFI_PREFERRED,
+                    self.log, ad, True, WFC_MODE_CELLULAR_PREFERRED,
                     self.wifi_network_ssid, self.wifi_network_pass):
                 ad.log.error("Failed to setup WFC.")
                 return False
@@ -201,6 +209,11 @@ class TelLiveStressTest(TelephonyBaseTest):
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
         }
+        rat = self.dut.adb.getprop("gsm.network.type")
+        self.dut.log.info("Network in RAT %s", rat)
+        if self.dut_incall and not is_rat_svd_capable(rat.upper()):
+            self.dut.log.info("In call data not supported, test SMS only")
+            selection = 0
         message_type = message_type_map[selection]
         the_number = self.result_info["%s Total" % message_type] + 1
         begin_time = get_current_epoch_time()
@@ -231,12 +244,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             text += rand_ascii_str(length - text_length)
         message_content_map = {0: [text], 1: [(test_name, text, None)]}
-        incall_non_ims = False
-        for ad in self.android_devices:
-            if ad.droid.telecomIsInCall() and (
-                    not ad.droid.telephonyIsImsRegistered()):
-                incall_non_ims = True
-                break
 
         result = message_func_map[selection](self.log, ads[0], ads[1],
                                              message_content_map[selection],
@@ -250,9 +257,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("%s fails", log_msg)
                 self.result_info["%s Failure" % message_type] += 1
             else:
-                if incall_non_ims:
-                    self.log.info(
-                        "Device not in IMS, MMS in call is not support")
+                rat = self.dut.adb.getprop("gsm.network.type")
+                self.dut.log.info("Network in RAT %s", rat)
+                if self.dut_incall and not is_rat_svd_capable(rat.upper()):
+                    self.dut.log.info(
+                        "In call data not supported, MMS failure expected")
                     self.result_info["Expected In-call MMS failure"] += 1
                     return True
                 else:
@@ -306,6 +315,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 mask=None)
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         failure_reasons = set()
+        self.dut_incall = True
         if self.single_phone_test:
             call_setup_result = initiate_call(
                 self.log,
@@ -374,6 +384,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             except:
                 pass
         self.log.info("%s end", log_msg)
+        self.dut_incall = False
         if not result:
             self.log.info("%s failed", log_msg)
             if self.user_params.get("gps_log_file", None):
@@ -459,8 +470,10 @@ class TelLiveStressTest(TelephonyBaseTest):
     def _init_perf_json(self):
         self.perf_file = os.path.join(self.log_path, "%s_perf_data_%s.json" %
                                       (self.test_name, self.begin_time))
-        self.perf_data = self.android_devices[0].build_info.copy()
-        self.perf_data["model"] = self.android_devices[0].model
+        self.perf_data = self.dut.build_info.copy()
+        self.perf_data["model"] = self.dut.model
+        self.perf_data["carrier"] = self.dut.adb.getprop(
+            "gsm.sim.operator.alpha")
         self._write_perf_json()
 
     def _update_perf_json(self):
@@ -557,16 +570,23 @@ class TelLiveStressTest(TelephonyBaseTest):
         file_name = file_names[selection]
         self.result_info["Internet Connection Check Total"] += 1
         if not verify_internet_connection(self.log, self.dut):
-            self.result_info["Internet Connection Check Failure"] += 1
-            test_name = "%s_internet_connection_No_%s_failure" % (
-                self.test_name,
-                self.result_info["Internet Connection Check Failure"])
-            try:
-                self._ad_take_extra_logs(self.dut, test_name, begin_time)
-                self._ad_take_bugreport(self.dut, test_name, begin_time)
-            except Exception as e:
-                self.log.exception(e)
-            return False
+            rat = self.dut.adb.getprop("gsm.network.type")
+            self.dut.log.info("Network in RAT %s", rat)
+            if self.dut_incall and not is_rat_svd_capable(rat.upper()):
+                self.result.info[
+                    "Expected Incall Internet Connection Check Failure"] += 1
+                return True
+            else:
+                self.result_info["Internet Connection Check Failure"] += 1
+                test_name = "%s_internet_connection_No_%s_failure" % (
+                    self.test_name,
+                    self.result_info["Internet Connection Check Failure"])
+                try:
+                    self._ad_take_extra_logs(self.dut, test_name, begin_time)
+                    self._ad_take_bugreport(self.dut, test_name, begin_time)
+                except Exception as e:
+                    self.log.exception(e)
+                return False
         else:
             self.result_info["Internet Connection Check Success"] += 1
 
@@ -610,21 +630,34 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def check_incall_data(self):
         if self.single_phone_test:
-            call_setup_result = initiate_call(
-                self.log, self.dut,
-                self.call_server_number) and wait_for_in_call_active(
-                    self.dut, 60, 3)
-            incall_data = verify_internet_connection(self.log, self.dut)
+            if not initiate_call(
+                    self.log, self.dut,
+                    self.call_server_number) and wait_for_in_call_active(
+                        self.dut, 60, 3):
+                raise signals.TestAbort("Unable to make phone call")
         else:
-            ads = self.android_devices
-            call_setup_result = call_setup_teardown(
-                self.log, ads[0], ads[1], ad_hangup=None)
-            incall_data = verify_internet_connection(
-                self.log, ads[0]) and verify_internet_connection(
-                    self.log, ads[1])
-        self.log.info("***** Incall data capability is %s *****", incall_data)
-        hangup_call_by_adb(self.dut)
-        return call_setup_result and incall_data
+            if not call_setup_teardown(
+                    self.log, self.dut, self.android_devices[1],
+                    ad_hangup=None):
+                raise signals.TestAbort("Unable to make phone call")
+        voice_rat = self.dut.droid.telephonyGetCurrentVoiceNetworkType()
+        data_rat = self.dut.droid.telephonyGetCurrentDataNetworkType()
+        self.dut.log.info("Voice in RAT %s, Data in RAT %s", voice_rat,
+                          data_rat)
+        try:
+            if is_rat_svd_capable(voice_rat.upper()):
+                self.dut.log.info("Capable for simultaneous voice and data")
+                if not verify_internet_connection(self.log, self.dut):
+                    self.dut.log.error("Incall data check failed")
+                    raise signals.TestAbort("Incall data check failed")
+                else:
+                    return True
+            else:
+                self.dut.log.info(
+                    "Not capable for simultaneous voice and data")
+                return False
+        finally:
+            hangup_call_by_adb(self.dut)
 
     def parallel_tests(self, setup_func=None, call_verification_func=None):
         self.log.info(self._get_result_message())
@@ -635,16 +668,21 @@ class TelLiveStressTest(TelephonyBaseTest):
                                             setup_func.__name__),
                                   self.begin_time)
             return False
-        in_call_data = self.check_incall_data()
         if not call_verification_func:
             call_verification_func = is_phone_in_call
         self.finishing_time = time.time() + self.max_run_time
-        if in_call_data:
+        if self.check_incall_data():
+            self.log.info(
+                "==== Start parallel voice/message/data stress test ====")
+            self.perf_data["testing method"] = "parallel"
             results = run_multithread_func(
                 self.log, [(self.call_test, [call_verification_func]),
                            (self.message_test, []), (self.data_test, []),
                            (self.crash_check_test, [])])
         else:
+            self.log.info(
+                "==== Start sequential voice/message/data stress test ====")
+            self.perf_data["testing method"] = "sequential"
             results = run_multithread_func(
                 self.log, [(self.sequential_tests, [call_verification_func]),
                            (self.crash_check_test, [])])
@@ -729,6 +767,8 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_volte_parallel_stress(self):
         """ VoLTE on stress test"""
+        if CAPABILITY_VOLTE not in self.dut_capabilities:
+            raise signals.TestSkipClass("VoLTE is not supported")
         return self.parallel_tests(
             setup_func=self._setup_lte_volte_enabled,
             call_verification_func=is_phone_in_call_volte)
@@ -745,6 +785,10 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_parallel_stress(self):
         """ Wifi calling APM mode off stress test"""
+        if CAPABILITY_WFC not in self.dut_capabilities:
+            raise signals.TestSkipClass("WFC is not supported")
+        if WFC_MODE_WIFI_PREFERRED not in self.dut_wfc_modes:
+            raise signals.TestSkip("WFC_MODE_WIFI_PREFERRED is not supported")
         return self.parallel_tests(
             setup_func=self._setup_wfc,
             call_verification_func=is_phone_in_call_iwlan)
@@ -753,6 +797,8 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_apm_parallel_stress(self):
         """ Wifi calling in APM mode on stress test"""
+        if CAPABILITY_WFC not in self.dut_capabilities:
+            raise signals.TestSkipClass("WFC is not supported")
         return self.parallel_tests(
             setup_func=self._setup_wfc_apm,
             call_verification_func=is_phone_in_call_iwlan)
@@ -767,7 +813,7 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     @test_tracker_info(uuid="f34f1a31-3948-4675-8698-372a83b8088d")
     @TelephonyBaseTest.tel_test_wrap
-    def test_call_2g_parallel_stress(self):
+    def test_2g_parallel_stress(self):
         """ 2G call stress test"""
         return self.parallel_tests(
             setup_func=self._setup_2g,
@@ -777,6 +823,8 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_modeprefchange_parallel_stress(self):
         """ VoLTE Mode Pref call stress test"""
+        if CAPABILITY_VOLTE not in self.dut_capabilities:
+            raise signals.TestSkipClass("VoLTE is not supported")
         return self.parallel_with_network_change_tests(
             setup_func=self._setup_lte_volte_enabled)
 
