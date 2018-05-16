@@ -745,11 +745,19 @@ class AndroidDevice:
             extra_params = self.adb_logcat_param
         else:
             extra_params = "-b all"
-        if self.last_logcat_timestamp:
-            begin_at = '-T "%s"' % self.last_logcat_timestamp
+        last_timestamp = None
+        if os.path.exists(self.adb_logcat_file_path):
+            output = job.run("tail %s" % self.adb_logcat_file_path)
+            if output.stdout and output.exit_status != 1:
+                timestamps = re.findall(r"(.*\d+-\d+ \d+:\d+:\d+.\d+)",
+                                        output.stdout)
+                if timestamps:
+                    last_timestamp = timestamps[-1]
+        if last_timestamp:
+            begin_at = '-T "%s"' % last_timestamp
         else:
             begin_at = '-T 1'
-        # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
+       # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
         cmd = "adb -s {} logcat {} -v year {} >> {}".format(
             self.serial, begin_at, extra_params, self.adb_logcat_file_path)
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
@@ -764,17 +772,8 @@ class AndroidDevice:
         # Set the last timestamp to the current timestamp. This may cause
         # a race condition that allows the same line to be logged twice,
         # but it does not pose a problem for our logging purposes.
-        try:
-            logcat_output = self.adb.logcat('-t 1 -v year')
-            next_line = logcat_output.find('\n')
-            self.last_logcat_timestamp = logcat_output[next_line + 1:
-                                                       next_line + 24]
-        except Exception as e:
-            self.log.error('Unable to parse the last logcat timestamp before '
-                           'shutting down the logcat process: %s' % e)
-        finally:
-            utils.stop_standing_subprocess(self.adb_logcat_process)
-            self.adb_logcat_process = None
+        utils.stop_standing_subprocess(self.adb_logcat_process)
+        self.adb_logcat_process = None
 
     def get_apk_uid(self, apk_name):
         """Get the uid of the given apk.
