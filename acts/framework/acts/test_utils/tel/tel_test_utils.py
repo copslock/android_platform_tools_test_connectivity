@@ -1940,7 +1940,8 @@ def call_setup_teardown_for_subscription(
     for ad in (ad_caller, ad_callee):
         call_ids = ad.droid.telecomCallGetCallIds()
         setattr(ad, "call_ids", call_ids)
-        ad.log.info("Before making call, existing phone calls %s", call_ids)
+        if call_ids:
+            ad.log.info("Pre-exist CallId %s before making call", call_ids)
     try:
         if not initiate_call(
                 log,
