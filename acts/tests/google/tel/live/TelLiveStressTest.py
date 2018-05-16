@@ -573,7 +573,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             rat = self.dut.adb.getprop("gsm.network.type")
             self.dut.log.info("Network in RAT %s", rat)
             if self.dut_incall and not is_rat_svd_capable(rat.upper()):
-                self.result.info[
+                self.result_info[
                     "Expected Incall Internet Connection Check Failure"] += 1
                 return True
             else:
