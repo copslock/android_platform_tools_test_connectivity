@@ -96,21 +96,7 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
             self.carrier_configs[CarrierConfigs.DEFAULT_WFC_IMS_ENABLED_BOOL])
         self.default_wfc_mode = self.carrier_configs.get(
             CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT, None)
-        if self.carrier_configs.get(CarrierConfigs.EDITABLE_WFC_MODE_BOOL,
-                                    False):
-            self.dut_wfc_modes = [
-                WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED
-            ]
-        else:
-            self.dut_wfc_modes = [
-                self.carrier_configs.get(
-                    CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT,
-                    WFC_MODE_CELLULAR_PREFERRED)
-            ]
-        if self.carrier_configs.get(
-                CarrierConfigs.WFC_SUPPORTS_WIFI_ONLY_BOOL,
-                False) and WFC_MODE_WIFI_ONLY not in wfc_modes:
-            self.dut_wfc_modes.append(WFC_MODE_WIFI_ONLY)
+        self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
 
     def check_call_in_wfc(self):
         result = True
