@@ -57,6 +57,10 @@ BLACKLIST = [
     'acts/test_utils/coex/coex_test_utils.py',
     'acts/framework/acts/test_utils/coex/CoexBaseTest.py',
     'acts/framework/acts/test_utils/coex/CoexPerformanceBaseTest.py',
+    'acts/framework/acts/test_utils/power/PowerWiFiBaseTest.py',
+    'acts/framework/acts/test_utils/power/PowerCoexBaseTest.py',
+    'acts/framework/acts/test_utils/power/PowerBaseTest.py',
+    'acts/framework/acts/test_utils/power/PowerBTBaseTest.py',
 ]
 
 
