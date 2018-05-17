@@ -119,7 +119,9 @@ config_entries = [
     ConfigEntryMeta(
         acts_config_key=Config.key_test_failure_tracebacks.value,
         cli_flags=['-tft', '--test_failure_tracebacks'],
-        cli_action='store_true',
+        env_var_name='ACTS_TEST_FAILURE_TRACEBACKS',
+        cli_action='store_const',
+        cli_const=True,
         help='Enables tracebacks to be printed when a test raises TestFailure.',
     )
 ]
