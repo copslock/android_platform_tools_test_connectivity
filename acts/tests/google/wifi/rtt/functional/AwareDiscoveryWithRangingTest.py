@@ -23,6 +23,8 @@ from acts.test_utils.net import connectivity_const as cconsts
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 from acts.test_utils.wifi.aware.AwareBaseTest import AwareBaseTest
+from acts.test_utils.wifi.rtt import rtt_const as rconsts
+from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 
@@ -1460,3 +1462,105 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
         aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, ff_s_id))
     asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
                         "Discovery with ranging for FF expected!")
+
+
+  def test_discovery_direct_concurrency(self):
+    """Verify the behavior of Wi-Fi Aware Ranging used as part of discovery and
+    as direct ranging to a peer device.
+
+    Process:
+    - Start YYY service with ranging in-range
+    - Start XXX service with ranging out-of-range
+    - Start performing direct Ranging
+    - While above going on update XXX to be in-range
+    - Keep performing direct Ranging in context of YYY
+    - Stop direct Ranging and look for XXX to discover
+    """
+    dut1 = self.android_devices[0]
+    dut1.pretty_name = "DUT1"
+    dut2 = self.android_devices[1]
+    dut2.pretty_name = "DUT2"
+
+    # DUTs: attach and wait for confirmation
+    dut1_id = dut1.droid.wifiAwareAttach(False)
+    autils.wait_for_event(dut1, aconsts.EVENT_CB_ON_ATTACHED)
+    time.sleep(self.device_startup_offset)
+    dut2_id = dut2.droid.wifiAwareAttach(True)
+    event = autils.wait_for_event(dut2, aconsts.EVENT_CB_ON_IDENTITY_CHANGED)
+    dut2_mac = event['data']['mac']
+
+    # DUT1: publishers bring-up
+    xxx_p_id = dut1.droid.wifiAwarePublish(dut1_id, autils.add_ranging_to_pub(
+      autils.create_discovery_config("XXX", aconsts.PUBLISH_TYPE_UNSOLICITED),
+      enable_ranging=True), True)
+    autils.wait_for_event(dut1, autils.decorate_event(
+      aconsts.SESSION_CB_ON_PUBLISH_STARTED, xxx_p_id))
+    yyy_p_id = dut1.droid.wifiAwarePublish(dut1_id, autils.add_ranging_to_pub(
+        autils.create_discovery_config("YYY", aconsts.PUBLISH_TYPE_UNSOLICITED),
+        enable_ranging=True), True)
+    autils.wait_for_event(dut1, autils.decorate_event(
+        aconsts.SESSION_CB_ON_PUBLISH_STARTED, yyy_p_id))
+
+    # DUT2: subscribers bring-up
+    xxx_s_id = dut2.droid.wifiAwareSubscribe(dut2_id, autils.add_ranging_to_sub(
+      autils.create_discovery_config("XXX", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+      min_distance_mm=1000000, max_distance_mm=1000001), True)
+    autils.wait_for_event(dut2, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, xxx_s_id))
+    yyy_s_id = dut2.droid.wifiAwareSubscribe(dut2_id, autils.add_ranging_to_sub(
+        autils.create_discovery_config("YYY", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+        min_distance_mm=None, max_distance_mm=1000000), True)
+    autils.wait_for_event(dut2, autils.decorate_event(
+        aconsts.SESSION_CB_ON_SUBSCRIBE_STARTED, yyy_s_id))
+
+    # Service discovery: YYY (with range info), but no XXX
+    event = autils.wait_for_event(dut2, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, yyy_s_id))
+    asserts.assert_true(aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"],
+                        "Discovery with ranging for YYY expected!")
+    yyy_peer_id_on_sub = event['data'][aconsts.SESSION_CB_KEY_PEER_ID]
+
+    autils.fail_on_event(dut2, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, xxx_s_id))
+
+    # Direct ranging
+    results21 = []
+    for iter in range(10):
+      id = dut2.droid.wifiRttStartRangingToAwarePeerId(yyy_peer_id_on_sub)
+      event = autils.wait_for_event(dut2, rutils.decorate_event(
+        rconsts.EVENT_CB_RANGING_ON_RESULT, id))
+      results21.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0])
+
+    time.sleep(5) # while switching roles
+
+    results12 = []
+    for iter in range(10):
+      id = dut1.droid.wifiRttStartRangingToAwarePeerMac(dut2_mac)
+      event = autils.wait_for_event(dut1, rutils.decorate_event(
+        rconsts.EVENT_CB_RANGING_ON_RESULT, id))
+      results12.append(event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0])
+
+    stats = [rutils.extract_stats(results12, 0, 0, 0),
+             rutils.extract_stats(results21, 0, 0, 0)]
+
+    # Update XXX to be within range
+    dut2.droid.wifiAwareUpdateSubscribe(xxx_s_id, autils.add_ranging_to_sub(
+      autils.create_discovery_config("XXX", aconsts.SUBSCRIBE_TYPE_PASSIVE),
+      min_distance_mm=None, max_distance_mm=1000000))
+    autils.wait_for_event(dut2, autils.decorate_event(
+      aconsts.SESSION_CB_ON_SESSION_CONFIG_UPDATED, xxx_s_id))
+
+    # Expect discovery on XXX - wait until discovery with ranging:
+    # - 0 or more: without ranging info (due to concurrency limitations)
+    # - 1 or more: with ranging (once concurrency limitation relieved)
+    num_events = 0
+    while True:
+      event = autils.wait_for_event(dut2, autils.decorate_event(
+          aconsts.SESSION_CB_ON_SERVICE_DISCOVERED, xxx_s_id))
+      if aconsts.SESSION_CB_KEY_DISTANCE_MM in event["data"]:
+        break
+      num_events = num_events + 1
+      asserts.assert_true(num_events < 10, # arbitrary safety valve
+                          "Way too many discovery events without ranging!")
+
+    asserts.explicit_pass("Discovery/Direct RTT Concurrency Pass", extras=stats)
