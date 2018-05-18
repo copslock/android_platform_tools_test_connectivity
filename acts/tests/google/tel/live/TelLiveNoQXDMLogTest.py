@@ -176,6 +176,9 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
                 else:
                     ad.log.error("Cannot Find Text %s in logcat",
                                  text_search_mapping[tel_state])
+                    if tel_state == "boot_complete":
+                        ad.log.error("TERMINATE - boot_complete not found")
+                        return False
                     blocked_for_calculate.append(tel_state)
 
             for tel_state in text_search_mapping:
