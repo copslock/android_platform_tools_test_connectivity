@@ -117,11 +117,9 @@ class TelephonyBaseTest(BaseTestClass):
                 try:
                     result = fn(self, *args, **kwargs)
                 except signals.TestFailure:
-                    if i < tries + 1:
-                        continue
                     if self.result_detail:
                         signal.details = self.result_detail
-                    raise
+                    result = False
                 except signals.TestSignal:
                     if self.result_detail:
                         signal.details = self.result_detail
@@ -130,7 +128,7 @@ class TelephonyBaseTest(BaseTestClass):
                     self.log.exception(e)
                     asserts.fail(self.result_detail)
                 if result is False:
-                    if i < tries + 1:
+                    if i < tries:
                         continue
                 else:
                     break
