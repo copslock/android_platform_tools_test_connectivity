@@ -140,6 +140,10 @@ class ApInterfaces(object):
         if wan:
             return wan
 
+        output = self.ssh.run('ifconfig')
+        interfaces_all = output.stdout.split('\n')
+        logging.info("IFCONFIG output = %s" % interfaces_all)
+
         raise ApInterfacesError('No WAN interface available')
 
     def get_lan_interface(self):
