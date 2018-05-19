@@ -1835,7 +1835,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mt_mms_in_3g_call(ads)
 
-    @test_tracker_info(uuid="c6cfba55-6cde-41cd-93bb-667c317a0127")
+    @test_tracker_info(uuid="18093f87-aab5-4d86-b178-8085a1651828")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_in_call_3g_wifi(self):
         """ Test MO MMS during a 3G call with Wifi on.
@@ -1861,7 +1861,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mo_mms_in_3g_call(ads, wifi=True)
 
-    @test_tracker_info(uuid="83c5dd99-f2fe-433d-9775-80a36d0d493b")
+    @test_tracker_info(uuid="8fe3359a-0857-401f-a043-c47a2a2acb47")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_in_call_3g_wifi(self):
         """ Test MT MMS during a 3G call with Wifi On.
