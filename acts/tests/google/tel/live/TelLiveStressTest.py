@@ -634,12 +634,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.log, self.dut,
                     self.call_server_number) and wait_for_in_call_active(
                         self.dut, 60, 3):
-                raise signals.TestAbort("Unable to make phone call")
+                raise signals.TestFailure("Unable to make phone call")
         else:
             if not call_setup_teardown(
                     self.log, self.dut, self.android_devices[1],
                     ad_hangup=None):
-                raise signals.TestAbort("Unable to make phone call")
+                raise signals.TestFailure("Unable to make phone call")
         voice_rat = self.dut.droid.telephonyGetCurrentVoiceNetworkType()
         data_rat = self.dut.droid.telephonyGetCurrentDataNetworkType()
         self.dut.log.info("Voice in RAT %s, Data in RAT %s", voice_rat,
@@ -649,7 +649,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.dut.log.info("Capable for simultaneous voice and data")
                 if not verify_internet_connection(self.log, self.dut):
                     self.dut.log.error("Incall data check failed")
-                    raise signals.TestAbort("Incall data check failed")
+                    raise signals.TestFailure("Incall data check failed")
                 else:
                     return True
             else:
