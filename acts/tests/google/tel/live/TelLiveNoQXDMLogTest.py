@@ -163,41 +163,61 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         for i in range(1, self.stress_test_number + 1):
             ad.log.info("Telephony Bootup Time Test %s Iteration: %d / %d",
                         self.test_name, i, self.stress_test_number)
+            begin_time = get_current_epoch_time()
+            ad.log.debug("Begin Time is %s", begin_time)
             ad.log.info("reboot!")
             reboot_device(ad)
             iteration_result = "pass"
 
             time.sleep(30)
 
+            dict_match = ad.search_logcat(text_search_mapping['boot_complete'],
+                                          begin_time=begin_time)
+            if len(dict_match) != 0:
+                text_obj_mapping['boot_complete'] = dict_match[0]['datetime_obj']
+                ad.log.debug("Datetime for boot_complete is %s",
+                            text_obj_mapping['boot_complete'])
+                bootup_time = dict_match[0]['datetime_obj'].strftime('%s')
+                bootup_time = int(bootup_time) * 1000
+                ad.log.info("Bootup Time is %d", bootup_time)
+            else:
+                ad.log.error("TERMINATE- boot_complete not seen in logcat")
+                return False
+
             for tel_state in text_search_mapping:
-                dict_match = ad.search_logcat(text_search_mapping[tel_state])
+                if tel_state == "boot_complete":
+                    continue
+                dict_match = ad.search_logcat(text_search_mapping[tel_state],
+                                              begin_time=bootup_time)
                 if len(dict_match) != 0:
                     text_obj_mapping[tel_state] = dict_match[0]['datetime_obj']
+                    ad.log.debug("Datetime for %s is %s",
+                                tel_state, text_obj_mapping[tel_state])
                 else:
                     ad.log.error("Cannot Find Text %s in logcat",
                                  text_search_mapping[tel_state])
-                    if tel_state == "boot_complete":
-                        ad.log.error("TERMINATE - boot_complete not found")
-                        return False
                     blocked_for_calculate.append(tel_state)
+                    ad.log.debug("New Blocked %s", blocked_for_calculate)
 
+            ad.log.info("List Blocked %s", blocked_for_calculate)
             for tel_state in text_search_mapping:
                 if tel_state not in blocked_for_calculate:
                     time_diff = text_obj_mapping[tel_state] - \
                                 text_obj_mapping['boot_complete']
-                    if time_diff.seconds > 100:
-                        continue
+                    ad.log.info("Time Diff is %d for %s",
+                                time_diff.seconds, tel_state)
                     if tel_state in keyword_time_dict:
                         keyword_time_dict[tel_state].append(time_diff.seconds)
                     else:
                         keyword_time_dict[tel_state] = [
                             time_diff.seconds,
                         ]
+                    ad.log.debug("Keyword Time Dict %s", keyword_time_dict)
 
             ad.log.info("Telephony Bootup Time Test %s Iteration: %d / %d %s",
                         self.test_name, i, self.stress_test_number,
                         iteration_result)
-
+        ad.log.info("Final Keyword Time Dict %s", keyword_time_dict)
         for tel_state in text_search_mapping:
             if tel_state not in blocked_for_calculate:
                 avg_time = self._get_list_average(keyword_time_dict[tel_state])
