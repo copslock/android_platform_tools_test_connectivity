@@ -24,7 +24,7 @@ import logging
 import re
 import random
 import string
-from time import sleep
+import time
 from acts.utils import exe_cmd
 import queue
 
@@ -274,7 +274,7 @@ def get_contact_count(device):
     return len(contact_list)
 
 
-def import_device_contacts_from_vcf(device, destination_path, vcf_file):
+def import_device_contacts_from_vcf(device, destination_path, vcf_file, timeout=10):
     """Uploads and import vcf file to device.
     """
     number_count = phone_number_count(destination_path, vcf_file)
@@ -283,10 +283,15 @@ def import_device_contacts_from_vcf(device, destination_path, vcf_file):
     phone_phonebook_path = "{}{}".format(STORAGE_PATH, vcf_file)
     device.adb.push("{} {}".format(local_phonebook_path, phone_phonebook_path))
     device.droid.importVcf("file://{}{}".format(STORAGE_PATH, vcf_file))
-    # keyevent to allow contacts import from vcf file
-    sleep(1)
-    for key in ["ENTER", "DPAD_RIGHT", "ENTER"]:
-        device.adb.shell("input keyevent KEYCODE_{}".format(key))
+    start_time = time.time()
+    while time.time() < start_time + timeout:
+        #TODO: use unattended way to bypass contact import module instead of keyevent
+        if "ImportVCardActivity" in device.get_my_current_focus_window():
+            # keyevent to allow contacts import from vcf file
+            for key in ["DPAD_RIGHT", "DPAD_RIGHT", "ENTER"]:
+                device.adb.shell("input keyevent KEYCODE_{}".format(key))
+            break
+        time.sleep(1)
     if wait_for_phone_number_update_complete(device, number_count):
         return number_count
     else:
