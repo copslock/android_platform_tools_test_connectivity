@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - The Android Open Source Project
 #
@@ -17,6 +17,8 @@
 import unittest
 
 from acts import logger
+import os
+import time
 
 
 class ActsLoggerTest(unittest.TestCase):
@@ -24,8 +26,10 @@ class ActsLoggerTest(unittest.TestCase):
     """
 
     def test_epoch_to_log_line_timestamp(self):
+        os.environ['TZ'] = 'US/Pacific'
+        time.tzset()
         actual_stamp = logger.epoch_to_log_line_timestamp(1469134262116)
-        self.assertEqual("07-21 13:51:02.116", actual_stamp)
+        self.assertEqual("2016-07-21 13:51:02.116", actual_stamp)
 
 
 if __name__ == "__main__":

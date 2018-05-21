@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - The Android Open Source Project
 #
@@ -197,7 +197,7 @@ class ActsTestRunnerTest(unittest.TestCase):
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
-        return_value=acts_android_device_test.MockAdbProxy(1))
+        return_value=acts_android_device_test.MockAdbProxy(1, return_value=''))
     @mock.patch(
         'acts.controllers.fastboot.FastbootProxy',
         return_value=acts_android_device_test.MockFastbootProxy(1))

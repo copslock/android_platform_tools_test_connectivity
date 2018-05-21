@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - The Android Open Source Project
 #
@@ -25,7 +25,8 @@ from acts import utils
 
 # An environment variable defining the base location for ACTS logs.
 _ENV_ACTS_LOGPATH = 'ACTS_LOGPATH'
-
+# An environment variable that enables test case failures to log stack traces.
+_ENV_TEST_FAILURE_TRACEBACKS = 'ACTS_TEST_FAILURE_TRACEBACKS'
 # An environment variable defining the test search paths for ACTS.
 _ENV_ACTS_TESTPATHS = 'ACTS_TESTPATHS'
 _PATH_SEPARATOR = ':'
@@ -106,18 +107,10 @@ def _validate_testbed_configs(testbed_configs, config_path):
     Raises:
         If any part of the configuration is invalid, ActsConfigError is raised.
     """
-    seen_names = set()
     # Cross checks testbed configs for resource conflicts.
-    for config in testbed_configs:
+    for name, config in testbed_configs.items():
         _update_file_paths(config, config_path)
-        # Check for conflicts between multiple concurrent testbed configs.
-        # No need to call it if there's only one testbed config.
-        name = config[keys.Config.key_testbed_name.value]
         _validate_testbed_name(name)
-        # Test bed names should be unique.
-        if name in seen_names:
-            raise ActsConfigError("Duplicate testbed name %s found." % name)
-        seen_names.add(name)
 
 
 def gen_term_signal_handler(test_runners):
@@ -257,17 +250,29 @@ def load_test_config_file(test_config_path,
     if override_test_case_iterations:
         configs[keys.Config.key_test_case_iterations.value] = \
             override_test_case_iterations
+
+    testbeds = configs[keys.Config.key_testbed.value]
+    if type(testbeds) is list:
+        tb_dict = dict()
+        for testbed in testbeds:
+            tb_dict[testbed[keys.Config.key_testbed_name.value]] = testbed
+        testbeds = tb_dict
+    elif type(testbeds) is dict:
+        # For compatibility, make sure the entry name is the same as
+        # the testbed's "name" entry
+        for name, testbed in testbeds.items():
+            testbed[keys.Config.key_testbed_name.value] = name
+
     if tb_filters:
-        tbs = []
-        for tb in configs[keys.Config.key_testbed.value]:
-            if tb[keys.Config.key_testbed_name.value] in tb_filters:
-                tbs.append(tb)
-        if len(tbs) != len(tb_filters):
-            raise ActsConfigError(
-                ("Expect to find %d test bed configs, found %d. Check if"
-                 " you have the correct test bed names.") % (len(tb_filters),
-                                                             len(tbs)))
-        configs[keys.Config.key_testbed.value] = tbs
+        tbs = {}
+        for name in tb_filters:
+            if name in testbeds:
+                tbs[name] = testbeds[name]
+            else:
+                raise ActsConfigError(
+                    'Expected testbed named "%s", but none was found. Check'
+                    'if you have the correct testbed names.' % name)
+        testbeds = tbs
 
     if (keys.Config.key_log_path.value not in configs
             and _ENV_ACTS_LOGPATH in os.environ):
@@ -280,6 +285,10 @@ def load_test_config_file(test_config_path,
               (os.environ[_ENV_ACTS_TESTPATHS]))
         configs[keys.Config.key_test_paths.value] = os.environ[
             _ENV_ACTS_TESTPATHS].split(_PATH_SEPARATOR)
+    if (keys.Config.key_test_failure_tracebacks not in configs
+            and _ENV_TEST_FAILURE_TRACEBACKS in os.environ):
+        configs[keys.Config.key_test_failure_tracebacks.value] = os.environ[
+            _ENV_TEST_FAILURE_TRACEBACKS]
 
     # Add the global paths to the global config.
     k_log_path = keys.Config.key_log_path.value
@@ -289,13 +298,12 @@ def load_test_config_file(test_config_path,
     config_path, _ = os.path.split(utils.abs_path(test_config_path))
     configs[keys.Config.key_config_path] = config_path
     _validate_test_config(configs)
-    _validate_testbed_configs(configs[keys.Config.key_testbed.value],
-                              config_path)
+    _validate_testbed_configs(testbeds, config_path)
     # Unpack testbeds into separate json objects.
-    beds = configs.pop(keys.Config.key_testbed.value)
+    configs.pop(keys.Config.key_testbed.value)
     config_jsons = []
 
-    for original_bed_config in beds:
+    for _, original_bed_config in testbeds.items():
         new_test_config = dict(configs)
         new_test_config[keys.Config.key_testbed.value] = original_bed_config
         # Keys in each test bed config will be copied to a level up to be

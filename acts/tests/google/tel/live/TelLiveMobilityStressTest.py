@@ -70,7 +70,7 @@ from TelWifiVoiceTest import ATTEN_NAME_FOR_CELL_3G
 from TelWifiVoiceTest import ATTEN_NAME_FOR_CELL_4G
 
 import socket
-from acts.controllers.sl4a_client import Sl4aProtocolError
+from acts.controllers.sl4a_lib.rpc_client import Sl4aProtocolError
 
 IGNORE_EXCEPTIONS = (BrokenPipeError, Sl4aProtocolError)
 EXCEPTION_TOLERANCE = 20
@@ -143,7 +143,8 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         }
         message_type = message_type_map[selection]
         self.result_info["Total %s" % message_type] += 1
-        begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+        begin_time = get_current_epoch_time()
+        start_qxdm_loggers(self.log, self.android_devices)
         if not message_func_map[selection](self.log, ads[0], ads[1],
                                            message_content_map[selection]):
             self.log.error("%s of length %s from %s to %s fails", message_type,
@@ -154,7 +155,6 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 self._take_bug_report("%s_%s_failure" % (self.test_name,
                                                          message_type),
                                       begin_time)
-                start_qxdm_loggers(self.log, self.android_devices)
             return False
         else:
             self.log.info("%s of length %s from %s to %s succeed",
@@ -164,7 +164,8 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
 
     def _make_phone_call(self, ads):
         self.result_info["Total Calls"] += 1
-        begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+        begin_time = get_current_epoch_time()
+        start_qxdm_loggers(self.log, self.android_devices)
         if not call_setup_teardown(
                 self.log,
                 ads[0],
@@ -177,7 +178,6 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
             self.result_info["Call Failure"] += 1
             self._take_bug_report("%s_call_failure" % self.test_name,
                                   begin_time)
-            start_qxdm_loggers(self.log, self.android_devices)
             return False
         self.log.info("Call setup and teardown succeed.")
         return True
@@ -187,8 +187,7 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         while time.time() < self.finishing_time:
             self.dut.log.info(dict(self.result_info))
             try:
-                begin_time = epoch_to_log_line_timestamp(
-                    get_current_epoch_time())
+                begin_time = get_current_epoch_time()
                 time.sleep(self.crash_check_interval)
                 crash_report = self.dut.check_crash_report(
                     "checking_crash", begin_time, True)
@@ -201,11 +200,9 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                return False
             self.dut.log.info("Crashes found: %s", failure)
         if failure:
             return False
@@ -292,15 +289,16 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                     failure += 1
                 self.dut.droid.goToSleepNow()
                 time.sleep(random.randrange(0, self.max_sleep_time))
-            except IGNORE_EXCEPTION as e:
+            except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    self.log.error("Too many exception errors %s",
+                                   IGNORE_EXCEPTIONS)
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                self.log.error(e)
+                return False
             self.dut.log.info("Call test failure: %s/%s", failure, total_count)
         if failure:
             return False
@@ -319,15 +317,16 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                     failure += 1
                 self.dut.droid.goToSleepNow()
                 time.sleep(random.randrange(0, self.max_sleep_time))
-            except IGNORE_EXCEPTION as e:
+            except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    self.log.error("Too many exception errors %s",
+                                   IGNORE_EXCEPTIONS)
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                self.log.error(e)
+                return False
             self.dut.log.info("Messaging test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:
@@ -343,6 +342,8 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
         file_names = ["5MB", "10MB", "20MB", "50MB", "200MB"]
         while time.time() < self.finishing_time:
             total_count += 1
+            begin_time = get_current_epoch_time()
+            start_qxdm_loggers(self.log, self.android_devices)
             try:
                 self.dut.log.info(dict(self.result_info))
                 self.result_info["Total file download"] += 1
@@ -356,18 +357,18 @@ class TelLiveMobilityStressTest(TelWifiVoiceTest):
                         self._take_bug_report(
                             "%s_file_download_failure" % self.test_name,
                             begin_time)
-                        start_qxdm_loggers(self.log, self.android_devices)
                 self.dut.droid.goToSleepNow()
                 time.sleep(random.randrange(0, self.max_sleep_time))
-            except IGNORE_EXCEPTION as e:
+            except IGNORE_EXCEPTIONS as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
                 if self.result_info["Exception Errors"] > EXCEPTION_TOLERANCE:
-                    self.finishing_time = time.time()
-                    raise
+                    self.log.error("Too many exception error %s",
+                                   IGNORE_EXCEPTIONS)
+                    return False
             except Exception as e:
-                self.finishing_time = time.time()
-                raise
+                self.log.error(e)
+                return False
             self.dut.log.info("File download test failure: %s/%s", failure,
                               total_count)
         if failure / total_count > 0.1:

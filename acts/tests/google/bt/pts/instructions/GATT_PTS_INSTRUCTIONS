@@ -14,11 +14,22 @@
 
 GATT
 =================================================================
+Note: Bug in PTS forces GATT operations to be over BR/EDR. To run tests over
+LE disable BR/EDR in ICS when running tests.
+
 TC_CL_GAC_BV_01_C
   gattc_connect_over_le
   gattc_request_mtu 23
   [Read PTS Handle and Size]
   gattc_write_char_by_instance_id [handle] [size]
+  gattc_disconnect
+
+#Potential new instructions for SIG testcase rewrite
+TC_CL_GAC_BV_01_C
+  gattc_connect_over_le
+  gattc_request_mtu 23
+  [Read PTS Handle and Size]
+  gattc_write_invalid_char_by_instance_id [handle] [size]
   gattc_disconnect
 
 TC_CL_GAD_BV_01_C
@@ -693,13 +704,13 @@ TC_SR_GAD_BV_06_C
 
 TC_SR_GAD_BV_07_C
   Note: Use Public Address
-  bta_set_scan_mode SCAN_MODE_CONNECTABLE_DISCOVERABLE
+  bta_set_scan_mode connectable_discoverable
   gatts_open
   [PTS Interaction]
 
 TC_SR_GAD_BV_08_C
   Note: Use Public Address
-  bta_set_scan_mode SCAN_MODE_CONNECTABLE_DISCOVERABLE
+  bta_set_scan_mode connectable_discoverable
   gatts_open
   [PTS Interaction]
 
@@ -977,7 +988,7 @@ TC_SR_GAR_BI_34_C
 TC_SR_GAR_BI_35_C
   Note: Use Public Address
   gatts_setup_database LARGE_DB_1
-  bta_set_scan_mode SCAN_MODE_CONNECTABLE_DISCOVERABLE
+  bta_set_scan_mode connectable_discoverable
   [PTS Interaction]
   gatts_send_response GATT_CONNECTION_CONGESTED
 

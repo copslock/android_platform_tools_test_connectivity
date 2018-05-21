@@ -240,86 +240,13 @@ class HidDeviceTest(BluetoothBaseTest):
         self.log.info("Host bonded: {}".format(
                 self.host_ad.droid.bluetoothGetBondedDevices()))
 
-        if not self.device_ad.droid.bluetoothGetBondedDevices():
-            self.log.error("HID device unbonded host on virtual_cable_unplug")
+        if self.device_ad.droid.bluetoothGetBondedDevices():
+            self.log.error("HID device didn't unbond on virtual_cable_unplug")
             test_result = False
 
-        if not self.host_ad.droid.bluetoothGetBondedDevices():
-            self.log.error("HID host unbonded device on virtual_cable_unplug")
-            test_result = False
-
-        return test_result
-
-    @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='5315ccc2-0869-4b63-9b02-6ea349acabc8')
-    def test_hid_device_unplug(self):
-        """Test HID Device Virtual_cable_unplug
-
-        Test the HID host and HID device handle Virtual_cable_unplug correctly
-
-        Steps:
-        1. Bluetooth HID device registers the Bluetooth input device service.
-        2. Get the MAC address of the HID host and HID device.
-        3. Establish HID profile connection from the HID host to the HID device.
-        4. HID device sends virtual_cable_unplug command to the HID host.
-
-        Expected Result:
-        HID profile connection is successfully established; After the HID device
-        sends virtual_cable_unplug command to the HID host, both disconnect
-        each other, but not unpair.
-
-        Returns:
-          Pass if True
-          Fail if False
-
-        TAGS: Classic, HID
-        Priority: 2
-        """
-
-        test_result = True
-
-        pair_pri_to_sec(self.host_ad, self.device_ad, attempts=3)
-
-        self.log.info("Device bonded: {}".format(
-                self.device_ad.droid.bluetoothGetBondedDevices()))
-        self.log.info("Host bonded: {}".format(
-                self.host_ad.droid.bluetoothGetBondedDevices()))
-
-        host_id = self.host_ad.droid.bluetoothGetLocalAddress()
-        device_id = self.device_ad.droid.bluetoothGetLocalAddress()
-
-        self.host_ad.droid.bluetoothConnectBonded(device_id)
-
-        time.sleep(hid_connection_timeout)
-        self.log.info("Device connected: {}".format(
-                self.device_ad.droid.bluetoothHidDeviceGetConnectedDevices()))
-
-        self.log.info("Device: send data report through interrupt channel")
-        hid_device_send_key_data_report(host_id, self.device_ad, "04")
-        hid_device_send_key_data_report(host_id, self.device_ad, "05")
-
-        self.log.info("Device: virtual unplug")
-        self.device_ad.droid.bluetoothHidDeviceVirtualUnplug(host_id)
-
-        try:
-            hid_device_callback = self.device_ad.ed.pop_event(
-                    bt_constants.hid_on_virtual_cable_unplug_event,
-                    bt_constants.hid_default_event_timeout)
-        except Empty as err:
-            self.log.error("Callback not received: {}".format(err))
-            test_result = False
-
-        self.log.info("Device bonded: {}".format(
-                self.device_ad.droid.bluetoothGetBondedDevices()))
-        self.log.info("Host bonded: {}".format(
-                self.host_ad.droid.bluetoothGetBondedDevices()))
-
-        if not self.device_ad.droid.bluetoothGetBondedDevices():
-            self.log.error("HID device unbonded host on virtual_cable_unplug")
-            test_result = False
-
-        if not self.host_ad.droid.bluetoothGetBondedDevices():
-            self.log.error("HID host unbonded device on virtual_cable_unplug")
+        if self.host_ad.droid.bluetoothGetBondedDevices():
+            self.log.error("HID host didn't unbond on virtual_cable_unplug")
             test_result = False
 
         return test_result
+

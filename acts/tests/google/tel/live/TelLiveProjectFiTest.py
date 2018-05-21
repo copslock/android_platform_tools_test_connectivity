@@ -18,8 +18,7 @@
 """
 
 import time
-import os
-import re
+
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CARRIER_SPT
@@ -29,10 +28,12 @@ from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
 from acts.test_utils.tel.tel_test_utils import abort_all_tests
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import is_sim_ready
+from acts.test_utils.tel.tel_test_utils import log_screen_shot
 from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import send_dialer_secret_code
-from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 
 CARRIER_AUTO = "auto"
@@ -50,6 +51,21 @@ _SWITCHING_PREF_FILE = (
 _INTENT_FLAGS = int(0x00008000 | 0x10000000 | 0x00080000 | 0x00020000)
 _TYCHO_PKG = 'com.google.android.apps.tycho'
 _MAX_WAIT_TIME = 600
+_TYCHO_VERBOSE_LOGGING_CMDS = [
+    "setprop log.tag.Tycho VERBOSE",
+    "CLASSPATH=/system/framework/am.jar su root app_process "
+    "/system/bin com.android.commands.am.Am broadcast -a "
+    "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+    "-e tycho.enable_request_logging true",
+    "CLASSPATH=/system/framework/am.jar su root app_process "
+    "/system/bin com.android.commands.am.Am broadcast -a "
+    "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+    "-e tycho.enable_sensitive_logging true",
+    "CLASSPATH=/system/framework/am.jar su root app_process "
+    "/system/bin com.android.commands.am.Am broadcast -a "
+    "com.google.gservices.intent.action.GSERVICES_OVERRIDE "
+    "-e tycho.enable_ample_logging true"
+]
 
 
 class TychoClassId(object):
@@ -72,14 +88,7 @@ class ActionTypeId(object):
 
 class TelLiveProjectFiTest(TelephonyBaseTest):
     def setup_class(self):
-        self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g") or self.user_params.get(
-                    "wifi_network_ssid_5g")
-        self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g") or self.user_params.get(
-                    "wifi_network_ssid_5g")
+        self.activation_attemps = self.user_params.get("activation_attemps", 2)
 
     def _add_google_account(self, ad, retries=3):
         for _ in range(3):
@@ -119,22 +128,38 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         ad.log.error("Fail to remove google account due to %s", output)
         return False
 
+    def _install_account_util(self, ad):
+        account_util = self.user_params["account_util"]
+        if isinstance(account_util, list):
+            account_util = account_util[0]
+        ad.log.info("Install account_util %s", account_util)
+        ad.ensure_screen_on()
+        ad.adb.install("-r %s" % account_util, timeout=300, ignore_status=True)
+        time.sleep(3)
+        if not ad.is_apk_installed("com.google.android.tradefed.account"):
+            ad.log.info("com.google.android.tradefed.account is not installed")
+            return False
+        return True
+
     def _account_registration(self, ad):
+        for cmd in _TYCHO_VERBOSE_LOGGING_CMDS:
+            ad.adb.shell(cmd)
         if hasattr(ad, "user_account"):
+            if self.check_project_fi_activated(ad, retries=2):
+                ad.log.info("Project Fi is activated already")
+                return True
             ad.exit_setup_wizard()
             if not ad.is_apk_installed("com.google.android.tradefed.account"
                                        ) and self.user_params.get(
                                            "account_util"):
-                account_util = self.user_params["account_util"]
-                if isinstance(account_util, list):
-                    account_util = account_util[0]
-                ad.log.info("Install account_util %s", account_util)
-                ad.ensure_screen_on()
-                ad.adb.install("-r %s" % account_util, timeout=180)
-            if not ad.is_apk_installed("com.google.android.tradefed.account"):
-                ad.log.error(
-                    "com.google.android.tradefed.account is not installed")
-                return False
+                for _ in range(2):
+                    if self._install_account_util(ad):
+                        break
+                else:
+                    ad.log.error(
+                        "Fail to install com.google.android.tradefed.account")
+                    return False
+            ad.force_stop_apk(_TYCHO_PKG)
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
                 ad.log.error("Failed to connect to wifi")
@@ -150,10 +175,19 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 (ad.user_account, ad.user_password))
             ad.log.info("Enable and activate tycho apk")
             ad.adb.shell('pm enable %s' % _TYCHO_PKG)
-            self.start_tycho_init_activity(ad)
-            if not self.check_project_fi_activated(ad):
-                ad.log.error("Fail to activate Fi account")
-                return False
+            for i in range(1, self.activation_attemps + 1):
+                if i == self.activation_attemps:
+                    ad.log.info("Reboot and try Fi activation again")
+                    reboot_device(ad)
+                self.activate_fi_account(ad)
+                if not self.check_project_fi_activated(ad):
+                    ad.log.error("Fail to activate Fi account on attempt-%s",
+                                 i)
+                    if i == self.activation_attemps:
+                        return False
+                else:
+                    ad.log.info("Fi account is activated successfully")
+                    break
         elif "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha"):
             ad.log.error("Google account is not provided for Fi Network")
             return False
@@ -174,9 +208,10 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
           action_type: The action type id to create the intent
         """
         ad.log.info('Starting service %s/.%s.', package, service_id)
-        intent = ad.droid.makeIntent(action_type, None, None, extras, [
-            'android.intent.category.DEFAULT'
-        ], package, package + '.' + service_id, _INTENT_FLAGS)
+        intent = ad.droid.makeIntent(action_type, None, None, extras,
+                                     ['android.intent.category.DEFAULT'],
+                                     package, package + '.' + service_id,
+                                     _INTENT_FLAGS)
         ad.droid.startServiceIntent(intent)
 
     def start_activity(self, ad, package, activity_id, extras=None):
@@ -189,12 +224,13 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
           extras: (dict) extras needed to specify with the activity id
         """
         ad.log.info('Starting activity %s/.%s.', package, activity_id)
-        intent = ad.droid.makeIntent(ActionTypeId.MAIN, None, None, extras, [
-            'android.intent.category.LAUNCHER'
-        ], package, package + '.' + activity_id, _INTENT_FLAGS)
+        intent = ad.droid.makeIntent(ActionTypeId.MAIN, None, None, extras,
+                                     ['android.intent.category.LAUNCHER'],
+                                     package, package + '.' + activity_id,
+                                     _INTENT_FLAGS)
         ad.droid.startActivityIntent(intent, False)
 
-    def start_tycho_init_activity(self, ad):
+    def activate_fi_account(self, ad):
         """Start Tycho InitActivity.
 
         For in-app Tycho activition (post-SUW tests), Tycho does not
@@ -206,24 +242,42 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         Args:
           ad: Android device need to start Tycho InitActivity.
         """
+        ad.force_stop_apk(_TYCHO_PKG)
         extra = {'in_setup_wizard': False, 'force_show_account_chooser': False}
         self.start_activity(ad, _TYCHO_PKG, TychoClassId.INIT_ACTIVITY, extra)
-        time.sleep(60)
-        ad.send_keycode("TAB")
-        ad.send_keycode("TAB")
-        ad.send_keycode("ENTER")
-        time.sleep(2)
-        ad.send_keycode("TAB")
-        ad.send_keycode("ENTER")
+        for _ in range(30):
+            ad.send_keycode("WAKEUP")
+            time.sleep(1)
+            current_window = ad.get_my_current_focus_window()
+            log_screen_shot(ad, self.test_name)
+            if 'SwitchConfirmDialogActivity' in current_window:
+                ad.log.info("In Switch Confirmation Dialog")
+                if ad.adb.getprop("ro.build.version.release")[0] not in ("8",
+                                                                         "O"):
+                    ad.send_keycode("TAB")
+                ad.send_keycode("TAB")
+                ad.send_keycode("ENTER")
+                time.sleep(10)
+            elif 'tycho.InitActivity' in current_window:
+                ad.log.info("In Tycho InitActivity")
+                ad.send_keycode("TAB")
+                ad.send_keycode("TAB")
+                ad.send_keycode("ENTER")
+                time.sleep(10)
 
-    def check_project_fi_activated(self, ad):
-        for _ in range(10):
-            if ad.adb.getprop("gsm.sim.state") == "READY" and (
-                    "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha") or
-                    "Fi Network" in ad.adb.getprop("gsm.operator.alpha")):
+            elif 'tycho.AccountChooserActivity' in current_window:
+                ad.send_keycode("ENTER")
+            else:
+                ad.log.info("Finished activation process")
+                return
+
+    def check_project_fi_activated(self, ad, retries=20):
+        for _ in range(retries):
+            if is_sim_ready(self.log, ad) and (
+                    ad.droid.telephonyGetSimOperatorName() == "Fi Network"):
                 ad.log.info("SIM state is READY, SIM operator is Fi")
                 return True
-            time.sleep(30)
+            time.sleep(5)
 
     def start_tycho_activation(self, ad):
         """Start the Tycho client and register to cellular network.
@@ -281,7 +335,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         except KeyError:
             ad.log.error('Unknown Mobile Country Code/Mobile Network Code %s',
                          mcc_mnc)
-        raise
+            raise
 
     def switch_sim(self, ad):
         """Requests switch between physical sim and esim.
@@ -295,11 +349,11 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             Error: whenever a device is not set to the desired carrier within
                    the timeout window.
         """
-        old_sim_operator = ad.adb.getprop("gsm.sim.operator.alpha")
+        old_sim_operator = ad.droid.telephonyGetSimOperatorName()
         ad.log.info("Before SIM switch, SIM operator = %s", old_sim_operator)
         send_dialer_secret_code(ad, "794824746")
         time.sleep(10)
-        new_sim_operator = ad.adb.getprop("gsm.sim.operator.alpha")
+        new_sim_operator = ad.droid.telephonyGetSimOperatorName()
         ad.log.info("After SIM switch, SIM operator = %s", new_sim_operator)
         refresh_droid_config(self.log, ad)
         return old_sim_operator != new_sim_operator
@@ -411,6 +465,13 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         switching_preferences = ad.adb.shell("cat %s" % _SWITCHING_PREF_FILE)
         return 'InProgress\" value=\"true' in switching_preferences
 
+    def check_network_carrier(self, ad, carrier):
+        current_carrier = self.get_active_carrier(ad)
+        ad.log.info("Current network carrier is %s", current_carrier)
+        is_in_switch = self.is_carrier_switch_in_progress(ad)
+        ad.log.info("Device in carrier switch progress mode")
+        return current_carrier == carrier and is_in_switch
+
     def wait_for_carrier_switch_completed(self,
                                           ad,
                                           carrier,
@@ -429,22 +490,29 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         Return:
             True or False for successful/unsuccessful switch.
         """
-        while timeout >= 0:
-            if self.get_active_carrier(ad) == carrier and (
-                    not self.is_carrier_switch_in_progress(ad)):
-                ad.log.info("Switched to %s", carrier)
+        check_args = [ad, carrier]
+        if wait_for_state(self.check_network_carrier, True, check_interval,
+                          timeout, *check_args):
+            ad.log.info("Switched to %s successfully", carrier)
+            ad.send_keycode("ENTER")
+            return True
+        else:
+            active_carrier = self.get_active_carrier(ad)
+            if active_carrier == carrier:
+                ad.log.info("Switched to %s successfully", carrier)
                 return True
-            time.sleep(check_interval)
-            timeout -= check_interval
-        ad.log.error("Carrier is %s. Fail to switch to %s",
-                     self.get_active_carrier(ad), carrier)
-        return False
+            ad.log.error("Carrier is %s. Fail to switch to %s", active_carrier,
+                         carrier)
+            return False
 
     def operator_network_switch(self, ad, carrier):
-        if "Fi Network" in ad.adb.getprop("gsm.sim.operator.alpha") and (
-                not self.set_active_carrier(ad, carrier)):
-            ad.log.error("Failed to switch to %s", carrier)
-            return False
+        if ad.droid.telephonyGetSimOperatorName() == "Fi Network":
+            for i in range(3):
+                if self.set_active_carrier(ad, carrier):
+                    break
+                elif i == 2:
+                    ad.log.error("Failed to switch to %s", carrier)
+                    return False
         if not ensure_phone_subscription(self.log, ad):
             ad.log.error("Unable to find a valid subscription!")
             return False
@@ -452,12 +520,12 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         return True
 
     def network_switch_test(self, carrier):
-        result = True
         tasks = [(self.operator_network_switch, [ad, carrier])
                  for ad in self.android_devices]
         if not multithread_func(self.log, tasks):
             abort_all_tests(self.log,
                             "Unable to switch to network %s" % carrier)
+        return True
 
     """ Tests Begin """
 
@@ -472,8 +540,13 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         """
         tasks = [(self._account_registration, [ad])
                  for ad in self.android_devices]
-        if not multithread_func(self.log, tasks):
+        try:
+            if not multithread_func(self.log, tasks):
+                abort_all_tests(self.log, "Unable to activate Fi account!")
+        except Exception as e:
+            self.log.error(e)
             abort_all_tests(self.log, "Unable to activate Fi account!")
+        return True
 
     @test_tracker_info(uuid="6bfbcc1d-e318-4964-bf36-5b82f086860d")
     @TelephonyBaseTest.tel_test_wrap

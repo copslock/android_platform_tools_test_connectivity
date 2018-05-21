@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - The Android Open Source Project
 #
@@ -13,12 +13,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import logging
 from builtins import str
 
 import argparse
 import multiprocessing
-import os
 import signal
 import sys
 import traceback
@@ -27,6 +26,7 @@ from acts import config_parser
 from acts import keys
 from acts import signals
 from acts import test_runner
+from acts.config.config_generator import ConfigGenerator
 
 
 def _run_test(parsed_config, test_identifiers, repeat=1):
@@ -91,8 +91,8 @@ def _run_tests_parallel(parsed_configs, test_identifiers, repeat):
     Each test run will be in its own process.
 
     Args:
-        parsed_config: A list of dicts, each is a set of configs for one
-                       test_runner.TestRunner.
+        parsed_configs: A list of dicts, each is a set of configs for one
+                        test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
@@ -145,11 +145,6 @@ def main(argv):
     """This is a sample implementation of a cli entry point for ACTS test
     execution.
 
-    Alternatively, you could directly invoke an ACTS test script:
-
-        python3 MyTest.py -c my_config.json
-
-    See acts.test_runner.main for more details.
     Or you could implement your own cli entry point using acts.config_parser
     functions and acts.test_runner.execute_one_test_class.
     """
@@ -227,7 +222,7 @@ def main(argv):
         '-r',
         '--random',
         action="store_true",
-        help=("If set, tests will be executed in random order."))
+        help="If set, tests will be executed in random order.")
     parser.add_argument(
         '-ti',
         '--test_case_iterations',
@@ -245,6 +240,21 @@ def main(argv):
     parsed_configs = config_parser.load_test_config_file(
         args.config[0], args.testbed, args.testpaths, args.logpath,
         args.test_args, args.random, args.test_case_iterations)
+
+    try:
+        new_parsed_args = ConfigGenerator().generate_configs()
+
+        for old_config, new_config in zip(parsed_configs, new_parsed_args):
+            if not old_config.items() <= new_config.items():
+                logging.warning('Backward compat broken:\n%s\n%s' % (
+                    old_config, new_config))
+    except SystemExit as e:
+        logging.warning('Unable to parse command line flags: %s' %
+                        traceback.format_exc(e))
+    except Exception as e:
+        logging.warning('Failed to generate configs through the new system: '
+                        '%s' % traceback.format_exc(e))
+
     # Prepare args for test runs
     test_identifiers = config_parser.parse_test_list(test_list)
 

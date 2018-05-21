@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - Google
 #
@@ -18,7 +18,7 @@
 # TIMERS
 ###############################################
 # Max time to wait for phone data/network connection state update
-MAX_WAIT_TIME_CONNECTION_STATE_UPDATE = 20
+MAX_WAIT_TIME_CONNECTION_STATE_UPDATE = 60
 
 # Max time to wait for network reselection
 MAX_WAIT_TIME_NW_SELECTION = 180
@@ -28,6 +28,9 @@ MAX_WAIT_TIME_CALL_DROP = 60
 
 # Wait time between state check retry
 WAIT_TIME_BETWEEN_STATE_CHECK = 5
+
+# Max wait time for state change
+MAX_WAIT_TIME_FOR_STATE_CHANGE = 60
 
 # Max time to wait after caller make a call and before
 # callee start ringing
@@ -97,7 +100,7 @@ MAX_WAIT_TIME_VIDEO_SESSION_EVENT = 10
 MAX_WAIT_TIME_USER_PLANE_DATA = 20
 
 # Max time to wait for tethering entitlement check
-MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK = 15
+MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK = 60
 
 # Max time to wait for voice mail count report correct result.
 MAX_WAIT_TIME_VOICE_MAIL_COUNT = 90
@@ -158,7 +161,7 @@ WAIT_TIME_VOICE_MAIL_SERVER_RESPONSE = 10
 WAIT_TIME_AFTER_REBOOT = 10
 
 # Time to wait for radio to up and running after force crash
-WAIT_TIME_AFTER_CRASH = 30
+WAIT_TIME_AFTER_CRASH = 60
 
 # Time to wait for tethering test after reboot
 WAIT_TIME_TETHERING_AFTER_REBOOT = 10
@@ -254,6 +257,7 @@ CARRIER_ORG = 'org'
 CARRIER_TEL = 'tel'
 CARRIER_TSA = 'tsa'
 CARRIER_USCC = 'uscc'
+CARRIER_ROGERS = 'ROGERS'
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'
@@ -272,6 +276,10 @@ CAPABILITY_VT = 'vt'
 CAPABILITY_WFC = 'wfc'
 CAPABILITY_MSIM = 'msim'
 CAPABILITY_OMADM = 'omadm'
+CAPABILITY_WFC_MODE_CHANGE = 'wfc_mode_change'
+CAPABILITY_CONFERENCE = 'conference'
+CAPABILITY_VOLTE_PROVISIONING = 'volte_provisioning'
+CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING = 'volte_override_wfc_provisioning'
 
 # Constant for operation direction
 DIRECTION_MOBILE_ORIGINATED = "MO"
@@ -427,6 +435,11 @@ PHONE_TYPE_NONE = "NONE"
 PHONE_TYPE_CDMA = "CDMA"
 PHONE_TYPE_SIP = "SIP"
 
+# Constant for SIM Power State
+CARD_POWER_DOWN = 0
+CARD_POWER_UP = 1
+CARD_POWER_UP_PASS_THROUGH = 2
+
 # Constant for SIM State
 SIM_STATE_READY = "READY"
 SIM_STATE_UNKNOWN = "UNKNOWN"
@@ -437,6 +450,7 @@ SIM_STATE_NETWORK_LOCKED = "NETWORK_LOCKED"
 SIM_STATE_NOT_READY = "NOT_READY"
 SIM_STATE_PERM_DISABLED = "PERM_DISABLED"
 SIM_STATE_CARD_IO_ERROR = "CARD_IO_ERROR"
+SIM_STATE_LOADED = "LOADED"
 
 # Constant for Data Connection State
 DATA_STATE_CONNECTED = "CONNECTED"
@@ -448,6 +462,10 @@ DATA_STATE_UNKNOWN = "UNKNOWN"
 # Constant for Data Roaming State
 DATA_ROAMING_ENABLE = 1
 DATA_ROAMING_DISABLE = 0
+
+# Constant for ConnectivityManager Data Connection
+TYPE_MOBILE = 0
+TYPE_WIFI = 1
 
 # Constant for Telephony Manager Call State
 TELEPHONY_STATE_RINGING = "RINGING"
@@ -685,6 +703,28 @@ class NetworkCallbackContainer:
     NETWORK_CALLBACK_EVENT = "networkCallbackEvent"
     MAX_MS_TO_LIVE = "maxMsToLive"
     RSSI = "rssi"
+
+
+class CarrierConfigs:
+    NAME_STRING = "carrier_name_string"
+    SUPPORT_CONFERENCE_CALL_BOOL = "support_conference_call_bool"
+    VOLTE_AVAILABLE_BOOL = "carrier_volte_available_bool"
+    VOLTE_PROVISIONED_BOOL = "carrier_volte_provisioned_bool"
+    VOLTE_PROVISIONING_REQUIRED_BOOL = "carrier_volte_provisioning_required_bool"
+    VOLTE_OVERRIDE_WFC_BOOL = "carrier_volte_override_wfc_provisioning_bool"
+    VT_AVAILABLE_BOOL = "carrier_vt_available_bool"
+    ENHANCED_4G_LTE_ON_BY_DEFAULT_BOOL = "enhanced_4g_lte_on_by_default_bool"
+    WFC_IMS_AVAILABLE_BOOL = "carrier_wfc_ims_available_bool"
+    WFC_SUPPORTS_WIFI_ONLY_BOOL = "carrier_wfc_supports_wifi_only_bool"
+    EDITABLE_ENHANCED_4G_LTE_BOOL = "editable_enhanced_4g_lte_bool"
+    EDITABLE_WFC_MODE_BOOL = "editable_wfc_mode_bool"
+    EDITABLE_WFC_ROAMING_MODE_BOOL = "editable_wfc_roaming_mode_bool"
+    DEFAULT_DATA_ROAMING_ENABLED_BOOL = "carrier_default_data_roaming_enabled_bool"
+    DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL = "carrier_default_wfc_ims_roaming_enabled_bool"
+    DEFAULT_WFC_IMS_ENABLED_BOOL = "carrier_default_wfc_ims_enabled_bool"
+    DEFAULT_WFC_IMS_MODE_INT = "carrier_default_wfc_ims_mode_int"
+    DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL = "carrier_default_wfc_ims_roaming_enabled_bool"
+    DEFAULT_WFC_IMS_ROAMING_MODE_INT = "carrier_default_wfc_ims_roaming_mode_int"
 
 
 """

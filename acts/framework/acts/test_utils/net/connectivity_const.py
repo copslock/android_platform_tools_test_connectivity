@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - Google
 #
@@ -52,6 +52,16 @@ VPN_STATE_FAILED = 5
 # TODO gmoturu: determine the exact timeout value
 # This is a random value as of now
 VPN_TIMEOUT = 15
+
+# Connectiivty Manager constants
+TYPE_MOBILE = 0
+TYPE_WIFI = 1
+
+# Multipath preference constants
+MULTIPATH_PREFERENCE_NONE = 0
+MULTIPATH_PREFERENCE_HANDOVER = 1 << 0
+MULTIPATH_PREFERENCE_RELIABILITY = 1 << 1
+MULTIPATH_PREFERENCE_PERFORMANCE = 1 << 2
 
 # Constants for VpnProfile
 class VpnProfile(object):

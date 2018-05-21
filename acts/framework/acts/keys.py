@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2017 - The Android Open Source Project
 #
@@ -27,14 +27,18 @@ class Config(enum.Enum):
     # These keys define the wording of test configs and their internal
     # references.
     key_log_path = "logpath"
+    key_testbeds_under_test = 'testbeds_under_test'
     key_testbed = "testbed"
     key_testbed_name = "name"
+    # configpath is the directory. key_config_full_path is the file path.
     key_config_path = "configpath"
+    key_config_full_path = 'config_full_path'
     key_test_paths = "testpaths"
     key_port = "Port"
     key_address = "Address"
     key_random = "random"
     key_test_case_iterations = "test_case_iterations"
+    key_test_failure_tracebacks = "test_failure_tracebacks"
     # Config names for controllers packaged in ACTS.
     key_android_device = "AndroidDevice"
     key_chameleon_device = "ChameleonDevice"
@@ -43,6 +47,7 @@ class Config(enum.Enum):
     key_access_point = "AccessPoint"
     key_attenuator = "Attenuator"
     key_iperf_server = "IPerfServer"
+    key_iperf_client = "IPerfClient"
     key_packet_sender = "PacketSender"
     key_monsoon = "Monsoon"
     key_sniffer = "Sniffer"
@@ -61,6 +66,7 @@ class Config(enum.Enum):
     m_key_access_point = "access_point"
     m_key_attenuator = "attenuator"
     m_key_iperf_server = "iperf_server"
+    m_key_iperf_client = "iperf_client"
     m_key_packet_sender = "packet_sender"
     m_key_sniffer = "sniffer"
 
@@ -76,6 +82,7 @@ class Config(enum.Enum):
         key_access_point,
         key_attenuator,
         key_iperf_server,
+        key_iperf_client,
         key_packet_sender,
         key_monsoon,
         key_sniffer,
@@ -91,13 +98,6 @@ def get_name_by_value(value):
         if member.value == value:
             return name
     return None
-
-
-def get_internal_value(external_value):
-    """Translates the value of an external key to the value of its
-    corresponding internal key.
-    """
-    return value_to_value(external_value, "i%s")
 
 
 def get_module_name(name_in_config):

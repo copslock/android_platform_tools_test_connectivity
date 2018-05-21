@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright 2016 - The Android Open Source Project
 #
@@ -99,8 +99,9 @@ class TestResultRecord(object):
         self.result = result
         if self.additional_errors:
             self.result = TestResultEnums.TEST_RESULT_UNKNOWN
-        if isinstance(e, signals.TestSignal):
+        if hasattr(e, 'details'):
             self.details = e.details
+        if hasattr(e, 'extras'):
             self.extras = e.extras
         elif e:
             self.details = str(e)

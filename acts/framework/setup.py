@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright 2017 - The Android Open Source Project
 #
@@ -34,6 +34,8 @@ install_requires = [
     'protobuf',
     'roman',
     'scapy-python3',
+    'pylibftdi',
+    'xlsxwriter'
 ]
 
 if sys.version_info < (3, ):
@@ -85,7 +87,7 @@ class ActsInstallDependencies(cmd.Command):
 
         for package in required_packages:
             self.announce('Installing %s...' % package, log.INFO)
-            pip.main(['install', package])
+            pip.main(['install', '-v', '--no-cache-dir', package])
 
         self.announce('Dependencies installed.')
 

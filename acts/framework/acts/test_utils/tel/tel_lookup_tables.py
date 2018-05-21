@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - Google
 #
@@ -50,6 +50,10 @@ def rat_family_for_generation(generation, operator, phone_type=None):
 
 def operator_name_from_plmn_id(plmn_id):
     return _TelTables.operator_id_to_name[plmn_id]
+
+
+def operator_name_from_network_name(name):
+    return _TelTables.operator_name_tbl.get("name", name)
 
 
 def is_valid_rat(rat_type):
@@ -141,6 +145,13 @@ class _TelTables():
     # Reference: Pages 43-50 in
     # https://www.itu.int/dms_pub/itu-t/opb/sp/T-SP-E.212B-2013-PDF-E.pdf [2013]
 
+    operator_name_tbl = {
+        "T-Mobile": tel_defines.CARRIER_TMO,
+        "AT&T": tel_defines.CARRIER_ATT,
+        "Verizon": tel_defines.CARRIER_VZW,
+        "Verizon Wireless": tel_defines.CARRIER_VZW,
+        "Sprint": tel_defines.CARRIER_SPT
+    }
     operator_id_to_name = {
 
         #VZW (Verizon Wireless)
@@ -654,6 +665,11 @@ device_capabilities = {
         tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_OMADM,
         tel_defines.CAPABILITY_VOLTE, tel_defines.CAPABILITY_WFC,
         tel_defines.CAPABILITY_VT
+    ],
+    "default": [
+        tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_OMADM,
+        tel_defines.CAPABILITY_VOLTE, tel_defines.CAPABILITY_WFC,
+        tel_defines.CAPABILITY_VT
     ]
 }
 
@@ -663,15 +679,21 @@ operator_capabilities = {
         tel_defines.CAPABILITY_VOLTE, tel_defines.CAPABILITY_WFC,
         tel_defines.CAPABILITY_VT
     ],
-    tel_defines.CARRIER_ATT: [tel_defines.CAPABILITY_PHONE],
+    tel_defines.CARRIER_ATT:
+    [tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE],
     tel_defines.CARRIER_TMO: [
         tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE,
         tel_defines.CAPABILITY_WFC, tel_defines.CAPABILITY_VT
     ],
     tel_defines.CARRIER_SPT: [tel_defines.CAPABILITY_PHONE],
+    tel_defines.CARRIER_ROGERS: [
+        tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE,
+        tel_defines.CAPABILITY_WFC
+    ],
     tel_defines.CARRIER_EEUK: [
         tel_defines.CAPABILITY_PHONE, tel_defines.CAPABILITY_VOLTE,
         tel_defines.CAPABILITY_WFC
     ],
-    tel_defines.CARRIER_VFUK: [tel_defines.CAPABILITY_PHONE]
+    tel_defines.CARRIER_VFUK: [tel_defines.CAPABILITY_PHONE],
+    "default": [tel_defines.CAPABILITY_PHONE]
 }

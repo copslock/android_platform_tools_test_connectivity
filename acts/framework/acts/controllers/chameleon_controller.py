@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2017 - The Android Open Source Project
 #
@@ -108,8 +108,9 @@ class ChameleonDevice:
             self.client = xmlrpc.client.ServerProxy(
                 self.address, allow_none=True, verbose=False)
         except ConnectionRefusedError as err:
-            self.log.exception("Failed to connect to Chameleon Device at: {}".
-                               format(self.address))
+            self.log.exception(
+                "Failed to connect to Chameleon Device at: {}".format(
+                    self.address))
         self.client.Reset()
 
     def pull_file(self, chameleon_location, destination):
@@ -136,7 +137,6 @@ class ChameleonDevice:
 
         Args:
             port_id: The ID of the audio input port.
-            has_file: True for saving audio data to file. False otherwise.
         Returns:
             List contain the location of the recorded audio and a dictionary
             of values relating to the raw audio including: file_type, channel,
@@ -172,7 +172,7 @@ class ChameleonDevice:
         Args:
             bus_number: 1 or 2 for audio bus 1 or bus 2.
         """
-        self.client.AudioBoardClearRoutes()
+        self.client.AudioBoardClearRoutes(bus_number)
 
     def scp(self, source, destination):
         """Copies files from the Chameleon device to the host machine.

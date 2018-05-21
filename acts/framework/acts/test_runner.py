@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - The Android Open Source Project
 #
@@ -18,7 +18,6 @@ from future import standard_library
 
 standard_library.install_aliases()
 
-import argparse
 import copy
 import importlib
 import inspect
@@ -35,77 +34,6 @@ from acts import logger
 from acts import records
 from acts import signals
 from acts import utils
-
-
-def main():
-    """Execute the test class in a test module.
-
-    This is the default entry point for running a test script file directly.
-    In this case, only one test class in a test script is allowed.
-
-    To make your test script executable, add the following to your file:
-
-        from acts import test_runner
-        ...
-        if __name__ == "__main__":
-            test_runner.main()
-
-    If you want to implement your own cli entry point, you could use function
-    execute_one_test_class(test_class, test_config, test_identifier)
-    """
-    # Parse cli args.
-    parser = argparse.ArgumentParser(description="ACTS Test Executable.")
-    parser.add_argument(
-        '-c',
-        '--config',
-        nargs=1,
-        type=str,
-        required=True,
-        metavar="<PATH>",
-        help="Path to the test configuration file.")
-    parser.add_argument(
-        '--test_case',
-        nargs='+',
-        type=str,
-        metavar="[test_a test_b...]",
-        help="A list of test case names in the test script.")
-    parser.add_argument(
-        '-tb',
-        '--test_bed',
-        nargs='+',
-        type=str,
-        metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
-        help="Specify which test beds to run tests on.")
-    args = parser.parse_args(sys.argv[1:])
-    # Load test config file.
-    test_configs = config_parser.load_test_config_file(args.config[0],
-                                                       args.test_bed)
-    # Find the test class in the test script.
-    test_class = _find_test_class()
-    test_class_name = test_class.__name__
-    # Parse test case specifiers if exist.
-    test_case_names = None
-    if args.test_case:
-        test_case_names = args.test_case
-    test_identifier = [(test_class_name, test_case_names)]
-    # Execute the test class with configs.
-    ok = True
-    for config in test_configs:
-        try:
-            result = execute_one_test_class(test_class, config,
-                                            test_identifier)
-            if not result:
-                logging.error(
-                    'Results for config %s have returned empty.' % config)
-            ok = result and ok
-        except signals.TestAbortAll:
-            pass
-        except:
-            logging.exception("Error occurred when executing test bed %s",
-                              config[keys.Config.key_testbed.value])
-            ok = False
-    if not ok:
-        sys.exit(1)
 
 
 def _find_test_class():
@@ -134,7 +62,7 @@ def execute_one_test_class(test_class, test_config, test_identifier):
     """Executes one specific test class.
 
     You could call this function in your own cli test entry point if you choose
-    not to use act.py or test_runner.main.
+    not to use act.py.
 
     Args:
         test_class: A subclass of acts.base_test.BaseTestClass that has the test
@@ -456,8 +384,8 @@ class TestRunner(object):
         # tracking controller objs in test_run_info.
         if builtin:
             self.test_run_info[module_ref_name] = controllers
-        self.log.debug("Found %d objects for controller %s",
-                       len(controllers), module_config_name)
+        self.log.debug("Found %d objects for controller %s", len(controllers),
+                       module_config_name)
         return controllers
 
     def unregister_controllers(self):
@@ -469,8 +397,11 @@ class TestRunner(object):
             name = self.get_module_reference_name(controller_module)
             if hasattr(controller_module, 'get_post_job_info'):
                 self.log.debug('Getting post job info for %s', name)
-                name, value = controller_module.get_post_job_info(controllers)
-                self.results.set_extra_data(name, value)
+                try:
+                    name, value = controller_module.get_post_job_info(controllers)
+                    self.results.set_extra_data(name, value)
+                except:
+                    self.log.error("Fail to get post job info for %s", name)
             try:
                 self.log.debug('Destroying %s.', name)
                 controller_module.destroy(controllers)
@@ -542,7 +473,7 @@ class TestRunner(object):
         matches = fnmatch.filter(self.test_classes.keys(), test_cls_name)
         if not matches:
             self.log.info(
-                "Cannot find test class %s or classes matching pattern,"
+                "Cannot find test class %s or classes matching pattern, "
                 "skipping for now." % test_cls_name)
             record = records.TestResultRecord("*all*", test_cls_name)
             record.test_skip(signals.TestSkip("Test class does not exist."))

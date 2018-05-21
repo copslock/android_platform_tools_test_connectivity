@@ -16,20 +16,23 @@
 
 import collections
 import ipaddress
+import time
 
+from acts import logger
+from acts.controllers.ap_lib import ap_get_interface
 from acts.controllers.ap_lib import bridge_interface
 from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.ap_lib import dhcp_server
 from acts.controllers.ap_lib import hostapd
-from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.utils_lib.commands import ip
 from acts.controllers.utils_lib.commands import route
-from acts.controllers.utils_lib.commands import shell
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+from acts.libs.proc import job
 
 ACTS_CONTROLLER_CONFIG_NAME = 'AccessPoint'
 ACTS_CONTROLLER_REFERENCE_NAME = 'access_points'
+_BRCTL = 'brctl'
 
 
 def create(configs):
@@ -45,9 +48,7 @@ def create(configs):
     Returns:
         A new AccessPoint.
     """
-    return [
-        AccessPoint(settings.from_config(c['ssh_config'])) for c in configs
-    ]
+    return [AccessPoint(c) for c in configs]
 
 
 def destroy(aps):
@@ -78,19 +79,12 @@ class Error(Exception):
 
 _ApInstance = collections.namedtuple('_ApInstance', ['hostapd', 'subnet'])
 
-# We use these today as part of a hardcoded mapping of interface name to
-# capabilities.  However, medium term we need to start inspecting
-# interfaces to determine their capabilities.
-_AP_2GHZ_INTERFACE = 'wlan0'
-_AP_5GHZ_INTERFACE = 'wlan1'
 # These ranges were split this way since each physical radio can have up
 # to 8 SSIDs so for the 2GHz radio the DHCP range will be
 # 192.168.1 - 8 and the 5Ghz radio will be 192.168.9 - 16
-_AP_2GHZ_SUBNET_STR = '192.168.1.0/24'
-_AP_5GHZ_SUBNET_STR = '192.168.9.0/24'
-_AP_2GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network(_AP_2GHZ_SUBNET_STR))
-_AP_5GHZ_SUBNET = dhcp_config.Subnet(ipaddress.ip_network(_AP_5GHZ_SUBNET_STR))
-LAN_INTERFACE = 'eth1'
+_AP_2GHZ_SUBNET_STR_DEFAULT = '192.168.1.0/24'
+_AP_5GHZ_SUBNET_STR_DEFAULT = '192.168.9.0/24'
+
 # The last digit of the ip for the bridge interface
 BRIDGE_IP_LAST = '100'
 
@@ -104,13 +98,29 @@ class AccessPoint(object):
         dhcp_settings: The dhcp server settings being used.
     """
 
-    def __init__(self, ssh_settings):
+    def __init__(self, configs):
         """
         Args:
-            ssh_settings: acts.controllers.utils_lib.ssh.SshSettings instance.
+            configs: configs for the access point from config file.
         """
-        self.ssh_settings = ssh_settings
+        self.ssh_settings = settings.from_config(configs['ssh_config'])
         self.ssh = connection.SshConnection(self.ssh_settings)
+        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' % (
+            self.ssh_settings.hostname, msg))
+
+        self.check_state()
+
+        if 'ap_subnet' in configs:
+            self._AP_2G_SUBNET_STR = configs['ap_subnet']['2g']
+            self._AP_5G_SUBNET_STR = configs['ap_subnet']['5g']
+        else:
+            self._AP_2G_SUBNET_STR = _AP_2GHZ_SUBNET_STR_DEFAULT
+            self._AP_5G_SUBNET_STR = _AP_5GHZ_SUBNET_STR_DEFAULT
+
+        self._AP_2G_SUBNET = dhcp_config.Subnet(
+            ipaddress.ip_network(self._AP_2G_SUBNET_STR))
+        self._AP_5G_SUBNET = dhcp_config.Subnet(
+            ipaddress.ip_network(self._AP_5G_SUBNET_STR))
 
         # Singleton utilities for running various commands.
         self._ip_cmd = ip.LinuxIpCommand(self.ssh)
@@ -119,7 +129,67 @@ class AccessPoint(object):
         # A map from network interface name to _ApInstance objects representing
         # the hostapd instance running against the interface.
         self._aps = dict()
-        self.bridge = bridge_interface.BridgeInterface(self.ssh)
+        self.bridge = bridge_interface.BridgeInterface(self)
+        self.interfaces = ap_get_interface.ApInterfaces(self)
+
+        # Get needed interface names and initialize the unnecessary ones.
+        self.wan = self.interfaces.get_wan_interface()
+        self.wlan = self.interfaces.get_wlan_interface()
+        self.wlan_2g = self.wlan[0]
+        self.wlan_5g = self.wlan[1]
+        self.lan = self.interfaces.get_lan_interface()
+        self.__initial_ap()
+
+    def check_state(self):
+        """Check what state the AP is in and reboot if required.
+
+        Check if the AP already has stale interfaces from the previous run.
+        If "yes", then reboot the AP and continue AP initialization.
+
+        """
+        self.log.debug("Checking AP state")
+        self.interfaces = ap_get_interface.ApInterfaces(self)
+        # Check if the AP has any virtual interfaces created.
+        interfaces = self.ssh.run('iw dev | grep -i "type ap" || true')
+        self.log.debug("AP interfaces = %s" % interfaces)
+        # The virtual interface will be of type "AP".
+        if 'AP' in interfaces.stdout:
+            self.log.debug("Found AP in stale state. Rebooting.")
+            try:
+                self.ssh.run('reboot')
+                # Wait for AP to shut down.
+                time.sleep(10)
+                self.ssh.run('echo connected', timeout=300)
+            except Exception as e:
+                self.log.exception("Error in rebooting AP: %s", e)
+                raise
+
+    def __initial_ap(self):
+        """Initial AP interfaces.
+
+        Bring down hostapd if instance is running, bring down all bridge
+        interfaces.
+        """
+        # This is necessary for Gale/Whirlwind flashed with dev channel image
+        # Unused interfaces such as existing hostapd daemon, guest, mesh
+        # interfaces need to be brought down as part of the AP initialization
+        # process, otherwise test would fail.
+        try:
+            self.ssh.run('stop hostapd')
+        except job.Error:
+            self.log.debug('No hostapd running')
+        # Bring down all wireless interfaces
+        for iface in self.wlan:
+            WLAN_DOWN = 'ifconfig {} down'.format(iface)
+            self.ssh.run(WLAN_DOWN)
+        # Bring down all bridge interfaces
+        bridge_interfaces = self.interfaces.get_bridge_interface()
+        if bridge_interfaces:
+            for iface in bridge_interfaces:
+                BRIDGE_DOWN = 'ifconfig {} down'.format(iface)
+                BRIDGE_DEL = 'brctl delbr {}'.format(iface)
+                self.ssh.run(BRIDGE_DOWN)
+                self.ssh.run(BRIDGE_DEL)
 
     def start_ap(self, hostapd_config, additional_parameters=None):
         """Starts as an ap using a set of configurations.
@@ -145,16 +215,13 @@ class AccessPoint(object):
         Raises:
             Error: When the ap can't be brought up.
         """
-        # Right now, we hardcode that a frequency maps to a particular
-        # network interface.  This is true of the hardware we're running
-        # against right now, but in general, we'll want to do some
-        # dynamic discovery of interface capabilities.  See b/32582843
+
         if hostapd_config.frequency < 5000:
-            interface = _AP_2GHZ_INTERFACE
-            subnet = _AP_2GHZ_SUBNET
+            interface = self.wlan_2g
+            subnet = self._AP_2G_SUBNET
         else:
-            interface = _AP_5GHZ_INTERFACE
-            subnet = _AP_5GHZ_SUBNET
+            interface = self.wlan_5g
+            subnet = self._AP_5G_SUBNET
 
         # In order to handle dhcp servers on any interface, the initiation of
         # the dhcp server must be done after the wlan interfaces are figured
@@ -198,18 +265,17 @@ class AccessPoint(object):
             counter = 1
             for bss in hostapd_config.bss_lookup:
                 if interface_mac_orig:
-                    hostapd_config.bss_lookup[
-                        bss].bssid = interface_mac_orig.stdout[:-1] + str(
-                            counter)
+                    hostapd_config.bss_lookup[bss].bssid = (
+                            interface_mac_orig.stdout[:-1] + str(counter))
                 self._route_cmd.clear_routes(net_interface=str(bss))
-                if interface is _AP_2GHZ_INTERFACE:
-                    starting_ip_range = _AP_2GHZ_SUBNET_STR
+                if interface is self.wlan_2g:
+                    starting_ip_range = self._AP_2G_SUBNET_STR
                 else:
-                    starting_ip_range = _AP_5GHZ_SUBNET_STR
+                    starting_ip_range = self._AP_5G_SUBNET_STR
                 a, b, c, d = starting_ip_range.split('.')
                 dhcp_bss[bss] = dhcp_config.Subnet(
-                    ipaddress.ip_network('%s.%s.%s.%s' % (a, b, str(
-                        int(c) + counter), d)))
+                    ipaddress.ip_network('%s.%s.%s.%s' %
+                                         (a, b, str(int(c) + counter), d)))
                 counter = counter + 1
 
         apd.start(hostapd_config, additional_parameters=additional_parameters)
@@ -238,6 +304,15 @@ class AccessPoint(object):
 
         self._dhcp.start(config=dhcp_config.DhcpConfig(configured_subnets))
 
+        # The following three commands are needed to enable bridging between
+        # the WAN and LAN/WLAN ports.  This means anyone connecting to the
+        # WLAN/LAN ports will be able to access the internet if the WAN port
+        # is connected to the internet.
+        self.ssh.run('iptables -t nat -F')
+        self.ssh.run(
+            'iptables -t nat -A POSTROUTING -o %s -j MASQUERADE' % self.wan)
+        self.ssh.run('echo 1 > /proc/sys/net/ipv4/ip_forward')
+
         return interface
 
     def get_bssid_from_ssid(self, ssid):
@@ -248,7 +323,7 @@ class AccessPoint(object):
         Returns: The BSSID if on the AP or None if SSID could not be found.
         """
 
-        interfaces = [_AP_2GHZ_INTERFACE, _AP_5GHZ_INTERFACE, ssid]
+        interfaces = [self.wlan_2g, self.wlan_5g, ssid]
         # Get the interface name associated with the given ssid.
         for interface in interfaces:
             cmd = "iw dev %s info|grep ssid|awk -F' ' '{print $2}'" % (
@@ -311,7 +386,7 @@ class AccessPoint(object):
             self.stop_all_aps()
         self.ssh.close()
 
-    def generate_bridge_configs(self, channel, iface_lan=LAN_INTERFACE):
+    def generate_bridge_configs(self, channel):
         """Generate a list of configs for a bridge between LAN and WLAN.
 
         Args:
@@ -322,13 +397,13 @@ class AccessPoint(object):
         """
 
         if channel < 15:
-            iface_wlan = _AP_2GHZ_INTERFACE
-            subnet_str = _AP_2GHZ_SUBNET_STR
+            iface_wlan = self.wlan_2g
+            subnet_str = self._AP_2G_SUBNET_STR
         else:
-            iface_wlan = _AP_5GHZ_INTERFACE
-            subnet_str = _AP_5GHZ_SUBNET_STR
+            iface_wlan = self.wlan_5g
+            subnet_str = self._AP_5G_SUBNET_STR
 
-        iface_lan = iface_lan
+        iface_lan = self.lan
 
         a, b, c, d = subnet_str.strip('/24').split('.')
         bridge_ip = "%s.%s.%s.%s" % (a, b, c, BRIDGE_IP_LAST)

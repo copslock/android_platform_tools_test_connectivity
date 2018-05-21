@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - The Android Open Source Project
 #
@@ -21,25 +21,16 @@ import shutil
 import tempfile
 import unittest
 
-from acts import base_test
-from acts.controllers import sl4a_client
+from acts import logger
 from acts.controllers import android_device
 
 # Mock log path for a test run.
 MOCK_LOG_PATH = "/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/"
-# The expected result of the cat adb operation.
-MOCK_ADB_LOGCAT_CAT_RESULT = [
-    "02-29 14:02:21.456  4454  Something\n",
-    "02-29 14:02:21.789  4454  Something again\n"
-]
-# A mockd piece of adb logcat output.
-MOCK_ADB_LOGCAT = ("02-29 14:02:19.123  4454  Nothing\n"
-                   "%s"
-                   "02-29 14:02:22.123  4454  Something again and again\n"
-                   ) % ''.join(MOCK_ADB_LOGCAT_CAT_RESULT)
+
 # Mock start and end time of the adb cat.
-MOCK_ADB_LOGCAT_BEGIN_TIME = "02-29 14:02:20.123"
-MOCK_ADB_LOGCAT_END_TIME = "02-29 14:02:22.000"
+MOCK_ADB_LOGCAT_BEGIN_TIME = "1970-01-02 21:03:20.123"
+MOCK_ADB_LOGCAT_END_TIME = "1970-01-02 21:22:02.000"
+MOCK_ADB_EPOCH_BEGIN_TIME = 191000123
 
 MOCK_SERIAL = 1
 MOCK_RELEASE_BUILD_ID = "ABC1.123456.007"
@@ -79,11 +70,12 @@ class MockAdbProxy(object):
                  serial,
                  fail_br=False,
                  fail_br_before_N=False,
-                 build_id=MOCK_RELEASE_BUILD_ID):
+                 build_id=MOCK_RELEASE_BUILD_ID,
+                 return_value=None):
         self.serial = serial
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
-        self.return_value = None
+        self.return_value = return_value
         self.return_multiple = False
         self.build_id = build_id
 
@@ -122,7 +114,9 @@ class MockAdbProxy(object):
     def bugreport(self, params, timeout=android_device.BUG_REPORT_TIMEOUT):
         expected = os.path.join(
             logging.log_path, "AndroidDevice%s" % self.serial,
-            "test_something", "AndroidDevice%s_sometime" % self.serial)
+            "test_something", "AndroidDevice%s_%s" %
+            (self.serial,
+             logger.normalize_log_line_timestamp(MOCK_ADB_LOGCAT_BEGIN_TIME)))
         assert expected in params, "Expected '%s', got '%s'." % (expected,
                                                                  params)
 
@@ -266,7 +260,6 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         self.assertEqual(ad.serial, 1)
         self.assertEqual(ad.model, "fakemodel")
         self.assertIsNone(ad.adb_logcat_process)
-        self.assertIsNone(ad.adb_logcat_file_path)
         expected_lp = os.path.join(logging.log_path,
                                    "AndroidDevice%s" % MOCK_SERIAL)
         self.assertEqual(ad.log_path, expected_lp)
@@ -330,7 +323,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         and writes the bugreport file to the correct path.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.take_bug_report("test_something", "sometime")
+        ad.take_bug_report("test_something", 234325.32)
         expected_path = os.path.join(
             logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
         create_dir_mock.assert_called_with(expected_path)
@@ -352,7 +345,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         expected_msg = "Failed to take bugreport on 1: OMG I died!"
         with self.assertRaisesRegex(android_device.AndroidDeviceError,
                                     expected_msg):
-            ad.take_bug_report("test_something", "sometime")
+            ad.take_bug_report("test_something", 4346343.23)
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
@@ -368,7 +361,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         bugreport on builds that do not have bugreportz.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.take_bug_report("test_something", "sometime")
+        ad.take_bug_report("test_something", MOCK_ADB_EPOCH_BEGIN_TIME)
         expected_path = os.path.join(
             logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
         create_dir_mock.assert_called_with(expected_path)
@@ -404,7 +397,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
                                          "AndroidDevice%s" % ad.serial,
                                          "adblog,fakemodel,%s.txt" % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = 'adb -s %s logcat -v threadtime -b all >> %s'
+        adb_cmd = 'adb -s %s logcat -T 1 -v year -b all >> %s'
         start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
                                                       expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
@@ -452,79 +445,10 @@ class ActsAndroidDeviceTest(unittest.TestCase):
                                          "AndroidDevice%s" % ad.serial,
                                          "adblog,fakemodel,%s.txt" % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = 'adb -s %s logcat -v threadtime -b radio >> %s'
+        adb_cmd = 'adb -s %s logcat -T 1 -v year -b radio >> %s'
         start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
                                                       expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
-
-    @mock.patch(
-        'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=MockFastbootProxy(MOCK_SERIAL))
-    @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
-    @mock.patch('acts.utils.stop_standing_subprocess')
-    @mock.patch(
-        'acts.logger.get_log_line_timestamp',
-        return_value=MOCK_ADB_LOGCAT_END_TIME)
-    @mock.patch('acts.utils._assert_subprocess_running')
-    def test_AndroidDevice_cat_adb_log(
-            self, check_proc_mock, mock_timestamp_getter, stop_proc_mock,
-            start_proc_mock, FastbootProxy, MockAdbProxy):
-        """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
-        file, locates the correct adb log lines within the given time range,
-        and writes the lines to the correct output file.
-        """
-        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        # Expect error if attempted to cat adb log before starting adb logcat.
-        expected_msg = ("Attempting to cat adb log when none has been "
-                        "collected on Android device .*")
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
-            ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
-        ad.start_adb_logcat()
-        # Direct the log path of the ad to a temp dir to avoid racing.
-        ad.log_path = os.path.join(self.tmp_dir, ad.log_path)
-        mock_adb_log_path = os.path.join(ad.log_path, "adblog,%s,%s.txt" %
-                                         (ad.model, ad.serial))
-        with open(mock_adb_log_path, 'w') as f:
-            f.write(MOCK_ADB_LOGCAT)
-        ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
-        cat_file_path = os.path.join(
-            ad.log_path, "AdbLogExcerpts",
-            ("some_test,02-29 14:02:20.123,%s,%s.txt") % (ad.model, ad.serial))
-        with open(cat_file_path, 'r') as f:
-            actual_cat = f.read()
-        self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
-        # Stops adb logcat.
-        ad.stop_adb_logcat()
-
-    @mock.patch(
-        'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL))
-    def test_is_rogue_sl4a_running_sl4a_not_running(self, adb_proxy):
-        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        with mock.patch.object(ad, 'get_package_pid', return_value=None):
-            self.assertEqual(False, ad.is_rogue_sl4a_running())
-
-    @mock.patch(
-        'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL))
-    def test_is_rogue_sl4a_running_sl4a_is_running_valid(self, adb_proxy):
-        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.adb.return_value = sl4a_client.DEFAULT_DEVICE_SIDE_PORT
-        with mock.patch.object(ad, 'get_package_pid', return_value="12345"):
-            self.assertEqual(False, ad.is_rogue_sl4a_running())
-
-    @mock.patch(
-        'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL))
-    def test_is_rogue_sl4a_running_sl4a_is_running_rogue(self, adb_proxy):
-        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.adb.return_value = ""
-        with mock.patch.object(ad, 'get_package_pid', return_value="12345"):
-            self.assertEqual(True, ad.is_rogue_sl4a_running())
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',

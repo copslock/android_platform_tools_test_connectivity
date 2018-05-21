@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright 2016 - The Android Open Source Project
 #
@@ -13,11 +13,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import logging
 import os
-import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 
 from acts import asserts
 from acts import keys
@@ -26,7 +25,6 @@ from acts import records
 from acts import signals
 from acts import tracelogger
 from acts import utils
-from acts.test_utils.tel.tel_test_utils import run_multithread_func
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
@@ -179,10 +177,15 @@ class BaseTestClass(object):
         self.current_test_name = test_name
         try:
             # Write test start token to adb log if android device is attached.
-            for ad in self.android_devices:
-                ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN, test_name))
-        except:
-            pass
+            if hasattr(self, 'android_devices'):
+                for ad in self.android_devices:
+                    if not ad.skip_sl4a:
+                        ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN,
+                                                       test_name))
+        except Exception as e:
+            self.log.warning(
+                'Unable to send BEGIN log command to all devices.')
+            self.log.warning('Error: %s' % e)
         return self.setup_test()
 
     def setup_test(self):
@@ -195,17 +198,20 @@ class BaseTestClass(object):
 
         Implementation is optional.
         """
+        return True
 
     def _teardown_test(self, test_name):
         """Proxy function to guarantee the base implementation of teardown_test
         is called.
         """
+        self.log.debug('Tearing down test %s' % test_name)
         try:
             # Write test end token to adb log if android device is attached.
             for ad in self.android_devices:
                 ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
-        except:
-            pass
+        except Exception as e:
+            self.log.warning('Unable to send END log command to all devices.')
+            self.log.warning('Error: %s' % e)
         try:
             self.teardown_test()
         finally:
@@ -229,7 +235,7 @@ class BaseTestClass(object):
         if record.details:
             self.log.error(record.details)
         self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        self.on_fail(record.test_name, record.log_begin_time)
+        self.on_fail(record.test_name, record.begin_time)
 
     def on_fail(self, test_name, begin_time):
         """A function that is executed upon a test case failure.
@@ -253,7 +259,7 @@ class BaseTestClass(object):
         if msg:
             self.log.info(msg)
         self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        self.on_pass(record.test_name, record.log_begin_time)
+        self.on_pass(record.test_name, record.begin_time)
 
     def on_pass(self, test_name, begin_time):
         """A function that is executed upon a test case passing.
@@ -275,7 +281,7 @@ class BaseTestClass(object):
         """
         self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
         self.log.info("Reason to skip: %s", record.details)
-        self.on_skip(record.test_name, record.log_begin_time)
+        self.on_skip(record.test_name, record.begin_time)
 
     def on_skip(self, test_name, begin_time):
         """A function that is executed upon a test case being skipped.
@@ -297,7 +303,7 @@ class BaseTestClass(object):
         """
         self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
         self.log.info("Reason to block: %s", record.details)
-        self.on_blocked(record.test_name, record.log_begin_time)
+        self.on_blocked(record.test_name, record.begin_time)
 
     def on_blocked(self, test_name, begin_time):
         """A function that is executed upon a test begin skipped.
@@ -316,7 +322,7 @@ class BaseTestClass(object):
                     case.
         """
         self.log.exception(record.details)
-        self.on_exception(record.test_name, record.log_begin_time)
+        self.on_exception(record.test_name, record.begin_time)
 
     def on_exception(self, test_name, begin_time):
         """A function that is executed upon an unhandled exception from a test
@@ -368,8 +374,8 @@ class BaseTestClass(object):
         is_generate_trigger = False
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
-        self.begin_time = tr_record.log_begin_time
-        self.epoch_begin_time = tr_record.begin_time
+        self.begin_time = int(tr_record.begin_time)
+        self.log_begin_time = tr_record.log_begin_time
         self.test_name = tr_record.test_name
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
@@ -378,7 +384,7 @@ class BaseTestClass(object):
                 if hasattr(self, 'android_devices'):
                     for ad in self.android_devices:
                         if not ad.is_adb_logcat_on:
-                            ad.start_adb_logcat(cont_logcat_file=True)
+                            ad.start_adb_logcat()
                 ret = self._setup_test(self.test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
@@ -396,7 +402,11 @@ class BaseTestClass(object):
                     tr_record.add_error("teardown_test", e)
                     self._exec_procedure_func(self._on_exception, tr_record)
         except (signals.TestFailure, AssertionError) as e:
-            self.log.error(e)
+            if self.user_params.get(
+                    keys.Config.key_test_failure_tracebacks.value, False):
+                self.log.exception(e)
+            else:
+                self.log.error(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
@@ -426,15 +436,11 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_exception, tr_record)
             self._exec_procedure_func(self._on_fail, tr_record)
         else:
-            # Keep supporting return False for now.
-            # TODO(angli): Deprecate return False support.
             if verdict or (verdict is None):
                 # Test passed.
                 tr_record.test_pass()
                 self._exec_procedure_func(self._on_pass, tr_record)
                 return
-            # Test failed because it didn't return True.
-            # This should be removed eventually.
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
@@ -680,27 +686,36 @@ class BaseTestClass(object):
         user.
         """
 
-    def _ad_take_reports(self, ad, test_name, begin_time):
-        try:
-            bugreport_path = os.path.join(ad.log_path, test_name)
-            utils.create_dir(bugreport_path)
-            ad.take_bug_report(test_name, begin_time)
-        except Exception as e:
-            ad.log.error("Failed to take a bug report for %s with error %s",
-                         test_name, e)
-        if getattr(ad, "qxdm_log", False):
+    def _ad_take_bugreport(self, ad, test_name, begin_time):
+        for i in range(3):
             try:
-                qxdm_begin_time = logger.epoch_to_log_line_timestamp(
-                    self.epoch_begin_time - 1000 * 60 * 3)
+                ad.take_bug_report(test_name, begin_time)
+                return True
+            except Exception as e:
+                ad.log.error("bugreport attempt %s error: %s", i + 1, e)
+
+    def _ad_take_extra_logs(self, ad, test_name, begin_time):
+        result = True
+        if getattr(ad, "qxdm_log", False):
+            # Gather qxdm log modified 3 minutes earlier than test start time
+            if begin_time:
+                qxdm_begin_time = begin_time - 1000 * 60 * 3
+            else:
+                qxdm_begin_time = None
+            try:
                 ad.get_qxdm_logs(test_name, qxdm_begin_time)
             except Exception as e:
                 ad.log.error("Failed to get QXDM log for %s with error %s",
                              test_name, e)
+                result = False
+
         try:
-            ad.check_crash_report(test_name, begin_time, True)
+            ad.check_crash_report(test_name, begin_time, log_crash_report=True)
         except Exception as e:
             ad.log.error("Failed to check crash report for %s with error %s",
                          test_name, e)
+            result = False
+        return result
 
     def _skip_bug_report(self):
         """A function to check whether we should skip creating a bug report."""
@@ -731,9 +746,12 @@ class BaseTestClass(object):
         if self._skip_bug_report():
             return
 
-        tasks = [(self._ad_take_reports, (ad, test_name, begin_time))
-                 for ad in self.android_devices]
-        run_multithread_func(self.log, tasks)
+        executor = ThreadPoolExecutor(max_workers=10)
+        for ad in getattr(self, 'android_devices', []):
+            executor.submit(self._ad_take_bugreport, ad, test_name, begin_time)
+            executor.submit(self._ad_take_extra_logs, ad, test_name,
+                            begin_time)
+        executor.shutdown()
 
     def _reboot_device(self, ad):
         ad.log.info("Rebooting device.")
@@ -750,6 +768,7 @@ class BaseTestClass(object):
         for (mylogger, session) in self.logger_sessions:
             self.log.info("Pulling diagnostic session %s", mylogger)
             mylogger.stop(session)
-            diag_path = os.path.join(self.log_path, begin_time)
+            diag_path = os.path.join(
+                self.log_path, logger.epoch_to_log_line_timestamp(begin_time))
             utils.create_dir(diag_path)
             mylogger.pull(session, diag_path)

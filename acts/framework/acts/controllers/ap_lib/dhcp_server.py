@@ -12,18 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import collections
-import itertools
-import os
 import time
-
-from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.utils_lib.commands import shell
 
-# The router wan interface will be hard set since this the default for the
-# whirlwind.  In the future it maybe desireable to see which interface has a
-# public address and assign it dynamically.
-_ROUTER_WAN_INTERFACE = 'eth2'
 _ROUTER_DNS = '8.8.8.8, 4.4.4.4'
 
 
@@ -80,15 +71,6 @@ class DhcpServer(object):
         """
         if self.is_alive():
             self.stop()
-
-        # The following three commands are needed to enable bridging between
-        # the WAN and LAN/WLAN ports.  This means anyone connecting to the
-        # WLAN/LAN ports will be able to access the internet if the WAN port
-        # is connected to the internet.
-        self._runner.run('iptables -t nat -F')
-        self._runner.run('iptables -t nat -A POSTROUTING -o %s -j MASQUERADE' %
-                         _ROUTER_WAN_INTERFACE)
-        self._runner.run('echo 1 > /proc/sys/net/ipv4/ip_forward')
 
         self._write_configs(config)
         self._shell.delete_file(self._log_file)

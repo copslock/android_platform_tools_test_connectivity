@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - Google
 #
@@ -18,6 +18,7 @@
 WIFI_CONNECTED = "WifiNetworkConnected"
 WIFI_DISCONNECTED = "WifiNetworkDisconnected"
 SUPPLICANT_CON_CHANGED = "SupplicantConnectionChanged"
+WIFI_STATE_CHANGED = "WifiStateChanged"
 WIFI_FORGET_NW_SUCCESS = "WifiManagerForgetNetworkOnSuccess"
 
 # These constants will be used by the ACTS wifi tests.

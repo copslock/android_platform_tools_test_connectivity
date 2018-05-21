@@ -53,10 +53,12 @@ from acts.test_utils.bt.bt_constants import bt_discovery_timeout
 from acts.test_utils.bt.bt_constants import bt_profile_states
 from acts.test_utils.bt.bt_constants import bt_profile_constants
 from acts.test_utils.bt.bt_constants import bt_rfcomm_uuids
+from acts.test_utils.bt.bt_constants import bluetooth_socket_conn_test_uuid
 from acts.test_utils.bt.bt_constants import bt_scan_mode_types
 from acts.test_utils.bt.bt_constants import btsnoop_last_log_path_on_device
 from acts.test_utils.bt.bt_constants import btsnoop_log_path_on_device
 from acts.test_utils.bt.bt_constants import default_rfcomm_timeout_ms
+from acts.test_utils.bt.bt_constants import default_bluetooth_socket_timeout_ms
 from acts.test_utils.bt.bt_constants import mtu_changed
 from acts.test_utils.bt.bt_constants import pairing_variant_passkey_confirmation
 from acts.test_utils.bt.bt_constants import pan_connect_timeout
@@ -64,6 +66,7 @@ from acts.test_utils.bt.bt_constants import small_timeout
 from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_constants import scan_failed
 from acts.test_utils.bt.bt_constants import hid_id_keyboard
+
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.utils import exe_cmd
@@ -220,7 +223,7 @@ def setup_multiple_devices_for_bt_test(android_devices):
     threads = []
     try:
         for a in android_devices:
-            thread = threading.Thread(target=reset_bluetooth, args=([[a]]))
+            thread = threading.Thread(target=factory_reset_bluetooth, args=([[a]]))
             threads.append(thread)
             thread.start()
         for t in threads:
@@ -279,6 +282,63 @@ def bluetooth_enabled_check(ad):
             return False
     return True
 
+def wait_for_bluetooth_manager_state(droid, state=None, timeout=10, threshold=5):
+    """ Waits for BlueTooth normalized state or normalized explicit state
+    args:
+        droid: droid device object
+        state: expected BlueTooth state
+        timeout: max timeout threshold
+        threshold: list len of bt state
+    Returns:
+        True if successful, false if unsuccessful.
+    """
+    all_states = []
+    get_state = lambda: droid.bluetoothGetLeState()
+    start_time = time.time()
+    while time.time() < start_time + timeout:
+        all_states.append(get_state())
+        if len(all_states) >= threshold:
+            # for any normalized state
+            if state is None:
+                if len(set(all_states[-threshold:])) == 1:
+                    log.info("State normalized {}".format(set(all_states[-threshold:])))
+                    return True
+            else:
+                # explicit check against normalized state
+                if set([state]).issubset(all_states[-threshold:]):
+                    return True
+        time.sleep(0.5)
+    log.error(
+        "Bluetooth state fails to normalize" if state is None else
+        "Failed to match bluetooth state, current state {} expected state {}".format(get_state(), state))
+    return False
+
+def factory_reset_bluetooth(android_devices):
+    """Clears Bluetooth stack of input Android device list.
+
+        Args:
+            android_devices: The Android device list to reset Bluetooth
+
+        Returns:
+            True if successful, false if unsuccessful.
+        """
+    for a in android_devices:
+        droid, ed = a.droid, a.ed
+        a.log.info("Reset state of bluetooth on device.")
+        if not bluetooth_enabled_check(a):
+            return False
+        # TODO: remove device unbond b/79418045
+        # Temporary solution to ensure all devices are unbonded
+        bonded_devices = droid.bluetoothGetBondedDevices()
+        for b in bonded_devices:
+            a.log.info("Removing bond for device {}".format(b['address']))
+            droid.bluetoothUnbond(b['address'])
+
+        droid.bluetoothFactoryReset()
+        wait_for_bluetooth_manager_state(droid)
+        if not enable_bluetooth(droid, ed):
+            return False
+    return True
 
 def reset_bluetooth(android_devices):
     """Resets Bluetooth state of input Android device list.
@@ -322,6 +382,7 @@ def determine_max_advertisements(android_device):
         "Determining number of maximum concurrent advertisements...")
     advertisement_count = 0
     bt_enabled = False
+    expected_bluetooth_on_event_name = bluetooth_on
     if not android_device.droid.bluetoothCheckState():
         android_device.droid.bluetoothToggleState(True)
     try:
@@ -513,9 +574,7 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
         raise BtTestUtilsError(
             "Scanner did not find advertisement {}".format(err))
     mac_address = event['data']['Result']['deviceInfo']['address']
-    scan_ad.droid.bleStopBleScan(scan_callback)
-    return mac_address, advertise_callback
-
+    return mac_address, advertise_callback, scan_callback
 
 def enable_bluetooth(droid, ed):
     if droid.bluetoothCheckState() is True:
@@ -534,7 +593,6 @@ def enable_bluetooth(droid, ed):
         return False
 
     return True
-
 
 def disable_bluetooth(droid):
     """Disable Bluetooth on input Droid object.
@@ -939,10 +997,10 @@ def disconnect_pri_from_sec(pri_ad, sec_ad, profiles_list):
     while not profile_disconnected.issuperset(profiles_list):
         try:
             profile_event = pri_ad.ed.pop_event(
-                bluetooth_profile_connection_state_changed, default_timeout)
+                bluetooth_profile_connection_state_changed, bt_default_timeout)
             pri_ad.log.info("Got event {}".format(profile_event))
-        except Exception:
-            pri_ad.log.error("Did not disconnect from Profiles")
+        except Exception as e:
+            pri_ad.log.error("Did not disconnect from Profiles. Reason {}".format(e))
             return False
 
         profile = profile_event['data']['profile']
@@ -1027,32 +1085,50 @@ def orchestrate_rfcomm_connection(client_ad,
     Returns:
         True if connection was successful, false if unsuccessful.
     """
+    result = orchestrate_bluetooth_socket_connection(
+        client_ad, server_ad, accept_timeout_ms,
+        (bt_rfcomm_uuids['default_uuid'] if uuid is None else uuid))
+
+    return result
+
+
+def orchestrate_bluetooth_socket_connection(
+        client_ad,
+        server_ad,
+        accept_timeout_ms=default_bluetooth_socket_timeout_ms,
+        uuid=None):
+    """Sets up the Bluetooth Socket connection between two Android devices.
+
+    Args:
+        client_ad: the Android device performing the connection.
+        server_ad: the Android device accepting the connection.
+    Returns:
+        True if connection was successful, false if unsuccessful.
+    """
     server_ad.droid.bluetoothStartPairingHelper()
     client_ad.droid.bluetoothStartPairingHelper()
-    if not uuid:
-        server_ad.droid.bluetoothRfcommBeginAcceptThread(
-            bt_rfcomm_uuids['default_uuid'], accept_timeout_ms)
-        client_ad.droid.bluetoothRfcommBeginConnectThread(
-            server_ad.droid.bluetoothGetLocalAddress(),
-            bt_rfcomm_uuids['default_uuid'])
-    else:
-        server_ad.droid.bluetoothRfcommBeginAcceptThread(
-            uuid, accept_timeout_ms)
-        client_ad.droid.bluetoothRfcommBeginConnectThread(
-            server_ad.droid.bluetoothGetLocalAddress(), uuid)
+
+    server_ad.droid.bluetoothSocketConnBeginAcceptThreadUuid(
+        (bluetooth_socket_conn_test_uuid
+         if uuid is None else uuid), accept_timeout_ms)
+    client_ad.droid.bluetoothSocketConnBeginConnectThreadUuid(
+        server_ad.droid.bluetoothGetLocalAddress(),
+        (bluetooth_socket_conn_test_uuid if uuid is None else uuid))
+
     end_time = time.time() + bt_default_timeout
     result = False
     test_result = True
     while time.time() < end_time:
-        if len(client_ad.droid.bluetoothRfcommActiveConnections()) > 0:
+        if len(client_ad.droid.bluetoothSocketConnActiveConnections()) > 0:
             test_result = True
-            client_ad.log.info("RFCOMM Client Connection Active")
+            client_ad.log.info("Bluetooth socket Client Connection Active")
             break
         else:
             test_result = False
         time.sleep(1)
     if not test_result:
-        client_ad.log.error("Failed to establish an RFCOMM connection")
+        client_ad.log.error(
+            "Failed to establish a Bluetooth socket connection")
         return False
     return True
 
@@ -1072,19 +1148,19 @@ def write_read_verify_data(client_ad, server_ad, msg, binary=False):
     client_ad.log.info("Write message.")
     try:
         if binary:
-            client_ad.droid.bluetoothRfcommWriteBinary(msg)
+            client_ad.droid.bluetoothSocketConnWriteBinary(msg)
         else:
-            client_ad.droid.bluetoothRfcommWrite(msg)
+            client_ad.droid.bluetoothSocketConnWrite(msg)
     except Exception as err:
         client_ad.log.error("Failed to write data: {}".format(err))
         return False
     server_ad.log.info("Read message.")
     try:
         if binary:
-            read_msg = server_ad.droid.bluetoothRfcommReadBinary().rstrip(
+            read_msg = server_ad.droid.bluetoothSocketConnReadBinary().rstrip(
                 "\r\n")
         else:
-            read_msg = server_ad.droid.bluetoothRfcommRead()
+            read_msg = server_ad.droid.bluetoothSocketConnRead()
     except Exception as err:
         server_ad.log.error("Failed to read data: {}".format(err))
         return False
@@ -1104,12 +1180,23 @@ def clear_bonded_devices(ad):
         True if clearing bonded devices was successful, false if unsuccessful.
     """
     bonded_device_list = ad.droid.bluetoothGetBondedDevices()
-    for device in bonded_device_list:
-        device_address = device['address']
+    while bonded_device_list:
+        device_address = bonded_device_list[0]['address']
         if not ad.droid.bluetoothUnbond(device_address):
-            log.error("Failed to unbond {}".format(device_address))
+            log.error("Failed to unbond {} from {}".format(
+                device_address, ad.serial))
             return False
-        log.info("Successfully unbonded {}".format(device_address))
+        log.info("Successfully unbonded {} from {}".format(
+            device_address, ad.serial))
+        #TODO: wait for BOND_STATE_CHANGED intent instead of waiting
+        time.sleep(1)
+
+        # If device was first connected using LE transport, after bonding it is
+        # accessible through it's LE address, and through it classic address.
+        # Unbonding it will unbond two devices representing different
+        # "addresses". Attempt to unbond such already unbonded devices will
+        # result in bluetoothUnbond returning false.
+        bonded_device_list = ad.droid.bluetoothGetBondedDevices()
     return True
 
 
@@ -1128,13 +1215,13 @@ def verify_server_and_client_connected(client_ad, server_ad, log=True):
         false if unsuccessful.
     """
     test_result = True
-    if len(server_ad.droid.bluetoothRfcommActiveConnections()) == 0:
+    if len(server_ad.droid.bluetoothSocketConnActiveConnections()) == 0:
         if log:
-            server_ad.log.error("No rfcomm connections found on server.")
+            server_ad.log.error("No socket connections found on server.")
         test_result = False
-    if len(client_ad.droid.bluetoothRfcommActiveConnections()) == 0:
+    if len(client_ad.droid.bluetoothSocketConnActiveConnections()) == 0:
         if log:
-            client_ad.log.error("No rfcomm connections found on client.")
+            client_ad.log.error("No socket connections found on client.")
         test_result = False
     return test_result
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2017 - The Android Open Source Project
 #
@@ -227,13 +227,13 @@ class QualityChecker(object):
 
             saturate_value = audio_data.get_maximum_value_from_sample_format(
                 self._raw_data.sample_format)
-            normalized_signal = audio_analysis.normalize_signal(signal,
-                                                                saturate_value)
+            normalized_signal = audio_analysis.normalize_signal(
+                signal, saturate_value)
             logging.debug('saturate_value: %f', saturate_value)
             logging.debug('max signal after normalized: %f',
                           max(normalized_signal))
-            spectral = audio_analysis.spectral_analysis(normalized_signal,
-                                                        self._rate)
+            spectral = audio_analysis.spectral_analysis(
+                normalized_signal, self._rate)
 
             logging.debug('Channel %d spectral:\n%s', channel_idx,
                           pprint.pformat(spectral))
@@ -245,27 +245,30 @@ class QualityChecker(object):
                          'above %f:\n%s', channel_idx, ignore_high_freq,
                          pprint.pformat(spectral))
 
-            print(spectral)
-            if check_quality:
-                quality = audio_quality_measurement.quality_measurement(
-                    signal=normalized_signal,
-                    rate=self._rate,
-                    dominant_frequency=spectral[0][0],
-                    block_size_secs=quality_params.block_size_secs,
-                    frequency_error_threshold=quality_params.
-                    frequency_error_threshold,
-                    delay_amplitude_threshold=quality_params.
-                    delay_amplitude_threshold,
-                    noise_amplitude_threshold=quality_params.
-                    noise_amplitude_threshold,
-                    burst_amplitude_threshold=quality_params.
-                    burst_amplitude_threshold)
+            try:
+                if check_quality:
+                    quality = audio_quality_measurement.quality_measurement(
+                        signal=normalized_signal,
+                        rate=self._rate,
+                        dominant_frequency=spectral[0][0],
+                        block_size_secs=quality_params.block_size_secs,
+                        frequency_error_threshold=quality_params.
+                        frequency_error_threshold,
+                        delay_amplitude_threshold=quality_params.
+                        delay_amplitude_threshold,
+                        noise_amplitude_threshold=quality_params.
+                        noise_amplitude_threshold,
+                        burst_amplitude_threshold=quality_params.
+                        burst_amplitude_threshold)
 
-                logging.debug('Channel %d quality:\n%s', channel_idx,
-                              pprint.pformat(quality))
-                self._quality_result.append(quality)
-
-            self._spectrals.append(spectral)
+                    logging.debug('Channel %d quality:\n%s', channel_idx,
+                                  pprint.pformat(quality))
+                    self._quality_result.append(quality)
+                self._spectrals.append(spectral)
+            except Exception as error:
+                logging.warning(
+                    "Failed to analyze channel {} with error: {}".format(
+                        channel_idx, error))
 
     def has_data(self):
         """Checks if data has been set.
@@ -297,8 +300,8 @@ class QualityChecker(object):
             dominant_freq = self._spectrals[idx][0][0]
             if abs(dominant_freq - expected_freq) > freq_threshold:
                 raise CompareFailure(
-                    'Failed at channel %d: %f is too far away from %f' % (
-                        idx, dominant_freq, expected_freq))
+                    'Failed at channel %d: %f is too far away from %f' %
+                    (idx, dominant_freq, expected_freq))
 
     def check_quality(self):
         """Checks the quality measurement results on each channel.
@@ -372,8 +375,8 @@ class QualityChecker(object):
             dominant_freq = self._spectrals[idx][0][0]
             if abs(dominant_freq - expected_freq) > freq_threshold:
                 raise CompareFailure(
-                    'Failed at channel %d: %f is too far away from %f' % (
-                        idx, dominant_freq, expected_freq))
+                    'Failed at channel %d: %f is too far away from %f' %
+                    (idx, dominant_freq, expected_freq))
 
     def check_quality(self):
         """Checks the quality measurement results on each channel.
@@ -450,8 +453,8 @@ def read_audio_file(filename, channel, bit_width, rate):
         raw_data = audio_data.AudioRawData(
             binary=binary, channel=channel, sample_format='S%d_LE' % bit_width)
     else:
-        raise CheckQualityError('File format for %s is not supported' %
-                                filename)
+        raise CheckQualityError(
+            'File format for %s is not supported' % filename)
 
     return raw_data, rate
 
@@ -501,7 +504,8 @@ def quality_analysis(
         quality_burst_amplitude_threshold=DEFAULT_BURST_AMPLITUDE_THRESHOLD,
         quality_delay_amplitude_threshold=DEFAULT_DELAY_AMPLITUDE_THRESHOLD,
         quality_frequency_error_threshold=DEFAULT_FREQUENCY_ERROR_THRESHOLD,
-        quality_noise_amplitude_threshold=DEFAULT_NOISE_AMPLITUDE_THRESHOLD, ):
+        quality_noise_amplitude_threshold=DEFAULT_NOISE_AMPLITUDE_THRESHOLD,
+):
     """ Runs various functions to measure audio quality base on user input.
 
     Args:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2016 - The Android Open Source Project
 #
@@ -28,6 +28,7 @@ from acts.controllers.anritsu_lib._anritsu_utils import NO_ERROR
 from acts.controllers.anritsu_lib._anritsu_utils import OPERATION_COMPLETE
 
 TERMINATOR = "\0"
+
 # The following wait times (except COMMUNICATION_STATE_WAIT_TIME) are actually
 # the times for socket to time out. Increasing them is to make sure there is
 # enough time for MD8475A operation to be completed in some cases.
@@ -389,18 +390,23 @@ class MD8475A(object):
     """Class to communicate with Anritsu MD8475A Signalling Tester.
        This uses GPIB command to interface with Anritsu MD8475A """
 
-    def __init__(self, ip_address, log_handle, wlan=False):
+    def __init__(self, ip_address, log_handle, wlan=False, md8475_version="A"):
         self._error_reporting = True
         self._ipaddr = ip_address
         self.log = log_handle
         self._wlan = wlan
+        port_number = 28002
+        if md8475_version == "B":
+            global TERMINATOR
+            TERMINATOR = "\n"
+            port_number = 5025
 
         # Open socket connection to Signaling Tester
         self.log.info("Opening Socket Connection with "
                       "Signaling Tester ({}) ".format(self._ipaddr))
         try:
             self._sock = socket.create_connection(
-                (self._ipaddr, 28002), timeout=120)
+                (self._ipaddr, port_number), timeout=120)
             self.send_query("*IDN?", 60)
             self.log.info("Communication with Signaling Tester OK.")
             self.log.info("Opened Socket connection to ({})"

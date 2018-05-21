@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright 2016 - The Android Open Source Project
 #
@@ -37,6 +37,10 @@ class TraceLogger():
             except IndexError:
                 break
         return trace_info
+
+    def exception(self, msg, *args, **kwargs):
+        trace_info = TraceLogger._get_trace_info(level=5)
+        self._logger.exception("%s %s" % (msg, trace_info), *args, **kwargs)
 
     def debug(self, msg, *args, **kwargs):
         trace_info = TraceLogger._get_trace_info(level=3)
