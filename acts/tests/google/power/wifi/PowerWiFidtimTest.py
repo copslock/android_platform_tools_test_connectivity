@@ -34,10 +34,12 @@ class PowerWiFidtimTest(PWBT.PowerWiFiBaseTest):
         indices = [2, 4, 6]
         self.decode_test_configs(attrs, indices)
         # Initialize the dut to rock-bottom state
-        wputils.change_dtim(
+        rebooted = wputils.change_dtim(
             self.dut,
             gEnableModulatedDTIM=int(self.test_configs.dtim),
             gMaxLIModulatedDTIM=dtim_max)
+        if rebooted:
+            self.dut_rockbottom()
         self.dut.log.info('DTIM value of the phone is now {}'.format(
             self.test_configs.dtim))
         self.setup_ap_connection(
