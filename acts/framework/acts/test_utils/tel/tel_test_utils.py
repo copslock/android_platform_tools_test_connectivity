@@ -5894,7 +5894,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
                 time.sleep(10)
             if ad.serial in list_fastboot_devices():
                 ad.log.info("Wipe in fastboot")
-                ad.fastboot._w(timeout=300)
+                ad.fastboot._w(timeout=300, ignore_status=True)
                 time.sleep(30)
                 ad.log.info("Reboot in fastboot")
                 ad.fastboot.reboot()
