@@ -222,7 +222,7 @@ def setup_multiple_devices_for_bt_test(android_devices):
     threads = []
     try:
         for a in android_devices:
-            thread = threading.Thread(target=reset_bluetooth, args=([[a]]))
+            thread = threading.Thread(target=factory_reset_bluetooth, args=([[a]]))
             threads.append(thread)
             thread.start()
         for t in threads:
@@ -281,6 +281,63 @@ def bluetooth_enabled_check(ad):
             return False
     return True
 
+def wait_for_bluetooth_manager_state(droid, state=None, timeout=10, threshold=5):
+    """ Waits for BlueTooth normalized state or normalized explicit state
+    args:
+        droid: droid device object
+        state: expected BlueTooth state
+        timeout: max timeout threshold
+        threshold: list len of bt state
+    Returns:
+        True if successful, false if unsuccessful.
+    """
+    all_states = []
+    get_state = lambda: droid.bluetoothGetLeState()
+    start_time = time.time()
+    while time.time() < start_time + timeout:
+        all_states.append(get_state())
+        if len(all_states) >= threshold:
+            # for any normalized state
+            if state is None:
+                if len(set(all_states[-threshold:])) == 1:
+                    log.info("State normalized {}".format(set(all_states[-threshold:])))
+                    return True
+            else:
+                # explicit check against normalized state
+                if set([state]).issubset(all_states[-threshold:]):
+                    return True
+        time.sleep(0.5)
+    log.error(
+        "Bluetooth state fails to normalize" if state is None else
+        "Failed to match bluetooth state, current state {} expected state {}".format(get_state(), state))
+    return False
+
+def factory_reset_bluetooth(android_devices):
+    """Clears Bluetooth stack of input Android device list.
+
+        Args:
+            android_devices: The Android device list to reset Bluetooth
+
+        Returns:
+            True if successful, false if unsuccessful.
+        """
+    for a in android_devices:
+        droid, ed = a.droid, a.ed
+        a.log.info("Reset state of bluetooth on device.")
+        if not bluetooth_enabled_check(a):
+            return False
+        # TODO: remove device unbond b/79418045
+        # Temporary solution to ensure all devices are unbonded
+        bonded_devices = droid.bluetoothGetBondedDevices()
+        for b in bonded_devices:
+            a.log.info("Removing bond for device {}".format(b['address']))
+            droid.bluetoothUnbond(b['address'])
+
+        droid.bluetoothFactoryReset()
+        wait_for_bluetooth_manager_state(droid)
+        if not enable_bluetooth(droid, ed):
+            return False
+    return True
 
 def reset_bluetooth(android_devices):
     """Resets Bluetooth state of input Android device list.
@@ -519,7 +576,6 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     scan_ad.droid.bleStopBleScan(scan_callback)
     return mac_address, advertise_callback
 
-
 def enable_bluetooth(droid, ed):
     if droid.bluetoothCheckState() is True:
         return True
@@ -537,7 +593,6 @@ def enable_bluetooth(droid, ed):
         return False
 
     return True
-
 
 def disable_bluetooth(droid):
     """Disable Bluetooth on input Droid object.
