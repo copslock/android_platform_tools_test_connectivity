@@ -4649,6 +4649,12 @@ def start_adb_tcpdump(ad, test_name, mask="ims"):
     """
     ad.log.debug("Ensuring no tcpdump is running in background")
     ad.adb.shell("killall -9 tcpdump")
+    out = ad.adb.shell("ls -l /sdcard/tcpdump/")
+    if "No such file" in out or not out:
+        ad.adb.shell("mkdir /sdcard/tcpdump")
+    else:
+        ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
+
     begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
     begin_time = normalize_log_line_timestamp(begin_time)
 
