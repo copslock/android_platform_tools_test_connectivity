@@ -47,6 +47,7 @@ from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
@@ -216,7 +217,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             selection = 0
         message_type = message_type_map[selection]
         the_number = self.result_info["%s Total" % message_type] + 1
-        begin_time = get_current_epoch_time()
+        begin_time = get_device_epoch_time(self.dut)
         test_name = "%s_No_%s_%s" % (self.test_name, the_number, message_type)
         start_qxdm_loggers(self.log, self.android_devices)
         log_msg = "[Test Case] %s" % test_name
@@ -305,7 +306,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.droid, ad.ed = ad.get_droid()
                     ad.ed.start()
             ad.droid.logI("%s begin" % log_msg)
-        begin_time = get_current_epoch_time()
+        begin_time = get_device_epoch_time(self.dut)
         if "wfc" in self.test_name:
             start_tcpdumps(
                 self.android_devices,
@@ -423,7 +424,7 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def _prefnetwork_mode_change(self, sub_id):
         # ModePref change to non-LTE
-        begin_time = get_current_epoch_time()
+        begin_time = get_device_epoch_time(self.dut)
         start_qxdm_loggers(self.log, self.android_devices)
         network_preference_list = [
             NETWORK_MODE_TDSCDMA_GSM_WCDMA, NETWORK_MODE_WCDMA_ONLY,
@@ -487,7 +488,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 self.log.info(dict(self.result_info))
                 self._update_perf_json()
-                begin_time = get_current_epoch_time()
+                begin_time = get_device_epoch_time(self.dut)
                 run_time_in_seconds = (begin_time - self.begin_time) / 1000
                 test_name = "%s_crash_%s_seconds_after_start" % (
                     self.test_name, run_time_in_seconds)
@@ -498,7 +499,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     if crash_report:
                         ad.log.error("Find new crash reports %s", crash_report)
                         failure += 1
-                        self.result_info["Crashes"] += 1
+                        self.result_info["Crashes"] += len(crash_report)
                         for crash in crash_report:
                             if "ramdump_modem" in crash:
                                 self.result_info["Crashes-Modem"] += 1
@@ -645,7 +646,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut.log.info("Voice in RAT %s, Data in RAT %s", voice_rat,
                           data_rat)
         try:
-            if is_rat_svd_capable(voice_rat.upper()):
+            if is_rat_svd_capable(voice_rat.upper()) and is_rat_svd_capable(
+                    data_rat.upper()):
                 self.dut.log.info("Capable for simultaneous voice and data")
                 if not verify_internet_connection(self.log, self.dut):
                     self.dut.log.error("Incall data check failed")

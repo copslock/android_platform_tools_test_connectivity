@@ -244,6 +244,14 @@ def extract_stats(results, range_reference_mm, range_margin_mm, min_rssi,
                          the reference LCI.
      - any_lcr_mismatch: True/False - checks if all LCR results are identical to
                          the reference LCR.
+     - num_attempted_measurements: extracted list of all of the individual
+                                   number of attempted measurements.
+     - num_successful_measurements: extracted list of all of the individual
+                                    number of successful measurements.
+     - invalid_num_attempted: True/False - checks if number of attempted
+                              measurements is non-zero for successful results.
+     - invalid_num_successful: True/False - checks if number of successful
+                               measurements is non-zero for successful results.
 
   Args:
     results: List of RTT results.
@@ -264,6 +272,8 @@ def extract_stats(results, range_reference_mm, range_margin_mm, min_rssi,
   stats['num_invalid_rssi'] = 0
   stats['any_lci_mismatch'] = False
   stats['any_lcr_mismatch'] = False
+  stats['invalid_num_attempted'] = False
+  stats['invalid_num_successful'] = False
 
   range_max_mm = range_reference_mm + range_margin_mm
   range_min_mm = range_reference_mm - range_margin_mm
@@ -303,10 +313,17 @@ def extract_stats(results, range_reference_mm, range_margin_mm, min_rssi,
     if not min_rssi <= rssi <= 0:
       stats['num_invalid_rssi'] = stats['num_invalid_rssi'] + 1
 
-    num_attempted_measurements.append(
-      result[rconsts.EVENT_CB_RANGING_KEY_NUM_ATTEMPTED_MEASUREMENTS])
-    num_successful_measurements.append(
-        result[rconsts.EVENT_CB_RANGING_KEY_NUM_SUCCESSFUL_MEASUREMENTS])
+    num_attempted = result[
+      rconsts.EVENT_CB_RANGING_KEY_NUM_ATTEMPTED_MEASUREMENTS]
+    num_attempted_measurements.append(num_attempted)
+    if num_attempted == 0:
+      stats['invalid_num_attempted'] = True
+
+    num_successful = result[
+      rconsts.EVENT_CB_RANGING_KEY_NUM_SUCCESSFUL_MEASUREMENTS]
+    num_successful_measurements.append(num_successful)
+    if num_successful == 0:
+      stats['invalid_num_successful'] = True
 
     lcis.append(result[rconsts.EVENT_CB_RANGING_KEY_LCI])
     if (result[rconsts.EVENT_CB_RANGING_KEY_LCI] != reference_lci):

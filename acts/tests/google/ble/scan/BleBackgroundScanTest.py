@@ -19,6 +19,7 @@ This test script exercises background scan test scenarios.
 
 from queue import Empty
 
+from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import bluetooth_off
@@ -49,6 +50,12 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         BluetoothBaseTest.__init__(self, controllers)
         self.scn_ad = self.android_devices[0]
         self.adv_ad = self.android_devices[1]
+
+    def setup_class(self):
+        super(BluetoothBaseTest, self).setup_class()
+        utils.set_location_service(self.scn_ad, True)
+        utils.set_location_service(self.adv_ad, True)
+        return True
 
     def setup_test(self):
         # Always start tests with Bluetooth enabled and BLE disabled.
@@ -100,8 +107,8 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         """
         self.scn_ad.droid.bluetoothEnableBLE()
         self._setup_generic_advertisement()
-        self.scn_ad.droid.bleSetScanSettingsScanMode(ble_scan_settings_modes[
-            'low_latency'])
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
+            ble_scan_settings_modes['low_latency'])
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
         self.scn_ad.droid.bleSetScanFilterDeviceName(
@@ -152,8 +159,8 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         """
         self._setup_generic_advertisement()
         self.scn_ad.droid.bluetoothEnableBLE()
-        self.scn_ad.droid.bleSetScanSettingsScanMode(ble_scan_settings_modes[
-            'low_latency'])
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
+            ble_scan_settings_modes['low_latency'])
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
         self.scn_ad.droid.bleSetScanFilterDeviceName(
@@ -174,8 +181,9 @@ class BleBackgroundScanTest(BluetoothBaseTest):
             try:
                 self.scn_ad.ed.pop_event(expected_event, self.default_timeout)
             except Empty:
-                self.log.error("Scan Result event not found. Expected {}".
-                               format(expected_event))
+                self.log.error(
+                    "Scan Result event not found. Expected {}".format(
+                        expected_event))
                 return False
         except Exception:
             self.log.info(
@@ -213,6 +221,7 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         """
         ble_state_error_msg = "Bluetooth LE State not OK {}. Expected {} got {}"
         # Enable BLE always available (effectively enabling BT in location)
+        self.scn_ad.shell.enable_ble_scanning()
         self.scn_ad.droid.bluetoothEnableBLE()
         self.scn_ad.droid.bluetoothToggleState(False)
         try:
@@ -237,8 +246,9 @@ class BleBackgroundScanTest(BluetoothBaseTest):
         try:
             self.scn_ad.ed.pop_event(bluetooth_le_off, self.default_timeout)
         except Empty:
-            self.log.error("Bluetooth LE Off event not found. Expected {}".
-                           format(bluetooth_le_off))
+            self.log.error(
+                "Bluetooth LE Off event not found. Expected {}".format(
+                    bluetooth_le_off))
             return False
         state = self.scn_ad.droid.bluetoothGetLeState()
         if state != bt_adapter_states['off']:

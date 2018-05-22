@@ -133,7 +133,6 @@ class WifiIOTtpeTest(WifiBaseTest):
     """Tests"""
 
     #ASUS
-    @test_tracker_info(uuid="d56cc46a-f772-4c96-b84e-4e05c82f5f9d")
     def test_iot_connection_to_ASUS_RT_AC68U_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
@@ -156,5 +155,5 @@ class WifiIOTtpeTest(WifiBaseTest):
 
     def test_iot_connection_to_ASUS_RT_N66U_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
-        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])  
-  
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
