@@ -3351,7 +3351,7 @@ def is_phone_in_call_active(ad, call_id=None):
         ad.log.info("%s state is %s", call_id, call_state)
         return call_state == "ACTIVE"
     else:
-        ad.log.error("No calls are found on this device to check state")
+        ad.log.info("Not in telecomIsInCall")
         return False
 
 
