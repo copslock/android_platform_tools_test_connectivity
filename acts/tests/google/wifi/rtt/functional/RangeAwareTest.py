@@ -229,6 +229,10 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                          "LCI mismatch", extras=extras)
     asserts.assert_false(stats['any_lcr_mismatch'],
                          "LCR mismatch", extras=extras)
+    asserts.assert_false(stats['invalid_num_attempted'],
+                         "Invalid (0) number of attempts", extras=stats)
+    asserts.assert_false(stats['invalid_num_successful'],
+                         "Invalid (0) number of successes", extras=stats)
     asserts.assert_equal(stats['num_invalid_rssi'], 0, "Invalid RSSI",
                          extras=extras)
     asserts.assert_true(
