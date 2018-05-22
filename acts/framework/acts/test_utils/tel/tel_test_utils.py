@@ -3355,7 +3355,10 @@ def is_phone_in_call_active(ad, call_id=None):
         return False
 
 
-def wait_for_in_call_active(ad, timeout=5, interval=1, call_id=None):
+def wait_for_in_call_active(ad,
+                            timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
+                            interval=WAIT_TIME_BETWEEN_STATE_CHECK,
+                            call_id=None):
     """Wait for call reach active state.
 
     Args:
