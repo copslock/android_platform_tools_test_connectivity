@@ -38,9 +38,11 @@ class PowerWiFimulticastTest(PWBT.PowerWiFiBaseTest):
         indices = [2, 4]
         self.decode_test_configs(attrs, indices)
         # Change DTIMx1 on the phone to receive all Multicast packets
-        wputils.change_dtim(
+        rebooted = wputils.change_dtim(
             self.dut, gEnableModulatedDTIM=1, gMaxLIModulatedDTIM=10)
         self.dut.log.info('DTIM value of the phone is now DTIMx1')
+        if rebooted:
+            self.dut_rockbottom()
 
         self.setup_ap_connection(
             self.main_network[self.test_configs.wifi_band])
