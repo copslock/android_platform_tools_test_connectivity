@@ -23,6 +23,7 @@ import pprint
 import time
 
 from queue import Empty
+from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_constants import adv_succ
@@ -46,6 +47,12 @@ class BleScanScreenStateTest(BluetoothBaseTest):
         BluetoothBaseTest.__init__(self, controllers)
         self.scn_ad = self.android_devices[0]
         self.adv_ad = self.android_devices[1]
+
+    def setup_class(self):
+        super(BluetoothBaseTest, self).setup_class()
+        utils.set_location_service(self.scn_ad, True)
+        utils.set_location_service(self.adv_ad, True)
+        return True
 
     def _setup_generic_advertisement(self):
         self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
