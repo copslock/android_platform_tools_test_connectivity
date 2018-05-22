@@ -230,8 +230,6 @@ def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
             pri_droid.droid.getBuildSerial(), dev_to_connect))
         return False
 
-    pri_droid.droid.bluetoothConnectBonded(dev_to_connect)
-
     end_time = time.time() + 10
     profile_connected = set()
     sec_addr = dev_to_connect
