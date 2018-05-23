@@ -90,6 +90,27 @@ class CmdInput(cmd.Cmd):
 
     """Begin GATT Client wrappers"""
 
+    def do_gattc_socket_conn_begin_connect_thread_psm(self, line):
+        cmd = ""
+        try:
+            self.pri_dut.gattc.socket_conn_begin_connect_thread_psm(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gattc_socket_conn_begin_accept_thread_psm(self, line):
+        cmd = ""
+        try:
+            self.pri_dut.gattc.socket_conn_begin_accept_thread_psm(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gattc_request_le_connection_parameters(self, line):
+        cmd = ""
+        try:
+            self.pri_dut.gattc.request_le_connection_parameters()
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
     def do_gattc_connect_over_le(self, line):
         """Perform GATT connection over LE"""
         cmd = "Gatt connect over LE"
@@ -277,6 +298,14 @@ class CmdInput(cmd.Cmd):
         cmd = "GATT Client Enable Notification on Descriptor by instance ID"
         try:
             self.pri_dut.gattc.enable_notification_desc_by_instance_id(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_gattc_enable_indication_desc_by_instance_id(self, line):
+        """GATT Client Enable Indication on Descriptor by instance ID"""
+        cmd = "GATT Client Enable Indication on Descriptor by instance ID"
+        try:
+            self.pri_dut.gattc.enable_indication_desc_by_instance_id(line)
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
@@ -473,7 +502,7 @@ class CmdInput(cmd.Cmd):
             value = []
             for i in range(size):
                 value.append(i % 256)
-            self.pri_dut.gatts.gatt_server_characteristic_set_value_by_instance_id(
+            self.pri_dut.gatts.characteristic_set_value_by_instance_id(
                 instance_id, value)
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
