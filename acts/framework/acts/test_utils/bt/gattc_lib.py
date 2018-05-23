@@ -17,6 +17,8 @@
 GATT Client Libraries
 """
 
+from acts.test_utils.bt.bt_constants import default_le_connection_interval_ms
+from acts.test_utils.bt.bt_constants import default_bluetooth_socket_timeout_ms
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
@@ -25,6 +27,8 @@ from acts.test_utils.bt.bt_constants import gatt_cb_strings
 from acts.test_utils.bt.bt_constants import gatt_char_desc_uuids
 from acts.test_utils.bt.bt_constants import gatt_descriptor
 from acts.test_utils.bt.bt_constants import gatt_transport
+from acts.test_utils.bt.bt_constants import le_default_supervision_timeout
+from acts.test_utils.bt.bt_constants import le_connection_interval_time_step_ms
 from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
 
@@ -329,15 +333,6 @@ class GattClientLib():
         self._setup_discovered_services_index()
         services_count = self.dut.droid.gattClientGetDiscoveredServicesCount(
             self.discovered_services_index)
-        """
-        self.log.info(
-            CMD_LOG.format(
-                cmd,
-                self.dut.droid.gattClientWriteDescriptorByInstanceId(
-                    self.bluetooth_gatt, self.discovered_services_index,
-                    int(instance_id, 16),
-                    gatt_descriptor['enable_notification_value'])))
-        """
         for i in range(services_count):
             characteristic_uuids = (
                 self.dut.droid.gattClientGetDiscoveredCharacteristicUuids(
@@ -356,6 +351,39 @@ class GattClientLib():
                             self.bluetooth_gatt,
                             self.discovered_services_index, i, j, k,
                             gatt_descriptor['enable_notification_value'])
+                        time.sleep(2)  #Necessary for PTS
+                        self.dut.droid.gattClientWriteDescriptorByIndex(
+                            self.bluetooth_gatt,
+                            self.discovered_services_index, i, j, k)
+                        time.sleep(2)  #Necessary for PTS
+                        self.dut.droid.gattClientSetCharacteristicNotificationByIndex(
+                            self.bluetooth_gatt,
+                            self.discovered_services_index, i, j, True)
+
+    def enable_indication_desc_by_instance_id(self, line):
+        """GATT Client Enable indication on Descriptor by instance ID"""
+        instance_id = line
+        self._setup_discovered_services_index()
+        services_count = self.dut.droid.gattClientGetDiscoveredServicesCount(
+            self.discovered_services_index)
+        for i in range(services_count):
+            characteristic_uuids = (
+                self.dut.droid.gattClientGetDiscoveredCharacteristicUuids(
+                    self.discovered_services_index, i))
+            for j in range(len(characteristic_uuids)):
+                descriptor_uuids = (
+                    self.dut.droid.
+                    gattClientGetDiscoveredDescriptorUuidsByIndex(
+                        self.discovered_services_index, i, j))
+                for k in range(len(descriptor_uuids)):
+                    desc_inst_id = self.dut.droid.gattClientGetDescriptorInstanceId(
+                        self.bluetooth_gatt, self.discovered_services_index, i,
+                        j, k)
+                    if desc_inst_id == int(instance_id, 16):
+                        self.dut.droid.gattClientDescriptorSetValueByIndex(
+                            self.bluetooth_gatt,
+                            self.discovered_services_index, i, j, k,
+                            gatt_descriptor['enable_indication_value'])
                         time.sleep(2)  #Necessary for PTS
                         self.dut.droid.gattClientWriteDescriptorByIndex(
                             self.bluetooth_gatt,
@@ -519,3 +547,30 @@ class GattClientLib():
             uuid = self.generic_uuid.format(line)
         self.dut.droid.gattClientDiscoverServiceByUuid(self.bluetooth_gatt,
                                                        uuid)
+
+    def request_le_connection_parameters(self):
+        le_min_ce_len = 0
+        le_max_ce_len = 0
+        le_connection_interval = 0
+        minInterval = default_le_connection_interval_ms / le_connection_interval_time_step_ms
+        maxInterval = default_le_connection_interval_ms / le_connection_interval_time_step_ms
+        return_status = self.dut.droid.gattClientRequestLeConnectionParameters(
+            self.bluetooth_gatt, minInterval, maxInterval, 0,
+            le_default_supervision_timeout, le_min_ce_len, le_max_ce_len)
+        self.log.info(
+            "Result of request le connection param: {}".format(return_status))
+
+    def socket_conn_begin_connect_thread_psm(self, line):
+        args = line.split()
+        is_ble = bool(int(args[0]))
+        secured_conn = bool(int(args[1]))
+        psm_value = int(args[2])  # 1
+        self.dut.droid.bluetoothSocketConnBeginConnectThreadPsm(
+            self.target_mac_addr, is_ble, psm_value, secured_conn)
+
+    def socket_conn_begin_accept_thread_psm(self, line):
+        accept_timeout_ms = default_bluetooth_socket_timeout_ms
+        is_ble = True
+        secured_conn = False
+        self.dut.droid.bluetoothSocketConnBeginAcceptThreadPsm(
+            accept_timeout_ms, is_ble, secured_conn)
