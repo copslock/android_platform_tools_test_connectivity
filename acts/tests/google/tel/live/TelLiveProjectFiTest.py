@@ -34,6 +34,7 @@ from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import send_dialer_secret_code
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 
 CARRIER_AUTO = "auto"
@@ -67,6 +68,11 @@ _TYCHO_VERBOSE_LOGGING_CMDS = [
     "-e tycho.enable_ample_logging true"
 ]
 
+_TYCHO_SERVER_LAB_OVERRIDE_CMD = (
+    "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE -e "
+    "url:tycho_server_endpoint https://android.googleapis.com/nova/nfe/ rewrite"
+    "https://android.googleapis.com/lab/nova/nfe/")
+
 
 class TychoClassId(object):
     """Tycho Activity/Service Classnames."""
@@ -88,7 +94,7 @@ class ActionTypeId(object):
 
 class TelLiveProjectFiTest(TelephonyBaseTest):
     def setup_class(self):
-        self.activation_attemps = self.user_params.get("activation_attemps", 2)
+        self.activation_attemps = self.user_params.get("activation_attemps", 3)
 
     def _add_google_account(self, ad, retries=3):
         for _ in range(3):
@@ -117,7 +123,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             ad.log.error(
                 "com.google.android.tradefed.account is not installed")
             return False
-        for _ in range(3):
+        for _ in range(retries):
             ad.ensure_screen_on()
             output = ad.adb.shell(
                 'am instrument -w '
@@ -142,6 +148,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         return True
 
     def _account_registration(self, ad):
+        toggle_airplane_mode_by_adb(self.log, ad, new_state=False)
         for cmd in _TYCHO_VERBOSE_LOGGING_CMDS:
             ad.adb.shell(cmd)
         if hasattr(ad, "user_account"):
@@ -175,6 +182,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 (ad.user_account, ad.user_password))
             ad.log.info("Enable and activate tycho apk")
             ad.adb.shell('pm enable %s' % _TYCHO_PKG)
+            #ad.adb.shell(_TYCHO_SERVER_LAB_OVERRIDE_CMD)
             for i in range(1, self.activation_attemps + 1):
                 if i == self.activation_attemps:
                     ad.log.info("Reboot and try Fi activation again")
@@ -250,6 +258,11 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             time.sleep(1)
             current_window = ad.get_my_current_focus_window()
             log_screen_shot(ad, self.test_name)
+            if ad.adb.shell(
+                    "settings get global device_provisioning_mobile_data"
+            ) != "1":
+                ad.adb.shell(
+                    "settings put global device_provisioning_mobile_data 1")
             if 'SwitchConfirmDialogActivity' in current_window:
                 ad.log.info("In Switch Confirmation Dialog")
                 if ad.adb.getprop("ro.build.version.release")[0] not in ("8",
