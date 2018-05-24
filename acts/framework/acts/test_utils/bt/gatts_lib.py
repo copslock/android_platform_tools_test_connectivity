@@ -117,12 +117,15 @@ class GattServerLib():
             self.gatt_server_callback)
         char_read = gatt_event['char_read_req']['evt'].format(
             self.gatt_server_callback)
+        char_write_req = gatt_event['char_write_req']['evt'].format(
+            self.gatt_server_callback)
         char_write = gatt_event['char_write']['evt'].format(
             self.gatt_server_callback)
         execute_write = gatt_event['exec_write']['evt'].format(
             self.gatt_server_callback)
-        regex = "({}|{}|{}|{}|{})".format(desc_read, desc_write, char_read,
-                                          char_write, execute_write)
+        regex = "({}|{}|{}|{}|{}|{})".format(desc_read, desc_write, char_read,
+                                             char_write, execute_write,
+                                             char_write_req)
         events = self.dut.ed.pop_events(regex, 5, small_timeout)
         status = 0
         if user_input:
@@ -147,7 +150,8 @@ class GattServerLib():
                 continue
             offset = event['data']['offset']
             instance_id = event['data']['instanceId']
-            if (event['name'] == desc_write or event['name'] == char_write):
+            if (event['name'] == desc_write or event['name'] == char_write
+                    or event['name'] == char_write_req):
                 if ('preparedWrite' in event['data']
                         and event['data']['preparedWrite'] == True):
                     value = event['data']['value']
