@@ -4857,6 +4857,11 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
                 ad.log.error("Failed to end call")
         ad.droid.telephonyFactoryReset()
         ad.droid.imsFactoryReset()
+        if ad.adb.shell(
+                "settings get global device_provisioning_mobile_data") != "1":
+            ad.log.warning("mobile data is not ON")
+            ad.adb.shell(
+                "settings put global device_provisioning_mobile_data 1")
         data_roaming = getattr(ad, 'roaming', False)
         if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
             set_cell_data_roaming_state_by_adb(ad, data_roaming)
@@ -5234,9 +5239,7 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     ad.droid.setMediaVolume(0)
     ad.droid.setVoiceCallVolume(0)
     ad.droid.setAlarmVolume(0)
-    out = ad.adb.shell("settings list system | grep volume")
-    for attr in re.findall(r"(volume_.*)=\d+", out):
-        ad.adb.shell("settings put system %s 0" % attr)
+    ad.adb.shell("setprop ro.audio.silent 1", ignore_status=True)
     return silent_mode == ad.droid.checkRingerSilentMode()
 
 
@@ -5937,6 +5940,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     if ad.skip_sl4a: return status
     bring_up_sl4a(ad)
     synchronize_device_time(ad)
+    set_phone_silent_mode(ad.log, ad)
     return status
 
 
