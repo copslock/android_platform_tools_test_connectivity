@@ -30,6 +30,8 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
+from acts.test_utils.tel.tel_defines import GEN_3G
+from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import INCALL_UI_DISPLAY_BACKGROUND
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
@@ -46,6 +48,7 @@ from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import hangup_call
@@ -61,6 +64,7 @@ from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
+from acts.test_utils.tel.tel_test_utils import wait_for_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -631,6 +635,73 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
+    def _check_data(self):
+        self.result_info["Data Connection Check Total"] += 1
+        if not wait_for_data_connection(self.log, self.dut, True):
+            self.result_info["Data Connection Setup Failure"] += 1
+            return False
+        if not verify_internet_connection(self.log, self.dut):
+            rat = self.dut.adb.getprop("gsm.network.type")
+            self.dut.log.info("Network in RAT %s", rat)
+            self.result_info["Internet Connection Check Failure"] += 1
+            return False
+        return True
+
+    def _data_call_test(self, sub_id, generation):
+        self.dut.log.info(dict(self.result_info))
+        begin_time = get_device_epoch_time(self.dut)
+        start_qxdm_loggers(self.log, self.android_devices)
+        test_name = "%s_data_call_test_iter_%s" % (
+            self.test_name,
+            self.result_info["Network Preference Change Total"] + 1)
+        log_msg = "[Test Case] %s" % test_name
+        self.log.info(log_msg)
+        self.dut.droid.logI("%s begin" % log_msg)
+        if not ensure_network_generation_for_subscription(
+                self.log, self.dut, sub_id, generation):
+            self.result_info["Network Change Failure"] += 1
+            try:
+                self._take_bug_report(test_name, begin_time)
+            except Exception as e:
+                self.log.warning(e)
+            return False
+        elif not self._check_data():
+            try:
+                self._take_bug_report(test_name, begin_time)
+            except Exception as e:
+                self.log.warning(e)
+            return False
+        self.dut.log.info("Toggling data connection")
+        self.dut.droid.telephonyToggleDataConnectionForSubscription(
+            sub_id, False)
+        time.sleep(3)
+        self.dut.droid.telephonyToggleDataConnectionForSubscription(
+            sub_id, True)
+        if not self._check_data():
+            self.dut.droid.logI("%s end" % log_msg)
+            self.dut.log.info("%s end", log_msg)
+            try:
+                self._take_bug_report(test_name, begin_time)
+            except Exception as e:
+                self.log.warning(e)
+            return False
+
+    def data_call_stress_test(self):
+        result = True
+        sub_id = self.dut.droid.subscriptionGetDefaultSubId()
+        while time.time() < self.finishing_time:
+            for generation in (GEN_4G, GEN_3G):
+                try:
+                    if not self._data_call_test(sub_id, generation):
+                        result = False
+                except Exception as e:
+                    self.log.error("Exception error %s", str(e))
+                    self.result_info["Exception Errors"] += 1
+            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
+                self.log.error("Too many exception errors, quit test")
+                return False
+        return result
+
     def check_incall_data(self):
         if self.single_phone_test:
             if not initiate_call(
@@ -831,5 +902,19 @@ class TelLiveStressTest(TelephonyBaseTest):
             raise signals.TestSkipClass("VoLTE is not supported")
         return self.parallel_with_network_change_tests(
             setup_func=self._setup_lte_volte_enabled)
+
+    @test_tracker_info(uuid="10e34247-5fd3-4f87-81bf-3c17a6b71ab2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_data_call_stress(self):
+        """ Default state stress test"""
+        self.finishing_time = time.time() + self.max_run_time
+        results = run_multithread_func(self.log,
+                                       [(self.data_call_stress_test, []),
+                                        (self.crash_check_test, [])])
+        result_message = self._get_result_message()
+        self.log.info(result_message)
+        self._update_perf_json()
+        self.result_detail = result_message
+        return all(results)
 
     """ Tests End """
