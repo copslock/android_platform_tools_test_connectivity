@@ -163,6 +163,9 @@ WAIT_TIME_AFTER_REBOOT = 10
 # Time to wait for radio to up and running after force crash
 WAIT_TIME_AFTER_CRASH = 60
 
+# Time to wait for boot complete after reboot
+WAIT_TIME_FOR_BOOT_COMPLETE = 75
+
 # Time to wait for tethering test after reboot
 WAIT_TIME_TETHERING_AFTER_REBOOT = 10
 
