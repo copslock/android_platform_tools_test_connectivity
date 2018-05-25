@@ -167,7 +167,7 @@ class WifiIOTtpeTest(WifiBaseTest):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
-    @test_tracker_info(uuid="6908039b-ccc9-4777-a0f1-3494ce642014)
+    @test_tracker_info(uuid="6908039b-ccc9-4777-a0f1-3494ce642014")
     def test_iot_connection_to_ASUS_RT_AC54U_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
