@@ -33,6 +33,7 @@ from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
+from acts.test_utils.tel.tel_test_utils import build_id_override
 from acts.test_utils.tel.tel_test_utils import enable_radio_log_on
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
@@ -44,6 +45,7 @@ from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import reboot_device
+from acts.test_utils.tel.tel_test_utils import recover_build_id
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import set_phone_screen_on
@@ -88,7 +90,7 @@ class TelephonyBaseTest(BaseTestClass):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
         if qxdm_log_mask_cfg and "dev/null" in qxdm_log_mask_cfg:
             qxdm_log_mask_cfg = None
-        tasks = [(self._init_device, (ad, qxdm_log_mask_cfg))
+        tasks = [(self._init_device, [ad, qxdm_log_mask_cfg])
                  for ad in self.android_devices]
         multithread_func(self.log, tasks)
         self.skip_reset_between_cases = self.user_params.get(
@@ -164,7 +166,7 @@ class TelephonyBaseTest(BaseTestClass):
                     self.log.error("Unable to load user config %s ",
                                    sim_conf_file)
 
-        tasks = [(self._setup_device, (ad, sim_conf_file))
+        tasks = [(self._setup_device, [ad, sim_conf_file])
                  for ad in self.android_devices]
         return multithread_func(self.log, tasks)
 
@@ -195,6 +197,9 @@ class TelephonyBaseTest(BaseTestClass):
     def _setup_device(self, ad, sim_conf_file):
         if not unlock_sim(ad):
             raise signals.TestAbortClass("unable to unlock the SIM")
+
+        if self.user_params.get("build_id_override", None):
+            build_id_override(ad, self.user_params["build_id_override"])
 
         if "sdm" in ad.model:
             if ad.adb.getprop("persist.radio.multisim.config") != "ssss":
@@ -291,17 +296,33 @@ class TelephonyBaseTest(BaseTestClass):
         setattr(ad, "telephony_test_setup", True)
         return True
 
-    def teardown_class(self):
+    def _teardown_device(self, ad):
         try:
-            for ad in self.android_devices:
-                stop_qxdm_logger(ad)
-                ad.droid.disableDevicePassword()
-                if "enable_wifi_verbose_logging" in self.user_params:
-                    ad.droid.wifiEnableVerboseLogging(
-                        WIFI_VERBOSE_LOGGING_DISABLED)
-            return True
+            stop_qxdm_logger(ad)
         except Exception as e:
             self.log.error("Failure with %s", e)
+        try:
+            ad.droid.disableDevicePassword()
+        except Exception as e:
+            self.log.error("Failure with %s", e)
+        try:
+            if "enable_wifi_verbose_logging" in self.user_params:
+                ad.droid.wifiEnableVerboseLogging(
+                    WIFI_VERBOSE_LOGGING_DISABLED)
+        except Exception as e:
+            self.log.error("Failure with %s", e)
+        try:
+            if self.user_params.get("build_id_override",
+                                    None) and self.user_params.get(
+                                        "recover_build_id", True):
+                recover_build_id(ad)
+        except Exception as e:
+            self.log.error("Failure with %s", e)
+
+    def teardown_class(self):
+        tasks = [(self._teardown_device, [ad]) for ad in self.android_devices]
+        multithread_func(self.log, tasks)
+        return True
 
     def setup_test(self):
         if not self.user_params.get("qxdm_log_mask_cfg", None):

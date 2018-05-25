@@ -6128,6 +6128,31 @@ def adb_disable_verity(ad):
         ad.adb.remount()
 
 
+def recover_build_id(ad):
+    build_fingerprint = ad.adb.getprop("ro.build.fingerprint")
+    if not build_fingerprint:
+        return
+    build_id = build_fingerprint.split("/")[3]
+    if ad.adb.getprop("ro.build.id") != build_id:
+        build_id_override(ad, build_id)
+
+
+def build_id_override(ad, build_id):
+    existing_build_id = ad.adb.getprop("ro.build.id")
+    if existing_build_id == build_id:
+        return
+    ad.log.info("Override build id %s with %s", existing_build_id, build_id)
+    adb_disable_verity(ad)
+    ad.adb.remount()
+    if "backup.prop" not in ad.adb.shell("ls /sdcard/"):
+        ad.adb.shell("cp /default.prop /sdcard/backup.prop")
+    ad.adb.shell("cat /default.prop | grep -v ro.build.id > /sdcard/test.prop")
+    ad.adb.shell("echo ro.build.id=%s >> /sdcard/test.prop" % build_id)
+    ad.adb.shell("cp /sdcard/test.prop /default.prop")
+    reboot_device(ad)
+    ad.log.info("ro.build.id = %s", ad.adb.getprop("ro.build.id"))
+
+
 def system_file_push(ad, src_file_path, dst_file_path):
     """Push system file on a device.
 
