@@ -80,6 +80,7 @@ class WifiStressTest(WifiBaseTest):
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
+        wutils.reset_wifi(self.dut)
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
@@ -273,7 +274,7 @@ class WifiStressTest(WifiBaseTest):
         AP1_network = self.reference_networks[0]["5g"]
         AP2_network = self.reference_networks[1]["5g"]
         wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
-        wutils.wifi_connect(self.dut, AP1_network)
+        self.scan_and_connect_by_ssid(AP1_network)
         # Reduce iteration to half because each iteration does two roams.
         for count in range(self.stress_count/2):
             self.log.info("Roaming iteration %d, from %s to %s", count,
