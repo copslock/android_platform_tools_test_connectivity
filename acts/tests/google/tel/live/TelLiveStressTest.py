@@ -60,6 +60,7 @@ from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import start_tcpdumps
+from acts.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
@@ -419,13 +420,15 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             self.log.info("%s test succeed", log_msg)
             self.result_info["Call Success"] += 1
-            if self.get_binder_logs and self.result_info["Call Total"] % 50 == 0:
+            if self.result_info["Call Total"] % 50 == 0:
                 for ad in ads:
-                    log_path = os.path.join(self.log_path,
-                                            "%s_binder_logs" % test_name,
-                                            "%s_binder_logs" % ad.serial)
-                    utils.create_dir(log_path)
-                    ad.pull_files(BINDER_LOGS, log_path)
+                    synchronize_device_time(ad)
+                    if self.get_binder_logs:
+                        log_path = os.path.join(self.log_path,
+                                                "%s_binder_logs" % test_name,
+                                                "%s_binder_logs" % ad.serial)
+                        utils.create_dir(log_path)
+                        ad.pull_files(BINDER_LOGS, log_path)
         return result
 
     def _prefnetwork_mode_change(self, sub_id):
@@ -651,9 +654,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut.log.info(dict(self.result_info))
         begin_time = get_device_epoch_time(self.dut)
         start_qxdm_loggers(self.log, self.android_devices)
+        self.result_info["Network Change Request Total"] += 1
         test_name = "%s_data_call_test_iter_%s" % (
-            self.test_name,
-            self.result_info["Network Preference Change Total"] + 1)
+            self.test_name, self.result_info["Network Change Request Total"])
         log_msg = "[Test Case] %s" % test_name
         self.log.info(log_msg)
         self.dut.droid.logI("%s begin" % log_msg)
