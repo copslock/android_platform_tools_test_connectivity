@@ -40,6 +40,7 @@ from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_BOOT_COMPLETE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_CRASH
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
@@ -169,7 +170,7 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             reboot_device(ad)
             iteration_result = "pass"
 
-            time.sleep(30)
+            time.sleep(WAIT_TIME_FOR_BOOT_COMPLETE)
 
             dict_match = ad.search_logcat(text_search_mapping['boot_complete'],
                                           begin_time=begin_time)
