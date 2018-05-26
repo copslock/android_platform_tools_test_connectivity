@@ -80,6 +80,7 @@ class WifiStressTest(WifiBaseTest):
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
+        wutils.reset_wifi(self.dut)
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
@@ -211,21 +212,21 @@ class WifiStressTest(WifiBaseTest):
             time.sleep(WAIT_FOR_AUTO_CONNECT)
             cur_network = self.dut.droid.wifiGetConnectionInfo()
             cur_ssid = cur_network[WifiEnums.SSID_KEY]
-            self.log.debug("Cur_ssid = %s" % cur_ssid)
+            self.log.info("Cur_ssid = %s" % cur_ssid)
             for count in range(0,len(self.networks)):
                 self.log.debug("Forget network %s" % cur_ssid)
                 wutils.wifi_forget_network(self.dut, cur_ssid)
                 time.sleep(WAIT_FOR_AUTO_CONNECT)
                 cur_network = self.dut.droid.wifiGetConnectionInfo()
                 cur_ssid = cur_network[WifiEnums.SSID_KEY]
-                self.log.debug("Cur_ssid = %s" % cur_ssid)
+                self.log.info("Cur_ssid = %s" % cur_ssid)
                 if count == len(self.networks) - 1:
                     break
                 if cur_ssid not in ssids:
                     raise signals.TestFailure("Device did not failover to the "
                         "expected network. SSID = %s" % cur_ssid)
             network_config = self.dut.droid.wifiGetConfiguredNetworks()
-            self.log.debug("Network Config = %s" % network_config)
+            self.log.info("Network Config = %s" % network_config)
             if len(network_config):
                 raise signals.TestFailure("All the network configurations were not "
                         "removed. Configured networks = %s" % network_config)
@@ -273,9 +274,9 @@ class WifiStressTest(WifiBaseTest):
         AP1_network = self.reference_networks[0]["5g"]
         AP2_network = self.reference_networks[1]["5g"]
         wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
-        wutils.wifi_connect(self.dut, AP1_network)
+        self.scan_and_connect_by_ssid(AP1_network)
         # Reduce iteration to half because each iteration does two roams.
-        for count in range(self.stress_count/2):
+        for count in range(int(self.stress_count/2)):
             self.log.info("Roaming iteration %d, from %s to %s", count,
                            AP1_network, AP2_network)
             wutils.trigger_roaming_and_validate(self.dut, self.attenuators,
