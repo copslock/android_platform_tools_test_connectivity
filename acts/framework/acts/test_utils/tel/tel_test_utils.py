@@ -5239,6 +5239,7 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     ad.droid.setMediaVolume(0)
     ad.droid.setVoiceCallVolume(0)
     ad.droid.setAlarmVolume(0)
+    ad.adb.ensure_root()
     ad.adb.shell("setprop ro.audio.silent 1", ignore_status=True)
     return silent_mode == ad.droid.checkRingerSilentMode()
 
