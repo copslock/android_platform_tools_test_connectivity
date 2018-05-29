@@ -28,7 +28,7 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
 
     def setup_class(self):
         CoexBaseTest.setup_class(self)
-        req_params = ["iterations"]
+        req_params = ["iterations", "fping_drop_tolerance"]
         self.unpack_userparams(req_params)
 
     def toogle_bluetooth_with_iperf(self):
@@ -238,7 +238,8 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_070
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+                                self.fping_drop_tolerance)),
                  (toggle_bluetooth, (self.pri_ad, self.iperf["duration"]))]
         if not multithread_func(self.log, tasks):
             return False
@@ -261,7 +262,8 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_071
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+                                self.fping_drop_tolerance)),
                  (perform_classic_discovery, (
                      self.pri_ad, self.iperf["duration"]))]
         if not multithread_func(self.log, tasks):

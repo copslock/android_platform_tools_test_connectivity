@@ -48,7 +48,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
     def setup_class(self):
         super().setup_class()
-        req_params = ["iterations", "audio_params", "music_file"]
+        req_params = ["iterations", "audio_params", "music_file",
+                      "fping_drop_tolerance"]
         self.unpack_userparams(req_params)
         if hasattr(self, "music_file"):
             self.push_music_to_android_device(self.pri_ad)
@@ -739,7 +740,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_076
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+                                self.fping_drop_tolerance)),
                  (self.connect_disconnect_headset, ())]
         if not multithread_func(self.log, tasks):
             return False
@@ -760,7 +762,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_077
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+                                self.fping_drop_tolerance)),
                  (self.music_play_and_check, (
                      self.pri_ad, self.audio_receiver.mac_address,
                      self.music_file_to_play, self.iperf["duration"]))]
@@ -786,7 +789,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_079
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+                                self.fping_drop_tolerance)),
                  (self.connect_disconnect_headset, ()),
                  (toggle_screen_state, (self.pri_ad, self.iterations))]
         if not multithread_func(self.log, tasks):
@@ -810,7 +814,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_080
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+                                self.fping_drop_tolerance)),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play, self.iperf["duration"])),
