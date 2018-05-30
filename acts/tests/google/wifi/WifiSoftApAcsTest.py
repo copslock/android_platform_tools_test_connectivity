@@ -205,7 +205,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
         """
         if avoid_chan in range(1,12):
             avoid_chan2 = hostapd_constants.AP_DEFAULT_CHANNEL_5G
-        elif avoid_channel in range(36, 166):
+        elif avoid_chan in range(36, 166):
             avoid_chan2 = hostapd_constants.AP_DEFAULT_CHANNEL_2G
         if chan == avoid_chan or chan == avoid_chan2:
             raise signals.TestFailure("ACS chose the same channel that the "
