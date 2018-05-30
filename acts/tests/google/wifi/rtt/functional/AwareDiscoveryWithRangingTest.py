@@ -1464,6 +1464,7 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
                         "Discovery with ranging for FF expected!")
 
 
+  @test_tracker_info(uuid="6700eab8-a172-43cd-aed3-e6577ce8fd89")
   def test_discovery_direct_concurrency(self):
     """Verify the behavior of Wi-Fi Aware Ranging used as part of discovery and
     as direct ranging to a peer device.
