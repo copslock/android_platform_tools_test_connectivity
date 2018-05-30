@@ -26,6 +26,7 @@ from acts import logger
 from acts import signals
 from acts import tracelogger
 from acts import utils
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
 from datetime import datetime
 
@@ -40,10 +41,14 @@ IP = "IP: "
 STATUS = "STATUS: "
 SSID = "SSID: "
 RSSI = "RSSI: "
+PING = "PING: "
 SCAN_BEGIN = "Scan Begin"
 SCAN_END = "Scan End"
 READ_TIMEOUT = 10
 BAUD_RATE = 9600
+TMP_DIR = "tmp/"
+SSID_KEY = wutils.WifiEnums.SSID_KEY
+PWD_KEY = wutils.WifiEnums.PWD_KEY
 
 
 class ArduinoWifiDongleError(signals.ControllerError):
@@ -113,6 +118,7 @@ class ArduinoWifiDongle(object):
         ssid: SSID of the wifi network the dongle is connected to.
         ip_addr: IP address on the wifi interface.
         scan_results: Most recent scan results.
+        ping: Ping status in bool - ping to www.google.com
     """
     def __init__(self, serial=''):
         """Initializes the ArduinoWifiDongle object."""
@@ -134,6 +140,12 @@ class ArduinoWifiDongle(object):
         self.status = 0
         self.scan_results = []
         self.scanning = False
+        self.ping = False
+
+        try:
+            os.stat(TMP_DIR)
+        except:
+            os.mkdir(TMP_DIR)
 
     def clean_up(self):
         """Cleans up the ArduinoifiDongle object and releases any resources it
@@ -167,12 +179,13 @@ class ArduinoWifiDongle(object):
         raise ArduinoWifiDongleError("Wifi dongle %s is specified in config"
                                     " but is not attached." % self.serial)
 
-    def write(self, arduino, file_path):
+    def write(self, arduino, file_path, network=None):
         """Write an ino file to the arduino wifi dongle.
 
         Args:
             arduino: path of the arduino executable.
-            file_path: path of the ino flash to flash onto the dongle.
+            file_path: path of the ino file to flash onto the dongle.
+            network: wifi network to connect to.
 
         Returns:
             True: if the write is sucessful.
@@ -181,6 +194,8 @@ class ArduinoWifiDongle(object):
         return_result = True
         self.stop_controller_log("Flashing %s\n" % file_path)
         cmd = arduino + file_path + " --upload --port " + self.port
+        if network:
+            cmd = self._update_ino_wifi_network(arduino, file_path, network)
         self.log.info("Command is %s" % cmd)
         proc = subprocess.Popen(cmd,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -191,6 +206,28 @@ class ArduinoWifiDongle(object):
             return_result = False
         self.start_controller_log("Flashing complete\n")
         return return_result
+
+    def _update_ino_wifi_network(self, arduino, file_path, network):
+        """Update wifi network in the ino file.
+
+        Args:
+            arduino: path of the arduino executable.
+            file_path: path of the ino file to flash onto the dongle
+            network: wifi network to update the ino file with
+
+        Returns:
+            cmd: arduino command to run to flash the ino file
+        """
+        tmp_file = "%s%s" % (TMP_DIR, file_path.split('/')[-1])
+        utils.exe_cmd("cp %s %s" % (file_path, tmp_file))
+        ssid = network[SSID_KEY]
+        pwd = network[PWD_KEY]
+        sed_cmd = "sed -i 's/\"wifi_tethering_test\"/\"%s\"/' %s" % (ssid, tmp_file)
+        utils.exe_cmd(sed_cmd)
+        sed_cmd = "sed -i  's/\"password\"/\"%s\"/' %s" % (pwd, tmp_file)
+        utils.exe_cmd(sed_cmd)
+        cmd = "%s %s --upload --port %s" %(arduino, tmp_file, self.port)
+        return cmd
 
     def start_controller_log(self, msg=None):
         """Reads the serial port and writes the data to ACTS log file.
@@ -271,6 +308,8 @@ class ArduinoWifiDongle(object):
             self.ssid = val
         elif STATUS in data:
             self.status = int(val)
+        elif PING in data:
+            self.ping = False if int(val) == 0 else True
 
     def ip_address(self, exp_result=True, timeout=READ_TIMEOUT):
         """Get the ip address of the wifi dongle.
@@ -292,13 +331,19 @@ class ArduinoWifiDongle(object):
             time.sleep(1)
         return self.ip_addr
 
-    def wifi_status(self):
+    def wifi_status(self, exp_result=True, timeout=READ_TIMEOUT):
         """Get wifi status on the dongle.
 
         Returns:
             True: if wifi is connected.
             False: if not connected.
         """
+        curr_time = time.time()
+        while time.time() < curr_time + timeout:
+            if (exp_result and self.status == 3) or \
+                (not exp_result and not self.status):
+                  break
+            time.sleep(1)
         return self.status == 3
 
     def wifi_scan(self, exp_result=True, timeout=READ_TIMEOUT):
@@ -330,3 +375,18 @@ class ArduinoWifiDongle(object):
                 scan_networks.append(d)
 
         return scan_networks
+
+    def ping_status(self, exp_result=True, timeout=READ_TIMEOUT):
+        """ Get ping status on the dongle.
+
+        Returns:
+            True: if ping is successful
+            False: if not successful
+        """
+        curr_time = time.time()
+        while time.time() < curr_time + timeout:
+            if (exp_result and self.ping) or \
+                (not exp_result and not self.ping):
+                  break
+            time.sleep(1)
+        return self.ping
