@@ -42,8 +42,9 @@ class RangeApSupporting11McTest(RttBaseTest):
   def test_rtt_80211mc_supporting_aps(self):
     """Scan for APs and perform RTT only to those which support 802.11mc"""
     dut = self.android_devices[0]
-    rtt_supporting_aps = rutils.scan_with_rtt_support_constraint(dut, True,
-                                                                 repeat=10)
+    rtt_supporting_aps = rutils.select_best_scan_results(
+      rutils.scan_with_rtt_support_constraint(dut, True, repeat=10),
+      select_count=2)
     dut.log.debug("RTT Supporting APs=%s", rtt_supporting_aps)
     events = rutils.run_ranging(dut, rtt_supporting_aps, self.NUM_ITER,
                                 self.TIME_BETWEEN_ITERATIONS)
@@ -87,8 +88,9 @@ class RangeApSupporting11McTest(RttBaseTest):
     """Scan for APs and perform RTT only to those which support 802.11mc - using
     the LEGACY API!"""
     dut = self.android_devices[0]
-    rtt_supporting_aps = rutils.scan_with_rtt_support_constraint(dut, True,
-                                                                 repeat=10)
+    rtt_supporting_aps = rutils.select_best_scan_results(
+      rutils.scan_with_rtt_support_constraint(dut, True, repeat=10),
+      select_count=2)
     dut.log.debug("RTT Supporting APs=%s", rtt_supporting_aps)
 
     rtt_configs = []

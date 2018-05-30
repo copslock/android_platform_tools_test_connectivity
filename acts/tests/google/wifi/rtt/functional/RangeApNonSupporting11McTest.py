@@ -14,15 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import queue
-
 from acts import asserts
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi import wifi_test_utils as wutils
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
 class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
@@ -47,7 +44,8 @@ class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
   def test_rtt_non_80211mc_supporting_aps(self):
     """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs"""
     dut = self.android_devices[0]
-    non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
+    non_rtt_aps = rutils.select_best_scan_results(
+      rutils.scan_with_rtt_support_constraint(dut, False), select_count=1)
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
     asserts.assert_true(len(non_rtt_aps) > 0, "Need at least one AP!")
     events = rutils.run_ranging(dut, non_rtt_aps, self.NUM_ITER,
@@ -84,7 +82,8 @@ class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
     device not having privilege access (expect failures)."""
     dut = self.android_devices[0]
     rutils.config_privilege_override(dut, True)
-    non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
+    non_rtt_aps = rutils.select_best_scan_results(
+      rutils.scan_with_rtt_support_constraint(dut, False), select_count=1)
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
     asserts.assert_true(len(non_rtt_aps) > 0, "Need at least one AP!")
     events = rutils.run_ranging(dut, non_rtt_aps, self.NUM_ITER,
@@ -114,7 +113,8 @@ class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
     that get an error result.
     """
     dut = self.android_devices[0]
-    non_rtt_aps = rutils.scan_with_rtt_support_constraint(dut, False)
+    non_rtt_aps = rutils.select_best_scan_results(
+      rutils.scan_with_rtt_support_constraint(dut, False), select_count=1)
     dut.log.debug("Visible non-IEEE 802.11mc APs=%s", non_rtt_aps)
     asserts.assert_true(len(non_rtt_aps) > 0, "Need at least one AP!")
     non_rtt_aps = non_rtt_aps[0:1] # pick first

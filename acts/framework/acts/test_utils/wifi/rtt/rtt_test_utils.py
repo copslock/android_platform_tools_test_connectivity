@@ -143,6 +143,33 @@ def scan_with_rtt_support_constraint(dut, support_rtt, repeat=0):
   return []
 
 
+def select_best_scan_results(scans, select_count, lowest_rssi=-80):
+  """Select the strongest 'select_count' scans in the input list based on
+  highest RSSI. Exclude all very weak signals, even if results in a shorter
+  list.
+
+  Args:
+    scans: List of scan results.
+    select_count: An integer specifying how many scans to return at most.
+    lowest_rssi: The lowest RSSI to accept into the output.
+  Returns: a list of the strongest 'select_count' scan results from the scans
+           list.
+  """
+  def takeRssi(element):
+    return element['level']
+
+  result = []
+  scans.sort(key=takeRssi, reverse=True)
+  for scan in scans:
+    if len(result) == select_count:
+      break
+    if scan['level'] < lowest_rssi:
+      break # rest are lower since we're sorted
+    result.append(scan)
+
+  return result
+
+
 def validate_ap_result(scan_result, range_result):
   """Validate the range results:
   - Successful if AP (per scan result) support 802.11mc (allowed to fail
