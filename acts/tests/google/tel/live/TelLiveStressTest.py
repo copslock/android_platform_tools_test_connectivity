@@ -314,7 +314,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.droid, ad.ed = ad.get_droid()
                     ad.ed.start()
             ad.droid.logI("%s begin" % log_msg)
-        begin_time = get_device_epoch_time(self.dut)
+        begin_time = get_device_epoch_time(ads[0])
         if "wfc" in self.test_name:
             start_tcpdumps(
                 self.android_devices,
@@ -343,6 +343,19 @@ class TelLiveStressTest(TelephonyBaseTest):
                 wait_time_in_call=0,
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND)
         if not call_setup_result:
+            call_logs = ads[0].search_logcat(
+                "ActivityManager: START u0 {act=android.intent.action.CALL",
+                begin_time)
+            messaging_logs = ads[0].search_logcat(
+                "com.google.android.apps.messaging/.ui.conversation.ConversationActivity",
+                begin_time)
+            if call_logs and messaging_logs:
+                if messaging_logs[-1]["datetime_obj"] - call_logs[-1]["datetime_obj"] < 5:
+                    ads[0].log.info(
+                        "Call setup failure due to simultaneous activities")
+                    self.result_info[
+                        "Call Setup Failure With Simultaneous Activity"] += 1
+                    return True
             self.log.error("%s: Setup Call failed.", log_msg)
             failure_reasons.add("Setup")
             result = False
@@ -742,11 +755,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.log, self.dut,
                     self.call_server_number) and wait_for_in_call_active(
                         self.dut, 60, 3):
+                self._take_bug_report(self.test_name, self.begin_time)
                 raise signals.TestFailure("Unable to make phone call")
         else:
             if not call_setup_teardown(
                     self.log, self.dut, self.android_devices[1],
                     ad_hangup=None):
+                self._take_bug_report(self.test_name, self.begin_time)
                 raise signals.TestFailure("Unable to make phone call")
         voice_rat = self.dut.droid.telephonyGetCurrentVoiceNetworkType()
         data_rat = self.dut.droid.telephonyGetCurrentDataNetworkType()
@@ -758,6 +773,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.dut.log.info("Capable for simultaneous voice and data")
                 if not verify_internet_connection(self.log, self.dut):
                     self.dut.log.error("Incall data check failed")
+                    self._take_bug_report(self.test_name, self.begin_time)
                     raise signals.TestFailure("Incall data check failed")
                 else:
                     return True
