@@ -242,6 +242,9 @@ class WifiStressTest(WifiBaseTest):
             4. Verify softAP is turned down and WiFi is up.
 
         """
+        # Set country code explicitly to "US".
+        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
         ap_ssid = "softap_" + utils.rand_ascii_str(8)
         ap_password = utils.rand_ascii_str(8)
         self.dut.log.info("softap setup: %s %s", ap_ssid, ap_password)
