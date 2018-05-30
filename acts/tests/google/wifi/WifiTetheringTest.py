@@ -29,7 +29,7 @@ from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
-from acts.test_utils.net import connectivity_test_utils as cutils
+from acts.test_utils.net import socket_test_utils as sutils
 from acts.test_utils.net import arduino_test_utils as dutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -257,10 +257,10 @@ class WifiTetheringTest(base_test.BaseTestClass):
         port = 8888
 
         time.sleep(6) # wait until UDP packets method is invoked
-        socket = cutils.open_datagram_socket(ad, local_ip, port)
-        result = cutils.send_recv_data_datagram_sockets(
+        socket = sutils.open_datagram_socket(ad, local_ip, port)
+        sutils.send_recv_data_datagram_sockets(
             ad, ad, socket, socket, remote_ip, port)
-        cutils.close_datagram_socket(ad, socket)
+        sutils.close_datagram_socket(ad, socket)
 
     def _ping_hotspot_interfaces_from_tethered_device(self, dut):
         """ Ping hotspot interfaces from tethered device
