@@ -33,12 +33,12 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import WIFI_WEAK_RSSI_VALUE
 from acts.test_utils.tel.tel_defines import SignalStrengthContainer
-from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
+from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from TelLiveConnectivityMonitorBaseTest import TelLiveConnectivityMonitorBaseTest
 from TelLiveConnectivityMonitorBaseTest import ACTIONS
@@ -82,33 +82,19 @@ class TelLiveConnectivityMonitorMobilityTest(
         TelLiveConnectivityMonitorBaseTest.setup_class(self)
 
         # Do WiFi RSSI calibration.
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
+        self.set_wifi_strong_cell_strong()
 
-        if not ensure_network_generation(
-                self.log,
-                self.android_devices[0],
-                GEN_4G,
-                voice_or_data=NETWORK_SERVICE_DATA,
-                toggle_apm_after_setting=True):
-            self.log.error("Setup_class: phone failed to select to LTE.")
+        if not ensure_phone_subscription(self.log, self.dut):
+            self.dut.log.error("Failed to find valid subscription")
             return False
-        if not ensure_wifi_connected(self.log, self.android_devices[0],
+        if not ensure_wifi_connected(self.log, self.dut,
                                      self.wifi_network_ssid,
                                      self.wifi_network_pass):
-            self.log.error("{} connect WiFI failed".format(
-                self.android_devices[0].serial))
+            self.dut.log.error("Fail to connect to WiFI")
             return False
-        if (not wait_for_wifi_data_connection(self.log,
-                                              self.android_devices[0], True) or
-                not verify_http_connection(self.log, self.android_devices[0])):
-            self.log.error("No Data on Wifi")
+        if (not wait_for_wifi_data_connection(self.log, self.dut, True)
+                or not verify_internet_connection(self.log, self.dut)):
+            self.dut.log.error("No Data on Wifi")
             return False
 
         # Delay WAIT_TIME_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED after WiFi
@@ -116,47 +102,40 @@ class TelLiveConnectivityMonitorMobilityTest(
         time.sleep(WAIT_TIME_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED)
         # Turn On Screen and delay WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON
         # then get WiFi RSSI to avoid WiFi RSSI report -127(invalid value).
-        self.android_devices[0].droid.wakeUpNow()
+        self.dut.droid.wakeUpNow()
         time.sleep(WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON)
 
         setattr(self, "wifi_rssi_with_no_atten",
-                self.android_devices[0].droid.wifiGetConnectionInfo()['rssi'])
+                self.dut.droid.wifiGetConnectionInfo()['rssi'])
         if self.wifi_rssi_with_no_atten == INVALID_WIFI_RSSI:
-            self.log.error(
+            self.dut.log.error(
                 "Initial WiFi RSSI calibration value is wrong: -127.")
             return False
-        self.log.info("WiFi RSSI calibration info: atten=0, RSSI={}".format(
-            self.wifi_rssi_with_no_atten))
-        ensure_phones_default_state(self.log, [self.android_devices[0]])
+        self.dut.log.info("WiFi RSSI calibration info: atten=0, RSSI=%s",
+                          self.wifi_rssi_with_no_atten)
+        ensure_phones_default_state(self.log, [self.dut])
 
         # Do Cellular RSSI calibration.
         setattr(self, "cell_rssi_with_no_atten",
-                self.android_devices[0].droid.telephonyGetSignalStrength()[
+                self.dut.droid.telephonyGetSignalStrength()[
                     SignalStrengthContainer.SIGNAL_STRENGTH_LTE_DBM])
-        self.log.info(
-            "Cellular RSSI calibration info: atten=0, RSSI={}".format(
-                self.cell_rssi_with_no_atten))
+        self.dut.log.info("Cellular RSSI calibration info: atten=0, RSSI=%s",
+                          self.cell_rssi_with_no_atten)
         return True
 
     def teardown_class(self):
+        self.dut.droid.telephonyStopTrackingSignalStrengthChange()
+        super().teardown_class()
+        return True
 
-        TelLiveConnectivityMonitorBase.teardown_class()
-
-        self.android_devices[
-            0].droid.telephonyStopTrackingSignalStrengthChange()
+    def setup_test(self):
+        super().setup_test()
+        self.set_wifi_strong_cell_strong()
         return True
 
     def teardown_test(self):
-
         super().teardown_test()
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_2G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
-        set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
-                 MAX_RSSI_RESERVED_VALUE)
+        self.set_wifi_strong_cell_strong()
         return True
 
     def set_wifi_strong_cell_strong(self):
@@ -378,9 +357,12 @@ class TelLiveConnectivityMonitorMobilityTest(
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_handover_to_volte_then_hangup(self):
         self.setup_volte()
-        self.connect_to_wifi()
-        self.enable_wfc()
-        self.set_wifi_strong_cell_absent()
+        if WFC_MODE_WIFI_PREFERRED in self.dut_wfc_modes:
+            self.setup_wfc_non_apm()
+        else:
+            self.connect_to_wifi()
+            self.enable_wfc()
+            self.set_wifi_strong_cell_absent()
         return self.call_setup_and_connectivity_monitor_checking(
             setup="volte",
             trigger="set_wifi_absent_cell_strong",
@@ -393,9 +375,12 @@ class TelLiveConnectivityMonitorMobilityTest(
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_handover_to_volte_then_call_drop(self):
         self.setup_volte()
-        self.connect_to_wifi()
-        self.enable_wfc()
-        set_wfc_mode(self.log, self.dut, WFC_MODE_WIFI_PREFERRED)
+        if WFC_MODE_WIFI_PREFERRED in self.dut_wfc_modes:
+            self.setup_wfc_non_apm()
+        else:
+            self.connect_to_wifi()
+            self.enable_wfc()
+            self.set_wifi_strong_cell_absent()
         return self.call_drop_test(
             setup="volte",
             count=1,
@@ -409,7 +394,12 @@ class TelLiveConnectivityMonitorMobilityTest(
         self.setup_csfb()
         self.connect_to_wifi()
         self.enable_wfc()
-        set_wfc_mode(self.log, self.dut, WFC_MODE_WIFI_PREFERRED)
+        if WFC_MODE_WIFI_PREFERRED in self.dut_wfc_modes:
+            self.setup_wfc_non_apm()
+        else:
+            self.connect_to_wifi()
+            self.enable_wfc()
+            self.set_wifi_strong_cell_absent()
         return self.call_drop_test(
             setup="csfb",
             count=1,

@@ -179,9 +179,9 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
     def setup_wfc_apm(self):
         if CAPABILITY_WFC not in self.dut_capabilities:
             raise signals.TestSkip("WFC is not supported, abort test.")
-        if not phone_setup_iwlan(
-                self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
-                self.wifi_network_ssid, self.wifi_network_pass):
+        if not phone_setup_iwlan(self.log, self.dut, True,
+                                 self.dut_wfc_modes[0], self.wifi_network_ssid,
+                                 self.wifi_network_pass):
             self.dut.log.error("Failed to setup WFC.")
             raise signals.TestFailure("Failed to setup WFC in APM")
         self.dut.log.info("Phone is in WFC enabled state.")
@@ -483,9 +483,10 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 elif trigger == "drop_reason_override":
                     hangup_call(self.log, self.ad_reference)
                     time.sleep(MAX_WAIT_TIME_FOR_STATE_CHANGE)
-                elif getattr(self, trigger, None):
+                elif trigger and getattr(self, trigger, None):
                     trigger_func = getattr(self, trigger)
                     trigger_func()
+                    time.sleep(MAX_WAIT_TIME_FOR_STATE_CHANGE)
 
         last_call_drop_reason(self.dut, begin_time)
         for ad in (self.ad_reference, self.dut):
