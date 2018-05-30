@@ -29,6 +29,8 @@ from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts.test_utils.net import connectivity_test_utils as cutils
+from acts.test_utils.net import arduino_test_utils as dutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 WAIT_TIME = 2
@@ -162,6 +164,56 @@ class WifiTetheringTest(base_test.BaseTestClass):
                 wutils.wifi_connect(dut, self.network)
             device_connected[dut_id] = not device_connected[dut_id]
 
+    def _connect_disconnect_android_device(self, dut_id, wifi_state):
+        """ Connect or disconnect wifi on android device depending on the
+            current wifi state
+
+        Args:
+            1. dut_id: tethered device to change the wifi state
+            2. wifi_state: current wifi state
+        """
+        ad = self.tethered_devices[dut_id]
+        if wifi_state:
+            self.log.info("Disconnecting wifi on android device")
+            wutils.wifi_forget_network(ad, self.network["SSID"])
+        else:
+            self.log.info("Connecting to wifi on android device")
+            wutils.wifi_connect(ad, self.network)
+
+    def _connect_disconnect_wifi_dongle(self, dut_id, wifi_state):
+        """ Connect or disconnect wifi on wifi dongle depending on the
+            current wifi state
+
+        Args:
+            1. dut_id: wifi dongle to change the wifi state
+            2. wifi_state: current wifi state
+        """
+        wd = self.arduino_wifi_dongles[dut_id]
+        if wifi_state:
+            self.log.info("Disconnecting wifi on dongle")
+            dutils.disconnect_wifi(wd)
+        else:
+            self.log.info("Connecting to wifi on dongle")
+            dutils.connect_wifi(wd, self.network)
+
+    def _connect_disconnect_tethered_devices(self):
+        """ Connect disconnect tethered devices to wifi hotspot """
+        num_android_devices = len(self.tethered_devices)
+        num_wifi_dongles = 0
+        if self.arduino_wifi_dongles:
+            num_wifi_dongles = len(self.arduino_wifi_dongles)
+        total_devices = num_android_devices + num_wifi_dongles
+        device_connected = [False] * total_devices
+        for _ in range(50):
+            dut_id = random.randint(0, total_devices-1)
+            wifi_state = device_connected[dut_id]
+            if dut_id < num_android_devices:
+              self._connect_disconnect_android_device(dut_id, wifi_state)
+            else:
+              self._connect_disconnect_wifi_dongle(dut_id-num_android_devices,
+                                                   wifi_state)
+            device_connected[dut_id] = not device_connected[dut_id]
+
     def _verify_ping(self, dut, ip, isIPv6=False):
         """ Verify ping works from the dut to IP/hostname
 
@@ -191,25 +243,24 @@ class WifiTetheringTest(base_test.BaseTestClass):
         return dut.droid.connectivityGetIPv4Addresses(iface_name) + \
             dut.droid.connectivityGetIPv6Addresses(iface_name)
 
-    def _test_traffic_between_two_tethered_devices(self, dut1, dut2):
+    def _test_traffic_between_two_tethered_devices(self, ad, wd):
         """ Verify pinging interfaces of one DUT from another
 
         Args:
-            1. dut1 - tethered device 1
-            2. dut2 - tethered device 2
+            1. ad - android device
+            2. wd - wifi dongle
         """
-        wutils.wifi_connect(dut1, self.network)
-        wutils.wifi_connect(dut2, self.network)
+        wutils.wifi_connect(ad, self.network)
+        dutils.connect_wifi(wd, self.network)
+        local_ip = ad.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        remote_ip = wd.ip_address()
+        port = 8888
 
-        dut1_ipaddrs = dut1.droid.connectivityGetIPv4Addresses("wlan0") + \
-            dut1.droid.connectivityGetIPv6Addresses("wlan0")
-        dut2_ipaddrs = dut2.droid.connectivityGetIPv4Addresses("wlan0") + \
-            dut2.droid.connectivityGetIPv6Addresses("wlan0")
-
-        for ip in dut1_ipaddrs:
-            asserts.assert_true(self._verify_ping(dut2, ip), "%s " % ip)
-        for ip in dut2_ipaddrs:
-            asserts.assert_true(self._verify_ping(dut1, ip), "%s " % ip)
+        time.sleep(6) # wait until UDP packets method is invoked
+        socket = cutils.open_datagram_socket(ad, local_ip, port)
+        result = cutils.send_recv_data_datagram_sockets(
+            ad, ad, socket, socket, remote_ip, port)
+        cutils.close_datagram_socket(ad, socket)
 
     def _ping_hotspot_interfaces_from_tethered_device(self, dut):
         """ Ping hotspot interfaces from tethered device
@@ -331,7 +382,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         wutils.stop_wifi_tethering(self.hotspot_device)
 
     @test_tracker_info(uuid="110b61d1-8af2-4589-8413-11beac7a3025")
-    def wifi_tethering_2ghz_traffic_between_2tethered_devices(self):
+    def test_wifi_tethering_2ghz_traffic_between_2tethered_devices(self):
         """ Steps:
 
             1. Start wifi hotspot with 2G band
@@ -341,7 +392,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         wutils.toggle_wifi_off_and_on(self.hotspot_device)
         self._start_wifi_tethering(WIFI_CONFIG_APBAND_2G)
         self._test_traffic_between_two_tethered_devices(self.tethered_devices[0],
-                                                        self.tethered_devices[1])
+                                                        self.arduino_wifi_dongles[0])
         wutils.stop_wifi_tethering(self.hotspot_device)
 
     @test_tracker_info(uuid="953f6e2e-27bd-4b73-85a6-d2eaa4e755d5")
@@ -355,7 +406,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         wutils.toggle_wifi_off_and_on(self.hotspot_device)
         self._start_wifi_tethering(WIFI_CONFIG_APBAND_5G)
         self._test_traffic_between_two_tethered_devices(self.tethered_devices[0],
-                                                        self.tethered_devices[1])
+                                                        self.arduino_wifi_dongles[0])
         wutils.stop_wifi_tethering(self.hotspot_device)
 
     @test_tracker_info(uuid="d7d5aa51-682d-4882-a334-61966d93b68c")
@@ -368,7 +419,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         """
         wutils.toggle_wifi_off_and_on(self.hotspot_device)
         self._start_wifi_tethering(WIFI_CONFIG_APBAND_2G)
-        self._connect_disconnect_devices()
+        self._connect_disconnect_tethered_devices()
         wutils.stop_wifi_tethering(self.hotspot_device)
 
     @test_tracker_info(uuid="34abd6c9-c7f1-4d89-aa2b-a66aeabed9aa")
