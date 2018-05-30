@@ -40,7 +40,7 @@ class WlanWithHfpFunctionalityTest(CoexBaseTest):
 
     def setup_class(self):
         CoexBaseTest.setup_class(self)
-        req_params = ["sim_conf_file"]
+        req_params = ["sim_conf_file", "fping_drop_tolerance"]
         self.unpack_userparams(req_params)
         self.ag_phone_number, self.re_phone_number = setup_tel_config(
             self.pri_ad, self.sec_ad, self.sim_conf_file)
@@ -661,7 +661,8 @@ class WlanWithHfpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_078
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+                                self.fping_drop_tolerance)),
                  (initiate_disconnect_from_hf, (
                      self.audio_receiver,self.pri_ad, self.sec_ad,
                      self.iperf["duration"]))]
@@ -685,7 +686,8 @@ class WlanWithHfpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_081
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"])),
+        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+                                self.fping_drop_tolerance)),
                  (initiate_disconnect_from_hf, (
                      self.audio_receiver, self.pri_ad, self.sec_ad,
                      self.iperf["duration"])),
