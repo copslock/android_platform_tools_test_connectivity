@@ -1,4 +1,4 @@
-# /usr/bin/env python3
+#!/usr/bin/env python3
 #
 # Copyright (C) 2018 The Android Open Source Project
 #
@@ -18,7 +18,7 @@ Test suite to check A2DP Functionality with Wlan.
 
 Test Setup:
 
-Two Android deivce.
+Two Android device.
 One A2DP Headset connected to Relay.
 """
 
@@ -56,7 +56,6 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
     def setup_test(self):
         super().setup_test()
-        self.audio_receiver.power_on()
         self.audio_receiver.enter_pairing_mode()
         time.sleep(5) #Wait until device goes into pairing mode.
         if not pair_and_connect_headset(
@@ -68,6 +67,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
+        self.audio.terminate_pyaudio()
         self.audio_receiver.clean_up()
         super().teardown_test()
 
