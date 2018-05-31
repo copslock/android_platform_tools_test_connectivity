@@ -21,6 +21,7 @@ import logging
 import os
 import re
 import shutil
+import time
 
 from acts import asserts
 from acts import logger as acts_logger
