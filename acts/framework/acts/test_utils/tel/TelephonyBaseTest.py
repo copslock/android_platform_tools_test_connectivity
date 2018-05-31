@@ -198,8 +198,8 @@ class TelephonyBaseTest(BaseTestClass):
         if not unlock_sim(ad):
             raise signals.TestAbortClass("unable to unlock the SIM")
 
-        if self.user_params.get("build_id_override", None):
-            build_id_override(ad, self.user_params["build_id_override"])
+        if self.user_params.get("build_id_override", False):
+            build_id_override(ad, "%s.LAB" % ad.build_info["build_id"])
 
         if "sdm" in ad.model:
             if ad.adb.getprop("persist.radio.multisim.config") != "ssss":
@@ -313,8 +313,8 @@ class TelephonyBaseTest(BaseTestClass):
             self.log.error("Failure with %s", e)
         try:
             if self.user_params.get("build_id_override",
-                                    None) and self.user_params.get(
-                                        "recover_build_id", True):
+                                    False) and self.user_params.get(
+                                        "recover_build_id", False):
                 recover_build_id(ad)
         except Exception as e:
             self.log.error("Failure with %s", e)
@@ -373,25 +373,15 @@ class TelephonyBaseTest(BaseTestClass):
 
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
         ad.adb.wait_for_device()
-        extra_qxdm_logs_in_seconds = self.user_params.get(
-            "extra_qxdm_logs_in_seconds", 60 * 3)
         result = True
-        if getattr(ad, "qxdm_log", True):
-            # Gather qxdm log modified 3 minutes earlier than test start time
-            if begin_time:
-                qxdm_begin_time = begin_time - 1000 * extra_qxdm_logs_in_seconds
-            else:
-                qxdm_begin_time = None
-            try:
-                ad.get_qxdm_logs(test_name, qxdm_begin_time)
-            except Exception as e:
-                ad.log.error("Failed to get QXDM log for %s with error %s",
-                             test_name, e)
-                result = False
 
-        # get tcpdump and screen shot log
-        get_tcpdump_log(ad, test_name, begin_time)
-        get_screen_shot_log(ad, test_name, begin_time)
+        try:
+            # get tcpdump and screen shot log
+            get_tcpdump_log(ad, test_name, begin_time)
+            get_screen_shot_log(ad, test_name, begin_time)
+        except Exception as e:
+            ad.log.error("Exception error %s", e)
+            result = False
 
         try:
             ad.check_crash_report(test_name, begin_time, log_crash_report=True)
@@ -399,6 +389,22 @@ class TelephonyBaseTest(BaseTestClass):
             ad.log.error("Failed to check crash report for %s with error %s",
                          test_name, e)
             result = False
+
+        extra_qxdm_logs_in_seconds = self.user_params.get(
+            "extra_qxdm_logs_in_seconds", 60 * 3)
+        if getattr(ad, "qxdm_log", True):
+            # Gather qxdm log modified 3 minutes earlier than test start time
+            if begin_time:
+                qxdm_begin_time = begin_time - 1000 * extra_qxdm_logs_in_seconds
+            else:
+                qxdm_begin_time = None
+            try:
+                time.sleep(10)
+                ad.get_qxdm_logs(test_name, qxdm_begin_time)
+            except Exception as e:
+                ad.log.error("Failed to get QXDM log for %s with error %s",
+                             test_name, e)
+                result = False
 
         extract_test_log(self.log, ad.adb_logcat_file_path,
                          os.path.join(self.log_path, test_name,
