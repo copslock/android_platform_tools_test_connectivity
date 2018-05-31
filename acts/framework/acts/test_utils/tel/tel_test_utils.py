@@ -5588,7 +5588,7 @@ def set_qxdm_logger_command(ad, mask=None):
         ad.log.info("Use QXDM log mask %s", mask_path)
         ad.log.debug("qxdm_log_path = %s", ad.qxdm_log_path)
         output_path = os.path.join(ad.qxdm_log_path, "logs")
-        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 50 -c" %
+        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 90 -c" %
                                   (mask_path, output_path))
         for prop in ("persist.sys.modem.diag.mdlog",
                      "persist.vendor.sys.modem.diag.mdlog"):
@@ -5602,7 +5602,7 @@ def set_qxdm_logger_command(ad, mask=None):
                         ad.adb.shell('echo "%s" > %s' %
                                      (ad.qxdm_logger_command, conf_path))
                         break
-                ad.adb.shell("%s true" % prop, ignore_status=True)
+                ad.adb.shell("setprop %s true" % prop, ignore_status=True)
                 break
         return True
 
