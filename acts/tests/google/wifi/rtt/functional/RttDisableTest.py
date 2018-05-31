@@ -50,7 +50,8 @@ class RttDisableTest(WifiBaseTest, RttBaseTest):
     asserts.assert_true(dut.droid.wifiIsRttAvailable(), "RTT is not available")
 
     # scan to get some APs to be used later
-    all_aps = rutils.scan_networks(dut)
+    all_aps = rutils.select_best_scan_results(rutils.scan_networks(dut),
+                                              select_count=1)
     asserts.assert_true(len(all_aps) > 0, "Need at least one visible AP!")
 
     # disable RTT and validate broadcast & API

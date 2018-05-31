@@ -255,3 +255,17 @@ def create_logger(logging_lambda=lambda message: message):
             >>> lambda log_message: return 'string'
     """
     return tracelogger.TraceLogger(LoggerAdapter(logging_lambda))
+
+
+def create_tagged_trace_logger(tag=''):
+    """Returns a logger that logs each line with the given prefix.
+
+    Args:
+        tag: The tag of the log line, E.g. if tag == tag123, the output
+            line would be:
+
+            <TESTBED> <TIME> <LOG_LEVEL> [tag123] logged message
+    """
+    def logging_lambda(msg):
+        return '[%s] %s' % (tag, msg)
+    return create_logger(logging_lambda)
