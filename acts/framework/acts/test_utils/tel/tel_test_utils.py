@@ -2262,12 +2262,12 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
         return False
     timeout = min(max(file_size / 100000, 600), 3600)
     output_path = "/sdcard/Download/" + file_name + ".zip"
-    url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
+    #url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
+    url = "http://146.148.91.8/download/%s.zip" % file_name
     if method == "sl4a":
         return (http_file_download_by_sl4a, (ad, url, output_path, file_size,
                                              True, timeout))
     if method == "curl" and check_curl_availability(ad):
-        url = "http://146.148.91.8/download/" + file_name + ".zip"
         return (http_file_download_by_curl, (ad, url, output_path, file_size,
                                              True, timeout))
     elif method == "sl4a":
@@ -3207,7 +3207,7 @@ def set_wfc_mode(log, ad, wfc_mode):
         True if success. False if ad does not support WFC or error happened.
     """
     if wfc_mode != WFC_MODE_DISABLED and wfc_mode not in ad.telephony.get(
-            "capabilities", []):
+            "wfc_modes", []):
         ad.log.error("WFC mode %s is not supported", wfc_mode)
         raise signals.TestSkip("WFC mode %s is not supported" % wfc_mode)
     try:
