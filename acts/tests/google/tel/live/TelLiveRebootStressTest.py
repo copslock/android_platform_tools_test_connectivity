@@ -593,6 +593,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 setattr(self.dut, "reboot_to_recover", True)
                 return False
         else:
+            if process == "rild":
+                if int(self.dut.adb.getprop("ro.product.first_api_level")) >= 28:
+                    process = "qcrild"
             self.dut.log.info("======== Killing process <%s> ========",
                               process)
             process_pid = self.dut.adb.shell("pidof %s" % process)
