@@ -15,9 +15,12 @@
 #   limitations under the License.
 
 import time
+from acts import signals
 from acts.test_utils.tel.tel_defines import CALL_PROPERTY_HIGH_DEF_AUDIO
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
+from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
+from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import GEN_2G
 from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
@@ -305,6 +308,10 @@ def phone_setup_iwlan(log,
     Returns:
         True if success. False if fail.
     """
+    #TODO: get per sub_id carrier_config for multi-sim purpose
+    if CAPABILITY_WFC not in ad.telephony.get("capabilities", []):
+        ad.log.error("WFC is not supported, abort test.")
+        raise signals.TestSkip("WFC is not supported, abort test.")
     return phone_setup_iwlan_for_subscription(log, ad,
                                               get_outgoing_voice_sub_id(ad),
                                               is_airplane_mode, wfc_mode,
@@ -597,6 +604,10 @@ def phone_setup_volte(log, ad):
         True: if VoLTE is enabled successfully.
         False: for errors
     """
+    #TODO: get per sub_id carrier_config for multi-sim purpose
+    if CAPABILITY_VOLTE not in ad.telephony.get("capabilities", []):
+        ad.log.error("VoLTE is not supported, abort test.")
+        raise signals.TestSkip("VoLTE is not supported, abort test.")
     return phone_setup_volte_for_subscription(log, ad,
                                               get_outgoing_voice_sub_id(ad))
 

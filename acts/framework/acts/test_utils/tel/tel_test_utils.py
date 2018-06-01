@@ -3201,6 +3201,10 @@ def set_wfc_mode(log, ad, wfc_mode):
     Returns:
         True if success. False if ad does not support WFC or error happened.
     """
+    if wfc_mode != WFC_MODE_DISABLED and wfc_mode not in ad.telephony.get(
+            "capabilities", []):
+        ad.log.error("WFC mode %s is not supported", wfc_mode)
+        raise signals.TestSkip("WFC mode %s is not supported" % wfc_mode)
     try:
         ad.log.info("Set wfc mode to %s", wfc_mode)
         if wfc_mode != WFC_MODE_DISABLED:
