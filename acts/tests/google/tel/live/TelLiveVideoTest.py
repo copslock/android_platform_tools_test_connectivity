@@ -84,17 +84,13 @@ class TelLiveVideoTest(TelephonyBaseTest):
         self.long_duration_call_total_duration = self.user_params.get(
             "long_duration_call_total_duration",
             DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
+
+    def setup_class(self):
+        TelephonyBaseTest.setup_class(self)
         for ad in self.android_devices:
-            operator = get_operator_name(self.log, ad)
-            model = get_model_name(ad)
-            if CAPABILITY_VT not in operator_capabilities.get(
-                    operator, operator_capabilities["default"]):
-                raise signals.TestAbortClass(
-                    "Video calling support for carrier %s" % operator)
-            if operator == "tmo" and model in ("angler", "bullhead",
-                                               "sailfish", "marlin"):
-                raise signals.TestAbortClass(
-                    "Video calling support for tmobile on %s" % model)
+            if CAPABILITY_VT not in ad.telephony.get("capabilities", []):
+                ad.log.error("Video calling is not supported")
+                raise signals.TestAbortClass("Video calling is not supported")
 
     """ Tests Begin """
 
@@ -1278,7 +1274,8 @@ class TelLiveVideoTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         for ad in [ads[0], ads[1]]:
             if get_audio_route(self.log, ad) != AUDIO_ROUTE_EARPIECE:
-                self.log.error("{} Audio is not on earpiece.".format(ad.serial))
+                self.log.error("{} Audio is not on earpiece.".format(
+                    ad.serial))
                 # TODO: b/26337892 Define expected audio route behavior.
 
         time.sleep(WAIT_TIME_IN_CALL)
