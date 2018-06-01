@@ -4865,11 +4865,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
                 ad.log.error("Failed to end call")
         ad.droid.telephonyFactoryReset()
         ad.droid.imsFactoryReset()
-        if ad.adb.shell(
-                "settings get global device_provisioning_mobile_data") != "1":
-            ad.log.warning("mobile data is not ON")
-            ad.adb.shell(
-                "settings put global device_provisioning_mobile_data 1")
         data_roaming = getattr(ad, 'roaming', False)
         if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
             set_cell_data_roaming_state_by_adb(ad, data_roaming)
