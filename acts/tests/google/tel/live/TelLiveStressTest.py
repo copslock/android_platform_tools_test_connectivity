@@ -494,15 +494,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s begin", log_msg)
         self.dut.droid.logI("%s begin" % log_msg)
-        self.dut.adb.shell(
-            "settings put global device_provisioning_mobile_data 0")
+        self.dut.adb.shell("svc data disable")
         time.sleep(WAIT_TIME_AFTER_MODE_CHANGE)
-        self.dut.adb.shell(
-            "settings put global device_provisioning_mobile_data 1")
-        time.sleep(3)
-        if self.dut.adb.shell(
-                "settings get global device_provisioning_mobile_data") != "1":
-            self.dut.log.warning("mobile data is not ON")
+        self.dut.adb.shell("svc data enable")
         if not self._check_data():
             result = False
         elif setup == "volte" and not phone_idle_volte(self.log, self.dut):
