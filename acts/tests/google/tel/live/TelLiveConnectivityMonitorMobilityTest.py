@@ -67,6 +67,9 @@ WIFI_RSSI_FOR_HAND_IN_TEST_PHONE_HAND_IN = -50
 WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_NOT_HAND_OUT = -60
 WIFI_RSSI_FOR_HAND_OUT_TEST_PHONE_HAND_OUT = -85
 
+CS_LINK_LOST = "Radio Link Lost"
+IMS_LINK_LOST = "Media Timeout"
+
 
 class TelLiveConnectivityMonitorMobilityTest(
         TelLiveConnectivityMonitorBaseTest):
@@ -255,8 +258,8 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_setup_and_connectivity_monitor_checking(
             setup="volte",
             trigger="set_wifi_absent_cell_absent",
-            extra_trigger=None,
-            expected_drop_reason=None,
+            pre_trigger=None,
+            expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 
@@ -267,8 +270,8 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_setup_and_connectivity_monitor_checking(
             setup="csfb",
             trigger="set_wifi_absent_cell_absent",
-            extra_trigger=None,
-            expected_drop_reason=None,
+            pre_trigger=None,
+            expected_drop_reason=CS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 
@@ -279,8 +282,8 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_setup_and_connectivity_monitor_checking(
             setup="3g",
             trigger="set_wifi_absent_cell_absent",
-            extra_trigger=None,
-            expected_drop_reason=None,
+            pre_trigger=None,
+            expected_drop_reason=CS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 
@@ -291,8 +294,8 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_setup_and_connectivity_monitor_checking(
             setup="wfc_apm",
             trigger="set_wifi_absent_cell_absent",
-            extra_trigger=None,
-            expected_drop_reason=None,
+            pre_trigger=None,
+            expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 
@@ -303,8 +306,8 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_setup_and_connectivity_monitor_checking(
             setup="wfc_non_apm",
             trigger="set_wifi_absent_cell_absent",
-            extra_trigger=None,
-            expected_drop_reason=None,
+            pre_trigger=None,
+            expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 
@@ -318,7 +321,7 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_setup_and_connectivity_monitor_checking(
             setup="volte",
             trigger=None,
-            extra_trigger="set_wifi_strong_cell_absent",
+            pre_trigger="set_wifi_strong_cell_absent",
             expected_drop_reason=None,
             expected_trouble=None,
             expected_action=None)
@@ -333,7 +336,7 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_setup_and_connectivity_monitor_checking(
             setup="csfb",
             trigger=None,
-            extra_trigger="set_wifi_strong_cell_absent",
+            pre_trigger="set_wifi_strong_cell_absent",
             expected_drop_reason=None,
             expected_trouble=None,
             expected_action=None)
@@ -348,7 +351,7 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_setup_and_connectivity_monitor_checking(
             setup="3g",
             trigger=None,
-            extra_trigger="set_wifi_strong_cell_absent",
+            pre_trigger="set_wifi_strong_cell_absent",
             expected_drop_reason=None,
             expected_trouble=None,
             expected_action=None)
@@ -366,7 +369,7 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_setup_and_connectivity_monitor_checking(
             setup="volte",
             trigger="set_wifi_absent_cell_strong",
-            extra_trigger="set_wifi_strong_cell_strong",
+            pre_trigger="set_wifi_strong_cell_strong",
             expected_drop_reason=None,
             expected_trouble=None,
             expected_action=None)
@@ -384,7 +387,9 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_drop_test(
             setup="volte",
             count=1,
-            extra_trigger="set_wifi_absent_cell_strong",
+            trigger="set_wifi_absent_cell_absent",
+            pre_trigger="set_wifi_absent_cell_strong",
+            expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 
@@ -403,7 +408,9 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_drop_test(
             setup="csfb",
             count=1,
-            extra_trigger="set_wifi_absent_cell_absent",
+            trigger="set_wifi_absent_cell_absent",
+            pre_trigger="set_wifi_absent_cell_strong",
+            expected_drop_reason=CS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 
@@ -417,7 +424,9 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_drop_test(
             setup="volte",
             count=1,
-            extra_trigger="set_wifi_strong_cell_absent",
+            trigger="set_wifi_absent_cell_absent",
+            pre_trigger="set_wifi_strong_cell_absent",
+            expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 
@@ -431,7 +440,9 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_drop_test(
             setup="csfb",
             count=1,
-            extra_trigger="set_wifi_strong_cell_absent",
+            trigger="set_wifi_absent_cell_absent",
+            pre_trigger="set_wifi_strong_cell_absent",
+            expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 
@@ -445,7 +456,9 @@ class TelLiveConnectivityMonitorMobilityTest(
         return self.call_drop_test(
             setup="3g",
             count=1,
-            extra_trigger="set_wifi_strong_cell_absent",
+            trigger="set_wifi_absent_cell_absent",
+            pre_trigger="set_wifi_strong_cell_absent",
+            expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
 

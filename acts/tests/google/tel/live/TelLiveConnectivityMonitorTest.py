@@ -428,7 +428,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         self.setup_volte()
         self.setup_wfc_non_apm()
         return self.call_drop_triggered_suggestion_test(
-            setup="wfc_non_apm", extra_trigger="toggle_wifi")
+            setup="wfc_non_apm", pre_trigger="toggle_wifi")
 
     @test_tracker_info(uuid="1c880cf8-082c-4451-b890-22081177d084")
     @TelephonyBaseTest.tel_test_wrap
@@ -449,7 +449,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         self.setup_volte()
         self.setup_wfc_apm()
         return self.call_drop_triggered_suggestion_test(
-            setup="wfc_apm", extra_trigger="toggle_wifi")
+            setup="wfc_apm", pre_trigger="toggle_wifi")
 
     @test_tracker_info(uuid="")
     @TelephonyBaseTest.tel_test_wrap
