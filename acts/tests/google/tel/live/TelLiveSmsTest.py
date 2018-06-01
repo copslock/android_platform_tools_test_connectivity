@@ -28,6 +28,7 @@ from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
@@ -1889,9 +1890,9 @@ class TelLiveSmsTest(TelephonyBaseTest):
     @test_tracker_info(uuid="ed720013-e366-448b-8901-bb09d26cea05")
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_iwlan(self):
-        """ Test MO SMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
+        """ Test MO SMS, Phone in APM, WiFi connected, WFC Cell Preferred mode.
 
-        Make sure PhoneA APM, WiFi connected, WFC WiFi preferred mode.
+        Make sure PhoneA APM, WiFi connected, WFC Cell preferred mode.
         Make sure PhoneA report iwlan as data rat.
         Make sure PhoneB is able to make/receive call/sms.
         Send SMS on PhoneA.
@@ -1903,7 +1904,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], True, WFC_MODE_CELLULAR_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -1916,7 +1917,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
     @test_tracker_info(uuid="4d4b0b7b-bf00-44f6-a0ed-23b438c30fc2")
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mt_iwlan(self):
-        """ Test MT SMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
+        """ Test MT SMS, Phone in APM, WiFi connected, WFC Cell Preferred mode.
 
         Make sure PhoneA APM, WiFi connected, WFC WiFi preferred mode.
         Make sure PhoneA report iwlan as data rat.
@@ -1930,7 +1931,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], True, WFC_MODE_CELLULAR_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -1943,9 +1944,9 @@ class TelLiveSmsTest(TelephonyBaseTest):
     @test_tracker_info(uuid="264e2557-e18c-41c0-8d99-49cee3fe6f07")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mo_iwlan(self):
-        """ Test MO MMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
+        """ Test MO MMS, Phone in APM, WiFi connected, WFC Cell Preferred mode.
 
-        Make sure PhoneA APM, WiFi connected, WFC WiFi preferred mode.
+        Make sure PhoneA APM, WiFi connected, WFC Cell preferred mode.
         Make sure PhoneA report iwlan as data rat.
         Make sure PhoneB is able to make/receive call/sms.
         Send MMS on PhoneA.
@@ -1957,7 +1958,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], True, WFC_MODE_CELLULAR_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
@@ -1970,9 +1971,9 @@ class TelLiveSmsTest(TelephonyBaseTest):
     @test_tracker_info(uuid="330db618-f074-4bfc-bf5e-78939fbee532")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_iwlan(self):
-        """ Test MT MMS, Phone in APM, WiFi connected, WFC WiFi Preferred mode.
+        """ Test MT MMS, Phone in APM, WiFi connected, WFC Cell Preferred mode.
 
-        Make sure PhoneA APM, WiFi connected, WFC WiFi preferred mode.
+        Make sure PhoneA APM, WiFi connected, WFC Cell preferred mode.
         Make sure PhoneA report iwlan as data rat.
         Make sure PhoneB is able to make/receive call/sms.
         Receive MMS on PhoneA.
@@ -1984,7 +1985,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], True, WFC_MODE_CELLULAR_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
