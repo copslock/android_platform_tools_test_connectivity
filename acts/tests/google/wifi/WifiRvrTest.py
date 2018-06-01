@@ -343,8 +343,11 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result = {}
         # Configure AP
         band = self.access_point.band_lookup_by_channel(channel)
-        if wutils.WifiEnums.channel_5G_to_freq[
-                channel] in wutils.WifiEnums.DFS_5G_FREQUENCIES:
+        if "2G" in band:
+            frequency = wutils.WifiEnums.channel_2G_to_freq[channel]
+        else:
+            frequency = wutils.WifiEnums.channel_5G_to_freq[channel]
+        if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params["DFS_region"])
         else:
             self.access_point.set_region(self.testbed_params["default_region"])
