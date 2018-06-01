@@ -882,7 +882,7 @@ def wait_for_ringing_call_for_subscription(
         caller=None,
         event_tracking_started=False,
         timeout=MAX_WAIT_TIME_CALLEE_RINGING,
-        retries=1):
+        interval=WAIT_TIME_BETWEEN_STATE_CHECK):
     """Wait for an incoming call on specified subscription.
 
     Args:
@@ -892,46 +892,51 @@ def wait_for_ringing_call_for_subscription(
         incoming_number: Expected incoming number. Default is None
         event_tracking_started: True if event tracking already state outside
         timeout: time to wait for ring
+        interval: checking interval
 
     Returns:
         True: if incoming call is received and answered successfully.
         False: for errors
     """
-    if not ad.droid.telecomIsRinging():
-        if not event_tracking_started:
-            ad.ed.clear_events(EventCallStateChanged)
-            ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-        event_ringing = None
-        for i in range(retries):
-            event_ringing = _wait_for_ringing_event(log, ad, timeout)
-            if event_ringing:
-                ad.log.info("callee received ring event")
-                if incoming_number and not check_phone_number_match(
-                        event_ringing['data']
-                    [CallStateContainer.INCOMING_NUMBER], incoming_number):
-                    ad.log.error(
-                        "Incoming Number not match. Expected number:%s, actual number:%s",
-                        incoming_number, event_ringing['data'][
-                            CallStateContainer.INCOMING_NUMBER])
-                    return False
-                break
+    if not event_tracking_started:
+        ad.ed.clear_events(EventCallStateChanged)
+        ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
+    ring_event_check = False
+    end_time = time.time() + timeout
+    try:
+        while time.time() < end_time:
+            if not ring_event_check:
+                event_ringing = _wait_for_ringing_event(log, ad, interval)
+                if event_ringing:
+                    ad.log.info("callee received ring event")
+                    if incoming_number and not check_phone_number_match(
+                            event_ringing['data']
+                        [CallStateContainer.INCOMING_NUMBER], incoming_number):
+                        ad.log.error(
+                            "Incoming Number not match. Expected number:%s, actual number:%s",
+                            incoming_number, event_ringing['data'][
+                                CallStateContainer.INCOMING_NUMBER])
+                        return False
+                    ring_event_check = True
             if ad.droid.telephonyGetCallStateForSubscription(
                     sub_id
-            ) == TELEPHONY_STATE_RINGING or ad.droid.telecomIsRinging():
-                ad.log.info("callee in ringing state")
-                break
-            if i == retries - 1:
-                ad.log.info(
-                    "callee didn't receive ring event or got into ringing state"
-                )
-                return False
+            ) == TELEPHONY_STATE_RINGING and ad.droid.telecomIsRinging():
+                ad.log.info("callee is in ringing state")
+                if caller:
+                    if caller.droid.telecomIsInCall():
+                        caller.log.info("Caller telecom is in call state")
+                        return True
+                    else:
+                        caller.log.info("Caller telecom is NOT in call state")
+                else:
+                    return True
+            else:
+                ad.log.info("callee is not in ringing state")
+            time.sleep(interval)
+    finally:
         if not event_tracking_started:
             ad.droid.telephonyStopTrackingCallStateChangeForSubscription(
                 sub_id)
-    if caller and not caller.droid.telecomIsInCall():
-        caller.log.error("Caller not in call state")
-        return False
-    return True
 
 
 def wait_for_call_offhook_event(
@@ -1004,17 +1009,15 @@ def wait_and_answer_call_for_subscription(
     ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
     try:
-        if not _wait_for_droid_in_state(
+        if not wait_for_ringing_call_for_subscription(
                 log,
                 ad,
-                timeout,
-                wait_for_ringing_call_for_subscription,
                 sub_id,
-                incoming_number=None,
+                incoming_number=incoming_number,
                 caller=caller,
                 event_tracking_started=True,
-                timeout=WAIT_TIME_BETWEEN_STATE_CHECK):
-            ad.log.info("Could not answer a call: phone never rang.")
+                timeout=timeout):
+            ad.log.info("Incoming call ringing check failed.")
             return False
         time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
         ad.log.info("Accept the ring call")
@@ -1090,7 +1093,8 @@ def wait_and_reject_call_for_subscription(log,
 
     if not wait_for_ringing_call_for_subscription(log, ad, sub_id,
                                                   incoming_number):
-        ad.log.error("Could not reject a call: phone never rang.")
+        ad.log.error(
+            "Could not reject a call: incoming call in ringing check failed.")
         return False
 
     ad.ed.clear_events(EventCallStateChanged)
