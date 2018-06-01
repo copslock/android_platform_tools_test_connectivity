@@ -114,6 +114,11 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
             fcntl.flock(self.lock_file, fcntl.LOCK_UN)
             self.lock_file.close()
 
+    def restart(self):
+        """Method to restart browser session without releasing lock file."""
+        self.quit()
+        self.__enter__()
+
     def visit_persistent(self, url, page_load_timeout, num_tries):
         """Method to visit webpages and retry upon failure.
 
@@ -130,7 +135,10 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
             try:
                 self.visit(url)
             except:
-                self.visit("about:blank")
+                try:
+                    self.visit("about:blank")
+                except:
+                    self.restart()
             if self.url.split("/")[-1] == url.split("/")[-1]:
                 break
             if idx == num_tries - 1:
