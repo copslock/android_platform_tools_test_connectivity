@@ -430,7 +430,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             except Exception as e:
                 self.log.exception(e)
             for ad in ads:
-                hangup_call_by_adb(ad)
+                if ad.droid.telecomIsInCall():
+                    hangup_call_by_adb(ad)
         else:
             self.log.info("%s test succeed", log_msg)
             self.result_info["Call Success"] += 1
@@ -781,8 +782,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.dut.log.info(
                     "Not capable for simultaneous voice and data")
                 return False
+            hangup_call(self.log, self.dut)
         finally:
-            hangup_call_by_adb(self.dut)
+            for ad in self.android_devices:
+                if ad.droid.telecomIsInCall():
+                    hangup_call(self.log, ad)
 
     def parallel_tests(self, setup_func=None, call_verification_func=None):
         self.log.info(self._get_result_message())
