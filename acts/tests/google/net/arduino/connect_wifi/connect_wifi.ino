@@ -55,7 +55,7 @@ void wifiStatus() {
         Serial.println("0");
     }
 
-    delay(1000);
+    delay(250);
     Serial.println("connect: wifiStatus(): CALL: Status End");
 }
 

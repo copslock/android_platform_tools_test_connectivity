@@ -20,9 +20,10 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
-class RttDisableTest(RttBaseTest):
+class RttDisableTest(WifiBaseTest, RttBaseTest):
   """Test class for RTT ranging enable/disable flows."""
 
   MODE_DISABLE_WIFI = 0
@@ -30,7 +31,10 @@ class RttDisableTest(RttBaseTest):
   MODE_DISABLE_LOCATIONING = 2
 
   def __init__(self, controllers):
+    WifiBaseTest.__init__(self, controllers)
     RttBaseTest.__init__(self, controllers)
+    if "AccessPoint" in self.user_params:
+      self.legacy_configure_ap_and_start()
 
   def run_disable_rtt(self, disable_mode):
     """Validate the RTT disabled flows: whether by disabling Wi-Fi or entering
@@ -46,7 +50,8 @@ class RttDisableTest(RttBaseTest):
     asserts.assert_true(dut.droid.wifiIsRttAvailable(), "RTT is not available")
 
     # scan to get some APs to be used later
-    all_aps = rutils.scan_networks(dut)
+    all_aps = rutils.select_best_scan_results(rutils.scan_networks(dut),
+                                              select_count=1)
     asserts.assert_true(len(all_aps) > 0, "Need at least one visible AP!")
 
     # disable RTT and validate broadcast & API

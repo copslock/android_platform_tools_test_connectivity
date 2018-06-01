@@ -132,28 +132,87 @@ class WifiIOTtpeTest(WifiBaseTest):
 
     """Tests"""
 
-    #ASUS
+    @test_tracker_info(uuid="0e4ad6ed-595c-4629-a4c9-c6be9c3c58e0")
     def test_iot_connection_to_ASUS_RT_AC68U_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
+    @test_tracker_info(uuid="a76d8acc-808e-4a5d-a52b-5ba07d07b810")
     def test_iot_connection_to_ASUS_RT_AC68U_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
-    def test_iot_connection_to_ASUS_RT_AC66U_2G(self):
+    @test_tracker_info(uuid="659a3e5e-07eb-4905-9cda-92e959c7b674")
+    def test_iot_connection_to_D_Link_DIR_868L_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
-    def test_iot_connection_to_ASUS_RT_AC66U_5G(self):
+    @test_tracker_info(uuid="6bcfd736-30fc-48a8-b4fb-723d1d113f3c")
+    def test_iot_connection_to_D_Link_DIR_868L_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
+    @test_tracker_info(uuid="c9da945a-2c4a-44e1-881d-adf307b39b21")
+    def test_iot_connection_to_TP_LINK_WR940N_2G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="db0d224d-df81-401f-bf35-08ad02e41a71")
     def test_iot_connection_to_ASUS_RT_N66U_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
+    @test_tracker_info(uuid="845ff1d6-618d-40f3-81c3-6ed3a0751fde")
     def test_iot_connection_to_ASUS_RT_N66U_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
+    @test_tracker_info(uuid="6908039b-ccc9-4777-a0f1-3494ce642014")
+    def test_iot_connection_to_ASUS_RT_AC54U_2G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="2647c15f-2aad-47d7-8dee-b2ee1ac4cef6")
+    def test_iot_connection_to_ASUS_RT_AC54U_5G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="99678f66-ddf1-454d-87e4-e55177ec380d")
+    def test_iot_connection_to_ASUS_RT_N56U_2G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="4dd75e81-9a8e-44fd-9449-09f5ab8a63c3")
+    def test_iot_connection_to_ASUS_RT_N56U_5G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="315397ce-50d5-4abf-a11c-1abcaef832d3")
+    def test_iot_connection_to_BELKIN_F9K1002v1_2G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="05ba464a-b1ef-4ac1-a32f-c919ec4aa1dd")
+    def test_iot_connection_to_CISCO_E1200_2G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="04912868-4a47-40ce-877e-4e4c89849557")
+    def test_iot_connection_to_TP_LINK_C2_2G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="53517a21-3802-4185-b8bb-6eaace063a42")
+    def test_iot_connection_to_TP_LINK_C2_5G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="71c08c1c-415d-4da4-a151-feef43fb6ad8")
+    def test_iot_connection_to_ASUS_RT_AC66U_2G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
+
+    @test_tracker_info(uuid="2322c155-07d1-47c9-bd21-2e358e3df6ee")
+    def test_iot_connection_to_ASUS_RT_AC66U_5G(self):
+        ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
+        self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])

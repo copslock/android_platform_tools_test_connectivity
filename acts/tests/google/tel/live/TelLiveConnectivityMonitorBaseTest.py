@@ -17,10 +17,12 @@
     Connectivity Monitor and Telephony Troubleshooter Tests
 """
 
+import os
 import re
 import time
 
 from acts import signals
+from acts import utils
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VT
@@ -103,6 +105,11 @@ ACTIONS = {
     12: "NONE"
 }
 
+IGNORED_CALL_DROP_REASONS = ["Radio Link Lost", "Media Timeout"]
+
+CALL_DATA_LOGS = ("/data/data/com.google.android.connectivitymonitor/databases"
+                  "/call_data_logs.db")
+
 
 class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
     def setup_class(self):
@@ -128,6 +135,15 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
         ## Work around for WFC not working issue on 2018 devices
         if "Permissive" not in self.dut.adb.shell("su root getenforce"):
             self.dut.adb.shell("su root setenforce 0")
+
+    def on_fail(self, test_name, begin_time):
+        self.dut.log.info("Pulling %s", CALL_DATA_LOGS)
+        log_path = os.path.join(self.dut.log_path, test_name,
+                                "CallDataLogs_%s" % self.dut.serial)
+        utils.create_dir(log_path)
+        self.dut.pull_files(CALL_DATA_LOGS, log_path)
+
+        self._take_bug_report(test_name, begin_time)
 
     def teardown_test(self):
         self.set_drop_reason_override(override_code=None)
@@ -179,9 +195,9 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
     def setup_wfc_apm(self):
         if CAPABILITY_WFC not in self.dut_capabilities:
             raise signals.TestSkip("WFC is not supported, abort test.")
-        if not phone_setup_iwlan(
-                self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
-                self.wifi_network_ssid, self.wifi_network_pass):
+        if not phone_setup_iwlan(self.log, self.dut, True,
+                                 self.dut_wfc_modes[0], self.wifi_network_ssid,
+                                 self.wifi_network_pass):
             self.dut.log.error("Failed to setup WFC.")
             raise signals.TestFailure("Failed to setup WFC in APM")
         self.dut.log.info("Phone is in WFC enabled state.")
@@ -399,7 +415,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
     def call_setup_and_connectivity_monitor_checking(self,
                                                      setup=None,
                                                      trigger=None,
-                                                     extra_trigger=None,
+                                                     pre_trigger=None,
                                                      expected_drop_reason=None,
                                                      expected_trouble=None,
                                                      expected_action=None):
@@ -464,18 +480,21 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 self.log.error("Call setup failed")
 
         if self.dut.droid.telecomIsInCall():
+            self.dut.log.info("Telecom is in call")
             # Trigger in-call event to drop the call
-            if extra_trigger:
-                if extra_trigger == "toggle_wifi":
+            if pre_trigger:
+                if pre_trigger == "toggle_wifi":
                     wifi_toggle_state(self.log, self.dut, None)
                     time.sleep(MAX_WAIT_TIME_FOR_STATE_CHANGE)
-                elif getattr(self, extra_trigger, None):
-                    extra_trigger_func = getattr(self, extra_trigger)
-                    extra_trigger_func()
+                elif getattr(self, pre_trigger, None):
+                    pre_trigger_func = getattr(self, pre_trigger)
+                    pre_trigger_func()
+                    time.sleep(MAX_WAIT_TIME_FOR_STATE_CHANGE)
                 self.dut.log.info(
                     "Voice in RAT %s",
                     self.dut.droid.telephonyGetCurrentVoiceNetworkType())
             if self.dut.droid.telecomIsInCall():
+                self.dut.log.info("Telecom is in call")
                 if trigger == "modem_crash":
                     self.trigger_modem_crash()
                 elif trigger == "toggling_apm":
@@ -483,9 +502,12 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 elif trigger == "drop_reason_override":
                     hangup_call(self.log, self.ad_reference)
                     time.sleep(MAX_WAIT_TIME_FOR_STATE_CHANGE)
-                elif getattr(self, trigger, None):
+                elif trigger and getattr(self, trigger, None):
                     trigger_func = getattr(self, trigger)
                     trigger_func()
+                    time.sleep(MAX_WAIT_TIME_FOR_STATE_CHANGE)
+        else:
+            self.dut.log.info("Not in call")
 
         last_call_drop_reason(self.dut, begin_time)
         for ad in (self.ad_reference, self.dut):
@@ -559,6 +581,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 if expected_action and expected_action != actions:
                     self.dut.log.error("actions = %s, expecting %s", actions,
                                        expected_action)
+                    result = False
                 if drop_percentage > CALL_TROUBLE_THRESHOLD and dropped > CONSECUTIVE_CALL_FAILS:
                     if diagnosis == "UNABLE_TO_TRIAGE":
                         self.dut.log.error(
@@ -577,6 +600,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 if drop_reason != expected_drop_reason:
                     self.dut.log.error("%s is: %s, expecting %s", reason_key,
                                        drop_reason, expected_drop_reason)
+                    result = False
                 else:
                     self.dut.log.info("%s is: %s", reason_key, drop_reason)
             else:
@@ -585,7 +609,8 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 result = False
 
         if not trigger or trigger == "toggling_apm" or "Call Drop: %s" % (
-                expected_drop_reason) in bugreport_database_before:
+                expected_drop_reason
+        ) in bugreport_database_before or expected_drop_reason in IGNORED_CALL_DROP_REASONS:
             return result
         # Parse logcat for UI notification only for the first failure
         if self.dut.search_logcat("Bugreport notification title Call Drop:",
@@ -604,7 +629,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
     def call_drop_test(self,
                        setup=None,
                        count=CONSECUTIVE_CALL_FAILS,
-                       extra_trigger=None,
+                       pre_trigger=None,
                        expected_trouble=None,
                        expected_action=None):
         result = True
@@ -621,7 +646,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
             if not self.call_setup_and_connectivity_monitor_checking(
                     setup=setup,
                     trigger=trigger,
-                    extra_trigger=extra_trigger,
+                    pre_trigger=pre_trigger,
                     expected_drop_reason=drop_reason,
                     expected_trouble=expected_trouble,
                     expected_action=expected_action):
@@ -633,7 +658,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
 
     def call_drop_triggered_suggestion_test(self,
                                             setup=None,
-                                            extra_trigger=None,
+                                            pre_trigger=None,
                                             expected_trouble=None,
                                             expected_action=None):
         result = True
@@ -671,14 +696,14 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
             return self.call_drop_test(
                 setup=setup,
                 count=CONSECUTIVE_CALL_FAILS,
-                extra_trigger=extra_trigger,
+                pre_trigger=pre_trigger,
                 expected_trouble=expected_trouble,
                 expected_action=expected_action)
 
     def healthy_call_test(self,
                           setup=None,
                           count=1,
-                          extra_trigger=None,
+                          pre_trigger=None,
                           expected_trouble=None,
                           expected_action=None):
         if self.dut.model not in ("marlin", "sailfish", "walleye", "taimen"):
@@ -688,7 +713,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
             if not self.call_setup_and_connectivity_monitor_checking(
                     setup=setup,
                     trigger=None,
-                    extra_trigger=extra_trigger,
+                    pre_trigger=pre_trigger,
                     expected_trouble=expected_trouble,
                     expected_action=expected_action):
                 self._ad_take_bugreport(

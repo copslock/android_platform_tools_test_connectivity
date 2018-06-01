@@ -19,6 +19,7 @@ import ipaddress
 import logging
 import time
 
+from acts import logger
 from acts.controllers.ap_lib import ap_get_interface
 from acts.controllers.ap_lib import bridge_interface
 from acts.controllers.ap_lib import dhcp_config
@@ -106,6 +107,9 @@ class AccessPoint(object):
             configs: configs for the access point from config file.
         """
         self.ssh_settings = settings.from_config(configs['ssh_config'])
+        self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' % (
+            self.ssh_settings.hostname, msg))
+
         if 'ap_subnet' in configs:
             self._AP_2G_SUBNET_STR = configs['ap_subnet']['2g']
             self._AP_5G_SUBNET_STR = configs['ap_subnet']['5g']

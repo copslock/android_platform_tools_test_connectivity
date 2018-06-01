@@ -655,6 +655,12 @@ class BaseTestClass(object):
                 self.log.error("Failed to setup %s.", self.TAG)
                 self._block_all_test_cases(tests)
                 return self.results
+        except signals.TestAbortClass:
+            try:
+                self._exec_func(self.teardown_class)
+            except Exception as e:
+                self.log.warning(e)
+            return self.results
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
             self._exec_func(self.teardown_class)

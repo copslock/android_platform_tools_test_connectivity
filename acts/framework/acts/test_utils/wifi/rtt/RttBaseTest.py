@@ -63,3 +63,8 @@ class RttBaseTest(BaseTestClass):
 
       # clean-up queue from the System Service UID
       ad.droid.wifiRttCancelRanging([1000])
+
+  def on_fail(self, test_name, begin_time):
+    for ad in self.android_devices:
+      ad.take_bug_report(test_name, begin_time)
+      ad.cat_adb_log(test_name, begin_time)

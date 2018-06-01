@@ -882,7 +882,7 @@ def wait_for_ringing_call_for_subscription(
         caller=None,
         event_tracking_started=False,
         timeout=MAX_WAIT_TIME_CALLEE_RINGING,
-        retries=1):
+        interval=WAIT_TIME_BETWEEN_STATE_CHECK):
     """Wait for an incoming call on specified subscription.
 
     Args:
@@ -892,6 +892,7 @@ def wait_for_ringing_call_for_subscription(
         incoming_number: Expected incoming number. Default is None
         event_tracking_started: True if event tracking already state outside
         timeout: time to wait for ring
+        interval: checking interval
 
     Returns:
         True: if incoming call is received and answered successfully.
@@ -900,38 +901,42 @@ def wait_for_ringing_call_for_subscription(
     if not event_tracking_started:
         ad.ed.clear_events(EventCallStateChanged)
         ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-    event_ringing = None
-    for i in range(retries):
-        event_ringing = _wait_for_ringing_event(log, ad, timeout)
-        if event_ringing:
-            ad.log.info("callee received ring event")
-            break
-        if ad.droid.telephonyGetCallStateForSubscription(
-                sub_id
-        ) == TELEPHONY_STATE_RINGING or ad.droid.telecomIsRinging():
-            ad.log.info("callee in ringing state")
-            break
-        if i == retries - 1:
-            ad.log.info(
-                "callee didn't receive ring event or got into ringing state")
-            return False
-    if not event_tracking_started:
-        ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
-    if caller and not caller.droid.telecomIsInCall():
-        caller.log.error("Caller not in call state")
-        return False
-    if not incoming_number:
-        return True
-
-    if event_ringing and not check_phone_number_match(
-            event_ringing['data'][CallStateContainer.INCOMING_NUMBER],
-            incoming_number):
-        ad.log.error(
-            "Incoming Number not match. Expected number:%s, actual number:%s",
-            incoming_number,
-            event_ringing['data'][CallStateContainer.INCOMING_NUMBER])
-        return False
-    return True
+    ring_event_check = False
+    end_time = time.time() + timeout
+    try:
+        while time.time() < end_time:
+            if not ring_event_check:
+                event_ringing = _wait_for_ringing_event(log, ad, interval)
+                if event_ringing:
+                    ad.log.info("callee received ring event")
+                    if incoming_number and not check_phone_number_match(
+                            event_ringing['data']
+                        [CallStateContainer.INCOMING_NUMBER], incoming_number):
+                        ad.log.error(
+                            "Incoming Number not match. Expected number:%s, actual number:%s",
+                            incoming_number, event_ringing['data'][
+                                CallStateContainer.INCOMING_NUMBER])
+                        return False
+                    ring_event_check = True
+            if ad.droid.telephonyGetCallStateForSubscription(
+                    sub_id
+            ) == TELEPHONY_STATE_RINGING and ad.droid.telecomIsRinging():
+                ad.log.info("callee is in ringing state")
+                if caller:
+                    if caller.droid.telecomIsInCall():
+                        caller.log.info("Caller telecom is in call state")
+                        return True
+                    else:
+                        caller.log.info("Caller telecom is NOT in call state")
+                else:
+                    return True
+            else:
+                ad.log.info("callee is not in ringing state")
+            time.sleep(interval)
+    finally:
+        if not event_tracking_started:
+            ad.droid.telephonyStopTrackingCallStateChangeForSubscription(
+                sub_id)
 
 
 def wait_for_call_offhook_event(
@@ -1004,17 +1009,15 @@ def wait_and_answer_call_for_subscription(
     ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
     try:
-        if not _wait_for_droid_in_state(
+        if not wait_for_ringing_call_for_subscription(
                 log,
                 ad,
-                timeout,
-                wait_for_ringing_call_for_subscription,
                 sub_id,
-                incoming_number=None,
+                incoming_number=incoming_number,
                 caller=caller,
                 event_tracking_started=True,
-                timeout=WAIT_TIME_BETWEEN_STATE_CHECK):
-            ad.log.info("Could not answer a call: phone never rang.")
+                timeout=timeout):
+            ad.log.info("Incoming call ringing check failed.")
             return False
         time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
         ad.log.info("Accept the ring call")
@@ -1090,7 +1093,8 @@ def wait_and_reject_call_for_subscription(log,
 
     if not wait_for_ringing_call_for_subscription(log, ad, sub_id,
                                                   incoming_number):
-        ad.log.error("Could not reject a call: phone never rang.")
+        ad.log.error(
+            "Could not reject a call: incoming call in ringing check failed.")
         return False
 
     ad.ed.clear_events(EventCallStateChanged)
@@ -3202,6 +3206,10 @@ def set_wfc_mode(log, ad, wfc_mode):
     Returns:
         True if success. False if ad does not support WFC or error happened.
     """
+    if wfc_mode != WFC_MODE_DISABLED and wfc_mode not in ad.telephony.get(
+            "capabilities", []):
+        ad.log.error("WFC mode %s is not supported", wfc_mode)
+        raise signals.TestSkip("WFC mode %s is not supported" % wfc_mode)
     try:
         ad.log.info("Set wfc mode to %s", wfc_mode)
         if wfc_mode != WFC_MODE_DISABLED:
@@ -4268,7 +4276,6 @@ def mms_receive_verify_after_call_hangup_for_subscription(
                 ad_tx.log.info("Got event %s", EventMmsSentSuccess)
             except Empty:
                 log.warning("No sent_success event.")
-                return False
             if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
                 return False
         finally:
@@ -4858,11 +4865,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
                 ad.log.error("Failed to end call")
         ad.droid.telephonyFactoryReset()
         ad.droid.imsFactoryReset()
-        if ad.adb.shell(
-                "settings get global device_provisioning_mobile_data") != "1":
-            ad.log.warning("mobile data is not ON")
-            ad.adb.shell(
-                "settings put global device_provisioning_mobile_data 1")
         data_roaming = getattr(ad, 'roaming', False)
         if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
             set_cell_data_roaming_state_by_adb(ad, data_roaming)
@@ -5240,6 +5242,7 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     ad.droid.setMediaVolume(0)
     ad.droid.setVoiceCallVolume(0)
     ad.droid.setAlarmVolume(0)
+    ad.adb.ensure_root()
     ad.adb.shell("setprop ro.audio.silent 1", ignore_status=True)
     return silent_mode == ad.droid.checkRingerSilentMode()
 
@@ -5589,7 +5592,7 @@ def set_qxdm_logger_command(ad, mask=None):
         ad.log.info("Use QXDM log mask %s", mask_path)
         ad.log.debug("qxdm_log_path = %s", ad.qxdm_log_path)
         output_path = os.path.join(ad.qxdm_log_path, "logs")
-        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 50 -c" %
+        ad.qxdm_logger_command = ("diag_mdlog -f %s -o %s -s 90 -c" %
                                   (mask_path, output_path))
         for prop in ("persist.sys.modem.diag.mdlog",
                      "persist.vendor.sys.modem.diag.mdlog"):
@@ -5603,7 +5606,7 @@ def set_qxdm_logger_command(ad, mask=None):
                         ad.adb.shell('echo "%s" > %s' %
                                      (ad.qxdm_logger_command, conf_path))
                         break
-                ad.adb.shell("%s true" % prop, ignore_status=True)
+                ad.adb.shell("setprop %s true" % prop, ignore_status=True)
                 break
         return True
 
@@ -6128,6 +6131,31 @@ def adb_disable_verity(ad):
         ad.adb.disable_verity()
         reboot_device(ad)
         ad.adb.remount()
+
+
+def recover_build_id(ad):
+    build_fingerprint = ad.adb.getprop("ro.build.fingerprint")
+    if not build_fingerprint:
+        return
+    build_id = build_fingerprint.split("/")[3]
+    if ad.adb.getprop("ro.build.id") != build_id:
+        build_id_override(ad, build_id)
+
+
+def build_id_override(ad, build_id):
+    existing_build_id = ad.adb.getprop("ro.build.id")
+    if existing_build_id == build_id:
+        return
+    ad.log.info("Override build id %s with %s", existing_build_id, build_id)
+    adb_disable_verity(ad)
+    ad.adb.remount()
+    if "backup.prop" not in ad.adb.shell("ls /sdcard/"):
+        ad.adb.shell("cp /default.prop /sdcard/backup.prop")
+    ad.adb.shell("cat /default.prop | grep -v ro.build.id > /sdcard/test.prop")
+    ad.adb.shell("echo ro.build.id=%s >> /sdcard/test.prop" % build_id)
+    ad.adb.shell("cp /sdcard/test.prop /default.prop")
+    reboot_device(ad)
+    ad.log.info("ro.build.id = %s", ad.adb.getprop("ro.build.id"))
 
 
 def system_file_push(ad, src_file_path, dst_file_path):

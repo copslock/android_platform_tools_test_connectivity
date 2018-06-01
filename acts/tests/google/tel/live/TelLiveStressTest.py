@@ -60,6 +60,7 @@ from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import start_tcpdumps
+from acts.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
@@ -77,6 +78,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
+from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
@@ -312,7 +314,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.droid, ad.ed = ad.get_droid()
                     ad.ed.start()
             ad.droid.logI("%s begin" % log_msg)
-        begin_time = get_device_epoch_time(self.dut)
+        begin_time = get_device_epoch_time(ads[0])
         if "wfc" in self.test_name:
             start_tcpdumps(
                 self.android_devices,
@@ -341,6 +343,19 @@ class TelLiveStressTest(TelephonyBaseTest):
                 wait_time_in_call=0,
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND)
         if not call_setup_result:
+            call_logs = ads[0].search_logcat(
+                "ActivityManager: START u0 {act=android.intent.action.CALL",
+                begin_time)
+            messaging_logs = ads[0].search_logcat(
+                "com.google.android.apps.messaging/.ui.conversation.ConversationActivity",
+                begin_time)
+            if call_logs and messaging_logs:
+                if messaging_logs[-1]["datetime_obj"] - call_logs[-1]["datetime_obj"] < 5:
+                    ads[0].log.info(
+                        "Call setup failure due to simultaneous activities")
+                    self.result_info[
+                        "Call Setup Failure With Simultaneous Activity"] += 1
+                    return True
             self.log.error("%s: Setup Call failed.", log_msg)
             failure_reasons.add("Setup")
             result = False
@@ -415,23 +430,32 @@ class TelLiveStressTest(TelephonyBaseTest):
             except Exception as e:
                 self.log.exception(e)
             for ad in ads:
-                hangup_call_by_adb(ad)
+                if ad.droid.telecomIsInCall():
+                    hangup_call_by_adb(ad)
         else:
             self.log.info("%s test succeed", log_msg)
             self.result_info["Call Success"] += 1
-            if self.get_binder_logs and self.result_info["Call Total"] % 50 == 0:
+            if self.result_info["Call Total"] % 50 == 0:
                 for ad in ads:
-                    log_path = os.path.join(self.log_path,
-                                            "%s_binder_logs" % test_name,
-                                            "%s_binder_logs" % ad.serial)
-                    utils.create_dir(log_path)
-                    ad.pull_files(BINDER_LOGS, log_path)
+                    synchronize_device_time(ad)
+                    if self.get_binder_logs:
+                        log_path = os.path.join(self.log_path,
+                                                "%s_binder_logs" % test_name,
+                                                "%s_binder_logs" % ad.serial)
+                        utils.create_dir(log_path)
+                        ad.pull_files(BINDER_LOGS, log_path)
         return result
 
     def _prefnetwork_mode_change(self, sub_id):
         # ModePref change to non-LTE
         begin_time = get_device_epoch_time(self.dut)
         start_qxdm_loggers(self.log, self.android_devices)
+        self.result_info["Network Change Request Total"] += 1
+        test_name = "%s_network_change_iter_%s" % (
+            self.test_name, self.result_info["Network Change Request Total"])
+        log_msg = "[Test Case] %s" % test_name
+        self.log.info("%s begin", log_msg)
+        self.dut.droid.logI("%s begin" % log_msg)
         network_preference_list = [
             NETWORK_MODE_TDSCDMA_GSM_WCDMA, NETWORK_MODE_WCDMA_ONLY,
             NETWORK_MODE_GLOBAL, NETWORK_MODE_CDMA, NETWORK_MODE_GSM_ONLY
@@ -444,22 +468,51 @@ class TelLiveStressTest(TelephonyBaseTest):
                           get_current_voice_rat(self.log, self.dut))
 
         # ModePref change back to with LTE
-        set_preferred_network_mode_pref(self.log, self.dut, sub_id,
-                                        NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA)
-        time.sleep(WAIT_TIME_AFTER_MODE_CHANGE)
-        rat = get_current_voice_rat(self.log, self.dut)
-        self.dut.log.info("Current Voice RAT is %s", rat)
-        self.result_info["RAT Change Total"] += 1
-        if rat != "LTE":
-            self.result_info["RAT Change Failure"] += 1
+        if not phone_setup_volte(self.log, self.dut):
+            self.dut.log.error("Phone failed to enable VoLTE.")
+            self.result_info["VoLTE Setup Failure"] += 1
+            self.dut.droid.logI("%s end" % log_msg)
+            self.dut.log.info("%s end", log_msg)
             try:
-                self._take_bug_report("%s_rat_change_failure" % self.test_name,
-                                      begin_time)
+                self._ad_take_extra_logs(self.dut, test_name, begin_time)
+                self._ad_take_bugreport(self.dut, test_name, begin_time)
             except Exception as e:
                 self.log.exception(e)
             return False
         else:
-            self.result_info["RAT Change Success"] += 1
+            self.result_info["VoLTE Setup Success"] += 1
+            return True
+
+    def _mobile_data_toggling(self, setup="volte"):
+        # ModePref change to non-LTE
+        begin_time = get_device_epoch_time(self.dut)
+        start_qxdm_loggers(self.log, self.android_devices)
+        result = True
+        self.result_info["Data Toggling Request Total"] += 1
+        test_name = "%s_data_toggling_iter_%s" % (
+            self.test_name, self.result_info["Data Toggling Request Total"])
+        log_msg = "[Test Case] %s" % test_name
+        self.log.info("%s begin", log_msg)
+        self.dut.droid.logI("%s begin" % log_msg)
+        self.dut.adb.shell("svc data disable")
+        time.sleep(WAIT_TIME_AFTER_MODE_CHANGE)
+        self.dut.adb.shell("svc data enable")
+        if not self._check_data():
+            result = False
+        elif setup == "volte" and not phone_idle_volte(self.log, self.dut):
+            result = False
+        self.dut.droid.logI("%s end" % log_msg)
+        self.dut.log.info("%s end", log_msg)
+        if not result:
+            self.result_info["Data Toggling Failure"] += 1
+            try:
+                self._ad_take_extra_logs(self.dut, test_name, begin_time)
+                self._ad_take_bugreport(self.dut, test_name, begin_time)
+            except Exception as e:
+                self.log.exception(e)
+            return False
+        else:
+            self.result_info["Data Toggling Success"] += 1
             return True
 
     def _get_result_message(self):
@@ -478,6 +531,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.perf_file = os.path.join(self.log_path, "%s_perf_data_%s.json" %
                                       (self.test_name, self.begin_time))
         self.perf_data = self.dut.build_info.copy()
+        self.perf_data["build_fingerprint"] = self.dut.adb.getprop(
+            "ro.build.fingerprint")
         self.perf_data["model"] = self.dut.model
         self.perf_data["carrier"] = self.dut.adb.getprop(
             "gsm.sim.operator.alpha")
@@ -651,40 +706,27 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut.log.info(dict(self.result_info))
         begin_time = get_device_epoch_time(self.dut)
         start_qxdm_loggers(self.log, self.android_devices)
-        test_name = "%s_data_call_test_iter_%s" % (
-            self.test_name,
-            self.result_info["Network Preference Change Total"] + 1)
+        self.result_info["Network Change Request Total"] += 1
+        test_name = "%s_network_change_test_iter_%s" % (
+            self.test_name, self.result_info["Network Change Request Total"])
         log_msg = "[Test Case] %s" % test_name
-        self.log.info(log_msg)
+        self.log.info("%s begin", log_msg)
         self.dut.droid.logI("%s begin" % log_msg)
         if not ensure_network_generation_for_subscription(
-                self.log, self.dut, sub_id, generation):
+                self.log, self.dut, sub_id,
+                generation) or not self._check_data():
             self.result_info["Network Change Failure"] += 1
-            try:
-                self._take_bug_report(test_name, begin_time)
-            except Exception as e:
-                self.log.warning(e)
-            return False
-        elif not self._check_data():
-            try:
-                self._take_bug_report(test_name, begin_time)
-            except Exception as e:
-                self.log.warning(e)
-            return False
-        self.dut.log.info("Toggling data connection")
-        self.dut.droid.telephonyToggleDataConnectionForSubscription(
-            sub_id, False)
-        time.sleep(3)
-        self.dut.droid.telephonyToggleDataConnectionForSubscription(
-            sub_id, True)
-        if not self._check_data():
             self.dut.droid.logI("%s end" % log_msg)
             self.dut.log.info("%s end", log_msg)
             try:
-                self._take_bug_report(test_name, begin_time)
+                self._ad_take_extra_logs(self.dut, test_name, begin_time)
+                self._ad_take_bugreport(self.dut, test_name, begin_time)
             except Exception as e:
                 self.log.warning(e)
             return False
+        if not self._mobile_data_toggling(setup=None):
+            return False
+        return True
 
     def data_call_stress_test(self):
         result = True
@@ -708,11 +750,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                     self.log, self.dut,
                     self.call_server_number) and wait_for_in_call_active(
                         self.dut, 60, 3):
+                self._take_bug_report(self.test_name, self.begin_time)
                 raise signals.TestFailure("Unable to make phone call")
         else:
             if not call_setup_teardown(
                     self.log, self.dut, self.android_devices[1],
                     ad_hangup=None):
+                self._take_bug_report(self.test_name, self.begin_time)
                 raise signals.TestFailure("Unable to make phone call")
         voice_rat = self.dut.droid.telephonyGetCurrentVoiceNetworkType()
         data_rat = self.dut.droid.telephonyGetCurrentDataNetworkType()
@@ -724,6 +768,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.dut.log.info("Capable for simultaneous voice and data")
                 if not verify_internet_connection(self.log, self.dut):
                     self.dut.log.error("Incall data check failed")
+                    self._take_bug_report(self.test_name, self.begin_time)
                     raise signals.TestFailure("Incall data check failed")
                 else:
                     return True
@@ -731,8 +776,11 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.dut.log.info(
                     "Not capable for simultaneous voice and data")
                 return False
+            hangup_call(self.log, self.dut)
         finally:
-            hangup_call_by_adb(self.dut)
+            for ad in self.android_devices:
+                if ad.droid.telecomIsInCall():
+                    hangup_call(self.log, ad)
 
     def parallel_tests(self, setup_func=None, call_verification_func=None):
         self.log.info(self._get_result_message())
@@ -796,14 +844,25 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def volte_modechange_volte_test(self):
         sub_id = self.dut.droid.subscriptionGetDefaultSubId()
+        result = True
         while time.time() < self.finishing_time:
             try:
-                run_multithread_func(
-                    self.log,
-                    [(self._data_download, [["5MB"]]),
-                     (self._make_phone_call, [is_phone_in_call_volte]),
-                     (self._send_message, [])])
-                self._prefnetwork_mode_change(sub_id)
+                if self._prefnetwork_mode_change(sub_id):
+                    run_multithread_func(
+                        self.log,
+                        [(self._data_download, [["5MB"]]),
+                         (self._make_phone_call, [is_phone_in_call_volte]),
+                         (self._send_message, [])])
+                else:
+                    result = False
+                if self._mobile_data_toggling():
+                    run_multithread_func(
+                        self.log,
+                        [(self._data_download, [["5MB"]]),
+                         (self._make_phone_call, [is_phone_in_call_volte]),
+                         (self._send_message, [])])
+                else:
+                    result = False
             except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
@@ -811,10 +870,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
                 self.log.error("Too many exception errors, quit test")
                 return False
-        if self.result_info["Call Failure"] or self.result_info["RAT Change Failure"] or self.result_info["SMS Failure"]:
-            return False
-        else:
-            return True
+        return result
 
     def parallel_with_network_change_tests(self, setup_func=None):
         if setup_func and not setup_func():

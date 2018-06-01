@@ -1,4 +1,4 @@
-# /usr/bin/env python3
+#!/usr/bin/env python3
 #
 # Copyright (C) 2018 The Android Open Source Project
 #
@@ -18,7 +18,7 @@ Test suite to check Multi Profile Functionality with Wlan.
 
 Test Setup:
 
-Two Android deivce.
+Two Android device.
 One A2DP and HFP Headset connected to Relay.
 """
 from acts.test_utils.bt import BtEnum
@@ -76,12 +76,12 @@ class CoexBtMultiProfileFunctionalityTest(CoexBaseTest):
         if not initiate_disconnect_from_hf(
                 self.audio_receiver, self.pri_ad, self.sec_ad,
                 self.iperf["duration"]):
-            self.log.error("Failed to initiate/hung up call")
+            self.log.error("Failed to initiate/hang up call")
             return False
         return self.teardown_result()
 
     def ble_with_multiprofile_connection(self):
-        """Wrapper function to check ble connection alongwith a2dp streaming
+        """Wrapper function to check ble connection along with a2dp streaming
         and hfp call connection with iperf.
         """
         if not connect_ble(self.pri_ad, self.sec_ad):
@@ -91,8 +91,8 @@ class CoexBtMultiProfileFunctionalityTest(CoexBaseTest):
                 self.pri_ad, self.audio_receiver.mac_address):
             self.log.error("Failed to stream music file")
             return False
-        self.run_iperf_and_get_result()
-        tasks = [(initiate_disconnect_from_hf,
+        tasks = [(self.run_iperf_and_get_result,()),
+                 (initiate_disconnect_from_hf,
                   (self.audio_receiver, self.pri_ad, self.sec_ad,
                    self.iperf["duration"]))]
         if not multithread_func(self.log, tasks):
@@ -212,8 +212,8 @@ class CoexBtMultiProfileFunctionalityTest(CoexBaseTest):
         Test Id: Bt_CoEx_082
         """
         if not self.ble_with_multiprofile_connection():
-            return True
-        return False
+            return False
+        return True
 
     def test_ble_connection_a2dp_streaming_hfp_call_with_tcp_dl(self):
         """Starts TCP-downlink traffic while connecting to BLE device,
@@ -236,5 +236,5 @@ class CoexBtMultiProfileFunctionalityTest(CoexBaseTest):
         Test Id: Bt_CoEx_083.
         """
         if not self.ble_with_multiprofile_connection():
-            return True
-        return False
+            return False
+        return True
