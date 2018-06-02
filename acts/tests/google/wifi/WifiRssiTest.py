@@ -62,7 +62,7 @@ class WifiRssiTest(base_test.BaseTestClass):
     def teardown_test(self):
         self.iperf_server.stop()
 
-    def pass_fail_check_rssi_stability(self, rssi_result):
+    def pass_fail_check_rssi_stability(self, postprocessed_results):
         """Check the test result and decide if it passed or failed.
 
         Checks the RSSI test result and fails the test if the standard
@@ -70,86 +70,31 @@ class WifiRssiTest(base_test.BaseTestClass):
         config file.
 
         Args:
-            rssi_result: dict containing attenuation, rssi, and other meta
-            data. This dict is the output of self.post_process_results
+            postprocessed_results: compiled arrays of RSSI measurements
         """
-        # Save output as text file
-        test_name = self.current_test_name
-        results_file_path = "{}/{}.json".format(self.log_path,
-                                                self.current_test_name)
-        with open(results_file_path, 'w') as results_file:
-            json.dump(rssi_result, results_file, indent=4)
-
-        x_data = []
-        y_data = []
-        legends = []
-        std_deviations = {
-            "signal_poll_rssi": [],
-            "signal_poll_avg_rssi": [],
-            "chain_0_rssi": [],
-            "chain_1_rssi": [],
-        }
-        for data_point in rssi_result["rssi_result"]:
-            for key, val in data_point["connected_rssi"].items():
-                if type(val) == list:
-                    x_data.append([
-                        x * self.test_params["polling_frequency"]
-                        for x in range(len(val))
-                    ])
-                    y_data.append(val)
-                    legends.append(key)
-                    std_deviations[key].append(
-                        data_point["connected_rssi"]["stdev_" + key])
-        data_sets = [x_data, y_data]
-        x_label = 'Time (s)'
-        y_label = 'RSSI (dBm)'
-        fig_property = {
-            "title": test_name,
-            "x_label": x_label,
-            "y_label": y_label,
-            "linewidth": 3,
-            "markersize": 0
-        }
-        output_file_path = "{}/{}.html".format(self.log_path, test_name)
-        wputils.bokeh_plot(
-            data_sets,
-            legends,
-            fig_property,
-            shaded_region=None,
-            output_file_path=output_file_path)
-
         test_failed = any([
             stdev > self.test_params["stdev_tolerance"]
-            for stdev in std_deviations["signal_poll_rssi"]
+            for stdev in postprocessed_results["signal_poll_rssi"]["stdev"]
         ])
-        if test_failed:
-            asserts.fail(
-                "RSSI stability failed. Standard deviations were {0} dB "
-                "(limit {1}), per chain standard deviation [{2}, {3}] dB".
-                format([
+        test_message = (
+            "RSSI stability {0}. Standard deviation was {1} dB "
+            "(limit {2}), per chain standard deviation [{3}, {4}] dB".format(
+                "failed" * test_failed + "passed" * (not test_failed), [
                     float("{:.2f}".format(x))
-                    for x in std_deviations["signal_poll_rssi"]
+                    for x in postprocessed_results["signal_poll_rssi"]["stdev"]
                 ], self.test_params["stdev_tolerance"], [
                     float("{:.2f}".format(x))
-                    for x in std_deviations["chain_0_rssi"]
+                    for x in postprocessed_results["chain_0_rssi"]["stdev"]
                 ], [
                     float("{:.2f}".format(x))
-                    for x in std_deviations["chain_1_rssi"]
+                    for x in postprocessed_results["chain_1_rssi"]["stdev"]
                 ]))
-        asserts.explicit_pass(
-            "RSSI stability passed. Standard deviations were {0} dB "
-            "(limit {1}), per chain standard deviation [{2}, {3}] dB".format([
-                float("{:.2f}".format(x))
-                for x in std_deviations["signal_poll_rssi"]
-            ], self.test_params["stdev_tolerance"], [
-                float("{:.2f}".format(x))
-                for x in std_deviations["chain_0_rssi"]
-            ], [
-                float("{:.2f}".format(x))
-                for x in std_deviations["chain_1_rssi"]
-            ]))
+        if test_failed:
+            asserts.fail(test_message)
+        asserts.explicit_pass(test_message)
 
-    def pass_fail_check_rssi_vs_attenuation(self, postprocessed_results):
+    def pass_fail_check_rssi_accuracy(self, postprocessed_results,
+                                      rssi_under_test, absolute_accuracy):
         """Check the test result and decide if it passed or failed.
 
         Checks the RSSI test result and compares and compute its deviation from
@@ -159,154 +104,246 @@ class WifiRssiTest(base_test.BaseTestClass):
         configuration file.
 
         Args:
-            result: dict containing attenuation, rssi, and other meta
-            data. This dict is the output of self.post_process_results
+            postprocessed_results: compiled arrays of RSSI measurements
+            rssi_under_test: list of RSSIs under test, i.e., can cause test to
+            fail
+            absolute_accuracy: boolean indicating whether to look at absolute
+            RSSI accuracy, or centered RSSI accuracy. Centered accuracy is
+            computed after systematic RSSI shifts are removed.
         """
-
-        error_data = {
-            "signal_poll_rssi": [
-                postprocessed_results["mean_signal_poll_rssi"][idx] -
-                postprocessed_results["predicted_rssi"][idx]
-                for idx in range(len(postprocessed_results["predicted_rssi"]))
-            ],
-            "signal_poll_avg_rssi": [
-                postprocessed_results["mean_signal_poll_avg_rssi"][idx] -
-                postprocessed_results["predicted_rssi"][idx]
-                for idx in range(len(postprocessed_results["predicted_rssi"]))
-            ],
-            "scan_rssi": [
-                postprocessed_results["mean_scan_rssi"][idx] -
-                postprocessed_results["predicted_rssi"][idx]
-                for idx in range(len(postprocessed_results["predicted_rssi"]))
-            ],
-            "chain_0_rssi": [
-                postprocessed_results["mean_chain_0_rssi"][idx] + CONST_3dB -
-                postprocessed_results["predicted_rssi"][idx]
-                for idx in range(len(postprocessed_results["predicted_rssi"]))
-            ],
-            "chain_1_rssi": [
-                postprocessed_results["mean_chain_1_rssi"][idx] + CONST_3dB -
-                postprocessed_results["predicted_rssi"][idx]
-                for idx in range(len(postprocessed_results["predicted_rssi"]))
-            ]
-        }
-
         test_failed = False
         test_message = ""
-        for key, val in error_data.items():
+        if absolute_accuracy:
+            error_type = "absolute"
+        else:
+            error_type = "centered"
+
+        for key, val in postprocessed_results.items():
             # Compute the error metrics ignoring invalid RSSI readings
             # If all readings invalid, set error to RSSI_ERROR_VAL
-            filtered_errors = [x for x in val if not math.isnan(x)]
-            if filtered_errors:
-                avg_error = sum([abs(x) for x in filtered_errors
-                                 ]) / len(filtered_errors)
-                avg_shift = sum(filtered_errors) / len(filtered_errors)
-            else:
-                avg_error = RSSI_ERROR_VAL
-            rssi_failure = (avg_error > self.test_params["abs_tolerance"]
-                            ) or math.isnan(avg_error)
-            if rssi_failure and key in self.test_params["rssi_under_test"]:
-                test_message = test_message + (
-                    "{} failed. Average error is {:.2f} dB. "
-                    "Average shift is {:.2f} dB.\n").format(
-                        key, avg_error, avg_shift)
-                test_failed = True
-            elif rssi_failure:
-                test_message = test_message + (
-                    "{} failed (ignored). Average error is {:.2f} dB. "
-                    "Average shift is {:.2f} dB.\n").format(
-                        key, avg_error, avg_shift)
-            else:
-                test_message = test_message + (
-                    "{} passed. Average error is {:.2f} dB. "
-                    "Average shift is {:.2f} dB.\n").format(
-                        key, avg_error, avg_shift)
+            if "rssi" in key and "predicted" not in key:
+                filtered_error = [x for x in val["error"] if not math.isnan(x)]
+                if filtered_error:
+                    avg_shift = statistics.mean(filtered_error)
+                    if absolute_accuracy:
+                        avg_error = statistics.mean(
+                            [abs(x) for x in filtered_error])
+                    else:
+                        avg_error = statistics.mean(
+                            [abs(x - avg_shift) for x in filtered_error])
+                else:
+                    avg_error = RSSI_ERROR_VAL
+                    avg_shift = RSSI_ERROR_VAL
+                rssi_failure = (avg_error > self.test_params["abs_tolerance"]
+                                ) or math.isnan(avg_error)
+                if rssi_failure and key in rssi_under_test:
+                    test_message = test_message + (
+                        "{} failed. Average {} error is {:.2f} dB. "
+                        "Average shift is {:.2f} dB.\n").format(
+                            key, error_type, avg_error, avg_shift)
+                    test_failed = True
+                elif rssi_failure:
+                    test_message = test_message + (
+                        "{} failed (ignored). Average {} error is {:.2f} dB. "
+                        "Average shift is {:.2f} dB.\n").format(
+                            key, error_type, avg_error, avg_shift)
+                else:
+                    test_message = test_message + (
+                        "{} passed. Average {} error is {:.2f} dB. "
+                        "Average shift is {:.2f} dB.\n").format(
+                            key, error_type, avg_error, avg_shift)
 
         if test_failed:
             asserts.fail(test_message)
         asserts.explicit_pass(test_message)
 
-    def post_process_rssi_vs_attenuation(self, rssi_result):
-        """Saves plots and JSON formatted results.
+    def post_process_rssi_sweep(self, rssi_result):
+        """Postprocesses and saves JSON formatted results.
 
         Args:
             rssi_result: dict containing attenuation, rssi and other meta
             data
         Returns:
-            postprocessed_results: compiled arrays of RSSI measurements used in
+            postprocessed_results: compiled arrays of RSSI data used in
             pass/fail check
         """
         # Save output as text file
-        test_name = self.current_test_name
         results_file_path = "{}/{}.json".format(self.log_path,
                                                 self.current_test_name)
         with open(results_file_path, 'w') as results_file:
             json.dump(rssi_result, results_file, indent=4)
-        # Plot and save
-        total_attenuation = [
-            att + rssi_result["fixed_attenuation"] +
-            rssi_result["dut_front_end_loss"]
-            for att in rssi_result["attenuation"]
-        ]
         # Compile results into arrays of RSSIs suitable for plotting
         postprocessed_results = {
-            "total_attenuation":
-            total_attenuation,
-            "mean_signal_poll_rssi": [
-                x["connected_rssi"]["mean_signal_poll_rssi"]
-                for x in rssi_result["rssi_result"]
-            ],
-            "mean_signal_poll_avg_rssi": [
-                x["connected_rssi"]["mean_signal_poll_avg_rssi"]
-                for x in rssi_result["rssi_result"]
-            ],
-            "mean_scan_rssi": [
-                x["scan_rssi"][rssi_result["connected_bssid"]]["avg_rssi"]
-                for x in rssi_result["rssi_result"]
-            ],
-            "mean_chain_0_rssi": [
-                x["connected_rssi"]["mean_chain_0_rssi"]
-                for x in rssi_result["rssi_result"]
-            ],
-            "mean_chain_1_rssi": [
-                x["connected_rssi"]["mean_chain_1_rssi"]
-                for x in rssi_result["rssi_result"]
-            ],
-            "predicted_rssi":
-            [rssi_result["ap_tx_power"] - att for att in total_attenuation]
+            "signal_poll_rssi": {},
+            "signal_poll_avg_rssi": {},
+            "scan_rssi": {},
+            "chain_0_rssi": {},
+            "chain_1_rssi": {},
+            "total_attenuation": [],
+            "predicted_rssi": []
         }
+        for key, val in postprocessed_results.items():
+            if "scan_rssi" in key:
+                postprocessed_results[key]["data"] = [
+                    x for data_point in rssi_result["rssi_result"] for x in
+                    data_point[key][rssi_result["connected_bssid"]]["data"]
+                ]
+                postprocessed_results[key]["mean"] = [
+                    x[key][rssi_result["connected_bssid"]]["mean"]
+                    for x in rssi_result["rssi_result"]
+                ]
+                postprocessed_results[key]["stdev"] = [
+                    x[key][rssi_result["connected_bssid"]]["stdev"]
+                    for x in rssi_result["rssi_result"]
+                ]
+            elif "predicted_rssi" in key:
+                postprocessed_results["total_attenuation"] = [
+                    att + rssi_result["fixed_attenuation"] +
+                    rssi_result["dut_front_end_loss"]
+                    for att in rssi_result["attenuation"]
+                ]
+                postprocessed_results["predicted_rssi"] = [
+                    rssi_result["ap_tx_power"] - att
+                    for att in postprocessed_results["total_attenuation"]
+                ]
+            elif "rssi" in key:
+                postprocessed_results[key]["data"] = [
+                    x for data_point in rssi_result["rssi_result"]
+                    for x in data_point[key]["data"]
+                ]
+                postprocessed_results[key]["mean"] = [
+                    x[key]["mean"] for x in rssi_result["rssi_result"]
+                ]
+                postprocessed_results[key]["stdev"] = [
+                    x[key]["stdev"] for x in rssi_result["rssi_result"]
+                ]
+        # Compute RSSI errors
+        for key, val in postprocessed_results.items():
+            if "chain" in key:
+                postprocessed_results[key]["error"] = [
+                    postprocessed_results[key]["mean"][idx] + CONST_3dB -
+                    postprocessed_results["predicted_rssi"][idx]
+                    for idx in range(
+                        len(postprocessed_results["predicted_rssi"]))
+                ]
+            elif "rssi" in key and "predicted" not in key:
+                postprocessed_results[key]["error"] = [
+                    postprocessed_results[key]["mean"][idx] -
+                    postprocessed_results["predicted_rssi"][idx]
+                    for idx in range(
+                        len(postprocessed_results["predicted_rssi"]))
+                ]
+        return postprocessed_results
+
+    def plot_rssi_vs_attenuation(self, postprocessed_results):
+        """Function to plot RSSI vs attenuation sweeps
+
+        Args:
+            postprocessed_results: compiled arrays of RSSI data.
+        """
         data_sets = [[
-            total_attenuation, total_attenuation, total_attenuation,
-            total_attenuation, total_attenuation, total_attenuation
+            postprocessed_results["total_attenuation"],
+            postprocessed_results["total_attenuation"],
+            postprocessed_results["total_attenuation"],
+            postprocessed_results["total_attenuation"],
+            postprocessed_results["total_attenuation"],
+            postprocessed_results["total_attenuation"]
         ], [
-            postprocessed_results["mean_signal_poll_rssi"],
-            postprocessed_results["mean_signal_poll_avg_rssi"],
-            postprocessed_results["mean_scan_rssi"],
-            postprocessed_results["mean_chain_0_rssi"],
-            postprocessed_results["mean_chain_1_rssi"],
+            postprocessed_results["signal_poll_rssi"]["mean"],
+            postprocessed_results["signal_poll_avg_rssi"]["mean"],
+            postprocessed_results["scan_rssi"]["mean"],
+            postprocessed_results["chain_0_rssi"]["mean"],
+            postprocessed_results["chain_1_rssi"]["mean"],
             postprocessed_results["predicted_rssi"]
         ]]
         legends = [
             "Signal Poll RSSI", "Signal Poll AVG_RSSI", "Scan RSSI",
             "Chain 0 RSSI", "Chain 1 RSSI", "Predicted RSSI"
         ]
-        x_label = 'Attenuation (dB)'
-        y_label = 'RSSI (dBm)'
         fig_property = {
-            "title": test_name,
-            "x_label": x_label,
-            "y_label": y_label,
+            "title": self.current_test_name,
+            "x_label": 'Attenuation (dB)',
+            "y_label": 'RSSI (dBm)',
             "linewidth": 3,
             "markersize": 10
         }
-        output_file_path = "{}/{}.html".format(self.log_path, test_name)
+        output_file_path = "{}/{}.html".format(self.log_path,
+                                               self.current_test_name)
         wputils.bokeh_plot(
             data_sets,
             legends,
             fig_property,
             shaded_region=None,
             output_file_path=output_file_path)
-        return postprocessed_results
+
+    def plot_rssi_vs_time(self, rssi_result, postprocessed_results,
+                          center_curves):
+        """Function to plot RSSI vs time.
+
+        Args:
+            rssi_result: dict containing raw RSSI data
+            postprocessed_results: compiled arrays of RSSI data
+            center_curvers: boolean indicating whether to shift curves to align
+            them with predicted RSSIs
+        """
+        x_data = []
+        y_data = []
+        legends = []
+        rssi_time_series = {
+            "signal_poll_rssi": [],
+            "signal_poll_avg_rssi": [],
+            "scan_rssi": [],
+            "chain_0_rssi": [],
+            "chain_1_rssi": [],
+            "predicted_rssi": []
+        }
+        for key, val in rssi_time_series.items():
+            if "predicted_rssi" in key:
+                rssi_time_series[key] = [
+                    x for x in postprocessed_results[key] for copies in range(
+                        len(rssi_result["rssi_result"][0]["signal_poll_rssi"][
+                            "data"]))
+                ]
+            elif "rssi" in key:
+                if center_curves:
+                    filtered_error = [
+                        x for x in postprocessed_results[key]["error"]
+                        if not math.isnan(x)
+                    ]
+                    if filtered_error:
+                        avg_shift = statistics.mean(filtered_error)
+                    else:
+                        avg_shift = 0
+                    rssi_time_series[key] = [
+                        x - avg_shift
+                        for x in postprocessed_results[key]["data"]
+                    ]
+                else:
+                    rssi_time_series[key] = postprocessed_results[key]["data"]
+            time = [
+                self.test_params["polling_frequency"] * x
+                for x in range(len(rssi_time_series[key]))
+            ]
+            if len(rssi_time_series[key]) > 0:
+                x_data.append(time)
+                y_data.append(rssi_time_series[key])
+                legends.append(key)
+        data_sets = [x_data, y_data]
+        fig_property = {
+            "title": self.current_test_name,
+            "x_label": 'Time (s)',
+            "y_label": center_curves * 'Centered' + 'RSSI (dBm)',
+            "linewidth": 3,
+            "markersize": 0
+        }
+        output_file_path = "{}/{}.html".format(self.log_path,
+                                               self.current_test_name)
+        wputils.bokeh_plot(
+            data_sets,
+            legends,
+            fig_property,
+            shaded_region=None,
+            output_file_path=output_file_path)
 
     def get_scan_rssi(self, tracked_bssids, num_measurements=1):
         """Gets scan RSSI for specified BSSIDs.
@@ -320,7 +357,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         """
         scan_rssi = {}
         for bssid in tracked_bssids:
-            scan_rssi[bssid] = {"rssi": [], "avg_rssi": None}
+            scan_rssi[bssid] = {"data": [], "mean": None, "stdev": None}
         for idx in range(num_measurements):
             scan_output = self.dut.adb.shell(SCAN)
             time.sleep(MED_SLEEP)
@@ -330,25 +367,24 @@ class WifiRssiTest(base_test.BaseTestClass):
                     bssid + ".*", scan_output, flags=re.IGNORECASE)
                 if bssid_result:
                     bssid_result = bssid_result.group(0).split("\t")
-                    scan_rssi[bssid]["rssi"].append(int(bssid_result[2]))
+                    scan_rssi[bssid]["data"].append(int(bssid_result[2]))
                 else:
-                    scan_rssi[bssid]["rssi"].append(RSSI_ERROR_VAL)
+                    scan_rssi[bssid]["data"].append(RSSI_ERROR_VAL)
         # Compute mean RSSIs. Only average valid readings.
         # Output RSSI_ERROR_VAL if no readings found.
         for key, val in scan_rssi.items():
             filtered_rssi_values = [
-                x for x in val["rssi"] if not math.isnan(x)
+                x for x in val["data"] if not math.isnan(x)
             ]
             if filtered_rssi_values:
-                scan_rssi[key]["avg_rssi"] = sum(filtered_rssi_values) / len(
-                    filtered_rssi_values)
+                scan_rssi[key]["mean"] = statistics.mean(filtered_rssi_values)
                 if len(filtered_rssi_values) > 1:
                     scan_rssi[key]["stdev"] = statistics.stdev(
                         filtered_rssi_values)
                 else:
                     scan_rssi[key]["stdev"] = 0
             else:
-                scan_rssi[key]["avg_rssi"] = RSSI_ERROR_VAL
+                scan_rssi[key]["mean"] = RSSI_ERROR_VAL
                 scan_rssi[key]["stdev"] = RSSI_ERROR_VAL
         return scan_rssi
 
@@ -366,10 +402,26 @@ class WifiRssiTest(base_test.BaseTestClass):
             statistics
         """
         connected_rssi = {
-            "signal_poll_rssi": [],
-            "signal_poll_avg_rssi": [],
-            "chain_0_rssi": [],
-            "chain_1_rssi": []
+            "signal_poll_rssi": {
+                "data": [],
+                "mean": None,
+                "stdev": None
+            },
+            "signal_poll_avg_rssi": {
+                "data": [],
+                "mean": None,
+                "stdev": None
+            },
+            "chain_0_rssi": {
+                "data": [],
+                "mean": None,
+                "stdev": None
+            },
+            "chain_1_rssi": {
+                "data": [],
+                "mean": None,
+                "stdev": None
+            }
         }
         for idx in range(num_measurements):
             measurement_start_time = time.time()
@@ -379,17 +431,21 @@ class WifiRssiTest(base_test.BaseTestClass):
             if match:
                 temp_rssi = int(match.group(0).split("=")[1])
                 if temp_rssi == -9999:
-                    connected_rssi["signal_poll_rssi"].append(RSSI_ERROR_VAL)
+                    connected_rssi["signal_poll_rssi"]["data"].append(
+                        RSSI_ERROR_VAL)
                 else:
-                    connected_rssi["signal_poll_rssi"].append(temp_rssi)
+                    connected_rssi["signal_poll_rssi"]["data"].append(
+                        temp_rssi)
             else:
-                connected_rssi["signal_poll_rssi"].append(RSSI_ERROR_VAL)
+                connected_rssi["signal_poll_rssi"]["data"].append(
+                    RSSI_ERROR_VAL)
             match = re.search("AVG_RSSI=.*", signal_poll_output)
             if match:
-                connected_rssi["signal_poll_avg_rssi"].append(
+                connected_rssi["signal_poll_avg_rssi"]["data"].append(
                     int(match.group(0).split("=")[1]))
             else:
-                connected_rssi["signal_poll_avg_rssi"].append(RSSI_ERROR_VAL)
+                connected_rssi["signal_poll_avg_rssi"]["data"].append(
+                    RSSI_ERROR_VAL)
             # Get per chain RSSI
             per_chain_rssi = self.dut.adb.shell(STATION_DUMP)
             match = re.search(".*signal avg:.*", per_chain_rssi)
@@ -397,33 +453,38 @@ class WifiRssiTest(base_test.BaseTestClass):
                 per_chain_rssi = per_chain_rssi[per_chain_rssi.find("[") + 1:
                                                 per_chain_rssi.find("]")]
                 per_chain_rssi = per_chain_rssi.split(", ")
-                connected_rssi["chain_0_rssi"].append(int(per_chain_rssi[0]))
-                connected_rssi["chain_1_rssi"].append(int(per_chain_rssi[1]))
+                connected_rssi["chain_0_rssi"]["data"].append(
+                    int(per_chain_rssi[0]))
+                connected_rssi["chain_1_rssi"]["data"].append(
+                    int(per_chain_rssi[1]))
             else:
-                connected_rssi["chain_0_rssi"].append(RSSI_ERROR_VAL)
-                connected_rssi["chain_1_rssi"].append(RSSI_ERROR_VAL)
+                connected_rssi["chain_0_rssi"]["data"].append(RSSI_ERROR_VAL)
+                connected_rssi["chain_1_rssi"]["data"].append(RSSI_ERROR_VAL)
             measurement_elapsed_time = time.time() - measurement_start_time
             time.sleep(max(0, polling_frequency - measurement_elapsed_time))
 
         # Compute mean RSSIs. Only average valid readings.
         # Output RSSI_ERROR_VAL if no valid connected readings found.
         for key, val in connected_rssi.copy().items():
-            filtered_rssi_values = [x for x in val if not math.isnan(x)]
+            filtered_rssi_values = [
+                x for x in val["data"] if not math.isnan(x)
+            ]
             if filtered_rssi_values:
-                connected_rssi["mean_{}".format(key)] = sum(
-                    filtered_rssi_values) / len(filtered_rssi_values)
+                connected_rssi[key]["mean"] = statistics.mean(
+                    filtered_rssi_values)
                 if len(filtered_rssi_values) > 1:
-                    connected_rssi["stdev_{}".format(key)] = statistics.stdev(
+                    connected_rssi[key]["stdev"] = statistics.stdev(
                         filtered_rssi_values)
                 else:
-                    connected_rssi["stdev_{}".format(key)] = 0
+                    connected_rssi[key]["stdev"] = 0
             else:
-                connected_rssi["mean_{}".format(key)] = RSSI_ERROR_VAL
-                connected_rssi["stdev_{}".format(key)] = RSSI_ERROR_VAL
+                connected_rssi[key]["mean"] = RSSI_ERROR_VAL
+                connected_rssi[key]["stdev"] = RSSI_ERROR_VAL
         return connected_rssi
 
     def rssi_test(self, iperf_traffic, connected_measurements,
-                  scan_measurements, bssids, polling_frequency):
+                  scan_measurements, bssids, polling_frequency,
+                  first_measurement_delay):
         """Test function to run RSSI tests.
 
         The function runs an RSSI test in the current device/AP configuration.
@@ -458,16 +519,15 @@ class WifiRssiTest(base_test.BaseTestClass):
                 self.attenuators[i].set_atten(atten)
                 for i in range(self.num_atten)
             ]
-            time.sleep(MED_SLEEP)
+            time.sleep(first_measurement_delay)
             current_rssi = {}
-            current_rssi["connected_rssi"] = self.get_connected_rssi(
-                connected_measurements, polling_frequency)
+            current_rssi = self.get_connected_rssi(connected_measurements,
+                                                   polling_frequency)
             current_rssi["scan_rssi"] = self.get_scan_rssi(
                 bssids, scan_measurements)
             rssi_result.append(current_rssi)
             self.log.info("Connected RSSI at {0:.2f} dB is {1:.2f} dB".format(
-                atten,
-                current_rssi["connected_rssi"]["mean_signal_poll_rssi"]))
+                atten, current_rssi["signal_poll_rssi"]["mean"]))
         # Stop iperf traffic if needed
         if self.iperf_traffic:
             self.iperf_server.stop()
@@ -476,7 +536,8 @@ class WifiRssiTest(base_test.BaseTestClass):
         return rssi_result
 
     def rssi_test_func(self, iperf_traffic, connected_measurements,
-                       scan_measurements, bssids, polling_frequency):
+                       scan_measurements, bssids, polling_frequency,
+                       first_measurement_delay):
         """Main function to test RSSI.
 
         The function sets up the AP in the correct channel and mode
@@ -490,6 +551,14 @@ class WifiRssiTest(base_test.BaseTestClass):
         rssi_result = {}
         # Configure AP
         band = self.access_point.band_lookup_by_channel(self.channel)
+        if "2G" in band:
+            frequency = wutils.WifiEnums.channel_2G_to_freq[self.channel]
+        else:
+            frequency = wutils.WifiEnums.channel_5G_to_freq[self.channel]
+        if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
+            self.access_point.set_region(self.testbed_params["DFS_region"])
+        else:
+            self.access_point.set_region(self.testbed_params["default_region"])
         self.access_point.set_channel(band, self.channel)
         self.access_point.set_bandwidth(band, self.mode)
         self.log.info("Access Point Configuration: {}".format(
@@ -504,7 +573,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         wutils.reset_wifi(self.dut)
         self.main_network[band]["channel"] = self.channel
         wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
-        time.sleep(5)
+        time.sleep(MED_SLEEP)
         # Run RvR and log result
         rssi_result["test_name"] = self.current_test_name
         rssi_result["ap_settings"] = self.access_point.ap_settings.copy()
@@ -523,15 +592,15 @@ class WifiRssiTest(base_test.BaseTestClass):
             "dut_front_end_loss"][str(self.channel)]
         rssi_result["rssi_result"] = self.rssi_test(
             iperf_traffic, connected_measurements, scan_measurements, bssids,
-            polling_frequency)
+            polling_frequency, first_measurement_delay)
         self.testclass_results.append(rssi_result)
         return rssi_result
 
     def _test_rssi_vs_atten(self):
         """ Function that gets called for each test case of rssi_vs_atten
 
-        The function gets called in each rvr test case. The function customizes
-        the test based on the test name of the test that called it
+        The function gets called in each rssi test case. The function
+        customizes the test based on the test name of the test that called it
         """
         test_params = self.current_test_name.split("_")
         self.channel = int(test_params[4][2:])
@@ -539,22 +608,25 @@ class WifiRssiTest(base_test.BaseTestClass):
         self.iperf_traffic = "ActiveTraffic" in test_params[6]
         self.iperf_args = '-i 1 -t 3600 -J -R'
         band = self.access_point.band_lookup_by_channel(self.channel)
-        num_atten_steps = int((self.test_params["rssi_atten_stop"] -
-                               self.test_params["rssi_atten_start"]) /
-                              self.test_params["rssi_atten_step"])
+        num_atten_steps = int((self.test_params["rssi_vs_atten_stop"] -
+                               self.test_params["rssi_vs_atten_start"]) /
+                              self.test_params["rssi_vs_atten_step"])
         self.rssi_atten_range = [
-            self.test_params["rssi_atten_start"] +
-            x * self.test_params["rssi_atten_step"]
+            self.test_params["rssi_vs_atten_start"] +
+            x * self.test_params["rssi_vs_atten_step"]
             for x in range(0, num_atten_steps)
         ]
         rssi_result = self.rssi_test_func(
-            self.iperf_traffic, self.test_params["connected_measurements"],
-            self.test_params["scan_measurements"],
+            self.iperf_traffic,
+            self.test_params["rssi_vs_atten_connected_measurements"],
+            self.test_params["rssi_vs_atten_scan_measurements"],
             [self.main_network[band]["BSSID"]],
-            self.test_params["polling_frequency"])
-        postprocessed_results = self.post_process_rssi_vs_attenuation(
-            rssi_result)
-        self.pass_fail_check_rssi_vs_attenuation(postprocessed_results)
+            self.test_params["polling_frequency"], MED_SLEEP)
+        postprocessed_results = self.post_process_rssi_sweep(rssi_result)
+        self.plot_rssi_vs_attenuation(postprocessed_results)
+        self.pass_fail_check_rssi_accuracy(
+            postprocessed_results, self.test_params["rssi_vs_atten_metrics"],
+            1)
 
     def _test_rssi_stability(self):
         """ Function that gets called for each test case of rssi_stability
@@ -568,15 +640,60 @@ class WifiRssiTest(base_test.BaseTestClass):
         self.iperf_traffic = "ActiveTraffic" in test_params[5]
         self.iperf_args = '-i 1 -t 3600 -J -R'
         band = self.access_point.band_lookup_by_channel(self.channel)
-        self.rssi_atten_range = self.test_params["stability_test_atten"]
+        self.rssi_atten_range = self.test_params["rssi_stability_atten"]
         connected_measurements = int(
-            self.test_params["stability_test_duration"] /
+            self.test_params["rssi_stability_duration"] /
             self.test_params["polling_frequency"])
         rssi_result = self.rssi_test_func(
             self.iperf_traffic, connected_measurements, 0,
             [self.main_network[band]["BSSID"]],
-            self.test_params["polling_frequency"])
-        self.pass_fail_check_rssi_stability(rssi_result)
+            self.test_params["polling_frequency"], MED_SLEEP)
+        postprocessed_results = self.post_process_rssi_sweep(rssi_result)
+        self.plot_rssi_vs_time(rssi_result, postprocessed_results, 1)
+        self.pass_fail_check_rssi_stability(postprocessed_results)
+
+    def _test_rssi_tracking(self):
+        """ Function that gets called for each test case of rssi_tracking
+
+        The function gets called in each rssi test case. The function
+        customizes the test based on the test name of the test that called it
+        """
+        test_params = self.current_test_name.split("_")
+        self.channel = int(test_params[3][2:])
+        self.mode = test_params[4]
+        self.iperf_traffic = "ActiveTraffic" in test_params[5]
+        self.iperf_args = '-i 1 -t 3600 -J -R'
+        band = self.access_point.band_lookup_by_channel(self.channel)
+        self.rssi_atten_range = []
+        for waveform in self.test_params["rssi_tracking_waveforms"]:
+            waveform_vector = []
+            for section in range(len(waveform["atten_levels"]) - 1):
+                section_limits = waveform["atten_levels"][section:section + 2]
+                if section_limits[0] < section_limits[1]:
+                    waveform_vector = waveform_vector + sorted(
+                        list(
+                            range(section_limits[0], section_limits[1],
+                                  waveform["step_size"])) *
+                        waveform["step_duration"])
+                else:
+                    waveform_vector = waveform_vector + list(
+                        reversed(
+                            sorted(
+                                list(
+                                    range(section_limits[1], section_limits[0],
+                                          waveform["step_size"])) *
+                                waveform["step_duration"])))
+            waveform_vector = waveform_vector * waveform["repetitions"]
+            self.rssi_atten_range = self.rssi_atten_range + waveform_vector
+        connected_measurements = int(1 / self.test_params["polling_frequency"])
+        rssi_result = self.rssi_test_func(
+            self.iperf_traffic, connected_measurements, 0,
+            [self.main_network[band]["BSSID"]],
+            self.test_params["polling_frequency"], 0)
+        postprocessed_results = self.post_process_rssi_sweep(rssi_result)
+        self.plot_rssi_vs_time(rssi_result, postprocessed_results, 1)
+        self.pass_fail_check_rssi_accuracy(postprocessed_results,
+                                           ["signal_poll_rssi"], 0)
 
     @test_tracker_info(uuid='519689b8-0a3c-4fd9-9227-fd7962d0f1a0')
     def test_rssi_stability_ch1_VHT20_ActiveTraffic(self):
@@ -777,6 +894,14 @@ class WifiRssiTest(base_test.BaseTestClass):
     @test_tracker_info(uuid='581b5794-239e-4d1c-b0ce-7c6dc5bd373f')
     def test_rssi_vs_atten_ch161_VHT20_ActiveTraffic(self):
         self._test_rssi_vs_atten()
+
+    @test_tracker_info(uuid='')
+    def test_rssi_tracking_ch161_VHT20_ActiveTraffic(self):
+        self._test_rssi_tracking()
+
+    @test_tracker_info(uuid='')
+    def test_rssi_tracking_ch161_VHT20_NoTraffic(self):
+        self._test_rssi_tracking()
 
 
 class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
