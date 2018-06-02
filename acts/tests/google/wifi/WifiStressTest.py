@@ -151,7 +151,6 @@ class WifiStressTest(WifiBaseTest):
         for count in range(self.stress_count):
             net_id = self.dut.droid.wifiAddNetwork(self.wpa_5g)
             asserts.assert_true(net_id != -1, "Add network %r failed" % self.wpa_5g)
-            self.dut.droid.wifiEnableNetwork(net_id, 0)
             self.scan_and_connect_by_id(self.wpa_5g, net_id)
             # Start IPerf traffic from phone to server.
             # Upload data for 10s.
