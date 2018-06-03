@@ -32,7 +32,7 @@ WAIT_FOR_AUTO_CONNECT = 40
 WAIT_BEFORE_CONNECTION = 30
 
 TIMEOUT = 1
-
+PING_ADDR = 'www.google.com'
 
 class WifiStressTest(WifiBaseTest):
     """WiFi Stress test class.
@@ -121,6 +121,18 @@ class WifiStressTest(WifiBaseTest):
             ssid)
         wutils.wifi_connect_by_id(self.dut, net_id)
 
+    def run_ping(self, sec):
+        """Run ping for given number of seconds.
+
+        Args:
+            sec: Time in seconds to run teh ping traffic.
+
+        """
+        self.log.info("Running ping for %d seconds" % sec)
+        result = self.dut.adb.shell("ping -w %d %s" %(sec, PING_ADDR))
+        self.log.debug("Ping Result = %s" % result)
+        if "100% packet loss" in result:
+            raise signals.TestFailure("100% packet loss during ping")
 
     """Tests"""
 
@@ -151,7 +163,6 @@ class WifiStressTest(WifiBaseTest):
         for count in range(self.stress_count):
             net_id = self.dut.droid.wifiAddNetwork(self.wpa_5g)
             asserts.assert_true(net_id != -1, "Add network %r failed" % self.wpa_5g)
-            self.dut.droid.wifiEnableNetwork(net_id, 0)
             self.scan_and_connect_by_id(self.wpa_5g, net_id)
             # Start IPerf traffic from phone to server.
             # Upload data for 10s.
@@ -160,8 +171,7 @@ class WifiStressTest(WifiBaseTest):
             result, data = self.dut.run_iperf_client(self.iperf_server_address, args)
             if not result:
                 self.log.debug("Error occurred in iPerf traffic.")
-                raise signals.TestFailure("Error occurred in iPerf traffic. Current"
-                    " WiFi state = %d" % self.dut.droid.wifiCheckState())
+                self.run_ping(10)
             wutils.wifi_forget_network(self.dut,self.wpa_5g[WifiEnums.SSID_KEY])
             time.sleep(WAIT_BEFORE_CONNECTION)
 
@@ -183,11 +193,9 @@ class WifiStressTest(WifiBaseTest):
         self.log.info("Running iperf client {}".format(args))
         result, data = self.dut.run_iperf_client(self.iperf_server_address,
             args, timeout=sec+1)
-        self.dut.droid.wifiDisconnect()
         if not result:
             self.log.debug("Error occurred in iPerf traffic.")
-            raise signals.TestFailure("Error occurred in iPerf traffic. Current"
-                " WiFi state = %d" % self.dut.droid.wifiCheckState())
+            self.run_ping(sec)
 
     @test_tracker_info(uuid="d367c83e-5b00-4028-9ed8-f7b875997d13")
     def test_stress_wifi_failover(self):
