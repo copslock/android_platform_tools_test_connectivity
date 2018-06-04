@@ -141,7 +141,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
         log_path = os.path.join(self.dut.log_path, test_name,
                                 "CallDataLogs_%s" % self.dut.serial)
         utils.create_dir(log_path)
-        self.dut.pull_files(CALL_DATA_LOGS, log_path)
+        self.dut.pull_files([CALL_DATA_LOGS], log_path)
 
         self._take_bug_report(test_name, begin_time)
 
@@ -469,6 +469,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                     verify_caller_func=is_phone_in_call_video_bidirectional,
                     verify_callee_func=is_phone_in_call_video_bidirectional):
                 self.dut.log.error("VT Call Failed.")
+                expected_drop_reason = None
         else:
             if not call_setup_teardown(
                     self.log,
@@ -478,6 +479,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                     verify_caller_func=call_verification_function,
                     wait_time_in_call=10):
                 self.log.error("Call setup failed")
+                expected_drop_reason = None
 
         if self.dut.droid.telecomIsInCall():
             self.dut.log.info("Telecom is in call")
@@ -597,7 +599,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
         for reason_key in checking_reasons:
             if call_data_summary_after.get(reason_key, None):
                 drop_reason = call_data_summary_after[reason_key]
-                if drop_reason != expected_drop_reason:
+                if expected_drop_reason and drop_reason != expected_drop_reason:
                     self.dut.log.error("%s is: %s, expecting %s", reason_key,
                                        drop_reason, expected_drop_reason)
                     result = False
@@ -630,18 +632,20 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                        setup=None,
                        count=CONSECUTIVE_CALL_FAILS,
                        pre_trigger=None,
+                       trigger=None,
                        expected_trouble=None,
                        expected_action=None):
         result = True
-        if self.dut.model in ("marlin", "sailfish", "walleye", "taimen"):
-            trigger = "modem_crash"
-            drop_reason = "Error Unspecified"
-        else:
-            trigger = "drop_reason_override"
-            self.set_drop_reason_override(
-                override_code=self.call_drop_override_code)
-            drop_reason = CALL_DROP_CODE_MAPPING[int(
-                self.call_drop_override_code)]
+        if not trigger:
+            if self.dut.model in ("marlin", "sailfish", "walleye", "taimen"):
+                trigger = "modem_crash"
+                drop_reason = "Error Unspecified"
+            else:
+                trigger = "drop_reason_override"
+                self.set_drop_reason_override(
+                    override_code=self.call_drop_override_code)
+                drop_reason = CALL_DROP_CODE_MAPPING[int(
+                    self.call_drop_override_code)]
         for iter in range(count):
             if not self.call_setup_and_connectivity_monitor_checking(
                     setup=setup,
