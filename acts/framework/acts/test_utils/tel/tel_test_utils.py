@@ -2270,7 +2270,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
     if method == "curl" and check_curl_availability(ad):
         return (http_file_download_by_curl, (ad, url, output_path, file_size,
                                              True, timeout))
-    elif method == "sl4a":
+    elif method == "sl4a" or method == "curl":
         return (http_file_download_by_sl4a, (ad, url, output_path, file_size,
                                              True, timeout))
     else:
@@ -2612,6 +2612,7 @@ def http_file_download_by_sl4a(ad,
                 url, file_path, timeout=timeout)
         except Exception as e:
             ad.log.warning("SL4A file download error: %s", e)
+            ad.downloading_droid.terminate()
             return False
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded successfully", url)
@@ -2654,39 +2655,46 @@ def http_file_download_by_sl4a(ad,
             ad.adb.shell("rm %s" % file_path, ignore_status=True)
 
 
-def get_mobile_data_usage(ad, subscriber_id=None, apk=None):
-    if not subscriber_id:
-        subscriber_id = ad.droid.telephonyGetSubscriberId()
-
-    if not getattr(ad, "data_metering_begin_time", None) or not getattr(
-            ad, "data_metering_end_time", None):
-        current_time = int(time.time() * 1000)
-        setattr(ad, "data_metering_begin_time",
-                current_time - 24 * 60 * 60 * 1000)
-        setattr(ad, "data_metering_end_time",
-                current_time + 30 * 24 * 60 * 60 * 1000)
-    begin_time = ad.data_metering_begin_time
-    end_time = ad.data_metering_end_time
+def get_mobile_data_usage(ad, sid=None, apk=None):
+    if not sid:
+        sid = ad.droid.subscriptionGetDefaultSubId()
+    current_time = int(time.time() * 1000)
+    begin_time = current_time - 10 * 24 * 60 * 60 * 1000
+    end_time = current_time + 10 * 24 * 60 * 60 * 1000
 
     if apk:
         uid = ad.get_apk_uid(apk)
         ad.log.info("apk %s uid = %s", apk, uid)
-        func = ad.droid.connectivityQueryDetailsForUid
-        func_args = [[TYPE_MOBILE, subscriber_id, begin_time, end_time, uid],
-                     [subscriber_id, begin_time, end_time, uid]]
-    else:
-        func = ad.droid.connectivityQuerySummaryForDevice
-        func_args = [[TYPE_MOBILE, subscriber_id, begin_time, end_time],
-                     [subscriber_id, begin_time, end_time]]
-    for args in func_args:
         try:
-            usage = func(*args)
-            ad.log.info("%s mobile data usage is %s", apk
-                        if apk else "Subscriber", usage)
-            return usage
-        except Exception as e:
-            ad.log.warning(e)
-    return None
+            usage_info = ad.droid.getMobileDataUsageInfoForUid(uid, sid)
+            ad.log.info("Mobile data usage info for uid %s = %s", uid,
+                        usage_info)
+            return usage_info["UsageLevel"]
+        except:
+            try:
+                return ad.droid.connectivityQueryDetailsForUid(
+                    TYPE_MOBILE,
+                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
+                    begin_time, end_time, uid)
+            except:
+                return ad.droid.connectivityQueryDetailsForUid(
+                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
+                    begin_time, end_time, uid)
+    else:
+        try:
+            usage_info = ad.droid.getMobileDataUsageInfo(sid)
+            ad.log.info("Mobile data usage info = %s", usage_info)
+            return usage_info["UsageLevel"]
+        except:
+            try:
+                return ad.droid.connectivityQuerySummaryForDevice(
+                    TYPE_MOBILE,
+                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
+                    begin_time, end_time)
+            except:
+                return ad.droid.connectivityQuerySummaryForDevice(
+                    ad.droid.telephonyGetSubscriberIdForSubscription(sid),
+                    begin_time, end_time)
 
 
 def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
@@ -2694,7 +2702,10 @@ def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
         subscriber_id = ad.droid.telephonyGetSubscriberId()
     ad.log.info("Set subscriber mobile data usage limit to %s", limit)
     ad.droid.logV("Setting subscriber mobile data usage limit to %s" % limit)
-    ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
+    try:
+        ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
+    except:
+        ad.droid.connectivitySetDataUsageLimit(subscriber_id, limit)
 
 
 def remove_mobile_data_usage_limit(ad, subscriber_id=None):
@@ -2703,7 +2714,10 @@ def remove_mobile_data_usage_limit(ad, subscriber_id=None):
     ad.log.debug("Remove subscriber mobile data usage limit")
     ad.droid.logV(
         "Setting subscriber mobile data usage limit to -1, unlimited")
-    ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
+    try:
+        ad.droid.connectivitySetDataUsageLimit(subscriber_id, "-1")
+    except:
+        ad.droid.connectivitySetDataUsageLimit(subscriber_id, -1)
 
 
 def trigger_modem_crash(ad, timeout=120):
