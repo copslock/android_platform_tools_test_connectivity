@@ -3084,8 +3084,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         # download file - size 5MB twice
         try:
             for _ in range(2):
-                if not active_file_download_test(self.log, dut, "5MB",
-                                                 "chrome"):
+                if not active_file_download_test(self.log, dut, "5MB", "curl"):
                     if get_mobile_data_usage(
                             dut, subscriber_id) + 5 * 1000 * 1000 < data_limit:
                         dut.log.error(
