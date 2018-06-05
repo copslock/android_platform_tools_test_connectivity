@@ -56,10 +56,13 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.pkt_sender.stop_sending(ignore_status=True)
         if hasattr(self, 'brconfigs'):
             self.access_point.bridge.teardown(self.brconfigs)
+            delattr(self, 'brconfigs')
         if hasattr(self, 'brconfigs_main'):
             self.access_point_main.bridge.teardown(self.brconfigs_main)
+            delattr(self, 'brconfigs_main')
         if hasattr(self, 'brconfigs_aux'):
             self.access_point_aux.bridge.teardown(self.brconfigs_aux)
+            delattr(self, 'brconfigs_aux')
         if hasattr(self, 'access_points'):
             for ap in self.access_points:
                 ap.close()
