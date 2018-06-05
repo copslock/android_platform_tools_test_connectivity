@@ -129,7 +129,8 @@ class WifiStressTest(WifiBaseTest):
 
         """
         self.log.info("Running ping for %d seconds" % sec)
-        result = self.dut.adb.shell("ping -w %d %s" %(sec, PING_ADDR))
+        result = self.dut.adb.shell("ping -w %d %s" %(sec, PING_ADDR),
+            timeout=sec+1)
         self.log.debug("Ping Result = %s" % result)
         if "100% packet loss" in result:
             raise signals.TestFailure("100% packet loss during ping")
