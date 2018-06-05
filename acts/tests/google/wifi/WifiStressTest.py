@@ -266,9 +266,7 @@ class WifiStressTest(WifiBaseTest):
                 WifiEnums.WIFI_CONFIG_APBAND_5G)
             wutils.start_wifi_connection_scan_and_ensure_network_found(
                 self.dut_client, ap_ssid)
-            # Toggle WiFi ON, which inturn calls softAP teardown.
-            wutils.wifi_toggle_state(self.dut, True)
-            time.sleep(TIMEOUT)
+            wutils.stop_wifi_tethering(self.dut)
             asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
                                  "SoftAp failed to shutdown!")
             time.sleep(TIMEOUT)
