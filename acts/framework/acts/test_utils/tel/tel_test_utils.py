@@ -2247,7 +2247,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
     # files available for download on the same website:
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
-    file_map_dict = {
+    file_size_map = {
         '5MB': 5000000,
         '10MB': 10000000,
         '20MB': 20000000,
@@ -2256,25 +2256,73 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
         '200MB': 200000000,
         '512MB': 512000000
     }
-    file_size = file_map_dict.get(file_name)
-    if not file_size:
-        log.warning("file_name %s for download is not available", file_name)
+    url_map = {
+        "5MB": [
+            "http://ipv4.download.thinkbroadband.com/5MB.zip",
+            "http://212.183.159.230/5MB.zip",
+            "http://146.148.91.8/download/5MB.zip"
+        ],
+        "10MB": [
+            "http://ipv4.download.thinkbroadband.com/10MB.zip",
+            "http://212.183.159.230/10MB.zip",
+            "http://146.148.91.8/download/10MB.zip",
+            "http://lax.futurehosting.com/test.zip",
+            "http://ovh.net/files/10Mio.dat"
+        ],
+        "20MB": [
+            "http://ipv4.download.thinkbroadband.com/20MB.zip",
+            "http://212.183.159.230/20MB.zip",
+            "http://146.148.91.8/download/20MB.zip"
+        ],
+        "50MB": [
+            "http://ipv4.download.thinkbroadband.com/50MB.zip",
+            "http://212.183.159.230/50MB.zip",
+            "http://146.148.91.8/download/50MB.zip"
+        ],
+        "100MB": [
+            "http://ipv4.download.thinkbroadband.com/100MB.zip",
+            "http://212.183.159.230/100MB.zip",
+            "http://146.148.91.8/download/100MB.zip",
+            "http://speedtest-ca.turnkeyinternet.net/100mb.bin",
+            "http://ovh.net/files/100Mio.dat",
+            "http://lax.futurehosting.com/test100.zip"
+        ],
+        "200MB": [
+            "http://ipv4.download.thinkbroadband.com/200MB.zip",
+            "http://212.183.159.230/200MB.zip",
+            "http://146.148.91.8/download/200MB.zip"
+        ],
+        "512MB": [
+            "http://ipv4.download.thinkbroadband.com/512MB.zip",
+            "http://212.183.159.230/200MB.zip",
+            "http://146.148.91.8/download/512MB.zip"
+        ]
+    }
+
+    file_size = file_size_map.get(file_name)
+    file_urls = url_map.get(file_name)
+    file_url = None
+    for url in file_urls:
+        url_splits = url.split("/")
+        if verify_http_connection(log, ad, url=url, retry=1):
+            output_path = "/sdcard/Download/%s" % url_splits[-1]
+            file_url = url
+            break
+    if not file_url:
+        log.error("No url available to download %s", file_name)
         return False
     timeout = min(max(file_size / 100000, 600), 3600)
-    output_path = "/sdcard/Download/" + file_name + ".zip"
-    #url = "http://ipv4.download.thinkbroadband.com/" + file_name + ".zip"
-    url = "http://146.148.91.8/download/%s.zip" % file_name
     if method == "sl4a":
-        return (http_file_download_by_sl4a, (ad, url, output_path, file_size,
-                                             True, timeout))
+        return (http_file_download_by_sl4a, (ad, file_url, output_path,
+                                             file_size, True, timeout))
     if method == "curl" and check_curl_availability(ad):
-        return (http_file_download_by_curl, (ad, url, output_path, file_size,
-                                             True, timeout))
+        return (http_file_download_by_curl, (ad, file_url, output_path,
+                                             file_size, True, timeout))
     elif method == "sl4a" or method == "curl":
-        return (http_file_download_by_sl4a, (ad, url, output_path, file_size,
-                                             True, timeout))
+        return (http_file_download_by_sl4a, (ad, file_url, output_path,
+                                             file_size, True, timeout))
     else:
-        return (http_file_download_by_chrome, (ad, url, file_size, True,
+        return (http_file_download_by_chrome, (ad, file_url, file_size, True,
                                                timeout))
 
 
