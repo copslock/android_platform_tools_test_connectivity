@@ -24,11 +24,14 @@ import pprint
 
 
 class BtaLib():
-    def __init__(self, log, mac_addr, dut):
+    def __init__(self, log, dut, target_mac_address=None):
         self.advertisement_list = []
         self.dut = dut
         self.log = log
-        self.mac_addr = mac_addr
+        self.target_mac_addr = target_mac_address
+
+    def set_target_mac_addr(self, mac_addr):
+        self.target_mac_addr = mac_addr
 
     def set_scan_mode(self, scan_mode):
         """Set the Scan mode of the Bluetooth Adapter"""
@@ -48,7 +51,7 @@ class BtaLib():
 
     def init_bond(self):
         """Initiate bond to PTS device"""
-        self.dut.droid.bluetoothDiscoverAndBond(self.mac_addr)
+        self.dut.droid.bluetoothDiscoverAndBond(self.target_mac_addr)
 
     def start_discovery(self):
         """Start BR/EDR Discovery"""
@@ -67,15 +70,15 @@ class BtaLib():
 
     def bond(self):
         """Bond to PTS device"""
-        self.dut.droid.bluetoothBond(self.mac_addr)
+        self.dut.droid.bluetoothBond(self.target_mac_addr)
 
     def disconnect(self):
         """BTA disconnect"""
-        self.dut.droid.bluetoothDisconnectConnected(self.mac_addr)
+        self.dut.droid.bluetoothDisconnectConnected(self.target_mac_addr)
 
     def unbond(self):
         """Unbond from PTS device"""
-        self.dut.droid.bluetoothUnbond(self.mac_addr)
+        self.dut.droid.bluetoothUnbond(self.target_mac_addr)
 
     def start_pairing_helper(self, line):
         """Start or stop Bluetooth Pairing Helper"""
@@ -96,12 +99,13 @@ class BtaLib():
 
     def fetch_uuids_with_sdp(self):
         """BTA fetch UUIDS with SDP"""
-        self.log.info(self.dut.droid.bluetoothFetchUuidsWithSdp(self.mac_addr))
+        self.log.info(
+            self.dut.droid.bluetoothFetchUuidsWithSdp(self.target_mac_addr))
 
     def connect_profiles(self):
         """Connect available profiles"""
-        self.dut.droid.bluetoothConnectBonded(self.mac_addr)
+        self.dut.droid.bluetoothConnectBonded(self.target_mac_addr)
 
     def tts_speak(self):
         """Open audio channel by speaking characters"""
-        self.dut.droid.ttsSpeak(self.mac_addr)
+        self.dut.droid.ttsSpeak(self.target_mac_addr)
