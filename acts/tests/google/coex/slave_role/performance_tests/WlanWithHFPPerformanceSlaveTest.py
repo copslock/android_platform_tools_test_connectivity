@@ -32,10 +32,10 @@ from acts.test_utils.tel.tel_test_utils import initiate_call
 class WlanWithHFPPerformanceSlaveTest(CoexBluezBaseTest):
 
     def __init__(self, controllers):
-        super().__init__(controllers)
+        super().__init__(controllers, HFP_TEST)
 
     def setup_class(self):
-        super().setup_class(HFP_TEST)
+        super().setup_class()
         if not self.bluez_flag:
             return False
         req_params = ["sim_conf_file"]

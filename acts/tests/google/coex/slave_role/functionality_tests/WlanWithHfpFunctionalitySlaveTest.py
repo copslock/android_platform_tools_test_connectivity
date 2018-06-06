@@ -28,10 +28,10 @@ from acts.test_utils.coex.coex_constants import WAIT_TIME
 class WlanWithHfpFunctionalitySlaveTest(CoexBluezBaseTest):
 
     def __init__(self, controllers):
-        super().__init__(controllers)
+        super().__init__(controllers, HFP_TEST)
 
     def setup_class(self):
-        super().setup_class(HFP_TEST)
+        super().setup_class()
         if not self.bluez_flag:
             return False
         req_params = ["iterations"]
