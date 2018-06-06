@@ -142,12 +142,12 @@ class WifiIOTTest(WifiBaseTest):
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="6870e35b-f7a7-45bf-b021-fea049ae53de")
-    def iot_connection_to_AirportExpress_2G(self):
+    def test_iot_connection_to_AirportExpress_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="95f4b405-79d7-4873-a152-4384acc88f41")
-    def iot_connection_to_AirportExpress_5G(self):
+    def test_iot_connection_to_AirportExpress_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
@@ -317,17 +317,17 @@ class WifiIOTTest(WifiBaseTest):
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="7c12f943-d9e2-45b1-aa84-fcb43efbbb04")
-    def iot_connection_to_TP_LINK_5504_2G(self):
+    def test_iot_connection_to_TP_LINK_5504_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="52be6b76-5e43-4289-83e1-4cd0d995d39b")
-    def iot_connection_to_TP_LINK_5504_5G_1(self):
+    def test_iot_connection_to_TP_LINK_5504_5G_1(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="0b43d1da-e207-443d-b16c-c4ee3e924036")
-    def iot_connection_to_TP_LINK_5504_5G_2(self):
+    def test_iot_connection_to_TP_LINK_5504_5G_2(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
@@ -352,12 +352,12 @@ class WifiIOTTest(WifiBaseTest):
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="e639f6db-ad8e-4b4f-91f3-10acdf93142a")
-    def iot_connection_to_AmpedAthena_2G(self):
+    def test_iot_connection_to_AmpedAthena_2G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
     @test_tracker_info(uuid="3dd90d80-952f-4f17-a48a-fe42e7d6e1ff")
-    def iot_connection_to_AmpedAthena_5G(self):
+    def test_iot_connection_to_AmpedAthena_5G(self):
         ssid_key = self.current_test_name.replace(self.iot_test_prefix, "")
         self.connect_to_wifi_network_and_run_iperf(self.ssid_map[ssid_key])
 
