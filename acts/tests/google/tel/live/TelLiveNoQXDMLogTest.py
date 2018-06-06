@@ -96,7 +96,6 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             self.android_devices) > 1 else None
         setattr(self.dut, "qxdm_log", False)
         setattr(self.ad_reference, "qxdm_log", False)
-        TelephonyBaseTest.__init__(self, controllers)
         self.stress_test_number = int(
             self.user_params.get("stress_test_number", 5))
         self.skip_reset_between_cases = False
@@ -110,9 +109,6 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         self.user_params["check_crash"] = False
         self.skip_reset_between_cases = False
-
-    def setup_class(self):
-        TelephonyBaseTest.setup_class(self)
 
     def _get_list_average(self, input_list):
         total_sum = float(sum(input_list))
@@ -172,12 +168,13 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
 
             time.sleep(WAIT_TIME_FOR_BOOT_COMPLETE)
 
-            dict_match = ad.search_logcat(text_search_mapping['boot_complete'],
-                                          begin_time=begin_time)
+            dict_match = ad.search_logcat(
+                text_search_mapping['boot_complete'], begin_time=begin_time)
             if len(dict_match) != 0:
-                text_obj_mapping['boot_complete'] = dict_match[0]['datetime_obj']
+                text_obj_mapping['boot_complete'] = dict_match[0][
+                    'datetime_obj']
                 ad.log.debug("Datetime for boot_complete is %s",
-                            text_obj_mapping['boot_complete'])
+                             text_obj_mapping['boot_complete'])
                 bootup_time = dict_match[0]['datetime_obj'].strftime('%s')
                 bootup_time = int(bootup_time) * 1000
                 ad.log.info("Bootup Time is %d", bootup_time)
@@ -188,12 +185,12 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             for tel_state in text_search_mapping:
                 if tel_state == "boot_complete":
                     continue
-                dict_match = ad.search_logcat(text_search_mapping[tel_state],
-                                              begin_time=bootup_time)
+                dict_match = ad.search_logcat(
+                    text_search_mapping[tel_state], begin_time=bootup_time)
                 if len(dict_match) != 0:
                     text_obj_mapping[tel_state] = dict_match[0]['datetime_obj']
-                    ad.log.debug("Datetime for %s is %s",
-                                tel_state, text_obj_mapping[tel_state])
+                    ad.log.debug("Datetime for %s is %s", tel_state,
+                                 text_obj_mapping[tel_state])
                 else:
                     ad.log.error("Cannot Find Text %s in logcat",
                                  text_search_mapping[tel_state])
@@ -205,8 +202,8 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
                 if tel_state not in blocked_for_calculate:
                     time_diff = text_obj_mapping[tel_state] - \
                                 text_obj_mapping['boot_complete']
-                    ad.log.info("Time Diff is %d for %s",
-                                time_diff.seconds, tel_state)
+                    ad.log.info("Time Diff is %d for %s", time_diff.seconds,
+                                tel_state)
                     if tel_state in keyword_time_dict:
                         keyword_time_dict[tel_state].append(time_diff.seconds)
                     else:
@@ -258,7 +255,6 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             True is pass, False if fail.
         """
         return self._telephony_bootup_time_test()
-
 
     @test_tracker_info(uuid="67f50d11-a987-4e79-9a20-1569d365511b")
     @TelephonyBaseTest.tel_test_wrap
