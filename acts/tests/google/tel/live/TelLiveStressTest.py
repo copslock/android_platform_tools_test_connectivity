@@ -624,7 +624,6 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def _data_download(self,
                        file_names=["5MB", "10MB", "20MB", "50MB", "200MB"]):
-        #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
         self.dut.log.info(dict(self.result_info))

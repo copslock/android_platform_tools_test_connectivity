@@ -2294,7 +2294,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
         ],
         "512MB": [
             "http://ipv4.download.thinkbroadband.com/512MB.zip",
-            "http://212.183.159.230/200MB.zip",
+            "http://212.183.159.230/512MB.zip",
             "http://146.148.91.8/download/512MB.zip"
         ]
     }
@@ -2309,7 +2309,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
             file_url = url
             break
     if not file_url:
-        log.error("No url available to download %s", file_name)
+        log.error("No url is available to download %s", file_name)
         return False
     timeout = min(max(file_size / 100000, 600), 3600)
     if method == "sl4a":
@@ -2328,6 +2328,8 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
 
 def active_file_download_test(log, ad, file_name="5MB", method="sl4a"):
     task = active_file_download_task(log, ad, file_name, method=method)
+    if not task:
+        return False
     return task[0](*task[1])
 
 
@@ -5738,6 +5740,18 @@ def start_qxdm_logger(ad, begin_time=None):
                 ad.adb.shell_nb(ad.qxdm_logger_command)
                 time.sleep(10)
         return True
+
+
+def disable_qxdm_logger(ad):
+    for prop in ("persist.sys.modem.diag.mdlog",
+                 "persist.vendor.sys.modem.diag.mdlog"):
+        if ad.adb.getprop(prop):
+            ad.adb.shell("setprop %s false" % prop, ignore_status=True)
+    for apk in ("com.android.nexuslogger", "com.android.pixellogger"):
+        if ad.is_apk_installed(apk) and ad.is_apk_running(apk):
+            ad.force_stop_apk(apk)
+    stop_qxdm_logger(ad)
+    return True
 
 
 def check_qxdm_logger_run_time(ad):
