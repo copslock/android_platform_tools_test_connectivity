@@ -71,7 +71,7 @@ _TYCHO_VERBOSE_LOGGING_CMDS = [
 _TYCHO_SERVER_LAB_OVERRIDE_CMD = (
     "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE -e "
     "url:tycho_server_endpoint https://android.googleapis.com/nova/nfe/ rewrite"
-    "https://android.googleapis.com/lab/nova/nfe/")
+    " https://android.googleapis.com/lab/nova/nfe/")
 
 
 class TychoClassId(object):
@@ -181,6 +181,9 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 'com.google.android.tradefed.account/.AddAccount' %
                 (ad.user_account, ad.user_password))
             ad.log.info("Enable and activate tycho apk")
+            if not ad.is_apk_installed(_TYCHO_PKG):
+                ad.log.info("%s is not installed", _TYCHO_PKG)
+                return False
             ad.adb.shell('pm enable %s' % _TYCHO_PKG)
             #ad.adb.shell(_TYCHO_SERVER_LAB_OVERRIDE_CMD)
             for i in range(1, self.activation_attemps + 1):
@@ -251,6 +254,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
           ad: Android device need to start Tycho InitActivity.
         """
         ad.force_stop_apk(_TYCHO_PKG)
+        ad.send_keycode("HOME")
         extra = {'in_setup_wizard': False, 'force_show_account_chooser': False}
         self.start_activity(ad, _TYCHO_PKG, TychoClassId.INIT_ACTIVITY, extra)
         for _ in range(30):
