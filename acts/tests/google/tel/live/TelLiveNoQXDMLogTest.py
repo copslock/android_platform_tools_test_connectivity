@@ -270,21 +270,14 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         """Set LTE band lock 4"""
         if not self.dut.is_apk_installed("com.google.mdstest"):
             raise signals.TestSkip("mdstest is not installed")
-        lock_lte_band_by_mds(self.dut, "4")
+        return lock_lte_band_by_mds(self.dut, "4")
 
     @TelephonyBaseTest.tel_test_wrap
     def test_lock_lte_band_13(self):
         """Set LTE band lock 4"""
         if not self.dut.is_apk_installed("com.google.mdstest"):
             raise signals.TestSkip("mdstest is not installed")
-        lock_lte_band_by_mds(self.dut, "13")
-
-    @TelephonyBaseTest.tel_test_wrap
-    def test_lock_lte_band_4_and_13(self):
-        """Set LTE band lock 4"""
-        if not self.dut.is_apk_installed("com.google.mdstest"):
-            raise signals.TestSkip("mdstest is not installed")
-        lock_lte_band_by_mds(self.dut, "4 13")
+        return lock_lte_band_by_mds(self.dut, "13")
 
 
 """ Tests End """
