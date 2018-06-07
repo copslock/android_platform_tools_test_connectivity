@@ -2166,10 +2166,10 @@ def verify_http_connection(log,
             http_response = ad.droid.httpPing(url)
         except:
             http_response = None
-        ad.log.info("Http ping response for %s is %s, expecting %s", url,
-                    http_response, expected_state)
         if (expected_state and http_response) or (not expected_state
                                                   and not http_response):
+            ad.log.info("Http ping response for %s meet expected %s", url,
+                        expected_state)
             return True
         if i < retry:
             time.sleep(retry_interval)
@@ -6210,7 +6210,9 @@ def adb_disable_verity(ad):
 
 
 def recover_build_id(ad):
-    build_fingerprint = ad.adb.getprop("ro.build.fingerprint")
+    build_fingerprint = ad.adb.getprop(
+        "ro.build.fingerprint") or ad.adb.getprop(
+            "ro.vendor.build.fingerprint")
     if not build_fingerprint:
         return
     build_id = build_fingerprint.split("/")[3]
@@ -6218,20 +6220,45 @@ def recover_build_id(ad):
         build_id_override(ad, build_id)
 
 
-def build_id_override(ad, build_id):
+def build_id_override(ad, new_build_id=None, postfix=None):
+    build_fingerprint = ad.adb.getprop(
+        "ro.build.fingerprint") or ad.adb.getprop(
+            "ro.vendor.build.fingerprint")
+    if build_fingerprint:
+        build_id = build_fingerprint.split("/")[3]
+    else:
+        build_id = None
     existing_build_id = ad.adb.getprop("ro.build.id")
-    if existing_build_id == build_id:
+    if not new_build_id:
+        if postfix and build_id:
+            new_build_id = "%s.%s" % (build_id, postfix)
+    if not new_build_id or existing_build_id == new_build_id:
         return
-    ad.log.info("Override build id %s with %s", existing_build_id, build_id)
+    ad.log.info("Override build id %s with %s", existing_build_id,
+                new_build_id)
     adb_disable_verity(ad)
     ad.adb.remount()
     if "backup.prop" not in ad.adb.shell("ls /sdcard/"):
         ad.adb.shell("cp /default.prop /sdcard/backup.prop")
     ad.adb.shell("cat /default.prop | grep -v ro.build.id > /sdcard/test.prop")
-    ad.adb.shell("echo ro.build.id=%s >> /sdcard/test.prop" % build_id)
+    ad.adb.shell("echo ro.build.id=%s >> /sdcard/test.prop" % new_build_id)
     ad.adb.shell("cp /sdcard/test.prop /default.prop")
     reboot_device(ad)
     ad.log.info("ro.build.id = %s", ad.adb.getprop("ro.build.id"))
+
+
+def enable_connectivity_metrics(ad):
+    cmds = [
+        "pm enable com.android.connectivity.metrics",
+        "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
+        " -e usagestats:connectivity_metrics:enable_data_collection 1",
+        "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
+        " -e usagestats:connectivity_metrics:telephony_snapshot_period_millis 180000",
+        "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
+        " -e usagestats:connectivity_metrics:data_collection_bitmap 62"
+    ]
+    for cmd in cmds:
+        ad.adb.shell(cmd)
 
 
 def system_file_push(ad, src_file_path, dst_file_path):
