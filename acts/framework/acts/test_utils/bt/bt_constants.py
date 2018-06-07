@@ -589,3 +589,10 @@ fpga_linein_bus_endpoint = 'Chameleon FPGA line-in'
 headphone_bus_endpoint = 'Cros device headphone'
 
 ### Chameleon Constants End ###
+
+### Begin logcat strings dict"""
+logcat_strings = {
+    "media_playback_vol_changed": "onRouteVolumeChanged",
+}
+
+### End logcat strings dict"""
