@@ -585,7 +585,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 self._make_phone_call(call_verification_func)
             except Exception as e:
-                self.log.error("Exception error %s", str(e))
+                self.log.exception("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
             if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
                 self.log.error("Too many exception errors, quit test")
@@ -607,7 +607,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 self._send_message(max_wait_time=max_wait_time)
             except Exception as e:
-                self.log.error("Exception error %s", str(e))
+                self.log.exception("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
             self.log.info(dict(self.result_info))
             if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
@@ -622,8 +622,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def _data_download(self,
-                       file_names=["5MB", "10MB", "20MB", "50MB", "200MB"]):
+    def _data_download(self, file_names=["5MB", "10MB", "20MB", "50MB"]):
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
         self.dut.log.info(dict(self.result_info))
