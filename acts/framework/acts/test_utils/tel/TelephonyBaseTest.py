@@ -35,6 +35,7 @@ from acts import utils
 from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
 from acts.test_utils.tel.tel_test_utils import build_id_override
+from acts.test_utils.tel.tel_test_utils import disable_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import enable_radio_log_on
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
@@ -86,13 +87,7 @@ class TelephonyBaseTest(BaseTestClass):
         self.qxdm_log = self.user_params.get("qxdm_log", True)
         self.enable_radio_log_on = self.user_params.get(
             "enable_radio_log_on", True)
-        qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
-        if isinstance(qxdm_log_mask_cfg, list):
-            qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
-        if qxdm_log_mask_cfg and "dev/null" in qxdm_log_mask_cfg:
-            qxdm_log_mask_cfg = None
-        tasks = [(self._init_device, [ad, qxdm_log_mask_cfg])
-                 for ad in self.android_devices]
+        tasks = [(self._init_device, [ad]) for ad in self.android_devices]
         multithread_func(self.log, tasks)
         self.skip_reset_between_cases = self.user_params.get(
             "skip_reset_between_cases", True)
@@ -152,6 +147,11 @@ class TelephonyBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def setup_class(self):
+        qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
+        if isinstance(qxdm_log_mask_cfg, list):
+            qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
+        if qxdm_log_mask_cfg and "dev/null" in qxdm_log_mask_cfg:
+            qxdm_log_mask_cfg = None
         sim_conf_file = self.user_params.get("sim_conf_file")
         if not sim_conf_file:
             self.log.info("\"sim_conf_file\" is not provided test bed config!")
@@ -167,11 +167,11 @@ class TelephonyBaseTest(BaseTestClass):
                     self.log.error("Unable to load user config %s ",
                                    sim_conf_file)
 
-        tasks = [(self._setup_device, [ad, sim_conf_file])
+        tasks = [(self._setup_device, [ad, sim_conf_file, qxdm_log_mask_cfg])
                  for ad in self.android_devices]
         return multithread_func(self.log, tasks)
 
-    def _init_device(self, ad, qxdm_log_mask_cfg=None):
+    def _init_device(self, ad):
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
         synchronize_device_time(ad)
@@ -180,8 +180,10 @@ class TelephonyBaseTest(BaseTestClass):
         unlock_sim(ad)
         ad.wakeup_screen()
         ad.adb.shell("input keyevent 82")
-        ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
+
+    def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
         stop_qxdm_logger(ad)
+        ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
         if ad.qxdm_log:
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
             if qxdm_log_mask_cfg:
@@ -194,8 +196,8 @@ class TelephonyBaseTest(BaseTestClass):
                 qxdm_log_mask = os.path.join(qxdm_mask_path, mask_file_name)
             set_qxdm_logger_command(ad, mask=qxdm_log_mask)
             start_qxdm_logger(ad, utils.get_current_epoch_time())
-
-    def _setup_device(self, ad, sim_conf_file):
+        else:
+            disable_qxdm_logger(ad)
         if not unlock_sim(ad):
             raise signals.TestAbortClass("unable to unlock the SIM")
 
