@@ -823,11 +823,6 @@ def wait_and_answer_call(log,
         video_state=video_state)
 
 
-def wait_for_ringing_event(log, ad, wait_time):
-    log.warning("***DEPRECATED*** wait_for_ringing_event()")
-    return _wait_for_ringing_event(log, ad, wait_time)
-
-
 def _wait_for_ringing_event(log, ad, wait_time):
     """Wait for ringing event.
 
@@ -901,14 +896,13 @@ def wait_for_ringing_call_for_subscription(
     if not event_tracking_started:
         ad.ed.clear_events(EventCallStateChanged)
         ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
-    ring_event_check = False
+    ring_event_received = False
     end_time = time.time() + timeout
     try:
         while time.time() < end_time:
-            if not ring_event_check:
+            if not ring_event_received:
                 event_ringing = _wait_for_ringing_event(log, ad, interval)
                 if event_ringing:
-                    ad.log.info("callee received ring event")
                     if incoming_number and not check_phone_number_match(
                             event_ringing['data']
                         [CallStateContainer.INCOMING_NUMBER], incoming_number):
@@ -917,11 +911,13 @@ def wait_for_ringing_call_for_subscription(
                             incoming_number, event_ringing['data'][
                                 CallStateContainer.INCOMING_NUMBER])
                         return False
-                    ring_event_check = True
-            if ad.droid.telephonyGetCallStateForSubscription(
-                    sub_id
-            ) == TELEPHONY_STATE_RINGING and ad.droid.telecomIsRinging():
-                ad.log.info("callee is in ringing state")
+                    ring_event_received = True
+            telephony_state = ad.droid.telephonyGetCallStateForSubscription(
+                sub_id)
+            telecom_state = ad.droid.telecomGetCallState()
+            if telephony_state == TELEPHONY_STATE_RINGING and (
+                    telecom_state == TELEPHONY_STATE_RINGING):
+                ad.log.info("callee is in telephony and telecom RINGING state")
                 if caller:
                     if caller.droid.telecomIsInCall():
                         caller.log.info("Caller telecom is in call state")
@@ -931,8 +927,60 @@ def wait_for_ringing_call_for_subscription(
                 else:
                     return True
             else:
-                ad.log.info("callee is not in ringing state")
+                ad.log.info(
+                    "telephony in %s, telecom in %s, expecting RINGING state",
+                    telephony_state, telecom_state)
             time.sleep(interval)
+    finally:
+        if not event_tracking_started:
+            ad.droid.telephonyStopTrackingCallStateChangeForSubscription(
+                sub_id)
+
+
+def wait_for_call_offhook_for_subscription(
+        log,
+        ad,
+        sub_id,
+        event_tracking_started=False,
+        timeout=MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT,
+        interval=WAIT_TIME_BETWEEN_STATE_CHECK):
+    """Wait for an incoming call on specified subscription.
+
+    Args:
+        log: log object.
+        ad: android device object.
+        sub_id: subscription ID
+        timeout: time to wait for ring
+        interval: checking interval
+
+    Returns:
+        True: if incoming call is received and answered successfully.
+        False: for errors
+    """
+    if not event_tracking_started:
+        ad.ed.clear_events(EventCallStateChanged)
+        ad.droid.telephonyStartTrackingCallStateForSubscription(sub_id)
+    offhook_event_received = False
+    end_time = time.time() + timeout
+    try:
+        while time.time() < end_time:
+            if not offhook_event_received:
+                if wait_for_call_offhook_event(log, ad, sub_id, True,
+                                               interval):
+                    offhook_event_received = True
+            telephony_state = ad.droid.telephonyGetCallStateForSubscription(
+                sub_id)
+            telecom_state = ad.droid.telecomGetCallState()
+            if telephony_state == TELEPHONY_STATE_OFFHOOK and (
+                    telecom_state == TELEPHONY_STATE_OFFHOOK):
+                ad.log.info("telephony and telecom are in OFFHOOK state")
+                return True
+            else:
+                ad.log.info(
+                    "telephony in %s, telecom in %s, expecting OFFHOOK state",
+                    telephony_state, telecom_state)
+            if offhook_event_received:
+                time.sleep(interval)
     finally:
         if not event_tracking_started:
             ad.droid.telephonyStopTrackingCallStateChangeForSubscription(
@@ -1019,14 +1067,11 @@ def wait_and_answer_call_for_subscription(
                 timeout=timeout):
             ad.log.info("Incoming call ringing check failed.")
             return False
-        time.sleep(WAIT_TIME_BETWEEN_STATE_CHECK)
         ad.log.info("Accept the ring call")
         ad.droid.telecomAcceptRingingCall(video_state)
 
-        if ad.droid.telecomIsInCall() or wait_for_call_offhook_event(
-                log, ad, sub_id, event_tracking_started=True,
-                timeout=timeout) or ad.droid.telecomIsInCall():
-            ad.log.info("Call answered successfully.")
+        if wait_for_call_offhook_for_subscription(
+                log, ad, sub_id, event_tracking_started=True):
             return True
         else:
             ad.log.error("Could not answer the call.")
@@ -1159,9 +1204,7 @@ def hangup_call(log, ad):
             field=CallStateContainer.CALL_STATE,
             value=TELEPHONY_STATE_IDLE)
     except Empty:
-        if ad.droid.telecomIsInCall():
-            ad.log.error("Telecom is in call, hangup call failed.")
-            return False
+        ad.log.warning("Call state IDLE event is not received after hang up.")
     finally:
         ad.droid.telephonyStopTrackingCallStateChange()
     if not wait_for_state(ad.droid.telecomIsInCall, False, 15, 1):
@@ -1279,25 +1322,14 @@ def initiate_call(log,
         else:
             ad.droid.telecomCallNumber(callee_number, video)
 
-        # Verify OFFHOOK event
-        checking_retries = int(timeout / checking_interval)
-        for i in range(checking_retries):
-            if (ad.droid.telecomIsInCall() and
-                    ad.droid.telephonyGetCallState() == TELEPHONY_STATE_OFFHOOK
-                    and ad.droid.telecomGetCallState() ==
-                    TELEPHONY_STATE_OFFHOOK) or wait_for_call_offhook_event(
-                        log, ad, sub_id, True, checking_interval):
-                return True
-        ad.log.info(
-            "Make call to %s fail. telecomIsInCall:%s, Telecom State:%s,"
-            " Telephony State:%s", callee_number, ad.droid.telecomIsInCall(),
-            ad.droid.telephonyGetCallState(), ad.droid.telecomGetCallState())
-        reasons = ad.search_logcat(
-            "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause",
-            begin_time)
-        if reasons:
-            ad.log.info(reasons[-1]["log_message"])
-        return False
+        # Verify OFFHOOK state
+        if not wait_for_call_offhook_for_subscription(
+                log, ad, sub_id, event_tracking_started=True):
+            ad.log.info("sub_id %s not in call offhook state", sub_id)
+            last_call_drop_reason(ad, begin_time=begin_time)
+            return False
+        else:
+            return True
     finally:
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
         if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
@@ -2161,9 +2193,21 @@ def verify_http_connection(log,
             Default Value is "http://www.google.com/".
 
     """
+    if not getattr(ad, "data_droid", None):
+        ad.data_droid, ad.data_ed = ad.get_droid()
+        ad.data_ed.start()
+    else:
+        try:
+            if not ad.data_droid.is_live:
+                ad.data_droid, ad.data_ed = ad.get_droid()
+                ad.data_ed.start()
+        except Exception:
+            ad.log.info("Start new sl4a session for file download")
+            ad.data_droid, ad.data_ed = ad.get_droid()
+            ad.data_ed.start()
     for i in range(0, retry + 1):
         try:
-            http_response = ad.droid.httpPing(url)
+            http_response = ad.data_droid.httpPing(url)
         except:
             http_response = None
         if (expected_state and http_response) or (not expected_state
@@ -2634,18 +2678,18 @@ def http_file_download_by_sl4a(ad,
     accounting_apk = SL4A_APK_NAME
     result = True
     try:
-        if not getattr(ad, "downloading_droid", None):
-            ad.downloading_droid, ad.downloading_ed = ad.get_droid()
-            ad.downloading_ed.start()
+        if not getattr(ad, "data_droid", None):
+            ad.data_droid, ad.data_ed = ad.get_droid()
+            ad.data_ed.start()
         else:
             try:
-                if not ad.downloading_droid.is_live:
-                    ad.downloading_droid, ad.downloading_ed = ad.get_droid()
-                    ad.downloading_ed.start()
+                if not ad.data_droid.is_live:
+                    ad.data_droid, ad.data_ed = ad.get_droid()
+                    ad.data_ed.start()
             except Exception:
                 ad.log.info("Start new sl4a session for file download")
-                ad.downloading_droid, ad.downloading_ed = ad.get_droid()
-                ad.downloading_ed.start()
+                ad.data_droid, ad.data_ed = ad.get_droid()
+                ad.data_ed.start()
         data_accounting = {
             "mobile_rx_bytes":
             ad.droid.getMobileRxBytes(),
@@ -2658,11 +2702,10 @@ def http_file_download_by_sl4a(ad,
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
                     file_path)
         try:
-            ad.downloading_droid.httpDownloadFile(
-                url, file_path, timeout=timeout)
+            ad.data_droid.httpDownloadFile(url, file_path, timeout=timeout)
         except Exception as e:
             ad.log.warning("SL4A file download error: %s", e)
-            ad.downloading_droid.terminate()
+            ad.data_droid.terminate()
             return False
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded successfully", url)
