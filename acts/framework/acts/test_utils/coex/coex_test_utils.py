@@ -367,8 +367,8 @@ def disconnect_headset_from_dev(pri_ad, sec_ad, profiles_list):
                 bluetooth_profile_connection_state_changed, bt_default_timeout)
             pri_ad.log.info("Got event {}".format(profile_event))
         except Exception:
-            pri_ad.log.error("Did not disconnect from Profiles")
-            return False
+            pri_ad.log.warning("Did not disconnect from Profiles")
+            pri_ad.log.warning("Did not get event {}".format(profile_event))
 
         profile = profile_event['data']['profile']
         state = profile_event['data']['state']
