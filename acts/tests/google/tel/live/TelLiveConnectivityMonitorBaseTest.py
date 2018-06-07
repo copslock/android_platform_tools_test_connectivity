@@ -459,27 +459,33 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 call_verification_function = is_phone_in_call_3g
             elif setup == "2g":
                 call_verification_function = is_phone_in_call_2g
-        if setup == "vt":
-            if not video_call_setup_teardown(
-                    self.log,
-                    self.dut,
-                    self.ad_reference,
-                    None,
-                    video_state=VT_STATE_BIDIRECTIONAL,
-                    verify_caller_func=is_phone_in_call_video_bidirectional,
-                    verify_callee_func=is_phone_in_call_video_bidirectional):
-                self.dut.log.error("VT Call Failed.")
-                expected_drop_reason = None
-        else:
-            if not call_setup_teardown(
-                    self.log,
-                    self.dut,
-                    self.ad_reference,
-                    ad_hangup=None,
-                    verify_caller_func=call_verification_function,
-                    wait_time_in_call=10):
-                self.log.error("Call setup failed")
-                expected_drop_reason = None
+        for i in range(2):
+            if setup == "vt":
+                if video_call_setup_teardown(
+                        self.log,
+                        self.dut,
+                        self.ad_reference,
+                        None,
+                        video_state=VT_STATE_BIDIRECTIONAL,
+                        verify_caller_func=is_phone_in_call_video_bidirectional,
+                        verify_callee_func=is_phone_in_call_video_bidirectional
+                ):
+                    break
+                elif i == 1:
+                    self.dut.log.error("VT Call Failed.")
+                    expected_drop_reason = None
+            else:
+                if call_setup_teardown(
+                        self.log,
+                        self.dut,
+                        self.ad_reference,
+                        ad_hangup=None,
+                        verify_caller_func=call_verification_function,
+                        wait_time_in_call=10):
+                    break
+                elif i == 1:
+                    self.log.error("Call setup failed")
+                    expected_drop_reason = None
 
         if self.dut.droid.telecomIsInCall():
             self.dut.log.info("Telecom is in call")
@@ -633,25 +639,26 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                        count=CONSECUTIVE_CALL_FAILS,
                        pre_trigger=None,
                        trigger=None,
+                       expected_drop_reason=None,
                        expected_trouble=None,
                        expected_action=None):
         result = True
         if not trigger:
             if self.dut.model in ("marlin", "sailfish", "walleye", "taimen"):
                 trigger = "modem_crash"
-                drop_reason = "Error Unspecified"
+                expected_drop_reason = "Error Unspecified"
             else:
                 trigger = "drop_reason_override"
                 self.set_drop_reason_override(
                     override_code=self.call_drop_override_code)
-                drop_reason = CALL_DROP_CODE_MAPPING[int(
+                expected_drop_reason = CALL_DROP_CODE_MAPPING[int(
                     self.call_drop_override_code)]
         for iter in range(count):
             if not self.call_setup_and_connectivity_monitor_checking(
                     setup=setup,
                     trigger=trigger,
                     pre_trigger=pre_trigger,
-                    expected_drop_reason=drop_reason,
+                    expected_drop_reason=expected_drop_reason,
                     expected_trouble=expected_trouble,
                     expected_action=expected_action):
                 self._ad_take_bugreport(self.dut, "%s_%s_iter_%s_failure" %
