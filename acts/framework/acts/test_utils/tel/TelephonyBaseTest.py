@@ -36,6 +36,7 @@ from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
 from acts.test_utils.tel.tel_test_utils import build_id_override
 from acts.test_utils.tel.tel_test_utils import disable_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import enable_connectivity_metrics
 from acts.test_utils.tel.tel_test_utils import enable_radio_log_on
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
@@ -172,8 +173,6 @@ class TelephonyBaseTest(BaseTestClass):
         return multithread_func(self.log, tasks)
 
     def _init_device(self, ad):
-        if self.enable_radio_log_on:
-            enable_radio_log_on(ad)
         synchronize_device_time(ad)
         ad.log_path = self.log_path
         print_radio_info(ad)
@@ -182,6 +181,22 @@ class TelephonyBaseTest(BaseTestClass):
         ad.adb.shell("input keyevent 82")
 
     def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
+        if self.user_params.get("enable_connectivity_metrics", True):
+            enable_connectivity_metrics(ad)
+        if self.user_params.get("build_id_override", False):
+            build_postfix = self.user_params.get("build_id_postfix", "TEST")
+            build_id_override(
+                ad,
+                new_build_id=self.user_params.get("build_id_override_with",
+                                                  None),
+                postfix=build_postfix)
+        if self.enable_radio_log_on:
+            enable_radio_log_on(ad)
+        if "sdm" in ad.model:
+            if ad.adb.getprop("persist.radio.multisim.config") != "ssss":
+                ad.adb.shell("setprop persist.radio.multisim.config ssss")
+                reboot_device(ad)
+
         stop_qxdm_logger(ad)
         ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
         if ad.qxdm_log:
@@ -200,14 +215,6 @@ class TelephonyBaseTest(BaseTestClass):
             disable_qxdm_logger(ad)
         if not unlock_sim(ad):
             raise signals.TestAbortClass("unable to unlock the SIM")
-
-        if self.user_params.get("build_id_override", False):
-            build_id_override(ad, "%s.LAB" % ad.build_info["build_id"])
-
-        if "sdm" in ad.model:
-            if ad.adb.getprop("persist.radio.multisim.config") != "ssss":
-                ad.adb.shell("setprop persist.radio.multisim.config ssss")
-                reboot_device(ad)
 
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
             ad.log.info("Device has no or unknown SIM in it")
@@ -412,7 +419,7 @@ class TelephonyBaseTest(BaseTestClass):
         extract_test_log(self.log, ad.adb_logcat_file_path,
                          os.path.join(self.log_path, test_name,
                                       "%s_%s.logcat" % (ad.serial, test_name)),
-                         "%s\"" % test_name)
+                         "%s " % test_name)
         return result
 
     def _take_bug_report(self, test_name, begin_time):
