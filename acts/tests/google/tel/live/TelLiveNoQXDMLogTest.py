@@ -24,68 +24,20 @@ import os
 from acts import signals
 from acts.utils import create_dir
 from acts.utils import unzip_maintain_permissions
-from acts.utils import get_current_epoch_time
 from acts.utils import exe_cmd
 from acts.test_decorators import test_tracker_info
-from acts.controllers.sl4a_lib.sl4a_types import Sl4aNetworkInfo
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
-from acts.test_utils.tel.tel_data_utils import wifi_tethering_setup_teardown
-from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
-from acts.test_utils.tel.tel_defines import CAPABILITY_VT
-from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
-from acts.test_utils.tel.tel_defines import CAPABILITY_OMADM
-from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_CHECK
-from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
-from acts.test_utils.tel.tel_defines import GEN_4G
-from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
-from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
-from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_BOOT_COMPLETE
-from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_CRASH
-from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
-from acts.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
+from acts.test_utils.tel.tel_test_utils import lock_lte_band_by_mds
 from acts.test_utils.tel.tel_test_utils import get_model_name
 from acts.test_utils.tel.tel_test_utils import get_operator_name
-from acts.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
-from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation
-from acts.test_utils.tel.tel_test_utils import is_sim_locked
-from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
-from acts.test_utils.tel.tel_test_utils import power_off_sim
-from acts.test_utils.tel.tel_test_utils import power_on_sim
 from acts.test_utils.tel.tel_test_utils import reboot_device
-from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
-from acts.test_utils.tel.tel_test_utils import trigger_modem_crash
-from acts.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
-from acts.test_utils.tel.tel_test_utils import unlock_sim
-from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
-from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
-from acts.test_utils.tel.tel_test_utils import wait_for_network_generation
-from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
-from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
-from acts.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts.test_utils.tel.tel_test_utils import wait_for_state
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
-from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
-from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
-from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
-from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
-from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
-from acts.test_utils.tel.tel_video_utils import phone_setup_video
-from acts.test_utils.tel.tel_video_utils import \
-    is_phone_in_call_video_bidirectional
 
 from acts.utils import get_current_epoch_time
-from acts.utils import rand_ascii_str
 
 
 class TelLiveNoQXDMLogTest(TelephonyBaseTest):
@@ -312,6 +264,27 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         except Exception as e:
             ad.log.error(e)
             return False
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_lock_lte_band_4(self):
+        """Set LTE band lock 4"""
+        if not self.dut.is_apk_installed("com.google.mdstest"):
+            raise signals.TestSkip("mdstest is not installed")
+        lock_lte_band_by_mds(self.dut, "4")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_lock_lte_band_13(self):
+        """Set LTE band lock 4"""
+        if not self.dut.is_apk_installed("com.google.mdstest"):
+            raise signals.TestSkip("mdstest is not installed")
+        lock_lte_band_by_mds(self.dut, "13")
+
+    @TelephonyBaseTest.tel_test_wrap
+    def test_lock_lte_band_4_and_13(self):
+        """Set LTE band lock 4"""
+        if not self.dut.is_apk_installed("com.google.mdstest"):
+            raise signals.TestSkip("mdstest is not installed")
+        lock_lte_band_by_mds(self.dut, "4 13")
 
 
 """ Tests End """
