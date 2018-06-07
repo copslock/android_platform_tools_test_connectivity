@@ -17,13 +17,19 @@
 GATT Client Libraries
 """
 
+from acts.test_utils.bt.bt_constants import default_le_connection_interval_ms
+from acts.test_utils.bt.bt_constants import default_bluetooth_socket_timeout_ms
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_connection
 from acts.test_utils.bt.bt_gatt_utils import setup_gatt_mtu
+from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
 from acts.test_utils.bt.bt_constants import gatt_cb_strings
 from acts.test_utils.bt.bt_constants import gatt_char_desc_uuids
 from acts.test_utils.bt.bt_constants import gatt_descriptor
 from acts.test_utils.bt.bt_constants import gatt_transport
+from acts.test_utils.bt.bt_constants import le_default_supervision_timeout
+from acts.test_utils.bt.bt_constants import le_connection_interval_time_step_ms
+from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_gatt_utils import log_gatt_server_uuids
 
 import time
@@ -31,20 +37,47 @@ import os
 
 
 class GattClientLib():
-    def __init__(self, log, mac_addr, dut):
+    def __init__(self, log, dut, target_mac_addr=None):
         self.dut = dut
         self.log = log
-        self.mac_addr = mac_addr
         self.gatt_callback = None
         self.bluetooth_gatt = None
         self.discovered_services_index = None
+        self.target_mac_addr = target_mac_addr
         self.generic_uuid = "0000{}-0000-1000-8000-00805f9b34fb"
+
+    def set_target_mac_addr(self, mac_addr):
+        self.target_mac_addr = mac_addr
+
+    def connect_over_le_based_off_name(self, autoconnect, name):
+        """Perform GATT connection over LE"""
+        self.dut.droid.bleSetScanSettingsScanMode(
+            ble_scan_settings_modes['low_latency'])
+        filter_list = self.dut.droid.bleGenFilterList()
+        scan_settings = self.dut.droid.bleBuildScanSetting()
+        scan_callback = self.dut.droid.bleGenScanCallback()
+        event_name = scan_result.format(scan_callback)
+        self.dut.droid.bleSetScanFilterDeviceName("BLE Rect")
+        self.dut.droid.bleBuildScanFilter(filter_list)
+        self.dut.droid.bleStartBleScan(filter_list, scan_settings,
+                                       scan_callback)
+
+        try:
+            event = self.dut.ed.pop_event(event_name, 10)
+            self.log.info("Found scan result: {}".format(event))
+        except Exception:
+            self.log.info("Didn't find any scan results.")
+        mac_addr = event['data']['Result']['deviceInfo']['address']
+        self.bluetooth_gatt, self.gatt_callback = setup_gatt_connection(
+            self.dut, mac_addr, autoconnect, transport=gatt_transport['le'])
+        self.dut.droid.bleStopBleScan(scan_callback)
+        self.discovered_services_index = None
 
     def connect_over_le(self, autoconnect):
         """Perform GATT connection over LE"""
         self.bluetooth_gatt, self.gatt_callback = setup_gatt_connection(
             self.dut,
-            self.mac_addr,
+            self.target_mac_addr,
             autoconnect,
             transport=gatt_transport['le'])
         self.discovered_services_index = None
@@ -52,10 +85,14 @@ class GattClientLib():
     def connect_over_bredr(self):
         """Perform GATT connection over BREDR"""
         self.bluetooth_gatt, self.gatt_callback = setup_gatt_connection(
-            self.dut, self.mac_addr, False, transport=gatt_transport['bredr'])
+            self.dut,
+            self.target_mac_addr,
+            False,
+            transport=gatt_transport['bredr'])
 
     def disconnect(self):
         """Perform GATT disconnect"""
+        cmd = "Disconnect GATT connection"
         try:
             disconnect_gatt_connection(self.dut, self.bluetooth_gatt,
                                        self.gatt_callback)
@@ -296,15 +333,6 @@ class GattClientLib():
         self._setup_discovered_services_index()
         services_count = self.dut.droid.gattClientGetDiscoveredServicesCount(
             self.discovered_services_index)
-        """
-        self.log.info(
-            CMD_LOG.format(
-                cmd,
-                self.dut.droid.gattClientWriteDescriptorByInstanceId(
-                    self.bluetooth_gatt, self.discovered_services_index,
-                    int(instance_id, 16),
-                    gatt_descriptor['enable_notification_value'])))
-        """
         for i in range(services_count):
             characteristic_uuids = (
                 self.dut.droid.gattClientGetDiscoveredCharacteristicUuids(
@@ -323,6 +351,39 @@ class GattClientLib():
                             self.bluetooth_gatt,
                             self.discovered_services_index, i, j, k,
                             gatt_descriptor['enable_notification_value'])
+                        time.sleep(2)  #Necessary for PTS
+                        self.dut.droid.gattClientWriteDescriptorByIndex(
+                            self.bluetooth_gatt,
+                            self.discovered_services_index, i, j, k)
+                        time.sleep(2)  #Necessary for PTS
+                        self.dut.droid.gattClientSetCharacteristicNotificationByIndex(
+                            self.bluetooth_gatt,
+                            self.discovered_services_index, i, j, True)
+
+    def enable_indication_desc_by_instance_id(self, line):
+        """GATT Client Enable indication on Descriptor by instance ID"""
+        instance_id = line
+        self._setup_discovered_services_index()
+        services_count = self.dut.droid.gattClientGetDiscoveredServicesCount(
+            self.discovered_services_index)
+        for i in range(services_count):
+            characteristic_uuids = (
+                self.dut.droid.gattClientGetDiscoveredCharacteristicUuids(
+                    self.discovered_services_index, i))
+            for j in range(len(characteristic_uuids)):
+                descriptor_uuids = (
+                    self.dut.droid.
+                    gattClientGetDiscoveredDescriptorUuidsByIndex(
+                        self.discovered_services_index, i, j))
+                for k in range(len(descriptor_uuids)):
+                    desc_inst_id = self.dut.droid.gattClientGetDescriptorInstanceId(
+                        self.bluetooth_gatt, self.discovered_services_index, i,
+                        j, k)
+                    if desc_inst_id == int(instance_id, 16):
+                        self.dut.droid.gattClientDescriptorSetValueByIndex(
+                            self.bluetooth_gatt,
+                            self.discovered_services_index, i, j, k,
+                            gatt_descriptor['enable_indication_value'])
                         time.sleep(2)  #Necessary for PTS
                         self.dut.droid.gattClientWriteDescriptorByIndex(
                             self.bluetooth_gatt,
@@ -486,3 +547,30 @@ class GattClientLib():
             uuid = self.generic_uuid.format(line)
         self.dut.droid.gattClientDiscoverServiceByUuid(self.bluetooth_gatt,
                                                        uuid)
+
+    def request_le_connection_parameters(self):
+        le_min_ce_len = 0
+        le_max_ce_len = 0
+        le_connection_interval = 0
+        minInterval = default_le_connection_interval_ms / le_connection_interval_time_step_ms
+        maxInterval = default_le_connection_interval_ms / le_connection_interval_time_step_ms
+        return_status = self.dut.droid.gattClientRequestLeConnectionParameters(
+            self.bluetooth_gatt, minInterval, maxInterval, 0,
+            le_default_supervision_timeout, le_min_ce_len, le_max_ce_len)
+        self.log.info(
+            "Result of request le connection param: {}".format(return_status))
+
+    def socket_conn_begin_connect_thread_psm(self, line):
+        args = line.split()
+        is_ble = bool(int(args[0]))
+        secured_conn = bool(int(args[1]))
+        psm_value = int(args[2])  # 1
+        self.dut.droid.bluetoothSocketConnBeginConnectThreadPsm(
+            self.target_mac_addr, is_ble, psm_value, secured_conn)
+
+    def socket_conn_begin_accept_thread_psm(self, line):
+        accept_timeout_ms = default_bluetooth_socket_timeout_ms
+        is_ble = True
+        secured_conn = False
+        self.dut.droid.bluetoothSocketConnBeginAcceptThreadPsm(
+            accept_timeout_ms, is_ble, secured_conn)
