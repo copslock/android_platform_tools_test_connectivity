@@ -39,7 +39,7 @@ from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 
 class BleScanScreenStateTest(BluetoothBaseTest):
     advertise_callback = -1
-    max_concurrent_scans = 28
+    max_concurrent_scans = 27
     scan_callback = -1
     shorter_scan_timeout = 2
 
