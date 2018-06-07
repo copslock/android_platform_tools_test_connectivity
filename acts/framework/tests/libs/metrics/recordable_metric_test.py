@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2017 - The Android Open Source Project
 #
@@ -32,22 +32,97 @@ class MockRecordableMetric(RecordableMetric):
         pass
 
 
-class JsonMetricTest(unittest.TestCase):
-    def test_create_channel_stream(self):
-        mock_open = mock.mock_open()
+class RecordableMetricTest(unittest.TestCase):
+    def get_mock_channel_stream(self, path, *args, **kwargs):
+        if path not in self._mock_channel_stream_lookup:
+            self._mock_channel_stream_lookup[path] = mock.MagicMock()
 
-        mock_json = {
-            'v': 10
-        }
+        return self._mock_channel_stream_lookup[path]
+
+    def setUp(self):
+        self._mock_channel_stream_lookup = {}
+
+    @patch("os.path.exists")
+    @patch("os.makedirs")
+    @patch("builtins.open")
+    def test_create_channel_stream(self, mock_open, mock_make_dirs,
+                                   mock_exists):
         mock_path = '/metric/path'
-        mock_metric = MockRecordableMetric(mock_json, mock_path)
+        mock_metric = MockRecordableMetric(mock_path)
 
-        with patch('builtins.open', mock_open):
-            mock_metric.finish()
+        mock_exists.return_value = False
+        mock_open.side_effect = self.get_mock_channel_stream
 
-        mock_open.assert_called_with(os.path.join(mock_path, 'raw.json'),
+        mock_metric.record(10, "test", "new")
+        mock_open.assert_called_with(os.path.join(mock_path, "new.smetric"),
                                      mode='w')
-        mock_open().write.assert_called_with(json.dumps(mock_json, indent=2))
+
+        mock_metric.record(20, "test", "other")
+        mock_open.assert_called_with(os.path.join(mock_path, "other.smetric"),
+                                     mode='w')
+
+        mock_metric.finish()
+
+    @patch("os.path.exists")
+    @patch("os.makedirs")
+    @patch("builtins.open")
+    def test_create_channel_error_on_existing_stream(self, mock_open,
+                                                     mock_make_dirs,
+                                                     mock_exists):
+        mock_path = '/metric/path'
+        mock_metric = MockRecordableMetric(mock_path)
+
+        mock_exists.return_value = True
+        mock_open.side_effect = self.get_mock_channel_stream
+
+        with self.assertRaises(ValueError):
+            mock_metric.record(10, "test", "new")
+
+    @patch("os.path.exists")
+    @patch("os.makedirs")
+    @patch("builtins.open")
+    def test_record_to_channel_stream(self, mock_open,
+                                      mock_make_dirs,
+                                      mock_exists):
+        mock_path = '/metric/path'
+        new_metric_path = os.path.join(mock_path, 'new.smetric')
+        mock_metric = MockRecordableMetric(mock_path)
+
+        mock_exists.return_value = False
+        mock_open.side_effect = self.get_mock_channel_stream
+
+        key = "test"
+        value = 10
+        mock_metric.record(value, key, "new")
+
+        expected_json = json.dumps({
+            "key": key,
+            "value": value,
+        })
+        mock_stream = self.get_mock_channel_stream(new_metric_path)
+        self.assertTrue(
+            mock_stream.write.call_args_list[0] == mock.call(expected_json))
+        self.assertTrue(
+            mock_stream.write.call_args_list[1] == mock.call("\n"))
+
+    @patch("os.path.exists")
+    @patch("os.makedirs")
+    @patch("builtins.open")
+    def test_close_blobs_on_finished(self, mock_open,
+                                      mock_make_dirs,
+                                      mock_exists):
+        mock_path = '/metric/path'
+        new_metric_path = os.path.join(mock_path, 'new.smetric')
+        mock_metric = MockRecordableMetric(mock_path)
+
+        mock_exists.return_value = False
+        mock_open.side_effect = self.get_mock_channel_stream
+
+        mock_metric.record(10, "test", "new")
+        mock_metric.finish()
+
+        mock_stream = self.get_mock_channel_stream(new_metric_path)
+        mock_stream.close.assert_called()
 
 
 if __name__ == "__main__":
