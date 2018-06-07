@@ -745,6 +745,32 @@ def start_wifi_tethering(ad, ssid, password, band=None):
     finally:
         ad.droid.wifiStopTrackingTetherStateChange()
 
+def save_wifi_soft_ap_config(ad, wifi_config, band=None, hidden=None):
+    """ Save a soft ap configuration """
+    if band:
+        wifi_config[WifiEnums.APBAND_KEY] = band
+    if hidden:
+        wifi_config[WifiEnums.HIDDEN_KEY] = hidden
+    asserts.assert_true(ad.droid.wifiSetWifiApConfiguration(wifi_config),
+                        "Failed to set WifiAp Configuration")
+
+    wifi_ap = ad.droid.wifiGetApConfiguration()
+    asserts.assert_true(
+        wifi_ap[WifiEnums.SSID_KEY] == wifi_config[WifiEnums.SSID_KEY],
+        "Hotspot SSID doesn't match with expected SSID")
+
+def start_wifi_tethering_saved_config(ad):
+    """ Turn on wifi hotspot with a config that is already saved """
+    ad.droid.wifiStartTrackingTetherStateChange()
+    ad.droid.connectivityStartTethering(tel_defines.TETHERING_WIFI, False)
+    try:
+        ad.ed.pop_event("ConnectivityManagerOnTetheringStarted")
+        ad.ed.wait_for_event("TetherStateChanged",
+                             lambda x: x["data"]["ACTIVE_TETHER"], 30)
+    except:
+        asserts.fail("Didn't receive wifi tethering starting confirmation")
+    finally:
+        ad.droid.wifiStopTrackingTetherStateChange()
 
 def stop_wifi_tethering(ad):
     """Stops wifi tethering on an android_device.
