@@ -2825,7 +2825,7 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
     begin_time = get_device_epoch_time(ad)
     ad.adb.shell(
         "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
-    stop_qxdm_logger(ad)
+    disable_qxdm_logger(ad)
     cmd = ('am instrument -w -e request "4b 25 03 00" '
            '"com.google.mdstest/com.google.mdstest.instrument.'
            'ModemCommandInstrumentation"')
@@ -2840,6 +2840,62 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
     else:
         ad.log.warning("There is no modem subsystem failure reason logcat")
         return False
+
+
+def lock_lte_band_by_mds(ad, band, timeout=120):
+    begin_time = get_device_epoch_time(ad)
+    ad.adb.shell(
+        "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
+    disable_qxdm_logger(ad)
+    ad.log.info("Write band %s locking to efs file", band)
+    if band == "4":
+        item_string = (
+            "4B 13 26 00 08 00 00 00 40 00 08 00 0B 00 08 00 00 00 00 00 00 00 "
+            "2F 6E 76 2F 69 74 65 6D 5F 66 69 6C 65 73 2F 6D 6F 64 65 6D 2F 6D "
+            "6D 6F 64 65 2F 6C 74 65 5F 62 61 6E 64 70 72 65 66 00")
+    elif band == "13":
+        item_string = (
+            "4B 13 26 00 08 00 00 00 40 00 08 00 0A 00 00 10 00 00 00 00 00 00 "
+            "2F 6E 76 2F 69 74 65 6D 5F 66 69 6C 65 73 2F 6D 6F 64 65 6D 2F 6D "
+            "6D 6F 64 65 2F 6C 74 65 5F 62 61 6E 64 70 72 65 66 00")
+    elif band == "4 13":
+        item_string = (
+            "4B 13 26 00 08 00 00 00 40 00 08 00 0A 00 00 10 00 00 00 00 00 00 "
+            "2F 6E 76 2F 69 74 65 6D 5F 66 69 6C 65 73 2F 6D 6F 64 65 6D 2F 6D "
+            "6D 6F 64 65 2F 6C 74 65 5F 62 61 6E 64 70 72 65 66 00")
+    cmd = ('am instrument -w -e request "%s" com.google.mdstest/com.google.'
+           'mdstest.instrument.ModemCommandInstrumentation')
+    for _ in range(3):
+        if "SUCCESS" in ad.adb.shell(cmd % item_string, ignore_status=True):
+            break
+    else:
+        ad.log.error("Fail to write band by %s" % (cmd % item_string))
+        return False
+
+    # Write 8 to EFC file
+    item_string = (
+        "4B 13 26 00 08 00 00 00 40 00 08 00 0B 00 08 00 00 00 00 00 00 00 2F "
+        "6E 76 2F 69 74 65 6D 5F 66 69 6C 65 73 2F 6D 6F 64 65 6D 2F 6D 6D 6F "
+        "64 65 2F 6C 74 65 5F 62 61 6E 64 70 72 65 66 00")
+
+    for _ in range(3):
+        if "SUCCESS" in ad.adb.shell(cmd % item_string, ignore_status=True):
+            break
+    else:
+        ad.log.error("Fail to write 8 by %s" % (cmd % item_string))
+        return False
+
+    # EFS Sync
+    item_string = "4B 13 30 00 2A 00 2F 00"
+
+    for _ in range(3):
+        if "SUCCESS" in ad.adb.shell(cmd % item_string, ignore_status=True):
+            break
+    else:
+        ad.log.error("Fail to sync efs by %s" % (cmd % item_string))
+        return False
+    time.sleep(5)
+    reboot_device(ad)
 
 
 def _connection_state_change(_event, target_state, connection_type):
