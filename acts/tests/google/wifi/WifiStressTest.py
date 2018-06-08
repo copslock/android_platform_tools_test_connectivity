@@ -231,7 +231,7 @@ class WifiStressTest(WifiBaseTest):
                   exhausted.
 
         """
-        for count in range(self.stress_count):
+        for count in range(int(self.stress_count/4)):
             ssids = list()
             for network in self.networks:
                 ssids.append(network[WifiEnums.SSID_KEY])
@@ -299,7 +299,7 @@ class WifiStressTest(WifiBaseTest):
             if initial_wifi_state != cur_wifi_state:
                raise signals.TestFailure("Wifi state was %d before softAP and %d now!" %
                     (initial_wifi_state, cur_wifi_state),
-                        extras={"Iterations":"%d" % self.stres_count,
+                        extras={"Iterations":"%d" % self.stress_count,
                             "Pass":"%d" %count})
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
