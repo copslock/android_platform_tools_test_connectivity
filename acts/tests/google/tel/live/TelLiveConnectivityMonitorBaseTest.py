@@ -416,7 +416,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                                                      setup=None,
                                                      trigger=None,
                                                      pre_trigger=None,
-                                                     expected_drop_reason=None,
+                                                     expected_drop_reason="",
                                                      expected_trouble=None,
                                                      expected_action=None):
 
@@ -428,6 +428,10 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
         self.parsing_troubleshooter_database()
         bugreport_database_before = self.parsing_bugreport_database()
 
+        if expected_drop_reason:
+            expected_drop_reasons = set(expected_drop_reason.split("|"))
+        else:
+            expected_drop_reasons = set()
         checking_counters = ["Calls"]
         checking_reasons = []
         result = True
@@ -459,33 +463,25 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 call_verification_function = is_phone_in_call_3g
             elif setup == "2g":
                 call_verification_function = is_phone_in_call_2g
-        for i in range(2):
-            if setup == "vt":
-                if video_call_setup_teardown(
-                        self.log,
-                        self.dut,
-                        self.ad_reference,
-                        None,
-                        video_state=VT_STATE_BIDIRECTIONAL,
-                        verify_caller_func=is_phone_in_call_video_bidirectional,
-                        verify_callee_func=is_phone_in_call_video_bidirectional
-                ):
-                    break
-                elif i == 1:
-                    self.dut.log.error("VT Call Failed.")
-                    expected_drop_reason = None
-            else:
-                if call_setup_teardown(
-                        self.log,
-                        self.dut,
-                        self.ad_reference,
-                        ad_hangup=None,
-                        verify_caller_func=call_verification_function,
-                        wait_time_in_call=10):
-                    break
-                elif i == 1:
-                    self.log.error("Call setup failed")
-                    expected_drop_reason = None
+        if setup == "vt":
+            if not video_call_setup_teardown(
+                    self.log,
+                    self.dut,
+                    self.ad_reference,
+                    None,
+                    video_state=VT_STATE_BIDIRECTIONAL,
+                    verify_caller_func=is_phone_in_call_video_bidirectional,
+                    verify_callee_func=is_phone_in_call_video_bidirectional):
+                raise signals.TestFailure("VT Call Failed.")
+        else:
+            if not call_setup_teardown(
+                    self.log,
+                    self.dut,
+                    self.ad_reference,
+                    ad_hangup=None,
+                    verify_caller_func=call_verification_function,
+                    wait_time_in_call=10):
+                raise signals.TestFailure("Call Setup Failed.")
 
         if self.dut.droid.telecomIsInCall():
             self.dut.log.info("Telecom is in call")
@@ -517,7 +513,9 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
         else:
             self.dut.log.info("Not in call")
 
-        last_call_drop_reason(self.dut, begin_time)
+        drop_reason = last_call_drop_reason(self.dut, begin_time)
+        if drop_reason:
+            expected_drop_reasons.add(drop_reason)
         for ad in (self.ad_reference, self.dut):
             try:
                 if ad.droid.telecomIsInCall():
@@ -601,11 +599,12 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                             "troubleshooter failed to provide suggestion, "
                             "actions = %s", actions)
                         result = False
-
+        if expected_drop_reasons:
+            expected_drop_reason = "|".join(expected_drop_reasons)
         for reason_key in checking_reasons:
             if call_data_summary_after.get(reason_key, None):
                 drop_reason = call_data_summary_after[reason_key]
-                if expected_drop_reason and drop_reason != expected_drop_reason:
+                if expected_drop_reason and drop_reason not in expected_drop_reason:
                     self.dut.log.error("%s is: %s, expecting %s", reason_key,
                                        drop_reason, expected_drop_reason)
                     result = False
