@@ -39,7 +39,8 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_GLOBAL
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_TDSCDMA_GSM_WCDMA
-from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA
+from acts.test_utils.tel.tel_defines import RAT_LTE
+from acts.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
@@ -59,11 +60,13 @@ from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
-from acts.test_utils.tel.tel_test_utils import start_tcpdumps
+from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection_by_ping
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
 from acts.test_utils.tel.tel_test_utils import wait_for_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
@@ -136,6 +139,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         super(TelLiveStressTest, self).setup_test()
         self.result_info = collections.defaultdict(int)
         self._init_perf_json()
+        self.internet_connection_check_method = verify_internet_connection
 
     def on_fail(self, test_name, begin_time):
         pass
@@ -298,6 +302,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         test_name = "%s_No_%s_phone_call" % (self.test_name, the_number)
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s for %s seconds begin", log_msg, duration)
+        begin_time = get_device_epoch_time(ads[0])
         for ad in self.android_devices:
             if not getattr(ad, "droid", None):
                 ad.droid, ad.ed = ad.get_droid()
@@ -314,14 +319,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.droid, ad.ed = ad.get_droid()
                     ad.ed.start()
             ad.droid.logI("%s begin" % log_msg)
-        begin_time = get_device_epoch_time(ads[0])
-        if "wfc" in self.test_name:
-            start_tcpdumps(
-                self.android_devices,
-                "%s_call_No_%s" % (self.test_name, the_number),
-                begin_time,
-                interface="wlan0",
-                mask=None)
+            if ad.droid.telephonyGetCurrentVoiceNetworkType() in (
+                    RAT_LTE, RAT_UNKNOWN) or "wfc" in self.test_name:
+                start_adb_tcpdump(ad, interface="any", mask="all")
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         failure_reasons = set()
         self.dut_incall = True
@@ -585,7 +585,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 self._make_phone_call(call_verification_func)
             except Exception as e:
-                self.log.error("Exception error %s", str(e))
+                self.log.exception("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
             if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
                 self.log.error("Too many exception errors, quit test")
@@ -607,7 +607,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             try:
                 self._send_message(max_wait_time=max_wait_time)
             except Exception as e:
-                self.log.error("Exception error %s", str(e))
+                self.log.exception("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
             self.log.info(dict(self.result_info))
             if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
@@ -622,16 +622,14 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def _data_download(self,
-                       file_names=["5MB", "10MB", "20MB", "50MB", "200MB"]):
-        #file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB", "1GB"]
+    def _data_download(self, file_names=["5MB", "10MB", "20MB", "50MB"]):
         begin_time = get_current_epoch_time()
         start_qxdm_loggers(self.log, self.android_devices)
         self.dut.log.info(dict(self.result_info))
         selection = random.randrange(0, len(file_names))
         file_name = file_names[selection]
         self.result_info["Internet Connection Check Total"] += 1
-        if not verify_internet_connection(self.log, self.dut):
+        if not self.internet_connection_check_method(self.log, self.dut):
             rat = self.dut.adb.getprop("gsm.network.type")
             self.dut.log.info("Network in RAT %s", rat)
             if self.dut_incall and not is_rat_svd_capable(rat.upper()):
@@ -695,7 +693,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         if not wait_for_data_connection(self.log, self.dut, True):
             self.result_info["Data Connection Setup Failure"] += 1
             return False
-        if not verify_internet_connection(self.log, self.dut):
+        if not self.internet_connection_check_method(self.log, self.dut):
             rat = self.dut.adb.getprop("gsm.network.type")
             self.dut.log.info("Network in RAT %s", rat)
             self.result_info["Internet Connection Check Failure"] += 1
@@ -763,12 +761,21 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut.log.info("Voice in RAT %s, Data in RAT %s", voice_rat,
                           data_rat)
         try:
+            if verify_internet_connection_by_ping(self.log, self.dut):
+                self.internet_connection_check_method = verify_internet_connection_by_ping
+            elif verify_http_connection(self.log, self.dut):
+                self.internet_connection_check_method = verify_http_connection
+            else:
+                self.dut.log.error("Data test failed")
+                raise signals.TestFailure("Data check failed")
             if is_rat_svd_capable(voice_rat.upper()) and is_rat_svd_capable(
                     data_rat.upper()):
                 self.dut.log.info("Capable for simultaneous voice and data")
-                if not verify_internet_connection(self.log, self.dut):
+
+                if not self.internet_connection_check_method(
+                        self.log, self.dut):
                     self.dut.log.error("Incall data check failed")
-                    self._take_bug_report(self.test_name, self.begin_time)
+                    #self._take_bug_report(self.test_name, self.begin_time)
                     raise signals.TestFailure("Incall data check failed")
                 else:
                     return True

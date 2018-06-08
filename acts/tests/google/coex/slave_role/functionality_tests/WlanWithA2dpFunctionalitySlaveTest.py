@@ -30,10 +30,10 @@ from acts.test_utils.coex.coex_test_utils import music_play_and_check
 class WlanWithA2dpFunctionalitySlaveTest(CoexBluezBaseTest):
 
     def __init__(self, controllers):
-        super().__init__(controllers)
+        super().__init__(controllers, A2DP_TEST)
 
     def setup_class(self):
-        super().setup_class(A2DP_TEST)
+        super().setup_class()
         if not self.bluez_flag:
             return False
         req_params = ["iterations", "music_file"]
@@ -90,6 +90,7 @@ class WlanWithA2dpFunctionalitySlaveTest(CoexBluezBaseTest):
                                          self.music_file_to_play,
                                          self.iperf["duration"])]
         self.run_thread(args)
+        time.sleep(0.5)
         if not connect_wlan_profile(self.pri_ad, self.network):
             return False
         self.run_iperf_and_get_result()

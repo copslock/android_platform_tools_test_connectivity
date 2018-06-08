@@ -17,6 +17,7 @@
 import collections
 import ipaddress
 import logging
+import os
 import time
 
 from acts import logger
@@ -36,6 +37,12 @@ from acts.libs.proc import job
 ACTS_CONTROLLER_CONFIG_NAME = 'AccessPoint'
 ACTS_CONTROLLER_REFERENCE_NAME = 'access_points'
 _BRCTL = 'brctl'
+
+LIFETIME = 180
+PROC_NET_SNMP6 = '/proc/net/snmp6'
+SCAPY_INSTALL_COMMAND = 'sudo python setup.py install'
+RA_MULTICAST_ADDR = '33:33:00:00:00:01'
+RA_SCRIPT = 'sendra.py'
 
 
 def create(configs):
@@ -141,6 +148,7 @@ class AccessPoint(object):
         self.wlan_5g = self.wlan[1]
         self.lan = self.interfaces.get_lan_interface()
         self.__initial_ap()
+        self.scapy_install_path = None
 
     def __initial_ap(self):
         """Initial AP interfaces.
@@ -390,3 +398,59 @@ class AccessPoint(object):
         configs = (iface_wlan, iface_lan, bridge_ip)
 
         return configs
+
+    def install_scapy(self, scapy_path, send_ra_path):
+        """Install scapy
+
+        Args:
+            scapy_path: path where scapy tar file is located on server
+            send_ra_path: path where sendra path is located on server
+        """
+        self.scapy_install_path = self.ssh.run('mktemp -d').stdout.rstrip()
+        self.log.info("Scapy install path: %s" % self.scapy_install_path)
+        self.ssh.send_file(scapy_path, self.scapy_install_path)
+        self.ssh.send_file(send_ra_path, self.scapy_install_path)
+
+        scapy = os.path.join(self.scapy_install_path, scapy_path.split('/')[-1])
+
+        untar_res = self.ssh.run(
+            'tar -xvf %s -C %s' % (scapy, self.scapy_install_path))
+
+        instl_res = self.ssh.run(
+            'cd %s; %s' % (self.scapy_install_path, SCAPY_INSTALL_COMMAND))
+
+    def cleanup_scapy(self):
+        """ Cleanup scapy """
+        if self.scapy_install_path:
+            cmd = 'rm -rf %s' % self.scapy_install_path
+            self.log.info("Cleaning up scapy %s" % cmd)
+            output = self.ssh.run(cmd)
+            self.scapy_install_path = None
+
+    def send_ra(self, iface, mac=RA_MULTICAST_ADDR, interval=1, count=None,
+                lifetime=LIFETIME):
+        """Invoke scapy and send RA to the device.
+
+        Args:
+          iface: string of the WiFi interface to use for sending packets.
+          mac: string HWAddr/MAC address to send the packets to.
+          interval: int Time to sleep between consecutive packets.
+          count: int Number of packets to be sent.
+          lifetime: int original RA's router lifetime in seconds.
+        """
+        scapy_command = os.path.join(self.scapy_install_path, RA_SCRIPT)
+        options = ' -m %s -i %d -c %d -l %d -in %s' % (
+            mac, interval, count, lifetime, iface)
+        self.log.info("Scapy cmd: %s" % scapy_command + options)
+        res = self.ssh.run(scapy_command + options)
+
+    def get_icmp6intype134(self):
+        """Read the value of Icmp6InType134 and return integer.
+
+        Returns:
+            Integer value >0 if grep is successful; 0 otherwise.
+        """
+        ra_count_str = self.ssh.run('grep Icmp6InType134 %s || true' %
+                                    PROC_NET_SNMP6).stdout
+        if ra_count_str:
+            return int(ra_count_str.split()[1])

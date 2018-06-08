@@ -36,7 +36,6 @@ from acts.test_utils.bt.bt_constants import scan_result
 
 class BleOnLostOnFoundTest(BluetoothBaseTest):
     default_timeout = 10
-    max_scan_instances = 28
     active_scan_callback_list = []
     active_adv_callback_list = []
 

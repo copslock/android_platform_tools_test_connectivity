@@ -199,10 +199,21 @@ class Sl4aSession(object):
         with self._terminate_lock:
             if not self._terminated:
                 self.log.debug('Terminating Session.')
-                self.rpc_client.closeSl4aSession()
+                try:
+                    self.rpc_client.closeSl4aSession()
+                except Exception as e:
+                    if "SL4A session has already been terminated" not in str(
+                            e):
+                        self.log.warning(e)
                 # Must be set after closeSl4aSession so the rpc_client does not
                 # think the session has closed.
                 self._terminated = True
                 if self._event_dispatcher:
-                    self._event_dispatcher.close()
-                self.rpc_client.terminate()
+                    try:
+                        self._event_dispatcher.close()
+                    except Exception as e:
+                        self.log.warning(e)
+                try:
+                    self.rpc_client.terminate()
+                except Exception as e:
+                    slef.log.warning(e)

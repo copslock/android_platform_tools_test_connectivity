@@ -28,10 +28,10 @@ from acts.test_utils.coex.coex_test_utils import setup_tel_config
 class CoexBtMultiProfilePerformanceSlaveTest(CoexBluezBaseTest):
 
     def __init__(self, controllers):
-        super().__init__(controllers)
+        super().__init__(controllers, MULTIPROFILE_TEST)
 
     def setup_class(self):
-        super().setup_class(MULTIPROFILE_TEST)
+        super().setup_class()
         if not self.bluez_flag:
             return False
         req_params = ["sim_conf_file", "music_file"]
