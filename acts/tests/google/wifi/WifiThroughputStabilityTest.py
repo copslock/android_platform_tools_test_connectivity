@@ -29,6 +29,8 @@ from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 TEST_TIMEOUT = 10
+SHORT_SLEEP = 1
+MED_SLEEP = 6
 
 
 class WifiThroughputStabilityTest(base_test.BaseTestClass):
@@ -97,7 +99,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             "throughput_stability_test_params", "testbed_params",
             "main_network"
         ]
-        opt_params = ["RetailAccessPoints"]
+        opt_params = ["RetailAccessPoints", "golden_files_list"]
         self.unpack_userparams(req_params, opt_params)
         self.test_params = self.throughput_stability_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
@@ -229,6 +231,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_result = {}
         # Configure AP
         band = self.access_point.band_lookup_by_channel(channel)
+        if "2G" in band:
+            frequency = wutils.WifiEnums.channel_2G_to_freq[channel]
+        else:
+            frequency = wutils.WifiEnums.channel_5G_to_freq[channel]
+        if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
+            self.access_point.set_region(self.testbed_params["DFS_region"])
+        else:
+            self.access_point.set_region(self.testbed_params["default_region"])
         self.access_point.set_channel(band, channel)
         self.access_point.set_bandwidth(band, mode)
         self.log.info("Access Point Configuration: {}".format(
@@ -240,10 +250,11 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             for i in range(self.num_atten)
         ]
         # Connect DUT to Network
-        self.main_network[band]["channel"] = channel
+        wutils.wifi_toggle_state(self.dut, True)
         wutils.reset_wifi(self.dut)
+        self.main_network[band]["channel"] = channel
         wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
-        time.sleep(5)
+        time.sleep(MED_SLEEP)
         # Run test and log result
         # Start iperf session
         self.log.info("Starting iperf test.")
