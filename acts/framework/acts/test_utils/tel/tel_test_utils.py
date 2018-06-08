@@ -5893,6 +5893,8 @@ def start_nexuslogger(ad):
     time.sleep(2)
     for i in range(3):
         ad.ensure_screen_on()
+        ad.unlock_screen()
+        time.sleep(1)
         ad.log.info("Start %s Attempt %d" % (qxdm_logger_apk, i + 1))
         ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
         time.sleep(5)
