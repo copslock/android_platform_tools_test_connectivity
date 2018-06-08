@@ -2353,7 +2353,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
             file_url = url
             break
     if not file_url:
-        log.error("No url is available to download %s", file_name)
+        ad.log.error("No url is available to download %s", file_name)
         return False
     timeout = min(max(file_size / 100000, 600), 3600)
     if method == "sl4a":
@@ -2846,8 +2846,7 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
         return False
 
 
-def lock_lte_band_by_mds(ad, band, timeout=120):
-    begin_time = get_device_epoch_time(ad)
+def lock_lte_band_by_mds(ad, band):
     ad.adb.shell(
         "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
     disable_qxdm_logger(ad)
@@ -2862,11 +2861,9 @@ def lock_lte_band_by_mds(ad, band, timeout=120):
             "4B 13 26 00 08 00 00 00 40 00 08 00 0A 00 00 10 00 00 00 00 00 00 "
             "2F 6E 76 2F 69 74 65 6D 5F 66 69 6C 65 73 2F 6D 6F 64 65 6D 2F 6D "
             "6D 6F 64 65 2F 6C 74 65 5F 62 61 6E 64 70 72 65 66 00")
-    elif band == "4 13":
-        item_string = (
-            "4B 13 26 00 08 00 00 00 40 00 08 00 0A 00 00 10 00 00 00 00 00 00 "
-            "2F 6E 76 2F 69 74 65 6D 5F 66 69 6C 65 73 2F 6D 6F 64 65 6D 2F 6D "
-            "6D 6F 64 65 2F 6C 74 65 5F 62 61 6E 64 70 72 65 66 00")
+    else:
+        ad.log.error("Band %s is not supported", band)
+        return False
     cmd = ('am instrument -w -e request "%s" com.google.mdstest/com.google.'
            'mdstest.instrument.ModemCommandInstrumentation')
     for _ in range(3):
@@ -2874,19 +2871,6 @@ def lock_lte_band_by_mds(ad, band, timeout=120):
             break
     else:
         ad.log.error("Fail to write band by %s" % (cmd % item_string))
-        return False
-
-    # Write 8 to EFC file
-    item_string = (
-        "4B 13 26 00 08 00 00 00 40 00 08 00 0B 00 08 00 00 00 00 00 00 00 2F "
-        "6E 76 2F 69 74 65 6D 5F 66 69 6C 65 73 2F 6D 6F 64 65 6D 2F 6D 6D 6F "
-        "64 65 2F 6C 74 65 5F 62 61 6E 64 70 72 65 66 00")
-
-    for _ in range(3):
-        if "SUCCESS" in ad.adb.shell(cmd % item_string, ignore_status=True):
-            break
-    else:
-        ad.log.error("Fail to write 8 by %s" % (cmd % item_string))
         return False
 
     # EFS Sync
@@ -5847,7 +5831,8 @@ def start_qxdm_logger(ad, begin_time=None):
 
 def disable_qxdm_logger(ad):
     for prop in ("persist.sys.modem.diag.mdlog",
-                 "persist.vendor.sys.modem.diag.mdlog"):
+                 "persist.vendor.sys.modem.diag.mdlog",
+                 "vendor.sys.modem.diag.mdlog_on"):
         if ad.adb.getprop(prop):
             ad.adb.shell("setprop %s false" % prop, ignore_status=True)
     for apk in ("com.android.nexuslogger", "com.android.pixellogger"):
