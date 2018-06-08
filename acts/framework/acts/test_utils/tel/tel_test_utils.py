@@ -2100,10 +2100,13 @@ def wait_for_call_id_clearing(ad,
 def last_call_drop_reason(ad, begin_time=None):
     reasons = ad.search_logcat(
         "qcril_qmi_voice_map_qmi_to_ril_last_call_failure_cause", begin_time)
+    reason_string = ""
     if reasons:
         log_msg = "Logcat call drop reasons:"
-        log_msg = "%s\n\t\t%s" % (log_msg, (
-            "\n\t\t".join([reason["log_message"] for reason in reasons])))
+        for reason in reasons:
+            log_msg = "%s\n\t%s" % (log_msg, reason["log_message"])
+            if "ril reason str" in reason["log_message"]:
+                reason_string = reason["log_message"].split(":")[-1].strip()
         ad.log.info(log_msg)
     reasons = ad.search_logcat("ACTION_FORBIDDEN_NO_SERVICE_AUTHORIZATION",
                                begin_time)
@@ -2111,6 +2114,7 @@ def last_call_drop_reason(ad, begin_time=None):
         ad.log.warning("ACTION_FORBIDDEN_NO_SERVICE_AUTHORIZATION is seen")
     ad.log.info("last call dumpsys: %s",
                 sorted(dumpsys_last_call_info(ad).items()))
+    return reason_string
 
 
 def phone_number_formatter(input_string, formatter=None):
@@ -2847,8 +2851,6 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
 
 
 def lock_lte_band_by_mds(ad, band):
-    ad.adb.shell(
-        "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
     disable_qxdm_logger(ad)
     ad.log.info("Write band %s locking to efs file", band)
     if band == "4":
