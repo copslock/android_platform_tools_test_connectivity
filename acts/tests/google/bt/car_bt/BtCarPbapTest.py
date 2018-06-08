@@ -485,3 +485,4 @@ class BtCarPbapTest(BluetoothBaseTest):
         bt_contacts_utils.erase_contacts(self.pse)
         bt_contacts_utils.erase_contacts(self.pse2)
         return pse1_matches and pse2_matches and pse1andpse2_matches
+

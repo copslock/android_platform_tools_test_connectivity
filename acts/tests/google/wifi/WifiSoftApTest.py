@@ -55,7 +55,6 @@ class WifiSoftApTest(WifiBaseTest):
         utils.require_sl4a((self.dut, self.dut_client))
         utils.sync_device_time(self.dut)
         utils.sync_device_time(self.dut_client)
-
         # Set country code explicitly to "US".
         self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
         self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)

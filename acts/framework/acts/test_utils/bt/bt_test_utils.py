@@ -1,4 +1,4 @@
-#/usr/bin/env python3.4
+# /usr/bin/env python3.4
 #
 # Copyright (C) 2016 The Android Open Source Project
 #
@@ -412,7 +412,7 @@ def determine_max_advertisements(android_device):
 
         regex = "(" + adv_succ.format(
             advertise_callback) + "|" + adv_fail.format(
-                advertise_callback) + ")"
+            advertise_callback) + ")"
         # wait for either success or failure event
         evt = android_device.ed.pop_events(regex, bt_default_timeout,
                                            small_timeout)
@@ -465,7 +465,7 @@ def get_advanced_droid_list(android_devices):
         else:
             max_advertisements = determine_max_advertisements(a)
             max_tries = 3
-            #Retry to calculate max advertisements
+            # Retry to calculate max advertisements
             while max_advertisements == -1 and max_tries > 0:
                 a.log.info(
                     "Attempts left to determine max advertisements: {}".format(
@@ -488,7 +488,7 @@ def get_advanced_droid_list(android_devices):
 def generate_id_by_size(
         size,
         chars=(
-            string.ascii_lowercase + string.ascii_uppercase + string.digits)):
+                string.ascii_lowercase + string.ascii_uppercase + string.digits)):
     """Generate random ascii characters of input size and input char types
 
     Args:
@@ -528,7 +528,7 @@ def cleanup_scanners_and_advertisers(scn_android_device, scn_callback_list,
     except Exception as err:
         adv_android_device.log.debug(
             "Failed to stop LE advertisement... reseting Bluetooth. Error {}".
-            format(err))
+                format(err))
         reset_bluetooth([adv_android_device])
 
 
@@ -891,7 +891,7 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
     paired = False
     for paired_device in pri_ad.droid.bluetoothGetBondedDevices():
         if paired_device['address'] == \
-            sec_ad.droid.bluetoothGetLocalAddress():
+                sec_ad.droid.bluetoothGetLocalAddress():
             paired = True
             break
 
@@ -949,7 +949,7 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
         device_addr = profile_event['data']['addr']
 
         if state == bt_profile_states['connected'] and \
-            device_addr == sec_ad.droid.bluetoothGetLocalAddress():
+                device_addr == sec_ad.droid.bluetoothGetLocalAddress():
             profile_connected.add(profile)
         pri_ad.log.info(
             "Profiles connected until now {}".format(profile_connected))
@@ -1008,7 +1008,7 @@ def disconnect_pri_from_sec(pri_ad, sec_ad, profiles_list):
         device_addr = profile_event['data']['addr']
 
         if state == bt_profile_states['disconnected'] and \
-            device_addr == sec_ad.droid.bluetoothGetLocalAddress():
+                device_addr == sec_ad.droid.bluetoothGetLocalAddress():
             profile_disconnected.add(profile)
         pri_ad.log.info(
             "Profiles disconnected so far {}".format(profile_disconnected))
@@ -1240,6 +1240,11 @@ def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
     if not toggle_airplane_mode_by_adb(log, panu_dut, True):
         panu_dut.log.error("Failed to toggle airplane mode on")
         return False
+    if not toggle_airplane_mode_by_adb(log, panu_dut, False):
+        pan_dut.log.error("Failed to toggle airplane mode off")
+        return False
+    pan_dut.droid.bluetoothStartConnectionStateChangeMonitor("")
+    panu_dut.droid.bluetoothStartConnectionStateChangeMonitor("")
     if not bluetooth_enabled_check(panu_dut):
         return False
     if not bluetooth_enabled_check(pan_dut):
@@ -1373,3 +1378,23 @@ def hid_device_send_key_data_report(host_id, device_ad, key, interval=1):
     time.sleep(interval)
     device_ad.droid.bluetoothHidDeviceSendReport(host_id, hid_id_keyboard,
                                                  hid_keyboard_report("00"))
+
+
+def is_a2dp_connected(sink, source):
+    """
+    Convenience Function to see if the 2 devices are connected on
+    A2dp.
+    Args:
+        sink:       Audio Sink
+        source:     Audio Source
+    Returns:
+        True if Connected
+        False if Not connected
+    """
+
+    devices = sink.droid.bluetoothA2dpSinkGetConnectedDevices()
+    for device in devices:
+        sink.log.info("A2dp Connected device {}".format(device["name"]))
+        if (device["address"] == source.droid.bluetoothGetLocalAddress()):
+            return True
+    return False

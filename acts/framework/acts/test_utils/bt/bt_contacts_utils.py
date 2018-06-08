@@ -425,3 +425,4 @@ def compare_call_logs(pse_call_log, pce_call_log):
         log.info(pce_call_log)
 
     return call_logs_match
+
