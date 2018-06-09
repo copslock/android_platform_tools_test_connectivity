@@ -5893,8 +5893,6 @@ def start_nexuslogger(ad):
     time.sleep(2)
     for i in range(3):
         ad.ensure_screen_on()
-        ad.unlock_screen()
-        time.sleep(1)
         ad.log.info("Start %s Attempt %d" % (qxdm_logger_apk, i + 1))
         ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
         time.sleep(5)
@@ -5960,14 +5958,12 @@ def start_adb_tcpdump(ad,
         begin_time = get_current_epoch_time()
 
     out = ad.adb.shell(
-        "ifconfig | grep encap", ignore_status=True, timeout=180)
-    if interface in ("any", "all"):
-        intfs = [
-            intf for intf in ("wlan0", "rmnet_data0", "rmnet_data6")
-            if intf in out
-        ]
-    else:
-        if interface not in out: return
+        'ifconfig | grep -v -E "r_|-rmnet" | grep -E "lan|data"',
+        ignore_status=True,
+        timeout=180)
+    intfs = re.findall(r"(\S+).*", out)
+    if interface and interface not in ("any", "all"):
+        if interface not in intfs: return
         intfs = [interface]
 
     out = ad.adb.shell("ps -ef | grep tcpdump")
@@ -5992,6 +5988,8 @@ def start_adb_tcpdump(ad,
             start_standing_subprocess(cmd, 10)
         except Exception as e:
             ad.log.error(e)
+    if cmds:
+        time.sleep(20)
 
 
 def stop_tcpdumps(ads):
