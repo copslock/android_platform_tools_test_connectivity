@@ -51,6 +51,7 @@ from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
@@ -135,6 +136,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut_incall = False
         self.dut_capabilities = self.dut.telephony.get("capabilities", [])
         self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
+        self.gps_log_file = self.user_params.get("gps_log_file", None)
         return True
 
     def setup_test(self):
@@ -413,11 +415,16 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut_incall = False
         if not result:
             self.log.info("%s failed", log_msg)
-            if self.user_params.get("gps_log_file", None):
+            if self.gps_log_file:
                 gps_info = job.run(
-                    "tail %s" % self.user_params["gps_log_file"],
-                    ignore_status=True)
+                    "tail %s" % self.gps_log_file, ignore_status=True)
                 if gps_info.stdout:
+                    gps_log_path = os.path.join(self.log_path, test_name,
+                                                "gps_logs.txt")
+                    utils.create_dir(gps_log_path)
+                    job.run(
+                        "tail %s > %s" % (self.gps_log_file, gps_log_path),
+                        ignore_status=True)
                     self.log.info("gps log:\n%s", gps_info.stdout)
                 else:
                     self.log.warning("Fail to get gps log %s",
@@ -442,6 +449,12 @@ class TelLiveStressTest(TelephonyBaseTest):
             if self.result_info["Call Total"] % 50 == 0:
                 for ad in ads:
                     synchronize_device_time(ad)
+                    if not ensure_wifi_connected(self.log, ad,
+                                                 self.wifi_network_ssid,
+                                                 self.wifi_network_pass):
+                        ad.log.error("Failed to connect to wifi")
+                        force_connectivity_metrics_upload(ad)
+                        time.sleep(300)
                     if self.get_binder_logs:
                         log_path = os.path.join(self.log_path,
                                                 "%s_binder_logs" % test_name,
