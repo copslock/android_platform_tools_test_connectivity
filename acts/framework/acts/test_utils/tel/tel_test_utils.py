@@ -6336,15 +6336,23 @@ def build_id_override(ad, new_build_id=None, postfix=None):
 def enable_connectivity_metrics(ad):
     cmds = [
         "pm enable com.android.connectivity.metrics",
+        "am startservice -a com.google.android.gms.usagereporting.OPTIN_UR",
         "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
         " -e usagestats:connectivity_metrics:enable_data_collection 1",
         "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
-        " -e usagestats:connectivity_metrics:telephony_snapshot_period_millis 180000",
-        "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
-        " -e usagestats:connectivity_metrics:data_collection_bitmap 62"
+        " -e usagestats:connectivity_metrics:telephony_snapshot_period_millis 180000"
+        # By default it turn on all modules
+        #"am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
+        #" -e usagestats:connectivity_metrics:data_collection_bitmap 62"
     ]
     for cmd in cmds:
         ad.adb.shell(cmd)
+
+
+def force_connectivity_metrics_upload(ad):
+    cmd = "cmd jobscheduler run --force com.android.connectivity.metrics %s"
+    for job_id in [2, 3, 5, 4, 1, 6]:
+        ad.adb.shell(cmd % job_id)
 
 
 def system_file_push(ad, src_file_path, dst_file_path):

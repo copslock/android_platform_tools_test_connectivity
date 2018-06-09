@@ -40,7 +40,9 @@ from acts.test_utils.tel.tel_test_utils import enable_connectivity_metrics
 from acts.test_utils.tel.tel_test_utils import enable_radio_log_on
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_phone_idle
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import extract_test_log
+from acts.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import get_screen_shot_log
 from acts.test_utils.tel.tel_test_utils import get_sim_state
@@ -315,6 +317,12 @@ class TelephonyBaseTest(BaseTestClass):
             ad.droid.disableDevicePassword()
         except Exception as e:
             self.log.error("Failure with %s", e)
+        if self.user_params.get("enable_connectivity_metrics", True):
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                ad.log.error("Failed to connect to wifi")
+            force_connectivity_metrics_upload(ad)
+            time.sleep(300)
         try:
             if "enable_wifi_verbose_logging" in self.user_params:
                 ad.droid.wifiEnableVerboseLogging(
