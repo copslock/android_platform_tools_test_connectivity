@@ -114,6 +114,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.android_devices = self.android_devices[:2]
         for ad in self.android_devices:
             ad.adb.shell("setprop nfc.debug_enable 1")
+            if self.user_params.get("turn_on_tcpdump", True):
+                start_adb_tcpdump(ad, interface="any", mask="all")
         self.user_params["telephony_auto_rerun"] = 0
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
