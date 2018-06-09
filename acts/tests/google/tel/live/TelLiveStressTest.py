@@ -235,6 +235,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s begin", log_msg)
         for ad in self.android_devices:
+            if self.user_params.get("turn_on_tcpdump", True):
+                start_adb_tcpdump(ad, interface="any", mask="all")
             if not getattr(ad, "messaging_droid", None):
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                 ad.messaging_ed.start()
@@ -250,6 +252,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                     ad.messaging_ed.start()
             ad.messaging_droid.logI("%s begin" % log_msg)
+
         text = "%s: " % test_name
         text_length = len(text)
         if length < text_length:
@@ -304,6 +307,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("%s for %s seconds begin", log_msg, duration)
         begin_time = get_device_epoch_time(ads[0])
         for ad in self.android_devices:
+            if self.user_params.get("turn_on_tcpdump", True):
+                start_adb_tcpdump(ad, interface="any", mask="all")
             if not getattr(ad, "droid", None):
                 ad.droid, ad.ed = ad.get_droid()
                 ad.ed.start()
@@ -319,9 +324,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.droid, ad.ed = ad.get_droid()
                     ad.ed.start()
             ad.droid.logI("%s begin" % log_msg)
-            if ad.droid.telephonyGetCurrentVoiceNetworkType() in (
-                    RAT_LTE, RAT_UNKNOWN) or "wfc" in self.test_name:
-                start_adb_tcpdump(ad, interface="any", mask="all")
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         failure_reasons = set()
         self.dut_incall = True
@@ -761,13 +763,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut.log.info("Voice in RAT %s, Data in RAT %s", voice_rat,
                           data_rat)
         try:
-            if verify_internet_connection_by_ping(self.log, self.dut):
-                self.internet_connection_check_method = verify_internet_connection_by_ping
-            elif verify_http_connection(self.log, self.dut):
-                self.internet_connection_check_method = verify_http_connection
-            else:
-                self.dut.log.error("Data test failed")
-                raise signals.TestFailure("Data check failed")
             if is_rat_svd_capable(voice_rat.upper()) and is_rat_svd_capable(
                     data_rat.upper()):
                 self.dut.log.info("Capable for simultaneous voice and data")
@@ -775,7 +770,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 if not self.internet_connection_check_method(
                         self.log, self.dut):
                     self.dut.log.error("Incall data check failed")
-                    #self._take_bug_report(self.test_name, self.begin_time)
                     raise signals.TestFailure("Incall data check failed")
                 else:
                     return True
