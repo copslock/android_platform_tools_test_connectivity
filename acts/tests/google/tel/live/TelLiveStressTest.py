@@ -49,6 +49,7 @@ from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
@@ -71,6 +72,7 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
 from acts.test_utils.tel.tel_test_utils import wait_for_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
+from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -449,12 +451,14 @@ class TelLiveStressTest(TelephonyBaseTest):
             if self.result_info["Call Total"] % 50 == 0:
                 for ad in ads:
                     synchronize_device_time(ad)
-                    if not ensure_wifi_connected(self.log, ad,
-                                                 self.wifi_network_ssid,
-                                                 self.wifi_network_pass):
-                        ad.log.error("Failed to connect to wifi")
+                    if not check_is_wifi_connected(self.log, ad,
+                                                   self.wifi_network_ssid):
+                        ensure_wifi_connected(self.log, ad,
+                                              self.wifi_network_ssid,
+                                              self.wifi_network_pass)
                         force_connectivity_metrics_upload(ad)
                         time.sleep(300)
+                        wifi_toggle_state(self.log, ad, False)
                     if self.get_binder_logs:
                         log_path = os.path.join(self.log_path,
                                                 "%s_binder_logs" % test_name,
@@ -760,6 +764,13 @@ class TelLiveStressTest(TelephonyBaseTest):
         return result
 
     def check_incall_data(self):
+        if verify_internet_connection_by_ping(self.log, self.dut):
+            self.internet_connection_check_method = verify_internet_connection_by_ping
+        elif verify_http_connection(self.log, self.dut):
+            self.internet_connection_check_method = verify_http_connection
+        else:
+            self.dut.log.error("Data test failed")
+            raise signals.TestFailure("Data check failed")
         if self.single_phone_test:
             if not initiate_call(
                     self.log, self.dut,
