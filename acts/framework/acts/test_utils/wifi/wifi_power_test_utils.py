@@ -313,9 +313,9 @@ def bokeh_plot(data_sets,
         index_now = legends.index(legend)
         color = colors[index_now % len(colors)]
         plot.line(
-            x_data, y_data, legend=str(legend), line_width=3, color=color)
+            x_data, y_data, legend=str(legend), line_width=fig_property['linewidth'], color=color)
         plot.circle(
-            x_data, y_data, size=10, legend=str(legend), fill_color=color)
+            x_data, y_data, size=fig_property['markersize'], legend=str(legend), fill_color=color)
 
     #Plot properties
     plot.xaxis.axis_label = fig_property['x_label']
