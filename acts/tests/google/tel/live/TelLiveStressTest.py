@@ -49,8 +49,10 @@ from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
@@ -70,6 +72,7 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
 from acts.test_utils.tel.tel_test_utils import wait_for_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
+from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -114,6 +117,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.android_devices = self.android_devices[:2]
         for ad in self.android_devices:
             ad.adb.shell("setprop nfc.debug_enable 1")
+            if self.user_params.get("turn_on_tcpdump", True):
+                start_adb_tcpdump(ad, interface="any", mask="all")
         self.user_params["telephony_auto_rerun"] = 0
         self.phone_call_iteration = int(
             self.user_params.get("phone_call_iteration", 500))
@@ -133,6 +138,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut_incall = False
         self.dut_capabilities = self.dut.telephony.get("capabilities", [])
         self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
+        self.gps_log_file = self.user_params.get("gps_log_file", None)
         return True
 
     def setup_test(self):
@@ -235,6 +241,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s begin", log_msg)
         for ad in self.android_devices:
+            if self.user_params.get("turn_on_tcpdump", True):
+                start_adb_tcpdump(ad, interface="any", mask="all")
             if not getattr(ad, "messaging_droid", None):
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                 ad.messaging_ed.start()
@@ -250,6 +258,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                     ad.messaging_ed.start()
             ad.messaging_droid.logI("%s begin" % log_msg)
+
         text = "%s: " % test_name
         text_length = len(text)
         if length < text_length:
@@ -304,6 +313,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("%s for %s seconds begin", log_msg, duration)
         begin_time = get_device_epoch_time(ads[0])
         for ad in self.android_devices:
+            if self.user_params.get("turn_on_tcpdump", True):
+                start_adb_tcpdump(ad, interface="any", mask="all")
             if not getattr(ad, "droid", None):
                 ad.droid, ad.ed = ad.get_droid()
                 ad.ed.start()
@@ -319,9 +330,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.droid, ad.ed = ad.get_droid()
                     ad.ed.start()
             ad.droid.logI("%s begin" % log_msg)
-            if ad.droid.telephonyGetCurrentVoiceNetworkType() in (
-                    RAT_LTE, RAT_UNKNOWN) or "wfc" in self.test_name:
-                start_adb_tcpdump(ad, interface="any", mask="all")
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         failure_reasons = set()
         self.dut_incall = True
@@ -409,11 +417,16 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut_incall = False
         if not result:
             self.log.info("%s failed", log_msg)
-            if self.user_params.get("gps_log_file", None):
+            if self.gps_log_file:
                 gps_info = job.run(
-                    "tail %s" % self.user_params["gps_log_file"],
-                    ignore_status=True)
+                    "tail %s" % self.gps_log_file, ignore_status=True)
                 if gps_info.stdout:
+                    gps_log_path = os.path.join(self.log_path, test_name,
+                                                "gps_logs.txt")
+                    utils.create_dir(gps_log_path)
+                    job.run(
+                        "tail %s > %s" % (self.gps_log_file, gps_log_path),
+                        ignore_status=True)
                     self.log.info("gps log:\n%s", gps_info.stdout)
                 else:
                     self.log.warning("Fail to get gps log %s",
@@ -438,6 +451,14 @@ class TelLiveStressTest(TelephonyBaseTest):
             if self.result_info["Call Total"] % 50 == 0:
                 for ad in ads:
                     synchronize_device_time(ad)
+                    if not check_is_wifi_connected(self.log, ad,
+                                                   self.wifi_network_ssid):
+                        ensure_wifi_connected(self.log, ad,
+                                              self.wifi_network_ssid,
+                                              self.wifi_network_pass)
+                        force_connectivity_metrics_upload(ad)
+                        time.sleep(300)
+                        wifi_toggle_state(self.log, ad, False)
                     if self.get_binder_logs:
                         log_path = os.path.join(self.log_path,
                                                 "%s_binder_logs" % test_name,
@@ -743,6 +764,13 @@ class TelLiveStressTest(TelephonyBaseTest):
         return result
 
     def check_incall_data(self):
+        if verify_internet_connection_by_ping(self.log, self.dut):
+            self.internet_connection_check_method = verify_internet_connection_by_ping
+        elif verify_http_connection(self.log, self.dut):
+            self.internet_connection_check_method = verify_http_connection
+        else:
+            self.dut.log.error("Data test failed")
+            raise signals.TestFailure("Data check failed")
         if self.single_phone_test:
             if not initiate_call(
                     self.log, self.dut,
@@ -761,13 +789,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut.log.info("Voice in RAT %s, Data in RAT %s", voice_rat,
                           data_rat)
         try:
-            if verify_internet_connection_by_ping(self.log, self.dut):
-                self.internet_connection_check_method = verify_internet_connection_by_ping
-            elif verify_http_connection(self.log, self.dut):
-                self.internet_connection_check_method = verify_http_connection
-            else:
-                self.dut.log.error("Data test failed")
-                raise signals.TestFailure("Data check failed")
             if is_rat_svd_capable(voice_rat.upper()) and is_rat_svd_capable(
                     data_rat.upper()):
                 self.dut.log.info("Capable for simultaneous voice and data")
@@ -775,7 +796,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 if not self.internet_connection_check_method(
                         self.log, self.dut):
                     self.dut.log.error("Incall data check failed")
-                    #self._take_bug_report(self.test_name, self.begin_time)
                     raise signals.TestFailure("Incall data check failed")
                 else:
                     return True

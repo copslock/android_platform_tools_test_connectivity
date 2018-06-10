@@ -5893,8 +5893,6 @@ def start_nexuslogger(ad):
     time.sleep(2)
     for i in range(3):
         ad.ensure_screen_on()
-        ad.unlock_screen()
-        time.sleep(1)
         ad.log.info("Start %s Attempt %d" % (qxdm_logger_apk, i + 1))
         ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
         time.sleep(5)
@@ -5960,14 +5958,12 @@ def start_adb_tcpdump(ad,
         begin_time = get_current_epoch_time()
 
     out = ad.adb.shell(
-        "ifconfig | grep encap", ignore_status=True, timeout=180)
-    if interface in ("any", "all"):
-        intfs = [
-            intf for intf in ("wlan0", "rmnet_data0", "rmnet_data6")
-            if intf in out
-        ]
-    else:
-        if interface not in out: return
+        'ifconfig | grep -v -E "r_|-rmnet" | grep -E "lan|data"',
+        ignore_status=True,
+        timeout=180)
+    intfs = re.findall(r"(\S+).*", out)
+    if interface and interface not in ("any", "all"):
+        if interface not in intfs: return
         intfs = [interface]
 
     out = ad.adb.shell("ps -ef | grep tcpdump")
@@ -5992,6 +5988,8 @@ def start_adb_tcpdump(ad,
             start_standing_subprocess(cmd, 10)
         except Exception as e:
             ad.log.error(e)
+    if cmds:
+        time.sleep(20)
 
 
 def stop_tcpdumps(ads):
@@ -6338,15 +6336,23 @@ def build_id_override(ad, new_build_id=None, postfix=None):
 def enable_connectivity_metrics(ad):
     cmds = [
         "pm enable com.android.connectivity.metrics",
+        "am startservice -a com.google.android.gms.usagereporting.OPTIN_UR",
         "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
         " -e usagestats:connectivity_metrics:enable_data_collection 1",
         "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
-        " -e usagestats:connectivity_metrics:telephony_snapshot_period_millis 180000",
-        "am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
-        " -e usagestats:connectivity_metrics:data_collection_bitmap 62"
+        " -e usagestats:connectivity_metrics:telephony_snapshot_period_millis 180000"
+        # By default it turn on all modules
+        #"am broadcast -a com.google.gservices.intent.action.GSERVICES_OVERRIDE"
+        #" -e usagestats:connectivity_metrics:data_collection_bitmap 62"
     ]
     for cmd in cmds:
         ad.adb.shell(cmd)
+
+
+def force_connectivity_metrics_upload(ad):
+    cmd = "cmd jobscheduler run --force com.android.connectivity.metrics %s"
+    for job_id in [2, 3, 5, 4, 1, 6]:
+        ad.adb.shell(cmd % job_id)
 
 
 def system_file_push(ad, src_file_path, dst_file_path):
