@@ -388,6 +388,9 @@ class AndroidDevice:
         self.adb = adb.AdbProxy(serial, ssh_connection=ssh_connection)
         self.fastboot = fastboot.FastbootProxy(
             serial, ssh_connection=ssh_connection)
+        self.adb_logcat_file_path = os.path.join(
+            log_path_base, 'AndroidDevice%s' % serial,
+            "adblog,{},{}.txt".format(self.model, serial))
         if not self.is_bootloader:
             self.root_adb()
         self._ssh_connection = ssh_connection
@@ -642,8 +645,9 @@ class AndroidDevice:
                 except (IndexError, ValueError) as e:
                     # Possible ValueError from string to int cast.
                     # Possible IndexError from split.
-                    self.log.warn('Command \"%s\" returned output line: '
-                                  '\"%s\".\nError: %s', cmd, out, e)
+                    self.log.warn(
+                        'Command \"%s\" returned output line: '
+                        '\"%s\".\nError: %s', cmd, out, e)
             except Exception as e:
                 self.log.warn(
                     'Device fails to check if %s running with \"%s\"\n'
@@ -754,7 +758,7 @@ class AndroidDevice:
             begin_at = '-T "%s"' % self.last_logcat_timestamp
         else:
             begin_at = '-T 1'
-        # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
+    # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
         cmd = "adb -s {} logcat {} -v year {} >> {}".format(
             self.serial, begin_at, extra_params, logcat_file_path)
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
@@ -810,8 +814,9 @@ class AndroidDevice:
                     'pm list packages | grep -w "package:%s"' % package_name))
 
         except Exception as err:
-            self.log.error('Could not determine if %s is installed. '
-                           'Received error:\n%s', package_name, err)
+            self.log.error(
+                'Could not determine if %s is installed. '
+                'Received error:\n%s', package_name, err)
             return False
 
     def is_sl4a_installed(self):
@@ -835,8 +840,9 @@ class AndroidDevice:
                     self.log.info("apk %s is running", package_name)
                     return True
             except Exception as e:
-                self.log.warn("Device fails to check is %s running by %s "
-                              "Exception %s", package_name, cmd, e)
+                self.log.warn(
+                    "Device fails to check is %s running by %s "
+                    "Exception %s", package_name, cmd, e)
                 continue
         self.log.debug("apk %s is not running", package_name)
         return False
@@ -896,9 +902,9 @@ class AndroidDevice:
         if new_br:
             out = self.adb.shell("bugreportz", timeout=BUG_REPORT_TIMEOUT)
             if not out.startswith("OK"):
-                raise AndroidDeviceError("Failed to take bugreport on %s: %s" %
-                                         (self.serial, out))
-            br_out_path = out.split(':')[1].strip()
+                raise AndroidDeviceError(
+                    "Failed to take bugreport on %s: %s" % (self.serial, out))
+            br_out_path = out.split(':')[1].strip().split()[0]
             self.adb.pull("%s %s" % (br_out_path, full_out_path))
         else:
             self.adb.bugreport(
@@ -1301,7 +1307,8 @@ class AndroidDevice:
 
     def is_screen_lock_enabled(self):
         """Check if screen lock is enabled"""
-        cmd = ("sqlite3 /data/system/locksettings.db .dump"" | grep lockscreen.password_type | grep -v alternate")
+        cmd = ("sqlite3 /data/system/locksettings.db .dump"
+               " | grep lockscreen.password_type | grep -v alternate")
         out = self.adb.shell(cmd, ignore_status=True)
         if "unable to open" in out:
             self.root_adb()
@@ -1319,7 +1326,7 @@ class AndroidDevice:
             self.log.info("Device is in CrpytKeeper window")
             return True
         if "StatusBar" in current_window and (
-                (not current_app) or "FallbackHome" in current_app):
+            (not current_app) or "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
@@ -1370,12 +1377,13 @@ class AndroidDevice:
 
     def exit_setup_wizard(self):
         if not self.is_user_setup_complete() or self.is_setupwizard_on():
-            self.adb.shell("pm disable %s" % self.get_setupwizard_package_name())
+            self.adb.shell(
+                "pm disable %s" % self.get_setupwizard_package_name())
         # Wait up to 5 seconds for user_setup_complete to be updated
-        for _ in range(5):
+        end_time = time.time() + 5
+        while time.time() < end_time:
             if self.is_user_setup_complete() or not self.is_setupwizard_on():
                 return
-            time.sleep(1)
 
         # If fail to exit setup wizard, set local.prop and reboot
         if not self.is_user_setup_complete() and self.is_setupwizard_on():
@@ -1386,12 +1394,18 @@ class AndroidDevice:
     def get_setupwizard_package_name(self):
         """Finds setupwizard package/.activity
 
+        Bypass setupwizard or setupwraith depending on device.
+
          Returns:
             packageName/.ActivityName
-         """
-        package = self.adb.shell("pm list packages -f | grep setupwizard | grep com.google.android")
+        """
+        packages_to_skip = "'setupwizard|setupwraith'"
+        android_package_name = "com.google.android"
+        package = self.adb.shell(
+            "pm list packages -f | grep -E {} | grep {}".format(
+                packages_to_skip, android_package_name))
         wizard_package = re.split("=", package)[1]
-        activity = re.search("wizard/(.*?).apk", package, re.IGNORECASE).groups()[0]
+        activity = re.search("(.*?).apk", package, re.IGNORECASE).groups()[0]
         self.log.info("%s/.%sActivity" % (wizard_package, activity))
         return "%s/.%sActivity" % (wizard_package, activity)
 
