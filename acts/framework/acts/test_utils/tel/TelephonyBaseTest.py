@@ -343,19 +343,21 @@ class TelephonyBaseTest(BaseTestClass):
         return True
 
     def setup_test(self):
-        if not self.user_params.get("qxdm_log_mask_cfg", None):
-            if "wfc" in self.test_name:
-                for ad in self.android_devices:
-                    if "IMS_DS_CNE_LnX_Golden.cfg" not in getattr(
-                            ad, "qxdm_logger_command", ""):
-                        set_qxdm_logger_command(ad,
-                                                "IMS_DS_CNE_LnX_Golden.cfg")
-            else:
-                for ad in self.android_devices:
-                    if "IMS_DS_CNE_LnX_Golden.cfg" in getattr(
-                            ad, "qxdm_logger_command", ""):
-                        set_qxdm_logger_command(ad, None)
         if getattr(self, "qxdm_log", True):
+            if not self.user_params.get("qxdm_log_mask_cfg", None):
+                if "wfc" in self.test_name:
+                    for ad in self.android_devices:
+                        if not getattr(ad, "qxdm_logger_command", None) or (
+                                "IMS_DS_CNE_LnX_Golden.cfg" not in getattr(
+                                    ad, "qxdm_logger_command", "")):
+                            set_qxdm_logger_command(
+                                ad, "IMS_DS_CNE_LnX_Golden.cfg")
+                else:
+                    for ad in self.android_devices:
+                        if not getattr(ad, "qxdm_logger_command", None) or (
+                                "IMS_DS_CNE_LnX_Golden.cfg" in getattr(
+                                    ad, "qxdm_logger_command", "")):
+                            set_qxdm_logger_command(ad, None)
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
         if getattr(self, "tcpdump_log", False) or "wfc" in self.test_name:
             mask = getattr(self, "tcpdump_mask", "all")
