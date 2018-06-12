@@ -21,6 +21,7 @@ Test Setup:
 One Android device.
 """
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
+from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
 from acts.test_utils.coex.coex_test_utils import toggle_bluetooth
 from acts.test_utils.coex.coex_test_utils import start_fping
