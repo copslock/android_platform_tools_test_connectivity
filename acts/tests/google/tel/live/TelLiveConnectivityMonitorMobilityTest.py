@@ -22,11 +22,9 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_atten_utils import set_rssi
 from acts.test_utils.tel.tel_defines import CELL_WEAK_RSSI_VALUE
-from acts.test_utils.tel.tel_defines import GEN_4G
 from acts.test_utils.tel.tel_defines import INVALID_WIFI_RSSI
 from acts.test_utils.tel.tel_defines import MAX_RSSI_RESERVED_VALUE
 from acts.test_utils.tel.tel_defines import MIN_RSSI_RESERVED_VALUE
-from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_WIFI_RSSI_CALIBRATION_SCREEN_ON
 from acts.test_utils.tel.tel_defines import WAIT_TIME_WIFI_RSSI_CALIBRATION_WIFI_CONNECTED
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
@@ -39,10 +37,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import wait_for_wifi_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
-from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from TelLiveConnectivityMonitorBaseTest import TelLiveConnectivityMonitorBaseTest
-from TelLiveConnectivityMonitorBaseTest import ACTIONS
-from TelLiveConnectivityMonitorBaseTest import TROUBLES
 
 # Attenuator name
 ATTEN_NAME_FOR_WIFI_2G = 'wifi0'
@@ -254,74 +249,60 @@ class TelLiveConnectivityMonitorMobilityTest(
     @test_tracker_info(uuid="d474725b-c34d-4686-8b5f-c0d4733a0cc1")
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_call_drop_by_poor_signals(self):
-        self.setup_volte()
-        return self.call_setup_and_connectivity_monitor_checking(
+        return self.forced_call_drop_test(
             setup="volte",
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger=None,
-            expected_drop_reason=IMS_LINK_LOST,
-            expected_trouble=None,
-            expected_action=None)
+            triggers=[
+                "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
+            ])
 
     @test_tracker_info(uuid="7f62f1c0-6d9e-4e7e-812f-b1c60d2f4b41")
     @TelephonyBaseTest.tel_test_wrap
     def test_csfb_call_drop_by_poor_signals(self):
-        self.setup_csfb()
-        return self.call_setup_and_connectivity_monitor_checking(
+        return self.forced_call_drop_test(
             setup="csfb",
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger=None,
-            expected_drop_reason=CS_LINK_LOST,
-            expected_trouble=None,
-            expected_action=None)
+            triggers=[
+                "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
+            ])
 
     @test_tracker_info(uuid="8d1c8c44-be54-43ec-892c-c3f41855c7c8")
     @TelephonyBaseTest.tel_test_wrap
     def test_3g_call_drop_by_poor_signal(self):
-        self.setup_3g()
-        return self.call_setup_and_connectivity_monitor_checking(
+        return self.forced_call_drop_test(
             setup="3g",
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger=None,
-            expected_drop_reason=CS_LINK_LOST,
-            expected_trouble=None,
-            expected_action=None)
+            triggers=[
+                "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
+            ])
 
     @test_tracker_info(uuid="66e01cb3-3bea-4d08-9ab4-7f22790c57b1")
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_apm_call_drop_by_poor_signal(self):
-        self.setup_wfc_apm()
-        return self.call_setup_and_connectivity_monitor_checking(
+        return self.forced_call_drop_test(
             setup="wfc_apm",
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger=None,
-            expected_drop_reason=IMS_LINK_LOST,
-            expected_trouble=None,
-            expected_action=None)
+            triggers=[
+                "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
+            ])
 
     @test_tracker_info(uuid="669e9f97-6931-403a-a13d-4f179bd4406f")
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_non_apm_call_drop_by_poor_signal(self):
         self.setup_wfc_non_apm()
-        return self.call_setup_and_connectivity_monitor_checking(
+        return self.forced_call_drop_test(
             setup="wfc_non_apm",
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger=None,
-            expected_drop_reason=IMS_LINK_LOST,
-            expected_trouble=None,
-            expected_action=None)
+            triggers=[
+                "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
+            ])
 
     @test_tracker_info(uuid="c7619788-2357-4c49-a754-50ffaf433d59")
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_handover_to_wfc_then_hangup(self):
-        self.setup_volte()
         self.connect_to_wifi()
         self.enable_wfc()
         set_wfc_mode(self.log, self.dut, WFC_MODE_CELLULAR_PREFERRED)
+        self.setup_volte()
         return self.call_setup_and_connectivity_monitor_checking(
             setup="volte",
-            trigger=None,
-            pre_trigger="set_wifi_strong_cell_absent",
+            handover="wfc_non_apm",
+            triggers=["set_wifi_strong_cell_absent"],
             expected_drop_reason=None,
             expected_trouble=None,
             expected_action=None)
@@ -332,11 +313,14 @@ class TelLiveConnectivityMonitorMobilityTest(
         self.setup_csfb()
         self.connect_to_wifi()
         self.enable_wfc()
-        set_wfc_mode(self.log, self.dut, WFC_MODE_CELLULAR_PREFERRED)
+        self.set_wifi_absent_cell_strong()
         return self.call_setup_and_connectivity_monitor_checking(
             setup="csfb",
-            trigger=None,
-            pre_trigger="set_wifi_strong_cell_absent",
+            handover="wfc_non_apm",
+            triggers=[
+                "set_wifi_strong_cell_strong", "connect_to_wifi",
+                "is_wfc_enabled", "set_wifi_strong_cell_absent"
+            ],
             expected_drop_reason=None,
             expected_trouble=None,
             expected_action=None)
@@ -348,10 +332,13 @@ class TelLiveConnectivityMonitorMobilityTest(
         self.connect_to_wifi()
         self.enable_wfc()
         set_wfc_mode(self.log, self.dut, WFC_MODE_CELLULAR_PREFERRED)
+        if not self.is_wfc_enabled():
+            self.dut.log.error("WFC is not enabled")
+            return False
         return self.call_setup_and_connectivity_monitor_checking(
             setup="3g",
-            trigger=None,
-            pre_trigger="set_wifi_strong_cell_absent",
+            handover="wfc_non_apm",
+            triggers=["set_wifi_strong_cell_absent"],
             expected_drop_reason=None,
             expected_trouble=None,
             expected_action=None)
@@ -360,16 +347,18 @@ class TelLiveConnectivityMonitorMobilityTest(
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_handover_to_volte_then_hangup(self):
         self.setup_volte()
-        if WFC_MODE_WIFI_PREFERRED in self.dut_wfc_modes:
-            self.setup_wfc_non_apm()
-        else:
-            self.connect_to_wifi()
-            self.enable_wfc()
-            self.set_wifi_strong_cell_absent()
+        self.connect_to_wifi()
+        self.enable_wfc()
+        self.set_wifi_strong_cell_absent()
+        if not self.is_wfc_enabled():
+            self.dut.log.error("WFC is not enabled")
+            return False
         return self.call_setup_and_connectivity_monitor_checking(
-            setup="volte",
-            trigger="set_wifi_absent_cell_strong",
-            pre_trigger="set_wifi_strong_cell_strong",
+            setup="wfc_non_apm",
+            handover="volte",
+            triggers=[
+                "set_wifi_strong_cell_strong", "set_wifi_absent_cell_strong"
+            ],
             expected_drop_reason=None,
             expected_trouble=None,
             expected_action=None)
@@ -378,17 +367,20 @@ class TelLiveConnectivityMonitorMobilityTest(
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_handover_to_volte_then_call_drop(self):
         self.setup_volte()
-        if WFC_MODE_WIFI_PREFERRED in self.dut_wfc_modes:
-            self.setup_wfc_non_apm()
-        else:
-            self.connect_to_wifi()
-            self.enable_wfc()
-            self.set_wifi_strong_cell_absent()
+        self.connect_to_wifi()
+        self.enable_wfc()
+        self.set_wifi_strong_cell_absent()
+        if not self.is_wfc_enabled():
+            self.dut.log.error("WFC is not enabled")
+            return False
         return self.call_drop_test(
-            setup="volte",
+            setup="wfc_non_apm",
+            handover="volte",
             count=1,
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger="set_wifi_absent_cell_strong",
+            triggers=[
+                "set_wifi_strong_cell_strong", "set_wifi_absent_cell_strong",
+                "set_wifi_absent_cell_absent"
+            ],
             expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
@@ -397,19 +389,20 @@ class TelLiveConnectivityMonitorMobilityTest(
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_handover_to_csfb_then_call_drop(self):
         self.setup_csfb()
+        self.set_wifi_strong_cell_absent()
         self.connect_to_wifi()
         self.enable_wfc()
-        if WFC_MODE_WIFI_PREFERRED in self.dut_wfc_modes:
-            self.setup_wfc_non_apm()
-        else:
-            self.connect_to_wifi()
-            self.enable_wfc()
-            self.set_wifi_strong_cell_absent()
+        if not self.is_wfc_enabled():
+            self.dut.log.error("WFC is not enabled")
+            return False
         return self.call_drop_test(
-            setup="csfb",
+            setup="wfc_apm",
+            handover="csfb",
             count=1,
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger="set_wifi_absent_cell_strong",
+            triggers=[
+                "set_wifi_strong_cell_strong", "set_wifi_absent_cell_strong",
+                "set_wifi_absent_cell_absent"
+            ],
             expected_drop_reason=CS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
@@ -420,12 +413,16 @@ class TelLiveConnectivityMonitorMobilityTest(
         self.setup_volte()
         self.connect_to_wifi()
         self.enable_wfc()
-        set_wfc_mode(self.log, self.dut, WFC_MODE_CELLULAR_PREFERRED)
+        self.set_wifi_absent_cell_strong()
         return self.call_drop_test(
             setup="volte",
+            handover="wfc_non_apm",
             count=1,
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger="set_wifi_strong_cell_absent",
+            triggers=[
+                "set_wifi_strong_cell_strong", "connect_to_wifi",
+                "is_wfc_enabled", "set_wifi_strong_cell_absent",
+                "set_wifi_absent_cell_absent"
+            ],
             expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
@@ -436,12 +433,16 @@ class TelLiveConnectivityMonitorMobilityTest(
         self.setup_csfb()
         self.connect_to_wifi()
         self.enable_wfc()
-        set_wfc_mode(self.log, self.dut, WFC_MODE_CELLULAR_PREFERRED)
+        self.set_wifi_absent_cell_strong()
         return self.call_drop_test(
             setup="csfb",
+            handover="wfc",
             count=1,
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger="set_wifi_strong_cell_absent",
+            triggers=[
+                "set_wifi_strong_cell_strong", "connect_to_wifi",
+                "is_wfc_enabled", "set_wifi_strong_cell_absent",
+                "set_wifi_absent_cell_absent"
+            ],
             expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
@@ -452,12 +453,16 @@ class TelLiveConnectivityMonitorMobilityTest(
         self.setup_3g()
         self.connect_to_wifi()
         self.enable_wfc()
-        set_wfc_mode(self.log, self.dut, WFC_MODE_CELLULAR_PREFERRED)
+        self.set_wifi_absent_cell_strong()
         return self.call_drop_test(
             setup="3g",
+            handover="wfc_non_apm",
             count=1,
-            trigger="set_wifi_absent_cell_absent",
-            pre_trigger="set_wifi_strong_cell_absent",
+            triggers=[
+                "set_wifi_strong_cell_strong", "connect_to_wifi",
+                "is_wfc_enabled", "set_wifi_strong_cell_absent",
+                "set_wifi_absent_cell_absent"
+            ],
             expected_drop_reason=IMS_LINK_LOST,
             expected_trouble=None,
             expected_action=None)
