@@ -336,7 +336,9 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
         output = self.dut.adb.shell(
             "cat /data/data/com.google.android.connectivitymonitor/"
             "shared_prefs/ConnectivityMonitor_BugReport.xml")
-        return re.findall(r"<string>(\S+)</string>", output)
+        bugreport_database = re.findall(r">Call Drop:\s+(.*)<", output)
+        self.dut.log.info("bugreport_database = %s", bugreport_database)
+        return bugreport_database
 
     def parsing_troubleshooter_database(self):
         output = self.dut.adb.shell(
@@ -514,6 +516,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
             self.dut.log.info("Not in call")
 
         drop_reason = last_call_drop_reason(self.dut, begin_time)
+        drop_reason = drop_reason.title()
         if drop_reason:
             expected_drop_reasons.add(drop_reason)
         for ad in (self.ad_reference, self.dut):
@@ -544,7 +547,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 if call_statistics_after.get("num_calls",
                                              0) - call_statistics_before.get(
                                                  "num_calls", 0) < 1:
-                    self.dut.log.error(
+                    self.dut.log.warning(
                         "call_statistics num_calls didn't increase")
                     # result = False
                 else:
@@ -562,14 +565,14 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 diagnosis = diagnostics_after.get("diagnosis")
                 actions = diagnostics_after.get("actions")
                 if after - before < 1:
-                    self.dut.log.error("call_statistics %s didn't increase, "
-                                       "before %s, after %s" % (stat_key,
-                                                                before, after))
+                    self.dut.log.warning("call_statistics %s didn't increase, "
+                                         "before %s, after %s" %
+                                         (stat_key, before, after))
                     # result = False
                 else:
                     self.dut.log.info("call_statistics %s increased", stat_key)
                 if most_failure_call_type != desc:
-                    self.dut.log.info(
+                    self.dut.log.warning(
                         "call_statistics call_type_with_most_failures "
                         "is %s, not %s", most_failure_call_type, desc)
                 else:
@@ -582,8 +585,8 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 self.dut.log.info("%s_dropped = %s, percentage = %s", desc,
                                   dropped, drop_percentage)
                 if expected_trouble and expected_trouble != diagnosis:
-                    self.dut.log.error("diagnoisis = %s, expecting %s",
-                                       diagnosis, expected_trouble)
+                    self.dut.log.warning("diagnoisis = %s, expecting %s",
+                                         diagnosis, expected_trouble)
                 if expected_action and expected_action != actions:
                     self.dut.log.error("actions = %s, expecting %s", actions,
                                        expected_action)
@@ -609,16 +612,31 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                                        drop_reason, expected_drop_reason)
                     result = False
                 else:
-                    self.dut.log.info("%s is: %s", reason_key, drop_reason)
+                    self.dut.log.info("%s is: %s as expected", reason_key,
+                                      drop_reason)
             else:
                 self.dut.log.error("%s is not provided in summary report",
                                    reason_key)
                 result = False
 
-        if not trigger or trigger == "toggling_apm" or "Call Drop: %s" % (
-                expected_drop_reason
-        ) in bugreport_database_before or expected_drop_reason in IGNORED_CALL_DROP_REASONS:
+        if not trigger or trigger == "toggling_apm":
             return result
+        if drop_reason in bugreport_database_before:
+            self.dut.log.info("%s is in bugreport database %s before call",
+                              drop_reason, bugreport_database_before)
+            return result
+        else:
+            self.dut.log.info("%s is not in bugreport database %s before call",
+                              drop_reason, bugreport_database_before)
+        if drop_reason in IGNORED_CALL_DROP_REASONS:
+            self.dut.log.info(
+                "Call drop with reason %s will skip bugreport notification",
+                drop_reason)
+            return result
+        else:
+            self.dut.log.info(
+                "Call drop %s should generate bugreport notification",
+                drop_reason)
         # Parse logcat for UI notification only for the first failure
         if self.dut.search_logcat("Bugreport notification title Call Drop:",
                                   begin_time):
@@ -626,12 +644,9 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 "Bugreport notification title Call Drop is seen in logcat")
             return result
         else:
-            self.dut.log.warning(
+            self.dut.log.error(
                 "Bugreport notification title Call Drop is not seen in logcat")
-            if call_data_summary_after.get("Calls_dropped", 0) > 1:
-                return result
-            else:
-                return False
+            return False
 
     def call_drop_test(self,
                        setup=None,
@@ -653,13 +668,19 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 expected_drop_reason = CALL_DROP_CODE_MAPPING[int(
                     self.call_drop_override_code)]
         for iter in range(count):
+            self.dut.log.info("===== %s_%s_iter_%s =====", self.test_name,
+                              trigger, iter + 1)
+            if iter < count - 1:
+                action = None
+            else:
+                action = expected_action
             if not self.call_setup_and_connectivity_monitor_checking(
                     setup=setup,
                     trigger=trigger,
                     pre_trigger=pre_trigger,
                     expected_drop_reason=expected_drop_reason,
                     expected_trouble=expected_trouble,
-                    expected_action=expected_action):
+                    expected_action=action):
                 self._ad_take_bugreport(self.dut, "%s_%s_iter_%s_failure" %
                                         (self.test_name, trigger,
                                          iter + 1), self.begin_time)
