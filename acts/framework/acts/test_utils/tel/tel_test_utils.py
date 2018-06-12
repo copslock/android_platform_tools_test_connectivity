@@ -2212,7 +2212,8 @@ def verify_http_connection(log,
     for i in range(0, retry + 1):
         try:
             http_response = ad.data_droid.httpPing(url)
-        except:
+        except Exception as e:
+            ad.log.info("httpPing with %s", e)
             http_response = None
         if (expected_state and http_response) or (not expected_state
                                                   and not http_response):
@@ -5888,7 +5889,7 @@ def start_nexuslogger(ad):
                      (qxdm_logger_apk, perm))
     time.sleep(2)
     for i in range(3):
-        ad.ensure_screen_on()
+        ad.unlock_screen()
         ad.log.info("Start %s Attempt %d" % (qxdm_logger_apk, i + 1))
         ad.adb.shell("am start -n %s/%s" % (qxdm_logger_apk, activity))
         time.sleep(5)

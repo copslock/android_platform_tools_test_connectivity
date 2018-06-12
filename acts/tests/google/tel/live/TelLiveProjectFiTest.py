@@ -152,9 +152,6 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         for cmd in _TYCHO_VERBOSE_LOGGING_CMDS:
             ad.adb.shell(cmd)
         if hasattr(ad, "user_account"):
-            if self.check_project_fi_activated(ad, retries=2):
-                ad.log.info("Project Fi is activated already")
-                return True
             ad.exit_setup_wizard()
             if not ad.is_apk_installed("com.google.android.tradefed.account"
                                        ) and self.user_params.get(
