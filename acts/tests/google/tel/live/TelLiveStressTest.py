@@ -421,11 +421,12 @@ class TelLiveStressTest(TelephonyBaseTest):
                 gps_info = job.run(
                     "tail %s" % self.gps_log_file, ignore_status=True)
                 if gps_info.stdout:
-                    gps_log_path = os.path.join(self.log_path, test_name,
-                                                "gps_logs.txt")
+                    gps_log_path = os.path.join(self.log_path, test_name)
                     utils.create_dir(gps_log_path)
                     job.run(
-                        "tail %s > %s" % (self.gps_log_file, gps_log_path),
+                        "tail %s > %s" %
+                        (self.gps_log_file,
+                         os.path.join(gps_log_path, "gps_logs.txt")),
                         ignore_status=True)
                     self.log.info("gps log:\n%s", gps_info.stdout)
                 else:
