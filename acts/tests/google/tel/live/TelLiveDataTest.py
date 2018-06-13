@@ -880,6 +880,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.info("====== Toggling provider bluetooth =====")
             self.provider.log.info("Disable provider bluetooth")
             disable_bluetooth(self.provider.droid)
+            time.sleep(10)
             if not self._test_internet_connection(False, True):
                 self.log.error(
                     "Internet connection check failed after disable bluetooth")
