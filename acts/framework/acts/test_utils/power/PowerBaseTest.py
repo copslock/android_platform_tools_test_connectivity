@@ -451,11 +451,11 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.brconfigs: dict for bridge interface configs
         """
         wutils.wifi_toggle_state(self.dut, True)
-        self.brconfigs = wputils.ap_setup(
-            self.access_point, network, bandwidth=bandwidth)
+        if hasattr(self, 'access_points'):
+            self.brconfigs = wputils.ap_setup(
+                self.access_point, network, bandwidth=bandwidth)
         if connect:
             wutils.wifi_connect(self.dut, network)
-        return self.brconfigs
 
     def process_iperf_results(self):
         """Get the iperf results and process.
