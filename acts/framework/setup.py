@@ -36,7 +36,8 @@ install_requires = [
     'roman',
     'scapy-python3',
     'pylibftdi',
-    'xlsxwriter'
+    'xlsxwriter',
+    'colorama'
 ]
 
 if sys.version_info < (3, ):
