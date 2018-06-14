@@ -125,7 +125,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         if hasattr(self, 'attenuators'):
             self.num_atten = self.attenuators[0].instrument.num_atten
             self.atten_level = self.unpack_custom_file(self.attenuation_file)
-        self.set_attenuation(INITIAL_ATTEN)
+            self.set_attenuation(INITIAL_ATTEN)
         self.threshold = self.unpack_custom_file(self.threshold_file)
         self.mon_info = self.create_monsoon_info()
 
