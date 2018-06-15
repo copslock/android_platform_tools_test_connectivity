@@ -44,11 +44,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        self.setup_volte()
-        return self.call_drop_triggered_suggestion_test(
-            setup="volte",
-            expected_trouble=TROUBLES[6],
-            expected_action=ACTIONS[6])
+        return self.forced_call_drop_test(setup="volte")
 
     @test_tracker_info(uuid="8c3ee59a-74e5-4885-8f42-8a15d4550d5f")
     @TelephonyBaseTest.tel_test_wrap
@@ -66,13 +62,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        self.setup_csfb()
-        if CAPABILITY_VOLTE in self.dut_capabilities:
-            action = ACTIONS[5]
-        else:
-            action = ACTIONS[7]
-        return self.call_drop_triggered_suggestion_test(
-            setup="csfb", expected_trouble=TROUBLES[7], expected_action=action)
+        return self.forced_call_drop_test(setup="csfb")
 
     @test_tracker_info(uuid="6cd12786-c048-4925-8745-1d5d30094257")
     @TelephonyBaseTest.tel_test_wrap
@@ -90,13 +80,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        self.setup_3g()
-        if CAPABILITY_VOLTE in self.dut_capabilities:
-            action = ACTIONS[5]
-        else:
-            action = ACTIONS[7]
-        return self.call_drop_triggered_suggestion_test(
-            setup="3g", expected_trouble=TROUBLES[7], expected_action=action)
+        return self.forced_call_drop_test(setup="3g")
 
     @test_tracker_info(uuid="51166448-cea6-480b-93d8-7063f940ce0a")
     @TelephonyBaseTest.tel_test_wrap
@@ -114,13 +98,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        self.setup_2g()
-        if CAPABILITY_VOLTE in self.dut_capabilities:
-            action = ACTIONS[5]
-        else:
-            action = ACTIONS[7]
-        return self.call_drop_triggered_suggestion_test(
-            setup="2g", expected_trouble=TROUBLES[7], expected_action=action)
+        return self.forced_call_drop_test(setup="2g")
 
     @test_tracker_info(uuid="409f3331-5d64-4793-b300-2b3d3fa50ba5")
     @TelephonyBaseTest.tel_test_wrap
@@ -138,11 +116,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        self.setup_wfc_apm()
-        return self.call_drop_triggered_suggestion_test(
-            setup="wfc_apm",
-            expected_trouble=TROUBLES[3],
-            expected_action=ACTIONS[11])
+        return self.forced_call_drop_test(setup="wfc_apm")
 
     @test_tracker_info(uuid="336c383f-ec19-4447-af37-7f9bb0bac4dd")
     @TelephonyBaseTest.tel_test_wrap
@@ -160,11 +134,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        self.setup_wfc_non_apm()
-        return self.call_drop_triggered_suggestion_test(
-            setup="wfc_non_apm",
-            expected_trouble=TROUBLES[3],
-            expected_action=ACTIONS[3])
+        return self.forced_call_drop_test(setup="wfc_non_apm")
 
     @test_tracker_info(uuid="fd8d22ac-66b2-4e91-a922-8ecec45c85e6")
     @TelephonyBaseTest.tel_test_wrap
@@ -182,8 +152,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        self.setup_vt()
-        return self.call_drop_triggered_suggestion_test(setup="vt")
+        return self.forced_call_drop_test(setup="vt")
 
     @test_tracker_info(uuid="11c4068e-9710-4a40-8587-79d32a68a37e")
     @TelephonyBaseTest.tel_test_wrap
@@ -427,8 +396,8 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         """
         self.setup_volte()
         self.setup_wfc_non_apm()
-        return self.call_drop_triggered_suggestion_test(
-            setup="wfc_non_apm", pre_trigger="toggle_wifi")
+        return self.call_setup_and_connectivity_monitor_checking(
+            setup="wfc_non_apm", triggers=["toggle_wifi", "toogle_wifi"])
 
     @test_tracker_info(uuid="1c880cf8-082c-4451-b890-22081177d084")
     @TelephonyBaseTest.tel_test_wrap
@@ -448,8 +417,8 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         """
         self.setup_volte()
         self.setup_wfc_apm()
-        return self.call_drop_triggered_suggestion_test(
-            setup="wfc_apm", pre_trigger="toggle_wifi")
+        return self.call_setup_and_connectivity_monitor_checking(
+            setup="wfc_apm", triggers=["toggle_wifi", "toggle_wifi"])
 
     @test_tracker_info(uuid="")
     @TelephonyBaseTest.tel_test_wrap
@@ -469,7 +438,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         """
         self.setup_volte()
         return self.call_setup_and_connectivity_monitor_checking(
-            setup="volte", trigger="toggling_apm")
+            setup="volte", triggers=["toggle_apm"])
 
     @test_tracker_info(uuid="8e1ba024-3b43-4a7d-adc8-2252da81c55c")
     @TelephonyBaseTest.tel_test_wrap
@@ -489,7 +458,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         """
         self.setup_csfb()
         return self.call_setup_and_connectivity_monitor_checking(
-            setup="csfb", trigger="toggling_apm")
+            setup="csfb", triggers=["toggle_apm"])
 
     @test_tracker_info(uuid="fe6afae4-fa04-435f-8bbc-4a63f5fb525c")
     @TelephonyBaseTest.tel_test_wrap
@@ -509,7 +478,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         """
         self.setup_3g()
         return self.call_setup_and_connectivity_monitor_checking(
-            setup="3g", trigger="toggling_apm")
+            setup="3g", triggers=["toggle_apm"])
 
     @test_tracker_info(uuid="cc089e2b-d0e1-42a3-80de-597986be3d4e")
     @TelephonyBaseTest.tel_test_wrap
@@ -529,7 +498,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         """
         self.setup_2g()
         return self.call_setup_and_connectivity_monitor_checking(
-            setup="2g", trigger="toggling_apm")
+            setup="2g", triggers=["toggle_apm"])
 
     @test_tracker_info(uuid="f8ba9655-572c-4a90-be59-6a5bc9a8fad0")
     @TelephonyBaseTest.tel_test_wrap
@@ -549,7 +518,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         """
         self.setup_wfc_apm()
         return self.call_setup_and_connectivity_monitor_checking(
-            setup="wfc_apm", trigger="toggling_apm")
+            setup="wfc_apm", triggers=["toggle_apm"])
 
     @test_tracker_info(uuid="f2995df9-f56d-442c-977a-141e3269481f")
     @TelephonyBaseTest.tel_test_wrap
@@ -570,7 +539,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         """
         self.setup_wfc_non_apm()
         return self.call_setup_and_connectivity_monitor_checking(
-            setup="wfc_non_apm", trigger="toggling_apm")
+            setup="wfc_non_apm", triggers=["toggle_apm"])
 
     @test_tracker_info(uuid="cb52110c-7470-4886-b71f-e32f0e489cbd")
     @TelephonyBaseTest.tel_test_wrap
@@ -590,7 +559,7 @@ class TelLiveConnectivityMonitorTest(TelLiveConnectivityMonitorBaseTest):
         """
         self.setup_vt()
         return self.call_setup_and_connectivity_monitor_checking(
-            setup="vt", trigger="toggling_apm")
+            setup="vt", triggers=["toggle_apm"])
 
     @test_tracker_info(uuid="b91a1e8d-3630-4b81-bc8c-c7d3dad42c77")
     @TelephonyBaseTest.tel_test_wrap
