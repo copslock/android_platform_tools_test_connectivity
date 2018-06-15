@@ -124,10 +124,12 @@ class RpcConnection(object):
         """Sends a request over the connection."""
         self._socket_file.write(request.encode('utf8') + b'\n')
         self._socket_file.flush()
+        self.log.debug('Sent: ' + request)
 
     def get_response(self):
         """Returns the first response sent back to the client."""
         data = self._socket_file.readline()
+        self.log.debug('Received: ' + data.decode('utf8', errors='replace'))
         return data
 
     def close(self):
