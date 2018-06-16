@@ -6127,11 +6127,20 @@ def bring_up_sl4a(ad, attemps=3):
                 raise
 
 
-def reboot_device(ad):
+def reboot_device(ad, recover_sim_state=True):
+    sim_state = is_sim_ready(ad.log, ad)
     ad.reboot()
     start_qxdm_logger(ad)
-    ad.ensure_screen_on()
-    unlock_sim(ad)
+    ad.unlock_screen()
+    if recover_sim_state:
+        if not unlock_sim(ad):
+            ad.log.error("Unable to unlock SIM")
+            return False
+        if sim_state and not _wait_for_droid_in_state(
+                log, ad, MAX_WAIT_TIME_FOR_STATE_CHANGE, is_sim_ready):
+            ad.log.error("Sim state didn't reach pre-reboot ready state")
+            return False
+    return True
 
 
 def unlocking_device(ad, device_password=None):

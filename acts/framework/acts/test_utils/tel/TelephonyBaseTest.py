@@ -186,7 +186,8 @@ class TelephonyBaseTest(BaseTestClass):
         if self.user_params.get("enable_connectivity_metrics", True):
             enable_connectivity_metrics(ad)
         if self.user_params.get("build_id_override", False):
-            build_postfix = self.user_params.get("build_id_postfix", "TEST")
+            build_postfix = self.user_params.get("build_id_postfix",
+                                                 "LAB_TEST")
             build_id_override(
                 ad,
                 new_build_id=self.user_params.get("build_id_override_with",
