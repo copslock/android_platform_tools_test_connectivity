@@ -54,6 +54,7 @@ from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_sub
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
+from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
@@ -351,6 +352,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 wait_time_in_call=0,
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND)
         if not call_setup_result:
+            get_telephony_signal_strength(ads[0])
+            get_telephony_signal_strength(ads[1])
             call_logs = ads[0].search_logcat(
                 "ActivityManager: START u0 {act=android.intent.action.CALL",
                 begin_time)
@@ -377,6 +380,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 time_message = "at <%s>/<%s> second." % (elapsed_time,
                                                          duration)
                 for ad in ads:
+                    get_telephony_signal_strength(ad)
                     if not call_verification_func(self.log, ad):
                         ad.log.warning("Call is NOT in correct %s state at %s",
                                        call_verification_func.__name__,
@@ -452,14 +456,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             if self.result_info["Call Total"] % 50 == 0:
                 for ad in ads:
                     synchronize_device_time(ad)
-                    if not check_is_wifi_connected(self.log, ad,
-                                                   self.wifi_network_ssid):
-                        ensure_wifi_connected(self.log, ad,
-                                              self.wifi_network_ssid,
-                                              self.wifi_network_pass)
-                        force_connectivity_metrics_upload(ad)
-                        time.sleep(300)
-                        wifi_toggle_state(self.log, ad, False)
+                    force_connectivity_metrics_upload(ad)
                     if self.get_binder_logs:
                         log_path = os.path.join(self.log_path,
                                                 "%s_binder_logs" % test_name,
