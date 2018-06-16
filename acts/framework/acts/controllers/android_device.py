@@ -1127,7 +1127,7 @@ class AndroidDevice:
         if self.is_bootloader:
             self.fastboot.reboot()
             return
-        self.terminate_all_sessions()
+        self.stop_services()
         self.log.info("Rebooting")
         self.adb.reboot()
         self.wait_for_boot_completion()
