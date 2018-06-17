@@ -308,7 +308,7 @@ class GattConnectTest(BluetoothBaseTest):
                                              self.default_timeout)
         except Empty:
             self.log.error(
-                gatt_cb_err['gatt_conn_change_err'].format(expected_event))
+                gatt_cb_err['gatt_conn_changed_err'].format(expected_event))
             test_result = False
         return self._orchestrate_gatt_disconnection(bluetooth_gatt,
                                                     gatt_callback)
