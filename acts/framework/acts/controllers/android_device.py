@@ -35,6 +35,7 @@ from acts.controllers import fastboot
 from acts.controllers.sl4a_lib import sl4a_manager
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+from acts.event.event import Event
 from acts.libs.proc import job
 
 ACTS_CONTROLLER_CONFIG_NAME = "AndroidDevice"
@@ -350,6 +351,40 @@ def take_bug_reports(ads, test_name, begin_time):
 
     args = [(test_name, begin_time, ad) for ad in ads]
     utils.concurrent_exec(take_br, args)
+
+
+class AndroidEvent(Event):
+    """The base class for AndroidDevice-related events."""
+
+    def __init__(self, android_device):
+        self.android_device = android_device
+
+    @property
+    def ad(self):
+        return self.android_device
+
+
+class AndroidBeginServicesEvent(AndroidEvent):
+    """The event posted when an AndroidDevice begins its services."""
+
+
+class AndroidRebootEvent(AndroidEvent):
+    """The event posted when an AndroidDevice has rebooted."""
+
+
+class AndroidDisconnectEvent(AndroidEvent):
+    """The event posted when an AndroidDevice has disconnected."""
+
+
+class AndroidReconnectEvent(AndroidEvent):
+    """The event posted when an AndroidDevice has disconnected."""
+
+
+class AndroidBugReportEvent(AndroidEvent):
+    """The event posted when an AndroidDevice captures a bugreport."""
+    def __init__(self, android_device, bugreport_dir):
+        super().__init__(android_device)
+        self.bugreport_dir = bugreport_dir
 
 
 class AndroidDevice:
