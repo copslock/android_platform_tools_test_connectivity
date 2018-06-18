@@ -24,8 +24,13 @@ import os
 from acts import utils
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
+from acts.utils import create_dir
+from acts.utils import dump_string_to_file
 
 from acts.controllers import android_device
+from acts.libs.proto.proto_utils import compile_import_proto
+from acts.libs.proto.proto_utils import parse_proto_to_ascii
+from acts.test_utils.bt.bt_metrics_utils import get_bluetooth_metrics
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
@@ -47,6 +52,29 @@ class BluetoothBaseTest(BaseTestClass):
         BaseTestClass.__init__(self, controllers)
         for ad in self.android_devices:
             self._setup_bt_libs(ad)
+
+    def collect_bluetooth_manager_metrics_logs(self, ads, test_name):
+        """
+        Collect Bluetooth metrics logs, save an ascii log to disk and return
+        both binary and ascii logs to caller
+        :param ads: list of active Android devices
+        :return: List of binary metrics logs,
+                List of ascii metrics logs
+        """
+        bluetooth_logs = []
+        bluetooth_logs_ascii = []
+        for ad in ads:
+            serial = ad.serial
+            out_name = "{}_{}_{}".format(serial, test_name,
+                                         "bluetooth_metrics.txt")
+            bluetooth_log = get_bluetooth_metrics(ad,
+                                                  ad.bluetooth_proto_module)
+            bluetooth_log_ascii = parse_proto_to_ascii(bluetooth_log)
+            dump_string_to_file(bluetooth_log_ascii,
+                                os.path.join(ad.metrics_path, out_name))
+            bluetooth_logs.append(bluetooth_log)
+            bluetooth_logs_ascii.append(bluetooth_log_ascii)
+        return bluetooth_logs, bluetooth_logs_ascii
 
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
@@ -104,7 +132,42 @@ class BluetoothBaseTest(BaseTestClass):
                 thread.start()
             for t in threads:
                 t.join()
-        return setup_multiple_devices_for_bt_test(self.android_devices)
+        if not setup_multiple_devices_for_bt_test(self.android_devices):
+            return False
+        if "bluetooth_proto_path" in self.user_params:
+            from google import protobuf
+
+            self.bluetooth_proto_path = self.user_params[
+                "bluetooth_proto_path"][0]
+            if not os.path.isfile(self.bluetooth_proto_path):
+                try:
+                    self.bluetooth_proto_path = "{}/bluetooth.proto".format(
+                        os.path.dirname(os.path.realpath(__file__)))
+                except Exception:
+                    self.log.error("File not found.")
+                if not os.path.isfile(self.bluetooth_proto_path):
+                    self.log.error("Unable to find Bluetooth proto {}.".format(
+                        self.bluetooth_proto_path))
+                    return False
+            for ad in self.android_devices:
+                ad.metrics_path = os.path.join(ad.log_path, "BluetoothMetrics")
+                create_dir(ad.metrics_path)
+                ad.bluetooth_proto_module = \
+                    compile_import_proto(ad.metrics_path, self.bluetooth_proto_path)
+                if not ad.bluetooth_proto_module:
+                    self.log.error("Unable to compile bluetooth proto at " +
+                                   self.bluetooth_proto_path)
+                    return False
+                # Clear metrics.
+                get_bluetooth_metrics(ad, ad.bluetooth_proto_module)
+        return True
+
+    def teardown_class(self):
+        if "bluetooth_proto_path" in self.user_params:
+            # Collect metrics here bassed off class name
+            bluetooth_logs, bluetooth_logs_ascii = \
+                self.collect_bluetooth_manager_metrics_logs(
+                    self.android_devices, self.__class__.__name__)
 
     def setup_test(self):
         self.timer_list = []
@@ -112,9 +175,6 @@ class BluetoothBaseTest(BaseTestClass):
             a.ed.clear_all_events()
             a.droid.setScreenTimeout(500)
             a.droid.wakeUpNow()
-        return True
-
-    def teardown_test(self):
         return True
 
     def on_fail(self, test_name, begin_time):
