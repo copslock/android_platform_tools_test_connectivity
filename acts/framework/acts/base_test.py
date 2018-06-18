@@ -18,6 +18,8 @@ import os
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 
+from acts.event import subscription_bundle
+
 from acts import asserts
 from acts import keys
 from acts import logger
@@ -27,6 +29,8 @@ from acts import tracelogger
 from acts import utils
 
 # Macro strings for test result reporting
+from acts.event.subscription_bundle import SubscriptionBundle
+
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
 
@@ -59,6 +63,10 @@ class BaseTestClass(object):
     TAG = None
 
     def __init__(self, configs):
+        self.class_subscriptions = SubscriptionBundle()
+        self.class_subscriptions.register()
+        self.all_subscriptions = [self.class_subscriptions]
+
         self.tests = []
         if not self.TAG:
             self.TAG = self.__class__.__name__
@@ -207,7 +215,7 @@ class BaseTestClass(object):
         self.log.debug('Tearing down test %s' % test_name)
         try:
             # Write test end token to adb log if android device is attached.
-            for ad in self.android_devices:
+            for ad in getattr(self, 'android_devices', []):
                 ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
         except Exception as e:
             self.log.warning('Unable to send END log command to all devices.')
@@ -506,10 +514,10 @@ class BaseTestClass(object):
 
             if format_args:
                 self.exec_one_testcase(test_name, test_func,
-                                       args + (setting, ), **kwargs)
+                                       args + (setting,), **kwargs)
             else:
                 self.exec_one_testcase(test_name, test_func,
-                                       (setting, ) + args, **kwargs)
+                                       (setting,) + args, **kwargs)
 
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(setting)
@@ -637,6 +645,7 @@ class BaseTestClass(object):
         Returns:
             The test results object of this class.
         """
+        self.register_test_class_event_subscriptions()
         self.log.info("==========> %s <==========", self.TAG)
         # Devise the actual test cases to run in the test class.
         if not test_names:
@@ -778,3 +787,12 @@ class BaseTestClass(object):
                 self.log_path, logger.epoch_to_log_line_timestamp(begin_time))
             utils.create_dir(diag_path)
             mylogger.pull(session, diag_path)
+
+    def register_test_class_event_subscriptions(self):
+        self.class_subscriptions = subscription_bundle.create_from_instance(
+            self)
+        self.class_subscriptions.register()
+
+    def unregister_test_class_event_subscriptions(self):
+        for package in self.all_subscriptions:
+            package.unregister()
