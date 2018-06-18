@@ -17,8 +17,8 @@
 import base64
 import concurrent.futures
 import datetime
-import json
 import functools
+import json
 import logging
 import os
 import random
@@ -591,6 +591,7 @@ def force_airplane_mode(ad, new_state, timeout_value=60):
         True if success.
         False if timeout.
     """
+
     # Using timeout decorator.
     # Wait for device with timeout. If after <timeout_value> seconds, adb
     # is still waiting for device, throw TimeoutError exception.
