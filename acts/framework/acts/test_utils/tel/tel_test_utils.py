@@ -2307,44 +2307,44 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
     }
     url_map = {
         "5MB": [
-            "http://ipv4.download.thinkbroadband.com/5MB.zip",
+            "http://146.148.91.8/download/5MB.zip",
             "http://212.183.159.230/5MB.zip",
-            "http://146.148.91.8/download/5MB.zip"
+            "http://ipv4.download.thinkbroadband.com/5MB.zip"
         ],
         "10MB": [
-            "http://ipv4.download.thinkbroadband.com/10MB.zip",
-            "http://212.183.159.230/10MB.zip",
             "http://146.148.91.8/download/10MB.zip",
+            "http://212.183.159.230/10MB.zip",
+            "http://ipv4.download.thinkbroadband.com/10MB.zip",
             "http://lax.futurehosting.com/test.zip",
             "http://ovh.net/files/10Mio.dat"
         ],
         "20MB": [
-            "http://ipv4.download.thinkbroadband.com/20MB.zip",
+            "http://146.148.91.8/download/20MB.zip",
             "http://212.183.159.230/20MB.zip",
-            "http://146.148.91.8/download/20MB.zip"
+            "http://ipv4.download.thinkbroadband.com/20MB.zip"
         ],
         "50MB": [
-            "http://ipv4.download.thinkbroadband.com/50MB.zip",
+            "http://146.148.91.8/download/50MB.zip",
             "http://212.183.159.230/50MB.zip",
-            "http://146.148.91.8/download/50MB.zip"
+            "http://ipv4.download.thinkbroadband.com/50MB.zip"
         ],
         "100MB": [
-            "http://ipv4.download.thinkbroadband.com/100MB.zip",
-            "http://212.183.159.230/100MB.zip",
             "http://146.148.91.8/download/100MB.zip",
+            "http://212.183.159.230/100MB.zip",
+            "http://ipv4.download.thinkbroadband.com/100MB.zip",
             "http://speedtest-ca.turnkeyinternet.net/100mb.bin",
             "http://ovh.net/files/100Mio.dat",
             "http://lax.futurehosting.com/test100.zip"
         ],
         "200MB": [
-            "http://ipv4.download.thinkbroadband.com/200MB.zip",
+            "http://146.148.91.8/download/200MB.zip",
             "http://212.183.159.230/200MB.zip",
-            "http://146.148.91.8/download/200MB.zip"
+            "http://ipv4.download.thinkbroadband.com/200MB.zip"
         ],
         "512MB": [
-            "http://ipv4.download.thinkbroadband.com/512MB.zip",
+            "http://146.148.91.8/download/512MB.zip",
             "http://212.183.159.230/512MB.zip",
-            "http://146.148.91.8/download/512MB.zip"
+            "http://ipv4.download.thinkbroadband.com/512MB.zip"
         ]
     }
 
@@ -5949,7 +5949,8 @@ def start_adb_tcpdump(ad,
     if "No such file" in out or not out:
         ad.adb.shell("mkdir /sdcard/tcpdump")
     else:
-        ad.adb.shell("rm -rf /sdcard/tcpdump/*", ignore_status=True)
+        ad.adb.shell(
+            "find /sdcard/tcpdump -type f -iname * -not -mtime -1800s -delete")
 
     if not begin_time:
         begin_time = get_current_epoch_time()
@@ -5986,7 +5987,7 @@ def start_adb_tcpdump(ad,
         except Exception as e:
             ad.log.error(e)
     if cmds:
-        time.sleep(20)
+        time.sleep(5)
 
 
 def stop_tcpdumps(ads):
@@ -6013,6 +6014,8 @@ def stop_adb_tcpdump(ad, interface="any"):
             pids = re.findall(r"\S+\s+(\d+).*tcpdump -i", out)
             for pid in pids:
                 ad.adb.shell("kill -9 %s" % pid)
+    ad.adb.shell(
+        "find /sdcard/tcpdump -type f -iname * -not -mtime -1800s -delete")
 
 
 def get_tcpdump_log(ad, test_name="", begin_time=None):
@@ -6031,7 +6034,6 @@ def get_tcpdump_log(ad, test_name="", begin_time=None):
                                 "TCPDUMP_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
-    stop_adb_tcpdump(ad)
     return True
 
 
@@ -6571,8 +6573,12 @@ def extract_test_log(log, src_file, dst_file, test_tag):
         return
     line_nums = re.findall(r"(\d+).*", result.stdout)
     if line_nums:
-        begin_line = line_nums[0]
-        end_line = line_nums[-1]
+        begin_line = int(line_nums[0])
+        end_line = int(line_nums[-1])
+        if end_line - begin_line <= 5:
+            result = job.run("wc -l < %s" % src_file)
+            if result.stdout:
+                end_line = int(result.stdout)
         log.info("Extract %s from line %s to line %s to %s", src_file,
                  begin_line, end_line, dst_file)
         job.run("awk 'NR >= %s && NR <= %s' %s > %s" % (begin_line, end_line,
