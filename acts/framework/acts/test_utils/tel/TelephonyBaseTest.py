@@ -393,6 +393,10 @@ class TelephonyBaseTest(BaseTestClass):
         self.on_fail(test_name, begin_time)
 
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
+        extract_test_log(self.log, ad.adb_logcat_file_path,
+                         os.path.join(self.log_path, test_name,
+                                      "%s_%s.logcat" % (ad.serial, test_name)),
+                         '%s"' % test_name)
         ad.adb.wait_for_device()
         result = True
 
@@ -427,10 +431,6 @@ class TelephonyBaseTest(BaseTestClass):
                              test_name, e)
                 result = False
 
-        extract_test_log(self.log, ad.adb_logcat_file_path,
-                         os.path.join(self.log_path, test_name,
-                                      "%s_%s.logcat" % (ad.serial, test_name)),
-                         "%s " % test_name)
         return result
 
     def _take_bug_report(self, test_name, begin_time):
