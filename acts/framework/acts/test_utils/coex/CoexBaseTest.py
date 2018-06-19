@@ -255,7 +255,7 @@ class CoexBaseTest(BaseTestClass):
         if record.details:
             self.log.error(record.details)
         self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        self.on_fail(record, record.test_name, record.log_begin_time)
+        self.on_fail(record, record.test_name, record.begin_time)
 
     def _on_pass(self, record):
         """Proxy function to guarantee the base implementation of on_pass is

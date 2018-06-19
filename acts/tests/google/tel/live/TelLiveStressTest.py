@@ -258,7 +258,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.log.info("Create new sl4a session for messaging")
                     ad.messaging_droid, ad.messaging_ed = ad.get_droid()
                     ad.messaging_ed.start()
-            ad.messaging_droid.logI("%s begin" % log_msg)
+            ad.messaging_droid.logI("[BEGIN]%s" % log_msg)
 
         text = "%s: " % test_name
         text_length = len(text)
@@ -273,7 +273,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                                              max_wait_time)
         self.log.info("%s end", log_msg)
         for ad in self.android_devices:
-            ad.messaging_droid.logI("%s end" % log_msg)
+            ad.messaging_droid.logI("[END]%s" % log_msg)
         if not result:
             self.result_info["%s Total" % message_type] += 1
             if message_type == "SMS":
@@ -330,7 +330,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.log.info("Create new sl4a session for phone call")
                     ad.droid, ad.ed = ad.get_droid()
                     ad.ed.start()
-            ad.droid.logI("%s begin" % log_msg)
+            ad.droid.logI("[BEGIN]%s" % log_msg)
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
         failure_reasons = set()
         self.dut_incall = True
@@ -414,7 +414,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.result_info["Call Total"] += 1
         for ad in self.android_devices:
             try:
-                ad.droid.logI("%s end" % log_msg)
+                ad.droid.logI("[END]%s" % log_msg)
             except:
                 pass
         self.log.info("%s end", log_msg)
@@ -474,7 +474,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.test_name, self.result_info["Network Change Request Total"])
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s begin", log_msg)
-        self.dut.droid.logI("%s begin" % log_msg)
+        self.dut.droid.logI("[BEGIN]%s" % log_msg)
         network_preference_list = [
             NETWORK_MODE_TDSCDMA_GSM_WCDMA, NETWORK_MODE_WCDMA_ONLY,
             NETWORK_MODE_GLOBAL, NETWORK_MODE_CDMA, NETWORK_MODE_GSM_ONLY
@@ -491,7 +491,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.dut.log.error("Phone failed to enable VoLTE.")
             self.result_info["VoLTE Setup Failure"] += 1
             self.dut.droid.logI("%s end" % log_msg)
-            self.dut.log.info("%s end", log_msg)
+            self.dut.log.info("[END]%s", log_msg)
             try:
                 self._ad_take_extra_logs(self.dut, test_name, begin_time)
                 self._ad_take_bugreport(self.dut, test_name, begin_time)
@@ -512,7 +512,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.test_name, self.result_info["Data Toggling Request Total"])
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s begin", log_msg)
-        self.dut.droid.logI("%s begin" % log_msg)
+        self.dut.droid.logI("[BEGIN]%s" % log_msg)
         self.dut.adb.shell("svc data disable")
         time.sleep(WAIT_TIME_AFTER_MODE_CHANGE)
         self.dut.adb.shell("svc data enable")
@@ -521,7 +521,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         elif setup == "volte" and not phone_idle_volte(self.log, self.dut):
             result = False
         self.dut.droid.logI("%s end" % log_msg)
-        self.dut.log.info("%s end", log_msg)
+        self.dut.log.info("[END]%s", log_msg)
         if not result:
             self.result_info["Data Toggling Failure"] += 1
             try:
@@ -728,13 +728,13 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.test_name, self.result_info["Network Change Request Total"])
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s begin", log_msg)
-        self.dut.droid.logI("%s begin" % log_msg)
+        self.dut.droid.logI("[BEGIN]%s" % log_msg)
         if not ensure_network_generation_for_subscription(
                 self.log, self.dut, sub_id,
                 generation) or not self._check_data():
             self.result_info["Network Change Failure"] += 1
             self.dut.droid.logI("%s end" % log_msg)
-            self.dut.log.info("%s end", log_msg)
+            self.dut.log.info("[END]%s", log_msg)
             try:
                 self._ad_take_extra_logs(self.dut, test_name, begin_time)
                 self._ad_take_bugreport(self.dut, test_name, begin_time)
@@ -787,8 +787,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut.log.info("Voice in RAT %s, Data in RAT %s", voice_rat,
                           data_rat)
         try:
-            if is_rat_svd_capable(voice_rat.upper()) and is_rat_svd_capable(
-                    data_rat.upper()):
+            if "wfc" in self.test_name or is_rat_svd_capable(
+                    voice_rat.upper()) and is_rat_svd_capable(
+                        data_rat.upper()):
                 self.dut.log.info("Capable for simultaneous voice and data")
 
                 if not self.internet_connection_check_method(
