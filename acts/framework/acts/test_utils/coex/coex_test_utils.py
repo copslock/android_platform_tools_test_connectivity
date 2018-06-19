@@ -368,8 +368,8 @@ def disconnect_headset_from_dev(pri_ad, sec_ad, profiles_list):
             pri_ad.log.info("Got event {}".format(profile_event))
         except Exception:
             pri_ad.log.warning("Did not disconnect from Profiles")
-            pri_ad.log.warning("Did not get event {}".format(profile_event))
-
+            return True
+        
         profile = profile_event['data']['profile']
         state = profile_event['data']['state']
         device_addr = profile_event['data']['addr']
