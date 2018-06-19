@@ -49,7 +49,7 @@ class I6sHeadset(GenericRelayDevice):
 
     def clean_up(self):
         """Turns off headset."""
-        self.relays[Buttons.Pair.value].set_no_for(PAIRING_MODE_WAIT_TIME)
+        self.relays[Buttons.PAIR.value].set_no_for(PAIRING_MODE_WAIT_TIME)
 
     def ensure_config_contains_relay(self, relay_name):
         """
