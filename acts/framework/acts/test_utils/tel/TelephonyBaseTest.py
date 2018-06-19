@@ -323,7 +323,7 @@ class TelephonyBaseTest(BaseTestClass):
                                          self.wifi_network_pass):
                 ad.log.error("Failed to connect to wifi")
             force_connectivity_metrics_upload(ad)
-            time.sleep(300)
+            time.sleep(30)
         try:
             if "enable_wifi_verbose_logging" in self.user_params:
                 ad.droid.wifiEnableVerboseLogging(

@@ -2281,15 +2281,23 @@ def check_curl_availability(ad):
     return ad.curl_capable
 
 
-def start_youtube_video(ad, url="https://www.youtube.com/watch?v=VHF-XK0Vg1s"):
+def start_youtube_video(ad, url="https://www.youtube.com/watch?v=pSJoP0LR8CQ"):
     ad.log.info("Open an youtube video")
     ad.ensure_screen_on()
     ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
     if wait_for_state(ad.droid.audioIsMusicActive, True, 15, 1):
-        ad.log.info("Started a video in youtube, audio is in MUSIC_state")
+        ad.log.info("Started a video in youtube, audio is in MUSIC state")
+        return True
     else:
-        ad.log.warning(
-            "Started a video in youtube, but audio is not in MUSIC state")
+        ad.unlock_screen()
+        ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
+        if wait_for_state(ad.droid.audioIsMusicActive, True, 15, 1):
+            ad.log.info("Started a video in youtube, audio is in MUSIC state")
+            return True
+        else:
+            ad.log.warning(
+                "Started a video in youtube, but audio is not in MUSIC state")
+            return False
 
 
 def active_file_download_task(log, ad, file_name="5MB", method="curl"):
