@@ -20,14 +20,14 @@ import time
 from concurrent import futures
 
 from acts import logger
-
+from acts import error
 SOCKET_TIMEOUT = 60
 
 # The Session UID when a UID has not been received yet.
 UNKNOWN_UID = -1
 
 
-class Sl4aException(Exception):
+class Sl4aException(error.ActsError):
     """The base class for all SL4A exceptions."""
 
 
