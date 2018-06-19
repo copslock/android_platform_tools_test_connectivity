@@ -608,11 +608,12 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                     self.dut.log.error("actions = %s, expecting %s", actions,
                                        expected_action)
                     result = False
-                if drop_percentage > CALL_TROUBLE_THRESHOLD and dropped > CONSECUTIVE_CALL_FAILS:
+                if drop_percentage > CALL_TROUBLE_THRESHOLD and (
+                        dropped > CONSECUTIVE_CALL_FAILS):
                     if diagnosis == "UNABLE_TO_TRIAGE":
                         self.dut.log.error(
                             "troubleshooter diagnosis is %s with %s dropped "
-                            "and % drop_percentage", diagnosis, dropped,
+                            "and %s drop_percentage", diagnosis, dropped,
                             drop_percentage)
                         result = False
                     if actions == "NONE":
@@ -771,7 +772,11 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 return False
         return True
 
-    def forced_call_drop_test(self, setup=None, handover=None, triggers=None):
+    def forced_call_drop_test(self,
+                              setup=None,
+                              handover=None,
+                              triggers=None,
+                              expected_drop_reason=None):
         expected_trouble = None
         expected_action = None
         technology = handover or setup
@@ -810,6 +815,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
             setup=setup,
             handover=handover,
             triggers=triggers,
+            expected_drop_reason=expected_drop_reason,
             expected_trouble=expected_trouble,
             expected_action=expected_action)
 
