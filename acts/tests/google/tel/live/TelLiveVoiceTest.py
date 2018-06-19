@@ -3407,14 +3407,16 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             ad_callee = ads[0]
         ad_download = ads[0]
 
-        start_youtube_video(ad_download)
+        if not start_youtube_video(ad_download):
+            ad_download.log.error("Fail to bring up youtube video")
+            return False
 
         if not call_setup_teardown(self.log, ad_caller, ad_callee, ad_caller,
                                    None, None, 30):
-            self.log.error("Call setup failed in active youtube video")
+            ad_download.log.error("Call setup failed in active youtube video")
             result = False
         else:
-            self.log.info("Call setup succeed in active youtube video")
+            ad_download.log.info("Call setup succeed in active youtube video")
             result = True
 
         if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):
