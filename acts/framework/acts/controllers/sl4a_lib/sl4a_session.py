@@ -249,4 +249,4 @@ class Sl4aSession(object):
                 try:
                     self.rpc_client.terminate()
                 except Exception as e:
-                    slef.log.warning(e)
+                    self.log.warning(e)
