@@ -253,7 +253,8 @@ class TelLiveConnectivityMonitorMobilityTest(
             setup="volte",
             triggers=[
                 "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
-            ])
+            ],
+            expected_drop_reason=IMS_LINK_LOST)
 
     @test_tracker_info(uuid="7f62f1c0-6d9e-4e7e-812f-b1c60d2f4b41")
     @TelephonyBaseTest.tel_test_wrap
@@ -262,7 +263,8 @@ class TelLiveConnectivityMonitorMobilityTest(
             setup="csfb",
             triggers=[
                 "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
-            ])
+            ],
+            expected_drop_reason=CS_LINK_LOST)
 
     @test_tracker_info(uuid="8d1c8c44-be54-43ec-892c-c3f41855c7c8")
     @TelephonyBaseTest.tel_test_wrap
@@ -271,7 +273,8 @@ class TelLiveConnectivityMonitorMobilityTest(
             setup="3g",
             triggers=[
                 "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
-            ])
+            ],
+            expected_drop_reason=CS_LINK_LOST)
 
     @test_tracker_info(uuid="66e01cb3-3bea-4d08-9ab4-7f22790c57b1")
     @TelephonyBaseTest.tel_test_wrap
@@ -280,7 +283,8 @@ class TelLiveConnectivityMonitorMobilityTest(
             setup="wfc_apm",
             triggers=[
                 "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
-            ])
+            ],
+            expected_drop_reason=IMS_LINK_LOST)
 
     @test_tracker_info(uuid="669e9f97-6931-403a-a13d-4f179bd4406f")
     @TelephonyBaseTest.tel_test_wrap
@@ -290,7 +294,8 @@ class TelLiveConnectivityMonitorMobilityTest(
             setup="wfc_non_apm",
             triggers=[
                 "set_wifi_absent_cell_absent", "set_wifi_strong_cell_strong"
-            ])
+            ],
+            expected_drop_reason=IMS_LINK_LOST)
 
     @test_tracker_info(uuid="c7619788-2357-4c49-a754-50ffaf433d59")
     @TelephonyBaseTest.tel_test_wrap
