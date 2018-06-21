@@ -108,8 +108,8 @@ ACTIONS = {
 
 IGNORED_CALL_DROP_REASONS = ["Radio Link Lost", "Media Timeout"]
 
-CALL_DATA_LOGS = ("/data/data/com.google.android.connectivitymonitor/databases"
-                  "/call_data_logs.db")
+CALL_DATA_LOGS = (
+    "/data/data/com.google.android.connectivitymonitor/databases")
 
 IGNORED_CALL_DROP_TRIGGERS = ["toggle_apm", "toggle_wifi"]
 
@@ -147,7 +147,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
     def on_fail(self, test_name, begin_time):
         self.dut.log.info("Pulling %s", CALL_DATA_LOGS)
         log_path = os.path.join(self.dut.log_path, test_name,
-                                "CallDataLogs_%s" % self.dut.serial)
+                                "ConnectivityMonitorLogs_%s" % self.dut.serial)
         utils.create_dir(log_path)
         self.dut.pull_files([CALL_DATA_LOGS], log_path)
 
