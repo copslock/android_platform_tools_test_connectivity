@@ -223,7 +223,8 @@ def setup_multiple_devices_for_bt_test(android_devices):
     threads = []
     try:
         for a in android_devices:
-            thread = threading.Thread(target=factory_reset_bluetooth, args=([[a]]))
+            thread = threading.Thread(
+                target=factory_reset_bluetooth, args=([[a]]))
             threads.append(thread)
             thread.start()
         for t in threads:
@@ -282,7 +283,11 @@ def bluetooth_enabled_check(ad):
             return False
     return True
 
-def wait_for_bluetooth_manager_state(droid, state=None, timeout=10, threshold=5):
+
+def wait_for_bluetooth_manager_state(droid,
+                                     state=None,
+                                     timeout=10,
+                                     threshold=5):
     """ Waits for BlueTooth normalized state or normalized explicit state
     args:
         droid: droid device object
@@ -301,7 +306,8 @@ def wait_for_bluetooth_manager_state(droid, state=None, timeout=10, threshold=5)
             # for any normalized state
             if state is None:
                 if len(set(all_states[-threshold:])) == 1:
-                    log.info("State normalized {}".format(set(all_states[-threshold:])))
+                    log.info("State normalized {}".format(
+                        set(all_states[-threshold:])))
                     return True
             else:
                 # explicit check against normalized state
@@ -310,8 +316,10 @@ def wait_for_bluetooth_manager_state(droid, state=None, timeout=10, threshold=5)
         time.sleep(0.5)
     log.error(
         "Bluetooth state fails to normalize" if state is None else
-        "Failed to match bluetooth state, current state {} expected state {}".format(get_state(), state))
+        "Failed to match bluetooth state, current state {} expected state {}".
+        format(get_state(), state))
     return False
+
 
 def factory_reset_bluetooth(android_devices):
     """Clears Bluetooth stack of input Android device list.
@@ -339,6 +347,7 @@ def factory_reset_bluetooth(android_devices):
         if not enable_bluetooth(droid, ed):
             return False
     return True
+
 
 def reset_bluetooth(android_devices):
     """Resets Bluetooth state of input Android device list.
@@ -576,6 +585,7 @@ def get_mac_address_of_generic_advertisement(scan_ad, adv_ad):
     mac_address = event['data']['Result']['deviceInfo']['address']
     return mac_address, advertise_callback, scan_callback
 
+
 def enable_bluetooth(droid, ed):
     if droid.bluetoothCheckState() is True:
         return True
@@ -593,6 +603,7 @@ def enable_bluetooth(droid, ed):
         return False
 
     return True
+
 
 def disable_bluetooth(droid):
     """Disable Bluetooth on input Droid object.
@@ -1000,7 +1011,8 @@ def disconnect_pri_from_sec(pri_ad, sec_ad, profiles_list):
                 bluetooth_profile_connection_state_changed, bt_default_timeout)
             pri_ad.log.info("Got event {}".format(profile_event))
         except Exception as e:
-            pri_ad.log.error("Did not disconnect from Profiles. Reason {}".format(e))
+            pri_ad.log.error(
+                "Did not disconnect from Profiles. Reason {}".format(e))
             return False
 
         profile = profile_event['data']['profile']
@@ -1387,3 +1399,78 @@ def is_a2dp_connected(sink, source):
         if (device["address"] == source.droid.bluetoothGetLocalAddress()):
             return True
     return False
+
+
+def get_device_selector_dictionary(android_device_list):
+    """Create a dictionary of Bluetooth features vs Android devices.
+
+    Args:
+        android_device_list: The list of Android devices.
+    Returns:
+        A dictionary of profiles/features to Android devices.
+    """
+    selector_dict = {}
+    for ad in android_device_list:
+        uuids = ad.droid.bluetoothGetLocalUuids()
+
+        for profile, uuid_const in sig_uuid_constants.items():
+            uuid_check = sig_uuid_constants['BASE_UUID'].format(
+                uuid_const).lower()
+            if uuid_check in uuids:
+                if profile in selector_dict:
+                    selector_dict[profile].append(ad)
+                else:
+                    selector_dict[profile] = [ad]
+
+        # Various services may not be active during BT startup.
+        # If the device can be identified through adb shell pm list features
+        # then try to add them to the appropriate profiles / features.
+
+        # Android TV.
+        if "feature:com.google.android.tv.installed" in ad.features:
+            ad.log.info("Android TV device found.")
+            supported_profiles = ['AudioSink']
+            _add_android_device_to_dictionary(ad, supported_profiles,
+                                              selector_dict)
+
+        # Android Auto
+        elif "feature:android.hardware.type.automotive" in ad.features:
+            ad.log.info("Android Auto device found.")
+            # Add: AudioSink , A/V_RemoteControl,
+            supported_profiles = [
+                'AudioSink', 'A/V_RemoteControl', 'Message Notification Server'
+            ]
+            _add_android_device_to_dictionary(ad, supported_profiles,
+                                              selector_dict)
+        # Android Wear
+        elif "feature:android.hardware.type.watch" in ad.features:
+            ad.log.info("Android Wear device found.")
+            supported_profiles = []
+            _add_android_device_to_dictionary(ad, supported_profiles,
+                                              selector_dict)
+        # Android Phone
+        elif "feature:android.hardware.telephony" in ad.features:
+            ad.log.info("Android Phone device found.")
+            # Add: AudioSink
+            supported_profiles = [
+                'AudioSource', 'A/V_RemoteControlTarget',
+                'Message Access Server'
+            ]
+            _add_android_device_to_dictionary(ad, supported_profiles,
+                                              selector_dict)
+    return selector_dict
+
+
+def _add_android_device_to_dictionary(android_device, profile_list,
+                                      selector_dict):
+    """Adds the AndroidDevice and supported features to the selector dictionary
+
+    Args:
+        android_device: The Android device.
+        profile_list: The list of profiles the Android device supports.
+    """
+    for profile in profile_list:
+        if profile in selector_dict and android_device not in selector_dict[profile]:
+            selector_dict[profile].append(android_device)
+        else:
+            selector_dict[profile] = [android_device]
