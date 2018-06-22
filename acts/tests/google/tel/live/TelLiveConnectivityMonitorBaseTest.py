@@ -108,8 +108,8 @@ ACTIONS = {
 
 IGNORED_CALL_DROP_REASONS = ["Radio Link Lost", "Media Timeout"]
 
-CALL_DATA_LOGS = ("/data/data/com.google.android.connectivitymonitor/databases"
-                  "/call_data_logs.db")
+CALL_DATA_LOGS = (
+    "/data/data/com.google.android.connectivitymonitor/databases")
 
 IGNORED_CALL_DROP_TRIGGERS = ["toggle_apm", "toggle_wifi"]
 
@@ -147,7 +147,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
     def on_fail(self, test_name, begin_time):
         self.dut.log.info("Pulling %s", CALL_DATA_LOGS)
         log_path = os.path.join(self.dut.log_path, test_name,
-                                "CallDataLogs_%s" % self.dut.serial)
+                                "ConnectivityMonitorLogs_%s" % self.dut.serial)
         utils.create_dir(log_path)
         self.dut.pull_files([CALL_DATA_LOGS], log_path)
 
@@ -608,11 +608,12 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                     self.dut.log.error("actions = %s, expecting %s", actions,
                                        expected_action)
                     result = False
-                if drop_percentage > CALL_TROUBLE_THRESHOLD and dropped > CONSECUTIVE_CALL_FAILS:
+                if drop_percentage > CALL_TROUBLE_THRESHOLD and (
+                        dropped > CONSECUTIVE_CALL_FAILS):
                     if diagnosis == "UNABLE_TO_TRIAGE":
                         self.dut.log.error(
                             "troubleshooter diagnosis is %s with %s dropped "
-                            "and % drop_percentage", diagnosis, dropped,
+                            "and %s drop_percentage", diagnosis, dropped,
                             drop_percentage)
                         result = False
                     if actions == "NONE":
@@ -771,7 +772,11 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
                 return False
         return True
 
-    def forced_call_drop_test(self, setup=None, handover=None, triggers=None):
+    def forced_call_drop_test(self,
+                              setup=None,
+                              handover=None,
+                              triggers=None,
+                              expected_drop_reason=None):
         expected_trouble = None
         expected_action = None
         technology = handover or setup
@@ -810,6 +815,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
             setup=setup,
             handover=handover,
             triggers=triggers,
+            expected_drop_reason=expected_drop_reason,
             expected_trouble=expected_trouble,
             expected_action=expected_action)
 

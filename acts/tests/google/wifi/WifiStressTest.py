@@ -297,7 +297,8 @@ class WifiStressTest(WifiBaseTest):
             wutils.stop_wifi_tethering(self.dut)
             asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
                                  "SoftAp failed to shutdown!")
-            time.sleep(TIMEOUT)
+            # Give some time for WiFi to come back to previous state.
+            time.sleep(2)
             cur_wifi_state = self.dut.droid.wifiCheckState()
             if initial_wifi_state != cur_wifi_state:
                raise signals.TestFailure("Wifi state was %d before softAP and %d now!" %
