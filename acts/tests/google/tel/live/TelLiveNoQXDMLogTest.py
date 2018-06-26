@@ -35,6 +35,7 @@ from acts.test_utils.tel.tel_test_utils import get_model_name
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 
 from acts.utils import get_current_epoch_time
@@ -278,6 +279,37 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         if not self.dut.is_apk_installed("com.google.mdstest"):
             raise signals.TestSkip("mdstest is not installed")
         return lock_lte_band_by_mds(self.dut, "13")
+
+    @test_tracker_info(uuid="e2a8cb1e-7998-4912-9e16-d9e5f1daee5d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_modem_ssr_rampdump_generation(self):
+        """Trigger Modem SSR Crash and Verify if Ramdumps are generated
+
+        1. Empty the rampdump dir
+        2. Trigger ModemSSR
+        3. Verify if rampdumps are getting generated or not
+
+        """
+        if not self.dut.is_apk_installed("com.google.mdstest"):
+            raise signals.TestSkip("mdstest is not installed")
+        try:
+            ad = self.android_devices[0]
+            ad.adb.shell("rm -rf /data/vendor/ssrdump/*", ignore_status=True)
+            if not trigger_modem_crash_by_modem(ad):
+                ad.log.error("Failed to trigger Modem SSR, aborting...")
+                return False
+            out = ad.adb.shell("ls -l /data/vendor/ssrdump/ramdump_modem_*",
+                               ignore_status=True)
+            if "No such file" in out or not out:
+                ad.log.error("Ramdump Modem File not found post SSR\n %s", out)
+                return False
+            ad.log.info("Ramdump Modem File found post SSR\n %s", out)
+            return True
+        except Exception as e:
+            ad.log.error(e)
+            return False
+        finally:
+            ad.adb.shell("rm -rf /data/vendor/ssrdump/*", ignore_status=True)
 
 
 """ Tests End """
