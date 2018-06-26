@@ -65,6 +65,7 @@ from acts.test_utils.bt.bt_constants import pan_connect_timeout
 from acts.test_utils.bt.bt_constants import small_timeout
 from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_constants import scan_failed
+from acts.test_utils.bt.bt_constants import sig_uuid_constants
 from acts.test_utils.bt.bt_constants import hid_id_keyboard
 
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
