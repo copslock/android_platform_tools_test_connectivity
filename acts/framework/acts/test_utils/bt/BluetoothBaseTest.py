@@ -31,6 +31,7 @@ from acts.controllers import android_device
 from acts.libs.proto.proto_utils import compile_import_proto
 from acts.libs.proto.proto_utils import parse_proto_to_ascii
 from acts.test_utils.bt.bt_metrics_utils import get_bluetooth_metrics
+from acts.test_utils.bt.bt_test_utils import get_device_selector_dictionary
 from acts.test_utils.bt.bt_test_utils import reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
@@ -52,6 +53,13 @@ class BluetoothBaseTest(BaseTestClass):
         BaseTestClass.__init__(self, controllers)
         for ad in self.android_devices:
             self._setup_bt_libs(ad)
+        if 'preferred_device_order' in self.user_params:
+            prefered_device_order = self.user_params['preferred_device_order']
+            for i, ad in enumerate(self.android_devices):
+                if ad.serial in prefered_device_order:
+                    index = prefered_device_order.index(ad.serial)
+                    self.android_devices[i], self.android_devices[index] = \
+                        self.android_devices[index], self.android_devices[i]
 
     def collect_bluetooth_manager_metrics_logs(self, ads, test_name):
         """
@@ -123,6 +131,8 @@ class BluetoothBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def setup_class(self):
+        self.device_selector = get_device_selector_dictionary(
+            self.android_devices)
         if "reboot_between_test_class" in self.user_params:
             threads = []
             for a in self.android_devices:
@@ -235,3 +245,6 @@ class BluetoothBaseTest(BaseTestClass):
         # Shell command library
         setattr(android_device, "shell",
                 ShellCommands(log=self.log, dut=android_device))
+        # Setup Android Device feature list
+        setattr(android_device, "features",
+                android_device.adb.shell("pm list features").split("\n"))
