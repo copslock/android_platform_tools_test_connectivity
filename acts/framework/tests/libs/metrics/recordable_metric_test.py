@@ -122,7 +122,7 @@ class RecordableMetricTest(unittest.TestCase):
         mock_metric.finish()
 
         mock_stream = self.get_mock_channel_stream(new_metric_path)
-        mock_stream.close.assert_called()
+        self.assertTrue(mock_stream.close.called)
 
 
 if __name__ == "__main__":
