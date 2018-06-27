@@ -69,15 +69,18 @@ class OtaRunnerTest(unittest.TestCase):
 
     def test_update(self):
         device = mock.MagicMock()
+        device.skip_sl4a = False
         tool = MockOtaTool('mock_command')
         runner = OtaRunnerImpl(tool, device)
         runner.android_device.adb.getprop = mock.Mock(side_effect=['a', 'b'])
         runner.get_post_build_id = lambda: 'abc'
+
         runner._update()
-        device.stop_services.assert_called()
-        device.wait_for_boot_completion.assert_called()
-        device.start_services.assert_called()
-        device.adb.install.assert_called()
+
+        self.assertTrue(device.stop_services.called)
+        self.assertTrue(device.wait_for_boot_completion.called)
+        self.assertTrue(device.start_services.called)
+        self.assertTrue(device.adb.install.called)
         tool.assert_calls_equal(self, 1)
 
     def test_update_fail_on_no_change_to_build(self):
@@ -247,3 +250,7 @@ class MultiUseOtaRunnerTest(unittest.TestCase):
                                               ['first_pkg', 'second_pkg'],
                                               ['first_apk', 'second_apk'])
         self.assertEqual(runner.get_sl4a_apk(), 'first_apk')
+
+
+if __name__ == '__main__':
+    unittest.main()
