@@ -33,7 +33,6 @@ import zipfile
 from acts.controllers import adb
 from acts.libs.proc import job
 
-
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
@@ -412,7 +411,7 @@ def _assert_subprocess_running(proc):
                              " stdout: %s" % (proc.pid, ret, err, out))
 
 
-def start_standing_subprocess(cmd, check_health_delay=0):
+def start_standing_subprocess(cmd, check_health_delay=0, shell=True):
     """Starts a long-running subprocess.
 
     This is not a blocking call and the subprocess started by it should be
@@ -436,7 +435,7 @@ def start_standing_subprocess(cmd, check_health_delay=0):
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        shell=True,
+        shell=shell,
         preexec_fn=os.setpgrp)
     logging.debug("Start standing subprocess with cmd: %s", cmd)
     if check_health_delay > 0:
@@ -940,3 +939,88 @@ def get_device_process_uptime(adb, process):
     if pid:
         runtime = adb.shell('ps -o etime= -p "%s"' % pid)
     return runtime
+
+
+def wait_until(func, timeout_s, condition=True, sleep_s=1.0):
+    """Executes a function repeatedly until condition is met.
+
+    Args:
+      func: The function pointer to execute.
+      timeout_s: Amount of time (in seconds) to wait before raising an
+                 exception.
+      condition: The ending condition of the WaitUntil loop.
+      sleep_s: The amount of time (in seconds) to sleep between each function
+               execution.
+
+    Returns:
+      The time in seconds before detecting a successful condition.
+
+    Raises:
+      TimeoutError: If the condition was never met and timeout is hit.
+    """
+    start_time = time.time()
+    end_time = start_time + timeout_s
+    count = 0
+    while True:
+        count += 1
+        if func() == condition:
+            return time.time() - start_time
+        if time.time() > end_time:
+            break
+        time.sleep(sleep_s)
+    raise TimeoutError('Failed to complete function %s in %d seconds having '
+                       'attempted %d times.' % (str(func), timeout_s, count))
+
+
+# Adapted from
+# https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#Python
+# Available under the Creative Commons Attribution-ShareAlike License
+def levenshtein(string1, string2):
+    """Returns the Levenshtein distance of two strings.
+    Uses Dynamic Programming approach, only keeping track of
+    two rows of the DP table at a time.
+
+    Args:
+      string1: String to compare to string2
+      string2: String to compare to string1
+
+    Returns:
+      distance: the Levenshtein distance between string1 and string2
+    """
+
+    if len(string1) < len(string2):
+        return levenshtein(string2, string1)
+
+    if len(string2) == 0:
+        return len(string1)
+
+    previous_row = range(len(string2) + 1)
+    for i, char1 in enumerate(string1):
+        current_row = [i + 1]
+        for j, char2 in enumerate(string2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (char1 != char2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+
+def string_similarity(s1, s2):
+    """Returns a similarity measurement based on Levenshtein distance.
+
+    Args:
+      s1: the string to compare to s2
+      s2: the string to compare to s1
+
+    Returns:
+      result: the similarity metric
+    """
+    lev = levenshtein(s1, s2)
+    try:
+        lev_ratio = float(lev) / max(len(s1), len(s2))
+        result = (1.0 - lev_ratio) * 100
+    except ZeroDivisionError:
+        result = 100 if not s2 else 0
+    return float(result)

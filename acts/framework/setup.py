@@ -32,6 +32,7 @@ install_requires = [
     'pyserial',
     'shellescape>=3.4.1',
     'protobuf',
+    'retry',
     'roman',
     'scapy-python3',
     'pylibftdi',
