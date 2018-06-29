@@ -78,7 +78,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
     """ Private Test Utils """
 
     def _get_expected_call_state(self, ad):
-        if ad.model in ("sailfish", "marlin") and "vzw" in [
+        if "vzw" in [
                 sub["operator"]
                 for sub in ad.telephony["subscription"].values()
         ]:
