@@ -5953,12 +5953,13 @@ def start_adb_tcpdump(ad,
         test_name: tcpdump file name will have this
 
     """
-    out = ad.adb.shell("ls -l /sdcard/tcpdump/")
+    out = ad.adb.shell("ls -l /data/local/tmp/tcpdump/")
     if "No such file" in out or not out:
-        ad.adb.shell("mkdir /sdcard/tcpdump")
+        ad.adb.shell("mkdir /data/local/tmp/tcpdump")
     else:
         ad.adb.shell(
-         "find /sdcard/tcpdump -type f -iname \"*\" -not -mtime -1800s -delete")
+            "find /data/local/tmp/tcpdump -type f -iname \"*\" -not -mtime "
+            "-1800s -delete")
 
     if not begin_time:
         begin_time = get_current_epoch_time()
@@ -5979,8 +5980,8 @@ def start_adb_tcpdump(ad,
             ad.log.info("tcpdump on interface %s is already running", intf)
             continue
         else:
-            log_file_name = "/sdcard/tcpdump/tcpdump_%s_%s_%s_%s.pcap" % (
-                ad.serial, intf, test_name, begin_time)
+            log_file_name = "/data/local/tmp/tcpdump/tcpdump_%s_%s_%s_%s.pcap" \
+                            % (ad.serial, intf, test_name, begin_time)
             if mask == "ims":
                 cmds.append(
                     "adb -s %s shell tcpdump -i %s -s0 -n -p udp port 500 or "
@@ -6023,7 +6024,7 @@ def stop_adb_tcpdump(ad, interface="any"):
             for pid in pids:
                 ad.adb.shell("kill -9 %s" % pid)
     ad.adb.shell(
-        "find /sdcard/tcpdump -type f -iname * -not -mtime -1800s -delete")
+     "find /data/local/tmp/tcpdump -type f -iname * -not -mtime -1800s -delete")
 
 
 def get_tcpdump_log(ad, test_name="", begin_time=None):
@@ -6035,7 +6036,7 @@ def get_tcpdump_log(ad, test_name="", begin_time=None):
         test_name: test case name
         begin_time: test begin time
     """
-    logs = ad.get_file_names("/sdcard/tcpdump", begin_time=begin_time)
+    logs = ad.get_file_names("/data/local/tmp/tcpdump", begin_time=begin_time)
     if logs:
         ad.log.info("Pulling tcpdumps %s", logs)
         log_path = os.path.join(ad.log_path, test_name,
