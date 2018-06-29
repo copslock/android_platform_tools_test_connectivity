@@ -5961,7 +5961,7 @@ def start_adb_tcpdump(ad,
         ad.adb.shell("mkdir /sdcard/tcpdump")
     else:
         ad.adb.shell(
-            "find /sdcard/tcpdump -type f -iname * -not -mtime -1800s -delete")
+         "find /sdcard/tcpdump -type f -iname \"*\" -not -mtime -1800s -delete")
 
     if not begin_time:
         begin_time = get_current_epoch_time()
