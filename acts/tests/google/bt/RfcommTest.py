@@ -846,30 +846,5 @@ class RfcommTest(BluetoothBaseTest):
         TAGS: Classic, RFCOMM
         Priority: 3
         """
-        return self._test_rfcomm_connection_with_uuid(bt_rfcomm_uuids[
-            'mcap_data_channel'])
-
-    @BluetoothBaseTest.bt_test_wrap
-    @test_tracker_info(uuid='d6c7523d-9247-480e-8154-edd51ae1be50')
-    def test_rfcomm_connection_l2cap_uuid(self):
-        """Test Bluetooth RFCOMM connection using L2CAP uuid
-
-        Test RFCOMM though establishing a basic connection.
-
-        Steps:
-        1. Get the mac address of the server device.
-        2. Establish an RFCOMM connection from the client to the server AD.
-        3. Verify that the RFCOMM connection is active from both the client and
-        server.
-
-        Expected Result:
-        RFCOMM connection is established then disconnected succcessfully.
-
-        Returns:
-          Pass if True
-          Fail if False
-
-        TAGS: Classic, RFCOMM
-        Priority: 3
-        """
-        return self._test_rfcomm_connection_with_uuid(bt_rfcomm_uuids['l2cap'])
+        return self._test_rfcomm_connection_with_uuid(
+            bt_rfcomm_uuids['mcap_data_channel'])
