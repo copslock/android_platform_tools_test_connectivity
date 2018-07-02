@@ -264,13 +264,13 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
         try:
             self.scn_ad.ed.pop_event(
                 scan_failed.format(scan_callback), self.default_timeout)
-            self.log.info(
-                "Found scan event successfully. Iteration {} successful."
+            self.log.error(
+                "Unexpected scan event found. Iteration {} successful."
                 .format(i))
-        except Exception:
-            self.log.info("Failed to find a onScanFailed event for callback {}"
-                          .format(scan_callback))
             test_result = False
+        except Exception:
+            self.log.info("No onScanFailed event for callback {} as expected."
+                          .format(scan_callback))
         for callback in scan_callback_list:
             self.scn_ad.droid.bleStopBleScan(callback)
         return test_result
