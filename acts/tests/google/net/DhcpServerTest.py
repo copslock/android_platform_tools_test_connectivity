@@ -40,6 +40,8 @@ class DhcpServerTest(base_test.BaseTestClass):
         # Allow using non-67 server ports as long as client uses 68
         bind_layers(UDP, BOOTP, dport=68)
 
+        self.dut.adb.shell(start_pmc_cmd)
+        self.dut.adb.shell("setprop log.tag.PMC VERBOSE")
         iflist_before = get_if_list()
         self._start_usb_tethering(self.dut)
         self.iface = self._wait_for_new_iface(iflist_before)
