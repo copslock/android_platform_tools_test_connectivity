@@ -361,7 +361,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 "com.google.android.apps.messaging/.ui.conversation.ConversationActivity",
                 begin_time)
             if call_logs and messaging_logs:
-                if messaging_logs[-1]["datetime_obj"] - call_logs[-1]["datetime_obj"] < 5:
+                if (messaging_logs[-1]["datetime_obj"] -
+                        call_logs[-1]["datetime_obj"]).seconds < 5:
                     ads[0].log.info(
                         "Call setup failure due to simultaneous activities")
                     self.result_info[
