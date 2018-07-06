@@ -98,6 +98,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self.log.info("Starting USB Tethering")
         dut.stop_services()
         dut.adb.shell(pmc_start_usb_tethering_cmd)
+        self._wait_for_device(self.dut)
         self.USB_TETHERED = True
 
     def _stop_usb_tethering(self, dut):
@@ -173,6 +174,47 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_offer(resp)
         self._assert_unicast(resp, giaddr)
         self._assert_broadcastbit(resp)
+
+    def _run_discover_paramrequestlist(self, params, unwanted_params):
+        params_opt = tuple(['param_req_list'] + [
+            chr(DHCPRevOptions[optname][0]).encode() for optname in params])
+        resp = self._get_response(
+            self._make_discover(self.hwaddr, options=[params_opt]))
+
+        self._assert_offer(resp)
+        # List of requested params in response order
+        resp_opts = [opt[0] for opt in resp.getlayer(DHCP).options]
+        resp_requested_opts = [opt for opt in resp_opts if opt in params]
+        # All above params should be supported, order should be conserved
+        asserts.assert_equal(params, resp_requested_opts)
+        asserts.assert_equal(0, len(set(resp_opts) & set(unwanted_params)))
+        return resp
+
+    def test_discover_paramrequestlist(self):
+        resp = self._run_discover_paramrequestlist(
+            ['subnet_mask', 'broadcast_address', 'router', 'name_server'],
+            unwanted_params=[])
+        for opt in ['broadcast_address', 'router', 'name_server']:
+            asserts.assert_true(getopt(resp, opt).startswith(NETADDR_PREFIX),
+                opt + ' does not start with ' + NETADDR_PREFIX)
+
+        subnet_mask = getopt(resp, 'subnet_mask')
+        asserts.assert_true(subnet_mask.startswith('255.255.'),
+            'Unexpected subnet mask for /16+: ' + subnet_mask)
+
+    def test_discover_paramrequestlist_rev(self):
+        # RFC2132 #9.8: "The DHCP server is not required to return the options
+        # in the requested order, but MUST try to insert the requested options
+        # in the order requested"
+        asserts.skip('legacy behavior not compliant: fixed order used')
+        self._run_discover_paramrequestlist(
+            ['name_server', 'router', 'broadcast_address', 'subnet_mask'],
+            unwanted_params=[])
+
+    def test_discover_paramrequestlist_unwanted(self):
+        asserts.skip('legacy behavior always sends all parameters')
+        self._run_discover_paramrequestlist(['router', 'name_server'],
+            unwanted_params=['broadcast_address', 'subnet_mask'])
 
     def _assert_renews(self, request, addr, exp_time, resp_type=ACK):
         # Sleep to test lease time renewal
@@ -277,7 +319,7 @@ class DhcpServerTest(base_test.BaseTestClass):
     @test_tracker_info(uuid="5563c616-2136-47f6-9151-4e28cbfe797c")
     def test_request_initreboot_nolease(self):
         # RFC2131 #4.3.2
-        asserts.skip("dnsmasq not compliant if --dhcp-authoritative set.")
+        asserts.skip("legacy behavior not compliant")
         addr = NETADDR_PREFIX + '123'
         resp = self._get_response(self._make_request(self.hwaddr, addr, None))
         asserts.assert_equal(resp, None)
