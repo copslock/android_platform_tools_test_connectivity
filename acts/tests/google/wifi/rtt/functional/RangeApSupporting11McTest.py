@@ -15,9 +15,11 @@
 #   limitations under the License.
 
 import queue
+import time
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
@@ -32,6 +34,15 @@ class RangeApSupporting11McTest(RttBaseTest):
 
     # Time gap (in seconds) between iterations
     TIME_BETWEEN_ITERATIONS = 0
+
+    # Soft AP SSID
+    SOFT_AP_SSID = "RTT_TEST_SSID"
+
+    # Soft AP Password (irrelevant)
+    SOFT_AP_PASSWORD = "ABCDEFGH"
+
+    # Time to wait before configuration changes
+    WAIT_FOR_CONFIG_CHANGES_SEC = 1
 
     def __init__(self, controllers):
         RttBaseTest.__init__(self, controllers)
@@ -86,6 +97,91 @@ class RangeApSupporting11McTest(RttBaseTest):
                 "Results exceeding error margin rate is too high",
                 extras=stats)
         asserts.explicit_pass("RTT test done", extras=stats)
+
+    def test_rtt_in_and_after_softap_mode(self):
+        """Verify behavior when a SoftAP is enabled and then disabled on the
+        device:
+
+        - SAP Enabled: depending on device characteristics RTT may succeed or
+                       fail.
+        - SAP Disabled: RTT must now succeed.
+        """
+        supp_required_params = ("dbs_supported_models", )
+        self.unpack_userparams(supp_required_params)
+
+        dut = self.android_devices[0]
+
+        rtt_supporting_aps = rutils.select_best_scan_results(
+            rutils.scan_with_rtt_support_constraint(dut, True, repeat=10),
+            select_count=1)
+        dut.log.debug("RTT Supporting APs=%s", rtt_supporting_aps)
+
+        # phase 1 (pre-SAP)
+        events = rutils.run_ranging(dut, rtt_supporting_aps, self.NUM_ITER,
+                                    self.TIME_BETWEEN_ITERATIONS)
+        stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
+                                       self.rtt_reference_distance_margin_mm,
+                                       self.rtt_min_expected_rssi_dbm,
+                                       self.lci_reference, self.lcr_reference)
+        dut.log.debug("Stats Phase 1 (pre-SAP)=%s", stats)
+
+        for bssid, stat in stats.items():
+            asserts.assert_true(
+                stat['num_no_results'] == 0,
+                "Phase 1 (pre-SAP) missing (timed-out) results",
+                extras=stats)
+
+        # phase 2 (SAP)
+        wutils.start_wifi_tethering(
+            dut,
+            self.SOFT_AP_SSID,
+            self.SOFT_AP_PASSWORD,
+            band=WIFI_CONFIG_APBAND_5G,
+            hidden=False)
+        time.sleep(self.WAIT_FOR_CONFIG_CHANGES_SEC)
+
+        events = rutils.run_ranging(dut, rtt_supporting_aps, self.NUM_ITER,
+                                    self.TIME_BETWEEN_ITERATIONS)
+        stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
+                                       self.rtt_reference_distance_margin_mm,
+                                       self.rtt_min_expected_rssi_dbm,
+                                       self.lci_reference, self.lcr_reference)
+        dut.log.debug("Stats Phase 2 (SAP)=%s", stats)
+
+        for bssid, stat in stats.items():
+            if dut.model in self.dbs_supported_models:
+                asserts.assert_true(
+                    stat['num_no_results'] == 0,
+                    "Phase 2 (SAP) missing (timed-out) results",
+                    extras=stats)
+            else:
+                asserts.assert_true(
+                    stat['num_success_results'] == 0,
+                    "Phase 2 (SAP) valid results - but unexpected in SAP!?",
+                    extras=stats)
+
+        # phase 3 (post-SAP)
+
+        # enabling Wi-Fi first: on some devices this will also disable SAP
+        # (that's the scenario we're primarily testing). Additionally,
+        # explicitly disable SAP (which may be a NOP on some devices).
+        wutils.wifi_toggle_state(dut, True)
+        time.sleep(self.WAIT_FOR_CONFIG_CHANGES_SEC)
+        wutils.stop_wifi_tethering(dut)
+
+        events = rutils.run_ranging(dut, rtt_supporting_aps, self.NUM_ITER,
+                                    self.TIME_BETWEEN_ITERATIONS)
+        stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
+                                       self.rtt_reference_distance_margin_mm,
+                                       self.rtt_min_expected_rssi_dbm,
+                                       self.lci_reference, self.lcr_reference)
+        dut.log.debug("Stats Phase 3 (post-SAP)=%s", stats)
+
+        for bssid, stat in stats.items():
+            asserts.assert_true(
+                stat['num_no_results'] == 0,
+                "Phase 3 (post-SAP) missing (timed-out) results",
+                extras=stats)
 
     #########################################################################
     #
