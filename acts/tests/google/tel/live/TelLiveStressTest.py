@@ -353,7 +353,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND)
         if not call_setup_result:
             get_telephony_signal_strength(ads[0])
-            get_telephony_signal_strength(ads[1])
+            if not self.single_phone_test:
+                get_telephony_signal_strength(ads[1])
             call_logs = ads[0].search_logcat(
                 "ActivityManager: START u0 {act=android.intent.action.CALL",
                 begin_time)
