@@ -20,6 +20,7 @@ import unittest
 from acts import asserts
 from acts import base_test
 from acts import signals
+from acts import error
 from acts import test_runner
 
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
@@ -246,6 +247,21 @@ class ActsBaseClassTest(unittest.TestCase):
         expected_summary = (
             "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 1, Passed 0, "
             "Requested 1, Skipped 0, Unknown 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_run_fail_by_ActsError_(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def __init__(self, controllers):
+                super(MockBaseTest, self).__init__(controllers)
+
+            def test_something(self):
+                raise error.ActsError()
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_something"])
+        expected_summary = (
+            "Blocked 0, ControllerInfo {}, Errors 1, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_teardown_test_assert_fail(self):
