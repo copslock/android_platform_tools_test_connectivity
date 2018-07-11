@@ -17,9 +17,10 @@
 from acts.libs.proc import job
 
 import logging
+from acts import error
 
 
-class FastbootError(Exception):
+class FastbootError(error.ActsError):
     """Raised when there is an error in fastboot operations."""
 
     def __init__(self, cmd, stdout, stderr, ret_code):
