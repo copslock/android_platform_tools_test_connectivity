@@ -20,6 +20,7 @@ import logging
 import re
 import shellescape
 
+from acts import error
 from acts.libs.proc import job
 
 DEFAULT_ADB_TIMEOUT = 60
@@ -50,7 +51,7 @@ def parsing_parcel_output(output):
     return re.sub(r'[.\s]', '', output)
 
 
-class AdbError(Exception):
+class AdbError(error.ActsError):
     """Raised when there is an error in adb operations."""
 
     def __init__(self, cmd, stdout, stderr, ret_code):
