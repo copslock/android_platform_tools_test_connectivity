@@ -1,6 +1,7 @@
 from acts import asserts
 from acts import base_test
 from acts.controllers import android_device
+from acts.test_decorators import test_tracker_info
 
 from scapy.all import *
 from threading import Event
@@ -81,6 +82,9 @@ class DhcpServerTest(base_test.BaseTestClass):
         self.stop_arp.set()
         self._stop_usb_tethering(self.dut)
 
+    def on_fail(self, test_name, begin_time):
+        self.dut.take_bug_report(test_name, begin_time)
+
     def _start_usb_tethering(self, dut):
         """ Start USB tethering
 
@@ -145,12 +149,14 @@ class DhcpServerTest(base_test.BaseTestClass):
             sendp(Ether(dst=BROADCAST_MAC, src=self.real_hwaddr) / reply,
                 iface=self.iface, verbose=False)
 
+    @test_tracker_info(uuid="a8712769-977a-4ee1-902f-90b3ba30b40c")
     def test_config_assumptions(self):
         resp = self._get_response(make_discover(self.hwaddr))
         asserts.assert_false(None == resp, "Device did not reply to discover")
         asserts.assert_true(get_yiaddr(resp).startswith(NETADDR_PREFIX),
             "Server does not use expected prefix")
 
+    @test_tracker_info(uuid="d6b598b7-f443-4b5a-ba80-4af5d211cade")
     def test_discover_assigned_ownaddress(self):
         addr, siaddr, resp = self._request_address(self.hwaddr)
 
@@ -167,6 +173,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_equal(lease_time, getopt(resp, 'lease_time'))
         asserts.assert_equal(addr, get_yiaddr(resp))
 
+    @test_tracker_info(uuid="cbb07d77-912b-4269-bbbc-adba99779587")
     def test_discover_assigned_otherhost(self):
         addr, siaddr, _ = self._request_address(self.hwaddr)
 
@@ -178,6 +185,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_false(get_yiaddr(resp) == addr,
             "Already assigned address offered")
 
+    @test_tracker_info(uuid="3d2b3d2f-eb5f-498f-b887-3b4638cebf14")
     def test_discover_requestaddress(self):
         addr = NETADDR_PREFIX + '200'
         resp = self._get_response(make_discover(self.hwaddr,
@@ -199,16 +207,19 @@ class DhcpServerTest(base_test.BaseTestClass):
         # Lease time renewed
         asserts.assert_equal(expTime, getopt(resp, 'lease_time'))
 
+    @test_tracker_info(uuid="ce42ba57-07be-427b-9cbd-5535c62b0120")
     def test_request_wrongnet(self):
         resp = self._get_response(make_request(self.hwaddr,
             OTHER_NETADDR_PREFIX + '1', None))
         self._assert_nak(resp)
 
+    @test_tracker_info(uuid="ec00d268-80cb-4be5-9771-2292cc7d2e18")
     def test_request_inuse(self):
         addr, siaddr, _ = self._request_address(self.hwaddr)
         res = self._get_response(make_request(self.other_hwaddr, addr, None))
         self._assert_nak(res)
 
+    @test_tracker_info(uuid="263c91b9-cfe9-4f21-985d-b7046df80528")
     def test_request_initreboot(self):
         addr, siaddr, resp = self._request_address(self.hwaddr)
         exp = getopt(resp, 'lease_time')
@@ -216,6 +227,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         # siaddr NONE: init-reboot client state
         self._assert_renews(make_request(self.hwaddr, addr, None), addr, exp)
 
+    @test_tracker_info(uuid="5563c616-2136-47f6-9151-4e28cbfe797c")
     def test_request_initreboot_nolease(self):
         # RFC2131 #4.3.2
         asserts.skip("dnsmasq not compliant if --dhcp-authoritative set.")
@@ -223,6 +235,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         resp = self._get_response(make_request(self.hwaddr, addr, None))
         asserts.assert_equal(resp, None)
 
+    @test_tracker_info(uuid="da5c5537-cb38-4a2e-828f-44bc97976fe5")
     def test_request_initreboot_incorrectlease(self):
         otheraddr = NETADDR_PREFIX + '123'
         addr, siaddr, _ = self._request_address(self.hwaddr)
@@ -232,6 +245,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         resp = self._get_response(make_request(self.hwaddr, otheraddr, None))
         self._assert_nak(resp)
 
+    @test_tracker_info(uuid="68bfcb25-5873-41ad-ad0a-bf22781534ca")
     def test_request_rebinding(self):
         addr, siaddr, resp = self._request_address(self.hwaddr)
         exp = getopt(resp, 'lease_time')
@@ -239,6 +253,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_renews(make_request(self.hwaddr, None, None, ciaddr=addr),
             addr, exp)
 
+    @test_tracker_info(uuid="cee2668b-bd79-47d7-b358-8f9387d715b1")
     def test_request_rebinding_inuse(self):
         addr, siaddr, _ = self._request_address(self.hwaddr)
 
@@ -246,6 +261,7 @@ class DhcpServerTest(base_test.BaseTestClass):
             ciaddr=addr))
         self._assert_nak(resp)
 
+    @test_tracker_info(uuid="d95d69b5-ab9a-42f5-8dd0-b9b6a6d960cc")
     def test_request_rebinding_wrongaddr(self):
         otheraddr = NETADDR_PREFIX + '123'
         addr, siaddr, _ = self._request_address(self.hwaddr)
@@ -257,6 +273,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_nak(resp)
         self._assert_broadcast(resp)
 
+    @test_tracker_info(uuid="421a86b3-8779-4910-8050-7806536efabb")
     def test_request_rebinding_wrongaddr_relayed(self):
         otheraddr = NETADDR_PREFIX + '123'
         relayaddr = NETADDR_PREFIX + '124'
@@ -273,6 +290,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_nak(resp)
         self._assert_unicast(resp, relayaddr)
 
+    @test_tracker_info(uuid="6ff1fab4-009a-4758-9153-0d9db63423da")
     def test_release(self):
         addr, siaddr, _ = self._request_address(self.hwaddr)
         # Re-requesting fails
@@ -285,6 +303,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         resp = self._get_response(make_request(self.other_hwaddr, addr, siaddr))
         self._assert_ack(resp)
 
+    @test_tracker_info(uuid="abb1a53e-6b6c-468f-88b9-ace9ca4d6593")
     def test_release_noserverid(self):
         addr, siaddr, _ = self._request_address(self.hwaddr)
 
@@ -297,6 +316,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         resp = self._get_response(make_request(self.other_hwaddr, addr, siaddr))
         self._assert_nak(resp)
 
+    @test_tracker_info(uuid="8415b69e-ae61-4474-8495-d783ba6818d1")
     def test_release_wrongserverid(self):
         addr, siaddr, _ = self._request_address(self.hwaddr)
 
