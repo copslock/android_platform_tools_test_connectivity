@@ -22,8 +22,10 @@ REQUEST = 3
 ACK = 5
 NAK = 6
 
-pmc_base_cmd = ("am broadcast -a com.android.pmc.action.AUTOPOWER --es PowerAction ")
-start_pmc_cmd = ("am start -S -n com.android.pmc/com.android.pmc.PMCMainActivity")
+pmc_base_cmd = (
+    "am broadcast -a com.android.pmc.action.AUTOPOWER --es PowerAction ")
+start_pmc_cmd = (
+    "am start -S -n com.android.pmc/com.android.pmc.PMCMainActivity")
 pmc_start_usb_tethering_cmd = "%sStartUSBTethering" % pmc_base_cmd
 pmc_stop_usb_tethering_cmd = "%sStopUSBTethering" % pmc_base_cmd
 
@@ -69,7 +71,6 @@ class DhcpServerTest(base_test.BaseTestClass):
         bind_layers(UDP, BOOTP, dport=68)
         self.hwaddr = self._next_hwaddr()
         self.other_hwaddr = self._next_hwaddr()
-        #self.real_hwaddr = hw_addr
         self.cleanup_releases = []
 
     def teardown_test(self):
@@ -88,9 +89,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         """
         self.log.info("Starting USB Tethering")
         dut.stop_services()
-        time.sleep(1)
         dut.adb.shell(pmc_start_usb_tethering_cmd)
-        time.sleep(2)
         self.USB_TETHERED = True
 
     def _stop_usb_tethering(self, dut):
@@ -102,8 +101,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self.log.info("Stopping USB Tethering")
         dut.adb.shell(pmc_stop_usb_tethering_cmd)
         self._wait_for_device(self.dut)
-        dut.start_services(
-            skip_sl4a=getattr(dut, "skip_sl4a", False))
+        dut.start_services(skip_sl4a=getattr(dut, "skip_sl4a", False))
         self.USB_TETHERED = False
 
     def _wait_for_device(self, dut):
@@ -118,6 +116,8 @@ class DhcpServerTest(base_test.BaseTestClass):
 
     def _wait_for_new_iface(self, old_ifaces):
         old_set = set(old_ifaces)
+        # Try 10 times to find a new interface with a 1s sleep every time
+        # (equivalent to a 9s timeout)
         for i in range(0, 10):
             new_ifaces = set(get_if_list()) - old_set
             asserts.assert_true(len(new_ifaces) < 2,
@@ -156,8 +156,7 @@ class DhcpServerTest(base_test.BaseTestClass):
 
         lease_time = getopt(resp, 'lease_time')
         server_id = getopt(resp, 'server_id')
-        asserts.assert_true(lease_time > 10,
-            "Lease time is unreasonably short")
+        asserts.assert_true(lease_time > 10, "Lease time is unreasonably short")
         asserts.assert_false(addr == '0.0.0.0', "Assigned address is empty")
         # Wait to test lease expiration time change
         time.sleep(2)
@@ -366,15 +365,17 @@ class DhcpServerTest(base_test.BaseTestClass):
 
 def setopt(packet, optname, val):
     dhcp = packet.getlayer(DHCP)
-    dhcp.options = [(optname, val) if opt[0] == optname else opt
-        for opt in dhcp.options]
+    if optname in [opt[0] for opt in dhcp.options]:
+        dhcp.options = [(optname, val) if opt[0] == optname else opt
+            for opt in dhcp.options]
+    else:
+        # Add before the last option (last option is "end")
+        dhcp.options.insert(len(dhcp.options) - 1, (optname, val))
 
 
 def getopt(packet, key):
     opts = [opt[1] for opt in packet.getlayer(DHCP).options if opt[0] == key]
-    if not opts:
-        return None
-    return opts[0]
+    return opts[0] if opts else None
 
 
 def removeopt(packet, key):
@@ -423,15 +424,14 @@ def make_request(src_hwaddr, reqaddr, siaddr, ciaddr='0.0.0.0', ipSrc=None):
 
 def make_release(src_hwaddr, addr, server_id):
     opts = [('message-type', 'release'), ('server_id', server_id), 'end']
-    return make_dhcp(src_hwaddr, opts, ciaddr=addr, ipSrc=addr,
-        ipDst=server_id)
+    return make_dhcp(src_hwaddr, opts, ciaddr=addr, ipSrc=addr, ipDst=server_id)
 
 
 def make_hwaddr(index):
-  if index > 0xffff:
-    raise ValueError("Address index out of range")
-  return '\x44\x85\x00\x00{}{}'.format(chr(index >> 8), chr(index & 0xff))
+    if index > 0xffff:
+        raise ValueError("Address index out of range")
+    return '\x44\x85\x00\x00{}{}'.format(chr(index >> 8), chr(index & 0xff))
+
 
 def format_hwaddr(addr):
-  return  ':'.join(['%02x' % ord(c) for c in addr])
-
+    return  ':'.join(['%02x' % ord(c) for c in addr])
