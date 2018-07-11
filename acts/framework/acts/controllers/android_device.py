@@ -26,6 +26,7 @@ import re
 import socket
 import time
 
+from acts import error
 from acts import logger as acts_logger
 from acts import signals
 from acts import tracelogger
@@ -63,14 +64,15 @@ DEFAULT_DEVICE_PASSWORD = "1111"
 RELEASE_ID_REGEXES = [re.compile(r'\w+\.\d+\.\d+'), re.compile(r'N\w+')]
 
 
-class AndroidDeviceError(signals.ControllerError):
+class AndroidDeviceError(error.ActsError):
+    """Raised when there is an error in AndroidDevice
+    """
     pass
 
 
 class DoesNotExistError(AndroidDeviceError):
     """Raised when something that does not exist is referenced.
     """
-
 
 def create(configs):
     """Creates AndroidDevice controller objects.

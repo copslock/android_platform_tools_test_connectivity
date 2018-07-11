@@ -338,7 +338,7 @@ class TestResult(object):
         d["Summary"] = self.summary_dict()
         d["Extras"] = self.extras
         d["Errors"] = self.errors_list()
-        json_str = json.dumps(d, indent=5, sort_keys=True)
+        json_str = json.dumps(d, indent=4, sort_keys=True)
         return json_str
 
     def summary_str(self):
