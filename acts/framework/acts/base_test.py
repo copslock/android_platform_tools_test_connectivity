@@ -25,6 +25,7 @@ from acts import keys
 from acts import logger
 from acts import records
 from acts import signals
+from acts import error
 from acts import tracelogger
 from acts import utils
 
@@ -190,6 +191,11 @@ class BaseTestClass(object):
                     if not ad.skip_sl4a:
                         ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN,
                                                        test_name))
+
+        except error.ActsError as e:
+            self.results.errors.append(e)
+            self.log.error('BaseTest setup_test error: %s' % e.message)
+
         except Exception as e:
             self.log.warning(
                 'Unable to send BEGIN log command to all devices.')
@@ -217,6 +223,11 @@ class BaseTestClass(object):
             # Write test end token to adb log if android device is attached.
             for ad in getattr(self, 'android_devices', []):
                 ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
+
+        except error.ActsError as e:
+            self.results.errors.append(e)
+            self.log.error('BaseTest teardown_test error: %s' % e.message)
+
         except Exception as e:
             self.log.warning('Unable to send END log command to all devices.')
             self.log.warning('Error: %s' % e)
@@ -400,6 +411,7 @@ class BaseTestClass(object):
                     verdict = test_func(*args, **kwargs)
                 else:
                     verdict = test_func()
+
             finally:
                 try:
                     self._teardown_test(self.test_name)
@@ -437,6 +449,9 @@ class BaseTestClass(object):
         except signals.TestBlocked as e:
             tr_record.test_blocked(e)
             self._exec_procedure_func(self._on_blocked, tr_record)
+        except error.ActsError as e:
+            self.results.errors.append(e)
+            self.log.error("BaseTest execute_one_test_case error: %s" % e.message)
         except Exception as e:
             self.log.error(traceback.format_exc())
             # Exception happened during test.
