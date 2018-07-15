@@ -232,6 +232,7 @@ class WifiStressTest(WifiBaseTest):
 
         """
         for count in range(int(self.stress_count/4)):
+            wutils.reset_wifi(self.dut)
             ssids = list()
             for network in self.networks:
                 ssids.append(network[WifiEnums.SSID_KEY])
