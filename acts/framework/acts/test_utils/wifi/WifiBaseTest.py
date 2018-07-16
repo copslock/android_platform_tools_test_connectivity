@@ -261,8 +261,10 @@ class WifiBaseTest(BaseTestClass):
         config_count = 1
         count = 0
 
-        if mirror_ap and ap_count == 1:
-             raise ValueError("ap_count cannot be 1 if mirror_ap is True.")
+        # For example, the NetworkSelector tests use 2 APs and require that
+        # both APs are not mirrored.
+        if not mirror_ap and ap_count == 1:
+             raise ValueError("ap_count cannot be 1 if mirror_ap is False.")
 
         if not mirror_ap:
             config_count = ap_count
