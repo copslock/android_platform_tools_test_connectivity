@@ -27,6 +27,7 @@ from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.ap_lib import dhcp_server
 from acts.controllers.ap_lib import hostapd
 from acts.controllers.ap_lib import hostapd_config
+from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.utils_lib.commands import ip
 from acts.controllers.utils_lib.commands import route
 from acts.controllers.utils_lib.commands import shell
