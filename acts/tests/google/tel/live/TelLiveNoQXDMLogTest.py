@@ -20,11 +20,15 @@
 import collections
 import time
 import os
+import re
 
 from acts import signals
 from acts.utils import create_dir
 from acts.utils import unzip_maintain_permissions
 from acts.utils import exe_cmd
+from acts.controllers.android_device import SL4A_APK_NAME
+from acts.controllers.android_device import list_adb_devices
+from acts.controllers.android_device import list_fastboot_devices
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_BOOT_COMPLETE
@@ -36,6 +40,7 @@ from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
+from acts.test_utils.tel.tel_test_utils import bring_up_sl4a
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 
 from acts.utils import get_current_epoch_time
@@ -310,6 +315,92 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             return False
         finally:
             ad.adb.shell("rm -rf /data/vendor/ssrdump/*", ignore_status=True)
+
+    @test_tracker_info(uuid="e12b2f00-7e18-47d6-b310-aabb96b165a3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_factory_modem_offline(self):
+        """Trigger Modem Factory Offline and verify if Modem Offline
+
+        1. Device in Fastboot
+        2. Wipe Userdata and set the fastboot command for factory
+        3. Device will bootup in adb, verify Modem Offline
+        4. Reboot again, and verify camping
+
+        """
+        try:
+            ad = self.android_devices[0]
+            skip_setup_wizard=True
+
+            # Pull sl4a apk from device
+            out = ad.adb.shell("pm path %s" % SL4A_APK_NAME)
+            result = re.search(r"package:(.*)", out)
+            if not result:
+                ad.log.error("Couldn't find sl4a apk")
+                return False
+            else:
+                sl4a_apk = result.group(1)
+                ad.log.info("Get sl4a apk from %s", sl4a_apk)
+                ad.pull_files([sl4a_apk], "/tmp/")
+            ad.stop_services()
+
+            # Fastboot Wipe
+            if ad.serial in list_adb_devices():
+                ad.log.info("Reboot to bootloader")
+                ad.adb.reboot("bootloader", ignore_status=True)
+                time.sleep(10)
+            if ad.serial in list_fastboot_devices():
+                ad.log.info("Wipe in fastboot")
+                ad.fastboot._w(timeout=300, ignore_status=True)
+                time.sleep(30)
+
+                # Factory Silent Mode Test
+                ad.log.info("Factory Offline in fastboot")
+                ad.fastboot.oem("continue-factory")
+                time.sleep(30)
+                ad.wait_for_boot_completion()
+                ad.root_adb()
+                ad.log.info("Re-install sl4a")
+                ad.adb.shell("settings put global package_verifier_enable 0")
+                ad.adb.install("-r /tmp/base.apk")
+                time.sleep(10)
+                try:
+                    ad.start_adb_logcat()
+                except:
+                    ad.log.error("Failed to start adb logcat!")
+                bring_up_sl4a(ad)
+                radio_state = ad.droid.telephonyIsRadioOn()
+                ad.log.info("Radio State is %s", radio_state)
+                if radio_state:
+                    ad.log.error("Radio state is ON in Factory Mode")
+                    return False
+                toggle_airplane_mode(self.log, ad, True)
+                time.sleep(5)
+                toggle_airplane_mode(self.log, ad, False)
+                radio_state = ad.droid.telephonyIsRadioOn()
+                ad.log.info("Radio State is %s", radio_state)
+                if ad.droid.telephonyIsRadioOn():
+                    ad.log.error("Radio state is ON after Airplane Toggle")
+                    return False
+                ad.log.info("Rebooting and verifying back in service")
+
+                # Bring it back to Online Mode
+                ad.stop_services()
+                ad.adb.reboot()
+                ad.wait_for_boot_completion()
+                ad.root_adb()
+                bring_up_sl4a(ad)
+                radio_state = ad.droid.telephonyIsRadioOn()
+                ad.log.info("Radio State is %s", radio_state)
+                if not radio_state:
+                    ad.log.error("Radio state is OFF in Online Mode")
+                    return False
+                return True
+        except Exception as e:
+            ad.log.error(e)
+            return False
+        finally:
+            ad.exit_setup_wizard()
+            bring_up_sl4a(ad)
 
 
 """ Tests End """
