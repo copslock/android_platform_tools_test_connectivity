@@ -1189,6 +1189,9 @@ class AndroidDevice:
         self.stop_services()
         self.log.info("Restarting android runtime")
         self.adb.shell("stop")
+        # Reset the boot completed flag before we restart the framework
+        # to correctly detect when the framework has fully come up.
+        self.adb.shell("setprop sys.boot_completed 0")
         self.adb.shell("start")
         self.wait_for_boot_completion()
         self.root_adb()
