@@ -176,8 +176,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_broadcastbit(resp)
 
     def _run_discover_paramrequestlist(self, params, unwanted_params):
-        params_opt = tuple(['param_req_list'] + [
-            chr(DHCPRevOptions[optname][0]).encode() for optname in params])
+        params_opt = make_paramrequestlist_opt(params)
         resp = self._get_response(
             self._make_discover(self.hwaddr, options=[params_opt]))
 
@@ -461,6 +460,272 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_equal(reqAddr, resp.getlayer(IP).dst)
         asserts.assert_equal(CLIENT_PORT, resp.getlayer(UDP).dport)
 
+    def test_macos_10_13_3_discover(self):
+        params_opt = make_paramrequestlist_opt([
+            'subnet_mask',
+            121, # Classless Static Route
+            'router',
+            'name_server',
+            'domain',
+            119, # Domain Search
+            252, # Private/Proxy autodiscovery
+            95, # LDAP
+            'NetBIOS_server',
+            46, # NetBIOS over TCP/IP Node Type
+            ])
+        req = self._make_discover(self.hwaddr,
+            options=[
+                params_opt,
+                ('max_dhcp_size', 1500),
+                # HW type Ethernet (0x01)
+                ('client_id', b'\x01' + self.hwaddr),
+                ('lease_time', 7776000),
+                ('hostname', b'test12-macbookpro'),
+            ], opts_padding=bytes(6))
+        req.getlayer(BOOTP).secs = 2
+        resp = self._get_response(req)
+        self._assert_standard_offer(resp)
+
+    def _make_macos_10_13_3_paramrequestlist(self):
+        return make_paramrequestlist_opt([
+            'subnet_mask',
+            121, # Classless Static Route
+            'router',
+            'name_server',
+            'domain',
+            119, # Domain Search
+            252, # Private/Proxy autodiscovery
+            95, # LDAP
+            44, # NetBIOS over TCP/IP Name Server
+            46, # NetBIOS over TCP/IP Node Type
+            ])
+
+    def test_macos_10_13_3_discover(self):
+        req = self._make_discover(self.hwaddr,
+            options=[
+                self._make_macos_10_13_3_paramrequestlist(),
+                ('max_dhcp_size', 1500),
+                # HW type Ethernet (0x01)
+                ('client_id', b'\x01' + self.hwaddr),
+                ('lease_time', 7776000),
+                ('hostname', b'test12-macbookpro'),
+            ], opts_padding=bytes(6))
+        req.getlayer(BOOTP).secs = 2
+        resp = self._get_response(req)
+        self._assert_offer(resp)
+        self._assert_standard_offer_or_ack(resp)
+
+    def test_macos_10_13_3_request_selecting(self):
+        req = self._make_request(self.hwaddr, None, None,
+            options=[
+                self._make_macos_10_13_3_paramrequestlist(),
+                ('max_dhcp_size', 1500),
+                # HW type Ethernet (0x01)
+                ('client_id', b'\x01' + self.hwaddr),
+                ('requested_addr', NETADDR_PREFIX + '109'),
+                ('server_id', self.server_addr),
+                ('hostname', b'test12-macbookpro'),
+            ])
+        req.getlayer(BOOTP).secs = 5
+        resp = self._get_response(req)
+        self._assert_ack(resp)
+        self._assert_standard_offer_or_ack(resp)
+
+    # Note: macOS does not seem to do any rebinding (straight to discover)
+    def test_macos_10_13_3_request_renewing(self):
+        req_ip = NETADDR_PREFIX + '109'
+        req = self._make_request(self.hwaddr, None, None,
+            ciaddr=req_ip, ip_src=req_ip, ip_dst=self.server_addr, options=[
+                self._make_macos_10_13_3_paramrequestlist(),
+                ('max_dhcp_size', 1500),
+                # HW type Ethernet (0x01)
+                ('client_id', b'\x01' + self.hwaddr),
+                ('lease_time', 7776000),
+                ('hostname', b'test12-macbookpro'),
+            ], opts_padding=bytes(6))
+        resp = self._get_response(req)
+        self._assert_ack(resp)
+        self._assert_standard_offer_or_ack(resp, renewing=True)
+
+    def _make_win10_paramrequestlist(self):
+        return make_paramrequestlist_opt([
+            'subnet_mask',
+            'router',
+            'name_server',
+            'domain',
+            31, # Perform Router Discover
+            33, # Static Route
+            'vendor_specific',
+            44, # NetBIOS over TCP/IP Name Server
+            46, # NetBIOS over TCP/IP Node Type
+            47, # NetBIOS over TCP/IP Scope
+            121, # Classless Static Route
+            249, # Private/Classless Static Route (MS)
+            252, # Private/Proxy autodiscovery
+            ])
+
+    def test_win10_discover(self):
+        req = self._make_discover(self.hwaddr, bcastbit=True,
+            options=[
+                # HW type Ethernet (0x01)
+                ('client_id', b'\x01' + self.hwaddr),
+                ('hostname', b'test120-w'),
+                ('vendor_class_id', b'MSFT 5.0'),
+                self._make_win10_paramrequestlist(),
+            ], opts_padding=bytes(11))
+        req.getlayer(BOOTP).secs = 2
+        resp = self._get_response(req)
+        self._assert_offer(resp)
+        self._assert_standard_offer_or_ack(resp, bcast=True)
+
+    def test_win10_request_selecting(self):
+        req = self._make_request(self.hwaddr, None, None, bcastbit=True,
+            options=[
+                ('max_dhcp_size', 1500),
+                # HW type Ethernet (0x01)
+                ('client_id', b'\x01' + self.hwaddr),
+                ('requested_addr', NETADDR_PREFIX + '109'),
+                ('server_id', self.server_addr),
+                ('hostname', b'test120-w'),
+                # Client Fully Qualified Domain Name
+                (81, b'\x00\x00\x00test120-w.ad.tst.example.com'),
+                ('vendor_class_id', b'MSFT 5.0'),
+                self._make_win10_paramrequestlist(),
+            ])
+        resp = self._get_response(req)
+        self._assert_ack(resp)
+        self._assert_standard_offer_or_ack(resp, bcast=True)
+
+    def _run_win10_request_renewing(self, bcast):
+        req_ip = NETADDR_PREFIX + '109'
+        req = self._make_request(self.hwaddr, None, None, bcastbit=bcast,
+            ciaddr=req_ip, ip_src=req_ip,
+            ip_dst=NETADDR_BROADCAST if bcast else self.server_addr,
+            options=[
+                ('max_dhcp_size', 1500),
+                # HW type Ethernet (0x01)
+                ('client_id', b'\x01' + self.hwaddr),
+                ('hostname', b'test120-w'),
+                # Client Fully Qualified Domain Name
+                (81, b'\x00\x00\x00test120-w.ad.tst.example.com'),
+                ('vendor_class_id', b'MSFT 5.0'),
+                self._make_win10_paramrequestlist(),
+            ])
+        resp = self._get_response(req)
+        self._assert_ack(resp)
+        self._assert_standard_offer_or_ack(resp, renewing=True, bcast=bcast)
+
+    def test_win10_request_renewing(self):
+        self._run_win10_request_renewing(bcast=False)
+
+    def test_win10_request_rebinding(self):
+        self._run_win10_request_renewing(bcast=True)
+
+    def _make_debian_paramrequestlist(self):
+        return make_paramrequestlist_opt([
+            'subnet_mask',
+            'broadcast_address',
+            'router',
+            'name_server',
+            119, # Domain Search
+            'hostname',
+            101, # TCode
+            'domain', # NetBIOS over TCP/IP Name Server
+            'vendor_specific', # NetBIOS over TCP/IP Node Type
+            121, # Classless Static Route
+            249, # Private/Classless Static Route (MS)
+            33, # Static Route
+            252, # Private/Proxy autodiscovery
+            'NTP_server',
+            ])
+
+    def test_debian_dhclient_4_3_5_discover(self):
+        req_ip = NETADDR_PREFIX + '109'
+        req = self._make_discover(self.hwaddr,
+            options=[
+                ('requested_addr', req_ip),
+                ('hostname', b'test12'),
+                self._make_debian_paramrequestlist(),
+            ], opts_padding=bytes(26))
+        resp = self._get_response(req)
+        self._assert_offer(resp)
+        self._assert_standard_offer_or_ack(resp)
+        asserts.assert_equal(req_ip, get_yiaddr(resp))
+
+    def test_debian_dhclient_4_3_5_request_selecting(self):
+        req = self._make_request(self.hwaddr, None, None,
+            options=[
+                ('server_id', self.server_addr),
+                ('requested_addr', NETADDR_PREFIX + '109'),
+                ('hostname', b'test12'),
+                self._make_debian_paramrequestlist(),
+            ], opts_padding=bytes(20))
+        resp = self._get_response(req)
+        self._assert_ack(resp)
+        self._assert_standard_offer_or_ack(resp, with_hostname=True)
+
+    def _run_debian_renewing(self, bcast):
+        req_ip = NETADDR_PREFIX + '109'
+        req = self._make_request(self.hwaddr, None, None,
+            ciaddr=req_ip, ip_src=req_ip,
+            ip_dst=NETADDR_BROADCAST if bcast else self.server_addr,
+            options=[
+                ('hostname', b'test12'),
+                self._make_debian_paramrequestlist(),
+            ],
+            opts_padding=bytes(32))
+        resp = self._get_response(req)
+        self._assert_ack(resp)
+        self._assert_standard_offer_or_ack(resp, renewing=True,
+            with_hostname=True)
+
+    def test_debian_dhclient_4_3_5_request_renewing(self):
+        self._run_debian_renewing(bcast=False)
+
+    def test_debian_dhclient_4_3_5_request_rebinding(self):
+        self._run_debian_renewing(bcast=True)
+
+    def _assert_standard_offer_or_ack(self, resp, renewing=False, bcast=False,
+            with_hostname=False):
+        # Responses to renew/rebind are always unicast to ciaddr even with
+        # broadcast flag set (RFC does not define this behavior, but this is
+        # more efficient and matches previous behavior)
+        if bcast and not renewing:
+            self._assert_broadcast(resp)
+        else:
+            self._assert_unicast(resp)
+        self._assert_broadcastbit(resp, isset=bcast)
+
+        bootp_resp = resp.getlayer(BOOTP)
+        asserts.assert_equal(0, bootp_resp.hops)
+        if renewing:
+            asserts.assert_true(bootp_resp.ciaddr.startswith(NETADDR_PREFIX),
+                'ciaddr does not start with expected prefix')
+        else:
+            asserts.assert_equal(INET4_ANY, bootp_resp.ciaddr)
+        asserts.assert_true(bootp_resp.yiaddr.startswith(NETADDR_PREFIX),
+            'yiaddr does not start with expected prefix')
+        asserts.assert_true(bootp_resp.siaddr.startswith(NETADDR_PREFIX),
+            'siaddr does not start with expected prefix')
+        asserts.assert_equal(INET4_ANY, bootp_resp.giaddr)
+
+        dhcp_resp = bootp_resp.getlayer(DHCP)
+        # end option is a single string, not a tuple.
+        # FQDN option 81 is not supported in new behavior
+        opt_names = [opt if opt == 'end' else opt[0]
+            for opt in dhcp_resp.options
+            if opt == 'end' or opt[0] != 81]
+
+        # Expect exactly these options in this order
+        expected_opts = [
+            'message-type', 'server_id', 'lease_time', 'renewal_time',
+            'rebinding_time', 'subnet_mask', 'broadcast_address', 'router',
+            'name_server']
+        if with_hostname:
+            expected_opts.append('hostname')
+        expected_opts.extend(['vendor_specific', 'end'])
+        asserts.assert_equal(expected_opts, opt_names)
+
     def _request_address(self, hwaddr, bcast=True):
         resp = self._get_response(self._make_discover(hwaddr))
         self._assert_offer(resp)
@@ -533,15 +798,18 @@ class DhcpServerTest(base_test.BaseTestClass):
         return ethernet / ip / udp / bootp / dhcp
 
     def _make_discover(self, src_hwaddr, options = [], giaddr=INET4_ANY,
-            bcastbit=False):
+            bcastbit=False, opts_padding=None):
         opts = [('message-type','discover')]
         opts.extend(options)
         opts.append('end')
+        if (opts_padding):
+            opts.append(opts_padding)
         return self._make_dhcp(src_hwaddr, options=opts, giaddr=giaddr,
             ip_dst=NETADDR_BROADCAST, bcastbit=bcastbit)
 
     def _make_request(self, src_hwaddr, reqaddr, siaddr, ciaddr=INET4_ANY,
-            ip_dst=None, ip_src=None, giaddr=INET4_ANY, bcastbit=False):
+            ip_dst=None, ip_src=None, giaddr=INET4_ANY, bcastbit=False,
+            options=[], opts_padding=None):
         if not ip_dst:
             ip_dst = siaddr or INET4_ANY
 
@@ -553,11 +821,16 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_false(ip_dst != INET4_ANY and isempty(ip_src),
             "Unicast ip_src cannot be zero")
         opts = [('message-type', 'request')]
-        if siaddr:
-            opts.append(('server_id', siaddr))
-        if reqaddr:
-            opts.append(('requested_addr', reqaddr))
+        if options:
+            opts.extend(options)
+        else:
+            if siaddr:
+                opts.append(('server_id', siaddr))
+            if reqaddr:
+                opts.append(('requested_addr', reqaddr))
         opts.append('end')
+        if opts_padding:
+            opts.append(opts_padding)
         return self._make_dhcp(src_hwaddr, options=opts, ciaddr=ciaddr,
             ip_src=ip_src, ip_dst=ip_dst, giaddr=giaddr, bcastbit=bcastbit)
 
@@ -565,6 +838,15 @@ class DhcpServerTest(base_test.BaseTestClass):
         opts = [('message-type', 'release'), ('server_id', server_id), 'end']
         return self._make_dhcp(src_hwaddr, opts, ciaddr=addr, ip_src=addr,
             ip_dst=server_id)
+
+
+def make_paramrequestlist_opt(params):
+    param_indexes = [DHCPRevOptions[opt][0] if isinstance(opt, str) else opt
+        for opt in params]
+    return tuple(['param_req_list'] + [
+        opt.to_bytes(1, byteorder='big') if isinstance(opt, int) else opt
+        for opt in param_indexes])
+
 
 def isempty(addr):
     return not addr or addr == INET4_ANY
@@ -601,8 +883,8 @@ def get_mess_type(packet):
 def make_hwaddr(index):
     if index > 0xffff:
         raise ValueError("Address index out of range")
-    return '\x44\x85\x00\x00{}{}'.format(chr(index >> 8), chr(index & 0xff))
+    return b'\x44\x85\x00\x00' + bytes([index >> 8, index & 0xff])
 
 
 def format_hwaddr(addr):
-    return  ':'.join(['%02x' % ord(c) for c in addr])
+    return  ':'.join(['%02x' % c for c in addr])
