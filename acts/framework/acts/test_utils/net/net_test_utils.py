@@ -153,8 +153,6 @@ def download_load_certs(ad, vpn_params, vpn_type, vpn_server_addr,
     local_cert_name = "%s_%s_%s" % (vpn_type.name,
                                     ipsec_server_type,
                                     vpn_params['client_pkcs_file_name'])
-    ad.adb.push("%s sdcard/" % local_cert_name)
-    return local_cert_name
 
     local_file_path = os.path.join(log_path, local_cert_name)
     try:
