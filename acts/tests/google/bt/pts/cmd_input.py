@@ -1054,7 +1054,7 @@ class CmdInput(cmd.Cmd):
         """Get HID Report"""
         cmd = "Get HID Report"
         try:
-            self.pri_dut.droid.bluetoothHidSendData(device_id, "42")
+            self.pri_dut.droid.bluetoothHidSendData(self.mac_addr, "42")
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
