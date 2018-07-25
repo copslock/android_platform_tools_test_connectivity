@@ -15,12 +15,11 @@
 
 from acts import asserts
 from acts import base_test
+from acts import utils
 from acts.controllers import adb
-from acts.controllers.utils_lib.ssh import connection
-from acts.controllers.utils_lib.ssh import settings
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
-from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
+from acts.test_utils.net.net_test_utils import start_tcpdump
+from acts.test_utils.net.net_test_utils import stop_tcpdump
 from acts.test_utils.net import connectivity_test_utils as cutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -49,25 +48,16 @@ class NattKeepAliveTest(base_test.BaseTestClass):
         self.ip_b = self.remote_server
         self.log.info("DUT IP addr: %s" % self.ip_a)
         self.log.info("Remote server IP addr: %s" % self.ip_b)
-
-        self.ssh_settings = settings.from_config(self.server_ssh_config)
-        self.ssh = connection.SshConnection(self.ssh_settings)
-
-        self.tcpdump_pid_a = None
-        self.tcpdump_file_a = None
+        self.tcpdump_pid = None
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
 
     def setup_test(self):
-        self.tcpdump_pid_a = start_adb_tcpdump(
-            self.dut, self.test_name, mask='all')
+        self.tcpdump_pid = start_tcpdump(self.dut, self.test_name)
 
     def teardown_test(self):
-        if self.tcpdump_pid_a:
-            stop_adb_tcpdump(
-                self.dut, self.tcpdump_pid_a, pull_tcpdump=True)
-        self.tcpdump_pid_a = None
+        stop_tcpdump(self.dut, self.tcpdump_pid, self.test_name)
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
@@ -78,7 +68,7 @@ class NattKeepAliveTest(base_test.BaseTestClass):
         """ Verify time diff between packets is equal to time interval """
 
         self.log.info("Packet Info: \n%s\n" % cmd_out)
-        pkts = cmd_out.split("\n")
+        pkts = cmd_out.rstrip().decode("utf-8", "ignore").split("\n")
 
         prev = 0
         for i in range(len(pkts)):
@@ -90,13 +80,14 @@ class NattKeepAliveTest(base_test.BaseTestClass):
                 return False
 
             # verify time interval
-            curr = int(interval)
+            curr = float(interval)
             if i == 0:
                 prev = curr
                 continue
-            if curr - prev != time_interval:
+            diff = int(round(curr-prev))
+            if diff != time_interval:
                 self.log.error("Keepalive time interval is %s, expected %s"
-                               % (curr-prev, time_interval))
+                               % (diff, time_interval))
                 return False
             prev = curr
 
@@ -129,16 +120,11 @@ class NattKeepAliveTest(base_test.BaseTestClass):
 
         # capture packets on server
         self.log.info("Capturing keepalive packets on %s" % self.ip_b)
-        cmd_out = None
-        try:
-            cmd_out = self.ssh.run(SERVER_UDP_KEEPALIVE, timeout = time_out)
-        except Exception as e:
-            self.log.error("Failed to capture packets on server: %s" % e)
-            result = False
+        cmd_out = utils.exe_cmd("timeout %s %s" %
+                                (time_out, SERVER_UDP_KEEPALIVE))
 
         # verify packets received
-        if cmd_out:
-            result = self._verify_time_interval(time_interval, cmd_out.stdout)
+        result = self._verify_time_interval(time_interval, cmd_out)
 
         # stop NATT keep alive
         status = cutils.stop_natt_keepalive(self.dut, nka_key)

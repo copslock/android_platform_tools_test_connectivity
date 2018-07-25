@@ -29,6 +29,7 @@ $(ACTS_DISTRO): $(sort $(shell find $(LOCAL_PATH)/acts))
 	@rm -f $(HOST_OUT)/acts-dist/acts.zip
 	$(hide) zip $(HOST_OUT)/acts-dist/acts.zip $(shell find tools/test/connectivity/acts/* ! -wholename "*__pycache__*")
 acts: $(ACTS_DISTRO)
+.PHONY: acts
 
 $(call dist-for-goals,tests,$(ACTS_DISTRO))
 
@@ -53,6 +54,7 @@ $(WTS_ACTS_DISTRO): $(SOONG_ZIP)
 	$(hide) chmod 755 $(WTS_ACTS_DISTRO)
 
 wts-acts: $(WTS_ACTS_DISTRO)
+.PHONY: wts-acts
 
 $(call dist-for-goals,tests,$(WTS_ACTS_DISTRO))
 
