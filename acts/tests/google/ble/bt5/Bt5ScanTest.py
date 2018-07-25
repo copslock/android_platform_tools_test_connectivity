@@ -1,4 +1,4 @@
-#/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright (C) 2016 The Android Open Source Project
 #
@@ -41,7 +41,6 @@ from acts import signals
 
 class Bt5ScanTest(BluetoothBaseTest):
     default_timeout = 10
-    max_scan_instances = 28
     report_delay = 2000
     scan_callbacks = []
     adv_callbacks = []

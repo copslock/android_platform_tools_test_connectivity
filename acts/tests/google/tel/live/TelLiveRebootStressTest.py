@@ -36,14 +36,12 @@ from acts.test_utils.tel.tel_defines import RAT_FAMILY_WLAN
 from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_CRASH
+from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
-from acts.test_utils.tel.tel_lookup_tables import device_capabilities
-from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import get_model_name
-from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts.test_utils.tel.tel_test_utils import is_droid_in_network_generation
@@ -94,18 +92,13 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         self.ad_reference = self.android_devices[1] if len(
             self.android_devices) > 1 else None
         self.dut_model = get_model_name(self.dut)
-        self.dut_operator = get_operator_name(self.log, self.dut)
-        self.dut_capabilities = set(
-            device_capabilities.get(
-                self.dut_model, device_capabilities["default"])) & set(
-                    operator_capabilities.get(
-                        self.dut_operator, operator_capabilities["default"]))
-        self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         self.user_params["check_crash"] = False
         self.skip_reset_between_cases = False
 
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
+        self.dut_capabilities = self.dut.telephony.get("capabilities", [])
+        self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
         self.default_testing_func_names = []
         for method in ("_check_volte", "_check_vt", "_check_csfb",
                        "_check_tethering", "_check_wfc_apm",
@@ -379,7 +372,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         if CAPABILITY_WFC in self.dut_capabilities:
             self.log.info("Check WFC in APM")
             if not phone_setup_iwlan(
-                    self.log, self.dut, True, WFC_MODE_WIFI_PREFERRED,
+                    self.log, self.dut, True, WFC_MODE_CELLULAR_PREFERRED,
                     self.wifi_network_ssid, self.wifi_network_pass):
                 self.log.error("Failed to setup WFC.")
                 return False
@@ -392,21 +385,21 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         return False
 
     def _check_wfc_nonapm(self):
-        if CAPABILITY_WFC in self.dut_capabilities and (
-                self.dut_operator == "tmo"):
-            self.log.info("Check WFC in NonAPM")
-            if not phone_setup_iwlan(
-                    self.log, self.dut, False, WFC_MODE_WIFI_PREFERRED,
-                    self.wifi_network_ssid, self.wifi_network_pass):
-                self.log.error("Failed to setup WFC.")
-                return False
-            if not call_setup_teardown(self.log, self.dut, self.ad_reference,
-                                       self.dut, is_phone_in_call_iwlan):
-                self.log.error("WFC Call Failed.")
-                return False
-            else:
-                return True
-        return False
+        if CAPABILITY_WFC not in self.dut_capabilities and (
+                WFC_MODE_WIFI_PREFERRED not in self.dut_wfc_modes):
+            return False
+        self.log.info("Check WFC in NonAPM")
+        if not phone_setup_iwlan(
+                self.log, self.dut, False, WFC_MODE_WIFI_PREFERRED,
+                self.wifi_network_ssid, self.wifi_network_pass):
+            self.log.error("Failed to setup WFC.")
+            return False
+        if not call_setup_teardown(self.log, self.dut, self.ad_reference,
+                                   self.dut, is_phone_in_call_iwlan):
+            self.log.error("WFC Call Failed.")
+            return False
+        else:
+            return True
 
     def _check_wfc_enabled(self):
         if not wait_for_wifi_data_connection(self.log, self.dut, True):
@@ -593,6 +586,10 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 setattr(self.dut, "reboot_to_recover", True)
                 return False
         else:
+            if process == "rild":
+                if int(self.dut.adb.getprop(
+                        "ro.product.first_api_level")) >= 28:
+                    process = "qcrild"
             self.dut.log.info("======== Killing process <%s> ========",
                               process)
             process_pid = self.dut.adb.shell("pidof %s" % process)
@@ -627,8 +624,16 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if is_sim_locked(self.dut):
                 unlock_sim(self.dut)
 
+        if process == "ims_rtp_daemon":
+            if not self._check_wfc_enabled:
+                failed_tests = ["_check_wfc_enabled"]
+            else:
+                failed_tests = []
+        else:
+            failed_tests = []
+
         begin_time = get_current_epoch_time()
-        failed_tests = self.feature_validator(*args)
+        failed_tests.extend(self.feature_validator(*args))
         crash_report = self.dut.check_crash_report(
             self.test_name, begin_time, log_crash_report=True)
         if failed_tests or crash_report:
@@ -642,7 +647,6 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             return False
         else:
             return True
-
 
     """ Tests Begin """
 
@@ -830,10 +834,11 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        if CAPABILITY_WFC not in self.dut_capabilities:
-            raise signals.TestSkip("WFC is not supported")
+        if CAPABILITY_WFC not in self.dut_capabilities and (
+                WFC_MODE_WIFI_PREFERRED not in self.dut_wfc_modes):
+            raise signals.TestSkip("WFC_NONAPM is not supported")
         if "_check_wfc_nonapm" not in self.default_testing_func_names:
-            raise signals.TestSkip("WFC in non-airplane mode is not supported")
+            raise signals.TestSkip("WFC in non-airplane mode is not working")
         func_names = ["_check_wfc_enabled"]
         if "_check_vt" in self.default_testing_func_names:
             func_names.append("_check_vt_enabled")
@@ -989,6 +994,12 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
+        if CAPABILITY_WFC not in self.dut_capabilities:
+            raise signals.TestSkip("WFC is not supported")
+        if WFC_MODE_WIFI_PREFERRED in self.dut_wfc_modes:
+            self._check_wfc_nonapm()
+        else:
+            self._check_wfc_apm()
         return self._crash_recovery_test("ims_rtp_daemon",
                                          *self.default_testing_func_names)
 

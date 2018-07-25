@@ -1,4 +1,4 @@
-#/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright (C) 2016 The Android Open Source Project
 #
@@ -37,7 +37,7 @@ from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 
 class ConcurrentBleScanningTest(BluetoothBaseTest):
     default_timeout = 20
-    max_concurrent_scans = 28
+    max_concurrent_scans = 27
 
     def __init__(self, controllers):
         BluetoothBaseTest.__init__(self, controllers)
@@ -264,13 +264,13 @@ class ConcurrentBleScanningTest(BluetoothBaseTest):
         try:
             self.scn_ad.ed.pop_event(
                 scan_failed.format(scan_callback), self.default_timeout)
-            self.log.info(
-                "Found scan event successfully. Iteration {} successful."
+            self.log.error(
+                "Unexpected scan event found. Iteration {} successful."
                 .format(i))
-        except Exception:
-            self.log.info("Failed to find a onScanFailed event for callback {}"
-                          .format(scan_callback))
             test_result = False
+        except Exception:
+            self.log.info("No onScanFailed event for callback {} as expected."
+                          .format(scan_callback))
         for callback in scan_callback_list:
             self.scn_ad.droid.bleStopBleScan(callback)
         return test_result

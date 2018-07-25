@@ -18,15 +18,20 @@ import os
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 
+from acts.event import subscription_bundle
+
 from acts import asserts
 from acts import keys
 from acts import logger
 from acts import records
 from acts import signals
+from acts import error
 from acts import tracelogger
 from acts import utils
 
 # Macro strings for test result reporting
+from acts.event.subscription_bundle import SubscriptionBundle
+
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
 
@@ -59,6 +64,10 @@ class BaseTestClass(object):
     TAG = None
 
     def __init__(self, configs):
+        self.class_subscriptions = SubscriptionBundle()
+        self.class_subscriptions.register()
+        self.all_subscriptions = [self.class_subscriptions]
+
         self.tests = []
         if not self.TAG:
             self.TAG = self.__class__.__name__
@@ -182,6 +191,11 @@ class BaseTestClass(object):
                     if not ad.skip_sl4a:
                         ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN,
                                                        test_name))
+
+        except error.ActsError as e:
+            self.results.errors.append(e)
+            self.log.error('BaseTest setup_test error: %s' % e.message)
+
         except Exception as e:
             self.log.warning(
                 'Unable to send BEGIN log command to all devices.')
@@ -207,8 +221,13 @@ class BaseTestClass(object):
         self.log.debug('Tearing down test %s' % test_name)
         try:
             # Write test end token to adb log if android device is attached.
-            for ad in self.android_devices:
+            for ad in getattr(self, 'android_devices', []):
                 ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
+
+        except error.ActsError as e:
+            self.results.errors.append(e)
+            self.log.error('BaseTest teardown_test error: %s' % e.message)
+
         except Exception as e:
             self.log.warning('Unable to send END log command to all devices.')
             self.log.warning('Error: %s' % e)
@@ -392,6 +411,7 @@ class BaseTestClass(object):
                     verdict = test_func(*args, **kwargs)
                 else:
                     verdict = test_func()
+
             finally:
                 try:
                     self._teardown_test(self.test_name)
@@ -429,6 +449,9 @@ class BaseTestClass(object):
         except signals.TestBlocked as e:
             tr_record.test_blocked(e)
             self._exec_procedure_func(self._on_blocked, tr_record)
+        except error.ActsError as e:
+            self.results.errors.append(e)
+            self.log.error("BaseTest execute_one_test_case error: %s" % e.message)
         except Exception as e:
             self.log.error(traceback.format_exc())
             # Exception happened during test.
@@ -506,10 +529,10 @@ class BaseTestClass(object):
 
             if format_args:
                 self.exec_one_testcase(test_name, test_func,
-                                       args + (setting, ), **kwargs)
+                                       args + (setting,), **kwargs)
             else:
                 self.exec_one_testcase(test_name, test_func,
-                                       (setting, ) + args, **kwargs)
+                                       (setting,) + args, **kwargs)
 
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(setting)
@@ -637,6 +660,7 @@ class BaseTestClass(object):
         Returns:
             The test results object of this class.
         """
+        self.register_test_class_event_subscriptions()
         self.log.info("==========> %s <==========", self.TAG)
         # Devise the actual test cases to run in the test class.
         if not test_names:
@@ -655,6 +679,12 @@ class BaseTestClass(object):
                 self.log.error("Failed to setup %s.", self.TAG)
                 self._block_all_test_cases(tests)
                 return self.results
+        except signals.TestAbortClass:
+            try:
+                self._exec_func(self.teardown_class)
+            except Exception as e:
+                self.log.warning(e)
+            return self.results
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
             self._exec_func(self.teardown_class)
@@ -772,3 +802,12 @@ class BaseTestClass(object):
                 self.log_path, logger.epoch_to_log_line_timestamp(begin_time))
             utils.create_dir(diag_path)
             mylogger.pull(session, diag_path)
+
+    def register_test_class_event_subscriptions(self):
+        self.class_subscriptions = subscription_bundle.create_from_instance(
+            self)
+        self.class_subscriptions.register()
+
+    def unregister_test_class_event_subscriptions(self):
+        for package in self.all_subscriptions:
+            package.unregister()

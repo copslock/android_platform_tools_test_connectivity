@@ -34,6 +34,7 @@ from acts import logger
 from acts import records
 from acts import signals
 from acts import utils
+from acts import error
 
 
 def _find_test_class():
@@ -544,6 +545,9 @@ class TestRunner(object):
                 for module in self._import_builtin_controllers():
                     self.register_controller(module, builtin=True)
                 self.run_test_class(test_cls_name, test_case_names)
+            except error.ActsError as e:
+                self.results.errors.append(e)
+                self.log.error("Test Runner Error: %s" % e.message)
             except signals.TestAbortAll as e:
                 self.log.warning(
                     "Abort all subsequent test classes. Reason: %s", e)

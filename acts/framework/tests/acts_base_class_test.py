@@ -20,6 +20,7 @@ import unittest
 from acts import asserts
 from acts import base_test
 from acts import signals
+from acts import error
 from acts import test_runner
 
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
@@ -182,7 +183,7 @@ class ActsBaseClassTest(unittest.TestCase):
         actual_record = bt_cls.results.blocked[0]
         self.assertEqual(actual_record.test_name, "test_something")
         expected_summary = (
-            "Blocked 1, ControllerInfo {}, Executed 0, Failed 0, Passed 0,"
+            "Blocked 1, ControllerInfo {}, Errors 0, Executed 0, Failed 0, Passed 0,"
             " Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
         call_check.assert_called_once_with("haha")
@@ -203,7 +204,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -223,7 +224,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 1, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 1, Passed 0, "
             "Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -244,8 +245,23 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, expected_msg)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 1, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 1, Passed 0, "
             "Requested 1, Skipped 0, Unknown 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_run_fail_by_ActsError_(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def __init__(self, controllers):
+                super(MockBaseTest, self).__init__(controllers)
+
+            def test_something(self):
+                raise error.ActsError()
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_something"])
+        expected_summary = (
+            "Blocked 0, ControllerInfo {}, Errors 1, Executed 1, Failed 0, Passed 0, "
+            "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_teardown_test_assert_fail(self):
@@ -263,7 +279,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -284,7 +300,7 @@ class ActsBaseClassTest(unittest.TestCase):
         expected_extra_error = {"teardown_test": MSG_EXPECTED_EXCEPTION}
         self.assertEqual(actual_record.additional_errors, expected_extra_error)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -306,7 +322,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 1, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 1, "
             "Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -331,7 +347,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -353,7 +369,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -378,7 +394,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -400,7 +416,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 1, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 1, Passed 0, "
             "Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -425,7 +441,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -451,7 +467,7 @@ class ActsBaseClassTest(unittest.TestCase):
                          'Setup for test_something failed.')
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 1, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 1, Passed 0, "
             "Requested 1, Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -471,7 +487,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -494,7 +510,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -515,7 +531,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.additional_errors["teardown_test"],
                          "Details=This is an expected exception., Extras=None")
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -539,7 +555,7 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.additional_errors["teardown_test"],
                          "Details=This is an expected exception., Extras=None")
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -562,7 +578,7 @@ class ActsBaseClassTest(unittest.TestCase):
             '_on_pass': MSG_EXPECTED_EXCEPTION
         })
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -585,7 +601,7 @@ class ActsBaseClassTest(unittest.TestCase):
             '_on_fail': MSG_EXPECTED_EXCEPTION
         })
         expected_summary = (
-            "Blocked 0, ControllerInfo {}, Executed 1, Failed 0, Passed 0, "
+            "Blocked 0, ControllerInfo {}, Errors 0, Executed 1, Failed 0, Passed 0, "
             "Requested 1, Skipped 0, Unknown 1")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -608,7 +624,7 @@ class ActsBaseClassTest(unittest.TestCase):
                          MSG_EXPECTED_EXCEPTION)
         self.assertEqual(
             bt_cls.results.summary_str(),
-            ("Blocked 0, ControllerInfo {}, Executed 2, Failed 1, Passed 1, "
+            ("Blocked 0, ControllerInfo {}, Errors 0, Executed 2, Failed 1, Passed 1, "
              "Requested 3, Skipped 0, Unknown 0"))
 
     def test_uncaught_exception(self):

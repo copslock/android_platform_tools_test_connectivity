@@ -20,6 +20,7 @@ import logging
 import re
 import shellescape
 
+from acts import error
 from acts.libs.proc import job
 
 DEFAULT_ADB_TIMEOUT = 60
@@ -28,6 +29,10 @@ DEFAULT_ADB_PULL_TIMEOUT = 180
 # (N and above add the serial to the error msg).
 DEVICE_NOT_FOUND_REGEX = re.compile('^error: device (?:\'.*?\' )?not found')
 DEVICE_OFFLINE_REGEX = re.compile('^error: device offline')
+# Raised when adb forward commands fail to forward a port.
+CANNOT_BIND_LISTENER_REGEX = re.compile('^error: cannot bind listener:')
+# Expected output is "Android Debug Bridge version 1.0.XX
+ADB_VERSION_REGEX = re.compile('Android Debug Bridge version 1.0.(\d+)')
 ROOT_USER_ID = '0'
 SHELL_USER_ID = '2000'
 
@@ -46,7 +51,7 @@ def parsing_parcel_output(output):
     return re.sub(r'[.\s]', '', output)
 
 
-class AdbError(Exception):
+class AdbError(error.ActsError):
     """Raised when there is an error in adb operations."""
 
     def __init__(self, cmd, stdout, stderr, ret_code):
@@ -169,7 +174,8 @@ class AdbProxy(object):
             return parsing_parcel_output(out)
         if ignore_status:
             return out or err
-        if ret == 1 and DEVICE_NOT_FOUND_REGEX.match(err):
+        if ret == 1 and (DEVICE_NOT_FOUND_REGEX.match(err) or
+                         CANNOT_BIND_LISTENER_REGEX.match(err)):
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
         else:
             return out
@@ -210,7 +216,14 @@ class AdbProxy(object):
             self._ssh_connection.create_ssh_tunnel(
                 remote_port, local_port=host_port)
             host_port = remote_port
-        return self.forward("tcp:%d tcp:%d" % (host_port, device_port))
+        output = self.forward("tcp:%d tcp:%d" % (host_port, device_port))
+        # If hinted_port is 0, the output will be the selected port.
+        # Otherwise, there will be no output upon successfully
+        # forwarding the hinted port.
+        if output:
+            return int(output)
+        else:
+            return host_port
 
     def remove_tcp_forward(self, host_port):
         """Stop tcp forwarding a port from localhost to this android device.
@@ -268,3 +281,19 @@ class AdbProxy(object):
             return self._exec_adb_cmd(clean_name, arg_str, **kwargs)
 
         return adb_call
+
+    def get_version_number(self):
+        """Returns the version number of ADB as an int (XX in 1.0.XX).
+
+        Raises:
+            AdbError if the version number is not found/parsable.
+        """
+        version_output = self.version()
+        match = re.search(ADB_VERSION_REGEX,
+                          version_output)
+
+        if not match:
+            logging.error('Unable to capture ADB version from adb version '
+                          'output: %s' % version_output)
+            raise AdbError('adb version', version_output, '', '')
+        return int(match.group(1))

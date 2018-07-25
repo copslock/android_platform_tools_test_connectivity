@@ -1786,6 +1786,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Hold/Unhold test fail.")
             return False
 
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
         return True
 
     @test_tracker_info(uuid="0667535e-dcad-49f0-9b4b-fa45d6c75f5b")
@@ -1828,6 +1832,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         if not self._hold_unhold_test(ads):
             self.log.error("Hold/Unhold test fail.")
+            return False
+
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
             return False
 
         return True
@@ -1874,6 +1882,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Hold/Unhold test fail.")
             return False
 
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
         return True
 
     @test_tracker_info(uuid="ace36801-1e7b-4f06-aa0b-17affc8df069")
@@ -1918,6 +1930,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Hold/Unhold test fail.")
             return False
 
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
         return True
 
     @test_tracker_info(uuid="2ad32874-0d39-4475-8ae3-d6dccda675f5")
@@ -1960,6 +1976,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         if not self._hold_unhold_test(ads):
             self.log.error("Hold/Unhold test fail.")
+            return False
+
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
             return False
 
         return True
@@ -2050,6 +2070,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Hold/Unhold test fail.")
             return False
 
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
         return True
 
     @test_tracker_info("37ad003b-6426-42f7-b528-ec7c1842fd18")
@@ -2094,6 +2118,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Hold/Unhold test fail.")
             return False
 
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
         return True
 
     @test_tracker_info(uuid="fa37cd37-c30a-4caa-80b4-52507995ec77")
@@ -2136,6 +2164,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Hold/Unhold test fail.")
             return False
 
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
         return True
 
     @test_tracker_info(uuid="28a9acb3-83e8-4dd1-82bf-173da8bd2eca")
@@ -2176,6 +2208,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         if not self._hold_unhold_test(ads):
             self.log.error("Hold/Unhold test fail.")
+            return False
+
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
             return False
 
         return True
@@ -2226,6 +2262,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Hold/Unhold test fail.")
             return False
 
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
         return True
 
     @test_tracker_info(uuid="23805165-01ce-4351-83d3-73c9fb3bda76")
@@ -2272,6 +2312,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         if not self._hold_unhold_test(ads):
             self.log.error("Hold/Unhold test fail.")
+            return False
+
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
             return False
 
         return True
@@ -2321,6 +2365,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Hold/Unhold test fail.")
             return False
 
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
+            return False
+
         return True
 
     @test_tracker_info(uuid="a6405fe6-c732-4ae6-bbae-e912a124f4a2")
@@ -2367,6 +2415,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
         if not self._hold_unhold_test(ads):
             self.log.error("Hold/Unhold test fail.")
+            return False
+
+        if not hangup_call(self.log, ads[0]):
+            self.log.error("Call Hangup Failed")
             return False
 
         return True
@@ -3355,14 +3407,16 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             ad_callee = ads[0]
         ad_download = ads[0]
 
-        start_youtube_video(ad_download)
+        if not start_youtube_video(ad_download):
+            ad_download.log.error("Fail to bring up youtube video")
+            return False
 
         if not call_setup_teardown(self.log, ad_caller, ad_callee, ad_caller,
                                    None, None, 30):
-            self.log.error("Call setup failed in active youtube video")
+            ad_download.log.error("Call setup failed in active youtube video")
             result = False
         else:
-            self.log.info("Call setup succeed in active youtube video")
+            ad_download.log.info("Call setup succeed in active youtube video")
             result = True
 
         if wait_for_state(ad_download.droid.audioIsMusicActive, True, 15, 1):

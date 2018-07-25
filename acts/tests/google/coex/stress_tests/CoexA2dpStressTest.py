@@ -1,4 +1,4 @@
-# /usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright (C) 2018 The Android Open Source Project
 #
@@ -18,7 +18,7 @@ Test suite to perform Stress test on A2DP with Wlan.
 
 Test Setup:
 
-One Android deivce.
+One Android device.
 One A2DP Headset connected to Relay.
 """
 import time
@@ -48,8 +48,7 @@ class CoexA2dpStressTest(CoexBaseTest):
 
     def setup_test(self):
         super().setup_test()
-        self.audio_receiver.power_on()
-        self.audio_receiver.enter_pairing_mode()
+        self.audio_receiver.pairing_mode()
         time.sleep(5) #Wait time until headset goes into pairing mode.
         if not pair_and_connect_headset(
                 self.pri_ad, self.audio_receiver.mac_address,
@@ -60,6 +59,7 @@ class CoexA2dpStressTest(CoexBaseTest):
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
+        self.audio.terminate_pyaudio()
         self.audio_receiver.clean_up()
         super().teardown_test()
 

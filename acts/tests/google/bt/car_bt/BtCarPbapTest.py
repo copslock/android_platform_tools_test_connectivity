@@ -1,4 +1,4 @@
-#/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright (C) 2016 The Android Open Source Project
 #
@@ -63,8 +63,6 @@ class BtCarPbapTest(BluetoothBaseTest):
         # Pair the devices.
         # This call may block until some specified timeout in bt_test_utils.py.
         # Grace time inbetween stack state changes
-
-        setup_multiple_devices_for_bt_test(self.android_devices)
         if not bt_test_utils.pair_pri_to_sec(self.pce, self.pse):
             self.log.error("Failed to pair.")
             return False

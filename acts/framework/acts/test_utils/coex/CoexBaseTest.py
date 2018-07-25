@@ -44,6 +44,7 @@ from acts.utils import stop_standing_subprocess
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
 IPERF_SERVER_WAIT_TIME = 5
+AVRCP_WAIT_TIME = 2
 
 
 class CoexBaseTest(BaseTestClass):
@@ -254,7 +255,7 @@ class CoexBaseTest(BaseTestClass):
         if record.details:
             self.log.error(record.details)
         self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        self.on_fail(record, record.test_name, record.log_begin_time)
+        self.on_fail(record, record.test_name, record.begin_time)
 
     def _on_pass(self, record):
         """Proxy function to guarantee the base implementation of on_pass is
@@ -328,24 +329,60 @@ class CoexBaseTest(BaseTestClass):
 
         Returns: True if successful, otherwise False.
         """
-        #TODO: Validate the success state of functionalities performed.
-        self.audio_receiver.press_volume_up()
-        time.sleep(2)
-        self.audio_receiver.press_volume_down()
-        time.sleep(2)
-        self.audio_receiver.press_next()
-        time.sleep(2)
-        self.audio_receiver.press_previous()
-        time.sleep(2)
+        if "Volume_up" and "Volume_down" in (
+                self.relay_devices[0].relays.keys()):
+            current_volume = self.pri_ad.droid.getMediaVolume()
+            self.audio_receiver.press_volume_up()
+            if current_volume == self.pri_ad.droid.getMediaVolume():
+                self.log.error("Increase volume failed")
+                return False
+            time.sleep(AVRCP_WAIT_TIME)
+            current_volume = self.pri_ad.droid.getMediaVolume()
+            self.audio_receiver.press_volume_down()
+            if current_volume == self.pri_ad.droid.getMediaVolume():
+                self.log.error("Decrease volume failed")
+                return False
+        else:
+            self.log.warning("No volume control pins specfied in relay config.")
+
+        if "Next" and "Previous" in self.relay_devices[0].relays.keys():
+            self.audio_receiver.press_next()
+            time.sleep(AVRCP_WAIT_TIME)
+            self.audio_receiver.press_previous()
+            time.sleep(AVRCP_WAIT_TIME)
+        else:
+            self.log.warning("No track change pins specfied in relay config.")
         return True
+
+    def get_call_volume(self):
+        """Function to get call volume when bluetooth headset connected.
+
+        Returns:
+            Call volume.
+        """
+        return self.pri_ad.adb.shell(
+            "settings list system|grep volume_bluetooth_sco_bt_sco_hs")
 
     def change_volume(self):
         """Changes volume with HFP call.
 
         Returns: True if successful, otherwise False.
         """
-        self.audio_receiver.press_volume_up()
-        time.sleep(2)
-        self.audio_receiver.press_volume_down()
-        time.sleep(2)
+        if "Volume_up" and "Volume_down" in (
+                self.relay_devices[0].relays.keys()):
+            current_volume = self.get_call_volume()
+            self.audio_receiver.press_volume_down()
+            time.sleep(AVRCP_WAIT_TIME)  # wait till volume_changes
+            if current_volume == self.get_call_volume():
+                self.log.error("Decrease volume failed")
+                return False
+            time.sleep(AVRCP_WAIT_TIME)
+            current_volume = self.get_call_volume()
+            self.audio_receiver.press_volume_up()
+            time.sleep(AVRCP_WAIT_TIME)  # wait till volume_changes
+            if current_volume == self.get_call_volume():
+                self.log.error("Increase volume failed")
+                return False
+        else:
+            self.log.warning("No volume control pins specfied in relay config.")
         return True

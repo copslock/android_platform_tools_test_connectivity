@@ -1,4 +1,4 @@
-# /usr/bin/env python3
+#!/usr/bin/env python3
 #
 # Copyright (C) 2018 The Android Open Source Project
 #
@@ -230,8 +230,6 @@ def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
             pri_droid.droid.getBuildSerial(), dev_to_connect))
         return False
 
-    pri_droid.droid.bluetoothConnectBonded(dev_to_connect)
-
     end_time = time.time() + 10
     profile_connected = set()
     sec_addr = dev_to_connect
@@ -369,9 +367,9 @@ def disconnect_headset_from_dev(pri_ad, sec_ad, profiles_list):
                 bluetooth_profile_connection_state_changed, bt_default_timeout)
             pri_ad.log.info("Got event {}".format(profile_event))
         except Exception:
-            pri_ad.log.error("Did not disconnect from Profiles")
-            return False
-
+            pri_ad.log.warning("Did not disconnect from Profiles")
+            return True
+        
         profile = profile_event['data']['profile']
         state = profile_event['data']['state']
         device_addr = profile_event['data']['addr']
@@ -833,7 +831,7 @@ def setup_tel_config(pri_ad, sec_ad, sim_conf_file):
     return pri_ad_num, sec_ad_num
 
 
-def start_fping(pri_ad, duration):
+def start_fping(pri_ad, duration, failure_rate):
     """Starts fping to ping for DUT's ip address.
 
     Steps:
@@ -842,6 +840,7 @@ def start_fping(pri_ad, duration):
     Args:
         pri_ad: An android device object.
         duration: Duration of fping in seconds.
+        failure_rate: Fping packet drop tolerance value.
 
     Returns:
         True if successful, False otherwise.
@@ -863,9 +862,9 @@ def start_fping(pri_ad, duration):
     res_line = lines[-1]
     # Ex: res_line = "192.168.186.224 : xmt/rcv/%loss = 10/10/0%,
     # min/avg/max = 36.7/251/1272"
-    loss_percent = re.split("[:/=,]", res_line)
+    loss_percent = re.split("[:/=,%]", res_line)
     # %loss will be in 7th index of the list
-    if loss_percent[-7] != "0%":
+    if int(loss_percent[-8]) > failure_rate:
         logging.error("Packet drop observed")
         return False
     return True

@@ -13,10 +13,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import fcntl
+import logging
+import selenium
 import splinter
 import time
-from acts.libs.proc import job
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 BROWSER_WAIT_SHORT = 1
 BROWSER_WAIT_MED = 3
@@ -52,74 +53,98 @@ def detroy(objs):
     return
 
 
-def start_chrome_browser(headless, max_allowed_sessions, timeout):
-    """Method to start chrome browser for retail AP configuration
+class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
+    """Class that implements a blocking browser session on top of selenium.
 
-    This function starts a chrome browser session to interface with the APs
-    web interface. The function attempts to maintain only one chromedriver
-    session by waiting until no chromedriver sessions are running on a machine.
-
-    Args:
-        headless: boolean controlling headless operation
-        max_allowed_sessions: maximum number of concurrent chrome sessions
-        timeout: maximum waiting time to launch chrome session
-    Returns:
-        browser: chrome browser session
-    Raises:
-        TimeoutError: raised when a browser session could not be started
-        withing the specified timeout
+    The class inherits from and builds upon splinter/selenium's webdriver class
+    and makes sure that only one such webdriver is active on a machine at any
+    single time. The class ensures single session operation using a lock file.
+    The class is to be used within context managers (e.g. with statements) to
+    ensure locks are always properly released.
     """
-    chrome_options = splinter.driver.webdriver.chrome.Options()
-    chrome_options.add_argument("--no-proxy-server")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--allow-running-insecure-content")
-    chrome_options.add_argument("--ignore-certificate-errors")
-    chrome_capabilities = DesiredCapabilities.CHROME.copy()
-    chrome_capabilities["acceptSslCerts"] = True
-    chrome_capabilities["acceptInsecureCerts"] = True
-    if headless:
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--disable-gpu")
 
-    start_time = time.time()
-    end_time = start_time + timeout
-    while time.time() < end_time:
-        browsers_running = int(job.run('pgrep chromedriver | wc -l').stdout)
-        if browsers_running >= max_allowed_sessions:
-            time.sleep(BROWSER_WAIT_SHORT)
-        else:
+    def __init__(self, headless, timeout):
+        """Constructor for BlockingBrowser class.
+
+        Args:
+            headless: boolean to control visible/headless browser operation
+            timeout: maximum time allowed to launch browser
+        """
+        self.chrome_options = splinter.driver.webdriver.chrome.Options()
+        self.chrome_options.add_argument("--no-proxy-server")
+        self.chrome_options.add_argument("--no-sandbox")
+        self.chrome_options.add_argument("--allow-running-insecure-content")
+        self.chrome_options.add_argument("--ignore-certificate-errors")
+        self.chrome_capabilities = selenium.webdriver.common.desired_capabilities.DesiredCapabilities.CHROME.copy(
+        )
+        self.chrome_capabilities["acceptSslCerts"] = True
+        self.chrome_capabilities["acceptInsecureCerts"] = True
+        if headless:
+            self.chrome_options.add_argument("--headless")
+            self.chrome_options.add_argument("--disable-gpu")
+        self.lock_file_path = "/usr/local/bin/chromedriver"
+        self.timeout = timeout
+
+    def __enter__(self):
+        self.lock_file = open(self.lock_file_path, "r")
+        start_time = time.time()
+        while time.time() < start_time + self.timeout:
             try:
-                browser = splinter.Browser(
-                    "chrome",
-                    options=chrome_options,
-                    desired_capabilities=chrome_capabilities)
-                return browser
-            except:
+                fcntl.flock(self.lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self.driver = selenium.webdriver.Chrome(
+                    options=self.chrome_options,
+                    desired_capabilities=self.chrome_capabilities)
+                self.element_class = splinter.driver.webdriver.WebDriverElement
+                self._cookie_manager = splinter.driver.webdriver.cookie_manager.CookieManager(
+                    self.driver)
+                super(splinter.driver.webdriver.chrome.WebDriver,
+                      self).__init__(2)
+                return super(BlockingBrowser, self).__enter__()
+            except BlockingIOError:
                 time.sleep(BROWSER_WAIT_SHORT)
-    raise TimeoutError("Could not start chrome browser in time.")
+        raise TimeoutError("Could not start chrome browser in time.")
 
-
-def visit_config_page(browser, url, page_load_timeout, num_tries):
-    """Method to visit Netgear AP webpages.
-
-    This function visits a web page and checks the the resulting URL matches
-    the intended URL, i.e. no redirects have happened
-
-    Args:
-        browser: the splinter browser object that will visit the URL
-        url: the intended url
-        num_tries: number of tries before url is declared unreachable
-    """
-    browser.driver.set_page_load_timeout(page_load_timeout)
-    for idx in range(num_tries):
+    def __exit__(self, exc_type, exc_value, traceback):
         try:
-            browser.visit(url)
+            super(BlockingBrowser, self).__exit__(exc_type, exc_value,
+                                                  traceback)
         except:
-            browser.visit("about:blank")
-        if browser.url.split("/")[-1] == url.split("/")[-1]:
-            break
-        if idx == num_tries - 1:
-            raise RuntimeError("URL was unreachable.")
+            raise RuntimeError("Failed to quit browser. Releasing lock file.")
+        finally:
+            fcntl.flock(self.lock_file, fcntl.LOCK_UN)
+            self.lock_file.close()
+
+    def restart(self):
+        """Method to restart browser session without releasing lock file."""
+        self.quit()
+        self.__enter__()
+
+    def visit_persistent(self, url, page_load_timeout, num_tries):
+        """Method to visit webpages and retry upon failure.
+
+        The function visits a web page and checks the the resulting URL matches
+        the intended URL, i.e. no redirects have happened
+
+        Args:
+            url: the intended url
+            page_load_timeout: timeout for page visits
+            num_tries: number of tries before url is declared unreachable
+        """
+        self.driver.set_page_load_timeout(page_load_timeout)
+        for idx in range(num_tries):
+            try:
+                self.visit(url)
+            except:
+                try:
+                    self.visit("about:blank")
+                except:
+                    self.restart()
+            if self.url.split("/")[-1] == url.split("/")[-1]:
+                break
+            if idx == num_tries - 1:
+                logging.error("URL unreachable. Current URL: {}".format(
+                    self.url))
+                raise RuntimeError("URL unreachable.")
 
 
 class WifiRetailAP(object):
@@ -148,6 +173,7 @@ class WifiRetailAP(object):
         with the assumed settings saved in the AP object. When called after AP
         configuration, this method helps ensure that our configuration was
         successful.
+        Note: Calling this function updates the stored ap_settings
 
         Raises:
             ValueError: If read AP settings do not match stored settings.
@@ -155,8 +181,9 @@ class WifiRetailAP(object):
         assumed_ap_settings = self.ap_settings.copy()
         actual_ap_settings = self.read_ap_settings()
         if assumed_ap_settings != actual_ap_settings:
-            raise ValueError(
-                "Discrepancy in AP settings. Potential configuration error.")
+            logging.warning(
+                "Discrepancy in AP settings. Some settings may have been overwritten."
+            )
 
     def configure_ap(self):
         """Function that configures ap based on values of ap_settings.
@@ -165,6 +192,20 @@ class WifiRetailAP(object):
         if function not implemented in child class.
         """
         raise NotImplementedError
+
+    def set_region(self, region):
+        """Function that sets AP region.
+
+        This function sets the region for the AP. Note that this may overwrite
+        channel and bandwidth settings in cases where the new region does not
+        support the current wireless configuration.
+
+        Args:
+            region: string indicating AP region
+        """
+        logging.warning("Updating region may overwrite wireless settings.")
+        setting_to_update = {"region": region}
+        self.update_ap_settings(setting_to_update)
 
     def set_radio_on_off(self, network, status):
         """Function that turns the radio on or off.
@@ -381,22 +422,22 @@ class NetgearR7000AP(WifiRetailAP):
 
     def read_ap_settings(self):
         """Function to read ap settings."""
-        with start_chrome_browser(self.ap_settings["headless_browser"], 1,
-                                  600) as browser:
+        with BlockingBrowser(self.ap_settings["headless_browser"],
+                             600) as browser:
             # Visit URL
-            visit_config_page(browser, self.config_page, BROWSER_WAIT_MED, 10)
-            visit_config_page(browser, self.config_page_nologin,
-                              BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page_nologin,
+                                     BROWSER_WAIT_MED, 10)
 
             for key, value in self.config_page_fields.items():
                 if "status" in key:
-                    visit_config_page(browser, self.config_page_advanced,
-                                      BROWSER_WAIT_MED, 10)
+                    browser.visit_persistent(self.config_page_advanced,
+                                             BROWSER_WAIT_MED, 10)
                     config_item = browser.find_by_name(value)
                     self.ap_settings["{}_{}".format(key[1], key[0])] = int(
                         config_item.first.checked)
-                    visit_config_page(browser, self.config_page_nologin,
-                                      BROWSER_WAIT_MED, 10)
+                    browser.visit_persistent(self.config_page_nologin,
+                                             BROWSER_WAIT_MED, 10)
                 else:
                     config_item = browser.find_by_name(value)
                     if "bandwidth" in key:
@@ -425,12 +466,12 @@ class NetgearR7000AP(WifiRetailAP):
         # Turn radios on or off
         self.configure_radio_on_off()
         # Configure radios
-        with start_chrome_browser(self.ap_settings["headless_browser"], 1,
-                                  600) as browser:
+        with BlockingBrowser(self.ap_settings["headless_browser"],
+                             600) as browser:
             # Visit URL
-            visit_config_page(browser, self.config_page, BROWSER_WAIT_MED, 10)
-            visit_config_page(browser, self.config_page_nologin,
-                              BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page_nologin,
+                                     BROWSER_WAIT_MED, 10)
 
             # Update region, and power/bandwidth for each network
             for key, value in self.config_page_fields.items():
@@ -443,9 +484,13 @@ class NetgearR7000AP(WifiRetailAP):
                     config_item.select_by_text(self.ap_settings["region"])
                 elif "bandwidth" in key:
                     config_item = browser.find_by_name(value).first
-                    config_item.select_by_text(
-                        self.bw_mode_text[self.ap_settings["{}_{}".format(
-                            key[1], key[0])]])
+                    try:
+                        config_item.select_by_text(
+                            self.bw_mode_text[self.ap_settings["{}_{}".format(
+                                key[1], key[0])]])
+                    except AttributeError:
+                        logging.warning(
+                            "Cannot select bandwidth. Keeping AP default.")
 
             # Update security settings (passwords updated only if applicable)
             for key, value in self.config_page_fields.items():
@@ -472,9 +517,13 @@ class NetgearR7000AP(WifiRetailAP):
                         key[1], key[0])])
                 elif "channel" in key:
                     config_item = browser.find_by_name(value).first
-                    config_item.select(self.ap_settings["{}_{}".format(
-                        key[1], key[0])])
-                    time.sleep(BROWSER_WAIT_SHORT)
+                    try:
+                        config_item.select(self.ap_settings["{}_{}".format(
+                            key[1], key[0])])
+                        time.sleep(BROWSER_WAIT_SHORT)
+                    except AttributeError:
+                        logging.warning(
+                            "Cannot select channel. Keeping AP default.")
                     try:
                         alert = browser.get_alert()
                         alert.accept()
@@ -490,18 +539,17 @@ class NetgearR7000AP(WifiRetailAP):
                 time.sleep(BROWSER_WAIT_SHORT)
             except:
                 time.sleep(BROWSER_WAIT_SHORT)
-            visit_config_page(browser, self.config_page,
-                              BROWSER_WAIT_EXTRA_LONG, 10)
-        self.validate_ap_settings()
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_EXTRA_LONG,
+                                     10)
 
     def configure_radio_on_off(self):
         """Helper configuration function to turn radios on/off."""
-        with start_chrome_browser(self.ap_settings["headless_browser"], 1,
-                                  600) as browser:
+        with BlockingBrowser(self.ap_settings["headless_browser"],
+                             600) as browser:
             # Visit URL
-            visit_config_page(browser, self.config_page, BROWSER_WAIT_MED, 10)
-            visit_config_page(browser, self.config_page_advanced,
-                              BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page_advanced,
+                                     BROWSER_WAIT_MED, 10)
 
             # Turn radios on or off
             status_toggled = False
@@ -521,8 +569,8 @@ class NetgearR7000AP(WifiRetailAP):
                 time.sleep(BROWSER_WAIT_SHORT)
                 browser.find_by_name("Apply").first.click()
                 time.sleep(BROWSER_WAIT_EXTRA_LONG)
-                visit_config_page(browser, self.config_page,
-                                  BROWSER_WAIT_EXTRA_LONG, 10)
+                browser.visit_persistent(self.config_page,
+                                         BROWSER_WAIT_EXTRA_LONG, 10)
 
 
 class NetgearR7500AP(WifiRetailAP):
@@ -622,10 +670,10 @@ class NetgearR7500AP(WifiRetailAP):
         self.read_radio_on_off()
         # Get radio configuration. Note that if both radios are off, the below
         # code will result in an error
-        with start_chrome_browser(self.ap_settings["headless_browser"], 1,
-                                  600) as browser:
-            visit_config_page(browser, self.config_page, BROWSER_WAIT_MED, 10)
-            visit_config_page(browser, self.config_page, BROWSER_WAIT_MED, 10)
+        with BlockingBrowser(self.ap_settings["headless_browser"],
+                             600) as browser:
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
             time.sleep(BROWSER_WAIT_SHORT)
             wireless_button = browser.find_by_id("wireless").first
             wireless_button.click()
@@ -667,10 +715,10 @@ class NetgearR7500AP(WifiRetailAP):
         # Turn radios on or off
         self.configure_radio_on_off()
         # Configure radios
-        with start_chrome_browser(self.ap_settings["headless_browser"], 1,
-                                  600) as browser:
-            visit_config_page(browser, self.config_page, BROWSER_WAIT_MED, 10)
-            visit_config_page(browser, self.config_page, BROWSER_WAIT_MED, 10)
+        with BlockingBrowser(self.ap_settings["headless_browser"],
+                             600) as browser:
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
             time.sleep(BROWSER_WAIT_SHORT)
             wireless_button = browser.find_by_id("wireless").first
             wireless_button.click()
@@ -696,18 +744,29 @@ class NetgearR7500AP(WifiRetailAP):
                                 48 < int(self.ap_settings["{}_{}".format(
                                     key[1], key[0])]) < 149)
                         config_item = iframe.find_by_name(value).first
-                        config_item.select_by_text(channel_string)
+                        try:
+                            config_item.select_by_text(channel_string)
+                        except AttributeError:
+                            logging.warning(
+                                "Cannot select channel. Keeping AP default.")
                     elif key == ("2G", "bandwidth"):
                         config_item = iframe.find_by_name(value).first
-                        config_item.select_by_text(
-                            str(self.bw_mode_text_2g[self.ap_settings[
-                                "{}_{}".format(key[1], key[0])]]))
+                        try:
+                            config_item.select_by_text(
+                                str(self.bw_mode_text_2g[self.ap_settings[
+                                    "{}_{}".format(key[1], key[0])]]))
+                        except AttributeError:
+                            logging.warning(
+                                "Cannot select bandwidth. Keeping AP default.")
                     elif key == ("5G_1", "bandwidth"):
                         config_item = iframe.find_by_name(value).first
-                        config_item.select_by_text(
-                            str(self.bw_mode_text_5g[self.ap_settings[
-                                "{}_{}".format(key[1], key[0])]]))
-
+                        try:
+                            config_item.select_by_text(
+                                str(self.bw_mode_text_5g[self.ap_settings[
+                                    "{}_{}".format(key[1], key[0])]]))
+                        except AttributeError:
+                            logging.warning(
+                                "Cannot select bandwidth. Keeping AP default.")
                 # Update passwords for WPA2-PSK protected networks
                 # (Must be done after security type is selected)
                 for key, value in self.config_page_fields.items():
@@ -738,17 +797,16 @@ class NetgearR7500AP(WifiRetailAP):
                     pass
                 time.sleep(BROWSER_WAIT_SHORT)
             time.sleep(BROWSER_WAIT_EXTRA_LONG)
-            visit_config_page(browser, self.config_page,
-                              BROWSER_WAIT_EXTRA_LONG, 10)
-        self.validate_ap_settings()
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_EXTRA_LONG,
+                                     10)
 
     def configure_radio_on_off(self):
         """Helper configuration function to turn radios on/off."""
-        with start_chrome_browser(self.ap_settings["headless_browser"], 1,
-                                  600) as browser:
-            visit_config_page(browser, self.config_page, BROWSER_WAIT_MED, 10)
-            visit_config_page(browser, self.config_page_advanced,
-                              BROWSER_WAIT_MED, 10)
+        with BlockingBrowser(self.ap_settings["headless_browser"],
+                             600) as browser:
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page_advanced,
+                                     BROWSER_WAIT_MED, 10)
             time.sleep(BROWSER_WAIT_SHORT)
             wireless_button = browser.find_by_id("advanced_bt").first
             wireless_button.click()
@@ -777,16 +835,16 @@ class NetgearR7500AP(WifiRetailAP):
                     time.sleep(BROWSER_WAIT_SHORT)
                     browser.find_by_name("Apply").first.click()
                     time.sleep(BROWSER_WAIT_EXTRA_LONG)
-                    visit_config_page(browser, self.config_page,
-                                      BROWSER_WAIT_EXTRA_LONG, 10)
+                    browser.visit_persistent(self.config_page,
+                                             BROWSER_WAIT_EXTRA_LONG, 10)
 
     def read_radio_on_off(self):
         """Helper configuration function to read radio status."""
-        with start_chrome_browser(self.ap_settings["headless_browser"], 1,
-                                  600) as browser:
-            visit_config_page(browser, self.config_page, BROWSER_WAIT_MED, 10)
-            visit_config_page(browser, self.config_page_advanced,
-                              BROWSER_WAIT_MED, 10)
+        with BlockingBrowser(self.ap_settings["headless_browser"],
+                             600) as browser:
+            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
+            browser.visit_persistent(self.config_page_advanced,
+                                     BROWSER_WAIT_MED, 10)
             wireless_button = browser.find_by_id("advanced_bt").first
             wireless_button.click()
             time.sleep(BROWSER_WAIT_SHORT)

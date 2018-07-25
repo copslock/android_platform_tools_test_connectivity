@@ -343,6 +343,14 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result = {}
         # Configure AP
         band = self.access_point.band_lookup_by_channel(channel)
+        if "2G" in band:
+            frequency = wutils.WifiEnums.channel_2G_to_freq[channel]
+        else:
+            frequency = wutils.WifiEnums.channel_5G_to_freq[channel]
+        if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
+            self.access_point.set_region(self.testbed_params["DFS_region"])
+        else:
+            self.access_point.set_region(self.testbed_params["default_region"])
         self.access_point.set_channel(band, channel)
         self.access_point.set_bandwidth(band, mode)
         self.log.info("Access Point Configuration: {}".format(
@@ -467,6 +475,118 @@ class WifiRvrTest(base_test.BaseTestClass):
 
     @test_tracker_info(uuid='2e5ad031-6404-4e71-b3b3-8a3bb2c85d4f')
     def test_rvr_TCP_UL_ch48_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='c2e199ce-d23f-4a24-b146-74e762085620')
+    def test_rvr_TCP_DL_ch52_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='5c5943e8-9d91-4270-a5ab-e7018807c64e')
+    def test_rvr_TCP_UL_ch52_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='b52afe89-182f-4bad-8879-cbf7001d28ef')
+    def test_rvr_TCP_DL_ch56_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='f8526241-3b96-463a-9082-a749a8650d5f')
+    def test_rvr_TCP_UL_ch56_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='c3042d7e-7468-4ab8-aec3-9b3088ba3e4c')
+    def test_rvr_TCP_DL_ch60_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='80426542-b035-4fb3-9010-e997f95d4964')
+    def test_rvr_TCP_UL_ch60_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='aa0e7117-390c-4265-adf2-0990f65f8b0b')
+    def test_rvr_TCP_DL_ch64_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='b2fdda85-256b-4368-8e8b-39274062264e')
+    def test_rvr_TCP_UL_ch64_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='48b6590f-1553-4170-83a5-40d3976e9e77')
+    def test_rvr_TCP_DL_ch100_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='2d0525fe-57ce-49d3-826d-4ebedd2ca6d6')
+    def test_rvr_TCP_UL_ch100_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='52da922d-6c2f-4afa-aca3-c19438ae3217')
+    def test_rvr_TCP_DL_ch100_VHT40(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='2c7e7106-88c8-47ba-ac28-362475abec41')
+    def test_rvr_TCP_UL_ch100_VHT40(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='fd4a7118-e9fe-4931-b32c-f69efd3e6493')
+    def test_rvr_TCP_DL_ch100_VHT80(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='146502b2-9cab-4bbe-8a5c-7ec625edc2ef')
+    def test_rvr_TCP_UL_ch100_VHT80(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='a5e185d6-b523-4016-bc8a-2a32cdc67ae0')
+    def test_rvr_TCP_DL_ch104_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='886aed91-0fdc-432d-b47e-ebfa85ac27ad')
+    def test_rvr_TCP_UL_ch104_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='fda3de6e-3183-401b-b98c-1b076da139e1')
+    def test_rvr_TCP_DL_ch108_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='29cc30f5-bbc8-4b64-9789-a56154907af5')
+    def test_rvr_TCP_UL_ch108_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='5c52ccac-8c38-46fa-a7b3-d714b6a814ad')
+    def test_rvr_TCP_DL_ch112_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='cc1c2a0b-71a3-4343-b7ff-489527c839d2')
+    def test_rvr_TCP_UL_ch112_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='11c6ccc3-e347-44ce-9a79-6c90e9dfd0a0')
+    def test_rvr_TCP_DL_ch116_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='29f0fce1-005d-4ad7-97d7-6b43cbdff01b')
+    def test_rvr_TCP_UL_ch116_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='112302b1-8261-479a-b397-916b08fbbdd2')
+    def test_rvr_TCP_DL_ch132_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='3bb0efb8-ddfc-4a0b-b7cf-6d6af1dbb9f4')
+    def test_rvr_TCP_UL_ch132_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='11a4638f-d872-4730-82eb-71d9c64e0e16')
+    def test_rvr_TCP_DL_ch136_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='4d797c24-3bbe-43a6-ac9e-291db1aa732a')
+    def test_rvr_TCP_UL_ch136_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='5d433b44-0395-43cb-b85a-be138390b18b')
+    def test_rvr_TCP_DL_ch140_VHT20(self):
+        self._test_rvr()
+
+    @test_tracker_info(uuid='47061772-21b1-4330-bd4f-daec21afa0c8')
+    def test_rvr_TCP_UL_ch140_VHT20(self):
         self._test_rvr()
 
     @test_tracker_info(uuid='24aa1e7a-3978-4803-877f-3ac5812ab0ae')
@@ -616,6 +736,19 @@ class WifiRvr_UNII3_Test(WifiRvrTest):
             "test_rvr_TCP_DL_ch157_VHT20", "test_rvr_TCP_UL_ch157_VHT20",
             "test_rvr_TCP_DL_ch157_VHT40", "test_rvr_TCP_UL_ch157_VHT40",
             "test_rvr_TCP_DL_ch161_VHT20", "test_rvr_TCP_UL_ch161_VHT20")
+
+
+class WifiRvr_SampleDFS_Test(WifiRvrTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = (
+            "test_rvr_TCP_DL_ch64_VHT20", "test_rvr_TCP_UL_ch64_VHT20",
+            "test_rvr_TCP_DL_ch100_VHT20", "test_rvr_TCP_UL_ch100_VHT20",
+            "test_rvr_TCP_DL_ch100_VHT40", "test_rvr_TCP_UL_ch100_VHT40",
+            "test_rvr_TCP_DL_ch100_VHT80", "test_rvr_TCP_UL_ch100_VHT80",
+            "test_rvr_TCP_DL_ch116_VHT20", "test_rvr_TCP_UL_ch116_VHT20",
+            "test_rvr_TCP_DL_ch132_VHT20", "test_rvr_TCP_UL_ch132_VHT20",
+            "test_rvr_TCP_DL_ch140_VHT20", "test_rvr_TCP_UL_ch140_VHT20")
 
 
 class WifiRvr_SampleUDP_Test(WifiRvrTest):

@@ -160,6 +160,45 @@ class TelLiveDataTest(TelephonyBaseTest):
                                    self.wifi_network_ssid,
                                    self.wifi_network_pass, GEN_4G)
 
+    @test_tracker_info(uuid="98d9f8c9-0532-49b6-85a3-5246b8314755")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_lte_wifi_switching_stress(self):
+        """LTE WiFi Switching Data Connection Check
+
+        Same steps as test_lte_wifi_switching with stress testing
+
+        Returns:
+            True if pass.
+        """
+        MINIMUM_SUCCESS_RATE = .95
+        success_count = 0
+        fail_count = 0
+        self.stress_test_number = 10
+
+        for i in range(1, self.stress_test_number + 1):
+            ensure_phones_default_state(
+                self.log, [self.android_devices[0]])
+
+            if wifi_cell_switching(self.log, self.android_devices[0],
+                                   self.wifi_network_ssid,
+                                   self.wifi_network_pass, GEN_4G):
+                success_count += 1
+                result_str = "Succeeded"
+            else:
+                fail_count += 1
+                result_str = "Failed"
+            self.log.info("Iteration {} {}. Current: {} / {} passed.".format(
+                i, result_str, success_count, self.stress_test_number))
+
+        self.log.info("Final Count - Success: {}, Failure: {} - {}%".format(
+            success_count, fail_count,
+            str(100 * success_count / (success_count + fail_count))))
+        if success_count / (
+                success_count + fail_count) >= MINIMUM_SUCCESS_RATE:
+            return True
+        else:
+            return False
+
     @test_tracker_info(uuid="8a836cf1-600b-4cf3-abfe-2e3da5c11396")
     @TelephonyBaseTest.tel_test_wrap
     def test_wcdma_wifi_switching(self):
@@ -880,6 +919,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.info("====== Toggling provider bluetooth =====")
             self.provider.log.info("Disable provider bluetooth")
             disable_bluetooth(self.provider.droid)
+            time.sleep(10)
             if not self._test_internet_connection(False, True):
                 self.log.error(
                     "Internet connection check failed after disable bluetooth")
@@ -3084,8 +3124,7 @@ class TelLiveDataTest(TelephonyBaseTest):
         # download file - size 5MB twice
         try:
             for _ in range(2):
-                if not active_file_download_test(self.log, dut, "5MB",
-                                                 "chrome"):
+                if not active_file_download_test(self.log, dut, "5MB", "curl"):
                     if get_mobile_data_usage(
                             dut, subscriber_id) + 5 * 1000 * 1000 < data_limit:
                         dut.log.error(

@@ -44,6 +44,8 @@ HCI_CONFIG_DOWN = "down"
 BLUEZ_PATH = "/usr/local/bluez/"
 KILL_CMD = "kill -9 "
 FIND_PROCESS = "ps -elf|grep "
+CMD_FIND = ""
+CMD_PATH = ""
 CMD_HCI = "hciconfig hci0 "
 
 commands = {

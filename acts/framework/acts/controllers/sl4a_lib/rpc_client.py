@@ -20,14 +20,14 @@ import time
 from concurrent import futures
 
 from acts import logger
-
+from acts import error
 SOCKET_TIMEOUT = 60
 
 # The Session UID when a UID has not been received yet.
 UNKNOWN_UID = -1
 
 
-class Sl4aException(Exception):
+class Sl4aException(error.ActsError):
     """The base class for all SL4A exceptions."""
 
 
@@ -224,10 +224,8 @@ class RpcClient(object):
         try:
             for i in range(1, retries + 1):
                 connection.send_request(request)
-                self._log.debug('Sent: %s' % request)
 
                 response = connection.get_response()
-                self._log.debug('Received: %s', response)
                 if not response:
                     if i < retries:
                         self._log.warning(
@@ -259,8 +257,13 @@ class RpcClient(object):
         result = json.loads(str(response, encoding='utf8'))
 
         if result['error']:
+            error_object = result['error']
+            if (error_object.get('code', None) and
+                    error_object.get('message', None)):
+                self._log.error('Received Sl4aError %s:%s' % (
+                    error_object['code'], error_object['message']))
             err_msg = 'RPC call %s to device failed with error %s' % (
-                method, result['error'])
+                method, error_object.get('data', error_object))
             self._log.error(err_msg)
             raise Sl4aApiError(err_msg)
         if result['id'] != ticket:

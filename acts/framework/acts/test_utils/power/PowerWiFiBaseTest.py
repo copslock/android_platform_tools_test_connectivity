@@ -34,6 +34,7 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.access_point_main = self.access_points[0]
             if len(self.access_points) > 1:
                 self.access_point_aux = self.access_points[1]
+        if hasattr(self, 'network_file'):
             self.networks = self.unpack_custom_file(self.network_file, False)
             self.main_network = self.networks['main_network']
             self.aux_network = self.networks['aux_network']
@@ -56,10 +57,13 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.pkt_sender.stop_sending(ignore_status=True)
         if hasattr(self, 'brconfigs'):
             self.access_point.bridge.teardown(self.brconfigs)
+            delattr(self, 'brconfigs')
         if hasattr(self, 'brconfigs_main'):
             self.access_point_main.bridge.teardown(self.brconfigs_main)
+            delattr(self, 'brconfigs_main')
         if hasattr(self, 'brconfigs_aux'):
             self.access_point_aux.bridge.teardown(self.brconfigs_aux)
+            delattr(self, 'brconfigs_aux')
         if hasattr(self, 'access_points'):
             for ap in self.access_points:
                 ap.close()

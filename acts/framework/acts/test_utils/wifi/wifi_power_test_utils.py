@@ -190,7 +190,7 @@ def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=10):
             gMDTIM_old) == gMaxLIModulatedDTIM:
         ad.log.info('Current DTIM is already the desired value,'
                     'no need to reset it')
-        return
+        return 0
 
     gE_new = ENABLED_MODULATED_DTIM + str(gEnableModulatedDTIM)
     gM_new = MAX_MODULATED_DTIM + str(gMaxLIModulatedDTIM)
@@ -204,7 +204,10 @@ def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=10):
     push_file_to_phone(ad, ini_file_local, ini_file_phone)
     ad.log.info('DTIM changes checked in and rebooting...')
     ad.reboot()
+    # Wait for auto-wifi feature to start
+    time.sleep(20)
     ad.log.info('DTIM updated and device back from reboot')
+    return 1
 
 
 def push_file_to_phone(ad, file_local, file_phone):
@@ -310,9 +313,9 @@ def bokeh_plot(data_sets,
         index_now = legends.index(legend)
         color = colors[index_now % len(colors)]
         plot.line(
-            x_data, y_data, legend=str(legend), line_width=3, color=color)
+            x_data, y_data, legend=str(legend), line_width=fig_property['linewidth'], color=color)
         plot.circle(
-            x_data, y_data, size=10, legend=str(legend), fill_color=color)
+            x_data, y_data, size=fig_property['markersize'], legend=str(legend), fill_color=color)
 
     #Plot properties
     plot.xaxis.axis_label = fig_property['x_label']

@@ -25,8 +25,7 @@ from acts import base_test
 from acts import test_runner
 from acts.controllers import adb
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
-from acts.test_utils.tel.tel_test_utils import verify_http_connection
+from acts.test_utils.net import net_test_utils as nutils
 from acts.test_utils.tel.tel_test_utils import _check_file_existance
 from acts.test_utils.tel.tel_test_utils import _generate_file_directory_and_file_name
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -44,33 +43,33 @@ class DataCostTest(base_test.BaseTestClass):
     def setup_class(self):
         """ Setup devices for tethering and unpack params """
 
-        self.dut = self.android_devices[0]
         req_params = ("wifi_network", "download_file")
         self.unpack_userparams(req_params)
-        wutils.reset_wifi(self.dut)
-        self.dut.droid.telephonyToggleDataConnection(True)
-        wait_for_cell_data_connection(self.log, self.dut, True)
-        asserts.assert_true(
-            verify_http_connection(self.log, self.dut),
-            "HTTP verification failed on cell data connection")
-        self.cell_network = self.dut.droid.connectivityGetActiveNetwork()
-        self.log.info("cell network %s" % self.cell_network)
-        wutils.wifi_connect(self.dut, self.wifi_network)
-        self.wifi_network = self.dut.droid.connectivityGetActiveNetwork()
-        self.log.info("wifi network %s" % self.wifi_network)
-        self.sub_id = str(self.dut.droid.telephonyGetSubscriberId())
+
+        for ad in self.android_devices:
+            nutils.verify_lte_data_and_tethering_supported(ad)
 
     def teardown_class(self):
-        wutils.reset_wifi(self.dut)
-        self.dut.droid.telephonyToggleDataConnection(True)
+        """ Reset settings to default """
+        for ad in self.android_devices:
+            sub_id = str(ad.droid.telephonyGetSubscriberId())
+            ad.droid.connectivityFactoryResetNetworkPolicies(sub_id)
+            ad.droid.connectivitySetDataWarningLimit(sub_id, -1)
+            wutils.reset_wifi(ad)
+
+    def on_fail(self, test_name, begin_time):
+        for ad in self.android_devices:
+            ad.take_bug_report(test_name, begin_time)
 
     """ Helper functions """
 
-    def _get_total_data_usage_for_device(self, conn_type):
+    def _get_total_data_usage_for_device(self, ad, conn_type, sub_id):
         """ Get total data usage in MB for device
 
         Args:
-            1. conn_type - MOBILE/WIFI data usage
+            ad: Android device object
+            conn_type: MOBILE/WIFI data usage
+            sub_id: subscription id
 
         Returns:
             Data usage in MB
@@ -79,8 +78,8 @@ class DataCostTest(base_test.BaseTestClass):
         # actual end time. NetStats:bucket is of size 2 hours and to ensure to
         # get the most recent data usage, end_time should be +2hours
         end_time = int(time.time() * 1000) + 2 * 1000 * 60 * 60
-        data_usage = self.dut.droid.connectivityQuerySummaryForDevice(
-            conn_type, self.sub_id, 0, end_time)
+        data_usage = ad.droid.connectivityQuerySummaryForDevice(
+            conn_type, sub_id, 0, end_time)
         data_usage /= 1000.0 * 1000.0 # convert data_usage to MB
         self.log.info("Total data usage is: %s" % data_usage)
         return data_usage
@@ -89,8 +88,8 @@ class DataCostTest(base_test.BaseTestClass):
         """ Check if multipath value is same as expected
 
         Args:
-            1. val - multipath preference for the network
-            2. exp - expected multipath preference value
+            val: multipath preference for the network
+            exp: expected multipath preference value
         """
         if exp == NONE:
             asserts.assert_true(val == exp, "Multipath value should be 0")
@@ -98,19 +97,25 @@ class DataCostTest(base_test.BaseTestClass):
             asserts.assert_true(val >= exp,
                                 "Multipath value should be at least %s" % exp)
 
-    def _verify_multipath_preferences(self, wifi_pref, cell_pref):
+    def _verify_multipath_preferences(self,
+                                      ad,
+                                      wifi_pref,
+                                      cell_pref,
+                                      wifi_network,
+                                      cell_network):
         """ Verify mutlipath preferences for wifi and cell networks
 
         Args:
+            ad: Android device object
             wifi_pref: Expected multipath value for wifi network
             cell_pref: Expected multipath value for cell network
+            wifi_network: Wifi network id on the device
+            cell_network: Cell network id on the device
         """
         wifi_multipath = \
-            self.dut.droid.connectivityGetMultipathPreferenceForNetwork(
-                self.wifi_network)
+            ad.droid.connectivityGetMultipathPreferenceForNetwork(wifi_network)
         cell_multipath = \
-            self.dut.droid.connectivityGetMultipathPreferenceForNetwork(
-                self.cell_network)
+            ad.droid.connectivityGetMultipathPreferenceForNetwork(cell_network)
         self.log.info("WiFi multipath preference: %s" % wifi_multipath)
         self.log.info("Cell multipath preference: %s" % cell_multipath)
         self.log.info("Checking multipath preference for wifi")
@@ -129,20 +134,31 @@ class DataCostTest(base_test.BaseTestClass):
             2. Set mobile data usage limit to low value
             3. Verify that multipath preference is 0 for cell network
         """
-        # verify multipath preference values
-        self._verify_multipath_preferences(RELIABLE, RELIABLE)
+        # set vars
+        ad = self.android_devices[0]
+        sub_id = str(ad.droid.telephonyGetSubscriberId())
+        cell_network = ad.droid.connectivityGetActiveNetwork()
+        self.log.info("cell network %s" % cell_network)
+        wutils.wifi_connect(ad, self.wifi_network)
+        wifi_network = ad.droid.connectivityGetActiveNetwork()
+        self.log.info("wifi network %s" % wifi_network)
+
+        # verify mulipath preference values
+        self._verify_multipath_preferences(
+            ad, RELIABLE, RELIABLE, wifi_network, cell_network)
 
         # set low data limit on mobile data
-        total_pre = self._get_total_data_usage_for_device(0)
+        total_pre = self._get_total_data_usage_for_device(ad, 0, sub_id)
         self.log.info("Setting data usage limit to %sMB" % (total_pre + 5))
-        self.dut.droid.connectivitySetDataUsageLimit(
-            self.sub_id, str(int((total_pre + 5) * 1000.0 * 1000.0)))
-
-        # reset data limit
-        self.dut.droid.connectivityFactoryResetNetworkPolicies(self.sub_id)
+        ad.droid.connectivitySetDataUsageLimit(
+            sub_id, int((total_pre + 5) * 1000.0 * 1000.0))
+        self.log.info("Setting data warning limit to %sMB" % (total_pre + 5))
+        ad.droid.connectivitySetDataWarningLimit(
+            sub_id, int((total_pre + 5) * 1000.0 * 1000.0))
 
         # verify multipath preference values
-        self._verify_multipath_preferences(RELIABLE, NONE)
+        self._verify_multipath_preferences(
+            ad, RELIABLE, NONE, wifi_network, cell_network)
 
     @test_tracker_info(uuid="a2781411-d880-476a-9f40-2c67e0f97db9")
     def test_multipath_preference_data_download(self):
@@ -154,22 +170,32 @@ class DataCostTest(base_test.BaseTestClass):
             3. Download large file over cell network
             4. Verify multipath preference on cell network is 0
         """
+        # set vars
+        ad = self.android_devices[1]
+        cell_network = ad.droid.connectivityGetActiveNetwork()
+        self.log.info("cell network %s" % cell_network)
+        wutils.wifi_connect(ad, self.wifi_network)
+        wifi_network = ad.droid.connectivityGetActiveNetwork()
+        self.log.info("wifi network %s" % wifi_network)
+
         # verify multipath preference for wifi and cell networks
-        self._verify_multipath_preferences(RELIABLE, RELIABLE)
+        self._verify_multipath_preferences(
+            ad, RELIABLE, RELIABLE, wifi_network, cell_network)
 
         # download file with cell network
-        self.dut.droid.connectivityNetworkOpenConnection(self.cell_network,
-                                                         self.download_file)
+        ad.droid.connectivityNetworkOpenConnection(cell_network,
+                                                   self.download_file)
         file_folder, file_name = _generate_file_directory_and_file_name(
             self.download_file, DOWNLOAD_PATH)
         file_path = os.path.join(file_folder, file_name)
         self.log.info("File path: %s" % file_path)
-        if _check_file_existance(self.dut, file_path):
+        if _check_file_existance(ad, file_path):
             self.log.info("File exists. Removing file %s" % file_name)
-            self.dut.adb.shell("rm -rf %s%s" % (DOWNLOAD_PATH, file_name))
+            ad.adb.shell("rm -rf %s%s" % (DOWNLOAD_PATH, file_name))
 
         #  verify multipath preference values
-        self._verify_multipath_preferences(RELIABLE, NONE)
+        self._verify_multipath_preferences(
+            ad, RELIABLE, NONE, wifi_network, cell_network)
 
     # TODO gmoturu@: Need to add tests that use the mobility rig and test when
     # the WiFi signal is poor and data signal is good.

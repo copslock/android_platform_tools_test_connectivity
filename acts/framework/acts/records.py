@@ -18,10 +18,8 @@
 
 import json
 import logging
-import pprint
 
 from acts import logger
-from acts import signals
 from acts import utils
 
 
@@ -238,6 +236,7 @@ class TestResult(object):
         self.controller_info = {}
         self.post_run_data = {}
         self.extras = {}
+        self.errors = []
 
     def __add__(self, r):
         """Overrides '+' operator for TestResult class.
@@ -338,6 +337,7 @@ class TestResult(object):
         d["Results"] = [record.to_dict() for record in self.executed]
         d["Summary"] = self.summary_dict()
         d["Extras"] = self.extras
+        d["Errors"] = self.errors_list()
         json_str = json.dumps(d, indent=4, sort_keys=True)
         return json_str
 
@@ -376,4 +376,11 @@ class TestResult(object):
         d["Skipped"] = len(self.skipped)
         d["Blocked"] = len(self.blocked)
         d["Unknown"] = len(self.unknown)
+        d["Errors"] = len(self.errors)
         return d
+
+    def errors_list(self):
+        l = list()
+        for e in self.errors:
+            l.append({"Error Code": e.error_code, "Message": e.message})
+        return l

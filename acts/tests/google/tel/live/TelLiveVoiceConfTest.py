@@ -18,6 +18,7 @@
 """
 
 import time
+from acts import signals
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_MANAGE_CONFERENCE
@@ -26,27 +27,20 @@ from acts.test_utils.tel.tel_defines import CALL_CAPABILITY_SWAP_CONFERENCE
 from acts.test_utils.tel.tel_defines import CALL_PROPERTY_CONFERENCE
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
-from acts.test_utils.tel.tel_defines import CARRIER_VZW
-from acts.test_utils.tel.tel_defines import GEN_3G
-from acts.test_utils.tel.tel_defines import RAT_3G
+from acts.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
-from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_reject
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts.test_utils.tel.tel_test_utils import \
-    ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import get_call_uri
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import is_uri_equivalent
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
-from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
-from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
@@ -57,6 +51,7 @@ from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_iwlan
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_wcdma
+from acts.test_utils.tel.tel_voice_utils import phone_setup_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
@@ -67,6 +62,14 @@ from acts.test_utils.tel.tel_voice_utils import swap_calls
 
 
 class TelLiveVoiceConfTest(TelephonyBaseTest):
+    def setup_class(self):
+        TelephonyBaseTest.setup_class(self)
+        if CAPABILITY_CONFERENCE not in self.android_devices[0].telephony.get(
+                "capabilities", []):
+            self.android_devices[0].log.error(
+                "Conference call is not supported, abort test.")
+            raise signals.TestAbortClass(
+                "Conference call is not supported, abort test.")
 
     # Note: Currently Conference Call do not verify voice.
     # So even if test cases passed, does not necessarily means
@@ -75,7 +78,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
     """ Private Test Utils """
 
     def _get_expected_call_state(self, ad):
-        if ad.model in ("sailfish", "marlin") and "vzw" in [
+        if "vzw" in [
                 sub["operator"]
                 for sub in ad.telephony["subscription"].values()
         ]:
