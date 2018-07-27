@@ -73,5 +73,13 @@ class WifiTethering2GPskOTATest(BaseTestClass):
 
     """Tests"""
 
+    @test_tracker_info(uuid="4b1cec63-d1d2-4046-84e9-e806bb08ce41")
     def test_wifi_tethering_ota_2g_psk(self):
+        """ Verify wifi hotspot after ota upgrade
+
+        Steps:
+          1. Save a wifi hotspot config with 2g band and psk auth
+          2. Do a OTA update
+          3. Verify that wifi hotspot works with teh saved config
+        """
         self._verify_wifi_tethering()
