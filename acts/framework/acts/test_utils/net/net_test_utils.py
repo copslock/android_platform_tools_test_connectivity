@@ -15,6 +15,12 @@
 #   limitations under the License.
 
 from acts import asserts
+from acts import utils
+from acts.logger import epoch_to_log_line_timestamp
+from acts.utils import get_current_epoch_time
+from acts.logger import normalize_log_line_timestamp
+from acts.utils import start_standing_subprocess
+from acts.utils import stop_standing_subprocess
 from acts.test_utils.net import connectivity_const as cconst
 from acts.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
@@ -29,6 +35,7 @@ VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
 VPN_PARAMS = cconst.VpnReqParams
 VPN_PING_ADDR = "10.10.10.1"
+TCPDUMP_PATH = "/data/local/tmp/tcpdump"
 
 def verify_lte_data_and_tethering_supported(ad):
     """Verify if LTE data is enabled and tethering supported"""
@@ -146,8 +153,6 @@ def download_load_certs(ad, vpn_params, vpn_type, vpn_server_addr,
     local_cert_name = "%s_%s_%s" % (vpn_type.name,
                                     ipsec_server_type,
                                     vpn_params['client_pkcs_file_name'])
-    ad.adb.push("%s sdcard/" % local_cert_name)
-    return local_cert_name
 
     local_file_path = os.path.join(log_path, local_cert_name)
     try:
@@ -209,3 +214,61 @@ def generate_legacy_vpn_profile(ad,
         vpn_profile[VPN_CONST.MPPE] = "mppe"
 
     return vpn_profile
+
+def start_tcpdump(ad, test_name):
+    """Start tcpdump on all interfaces
+
+    Args:
+        ad: android device object.
+        test_name: tcpdump file name will have this
+    """
+    ad.log.info("Starting tcpdump on all interfaces")
+    try:
+        ad.adb.shell("killall -9 tcpdump")
+    except AdbError:
+        ad.log.warn("Killing existing tcpdump processes failed")
+    out = ad.adb.shell("ls -l %s" % TCPDUMP_PATH)
+    if "No such file" in out or not out:
+        ad.adb.shell("mkdir %s" % TCPDUMP_PATH)
+    else:
+        ad.adb.shell("rm -rf %s/*" % TCPDUMP_PATH, ignore_status=True)
+
+    begin_time = epoch_to_log_line_timestamp(get_current_epoch_time())
+    begin_time = normalize_log_line_timestamp(begin_time)
+
+    file_name = "%s/tcpdump_%s_%s.pcap" % (TCPDUMP_PATH, ad.serial, test_name)
+    ad.log.info("tcpdump file is %s", file_name)
+    try:
+        cmd = "adb -s {} shell tcpdump -i any -s0 -w {}" . \
+            format(ad.serial, file_name)
+        return start_standing_subprocess(cmd, 5)
+    except e:
+        ad.log.error(e)
+
+    return None
+
+def stop_tcpdump(ad, proc, test_name):
+    """Stops tcpdump on any iface
+       Pulls the tcpdump file in the tcpdump dir
+
+    Args:
+        ad: android device object.
+        proc: need to know which pid to stop
+        test_name: test name to save the tcpdump file
+
+    Returns:
+      log_path of the tcpdump file
+    """
+    ad.log.info("Stopping and pulling tcpdump if any")
+    if proc == None:
+        return None
+    try:
+        stop_standing_subprocess(proc)
+    except Exception as e:
+        ad.log.warning(e)
+    log_path = os.path.join(ad.log_path, test_name)
+    utils.create_dir(log_path)
+    ad.adb.pull("%s/. %s" % (TCPDUMP_PATH, log_path))
+    ad.adb.shell("rm -rf %s/*" % TCPDUMP_PATH, ignore_status=True)
+    file_name = "tcpdump_%s_%s.pcap" % (ad.serial, test_name)
+    return "%s/%s" % (log_path, file_name)
