@@ -13,124 +13,279 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import numbers
+from __future__ import absolute_import
+import sys
+import os
+# A temporary hack to prevent tests/libs/logging from being selected as the
+# python default logging module.
+sys.path[0] = os.path.join(sys.path[0], '../')
+import unittest
+import logging
 
+from acts import base_test
 from acts.libs import version_selector
-from tests.libs import test_module
+from acts.test_decorators import test_tracker_info
 
 
-def version_api(min_api=0, max_api=99999999999999):
-    """Decorates a function to only be called for the given API level.
-
-    Only gets called if the AndroidDevice in the args is within the specified
-    API range. Otherwise, a different function may be called instead. If the
-    API level is out of range, and no other function handles that API level, an
-    error is raise instead.
-
-    Note: In Python3.5 and below, the order of kwargs is not preserved. If your
-          function contains multiple AndroidDevices within the kwargs, and no
-          AndroidDevices within args, you are NOT guaranteed the first
-          AndroidDevice is the same one chosen each time the function runs. Due
-          to this, we do not check for AndroidDevices in kwargs.
-
-    Args:
-         min_api: The minimum API level. Can be an int or an AndroidApi value.
-         max_api: The maximum API level. Can be an int or an AndroidApi value.
-    """
-    def get_api_level(*args, **kwargs):
-        # raise ValueError(
-        #     'No AndroidDevice found within the function parameters.')
-        for arg in args:
-            if isinstance(arg, numbers.Number):
-                return arg
-        for kwarg, value in kwargs:
-            if isinstance(value, numbers.Number):
-                return value
-
-    return version_selector.set_version(get_api_level, min_api, max_api)
+def versioning_decorator(min_sdk, max_sdk):
+    return version_selector.set_version(lambda ret, *_, **__: ret, min_sdk,
+                                        max_sdk)
 
 
-@version_api(min_api=1, max_api=1)
-def test2(arg1):
-    print('1: %s' % arg1)
+def versioning_decorator2(min_sdk, max_sdk):
+    return version_selector.set_version(lambda ret, *_, **__: ret, min_sdk,
+                                        max_sdk)
 
 
-@version_api(min_api=2, max_api=2)
-def test2(arg1):
-    print('2: %s' % arg1)
+def test_versioning(min_sdk, max_sdk):
+    return version_selector.set_version(lambda *_, **__: 1, min_sdk, max_sdk)
 
 
-class TestClass(object):
-    class Inner(object):
-        @android_api(min_api=4, max_api=4)
-        def test(self):
-            print('self: %s' % self)
+@versioning_decorator(1, 10)
+def versioned_func(arg1, arg2):
+    return 'function 1', arg1, arg2
 
-    @staticmethod
-    @version_api(0, 0)
-    def test_static(arg1):
-        print('Static1: %s' % arg1)
 
-    @staticmethod
-    @version_api(1, 2)
-    def test_static(arg1):
-        print('Static2: %s' % arg1)
+@versioning_decorator(11, 11)
+def versioned_func(arg1, arg2):
+    return 'function 2', arg1, arg2
 
-    @staticmethod
-    @version_api(5, 8)
-    def test_static(arg1):
-        print('Static3: %s' % arg1)
 
+@versioning_decorator(12, 20)
+def versioned_func(arg1, arg2):
+    return 'function 3', arg1, arg2
+
+
+@versioning_decorator(1, 20)
+def versioned_func_with_kwargs(_, asdf='jkl'):
+    return asdf
+
+
+def class_versioning_decorator(min_sdk, max_sdk):
+    return version_selector.set_version(lambda _, ret, *__, **___: ret, min_sdk,
+                                        max_sdk)
+
+
+class VersionedClass(object):
     @classmethod
-    @version_api(1, 1)
-    def test_class(cls, arg1):
-        print('Class1: %s, %s' % (cls, arg1))
+    @class_versioning_decorator(1, 99999999)
+    def class_func(cls, arg1):
+        return cls, arg1
 
-    @classmethod
-    @version_api(2, 2)
-    def test_class(cls, arg1):
-        print('Class2: %s, %s' % (cls, arg1))
+    @staticmethod
+    @versioning_decorator(1, 99999999)
+    def static_func(arg1):
+        return arg1
 
-    @version_api(1, 1)
-    def test_instance(self, arg1):
-        print('Self1: %s, %s' % (self, arg1))
+    @class_versioning_decorator(1, 99999999)
+    def instance_func(self, arg1):
+        return self, arg1
 
-    @version_api(2, 2)
-    def test_instance(self, arg1):
-        print('Self2: %s, %s' % (self, arg1))
 
-    @version_api(3, 3)
-    def test_instance(self, arg1):
-        print('Self3: %s, %s' % (self, arg1))
+class VersionedTestClass(base_test.BaseTestClass):
+    @test_tracker_info('UUID_1')
+    @test_versioning(1, 1)
+    def test_1(self):
+        pass
+
+    @test_versioning(1, 1)
+    @test_tracker_info('UUID_2')
+    def test_2(self):
+        pass
+
+
+class VersionSelectorIntegrationTest(unittest.TestCase):
+    """Tests the acts.libs.version_selector module."""
+
+    def test_versioned_test_class_calls_both_functions(self):
+        """Tests that VersionedTestClass (above) can be called with
+        test_tracker_info."""
+        test_class = VersionedTestClass({'log': logging.getLogger(),
+                                         'cli_args': []})
+        test_class.run(['test_1', 'test_2'], 1)
+
+        self.assertIn('Executed 2', test_class.results.summary_str(),
+                      'One or more of the test cases did not execute.')
+        self.assertEqual(
+            'UUID_1',
+            test_class.results.executed[0].extras['test_tracker_uuid'],
+            'The test_tracker_uuid was not found for test_1.')
+        self.assertEqual(
+            'UUID_2',
+            test_class.results.executed[1].extras['test_tracker_uuid'],
+            'The test_tracker_uuid was not found for test_2.')
+
+    def test_raises_syntax_error_if_decorated_with_staticmethod_first(self):
+        try:
+            class SomeClass(object):
+                @versioning_decorator(1, 1)
+                @staticmethod
+                def test_1():
+                    pass
+        except SyntaxError:
+            pass
+        else:
+            self.fail('Placing the @staticmethod decorator after the '
+                      'versioning decorator should cause a SyntaxError.')
+
+    def test_raises_syntax_error_if_decorated_with_classmethod_first(self):
+        try:
+            class SomeClass(object):
+                @versioning_decorator(1, 1)
+                @classmethod
+                def test_1(cls):
+                    pass
+        except SyntaxError:
+            pass
+        else:
+            self.fail('Placing the @classmethod decorator after the '
+                      'versioning decorator should cause a SyntaxError.')
+
+    def test_overriding_an_undecorated_func_raises_a_syntax_error(self):
+        try:
+            class SomeClass(object):
+                def test_1(self):
+                    pass
+
+                @versioning_decorator(1, 1)
+                def test_1(self):
+                    pass
+        except SyntaxError:
+            pass
+        else:
+            self.fail('Overwriting a function that already exists without a '
+                      'versioning decorator should raise a SyntaxError.')
+
+    def test_func_decorated_with_2_different_versioning_decorators_causes_error(
+            self):
+        try:
+            class SomeClass(object):
+                @versioning_decorator(1, 1)
+                def test_1(self):
+                    pass
+
+                @versioning_decorator2(2, 2)
+                def test_1(self):
+                    pass
+        except SyntaxError:
+            pass
+        else:
+            self.fail('Using two different versioning decorators to version a '
+                      'single function should raise a SyntaxError.')
+
+    def test_func_decorated_with_overlapping_ranges_causes_value_error(self):
+        try:
+            class SomeClass(object):
+                @versioning_decorator(1, 2)
+                def test_1(self):
+                    pass
+
+                @versioning_decorator(2, 2)
+                def test_1(self):
+                    pass
+        except ValueError:
+            pass
+        else:
+            self.fail('Decorated functions with overlapping version ranges '
+                      'should raise a ValueError.')
+
+    def test_func_decorated_with_min_gt_max_causes_value_error(self):
+        try:
+            class SomeClass(object):
+                @versioning_decorator(2, 1)
+                def test_1(self):
+                    pass
+        except ValueError:
+            pass
+        else:
+            self.fail('If the min_version level is higher than the max_version '
+                      'level, a ValueError should be raised.')
+
+    def test_calling_versioned_func_on_min_version_level_is_inclusive(self):
+        """Tests that calling some versioned function with the minimum version
+        level of the decorated function will call that function."""
+        ret = versioned_func(1, 'some_value')
+        self.assertEqual(ret, ('function 1', 1, 'some_value'),
+                         'Calling versioned_func(1, ...) did not return the '
+                         'versioned function for the correct range.')
+
+    def test_calling_versioned_func_on_middle_level_works(self):
+        """Tests that calling some versioned function a version value within the
+        range of the decorated function will call that function."""
+        ret = versioned_func(16, 'some_value')
+        self.assertEqual(ret, ('function 3', 16, 'some_value'),
+                         'Calling versioned_func(16, ...) did not return the '
+                         'versioned function for the correct range.')
+
+    def test_calling_versioned_func_on_max_version_level_is_inclusive(self):
+        """Tests that calling some versioned function with the maximum version
+        level of the decorated function will call that function."""
+        ret = versioned_func(10, 'some_value')
+        self.assertEqual(ret, ('function 1', 10, 'some_value'),
+                         'Calling versioned_func(10, ...) did not return the '
+                         'versioned function for the correct range.')
+
+    def test_calling_versioned_func_on_min_equals_max_level_works(self):
+        """Tests that calling some versioned function with the maximum version
+        level of the decorated function will call that function."""
+        ret = versioned_func(11, 'some_value')
+        self.assertEqual(ret, ('function 2', 11, 'some_value'),
+                         'Calling versioned_func(10, ...) did not return the '
+                         'versioned function for the correct range.')
+
+    def test_sending_kwargs_through_decorated_functions_works(self):
+        """Tests that calling some versioned function with the maximum version
+        level of the decorated function will call that function."""
+        ret = versioned_func_with_kwargs(1, asdf='some_value')
+        self.assertEqual(ret, 'some_value',
+                         'Calling versioned_func_with_kwargs(1, ...) did not'
+                         'return the kwarg value properly.')
+
+    def test_kwargs_can_default_through_decorated_functions(self):
+        """Tests that calling some versioned function with the maximum version
+        level of the decorated function will call that function."""
+        ret = versioned_func_with_kwargs(1)
+        self.assertEqual(ret, 'jkl',
+                         'Calling versioned_func_with_kwargs(1) did not'
+                         'return the default kwarg value properly.')
+
+    def test_staticmethod_can_be_called_properly(self):
+        """Tests that decorating a staticmethod will properly send the arguments
+        in the correct order.
+
+        i.e., we want to make sure self or cls do not get sent as the first
+        argument to the decorated staticmethod.
+        """
+        versioned_class = VersionedClass()
+        ret = versioned_class.static_func(123456)
+        self.assertEqual(ret, 123456,
+                         'The first argument was not set properly for calling '
+                         'a staticmethod.')
+
+    def test_instance_method_can_be_called_properly(self):
+        """Tests that decorating a method will properly send the arguments
+        in the correct order.
+
+        i.e., we want to make sure self is the first argument returned.
+        """
+        versioned_class = VersionedClass()
+        ret = versioned_class.instance_func(123456)
+        self.assertEqual(ret, (versioned_class, 123456),
+                         'The arguments were not set properly for an instance '
+                         'method.')
+
+    def test_classmethod_can_be_called_properly(self):
+        """Tests that decorating a classmethod will properly send the arguments
+        in the correct order.
+
+        i.e., we want to make sure cls is the first argument returned.
+        """
+        versioned_class = VersionedClass()
+        ret = versioned_class.class_func(123456)
+        self.assertEqual(ret, (VersionedClass, 123456),
+                         'The arguments were not set properly for a '
+                         'classmethod.')
 
 
 if __name__ == '__main__':
-    tc = TestClass()
-    tc.test_static(1)
-    tc.test_static(2)
-    tc.test_static(5)
-
-    tc.test_class(1)
-    tc.test_class(2)
-
-    tc.test_instance(1)
-    tc.test_instance(2)
-    tc.test_instance(3)
-
-    test2(1, 'a')
-    test2(2, 'b')
-
-    test_module.test2(1, 'a')
-    test_module.test2(2, 'b')
-
-    tc2 = test_module.TestClass()
-    tc2.test_static(1)
-    tc2.test_static(2)
-    tc2.test_static(3)
-
-    tc2.test_class(1)
-    tc2.test_class(2)
-
-    tc2.test_instance(1)
-    tc2.test_instance(2)
-    tc2.test_instance(3)
+    unittest.main()

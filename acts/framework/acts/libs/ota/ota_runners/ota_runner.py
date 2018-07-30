@@ -74,6 +74,7 @@ class OtaRunner(object):
                     break
         log.info('Starting services.')
         self.android_device.start_services()
+        self.android_device.update_sdk_api_level()
         log.info('Services started. Running ota tool cleanup.')
         self.ota_tool.cleanup(self)
         log.info('Cleanup complete.')
