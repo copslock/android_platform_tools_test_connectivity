@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import inspect
+import logging
 import os
 
 
@@ -73,7 +74,8 @@ class TakoTraceLogger(TraceLogger):
         self.t = self.step
         self.w = self.warning
 
-    def _logger_level(self, level):
+    def _logger_level(self, level_name):
+        level = logging.getLevelName(level_name)
         return lambda *args, **kwargs: self._logger.log(level, *args, **kwargs)
 
     def step(self, msg, *args, **kwargs):
