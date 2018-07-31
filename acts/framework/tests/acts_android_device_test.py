@@ -28,9 +28,10 @@ from acts.controllers import android_device
 MOCK_LOG_PATH = "/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/"
 
 # Mock start and end time of the adb cat.
-MOCK_ADB_LOGCAT_BEGIN_TIME = "1970-01-02 21:03:20.123"
-MOCK_ADB_LOGCAT_END_TIME = "1970-01-02 21:22:02.000"
 MOCK_ADB_EPOCH_BEGIN_TIME = 191000123
+MOCK_ADB_LOGCAT_BEGIN_TIME = logger.normalize_log_line_timestamp(
+    logger.epoch_to_log_line_timestamp(MOCK_ADB_EPOCH_BEGIN_TIME))
+MOCK_ADB_LOGCAT_END_TIME = "1970-01-02 21:22:02.000"
 
 MOCK_SERIAL = 1
 MOCK_RELEASE_BUILD_ID = "ABC1.123456.007"
