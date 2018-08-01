@@ -83,11 +83,8 @@ class Config(enum.Enum):
     # Controller names packaged with ACTS.
     builtin_controller_names = [
         key_android_device,
-<<<<<<< HEAD
         key_fuchsia_device,
-=======
         key_buds_device,
->>>>>>> e103e775e... Added the Apollo Libraries to ACTS.
         key_native_android_device,
         key_relay_device,
         key_access_point,
