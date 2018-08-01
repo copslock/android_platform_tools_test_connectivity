@@ -74,6 +74,7 @@ class DoesNotExistError(AndroidDeviceError):
     """Raised when something that does not exist is referenced.
     """
 
+
 def create(configs):
     """Creates AndroidDevice controller objects.
 
@@ -384,6 +385,7 @@ class AndroidReconnectEvent(AndroidEvent):
 
 class AndroidBugReportEvent(AndroidEvent):
     """The event posted when an AndroidDevice captures a bugreport."""
+
     def __init__(self, android_device, bugreport_dir):
         super().__init__(android_device)
         self.bugreport_dir = bugreport_dir
@@ -795,7 +797,7 @@ class AndroidDevice:
         else:
             begin_at = '-T 1'
 
-    # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
+        # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
         cmd = "adb -s {} logcat {} -v year {} >> {}".format(
             self.serial, begin_at, extra_params, self.adb_logcat_file_path)
         self.adb_logcat_process = utils.start_standing_subprocess(cmd)
@@ -1167,6 +1169,22 @@ class AndroidDevice:
         self.stop_services()
         self.log.info("Rebooting")
         self.adb.reboot()
+
+        timeout_start = time.time()
+        timeout = 2 * 60
+        # b/111791239: Newer versions of android sometimes return early after
+        # `adb reboot` is called. This means subsequent calls may make it to
+        # the device before the reboot goes through, return false positives for
+        # getprops such as sys.boot_completed.
+        while time.time() < timeout_start + timeout:
+            try:
+                self.adb.get_state()
+                time.sleep(.1)
+            except adb.AdbError:
+                # get_state will raise an error if the device is not found. We
+                # want the device to be missing to prove the device has kicked
+                # off the reboot.
+                break
         self.wait_for_boot_completion()
         self.root_adb()
         if stop_at_lock_screen:
@@ -1369,7 +1387,7 @@ class AndroidDevice:
             self.log.info("Device is in CrpytKeeper window")
             return True
         if "StatusBar" in current_window and (
-            (not current_app) or "FallbackHome" in current_app):
+                (not current_app) or "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
