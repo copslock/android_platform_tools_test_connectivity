@@ -90,32 +90,19 @@ class WifiBaseTest(BaseTestClass):
             ref_5g_ssid = '5g_%s' % utils.rand_ascii_str(ssid_length_5g)
             ref_5g_passphrase = utils.rand_ascii_str(passphrase_length_5g)
 
-        if hidden:
-           network_dict_2g = {
-              "SSID": ref_2g_ssid,
-              "security": ref_2g_security,
-              "password": ref_2g_passphrase,
-              "hiddenSSID": True
-           }
+        network_dict_2g = {
+            "SSID": ref_2g_ssid,
+            "security": ref_2g_security,
+            "password": ref_2g_passphrase,
+            "hiddenSSID": hidden
+        }
 
-           network_dict_5g = {
-              "SSID": ref_5g_ssid,
-              "security": ref_5g_security,
-              "password": ref_5g_passphrase,
-              "hiddenSSID": True
-           }
-        else:
-            network_dict_2g = {
-                "SSID": ref_2g_ssid,
-                "security": ref_2g_security,
-                "password": ref_2g_passphrase
-            }
-
-            network_dict_5g = {
-                "SSID": ref_5g_ssid,
-                "security": ref_5g_security,
-                "password": ref_5g_passphrase
-            }
+        network_dict_5g = {
+            "SSID": ref_5g_ssid,
+            "security": ref_5g_security,
+            "password": ref_5g_passphrase,
+            "hiddenSSID": hidden
+        }
 
         ap = 0
         for ap in range(MAX_AP_COUNT):
@@ -159,28 +146,17 @@ class WifiBaseTest(BaseTestClass):
             open_2g_ssid = '2g_%s' % utils.rand_ascii_str(ssid_length_2g)
             open_5g_ssid = '5g_%s' % utils.rand_ascii_str(ssid_length_5g)
 
-        if hidden:
-            network_dict_2g = {
+        network_dict_2g = {
             "SSID": open_2g_ssid,
             "security": 'none',
-            "hiddenSSID": True
-            }
+            "hiddenSSID": hidden
+        }
 
-            network_dict_5g = {
+        network_dict_5g = {
             "SSID": open_5g_ssid,
             "security": 'none',
-            "hiddenSSID": True
-            }
-        else:
-            network_dict_2g = {
-                "SSID": open_2g_ssid,
-                "security": 'none'
-            }
-
-            network_dict_5g = {
-                "SSID": open_5g_ssid,
-                "security": 'none'
-            }
+            "hiddenSSID": hidden
+        }
 
         ap = 0
         for ap in range(MAX_AP_COUNT):
@@ -338,38 +314,27 @@ class WifiBaseTest(BaseTestClass):
         # build config based on the bss_Settings alone.
         hostapd_config_settings = network_list.pop(0)
         for network in network_list:
-            if "password" in network and "hiddenSSID" in network:
+            if "password" in network:
                 bss_settings.append(
                     hostapd_bss_settings.BssSettings(
                         name=network["SSID"],
                         ssid=network["SSID"],
-                        hidden=True,
+                        hidden=network["hiddenSSID"],
                         security=hostapd_security.Security(
                             security_mode=network["security"],
                             password=network["password"])))
-            elif "password" in network and not "hiddenSSID" in network:
+            elif "password" not in network:
                 bss_settings.append(
                     hostapd_bss_settings.BssSettings(
                         name=network["SSID"],
                         ssid=network["SSID"],
-                        security=hostapd_security.Security(
-                            security_mode=network["security"],
-                            password=network["password"])))
-            elif not "password" in network and "hiddenSSID" in network:
-                bss_settings.append(
-                    hostapd_bss_settings.BssSettings(
-                        name=network["SSID"],
-                        ssid=network["SSID"],
-                        hidden=True))
-            elif not "password" in network and not "hiddenSSID" in network:
-                bss_settings.append(
-                    hostapd_bss_settings.BssSettings(
-                        name=network["SSID"],
-                        ssid=network["SSID"]))
+                        hidden=network["hiddenSSID"]))
+
         if "password" in hostapd_config_settings:
             config = hostapd_ap_preset.create_ap_preset(
                 channel=ap_settings["channel"],
                 ssid=hostapd_config_settings["SSID"],
+                hidden=hostapd_config_settings["hiddenSSID"],
                 security=hostapd_security.Security(
                     security_mode=hostapd_config_settings["security"],
                     password=hostapd_config_settings["password"]),
@@ -379,6 +344,7 @@ class WifiBaseTest(BaseTestClass):
             config = hostapd_ap_preset.create_ap_preset(
                 channel=ap_settings["channel"],
                 ssid=hostapd_config_settings["SSID"],
+                hidden=hostapd_config_settings["hiddenSSID"],
                 bss_settings=bss_settings,
                 profile_name='whirlwind')
         return config
