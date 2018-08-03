@@ -22,6 +22,7 @@ def create_ap_preset(profile_name,
                      frequency=None,
                      security=None,
                      ssid=None,
+                     hidden=False,
                      vht_bandwidth=80,
                      bss_settings=[],
                      iface_wlan_2g=hostapd_constants.WLAN0_STRING,
@@ -82,6 +83,7 @@ def create_ap_preset(profile_name,
             ]
             config = hostapd_config.HostapdConfig(
                 ssid=ssid,
+                hidden=hidden,
                 security=security,
                 interface=interface,
                 mode=mode,
@@ -129,6 +131,7 @@ def create_ap_preset(profile_name,
             ]
             config = hostapd_config.HostapdConfig(
                 ssid=ssid,
+                hidden=hidden,
                 security=security,
                 interface=interface,
                 mode=mode,
