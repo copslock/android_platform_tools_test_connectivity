@@ -494,12 +494,15 @@ class WifiManagerTest(WifiBaseTest):
     """Tests"""
 
     @test_tracker_info(uuid="525fc5e3-afba-4bfd-9a02-5834119e3c66")
-    def test_toggle_state(self):
+    def test_toggle_wifi_state_and_get_startupTime(self):
         """Test toggling wifi"""
         self.log.debug("Going from on to off.")
         wutils.wifi_toggle_state(self.dut, False)
         self.log.debug("Going from off to on.")
+        startTime = time.time()
         wutils.wifi_toggle_state(self.dut, True)
+        startup_time = time.time() - startTime
+        self.log.debug("WiFi was enabled on the device in %s s." % startup_time)
 
     @test_tracker_info(uuid="e9d11563-2bbe-4c96-87eb-ec919b51435b")
     def test_toggle_with_screen(self):
