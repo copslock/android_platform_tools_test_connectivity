@@ -843,7 +843,7 @@ def parse_ping_ouput(ad, count, out, loss_tolerance=20):
     packet_xmit = int(result.group(1))
     packet_rcvd = int(result.group(2))
     min_packet_xmit_rcvd = (100 - loss_tolerance) * 0.01
-    if (packet_loss >= loss_tolerance
+    if (packet_loss > loss_tolerance
             or packet_xmit < count * min_packet_xmit_rcvd
             or packet_rcvd < count * min_packet_xmit_rcvd):
         ad.log.error("%s, ping failed with loss more than tolerance %s%%",
