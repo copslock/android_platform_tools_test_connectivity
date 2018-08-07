@@ -812,7 +812,7 @@ def parse_ping_ouput(ad, count, out, loss_tolerance=20):
     packet_rcvd = int(stats[1].split()[0])
     min_packet_xmit_rcvd = (100 - loss_tolerance) * 0.01
 
-    if (packet_loss >= loss_tolerance
+    if (packet_loss > loss_tolerance
             or packet_xmit < count * min_packet_xmit_rcvd
             or packet_rcvd < count * min_packet_xmit_rcvd):
         ad.log.error(
