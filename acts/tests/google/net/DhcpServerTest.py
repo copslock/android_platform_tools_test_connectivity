@@ -6,6 +6,7 @@ from acts.test_decorators import test_tracker_info
 from scapy.all import *
 from threading import Event
 from threading import Thread
+import random
 import time
 import warnings
 
@@ -167,6 +168,17 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_offer(resp)
         self._assert_broadcast(resp)
 
+    def test_discover_bootpfields(self):
+        discover = self._make_discover(self.hwaddr)
+        resp = self._get_response(discover)
+        self._assert_offer(resp)
+        self._assert_unicast(resp)
+        bootp = assert_bootp_response(resp, discover)
+        asserts.assert_equal(INET4_ANY, bootp.ciaddr)
+        asserts.assert_equal(self.server_addr, bootp.siaddr)
+        asserts.assert_equal(INET4_ANY, bootp.giaddr)
+        asserts.assert_equal(self.hwaddr, get_chaddr(bootp))
+
     def test_discover_relayed_broadcastbit(self):
         giaddr = NETADDR_PREFIX + '123'
         resp = self._get_response(
@@ -182,7 +194,7 @@ class DhcpServerTest(base_test.BaseTestClass):
 
         self._assert_offer(resp)
         # List of requested params in response order
-        resp_opts = [opt[0] for opt in resp.getlayer(DHCP).options]
+        resp_opts = get_opt_labels(resp)
         resp_requested_opts = [opt for opt in resp_opts if opt in params]
         # All above params should be supported, order should be conserved
         asserts.assert_equal(params, resp_requested_opts)
@@ -279,13 +291,34 @@ class DhcpServerTest(base_test.BaseTestClass):
         addr, siaddr, resp = self._request_address(self.hwaddr, bcast=False)
         self._assert_unicast(resp, addr)
 
+    def test_request_bootpfields(self):
+        req_addr = NETADDR_PREFIX + '200'
+        req = self._make_request(self.hwaddr, req_addr, self.server_addr)
+        resp = self._get_response(req)
+        self._assert_ack(resp)
+        bootp = assert_bootp_response(resp, req)
+        asserts.assert_equal(INET4_ANY, bootp.ciaddr)
+        asserts.assert_equal(self.server_addr, bootp.siaddr)
+        asserts.assert_equal(INET4_ANY, bootp.giaddr)
+        asserts.assert_equal(self.hwaddr, get_chaddr(bootp))
+
     @test_tracker_info(uuid="ec00d268-80cb-4be5-9771-2292cc7d2e18")
     def test_request_selecting_inuse(self):
         addr, siaddr, _ = self._request_address(self.hwaddr)
-        resp = self._get_response(
-            self._make_request(self.other_hwaddr, addr, siaddr))
+        new_req = self._make_request(self.other_hwaddr, addr, siaddr)
+        resp = self._get_response(new_req)
         self._assert_nak(resp)
         self._assert_broadcast(resp)
+        bootp = assert_bootp_response(resp, new_req)
+        asserts.assert_equal(INET4_ANY, bootp.ciaddr)
+        asserts.assert_equal(INET4_ANY, bootp.yiaddr)
+        asserts.assert_equal(INET4_ANY, bootp.siaddr)
+        asserts.assert_equal(INET4_ANY, bootp.giaddr)
+        asserts.assert_equal(self.other_hwaddr, get_chaddr(bootp))
+        asserts.assert_equal(
+            ['message-type', 'server_id', 56, 'end'], # 56 is "message" opt
+            get_opt_labels(bootp))
+        asserts.assert_equal(self.server_addr, getopt(bootp, 'server_id'))
 
     def test_request_selecting_wrongsiaddr(self):
         addr = NETADDR_PREFIX + '200'
@@ -709,12 +742,9 @@ class DhcpServerTest(base_test.BaseTestClass):
             'siaddr does not start with expected prefix')
         asserts.assert_equal(INET4_ANY, bootp_resp.giaddr)
 
-        dhcp_resp = bootp_resp.getlayer(DHCP)
-        # end option is a single string, not a tuple.
+        opt_labels = get_opt_labels(bootp_resp)
         # FQDN option 81 is not supported in new behavior
-        opt_names = [opt if opt == 'end' else opt[0]
-            for opt in dhcp_resp.options
-            if opt == 'end' or opt[0] != 81]
+        opt_labels = [opt for opt in opt_labels if opt != 81]
 
         # Expect exactly these options in this order
         expected_opts = [
@@ -724,7 +754,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         if with_hostname:
             expected_opts.append('hostname')
         expected_opts.extend(['vendor_specific', 'end'])
-        asserts.assert_equal(expected_opts, opt_names)
+        asserts.assert_equal(expected_opts, opt_labels)
 
     def _request_address(self, hwaddr, bcast=True):
         resp = self._get_response(self._make_discover(hwaddr))
@@ -793,7 +823,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         ip = IP(src=ip_src, dst=ip_dst)
         udp = UDP(sport=68, dport=SERVER_PORT)
         bootp = BOOTP(chaddr=src_hwaddr, ciaddr=ciaddr, giaddr=giaddr,
-            flags=(0x8000 if bcastbit else 0), xid=RandInt())
+            flags=(0x8000 if bcastbit else 0), xid=random.randrange(0, 2**32))
         dhcp = DHCP(options=options)
         return ethernet / ip / udp / bootp / dhcp
 
@@ -839,6 +869,15 @@ class DhcpServerTest(base_test.BaseTestClass):
         return self._make_dhcp(src_hwaddr, opts, ciaddr=addr, ip_src=addr,
             ip_dst=server_id)
 
+def assert_bootp_response(resp, req):
+    bootp = resp.getlayer(BOOTP)
+    asserts.assert_equal(2, bootp.op, 'Invalid BOOTP op')
+    asserts.assert_equal(1, bootp.htype, 'Invalid BOOTP htype')
+    asserts.assert_equal(6, bootp.hlen, 'Invalid BOOTP hlen')
+    asserts.assert_equal(0, bootp.hops, 'Invalid BOOTP hops')
+    asserts.assert_equal(req.getlayer(BOOTP).xid, bootp.xid, 'Invalid XID')
+    return bootp
+
 
 def make_paramrequestlist_opt(params):
     param_indexes = [DHCPRevOptions[opt][0] if isinstance(opt, str) else opt
@@ -854,7 +893,7 @@ def isempty(addr):
 
 def setopt(packet, optname, val):
     dhcp = packet.getlayer(DHCP)
-    if optname in [opt[0] for opt in dhcp.options]:
+    if optname in get_opt_labels(dhcp):
         dhcp.options = [(optname, val) if opt[0] == optname else opt
             for opt in dhcp.options]
     else:
@@ -872,8 +911,20 @@ def removeopt(packet, key):
     dhcp.options = [opt for opt in dhcp.options if opt[0] != key]
 
 
+def get_opt_labels(packet):
+    dhcp_resp = packet.getlayer(DHCP)
+    # end option is a single string, not a tuple.
+    return [opt if isinstance(opt, str) else opt[0]
+        for opt in dhcp_resp.options if opt != 'pad']
+
+
 def get_yiaddr(packet):
     return packet.getlayer(BOOTP).yiaddr
+
+
+def get_chaddr(packet):
+    # We use Ethernet addresses. Ignore address padding
+    return packet.getlayer(BOOTP).chaddr[:6]
 
 
 def get_mess_type(packet):
