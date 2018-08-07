@@ -287,6 +287,57 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_offer(resp)
         asserts.assert_equal(get_yiaddr(resp), addr)
 
+    def test_discover_requestaddress_wrongsubnet(self):
+        addr = OTHER_NETADDR_PREFIX + '200'
+        resp = self._get_response(
+            self._make_discover(self.hwaddr, [('requested_addr', addr)]))
+        self._assert_offer(resp)
+        self._assert_unicast(resp)
+        asserts.assert_false(get_yiaddr(resp) == addr,
+            'Server offered invalid address')
+
+    def test_discover_giaddr_outside_subnet(self):
+        giaddr = OTHER_NETADDR_PREFIX + '201'
+        resp = self._get_response(
+            self._make_discover(self.hwaddr, giaddr=giaddr))
+        asserts.assert_equal(resp, None)
+
+    def test_discover_srcaddr_outside_subnet(self):
+        srcaddr = OTHER_NETADDR_PREFIX + '200'
+        resp = self._get_response(
+            self._make_discover(self.hwaddr, ip_src=srcaddr))
+        self._assert_offer(resp)
+        asserts.assert_false(srcaddr == get_yiaddr(resp),
+            'Server offered invalid address')
+
+    def test_discover_requestaddress_giaddr_outside_subnet(self):
+        addr = NETADDR_PREFIX + '200'
+        giaddr = OTHER_NETADDR_PREFIX + '201'
+        req = self._make_discover(self.hwaddr, [('requested_addr', addr)],
+                ip_src=giaddr, giaddr=giaddr)
+        resp = self._get_response(req)
+        asserts.assert_equal(resp, None)
+
+    def test_discover_knownaddress_giaddr_outside_subnet(self):
+        addr, siaddr, _ = self._request_address(self.hwaddr)
+
+        # New discover, same client, through relay in invalid subnet
+        giaddr = OTHER_NETADDR_PREFIX + '200'
+        resp = self._get_response(
+            self._make_discover(self.hwaddr, giaddr=giaddr))
+        asserts.assert_equal(resp, None)
+
+    def test_discover_knownaddress_giaddr_valid_subnet(self):
+        addr, siaddr, _ = self._request_address(self.hwaddr)
+
+        # New discover, same client, through relay in valid subnet
+        giaddr = NETADDR_PREFIX + '200'
+        resp = self._get_response(
+            self._make_discover(self.hwaddr, giaddr=giaddr))
+        self._assert_offer(resp)
+        self._assert_unicast(resp, giaddr)
+        self._assert_broadcastbit(resp, isset=False)
+
     def test_request_unicast(self):
         addr, siaddr, resp = self._request_address(self.hwaddr, bcast=False)
         self._assert_unicast(resp, addr)
@@ -329,6 +380,35 @@ class DhcpServerTest(base_test.BaseTestClass):
             self._make_request(self.hwaddr, addr, siaddr=wrong_siaddr))
         asserts.assert_true(resp == None,
             'Received response for request with incorrect siaddr')
+
+    def test_request_selecting_giaddr_outside_subnet(self):
+        addr = NETADDR_PREFIX + '200'
+        giaddr = OTHER_NETADDR_PREFIX + '201'
+        resp = self._get_response(
+            self._make_request(self.hwaddr, addr, siaddr=self.server_addr,
+                giaddr=giaddr))
+        asserts.assert_equal(resp, None)
+
+    def test_request_selecting_hostnameupdate(self):
+        addr = NETADDR_PREFIX + '123'
+        hostname1 = b'testhostname1'
+        hostname2 = b'testhostname2'
+        req = self._make_request(self.hwaddr, None, None,
+            options=[
+                ('requested_addr', addr),
+                ('server_id', self.server_addr),
+                ('hostname', hostname1)])
+        resp = self._get_response(req)
+        self._assert_ack(resp)
+        self._assert_unicast(resp, addr)
+        asserts.assert_equal(hostname1, getopt(req, 'hostname'))
+
+        # Re-request with different hostname
+        setopt(req, 'hostname', hostname2)
+        resp = self._get_response(req)
+        self._assert_ack(resp)
+        self._assert_unicast(resp, addr)
+        asserts.assert_equal(hostname2, getopt(req, 'hostname'))
 
     def _run_initreboot(self, bcastbit):
         addr, siaddr, resp = self._request_address(self.hwaddr)
@@ -828,14 +908,14 @@ class DhcpServerTest(base_test.BaseTestClass):
         return ethernet / ip / udp / bootp / dhcp
 
     def _make_discover(self, src_hwaddr, options = [], giaddr=INET4_ANY,
-            bcastbit=False, opts_padding=None):
+            bcastbit=False, opts_padding=None, ip_src=INET4_ANY):
         opts = [('message-type','discover')]
         opts.extend(options)
         opts.append('end')
         if (opts_padding):
             opts.append(opts_padding)
         return self._make_dhcp(src_hwaddr, options=opts, giaddr=giaddr,
-            ip_dst=NETADDR_BROADCAST, bcastbit=bcastbit)
+            ip_dst=NETADDR_BROADCAST, bcastbit=bcastbit, ip_src=ip_src)
 
     def _make_request(self, src_hwaddr, reqaddr, siaddr, ciaddr=INET4_ANY,
             ip_dst=None, ip_src=None, giaddr=INET4_ANY, bcastbit=False,
@@ -846,7 +926,9 @@ class DhcpServerTest(base_test.BaseTestClass):
         if not ip_src and ip_dst == INET4_ANY:
             ip_src = INET4_ANY
         elif not ip_src:
-            ip_src = ciaddr if not isempty(ciaddr) else reqaddr
+            ip_src = (giaddr if not isempty(giaddr)
+                else ciaddr if not isempty(ciaddr)
+                else reqaddr)
         # Kernel will not receive unicast UDP packets with empty ip_src
         asserts.assert_false(ip_dst != INET4_ANY and isempty(ip_src),
             "Unicast ip_src cannot be zero")
