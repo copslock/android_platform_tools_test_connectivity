@@ -69,7 +69,7 @@ class EventBusIntegrationTest(TestCase):
         """Tests that TestClasses have their subscribed functions called."""
         TestRunner(self.config, [('TestClass', [])]).run(TestClass)
 
-        self.assertEqual(len(TestClass.instance_event_received), 1)
+        self.assertGreaterEqual(len(TestClass.instance_event_received), 1)
         self.assertEqual(len(TestClass.static_event_received), 0)
 
     def test_subscribe_static_bundles(self):
