@@ -162,12 +162,14 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_true(get_yiaddr(resp).startswith(NETADDR_PREFIX),
             "Server does not use expected prefix")
 
+    @test_tracker_info(uuid="e3761689-7d64-46b1-97ce-15f315eaf568")
     def test_discover_broadcastbit(self):
         resp = self._get_response(
             self._make_discover(self.hwaddr, bcastbit=True))
         self._assert_offer(resp)
         self._assert_broadcast(resp)
 
+    @test_tracker_info(uuid="30a7ea7c-c20f-4c46-aaf2-96f19d8f8191")
     def test_discover_bootpfields(self):
         discover = self._make_discover(self.hwaddr)
         resp = self._get_response(discover)
@@ -179,6 +181,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_equal(INET4_ANY, bootp.giaddr)
         asserts.assert_equal(self.hwaddr, get_chaddr(bootp))
 
+    @test_tracker_info(uuid="593f4051-516d-44fa-8834-7d485362f182")
     def test_discover_relayed_broadcastbit(self):
         giaddr = NETADDR_PREFIX + '123'
         resp = self._get_response(
@@ -201,6 +204,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_equal(0, len(set(resp_opts) & set(unwanted_params)))
         return resp
 
+    @test_tracker_info(uuid="00a8a3f6-f143-47ff-a79b-482c607fb5b8")
     def test_discover_paramrequestlist(self):
         resp = self._run_discover_paramrequestlist(
             ['subnet_mask', 'broadcast_address', 'router', 'name_server'],
@@ -213,6 +217,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_true(subnet_mask.startswith('255.255.'),
             'Unexpected subnet mask for /16+: ' + subnet_mask)
 
+    @test_tracker_info(uuid="d1aad4a3-9eab-4900-aa6a-5b82a4a64f46")
     def test_discover_paramrequestlist_rev(self):
         # RFC2132 #9.8: "The DHCP server is not required to return the options
         # in the requested order, but MUST try to insert the requested options
@@ -222,6 +227,7 @@ class DhcpServerTest(base_test.BaseTestClass):
             ['name_server', 'router', 'broadcast_address', 'subnet_mask'],
             unwanted_params=[])
 
+    @test_tracker_info(uuid="e3ae6335-8cc7-4bf1-bb58-67646b727f2b")
     def test_discover_paramrequestlist_unwanted(self):
         asserts.skip('legacy behavior always sends all parameters')
         self._run_discover_paramrequestlist(['router', 'name_server'],
@@ -287,6 +293,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_offer(resp)
         asserts.assert_equal(get_yiaddr(resp), addr)
 
+    @test_tracker_info(uuid="5ffd9d25-304e-434b-bedb-56ccf27dcebd")
     def test_discover_requestaddress_wrongsubnet(self):
         addr = OTHER_NETADDR_PREFIX + '200'
         resp = self._get_response(
@@ -296,12 +303,14 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_false(get_yiaddr(resp) == addr,
             'Server offered invalid address')
 
+    @test_tracker_info(uuid="f7d6a92f-9386-4b65-b6c1-d0a3f11213bf")
     def test_discover_giaddr_outside_subnet(self):
         giaddr = OTHER_NETADDR_PREFIX + '201'
         resp = self._get_response(
             self._make_discover(self.hwaddr, giaddr=giaddr))
         asserts.assert_equal(resp, None)
 
+    @test_tracker_info(uuid="1348c79a-9203-4bb8-b33b-af80bacd17b1")
     def test_discover_srcaddr_outside_subnet(self):
         srcaddr = OTHER_NETADDR_PREFIX + '200'
         resp = self._get_response(
@@ -310,6 +319,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_false(srcaddr == get_yiaddr(resp),
             'Server offered invalid address')
 
+    @test_tracker_info(uuid="a03bb783-8665-4c66-9c0c-1bb02ddca07e")
     def test_discover_requestaddress_giaddr_outside_subnet(self):
         addr = NETADDR_PREFIX + '200'
         giaddr = OTHER_NETADDR_PREFIX + '201'
@@ -318,6 +328,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         resp = self._get_response(req)
         asserts.assert_equal(resp, None)
 
+    @test_tracker_info(uuid="725956af-71e2-45d8-b8b3-402d21bfc7db")
     def test_discover_knownaddress_giaddr_outside_subnet(self):
         addr, siaddr, _ = self._request_address(self.hwaddr)
 
@@ -327,6 +338,7 @@ class DhcpServerTest(base_test.BaseTestClass):
             self._make_discover(self.hwaddr, giaddr=giaddr))
         asserts.assert_equal(resp, None)
 
+    @test_tracker_info(uuid="2ee9d5b1-c15d-40c4-98e9-63202d1f1557")
     def test_discover_knownaddress_giaddr_valid_subnet(self):
         addr, siaddr, _ = self._request_address(self.hwaddr)
 
@@ -338,10 +350,12 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_unicast(resp, giaddr)
         self._assert_broadcastbit(resp, isset=False)
 
+    @test_tracker_info(uuid="f43105a5-633a-417a-8a07-39bc36c493e7")
     def test_request_unicast(self):
         addr, siaddr, resp = self._request_address(self.hwaddr, bcast=False)
         self._assert_unicast(resp, addr)
 
+    @test_tracker_info(uuid="09f3c1c4-1202-4f85-a965-4d86aee069f3")
     def test_request_bootpfields(self):
         req_addr = NETADDR_PREFIX + '200'
         req = self._make_request(self.hwaddr, req_addr, self.server_addr)
@@ -371,6 +385,7 @@ class DhcpServerTest(base_test.BaseTestClass):
             get_opt_labels(bootp))
         asserts.assert_equal(self.server_addr, getopt(bootp, 'server_id'))
 
+    @test_tracker_info(uuid="0643c179-3542-4297-9b06-8d86ff785e9c")
     def test_request_selecting_wrongsiaddr(self):
         addr = NETADDR_PREFIX + '200'
         wrong_siaddr = NETADDR_PREFIX + '201'
@@ -381,6 +396,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_true(resp == None,
             'Received response for request with incorrect siaddr')
 
+    @test_tracker_info(uuid="676beab2-4af8-4bf0-a4ad-c7626ae5987f")
     def test_request_selecting_giaddr_outside_subnet(self):
         addr = NETADDR_PREFIX + '200'
         giaddr = OTHER_NETADDR_PREFIX + '201'
@@ -389,6 +405,7 @@ class DhcpServerTest(base_test.BaseTestClass):
                 giaddr=giaddr))
         asserts.assert_equal(resp, None)
 
+    @test_tracker_info(uuid="fe17df0c-2f41-416f-bb76-d75b74b63c0f")
     def test_request_selecting_hostnameupdate(self):
         addr = NETADDR_PREFIX + '123'
         hostname1 = b'testhostname1'
@@ -424,6 +441,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_unicast(resp)
         self._assert_broadcastbit(resp, isset=False)
 
+    @test_tracker_info(uuid="f05dd60f-03dd-4e2b-8e58-80f4d752ad51")
     def test_request_initreboot_broadcastbit(self):
         resp = self._run_initreboot(bcastbit=True)
         self._assert_broadcast(resp)
@@ -473,6 +491,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_unicast(resp, addr)
         self._assert_broadcastbit(resp, isset=False)
 
+    @test_tracker_info(uuid="4c591536-8062-40ec-ae12-1ebe7dcad8e2")
     def test_request_rebinding_relayed(self):
         giaddr = NETADDR_PREFIX + '123'
         resp, _ = self._run_rebinding(bcastbit=False, giaddr=giaddr)
@@ -563,6 +582,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_nak(resp)
         self._assert_broadcast(resp)
 
+    @test_tracker_info(uuid="0858f678-3db2-4c12-a21b-6e16c5d7e7ce")
     def test_unicast_l2l3(self):
         reqAddr = NETADDR_PREFIX + '124'
         resp = self._get_response(self._make_request(
@@ -573,6 +593,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         asserts.assert_equal(reqAddr, resp.getlayer(IP).dst)
         asserts.assert_equal(CLIENT_PORT, resp.getlayer(UDP).dport)
 
+    @test_tracker_info(uuid="bf05efe9-ee5b-46ba-9b3c-5a4441c13798")
     def test_macos_10_13_3_discover(self):
         params_opt = make_paramrequestlist_opt([
             'subnet_mask',
@@ -613,6 +634,7 @@ class DhcpServerTest(base_test.BaseTestClass):
             46, # NetBIOS over TCP/IP Node Type
             ])
 
+    @test_tracker_info(uuid="bf05efe9-ee5b-46ba-9b3c-5a4441c13798")
     def test_macos_10_13_3_discover(self):
         req = self._make_discover(self.hwaddr,
             options=[
@@ -628,6 +650,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_offer(resp)
         self._assert_standard_offer_or_ack(resp)
 
+    @test_tracker_info(uuid="7acc796b-c4f1-46cc-8ffb-0a0efb05ae86")
     def test_macos_10_13_3_request_selecting(self):
         req = self._make_request(self.hwaddr, None, None,
             options=[
@@ -645,6 +668,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_standard_offer_or_ack(resp)
 
     # Note: macOS does not seem to do any rebinding (straight to discover)
+    @test_tracker_info(uuid="e8f0b60c-9ea3-4184-8426-151a395bff5b")
     def test_macos_10_13_3_request_renewing(self):
         req_ip = NETADDR_PREFIX + '109'
         req = self._make_request(self.hwaddr, None, None,
@@ -677,6 +701,7 @@ class DhcpServerTest(base_test.BaseTestClass):
             252, # Private/Proxy autodiscovery
             ])
 
+    @test_tracker_info(uuid="11b3db9c-4cd7-4088-99dc-881f25ce4e76")
     def test_win10_discover(self):
         req = self._make_discover(self.hwaddr, bcastbit=True,
             options=[
@@ -691,6 +716,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_offer(resp)
         self._assert_standard_offer_or_ack(resp, bcast=True)
 
+    @test_tracker_info(uuid="4fe04e7f-c643-4a19-b15c-cf417b2c9410")
     def test_win10_request_selecting(self):
         req = self._make_request(self.hwaddr, None, None, bcastbit=True,
             options=[
@@ -728,9 +754,11 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_ack(resp)
         self._assert_standard_offer_or_ack(resp, renewing=True, bcast=bcast)
 
+    @test_tracker_info(uuid="1b23c9c7-cc94-42d0-83a6-f1b2bc125fb9")
     def test_win10_request_renewing(self):
         self._run_win10_request_renewing(bcast=False)
 
+    @test_tracker_info(uuid="c846bd14-71fb-4492-a4d3-0aa5c2c35751")
     def test_win10_request_rebinding(self):
         self._run_win10_request_renewing(bcast=True)
 
@@ -752,6 +780,7 @@ class DhcpServerTest(base_test.BaseTestClass):
             'NTP_server',
             ])
 
+    @test_tracker_info(uuid="b0bb6ae7-07e6-4ecb-9a2f-db9c8146a3d5")
     def test_debian_dhclient_4_3_5_discover(self):
         req_ip = NETADDR_PREFIX + '109'
         req = self._make_discover(self.hwaddr,
@@ -765,6 +794,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_standard_offer_or_ack(resp)
         asserts.assert_equal(req_ip, get_yiaddr(resp))
 
+    @test_tracker_info(uuid="d70bc043-84cb-4735-9123-c46c6d1ce5ac")
     def test_debian_dhclient_4_3_5_request_selecting(self):
         req = self._make_request(self.hwaddr, None, None,
             options=[
@@ -792,9 +822,11 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._assert_standard_offer_or_ack(resp, renewing=True,
             with_hostname=True)
 
+    @test_tracker_info(uuid="5e1e817d-9972-46ca-8d44-1e120bf1bafc")
     def test_debian_dhclient_4_3_5_request_renewing(self):
         self._run_debian_renewing(bcast=False)
 
+    @test_tracker_info(uuid="b179a36d-910e-4006-a79a-11cc561b69db")
     def test_debian_dhclient_4_3_5_request_rebinding(self):
         self._run_debian_renewing(bcast=True)
 
