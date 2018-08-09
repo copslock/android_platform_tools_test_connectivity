@@ -289,6 +289,27 @@ class WifiSoftApTest(WifiBaseTest):
         wutils.stop_wifi_tethering(self.dut)
         wutils.wait_for_disconnect(self.dut_client)
 
+    @test_tracker_info(uuid="")
+    def test_full_tether_startup_2G_with_airplane_mode_on(self):
+        """Test full startup of wifi tethering in 2G band with
+        airplane mode on.
+
+        1. Turn on airplane mode.
+        2. Report current state.
+        3. Switch to AP mode.
+        4. verify SoftAP active.
+        5. Shutdown wifi tethering.
+        6. verify back to previous mode.
+        7. Turn off airplane mode.
+        """
+        self.dut.log.debug("Toggling Airplane mode ON.")
+        asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                            "Can not turn on airplane mode: %s" % self.dut.serial)
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G)
+        self.dut.log.debug("Toggling Airplane mode OFF.")
+        asserts.assert_true(utils.force_airplane_mode(self.dut, False),
+                            "Can not turn off airplane mode: %s" % self.dut.serial)
+
     """ Tests End """
 
 
