@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
 """
 A comprehensive interface for performing test actions on an Apollo device.
 """
@@ -59,8 +58,10 @@ AVRCPSTATUS = 'AvrcpPlayPause'
 DEFAULT_TIMEOUT = 60  # wait 60 seconds max for bond/connect.
 DEFAULT_CMD_INTERVAL = 0.5  # default interval between serial commands
 DEFAULT_CMD_RETRY = 5  # default retry times when a command failed.
-DEFAULT_BT_PROFILES = ['HFP Pri', 'HFP Sec', 'A2DP Pri', 'A2DP Sec', 'CTRL',
-                       'AUDIO', 'DEBUG', 'TRANS']
+DEFAULT_BT_PROFILES = [
+    'HFP Pri', 'HFP Sec', 'A2DP Pri', 'A2DP Sec', 'CTRL', 'AUDIO', 'DEBUG',
+    'TRANS'
+]
 DEFAULT_BT_STATUS = ['A2DP(pri)', 'HFP(pri.)', 'Comp']
 
 
@@ -83,7 +84,7 @@ class ApolloTestActions(BaseTestAction):
 
     def bluetooth_get_status(self):
         status = self.dut.get_bt_status()
-        self.logger.i(status)
+        self.logger.info(status)
 
     def wait_for_bluetooth_disconnection(self, timeout=60):
         """ Set pairing mode and disconnect.
@@ -95,11 +96,11 @@ class ApolloTestActions(BaseTestAction):
         """
         result = True
         apollo_status = self.dut.get_bt_status()
-        self.logger.i('Waiting for the disconnection.')
+        self.logger.info('Waiting for the disconnection.')
         time.sleep(1)
         ini_time = time.time()
         while len(apollo_status) != len(
-                [s for s in apollo_status.values() if s == 'FALSE']):
+            [s for s in apollo_status.values() if s == 'FALSE']):
             apollo_status = self.dut.get_bt_status()
             if (time.time() - ini_time) > timeout:
                 self.logger.warning('Timeout waiting for the disconnection.')
@@ -161,8 +162,8 @@ class ApolloTestActions(BaseTestAction):
         if not bt_util.android_device_in_paired_state(phone, target_addr):
             self.logger.info('Device is already unpaired, skipping unpairing.')
         else:
-            result = bt_util.bt_unpair(phone, self.dut,
-                                       factory_reset_dut=factory_reset_dut)
+            result = bt_util.bt_unpair(
+                phone, self.dut, factory_reset_dut=factory_reset_dut)
             if not result:
                 raise TestActsError('Bluetooth unpairing failed.')
             if companion_app:
@@ -206,11 +207,14 @@ class ApolloTestActions(BaseTestAction):
         if not is_played:
             self.logger.error('AVRCP Played status not found')
             raise TestActsError('AVRCP Played status not found.')
-        wait_until(lambda: self.dut.is_streaming(), play_detection_timeout,
-                   sleep_s=0.25)
+        wait_until(
+            lambda: self.dut.is_streaming(),
+            play_detection_timeout,
+            sleep_s=0.25)
         if not self.dut.is_streaming():
             self.logger.error('Device is NOT in a deviceA2DPStreaming state')
-            raise TestActsError('Device is NOT in a deviceA2DPStreaming state.')
+            raise TestActsError(
+                'Device is NOT in a deviceA2DPStreaming state.')
 
     def send_music_pause_event_and_validate(self):
         """Send the pause event on Apollo and validate the responses and DSP
@@ -229,11 +233,14 @@ class ApolloTestActions(BaseTestAction):
         if not is_paused:
             self.logger.error('AVRCP Paused statue not found')
             raise TestActsError('AVRCP Paused status not found.')
-        wait_until(lambda: not self.dut.is_streaming(),
-                   paused_detection_timeout, sleep_s=0.25)
+        wait_until(
+            lambda: not self.dut.is_streaming(),
+            paused_detection_timeout,
+            sleep_s=0.25)
         if self.dut.is_streaming():
             self.logger.error('Device is still in deviceA2DPStreaming state')
-            raise TestActsError('Device is still in deviceA2DPStreaming state.')
+            raise TestActsError(
+                'Device is still in deviceA2DPStreaming state.')
 
     def vol_down_and_validate(self):
         """Send volume down twice and validate by comparing two levels
@@ -247,8 +254,8 @@ class ApolloTestActions(BaseTestAction):
         after_vol = self.dut.volume('Down', 1)
         if not after_vol or not before_vol or after_vol >= before_vol:
             self.logger.error(
-                'Unable to decrease the volume. Before: %s. After: %s' % (
-                    before_vol, after_vol))
+                'Unable to decrease the volume. Before: %s. After: %s' %
+                (before_vol, after_vol))
             raise TestActsError('error decreasing volume')
 
     def vol_up_and_validate(self):
@@ -263,16 +270,18 @@ class ApolloTestActions(BaseTestAction):
         after_vol = self.dut.volume('Up', 1)
         if not after_vol or not before_vol or after_vol <= before_vol:
             self.logger.error(
-                'Unable to increase the volume. Before: %s. After: %s' % (
-                    before_vol, after_vol))
+                'Unable to increase the volume. Before: %s. After: %s' %
+                (before_vol, after_vol))
             raise TestActsError('error increasing volume')
 
-    def call_and_validate_ringing(self, calling_phone, number_to_call,
+    def call_and_validate_ringing(self,
+                                  calling_phone,
+                                  number_to_call,
                                   call_retries=10):
         for i in range(call_retries):
             initiate_call(self.logger, calling_phone, number_to_call)
-            is_calling = wait_for_droid_in_call(self.logger, calling_phone,
-                                                max_time=10)
+            is_calling = wait_for_droid_in_call(
+                self.logger, calling_phone, max_time=10)
             if is_calling:
                 self.logger.info('Call initiated!')
                 break
@@ -281,13 +290,15 @@ class ApolloTestActions(BaseTestAction):
                 if i == call_retries:
                     self.logger.error('Call initiation retries exhausted')
                     raise TestActsError(
-                        '%s retries failed to initiate the call' % (
-                            call_retries))
+                        '%s retries failed to initiate the call' %
+                        (call_retries))
             self.logger.warning('Retrying call...')
         # wait for offhook state and return
         wait_until(
             (lambda: calling_phone.droid.telecomGetCallState() == 'OFFHOOK'),
-            timeout_s=40, condition=True, sleep_s=.5)
+            timeout_s=40,
+            condition=True,
+            sleep_s=.5)
         self.logger.info('Phone call initiated on %s' % calling_phone.serial)
 
     def answer_phone_and_validate_call_received(self, receiving_phone):
@@ -295,22 +306,28 @@ class ApolloTestActions(BaseTestAction):
         # running the command)
         wait_until(
             lambda: receiving_phone.droid.telecomGetCallState() == 'RINGING',
-            timeout_s=40, condition=True, sleep_s=.5)
-        self.logger.info('Ring detected on %s - now answering the call...' % (
-            receiving_phone.serial))
+            timeout_s=40,
+            condition=True,
+            sleep_s=.5)
+        self.logger.info('Ring detected on %s - now answering the call...' %
+                         (receiving_phone.serial))
         # answer the phone call
         self.dut.tap()
         # wait until OFFHOOK state
         wait_until(
             lambda: receiving_phone.droid.telecomGetCallState() == 'OFFHOOK',
-            timeout_s=40, condition=True, sleep_s=.5)
+            timeout_s=40,
+            condition=True,
+            sleep_s=.5)
 
     def hangup_phone_and_validate_call_hung(self, receiving_phone):
         # wait for phone to be in OFFHOOK state (assumed that a call is answered
         # and engaged)
         wait_until(
             lambda: receiving_phone.droid.telecomGetCallState() == 'OFFHOOK',
-            timeout_s=40, condition=True, sleep_s=.5)
+            timeout_s=40,
+            condition=True,
+            sleep_s=.5)
         # end the call (post and pre 1663 have different way of ending call)
         self.logger.info(
             'Hanging up the call on %s...' % receiving_phone.serial)
@@ -321,7 +338,9 @@ class ApolloTestActions(BaseTestAction):
         # wait for idle state
         wait_until(
             lambda: receiving_phone.droid.telecomGetCallState() == 'IDLE',
-            timeout_s=40, condition=True, sleep_s=.5)
+            timeout_s=40,
+            condition=True,
+            sleep_s=.5)
 
     @timed_action
     def factory_reset(self):
@@ -337,31 +356,34 @@ class ApolloTestActions(BaseTestAction):
     def wait_for_magic_pairing_notification(self, android_act, timeout=60):
         dut_detected = False
         start_time = time.time()
-        self.logger.i('Waiting for MP prompt: %s' % BISTO_MP_DEVICE_TEXT)
+        self.logger.info('Waiting for MP prompt: %s' % BISTO_MP_DEVICE_TEXT)
         while not dut_detected:
             android_act.dut.ui_util.uia.wait.update()
             self.sleep(1)
-            if android_act.dut.ui_util.uia(textContains=BISTO_MP_DETECT_HEADER,
-                                           enabled=True).exists:
+            if android_act.dut.ui_util.uia(
+                    textContains=BISTO_MP_DETECT_HEADER, enabled=True).exists:
                 if android_act.dut.ui_util.uia(
-                        textContains=BISTO_MP_DEVICE_TEXT, enabled=True).exists:
-                    self.logger.i('DUT Apollo MP prompt detected!')
+                        textContains=BISTO_MP_DEVICE_TEXT,
+                        enabled=True).exists:
+                    self.logger.info('DUT Apollo MP prompt detected!')
                     dut_detected = True
                 else:
-                    self.logger.i(
-                        'NONE DUT Apollo MP prompt detected! Cancel and RETRY!')
+                    self.logger.info(
+                        'NONE DUT Apollo MP prompt detected! Cancel and RETRY!'
+                    )
                     android_act.dut.ui_util.click_by_text(BISTO_MP_CANCEL_TEXT)
             if time.time() - start_time > timeout:
                 break
         if not dut_detected:
-            self.logger.i('Failed to get %s MP prompt' % BISTO_MP_DEVICE_TEXT)
+            self.logger.info(
+                'Failed to get %s MP prompt' % BISTO_MP_DEVICE_TEXT)
         return dut_detected
 
     @timed_action
     def start_magic_pairing(self, android_act, timeout=30, retries=3):
         paired = False
-        android_act.dut.ui_util.click_by_text(BISTO_MP_CONNECT_TEXT,
-                                              timeout=timeout)
+        android_act.dut.ui_util.click_by_text(
+            BISTO_MP_CONNECT_TEXT, timeout=timeout)
         connect_start_time = time.time()
         count = 0
         timeout = 30
@@ -370,25 +392,26 @@ class ApolloTestActions(BaseTestAction):
             android_act.dut.ui_util.uia.wait.update()
             self.sleep(1)
             if time.time() - connect_start_time > timeout:
-                self.logger.i('Time out! %s seconds' % time)
+                self.logger.info('Time out! %s seconds' % time)
                 android_act.app_force_close_agsa()
-                self.logger.i('Timeout(s): %s' % timeout)
+                self.logger.info('Timeout(s): %s' % timeout)
                 break
             if android_act.dut.ui_util.uia(
                     textContains=BISTO_MP_CONNECT_FAIL_TEXT,
                     enabled=True).exists:
                 count += 1
-                self.logger.i('MP FAILED! Retry %s.' % count)
+                self.logger.info('MP FAILED! Retry %s.' % count)
                 android_act.dut.ui_util.click_by_text(
                     BISTO_MP_CONNECT_RETRY_TEXT)
                 connect_start_time = time.time()
             elif android_act.dut.ui_util.uia(
                     textContains=BISTO_MP_CONNECTED_TEXT, enabled=True).exists:
-                self.logger.i('MP SUCCESSFUL! Exiting AGSA...')
+                self.logger.info('MP SUCCESSFUL! Exiting AGSA...')
                 paired = True
                 android_act.dut.ui_util.click_by_text(
                     BISTO_MP_CONNECTED_EXIT_TEXT)
-                android_act.dut.ui_util.wait_for_text(BISTO_MP_EXIT_PROMPT_TEXT)
+                android_act.dut.ui_util.wait_for_text(
+                    BISTO_MP_EXIT_PROMPT_TEXT)
                 android_act.dut.ui_util.click_by_text(
                     BISTO_MP_EXIT_CONFIRM_TEXT)
         return paired
@@ -404,7 +427,8 @@ class ApolloTestActions(BaseTestAction):
         return True
 
     @timed_action
-    def wait_for_bluetooth_a2dp_hfp(self, timeout=DEFAULT_TIMEOUT,
+    def wait_for_bluetooth_a2dp_hfp(self,
+                                    timeout=DEFAULT_TIMEOUT,
                                     interval=DEFAULT_CMD_INTERVAL):
         """Wait for BT connection by checking if A2DP and HFP connected.
 
@@ -425,8 +449,8 @@ class ApolloTestActions(BaseTestAction):
             self.logger.warning('Failed to wait for BT connection: %s' % ex)
         return ret
 
-    def _wait_for_bluetooth_profile_connection(self, profiles_to_check, timeout,
-                                               interval, timer):
+    def _wait_for_bluetooth_profile_connection(self, profiles_to_check,
+                                               timeout, interval, timer):
         """A generic method to wait for specified BT profile connection.
 
         Args:
@@ -480,8 +504,8 @@ class ApolloTestActions(BaseTestAction):
         return profiles
 
     @timed_action
-    def wait_for_bluetooth_status_connection_all(self, timeout=DEFAULT_TIMEOUT,
-                                                 interval=DEFAULT_CMD_INTERVAL):
+    def wait_for_bluetooth_status_connection_all(
+            self, timeout=DEFAULT_TIMEOUT, interval=DEFAULT_CMD_INTERVAL):
         """Wait for BT connection by checking if A2DP, HFP and COMP connected.
 
         This is used for BT reconnect test.
@@ -500,13 +524,13 @@ class ApolloTestActions(BaseTestAction):
                 time.sleep(interval)
                 status = self.dut.get_bt_status()
                 for key in DEFAULT_BT_STATUS:
-                    if (not connected_status[key] and key in status and
-                            'TRUE' == status[key]):
+                    if (not connected_status[key] and key in status
+                            and 'TRUE' == status[key]):
                         self.measurement_timer.stop_timer(key)
                         connected_status[key] = True
-                        self.logger.i(
-                            'BT status %s connected at %fs.' % (
-                                key, self.measurement_timer.elapsed(key)))
+                        self.logger.info(
+                            'BT status %s connected at %fs.' %
+                            (key, self.measurement_timer.elapsed(key)))
                 if False not in connected_status.values():
                     ret = True
                     break
@@ -517,8 +541,13 @@ class ApolloTestActions(BaseTestAction):
         return ret
 
     def initiate_ota_via_agsa_verify_transfer_completion_in_logcat(
-            self, agsa_action, dfu_path, destination=None, force=True,
-            apply_image=True, reconnect=True):
+            self,
+            agsa_action,
+            dfu_path,
+            destination=None,
+            force=True,
+            apply_image=True,
+            reconnect=True):
         """
         Starts an OTA by issuing an intent to AGSA after copying the dfu file to
         the appropriate location on the phone
