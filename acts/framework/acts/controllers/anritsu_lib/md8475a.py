@@ -519,7 +519,7 @@ class MD8475A(object):
         Returns:
             query response
         """
-        self.log.info("--> {}".format(query))
+        self.log.debug("--> {}".format(query))
         querytoSend = (query + TERMINATOR).encode('utf-8')
         self._sock.settimeout(sock_timeout)
         try:
@@ -527,7 +527,7 @@ class MD8475A(object):
             result = self._sock.recv(ANRITSU_SOCKET_BUFFER_SIZE).rstrip(
                 TERMINATOR.encode('utf-8'))
             response = result.decode('utf-8')
-            self.log.info('<-- {}'.format(response))
+            self.log.debug('<-- {}'.format(response))
             return response
         except socket.timeout:
             raise AnritsuError("Timeout: Response from Anritsu")
@@ -543,7 +543,7 @@ class MD8475A(object):
         Returns:
             None
         """
-        self.log.info("--> {}".format(command))
+        self.log.debug("--> {}".format(command))
         if self._error_reporting:
             cmdToSend = (command + ";ERROR?" + TERMINATOR).encode('utf-8')
             self._sock.settimeout(sock_timeout)
