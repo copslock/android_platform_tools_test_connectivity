@@ -56,12 +56,19 @@ BLACKLIST = [
     'acts/test_utils/bt/bt_power_test_utils.py',
     'acts/test_utils/coex/coex_test_utils.py',
     'acts/framework/acts/controllers/buds_lib/dev_utils/proto/gen/nanopb_pb2.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/bigquery_logger_utils.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/test_bigquery_utils.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/test_bigquery_logger.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/bigquery_buffer.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/bigquery_logger.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/bigquery_scheduled_automatic_client.py',
     'acts/framework/acts/test_utils/coex/CoexBaseTest.py',
     'acts/framework/acts/test_utils/coex/CoexPerformanceBaseTest.py',
     'acts/framework/acts/test_utils/power/PowerWiFiBaseTest.py',
     'acts/framework/acts/test_utils/power/PowerCoexBaseTest.py',
     'acts/framework/acts/test_utils/power/PowerBaseTest.py',
     'acts/framework/acts/test_utils/power/PowerBTBaseTest.py',
+    'acts/framework/acts/controllers/buds_lib/data_storage/_sponge/sponge_client_lite.py',
 ]
 
 
