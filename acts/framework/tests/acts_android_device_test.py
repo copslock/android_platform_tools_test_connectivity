@@ -399,8 +399,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
                                          "adblog,fakemodel,%s.txt" % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = 'adb -s %s logcat -T 1 -v year -b all >> %s'
-        start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
-                                                      expected_log_path))
+        start_proc_mock.assert_called_with(
+            adb_cmd % (ad.serial, expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
         expected_msg = ("Android device .* already has an adb logcat thread "
                         "going on. Cannot start another one.")
@@ -447,8 +447,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
                                          "adblog,fakemodel,%s.txt" % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = 'adb -s %s logcat -T 1 -v year -b radio >> %s'
-        start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
-                                                      expected_log_path))
+        start_proc_mock.assert_called_with(
+            adb_cmd % (ad.serial, expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
 
     @mock.patch(

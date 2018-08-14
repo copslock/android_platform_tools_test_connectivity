@@ -738,6 +738,12 @@ def set_location_service(ad, new_state):
             If new_state is False, turn off location service.
             If new_state if True, set location service to "High accuracy".
     """
+    ad.adb.shell("content insert --uri "
+                 " content://com.google.settings/partner --bind "
+                 "name:s:network_location_opt_in --bind value:s:1")
+    ad.adb.shell("content insert --uri "
+                 " content://com.google.settings/partner --bind "
+                 "name:s:use_location_for_services --bind value:s:1")
     if new_state:
         ad.adb.shell("settings put secure location_providers_allowed +gps")
         ad.adb.shell("settings put secure location_providers_allowed +network")
@@ -757,16 +763,6 @@ def set_mobile_data_always_on(ad, new_state):
     """
     ad.adb.shell("settings put global mobile_data_always_on {}".format(
         1 if new_state else 0))
-
-
-def set_regulatory_domain(ad, domain):
-    """Set the Wi-Fi regulatory domain
-
-    Args:
-      ad: android device object.
-      domain: regulatory domain
-    """
-    ad.adb.shell("iw reg set %s" % domain)
 
 
 def bypass_setup_wizard(ad, bypass_wait_time=3):
@@ -847,7 +843,7 @@ def parse_ping_ouput(ad, count, out, loss_tolerance=20):
     packet_xmit = int(result.group(1))
     packet_rcvd = int(result.group(2))
     min_packet_xmit_rcvd = (100 - loss_tolerance) * 0.01
-    if (packet_loss >= loss_tolerance
+    if (packet_loss > loss_tolerance
             or packet_xmit < count * min_packet_xmit_rcvd
             or packet_rcvd < count * min_packet_xmit_rcvd):
         ad.log.error("%s, ping failed with loss more than tolerance %s%%",

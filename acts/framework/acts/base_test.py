@@ -18,8 +18,6 @@ import os
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 
-from acts.event import subscription_bundle
-
 from acts import asserts
 from acts import keys
 from acts import logger
@@ -28,10 +26,14 @@ from acts import signals
 from acts import error
 from acts import tracelogger
 from acts import utils
-
-# Macro strings for test result reporting
+from acts.event import event_bus
+from acts.event import subscription_bundle
+from acts.event.event import TestCaseBeginEvent
+from acts.event.event import TestCaseEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
 
+
+# Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
 
@@ -83,6 +85,7 @@ class BaseTestClass(object):
                 if ad.droid:
                     utils.set_location_service(ad, False)
                     utils.sync_device_time(ad)
+        self.testbed_name = ''
 
     def __enter__(self):
         return self
@@ -399,6 +402,9 @@ class BaseTestClass(object):
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
         try:
+            event_bus.post(TestCaseBeginEvent(self.testbed_name,
+                                              self.__class__.__name__,
+                                              test_name))
             try:
                 if hasattr(self, 'android_devices'):
                     for ad in self.android_devices:
@@ -467,6 +473,9 @@ class BaseTestClass(object):
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
+            event_bus.post(TestCaseEndEvent(self.testbed_name,
+                                            self.__class__.__name__,
+                                            test_name, signals.TestPass))
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
 
