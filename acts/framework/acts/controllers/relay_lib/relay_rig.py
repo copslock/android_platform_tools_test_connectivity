@@ -24,6 +24,7 @@ from acts.controllers.relay_lib.i6s_headset import I6sHeadset
 from acts.controllers.relay_lib.logitech_headset import LogitechAudioReceiver
 from acts.controllers.relay_lib.sony_xb2_speaker import SonyXB2Speaker
 from acts.controllers.relay_lib.sony_xb20_speaker import SonyXB20Speaker
+from acts.controllers.relay_lib.tao_tronics_headset import TaoTronicsCarkit
 from acts.controllers.relay_lib.ak_xb10_speaker import AkXB10Speaker
 from acts.controllers.relay_lib.dongles import SingleButtonDongle
 from acts.controllers.relay_lib.dongles import ThreeButtonDongle
@@ -66,6 +67,7 @@ class RelayRig:
         "LogitechAudioReceiver" :lambda x, rig: LogitechAudioReceiver(x, rig),
         'SonyXB2Speaker': lambda x, rig: SonyXB2Speaker(x, rig),
         'SonyXB20Speaker': lambda x, rig: SonyXB20Speaker(x, rig),
+        'TaoTronicsCarkit': lambda x, rig: TaoTronicsCarkit(x, rig),
         'AkXB10Speaker': lambda x, rig: AkXB10Speaker(x, rig),
         'SingleButtonDongle': lambda x, rig: SingleButtonDongle(x, rig),
         'ThreeButtonDongle': lambda x, rig: ThreeButtonDongle(x, rig),
