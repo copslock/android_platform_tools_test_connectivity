@@ -19,18 +19,28 @@ from acts import error
 
 
 class ActsErrorTest(unittest.TestCase):
-    def test_error_without_args(self):
+
+    def test_assert_key_pulled_from_acts_error_code(self):
         e = error.ActsError()
         self.assertEqual(e.error_code, 100)
+
+    def test_assert_description_pulled_from_docstring(self):
+        e = error.ActsError()
         self.assertEqual(e.message, 'Base Acts Error')
-        self.assertEqual(e.extra, ())
+
+    def test_error_without_args(self):
+        e = error.ActsError()
+        self.assertEqual(e.extra['details'], ())
 
     def test_error_with_args(self):
-        args = 'hello'
-        e = error.ActsError(args)
-        self.assertEqual(e.error_code, 100)
-        self.assertEqual(e.message, 'Base Acts Error')
-        self.assertEqual(e.extra, ('hello',))
+        args = ['hello']
+        e = error.ActsError(*args)
+        self.assertEqual(e.extra['details'], args)
+
+    def test_error_with_kwargs(self):
+        e = error.ActsError(key='value')
+        self.assertTrue('key' in e.extra.keys())
+        self.assertTrue('value' in e.extra['key'])
 
 
 if __name__ == '__main__':

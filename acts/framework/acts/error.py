@@ -10,7 +10,9 @@ class ActsError(Exception):
         class_name = self.__class__.__name__
         self.message = self.__class__.__doc__
         self.error_code = getattr(ActsErrorCode, class_name)
-        self.extra = args
+        self.extra = kwargs
+        if len(args) > 0:
+            self.extra['details'] = args
 
     def json_str(self):
         """Converts this error to a string in json format.
