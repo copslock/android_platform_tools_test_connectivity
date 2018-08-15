@@ -64,15 +64,17 @@ DEFAULT_DEVICE_PASSWORD = "1111"
 RELEASE_ID_REGEXES = [re.compile(r'\w+\.\d+\.\d+'), re.compile(r'N\w+')]
 
 
+class AndroidDeviceConfigError(Exception):
+    """Raised when AndroidDevice configs are malformatted."""
+
+
 class AndroidDeviceError(error.ActsError):
-    """Raised when there is an error in AndroidDevice
-    """
-    pass
+    """Raised when there is an error in AndroidDevice."""
 
 
 class DoesNotExistError(AndroidDeviceError):
-    """Raised when something that does not exist is referenced.
-    """
+    """Raised when something that does not exist is referenced."""
+
 
 
 def create(configs):
@@ -86,11 +88,11 @@ def create(configs):
         A list of AndroidDevice objects.
     """
     if not configs:
-        raise AndroidDeviceError(ANDROID_DEVICE_EMPTY_CONFIG_MSG)
+        raise AndroidDeviceConfigError(ANDROID_DEVICE_EMPTY_CONFIG_MSG)
     elif configs == ANDROID_DEVICE_PICK_ALL_TOKEN:
         ads = get_all_instances()
     elif not isinstance(configs, list):
-        raise AndroidDeviceError(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
+        raise AndroidDeviceConfigError(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
     elif isinstance(configs[0], str):
         # Configs is a list of serials.
         ads = get_instances(configs)
@@ -103,7 +105,8 @@ def create(configs):
     for ad in ads:
         if not ad.is_connected():
             raise DoesNotExistError(("Android device %s is specified in config"
-                                     " but is not attached.") % ad.serial)
+                                     " but is not attached.") % ad.serial,
+                                    serial=ad.serial)
     _start_services_on_ads(ads)
     return ads
 
@@ -163,17 +166,19 @@ def _start_services_on_ads(ads):
     for ad in ads:
         running_ads.append(ad)
         if not ad.ensure_screen_on():
-            ad.log.error("User window cannot come up")
+            ad.log.error('User window cannot come up')
             destroy(running_ads)
-            raise AndroidDeviceError("User window cannot come up")
+            raise AndroidDeviceError('User window cannot come up',
+                                     serial=ad.serial)
         if not ad.skip_sl4a and not ad.is_sl4a_installed():
-            ad.log.error("sl4a.apk is not installed")
+            ad.log.error('sl4a.apk is not installed')
             destroy(running_ads)
-            raise AndroidDeviceError("The required sl4a.apk is not installed")
+            raise AndroidDeviceError('The required sl4a.apk is not installed',
+                                     serial=ad.serial)
         try:
             ad.start_services(skip_sl4a=ad.skip_sl4a)
         except:
-            ad.log.exception("Failed to start some services, abort!")
+            ad.log.exception('Failed to start some services, abort!')
             destroy(running_ads)
             raise
 
@@ -244,12 +249,12 @@ def get_instances_with_configs(configs):
     results = []
     for c in configs:
         try:
-            serial = c.pop("serial")
+            serial = c.pop('serial')
         except KeyError:
-            raise AndroidDeviceError(
+            raise AndroidDeviceConfigError(
                 "Required value 'serial' is missing in AndroidDevice config %s."
                 % c)
-        ssh_config = c.pop("ssh_config", None)
+        ssh_config = c.pop('ssh_config', None)
         ssh_connection = None
         if ssh_config is not None:
             ssh_settings = settings.from_config(ssh_config)
@@ -325,14 +330,14 @@ def get_device(ads, **kwargs):
 
     filtered = filter_devices(ads, _get_device_filter)
     if not filtered:
-        raise AndroidDeviceError(
+        raise ValueError(
             "Could not find a target device that matches condition: %s." %
             kwargs)
     elif len(filtered) == 1:
         return filtered[0]
     else:
         serials = [ad.serial for ad in filtered]
-        raise AndroidDeviceError("More than one device matched: %s" % serials)
+        raise ValueError("More than one device matched: %s" % serials)
 
 
 def take_bug_reports(ads, test_name, begin_time):
@@ -619,7 +624,7 @@ class AndroidDevice:
             if hasattr(self, k) and k != "skip_sl4a":
                 raise AndroidDeviceError(
                     "Attempting to set existing attribute %s on %s" %
-                    (k, self.serial))
+                    (k, self.serial), serial=self.serial)
             setattr(self, k, v)
 
     def root_adb(self):
@@ -773,9 +778,10 @@ class AndroidDevice:
                               logcat is no longer running.
         """
         if self.is_adb_logcat_on:
-            raise AndroidDeviceError(("Android device {} already has an adb "
-                                      "logcat thread going on. Cannot start "
-                                      "another one.").format(self.serial))
+            raise AndroidDeviceError(
+                'Android device %s already has a running adb logcat thread. '
+                'Cannot start another one.' % self.serial,
+                serial=self.serial)
         # Disable adb log spam filter. Have to stop and clear settings first
         # because 'start' doesn't support --clear option before Android N.
         self.adb.shell("logpersist.stop --clear")
@@ -807,8 +813,9 @@ class AndroidDevice:
         """
         if not self.is_adb_logcat_on:
             raise AndroidDeviceError(
-                "Android device %s does not have an ongoing adb logcat "
-                "collection." % self.serial)
+                'Android device %s does not have an ongoing adb logcat '
+                'collection.' % self.serial,
+                serial=self.serial)
         # Set the last timestamp to the current timestamp. This may cause
         # a race condition that allows the same line to be logged twice,
         # but it does not pose a problem for our logging purposes.
@@ -938,7 +945,8 @@ class AndroidDevice:
             out = self.adb.shell("bugreportz", timeout=BUG_REPORT_TIMEOUT)
             if not out.startswith("OK"):
                 raise AndroidDeviceError(
-                    "Failed to take bugreport on %s: %s" % (self.serial, out))
+                    'Failed to take bugreport on %s: %s' % (self.serial, out),
+                    serial=self.serial)
             br_out_path = out.split(':')[1].strip().split()[0]
             self.adb.pull("%s %s" % (br_out_path, full_out_path))
         else:
@@ -1147,7 +1155,8 @@ class AndroidDevice:
                 pass
             time.sleep(5)
         raise AndroidDeviceError(
-            "Device %s booting process timed out." % self.serial)
+            'Device %s booting process timed out.' % self.serial,
+            serial=self.serial)
 
     def reboot(self, stop_at_lock_screen=False):
         """Reboots the device.
@@ -1195,7 +1204,8 @@ class AndroidDevice:
             return
         if not self.ensure_screen_on():
             self.log.error("User window cannot come up")
-            raise AndroidDeviceError("User window cannot come up")
+            raise AndroidDeviceError("User window cannot come up",
+                                     serial=self.serial)
         self.start_services(self.skip_sl4a)
 
     def restart_runtime(self):
@@ -1215,7 +1225,8 @@ class AndroidDevice:
         self.root_adb()
         if not self.ensure_screen_on():
             self.log.error("User window cannot come up")
-            raise AndroidDeviceError("User window cannot come up")
+            raise AndroidDeviceError('User window cannot come up',
+                                     serial=self.serial)
         self.start_services(self.skip_sl4a)
 
     def search_logcat(self, matching_string, begin_time=None):

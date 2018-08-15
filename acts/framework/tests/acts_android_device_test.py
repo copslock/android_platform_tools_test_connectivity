@@ -182,13 +182,13 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     def test_create_with_empty_config(self):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+        with self.assertRaisesRegex(android_device.AndroidDeviceConfigError,
                                     expected_msg):
             android_device.create([])
 
     def test_create_with_not_list_config(self):
         expected_msg = android_device.ANDROID_DEVICE_NOT_LIST_CONFIG_MSG
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+        with self.assertRaisesRegex(android_device.AndroidDeviceConfigError,
                                     expected_msg):
             android_device.create("HAHA")
 
@@ -212,16 +212,14 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ads = get_mock_ads(5)
         expected_msg = ("Could not find a target device that matches condition"
                         ": {'serial': 5}.")
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
+        with self.assertRaisesRegex(ValueError, expected_msg):
             ad = android_device.get_device(ads, serial=len(ads))
 
     def test_get_device_too_many_matches(self):
         ads = get_mock_ads(5)
         target_serial = ads[1].serial = ads[0].serial
         expected_msg = "More than one device matched: \[0, 0\]"
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
+        with self.assertRaisesRegex(ValueError, expected_msg):
             ad = android_device.get_device(ads, serial=target_serial)
 
     def test_start_services_on_ads(self):
@@ -402,8 +400,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         start_proc_mock.assert_called_with(
             adb_cmd % (ad.serial, expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
-        expected_msg = ("Android device .* already has an adb logcat thread "
-                        "going on. Cannot start another one.")
+        expected_msg = ('Android device .* already has a running adb logcat '
+                        'thread. Cannot start another one.')
         # Expect error if start is called back to back.
         with self.assertRaisesRegex(android_device.AndroidDeviceError,
                                     expected_msg):
