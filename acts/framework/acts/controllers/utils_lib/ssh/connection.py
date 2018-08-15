@@ -332,7 +332,7 @@ class SshConnection(object):
         Returns:
             the created tunnel process.
         """
-        if local_port is None:
+        if not local_port:
             local_port = host_utils.get_available_host_port()
         else:
             for tunnel in self._tunnels:
