@@ -75,8 +75,6 @@ class AdbProxy(object):
     >> adb.devices() # will return the console output of "adb devices".
     """
 
-    _SERVER_LOCAL_PORT = None
-
     def __init__(self, serial="", ssh_connection=None):
         """Construct an instance of AdbProxy.
 
@@ -86,11 +84,12 @@ class AdbProxy(object):
                             connected to a remote host that we can reach via SSH.
         """
         self.serial = serial
+        self._server_local_port = None
         adb_path = self._exec_cmd("which adb")
         adb_cmd = [adb_path]
         if serial:
             adb_cmd.append("-s %s" % serial)
-        if ssh_connection is not None and not AdbProxy._SERVER_LOCAL_PORT:
+        if ssh_connection is not None:
             # Kill all existing adb processes on the remote host (if any)
             # Note that if there are none, then pkill exits with non-zero status
             ssh_connection.run("pkill adb", ignore_status=True)
@@ -103,9 +102,9 @@ class AdbProxy(object):
             ssh_connection.run(remote_adb_cmd)
             # Proxy a local port to the adb server port
             local_port = ssh_connection.create_ssh_tunnel(5037)
-            AdbProxy._SERVER_LOCAL_PORT = local_port
+            self._server_local_port = local_port
 
-        if AdbProxy._SERVER_LOCAL_PORT:
+        if self._server_local_port:
             adb_cmd.append("-P %d" % local_port)
         self.adb_str = " ".join(adb_cmd)
         self._ssh_connection = ssh_connection
@@ -213,7 +212,7 @@ class AdbProxy(object):
             #  2) Setup forwarding between that remote port and the requested
             #     device port
             remote_port = self._ssh_connection.find_free_port()
-            self._ssh_connection.create_ssh_tunnel(
+            local_port = self._ssh_connection.create_ssh_tunnel(
                 remote_port, local_port=host_port)
             host_port = remote_port
         output = self.forward("tcp:%d tcp:%d" % (host_port, device_port))
@@ -223,7 +222,7 @@ class AdbProxy(object):
         if output:
             return int(output)
         else:
-            return host_port
+            return local_port
 
     def remove_tcp_forward(self, host_port):
         """Stop tcp forwarding a port from localhost to this android device.
