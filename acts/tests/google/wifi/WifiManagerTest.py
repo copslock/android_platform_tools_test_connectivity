@@ -53,13 +53,14 @@ class WifiManagerTest(WifiBaseTest):
         wutils.wifi_test_device_init(self.dut)
         req_params = []
         opt_param = [
-            "open_network", "reference_networks", "iperf_server_address"
+            "open_network", "reference_networks", "iperf_server_address",
+            "wpa_networks", "wep_networks"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
         if "AccessPoint" in self.user_params:
-            self.legacy_configure_ap_and_start()
+            self.legacy_configure_ap_and_start(wpa_network=True, wep_network=True)
 
         asserts.assert_true(
             len(self.reference_networks) > 0,
@@ -69,7 +70,8 @@ class WifiManagerTest(WifiBaseTest):
             self.iperf_server = self.iperf_servers[0]
         self.wpapsk_2g = self.reference_networks[0]["2g"]
         self.wpapsk_5g = self.reference_networks[0]["5g"]
-        self.open_network = self.open_network[0]["2g"]
+        self.open_network_2g = self.open_network[0]["2g"]
+        self.open_network_5g = self.open_network[0]["5g"]
         if hasattr(self, 'iperf_server'):
             self.iperf_server.start()
 
@@ -526,9 +528,12 @@ class WifiManagerTest(WifiBaseTest):
     @test_tracker_info(uuid="71556e06-7fb1-4e2b-9338-b01f1f8e286e")
     def test_scan(self):
         """Test wifi connection scan can start and find expected networks."""
-        ssid = self.open_network[WifiEnums.SSID_KEY]
+        ssid = self.open_network_2g[WifiEnums.SSID_KEY]
         wutils.start_wifi_connection_scan_and_ensure_network_found(
-            self.dut, ssid);
+            self.dut, ssid)
+        ssid = self.open_network_5g[WifiEnums.SSID_KEY]
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, ssid)
 
     @test_tracker_info(uuid="3ea09efb-6921-429e-afb1-705ef5a09afa")
     def test_scan_with_wifi_off_and_location_scan_on(self):
@@ -537,9 +542,12 @@ class WifiManagerTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, False)
 
         """Test wifi connection scan can start and find expected networks."""
-        ssid = self.open_network[WifiEnums.SSID_KEY]
+        ssid = self.open_network_2g[WifiEnums.SSID_KEY]
         wutils.start_wifi_connection_scan_and_ensure_network_found(
-            self.dut, ssid);
+            self.dut, ssid)
+        ssid = self.open_network_5g[WifiEnums.SSID_KEY]
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, ssid)
 
     @test_tracker_info(uuid="770caebe-bcb1-43ac-95b6-5dd52dd90e80")
     def test_scan_with_wifi_off_and_location_scan_off(self):
@@ -559,8 +567,8 @@ class WifiManagerTest(WifiBaseTest):
     @test_tracker_info(uuid="a4ad9930-a8fa-4868-81ed-a79c7483e502")
     def test_add_network(self):
         """Test wifi connection scan."""
-        ssid = self.open_network[WifiEnums.SSID_KEY]
-        nId = self.dut.droid.wifiAddNetwork(self.open_network)
+        ssid = self.open_network_2g[WifiEnums.SSID_KEY]
+        nId = self.dut.droid.wifiAddNetwork(self.open_network_2g)
         asserts.assert_true(nId > -1, "Failed to add network.")
         configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         self.log.debug(
@@ -571,8 +579,8 @@ class WifiManagerTest(WifiBaseTest):
 
     @test_tracker_info(uuid="aca85551-10ba-4007-90d9-08bcdeb16a60")
     def test_forget_network(self):
-        ssid = self.open_network[WifiEnums.SSID_KEY]
-        nId = self.dut.droid.wifiAddNetwork(self.open_network)
+        ssid = self.open_network_2g[WifiEnums.SSID_KEY]
+        nId = self.dut.droid.wifiAddNetwork(self.open_network_2g)
         asserts.assert_true(nId > -1, "Failed to add network.")
         configured_networks = self.dut.droid.wifiGetConfiguredNetworks()
         self.log.debug(
@@ -837,5 +845,45 @@ class WifiManagerTest(WifiBaseTest):
 
         Connect to a wifi network, then the same as test_energy_info.
         """
-        wutils.wifi_connect(self.dut, self.open_network)
+        wutils.wifi_connect(self.dut, self.open_network_2g)
         self.get_energy_info()
+
+    @test_tracker_info(uuid="2622c253-defc-4a35-93a6-ca9d29a8238c")
+    def test_connect_to_wep_2g(self):
+        """Verify DUT can connect to 2GHz WEP network
+
+        Steps:
+        1. Ensure the 2GHz WEP network is visible in scan result.
+        2. Connect to the network and validate internet connection.
+        """
+        wutils.connect_to_wifi_network(self.dut, self.wep_networks[0]["2g"])
+
+    @test_tracker_info(uuid="1f2d17a2-e92d-43af-966b-3421c0db8620")
+    def test_connect_to_wep_5g(self):
+        """Verify DUT can connect to 5GHz WEP network
+
+        Steps:
+        1. Ensure the 5GHz WEP network is visible in scan result.
+        2. Connect to the network and validate internet connection.
+        """
+        wutils.connect_to_wifi_network(self.dut, self.wep_networks[0]["5g"])
+
+    @test_tracker_info(uuid="4a957952-289d-4657-9882-e1475274a7ff")
+    def test_connect_to_wpa_2g(self):
+        """Verify DUT can connect to 2GHz WPA-PSK network
+
+        Steps:
+        1. Ensure the 2GHz WPA-PSK network is visible in scan result.
+        2. Connect to the network and validate internet connection.
+        """
+        wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["2g"])
+
+    @test_tracker_info(uuid="612c3c31-a4c5-4014-9a2d-3f4bcc20c0d7")
+    def test_connect_to_wpa_5g(self):
+        """Verify DUT can connect to 5GHz WPA-PSK network
+
+        Steps:
+        1. Ensure the 5GHz WPA-PSK network is visible in scan result.
+        2. Connect to the network and validate internet connection.
+        """
+        wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["5g"])
