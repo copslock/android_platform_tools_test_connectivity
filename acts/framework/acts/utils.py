@@ -296,6 +296,19 @@ def rand_ascii_str(length):
     return ''.join(letters)
 
 
+def rand_hex_str(length):
+    """Generates a random string of specified length, composed of hex digits
+
+    Args:
+        length: The number of characters in the string.
+
+    Returns:
+        The random string generated.
+    """
+    letters = [random.choice(string.hexdigits) for i in range(length)]
+    return ''.join(letters)
+
+
 # Thead/Process related functions.
 def concurrent_exec(func, param_list):
     """Executes a function with different parameters pseudo-concurrently.
