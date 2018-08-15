@@ -107,6 +107,11 @@ class FuchsiaDevice:
     """
 
     def __init__(self, ip="", port=80):
+        """
+        Args:
+            ip: string, Ip address of fuchsia device.
+            port: int, Port number of connection
+        """
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "FuchsiaDevice%s" % ip)
         self.log = tracelogger.TraceLogger(
@@ -115,24 +120,33 @@ class FuchsiaDevice:
         self.ip = ip
         self.log = logging.getLogger()
         self.port = port
+
         self.address = "http://{}:{}".format(ip, self.port)
         self.init_address = self.address + "/init"
         self.cleanup_address = self.address + "/cleanup"
-        # TODO(aniramakri): Come up with better client numbering system
-        self.client_id = "FTest" + str(random.randint(0, 1000000))
+        self.print_address = self.address + "/print_clients"
+
+        # TODO(): Come up with better client numbering system
+        self.client_id = "FuchsiaClient" + str(random.randint(0, 1000000))
         self.test_counter = 0
+
+        # Grab commands from FuchsiaBleLib
         setattr(self, "ble_lib",
                 FuchsiaBleLib(self.address, self.test_counter, self.client_id))
-        self.ble_lib.bleStopBleAdvertising()
+
         #Init server
         self.init_server_connection()
 
-    # The id of a command is: client_id.test_id
     def build_id(self, test_id):
+        """Concatenates client_id and test_id to form a command_id
+            
+        Args:
+            test_id: string, unique identifier of test command
+        """
         return self.client_id + "." + str(test_id)
 
     def init_server_connection(self):
-        ################ #Initialize connection #####################
+        """Initializes HTTP connection with SL4F server."""
         self.log.debug("Initialziing server connection")
         init_data = json.dumps({
             "jsonrpc": "2.0",
@@ -144,6 +158,24 @@ class FuchsiaDevice:
         })
         r = requests.get(url=self.init_address, data=init_data)
         self.test_counter += 1
+
+    def print_clients(self):
+        """Gets connected clients from SL4F server"""
+        self.log.debug("Request to print clients")
+        print_id = self.build_id(self.test_counter)
+        print_args = {}
+        print_method = "sl4f.sl4f_print_clients"
+        data = json.dumps({
+            "jsonrpc": "2.0",
+            "id": print_id,
+            "method": print_method,
+            "params": print_args
+        })
+
+        r = requests.get(url=self.print_address, data=data).json()
+        self.test_counter += 1
+
+        return r
 
     def clean_up(self):
         """Cleans up the FuchsiaDevice object and releases any resources it
@@ -158,10 +190,12 @@ class FuchsiaDevice:
             "method": cleanup_method,
             "params": cleanup_args
         })
-        r = requests.get(url=self.cleanup_address, data=data)
+
+        r = requests.get(url=self.cleanup_address, data=data).json()
         self.test_counter += 1
 
-        self.log.debug("Cleaned up with status: ", r.json())
+        self.log.debug("Cleaned up with status: ", r)
+        return r
 
     def start_services(self, skip_sl4f=False, skip_setup_wizard=True):
         """Starts long running services on the Fuchsia device.
