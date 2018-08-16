@@ -209,12 +209,18 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     terminal_format = log_line_format
     if prefix:
         terminal_format = '[{}] {}'.format(prefix, log_line_format)
-    c_formatter = ColoredLogFormatter(terminal_format, log_line_time_format)
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setFormatter(c_formatter)
-    ch.setLevel(logging.INFO)
-    # Log everything to file
+    # A formatter for logging everything with timestamps
     f_formatter = logging.Formatter(log_line_format, log_line_time_format)
+    # Same as above, but with color, and any potential prefix
+    c_formatter = ColoredLogFormatter(terminal_format, log_line_time_format)
+
+    ch = logging.StreamHandler(sys.stdout)
+    if os.isatty(sys.stdout.fileno()):
+        ch.setFormatter(c_formatter)
+    else:
+        ch.setFormatter(f_formatter)
+    ch.setLevel(logging.INFO)
+
     # All the logs of this test class go into one directory
     if filename is None:
         filename = get_log_file_timestamp()
