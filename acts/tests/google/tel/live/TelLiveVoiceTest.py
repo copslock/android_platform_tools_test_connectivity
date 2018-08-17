@@ -3408,8 +3408,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         ad_download = ads[0]
 
         if not start_youtube_video(ad_download):
-            ad_download.log.error("Fail to bring up youtube video")
-            return False
+            ad_download.log.warning("Fail to bring up youtube video")
 
         if not call_setup_teardown(self.log, ad_caller, ad_callee, ad_caller,
                                    None, None, 30):
