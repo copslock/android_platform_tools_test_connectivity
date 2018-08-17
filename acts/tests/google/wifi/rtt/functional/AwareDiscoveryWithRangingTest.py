@@ -1929,4 +1929,4 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
                 "Way too many discovery events without ranging!")
 
         asserts.explicit_pass(
-            "Discovery/Direct RTT Concurrency Pass", extras=stats)
+            "Discovery/Direct RTT Concurrency Pass", extras={"data": stats})
