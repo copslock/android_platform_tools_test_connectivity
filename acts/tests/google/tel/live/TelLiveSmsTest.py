@@ -2869,6 +2869,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         expected_result = False
         if get_operator_name(self.log, ads[0]) == "vzw":
             expected_result = True
+        ads[0].log.info("Expected Result is %s", expected_result)
 
         try:
             tasks = [(phone_setup_voice_general, (self.log, ads[0])),
