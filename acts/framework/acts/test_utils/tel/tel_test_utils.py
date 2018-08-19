@@ -3919,6 +3919,7 @@ def get_operator_name(log, ad, subId=None):
             result = operator_name_from_network_name(result)
         except Exception:
             result = CARRIER_UNKNOWN
+    ad.log.info("Operator Name is %s", result)
     return result
 
 
