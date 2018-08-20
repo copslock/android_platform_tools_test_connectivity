@@ -440,6 +440,51 @@ class TelWifiDataTest(TelephonyBaseTest):
             return False
         return True
 
+    @test_tracker_info(uuid="ba183bde-6763-411a-ad29-7f1e96479950")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_lte_oos_lte_camping(self):
+        """Test for Out Of Service Scenarios
+
+        Steps:
+        1. Set WiFi and Cell available
+        2. Setup Attenuator as No Service Scenario
+        3. Verify there is no LTE or WiFi Signal
+        4. Wait for 2 mins
+        5. Setup Attenuator as Cellular only service
+        6. Verify Data Connection
+
+        Expected Results:
+        1. Device should camp back on LTE after OOS
+        2. Data should be in working state
+
+        Returns:
+        True if Pass. False if fail.
+        """
+        ad = self.android_devices[0]
+        if not self._basic_connectivity_check():
+            self.log.error("Basic Connectivity Check Failed")
+            return False
+        self._atten_setup_no_service()
+        ad.log.info("Waiting for 1 min")
+        time.sleep(60)
+        if (wait_for_cell_data_connection(self.log, ad, True) or
+                wait_for_wifi_data_connection(self.log, ad, True)):
+            ad.log.error("Data is available, Expecting no Cellular/WiFi Signal")
+            get_telephony_signal_strength(ad)
+            get_wifi_signal_strength(ad)
+            return False
+        ad.log.info("Waiting for 2 mins")
+        time.sleep(120)
+        self._atten_setup_lte_only()
+        ad.on_mobile_data = True
+        if (not wait_for_cell_data_connection(self.log, ad, True)
+                or not verify_internet_connection(self.log, ad)):
+            ad.log.error("Data not on LTE")
+            get_telephony_signal_strength(ad)
+            get_wifi_signal_strength(ad)
+            return False
+        return True
+
     @test_tracker_info(uuid="c5581e04-4589-4f32-b1f9-76f0b16666ce")
     @TelephonyBaseTest.tel_test_wrap
     def test_modem_power_poor_coverage(self):

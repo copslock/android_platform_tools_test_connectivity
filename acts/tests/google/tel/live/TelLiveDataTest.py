@@ -937,7 +937,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             self.log.info("===== Toggling provider data connection =====")
             self.provider.log.info("Disable provider data connection")
             self.provider.droid.telephonyToggleDataConnection(False)
-
+            time.sleep(10)
             if not self._test_internet_connection(False, False):
                 return False
             self.provider.log.info("Enable provider data connection")
