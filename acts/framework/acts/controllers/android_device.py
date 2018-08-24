@@ -443,6 +443,8 @@ class AndroidDevice:
         self.data_accounting = collections.defaultdict(int)
         self._sl4a_manager = sl4a_manager.Sl4aManager(self.adb)
         self.last_logcat_timestamp = None
+        # Device info cache.
+        self._user_added_device_info = {}
 
     def clean_up(self):
         """Cleans up the AndroidDevice object and releases any resources it
@@ -527,6 +529,21 @@ class AndroidDevice:
             "build_id": build_id,
             "incremental_build_id": incremental_build_id,
             "build_type": self.adb.getprop("ro.build.type")
+        }
+        return info
+
+    @property
+    def device_info(self):
+        """Information to be pulled into controller info.
+
+        The latest serial, model, and build_info are included. Additional info
+        can be added via `add_device_info`.
+        """
+        info = {
+            'serial': self.serial,
+            'model': self.model,
+            'build_info': self.build_info,
+            'user_added_info': self._user_added_device_info
         }
         return info
 
@@ -1217,6 +1234,9 @@ class AndroidDevice:
         self.stop_services()
         self.log.info("Restarting android runtime")
         self.adb.shell("stop")
+        # Reset the boot completed flag before we restart the framework
+        # to correctly detect when the framework has fully come up.
+        self.adb.shell("setprop sys.boot_completed 0")
         self.adb.shell("start")
         self.wait_for_boot_completion()
         self.root_adb()
