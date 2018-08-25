@@ -214,7 +214,7 @@ class _VersionSelector(object):
         if self.instance is not None:
             # When the versioned function is a classmethod, the class is passed
             # into __call__ as the first argument.
-            level = self.get_version(*(self.instance, *args), **kwargs)
+            level = self.get_version(self.instance, *args, **kwargs)
         else:
             level = self.get_version(*args, **kwargs)
         if not isinstance(level, numbers.Number):
