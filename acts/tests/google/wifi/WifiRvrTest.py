@@ -30,6 +30,15 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 
 
 class WifiRvrTest(base_test.BaseTestClass):
+    """Class to test WiFi rate versus range.
+
+    This class implements WiFi rate versus range tests on single AP single STA
+    links. The class setups up the AP in the desired configurations, configures
+    and connects the phone to the AP, and runs iperf throughput test while
+    sweeping attenuation. For an example config file to run this test class see
+    example_connectivity_performance_ap_sta.json.
+    """
+
     TEST_TIMEOUT = 10
     SHORT_SLEEP = 1
     MED_SLEEP = 5
@@ -357,8 +366,9 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.access_point.ap_settings))
         # Set attenuator to 0 dB
         [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
-        # Connect DUT to Network
+        # Resest, configure, and connect DUT
         wutils.reset_wifi(self.client_dut)
+        self.client_dut.droid.wifiSetCountryCode(self.test_params["country_code"])
         self.main_network[band]["channel"] = channel
         wutils.wifi_connect(
             self.client_dut, self.main_network[band], num_of_tries=5)
