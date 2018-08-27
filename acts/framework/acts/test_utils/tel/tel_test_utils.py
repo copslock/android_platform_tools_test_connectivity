@@ -5964,7 +5964,7 @@ def start_adb_tcpdump(ad,
         ad.adb.shell(
             "find /data/local/tmp/tcpdump -type f -not -mtime -1800s -delete")
         ad.adb.shell(
-            "find /data/local/tmp/tcpdump -type f -not -ctime -3600s -delete")
+            "find /data/local/tmp/tcpdump -type f -size +5G -delete")
 
     if not begin_time:
         begin_time = get_current_epoch_time()
