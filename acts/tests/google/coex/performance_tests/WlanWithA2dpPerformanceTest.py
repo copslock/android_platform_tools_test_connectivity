@@ -35,7 +35,7 @@ from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
 class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
 
     def __init__(self, controllers):
-        CoexPerformanceBaseTest.__init__(self, controllers)
+        super().__init__(controllers)
 
     def setup_class(self):
         super().setup_class()
@@ -82,7 +82,8 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
         """
         tasks = [(self.run_iperf_and_get_result, ()),
                  (perform_classic_discovery,
-                  (self.pri_ad, self.iperf["duration"]))]
+                  (self.pri_ad, self.iperf["duration"], self.json_file,
+                   self.dev_list))]
         if not self.set_attenuation_and_run_iperf(tasks):
             return False
         return self.teardown_result()

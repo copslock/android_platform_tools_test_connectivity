@@ -21,13 +21,7 @@ from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
 class CoexBasicPerformanceTest(CoexPerformanceBaseTest):
 
     def __init__(self, controllers):
-        CoexPerformanceBaseTest.__init__(self, controllers)
-
-    def setup_class(self):
-        CoexPerformanceBaseTest.setup_class(self)
-
-    def teardown_test(self):
-        CoexPerformanceBaseTest.teardown_test(self)
+        super().__init__(controllers)
 
     def run_iperf_and_perform_discovery(self):
         """Starts iperf client on host machine and bluetooth discovery
@@ -37,8 +31,8 @@ class CoexBasicPerformanceTest(CoexPerformanceBaseTest):
             True if successful, False otherwise.
         """
         tasks = [(perform_classic_discovery,
-                (self.pri_ad, self.iperf["duration"])),
-                (self.run_iperf_and_get_result, ())]
+                  (self.pri_ad, self.iperf["duration"], self.json_file,
+                   self.dev_list)), (self.run_iperf_and_get_result, ())]
         if not self.set_attenuation_and_run_iperf(tasks):
             return False
         return self.teardown_result()
