@@ -548,7 +548,6 @@ class AndroidDevice:
         }
         return info
 
-    @property
     def sdk_api_level(self):
         if self._sdk_api_level is not None:
             return self._sdk_api_level
