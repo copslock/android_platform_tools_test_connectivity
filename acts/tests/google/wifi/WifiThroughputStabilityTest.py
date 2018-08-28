@@ -34,6 +34,15 @@ MED_SLEEP = 6
 
 
 class WifiThroughputStabilityTest(base_test.BaseTestClass):
+    """Class to test WiFi throughput stability.
+
+    This class tests throughput stability and identifies cases where throughput
+    fluctuates over time. The class setups up the AP, configures and connects
+    the phone, and runs iperf throughput test at several attenuations For an
+    example config file to run this test class see
+    example_connectivity_performance_ap_sta.json.
+    """
+
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = ("test_tput_stability_high_TCP_DL_ch6_VHT20",
@@ -253,6 +262,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         wutils.wifi_toggle_state(self.dut, True)
         wutils.reset_wifi(self.dut)
         self.main_network[band]["channel"] = channel
+        self.dut.droid.wifiSetCountryCode(self.test_params["country_code"])
         wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
         time.sleep(MED_SLEEP)
         # Run test and log result

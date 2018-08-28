@@ -40,6 +40,16 @@ RSSI_ERROR_VAL = float("nan")
 
 
 class WifiRssiTest(base_test.BaseTestClass):
+    """Class to test WiFi RSSI reporting.
+
+    This class tests RSSI reporting on android devices. The class tests RSSI
+    accuracy by checking RSSI over a large attenuation range, checks for RSSI
+    stability over time when attenuation is fixed, and checks that RSSI quickly
+    and reacts to changes attenuation by checking RSSI trajectories over
+    configurable attenuation waveforms.For an example config file to run this
+    test class see example_connectivity_performance_ap_sta.json.
+    """
+
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
 
@@ -572,6 +582,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         wutils.wifi_toggle_state(self.dut, True)
         wutils.reset_wifi(self.dut)
         self.main_network[band]["channel"] = self.channel
+        self.dut.droid.wifiSetCountryCode(self.test_params["country_code"])
         wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
         time.sleep(MED_SLEEP)
         # Run RvR and log result
