@@ -349,9 +349,9 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
     def test_softap_5G_wifi_connection_2G(self):
         """Tests bringing up SoftAp on 5G followed by connection to 2G network.
         """
-        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
+            self.wpapsk_2g, WIFI_CONFIG_APBAND_5G)
 
     @test_tracker_info(uuid="a2c62bc6-9ccd-4bc4-8a23-9a1b5d0b4b5c")
     def test_softap_2G_wifi_connection_5G(self):
@@ -359,7 +359,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
 
     @test_tracker_info(uuid="a2c62bc6-9ccd-4bc4-8a23-9a1b5d0b4b5c")
     def test_softap_2G_wifi_connection_5G_DFS(self):
@@ -367,14 +367,14 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_DFS)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
 
     @test_tracker_info(uuid="aa23a3fc-31a1-4d5c-8cf5-2eb9fdf9e7ce")
     def test_softap_5G_wifi_connection_2G_with_location_scan_on(self):
         """Tests bringing up SoftAp on 5G followed by connection to 2G network
         with location scans turned on.
         """
-        self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
+        self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
         self.turn_location_on_and_scan_toggle_on()
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
+            self.wpapsk_2g, WIFI_CONFIG_APBAND_5G)
