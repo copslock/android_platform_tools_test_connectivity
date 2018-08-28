@@ -33,7 +33,7 @@ class ActsErrorTest(unittest.TestCase):
         self.assertNotIn('details', e.extra)
 
     def test_error_with_args(self):
-        args = ('hello',)
+        args = ('hello', )
         e = error.ActsError(*args)
         self.assertEqual(e.extra['details'], args)
 
