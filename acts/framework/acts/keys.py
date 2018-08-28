@@ -53,6 +53,7 @@ class Config(enum.Enum):
     key_monsoon = "Monsoon"
     key_sniffer = "Sniffer"
     key_arduino_wifi_dongle = "ArduinoWifiDongle"
+    key_packet_capture = "PacketCapture"
     # Internal keys, used internally, not exposed to user's config files.
     ikey_user_param = "user_params"
     ikey_testbed_name = "testbed_name"
@@ -73,6 +74,7 @@ class Config(enum.Enum):
     m_key_packet_sender = "packet_sender"
     m_key_sniffer = "sniffer"
     m_key_arduino_wifi_dongle = "arduino_wifi_dongle"
+    m_key_packet_capture = "packet_capture"
 
     # A list of keys whose values in configs should not be passed to test
     # classes without unpacking first.
@@ -93,6 +95,7 @@ class Config(enum.Enum):
         key_sniffer,
         key_chameleon_device,
         key_arduino_wifi_dongle,
+        key_packet_capture,
     ]
 
     # Keys that are file or folder paths.
