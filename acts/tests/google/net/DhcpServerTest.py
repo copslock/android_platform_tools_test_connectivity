@@ -187,7 +187,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         resp = self._get_response(
             self._make_discover(self.hwaddr, giaddr=giaddr, bcastbit=True))
         self._assert_offer(resp)
-        self._assert_unicast(resp, giaddr)
+        self._assert_relayed(resp, giaddr)
         self._assert_broadcastbit(resp)
 
     def _run_discover_paramrequestlist(self, params, unwanted_params):
@@ -495,7 +495,7 @@ class DhcpServerTest(base_test.BaseTestClass):
     def test_request_rebinding_relayed(self):
         giaddr = NETADDR_PREFIX + '123'
         resp, _ = self._run_rebinding(bcastbit=False, giaddr=giaddr)
-        self._assert_unicast(resp, giaddr)
+        self._assert_relayed(resp, giaddr)
         self._assert_broadcastbit(resp, isset=False)
 
     @test_tracker_info(uuid="cee2668b-bd79-47d7-b358-8f9387d715b1")
@@ -534,7 +534,7 @@ class DhcpServerTest(base_test.BaseTestClass):
 
         resp = self._get_response(req)
         self._assert_nak(resp)
-        self._assert_unicast(resp, relayaddr)
+        self._assert_relayed(resp, relayaddr)
         self._assert_broadcastbit(resp)
 
     @test_tracker_info(uuid="6ff1fab4-009a-4758-9153-0d9db63423da")
@@ -921,6 +921,11 @@ class DhcpServerTest(base_test.BaseTestClass):
             "Layer 2 packet destination address was broadcast")
         if ipAddr:
             asserts.assert_equal(packet.getlayer(IP).dst, ipAddr)
+
+    def _assert_relayed(self, packet, giaddr):
+        self._assert_unicast(packet, giaddr)
+        asserts.assert_equal(giaddr, packet.getlayer(BOOTP).giaddr,
+            'Relayed response has invalid giaddr field')
 
     def _next_hwaddr(self):
         addr = make_hwaddr(self.next_hwaddr_index)
