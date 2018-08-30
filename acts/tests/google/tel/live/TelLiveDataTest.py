@@ -765,6 +765,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             stop_wifi_tethering(self.log, self.provider)
         self.provider.log.info("Provider disable bluetooth")
         disable_bluetooth(self.provider.droid)
+        time.sleep(10)
 
         for ad in self.clients:
             ad.log.info(
@@ -781,6 +782,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 "Provider failed to enable data connection.")
             return False
 
+        time.sleep(10)
         self.log.info("Verify internet")
         if not self._test_internet_connection(
                 client_status=False, provider_status=True):
