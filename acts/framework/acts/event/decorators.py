@@ -21,7 +21,7 @@ def subscribe_static(event_type, event_filter=None, order=0):
     class InnerSubscriptionHandle(StaticSubscriptionHandle):
         def __init__(self, func):
             super().__init__(event_type, func,
-                             _event_filter=event_filter,
+                             event_filter=event_filter,
                              order=order)
 
     return InnerSubscriptionHandle
@@ -30,8 +30,8 @@ def subscribe_static(event_type, event_filter=None, order=0):
 def subscribe(event_type, event_filter=None, order=0):
     class InnerSubscriptionHandle(InstanceSubscriptionHandle):
         def __init__(self, func):
-            super().__init__(event_type, lambda event: func(self._owner, event),
-                             _event_filter=event_filter,
+            super().__init__(event_type, func,
+                             event_filter=event_filter,
                              order=order)
 
     return InnerSubscriptionHandle
