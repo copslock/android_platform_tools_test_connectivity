@@ -18,10 +18,11 @@ from acts.event.event_subscription import EventSubscription
 
 class SubscriptionHandle(object):
     """The object created by a method decorated with an event decorator."""
-    def __init__(self, event_type, func, _event_filter=None, order=0):
+
+    def __init__(self, event_type, func, event_filter=None, order=0):
         self._event_type = event_type
         self._func = func
-        self._event_filter = _event_filter
+        self._event_filter = event_filter
         self.order = order
         self._subscription = None
         self._owner = None
@@ -35,11 +36,33 @@ class SubscriptionHandle(object):
         return self._subscription
 
     def __get__(self, instance, owner):
-        self._owner = instance
-        return self
+        # If our owner has been initialized, or do not have an instance owner,
+        # return self.
+        if self._owner is not None or instance is None:
+            return self
 
-    def __call__(self, event):
-        return self._func(event)
+        # Otherwise, we create a new SubscriptionHandle that will only be used
+        # for the instance that owns this SubscriptionHandle.
+        ret = SubscriptionHandle(self._event_type, self._func,
+                                 self._event_filter, self.order)
+        ret._owner = instance
+        ret._func = ret._wrap_call(ret._func)
+        for attr, value in owner.__dict__.items():
+            if value is self:
+                setattr(instance, attr, ret)
+                break
+        return ret
+
+    def _wrap_call(self, func):
+        def _wrapped_call(*args, **kwargs):
+            if self._owner is None:
+                return func(*args, **kwargs)
+            else:
+                return func(self._owner, *args, **kwargs)
+        return _wrapped_call
+
+    def __call__(self, *args, **kwargs):
+        return self._func(*args, **kwargs)
 
 
 class InstanceSubscriptionHandle(SubscriptionHandle):

@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import threading
 
 
 class EventSubscription(object):
@@ -24,6 +23,7 @@ class EventSubscription(object):
         _func: The subscribed function.
         _event_filter: A lambda that returns True if an event should be passed
                        to the subscribed function.
+        order: The order value in which this subscription should be called.
     """
     def __init__(self, event_type, func, event_filter=None, order=0):
         self._event_type = event_type
