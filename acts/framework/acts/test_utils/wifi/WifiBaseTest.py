@@ -470,3 +470,24 @@ class WifiBaseTest(BaseTestClass):
                 bss_settings=bss_settings,
                 profile_name='whirlwind')
         return config
+
+    def configure_packet_capture(
+            self,
+            channel_5g=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            channel_2g=hostapd_constants.AP_DEFAULT_CHANNEL_2G):
+        """Configure packet capture for 2G and 5G bands.
+
+        Args:
+            channel_5g: Channel to set the monitor mode to for 5G band.
+            channel_2g: Channel to set the monitor mode to for 2G band.
+        """
+        self.packet_capture = self.packet_capture[0]
+        result = self.packet_capture.configure_monitor_mode(
+            hostapd_constants.BAND_2G, channel_2g)
+        if not result:
+            raise ValueError("Failed to configure channel for 2G band")
+
+        result = self.packet_capture.configure_monitor_mode(
+            hostapd_constants.BAND_5G, channel_5g)
+        if not result:
+            raise ValueError("Failed to configure channel for 5G band.")
