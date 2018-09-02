@@ -82,17 +82,6 @@ class EventBusIntegrationTest(TestCase):
         self.assertEqual(len(TestClass.instance_event_received), 0)
         self.assertEqual(len(TestClass.static_event_received), 1)
 
-    def test_subscribe_object_bundles(self):
-        """Tests that @subscribe* bundles register all listeners."""
-        test_object = TestClass({})
-        bundle = subscription_bundle.create_from_object(test_object)
-        bundle.register()
-
-        event_bus.post(Event())
-
-        self.assertEqual(len(TestClass.instance_event_received), 1)
-        self.assertEqual(len(TestClass.static_event_received), 1)
-
     def test_subscribe_instance_bundles(self):
         """Tests that @subscribe bundles register only instance listeners."""
         test_object = TestClass({})

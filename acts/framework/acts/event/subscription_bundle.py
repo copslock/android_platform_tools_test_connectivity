@@ -110,19 +110,7 @@ def create_from_static(obj):
     Returns:
         An unregistered SubscriptionBundle.
     """
-    return _create_from_object(obj, StaticSubscriptionHandle)
-
-
-def create_from_object(obj):
-    """Generates a SubscriptionBundle from @subscribe.* functions on obj.
-
-    Args:
-        obj: The object that contains @subscribe.* functions.
-
-    Returns:
-        An unregistered SubscriptionBundle.
-    """
-    return _create_from_object(obj, SubscriptionHandle)
+    return _create_from_object(obj, obj, StaticSubscriptionHandle)
 
 
 def create_from_instance(instance):
@@ -134,14 +122,21 @@ def create_from_instance(instance):
     Returns:
         An unregistered SubscriptionBundle.
     """
-    return _create_from_object(instance, InstanceSubscriptionHandle)
+    return _create_from_object(instance, instance.__class__,
+                               InstanceSubscriptionHandle)
 
 
-def _create_from_object(obj, subscription_handle_type):
+def _create_from_object(obj, obj_to_search, subscription_handle_type):
     """Generates a SubscriptionBundle from an object's SubscriptionHandles.
 
+    Note that instance variables do not have the class's functions as direct
+    attributes. The attributes are resolved from the type of the object. Here,
+    we need to search through the instance's class to find the correct types,
+    and subscribe the instance-specific subscriptions.
+
     Args:
-        obj: The object that contains SubscriptionHandles
+        obj: The object that contains SubscriptionHandles.
+        obj_to_search: The class to search for SubscriptionHandles from.
         subscription_handle_type: The type of the SubscriptionHandles to
                                   capture.
 
@@ -149,9 +144,10 @@ def _create_from_object(obj, subscription_handle_type):
         An unregistered SubscriptionBundle.
     """
     bundle = SubscriptionBundle()
-    for attr_name in dir(obj):
-        attr = getattr(obj, attr_name)
-        if isinstance(attr, subscription_handle_type):
-            # Adds self to the list of arguments
-            bundle.add_subscription(attr.subscription)
+    for attr_name, attr_value in obj_to_search.__dict__.items():
+        if isinstance(attr_value, subscription_handle_type):
+            bundle.add_subscription(getattr(obj, attr_name).subscription)
+        if isinstance(attr_value, staticmethod):
+            if isinstance(getattr(obj, attr_name), subscription_handle_type):
+                bundle.add_subscription(getattr(obj, attr_name).subscription)
     return bundle
