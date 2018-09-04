@@ -55,11 +55,18 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
         return True
 
     def setup_test(self):
+        for dut in self.android_devices:
+            toggle_airplane_mode_by_adb(self.log, dut, False)
+
         if not bt_test_utils.connect_pri_to_sec(
             self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value])):
             return False
         # Grace time for connection to complete.
         time.sleep(3)
+
+    def teardown_class(self):
+        for dut in self.android_devices:
+            toggle_airplane_mode_by_adb(self.log, dut, False)
 
     def message_delivered(self, device):
         try:
