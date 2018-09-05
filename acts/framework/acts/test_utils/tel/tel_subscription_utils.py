@@ -197,6 +197,8 @@ def set_subid_for_message(ad, sub_id):
         None
     """
     ad.droid.subscriptionSetDefaultSmsSubId(sub_id)
+    if hasattr(ad, "outgoing_message_sub_id"):
+        ad.outgoing_message_sub_id = sub_id
 
 
 def set_subid_for_outgoing_call(ad, sub_id):
@@ -210,3 +212,5 @@ def set_subid_for_outgoing_call(ad, sub_id):
         None
     """
     ad.droid.telecomSetUserSelectedOutgoingPhoneAccountBySubId(sub_id)
+    if hasattr(ad, "outgoing_voice_sub_id"):
+        ad.outgoing_voice_sub_id = sub_id
