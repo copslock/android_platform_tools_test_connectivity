@@ -72,10 +72,8 @@ class OtaRunner(object):
                 time.sleep(SL4A_SERVICE_SETUP_TIME)
                 if self.android_device.is_sl4a_installed():
                     break
-        log.info('Starting services.')
-        self.android_device.start_services()
         self.android_device.update_sdk_api_level()
-        log.info('Services started. Running ota tool cleanup.')
+        log.info('Running ota tool cleanup.')
         self.ota_tool.cleanup(self)
         log.info('Cleanup complete.')
 
