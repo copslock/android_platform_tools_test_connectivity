@@ -76,7 +76,6 @@ class DoesNotExistError(AndroidDeviceError):
     """Raised when something that does not exist is referenced."""
 
 
-
 def create(configs):
     """Creates AndroidDevice controller objects.
 
@@ -554,7 +553,8 @@ class AndroidDevice:
         if self.is_bootloader:
             self.log.error('Device is in fastboot mode. Cannot get build info.')
             return
-        self._sdk_api_level = self.adb.shell('getprop ro.build.version.sdk')
+        self._sdk_api_level = int(
+            self.adb.shell('getprop ro.build.version.sdk'))
         return self._sdk_api_level
 
     @property
