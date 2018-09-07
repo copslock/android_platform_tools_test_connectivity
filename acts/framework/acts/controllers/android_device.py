@@ -809,10 +809,10 @@ class AndroidDevice:
                               logcat is no longer running.
         """
         if self.is_adb_logcat_on:
-            raise AndroidDeviceError(
+            self.log.warn(
                 'Android device %s already has a running adb logcat thread. '
-                'Cannot start another one.' % self.serial,
-                serial=self.serial)
+                % self.serial)
+            return
         # Disable adb log spam filter. Have to stop and clear settings first
         # because 'start' doesn't support --clear option before Android N.
         self.adb.shell("logpersist.stop --clear")
@@ -843,10 +843,10 @@ class AndroidDevice:
         """Stops the adb logcat collection subprocess.
         """
         if not self.is_adb_logcat_on:
-            raise AndroidDeviceError(
+            self.log.warn(
                 'Android device %s does not have an ongoing adb logcat '
-                'collection.' % self.serial,
-                serial=self.serial)
+                % self.serial)
+            return
         # Set the last timestamp to the current timestamp. This may cause
         # a race condition that allows the same line to be logged twice,
         # but it does not pose a problem for our logging purposes.
