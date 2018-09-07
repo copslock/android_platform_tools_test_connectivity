@@ -226,7 +226,7 @@ class _VersionSelector(object):
             raise ValueError(
                 'The API level the function %s returned %s for the arguments '
                 '(%s). This function must return a number.' %
-                (self.get_version.__qualname__, level,
+                (self.get_version.__qualname__, repr(level),
                  ', '.join(i for i in [args_out, kwargs_out] if i)))
 
         index = bisect.bisect_left(_VersionSelector.ListWrap(self.entry_list),
