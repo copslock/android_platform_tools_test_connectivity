@@ -21,7 +21,7 @@ from acts.controllers.android_device import AndroidDevice
 from acts.libs import version_selector
 
 
-class AndroidApi(enum.Enum):
+class AndroidApi:
     OLDEST = 0
     MINIMUM = 0
     L = 21
@@ -31,12 +31,13 @@ class AndroidApi(enum.Enum):
     N_MR1 = 25
     O = 26
     O_MR1 = 27
+    P = 28
     LATEST = sys.maxsize
     MAX = sys.maxsize
 
 
-def android_api(min_api=AndroidApi.OLDEST.value,
-                max_api=AndroidApi.LATEST.value):
+def android_api(min_api=AndroidApi.OLDEST,
+                max_api=AndroidApi.LATEST):
     """Decorates a function to only be called for the given API range.
 
     Only gets called if the AndroidDevice in the args is within the specified
