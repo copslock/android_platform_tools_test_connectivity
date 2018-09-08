@@ -27,6 +27,13 @@ from acts.libs.logging.log_stream import InvalidStyleSetError
 from acts.libs.logging.log_stream import LogStyles
 
 
+class TestClass(object):
+    """Dummy class for TestEvents"""
+
+    def test_case(self):
+        """Dummy test case for test events."""
+
+
 class LogStreamTest(unittest.TestCase):
     """Tests the _LogStream class in acts.libs.logging.log_stream."""
 
@@ -278,7 +285,7 @@ class LogStreamTest(unittest.TestCase):
 
         created_log_stream = log_stream._log_streams[self._testMethodName]
         created_log_stream.on_test_case_begin(
-            TestCaseBeginEvent('', '', self._testMethodName))
+            TestCaseBeginEvent(TestClass, TestClass.test_case))
 
         self.assertEqual(len(created_log_stream._test_case_log_handlers), 1)
 
@@ -308,6 +315,10 @@ class LogStreamModuleTests(unittest.TestCase):
 
     # _on_test_case_begin
 
+    @staticmethod
+    def create_test_case_event():
+        return TestCaseBeginEvent(TestClass, TestClass.test_case)
+
     @mock.patch('os.path.exists')
     @mock.patch('os.mkdir')
     def test_on_test_case_begin_makes_directory_if_not_exists(self, mkdir,
@@ -318,11 +329,11 @@ class LogStreamModuleTests(unittest.TestCase):
         """
         exists.return_value = False
 
-        log_stream._on_test_case_begin(TestCaseBeginEvent('', '', 'case'))
+        log_stream._on_test_case_begin(self.create_test_case_event())
 
         self.assertTrue(mkdir.called)
         self.assertEqual(mkdir.call_args[0][0], os.path.join(logging.log_path,
-                                                             'case'))
+                                                             'test_case'))
 
     @mock.patch('os.path.exists')
     @mock.patch('os.mkdir')
@@ -334,7 +345,7 @@ class LogStreamModuleTests(unittest.TestCase):
         """
         exists.return_value = True
 
-        log_stream._on_test_case_begin(TestCaseBeginEvent('', '', 'case'))
+        log_stream._on_test_case_begin(self.create_test_case_event())
 
         self.assertTrue(exists.called)
         self.assertFalse(mkdir.called)
@@ -351,7 +362,7 @@ class LogStreamModuleTests(unittest.TestCase):
             'b': mock.Mock()
         }
 
-        log_stream._on_test_case_begin(TestCaseBeginEvent('', '', ''))
+        log_stream._on_test_case_begin(self.create_test_case_event())
 
         self.assertTrue(log_stream._log_streams['a'].on_test_case_begin.called)
         self.assertTrue(log_stream._log_streams['b'].on_test_case_begin.called)
@@ -370,7 +381,7 @@ class LogStreamModuleTests(unittest.TestCase):
             'b': mock.Mock()
         }
 
-        log_stream._on_test_case_end(TestCaseBeginEvent('', '', ''))
+        log_stream._on_test_case_end(self.create_test_case_event())
 
         self.assertTrue(log_stream._log_streams['a'].on_test_case_end.called)
         self.assertTrue(log_stream._log_streams['b'].on_test_case_end.called)
