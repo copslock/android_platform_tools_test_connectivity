@@ -2552,20 +2552,22 @@ def http_file_download_by_curl(ad,
     try:
         ad.log.info("Download %s to %s by adb shell command %s", url,
                     file_path, curl_cmd)
-
+        out = ad.adb.shell("df -h")
+        ad.log.debug("%s", out)
         ad.adb.shell(curl_cmd, timeout=timeout)
         if _check_file_existance(ad, file_path, expected_file_size):
             ad.log.info("%s is downloaded to %s successfully", url, file_path)
-            return True
         else:
             ad.log.warning("Fail to download %s", url)
             return False
     except Exception as e:
         ad.log.warning("Download %s failed with exception %s", url, e)
-        dir_list = ["/data/local/tmp/tcpdump/", "/sdcard/Download/",
-                    "/data/vendor/radio/diag_logs/logs/"]
-        for dir_path in dir_list:
-            out = ad.adb.shell("ls -lh %s" % dir_path)
+        for cmd in ("ls -lh /data/local/tmp/tcpdump/",
+                    "ls -lh /sdcard/Download/",
+                    "ls -lh /data/vendor/radio/diag_logs/logs/",
+                    "df -h",
+                    "du -d 4 -h /data"):
+            out = ad.adb.shell(cmd)
             ad.log.debug("%s", out)
         return False
     finally:
@@ -2720,14 +2722,18 @@ def http_file_download_by_sl4a(ad,
         ad.log.info("Before downloading: %s", data_accounting)
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
                     file_path)
+        out = ad.adb.shell("df -h")
+        ad.log.debug("%s", out)
         try:
             ad.data_droid.httpDownloadFile(url, file_path, timeout=timeout)
         except Exception as e:
             ad.log.warning("SL4A file download error: %s", e)
-            dir_list = ["/data/local/tmp/tcpdump/", "/sdcard/Download/",
-                        "/data/vendor/radio/diag_logs/logs/"]
-            for dir_path in dir_list:
-                out = ad.adb.shell("ls -lh %s" % dir_path)
+            for cmd in ("ls -lh /data/local/tmp/tcpdump/",
+                        "ls -lh /sdcard/Download/",
+                        "ls -lh /data/vendor/radio/diag_logs/logs/",
+                        "df -h",
+                        "du -d 4 -h /data"):
+                out = ad.adb.shell(cmd)
                 ad.log.debug("%s", out)
             ad.data_droid.terminate()
             return False
