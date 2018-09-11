@@ -320,12 +320,10 @@ class PacketCapture(object):
         Args:
             pid: process id of tcpdump to kill.
         """
-        for key,val in self.pcap_properties.items():
+        for key, val in self.pcap_properties.items():
             if val.pid == pid:
                 break
-        try:
-            key
-        except NameError:
+        else:
             self.log.error("Failed to stop tcpdump. Invalid PID %s" % pid)
             return
 
