@@ -43,7 +43,7 @@ def compile_proto(proto_path, output_dir):
         return None
     # Validate output py-proto path
     if not os.path.exists(output_dir):
-        os.mkdirs(output_dir)
+        os.makedirs(output_dir)
     elif not os.path.isdir(output_dir):
         logging.error("Output path is not a valid directory: %s" %
                       (output_dir))
@@ -65,12 +65,13 @@ def compile_proto(proto_path, output_dir):
 
 
 def compile_import_proto(output_dir, proto_path):
-    """
-    Compile protobuf from PROTO_PATH and put the result in OUTPUT_DIR.
-    Return the imported module to caller.
-    :param output_dir: To store generated python proto library
-    :param proto_path: Path to the .proto file that needs to be compiled
-    :return: python proto module
+    """Compiles the given protobuf file and return the module.
+
+    Args:
+        output_dir: The directory to put the compilation output.
+        proto_path: The path to the .proto file that needs to be compiled.
+    Returns:
+        The protobuf module.
     """
     output_module_name = compile_proto(proto_path, output_dir)
     if not output_module_name:
@@ -86,9 +87,24 @@ def compile_import_proto(output_dir, proto_path):
 
 
 def parse_proto_to_ascii(binary_proto_msg):
-    """
-    Parse binary protobuf message to human readable ascii string
-    :param binary_proto_msg:
-    :return: ascii string of the message
+    """ Parses binary protobuf message to human readable ascii string.
+
+    Args:
+        binary_proto_msg: The binary format of the proto message.
+    Returns:
+        The ascii format of the proto message.
     """
     return protobuf.text_format.MessageToString(binary_proto_msg)
+
+
+def to_descriptor_proto(proto):
+    """Retrieves the descriptor proto for the given protobuf message.
+
+    Args:
+        proto: the original message.
+    Returns:
+        The descriptor proto for the input meessage.
+    """
+    descriptor_proto = protobuf.descriptor_pb2.DescriptorProto()
+    proto.DESCRIPTOR.CopyToProto(descriptor_proto)
+    return descriptor_proto
