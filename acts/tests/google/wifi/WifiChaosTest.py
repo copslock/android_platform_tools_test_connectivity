@@ -19,7 +19,7 @@ import pprint
 import time
 
 import acts.controllers.packet_capture as packet_capture
-import acts.signals
+import acts.signals as signals
 import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.test_utils.wifi.wifi_datastore_utils as dutils
 import acts.test_utils.wifi.rpm_controller_utils as rutils
@@ -50,11 +50,11 @@ class WifiChaosTest(WifiBaseTest):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
 
-        req_params = ["wpa2_networks"]
+        req_params = ["wpa2_hosts"]
         self.unpack_userparams(req_param_names=req_params)
 
         asserts.assert_true(
-            len(self.wpa2_networks) > 0,
+            len(self.wpa2_hosts) > 0,
             "Need at least one iot network with psk.")
 
         wutils.wifi_toggle_state(self.dut, True)
@@ -68,9 +68,6 @@ class WifiChaosTest(WifiBaseTest):
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
 
-    def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.cat_adb_log(test_name, begin_time)
 
     """Helper Functions"""
 
@@ -100,6 +97,24 @@ class WifiChaosTest(WifiBaseTest):
         if "100% packet loss" in result:
             raise signals.TestFailure("100% packet loss during ping")
 
+    def run_connect_disconnect(self, network):
+        for attempt in range(2):
+            # TODO:(bmahadev) Change it to 5 or more attempts later.
+                try:
+                    begin_time = time.time()
+                    ssid = network[WifiEnums.SSID_KEY]
+                    net_id = self.dut.droid.wifiAddNetwork(network)
+                    asserts.assert_true(net_id != -1, "Add network %s failed" % network)
+                    self.log.info("Connecting to %s" % ssid)
+                    self.scan_and_connect_by_id(network, net_id)
+                    self.run_ping(1)
+                    wutils.wifi_forget_network(self.dut, ssid)
+                    time.sleep(WAIT_BEFORE_CONNECTION)
+                except:
+                    self.log.error("Connection to %s network failed on the %d "
+                                   "attempt." % (ssid, attempt))
+                    self.dut.take_bug_report(ssid, begin_time)
+                    self.dut.cat_adb_log(ssid, begin_time)
 
     """Tests"""
 
@@ -140,14 +155,20 @@ class WifiChaosTest(WifiBaseTest):
         pcap_config['ssh_config']['host'] = host
 
         pcap = packet_capture.PacketCapture(pcap_config)
+        network = {"password": "password"}
 
-        for network in self.wpa2_networks:
+        for ap in self.wpa2_hosts:
 
             wutils.reset_wifi(self.dut)
-            ssid = network[WifiEnums.SSID_KEY]
 
-            band_val = network["bands"]
-            name = network["hostname"]
+            ap_info = dutils.show_device(ap)
+            ssid_2g = ssid_5g = None
+
+            if 'ssid_2g' in ap_info:
+                ssid_2g = ap_info['ssid_2g']
+            if 'ssid_5g' in ap_info:
+                ssid_5g = ap_info['ssid_5g']
+            name = ap_info["hostname"]
 
             # Lock AP in datastore.
             self.log.info("Lock AP in datastore")
@@ -157,39 +178,25 @@ class WifiChaosTest(WifiBaseTest):
                 continue
 
             # Get AP RPM attributes and Turn ON AP.
-            AP_dict = dutils.show_device(name)
-            rpm_ip = AP_dict['rpm_ip']
-            rpm_port = AP_dict['rpm_port']
+            rpm_ip = ap_info['rpm_ip']
+            rpm_port = ap_info['rpm_port']
 
-            rutils.turn_on_ap(pcap, ssid, rpm_port, rpm_ip=rpm_ip)
+            if ssid_2g:
+                scan_ssid = ssid_2g
+            else:
+                scan_ssid = ssid_5g
+
+            rutils.turn_on_ap(pcap, scan_ssid, rpm_port, rpm_ip=rpm_ip)
             self.log.info("Finished turning ON AP.")
+            time.sleep(10)
 
-            for bands in range(band_val):
+            if ssid_2g:
+                network["SSID"] = ssid_2g
+                self.run_connect_disconnect(network)
 
-                for attempt in range(1):
-                # TODO:(bmahadev) Change it to 5 or more attempts later.
-                    try:
-                        begin_time = time.time()
-                        net_id = self.dut.droid.wifiAddNetwork(network)
-                        asserts.assert_true(net_id != -1, "Add network %s failed" % network)
-                        self.scan_and_connect_by_id(network, net_id)
-                        self.run_ping(1)
-                        wutils.wifi_forget_network(self.dut, network[WifiEnums.SSID_KEY])
-                        time.sleep(WAIT_BEFORE_CONNECTION)
-                    except:
-                        self.log.error("Connection to %s network failed on the %d "
-                                       "attempt." % (network[WifiEnums.SSID_KEY], attempt))
-                        self.dut.take_bug_report(network[WifiEnums.SSID_KEY], begin_time)
-                        self.dut.cat_adb_log(network[WifiEnums.SSID_KEY], begin_time)
-                if band_val == SINGLE_BAND:
-                    break
-
-                # Repeat connection test with the '2G' band if it's a dual-band AP.
-                # This is done to avoid powering-up/down the same AP twice.
-                network[WifiEnums.SSID_KEY] = \
-                    network[WifiEnums.SSID_KEY].replace(
-                                                    hostapd_constants.BAND_5G,
-                                                    hostapd_constants.BAND_2G)
+            if ssid_5g:
+                network["SSID"] = ssid_5g
+                self.run_connect_disconnect(network)
 
             # Un-Lock AP in datastore.
             self.log.debug("Un-lock AP in datastore")
