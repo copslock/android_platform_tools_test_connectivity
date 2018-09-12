@@ -13,11 +13,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import os
-
-import acts.base_test
-import acts.test_utils.wifi.wifi_test_utils as wutils
-
 from acts import asserts
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
@@ -25,6 +20,13 @@ from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
+import acts.base_test
+import acts.test_utils.wifi.wifi_test_utils as wutils
+
+import copy
+import os
+import random
+import time
 
 WifiEnums = wutils.WifiEnums
 
@@ -41,6 +43,8 @@ class ApfCountersTest(WifiBaseTest):
 
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
+        self.tests = ("test_IPv6_RA_packets",
+                      "test_IPv6_RA_with_RTT", )
 
     def setup_class(self):
         self.dut = self.android_devices[0]
@@ -121,9 +125,12 @@ class ApfCountersTest(WifiBaseTest):
         """
         # get mac address of the dut
         ap = self.access_points[0]
-        wutils.connect_to_wifi_network(self.dut, self.wpapsk_5g)
+        wifi_network = copy.deepcopy(self.wpapsk_5g)
+        wifi_network['meteredOverride'] = 1
+        wutils.connect_to_wifi_network(self.dut, wifi_network)
         mac_addr = self.dut.droid.wifiGetConnectionInfo()['mac_address']
         self.log.info("mac_addr %s" % mac_addr)
+        time.sleep(30) # wait 30 sec before sending RAs
 
         # get the current ra count
         ra_count = self._get_icmp6intype134()
@@ -158,3 +165,38 @@ class ApfCountersTest(WifiBaseTest):
         asserts.assert_true(ra_count_latest == ra_count + 1,
                             "Device did not accept new RA after 1/6th time "
                             "interval. Device dropped a valid RA in sequence.")
+
+    @test_tracker_info(uuid="d2a0aff0-048c-475f-9bba-d90d8d9ebae3")
+    def test_IPv6_RA_with_RTT(self):
+        """Test if the device filters IPv6 RA packets with different re-trans time
+
+        Steps:
+          1. Get the current RA count
+          2. Send 400 packets with different re-trans time
+          3. Verify that RA count increased by 400
+          4. Verify internet connectivity
+        """
+        pkt_num = 400
+
+        # get mac address of the dut
+        ap = self.access_points[0]
+        wutils.connect_to_wifi_network(self.dut, self.wpapsk_5g)
+        mac_addr = self.dut.droid.wifiGetConnectionInfo()['mac_address']
+        self.log.info("mac_addr %s" % mac_addr)
+        time.sleep(30) # wait 30 sec before sending RAs
+
+        # get the current ra count
+        ra_count = self._get_icmp6intype134()
+
+        # send RA with differnt re-trans time
+        for _ in range(pkt_num):
+            rtt=random.randint(10, 10000)
+            ap.send_ra('wlan1', mac_addr, 0, 1, rtt=rtt)
+
+        # get the new RA count
+        new_ra_count = self._get_icmp6intype134()
+        asserts.assert_true(new_ra_count == ra_count + pkt_num,
+                            "Device did not accept all RAs")
+
+        # verify if internet connectivity works after sending RA packets
+        wutils.validate_connection(self.dut)
