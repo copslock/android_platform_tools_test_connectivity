@@ -203,9 +203,8 @@ class WifiAutoUpdateTest(WifiBaseTest):
                TODO: (@bmahadev) Add WEP network once it's ready.
 
         """
-        wutils.connect_to_wifi_network((self.open_network[0]['5g'], self.dut))
-        wutils.connect_to_wifi_network((self.reference_networks[0]['2g'],
-                self.dut))
+        wutils.connect_to_wifi_network(self.dut, self.open_network[0]['5g'])
+        wutils.connect_to_wifi_network(self.dut, self.reference_networks[0]['2g'])
         wutils.wifi_forget_network(self.dut,
                 self.reference_networks[0]['2g'][WifiEnums.SSID_KEY])
         wutils.wifi_forget_network(self.dut,
