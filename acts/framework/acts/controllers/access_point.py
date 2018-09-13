@@ -433,7 +433,7 @@ class AccessPoint(object):
             self.scapy_install_path = None
 
     def send_ra(self, iface, mac=RA_MULTICAST_ADDR, interval=1, count=None,
-                lifetime=LIFETIME):
+                lifetime=LIFETIME, rtt=0):
         """Invoke scapy and send RA to the device.
 
         Args:
@@ -442,10 +442,11 @@ class AccessPoint(object):
           interval: int Time to sleep between consecutive packets.
           count: int Number of packets to be sent.
           lifetime: int original RA's router lifetime in seconds.
+          rtt: retrans timer of the RA packet
         """
         scapy_command = os.path.join(self.scapy_install_path, RA_SCRIPT)
-        options = ' -m %s -i %d -c %d -l %d -in %s' % (
-            mac, interval, count, lifetime, iface)
+        options = ' -m %s -i %d -c %d -l %d -in %s -rtt %s' % (
+            mac, interval, count, lifetime, iface, rtt)
         self.log.info("Scapy cmd: %s" % scapy_command + options)
         res = self.ssh.run(scapy_command + options)
 
