@@ -15,9 +15,14 @@
 #   limitations under the License.
 from acts.event.subscription_handle import InstanceSubscriptionHandle
 from acts.event.subscription_handle import StaticSubscriptionHandle
+from acts.event import subscription_bundle
 
 
 def subscribe_static(event_type, event_filter=None, order=0):
+    """A decorator that subscribes a static or module-level function.
+
+    This function must be registered manually.
+    """
     class InnerSubscriptionHandle(StaticSubscriptionHandle):
         def __init__(self, func):
             super().__init__(event_type, func,
@@ -28,6 +33,7 @@ def subscribe_static(event_type, event_filter=None, order=0):
 
 
 def subscribe(event_type, event_filter=None, order=0):
+    """A decorator that subscribes an instance method."""
     class InnerSubscriptionHandle(InstanceSubscriptionHandle):
         def __init__(self, func):
             super().__init__(event_type, func,
@@ -35,3 +41,30 @@ def subscribe(event_type, event_filter=None, order=0):
                              order=order)
 
     return InnerSubscriptionHandle
+
+
+def register_static_subscriptions(decorated):
+    """Registers all static subscriptions in decorated's attributes.
+
+    Args:
+        decorated: The object being decorated
+
+    Returns:
+        The decorated.
+    """
+    subscription_bundle.create_from_static(decorated).register()
+
+    return decorated
+
+
+def register_instance_subscriptions(obj):
+    """A decorator that subscribes all instance subscriptions after object init.
+    """
+    old_init = obj.__init__
+
+    def init_replacement(self, *args, **kwargs):
+        old_init(self, *args, **kwargs)
+        subscription_bundle.create_from_instance(self).register()
+
+    obj.__init__ = init_replacement
+    return obj
