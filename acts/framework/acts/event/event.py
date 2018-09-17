@@ -97,6 +97,6 @@ class TestClassBeginEvent(TestClassEvent):
 class TestClassEndEvent(TestClassEvent):
     """The event posted when a test class has finished testing."""
 
-    def __init__(self, test_class, summary):
+    def __init__(self, test_class, result):
         super().__init__(test_class)
-        self.summary = summary
+        self.result = result
