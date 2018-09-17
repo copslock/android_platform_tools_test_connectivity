@@ -76,7 +76,7 @@ _log_streams = dict()
 
 @subscribe_static(TestCaseBeginEvent)
 def _on_test_case_begin(event):
-    log_path = os.path.join(logging.log_path, event.test_case)
+    log_path = os.path.join(logging.log_path, event.test_case_name)
     if not os.path.exists(log_path):
         os.mkdir(log_path)
 
@@ -328,7 +328,7 @@ class _LogStream(object):
 
         # Create new handlers for this test case.
         for descriptor in self._test_case_handler_descriptors:
-            handler = descriptor.create(test_case_event.test_case)
+            handler = descriptor.create(test_case_event.test_case_name)
             self.logger.addHandler(handler)
             self._test_case_log_handlers.append(handler)
 
