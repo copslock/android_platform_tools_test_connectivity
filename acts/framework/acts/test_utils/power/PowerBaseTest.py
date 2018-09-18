@@ -30,6 +30,7 @@ from acts.test_utils.wifi import wifi_power_test_utils as wputils
 SETTINGS_PAGE = 'am start -n com.android.settings/.Settings'
 SCROLL_BOTTOM = 'input swipe 0 2000 0 0'
 UNLOCK_SCREEN = 'input keyevent 82'
+SET_BATTERY_LEVEL = 'dumpsys battery set level 100'
 SCREENON_USB_DISABLE = 'dumpsys battery unplug'
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
 AOD_OFF = 'settings put secure doze_always_on 0'
@@ -252,6 +253,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.dut.adb.shell(ASSIST_GESTURE)
         self.dut.adb.shell(ASSIST_GESTURE_ALERT)
         self.dut.adb.shell(ASSIST_GESTURE_WAKE)
+        self.dut.adb.shell(SET_BATTERY_LEVEL)
         self.dut.adb.shell(SCREENON_USB_DISABLE)
         self.dut.adb.shell(UNLOCK_SCREEN)
         self.dut.adb.shell(SETTINGS_PAGE)
@@ -494,3 +496,4 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.dut.reboot()
             self.dut.adb.root()
             self.dut.adb.remount()
+            self.dut.adb.shell(SET_BATTERY_LEVEL)
