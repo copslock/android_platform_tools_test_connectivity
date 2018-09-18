@@ -19,6 +19,7 @@ import inspect
 from threading import RLock
 
 from acts.event.event_subscription import EventSubscription
+from acts.event.subscription_handle import SubscriptionHandle
 
 
 class _EventBus(object):
@@ -126,7 +127,10 @@ class _EventBus(object):
         Args:
             registration_id: the Subscription or registration_id to unsubscribe.
         """
-        if type(registration_id) is EventSubscription:
+        if type(registration_id) is SubscriptionHandle:
+            subscription = registration_id.subscription
+            registration_id = id(registration_id.subscription)
+        elif type(registration_id) is EventSubscription:
             subscription = registration_id
             registration_id = id(registration_id)
         elif registration_id in self._registration_id_map.keys():
