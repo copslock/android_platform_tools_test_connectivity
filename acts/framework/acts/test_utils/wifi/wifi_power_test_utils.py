@@ -206,6 +206,7 @@ def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=10):
     ad.reboot()
     # Wait for auto-wifi feature to start
     time.sleep(20)
+    ad.adb.shell('dumpsys battery set level 100')
     ad.log.info('DTIM updated and device back from reboot')
     return 1
 
