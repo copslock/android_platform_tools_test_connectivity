@@ -113,6 +113,7 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
     @BluetoothBaseTest.bt_test_wrap
     def test_fuchsia_connect_android_periph(self):
         sample_android_name = "Pixel1234"
+        self.ad.droid.bluetoothStartPairingHelper()
         self.ad.droid.bluetoothSetLocalName(sample_android_name)
         adv_callback = self._start_generic_advertisement_include_device_name()
         droid_name = self.ad.droid.bluetoothGetLocalName()
