@@ -25,7 +25,7 @@ Device:
 Additional setup steps:
 Change out pip/pip3 and python2.7/3.4 based on python version
 1. pip install pylibftdi
-2. pip install usblib1
+2. pip install libusb1
 3. sudo apt-get install libftdi-dev
 4. Make this file /etc/udev/rules.d/99-libftdi.rules with root and add the lines below:
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", GROUP="dialout", MODE="0660"

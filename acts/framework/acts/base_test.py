@@ -30,6 +30,8 @@ from acts.event import event_bus
 from acts.event import subscription_bundle
 from acts.event.event import TestCaseBeginEvent
 from acts.event.event import TestCaseEndEvent
+from acts.event.event import TestClassBeginEvent
+from acts.event.event import TestClassEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
 
 
@@ -669,6 +671,7 @@ class BaseTestClass(object):
         """
         self.register_test_class_event_subscriptions()
         self.log.info("==========> %s <==========", self.TAG)
+        event_bus.post(TestClassBeginEvent(self))
         # Devise the actual test cases to run in the test class.
         if not test_names:
             if self.tests:
@@ -712,6 +715,7 @@ class BaseTestClass(object):
             raise e
         finally:
             self._exec_func(self.teardown_class)
+            event_bus.post(TestClassEndEvent(self, self.results))
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
 
