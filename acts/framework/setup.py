@@ -33,10 +33,12 @@ install_requires = [
     'shellescape>=3.4.1',
     'protobuf',
     'retry',
+    'requests',
     'roman',
     'scapy-python3',
     'pylibftdi',
     'xlsxwriter',
+    # TODO(markdr): b/113719194: Remove this module
     'colorama'
 ]
 
