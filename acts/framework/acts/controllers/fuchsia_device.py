@@ -35,7 +35,8 @@ from acts import signals
 from acts import tracelogger
 from acts import utils
 
-from acts.controllers.fuchsia_lib.ble_lib import FuchsiaBleLib
+from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
+from acts.controllers.fuchsia_lib.bt.bta_lib import FuchsiaBtaLib
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -133,13 +134,16 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaBleLib
         setattr(self, "ble_lib",
                 FuchsiaBleLib(self.address, self.test_counter, self.client_id))
+        # Grab commands from FuchsiaBtaLib
+        setattr(self, "bta_lib",
+                FuchsiaBtaLib(self.address, self.test_counter, self.client_id))
 
         #Init server
         self.init_server_connection()
 
     def build_id(self, test_id):
         """Concatenates client_id and test_id to form a command_id
-            
+
         Args:
             test_id: string, unique identifier of test command
         """
