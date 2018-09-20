@@ -17,6 +17,7 @@
 import logging
 import time
 import pprint
+import os
 
 from enum import IntEnum
 from queue import Empty
@@ -1704,3 +1705,51 @@ def create_softap_config():
         WifiEnums.PWD_KEY: ap_password,
     }
     return config
+
+def start_cnss_diags(ads):
+    for ad in ads:
+        start_cnss_diag(ad)
+
+def start_cnss_diag(ad):
+    """Start cnss_diag to record extra wifi logs
+
+    Args:
+        ad: android device object.
+    """
+    if ad.model in wifi_constants.DEVICES_USING_LEGACY_PROP:
+        prop = wifi_constants.LEGACY_CNSS_DIAG_PROP
+    else:
+        prop = wifi_constants.CNSS_DIAG_PROP
+    if ad.adb.getprop(prop) != 'true':
+        ad.adb.shell("find /data/vendor/wifi/cnss_diag/wlan_logs/ -type f -delete")
+        ad.adb.shell("setprop %s true" % prop, ignore_status=True)
+
+def stop_cnss_diags(ads):
+    for ad in ads:
+        stop_cnss_diag(ad)
+
+def stop_cnss_diag(ad):
+    """Stops cnss_diag
+
+    Args:
+        ad: android device object.
+    """
+    if ad.model in wifi_constants.DEVICES_USING_LEGACY_PROP:
+        prop = wifi_constants.LEGACY_CNSS_DIAG_PROP
+    else:
+        prop = wifi_constants.CNSS_DIAG_PROP
+    ad.adb.shell("setprop %s false" % prop, ignore_status=True)
+
+def get_cnss_diag_log(ad, test_name=""):
+    """Pulls the cnss_diag logs in the wlan_logs dir
+    Args:
+        ad: android device object.
+        test_name: test case name
+    """
+    logs = ad.get_file_names("/data/vendor/wifi/cnss_diag/wlan_logs/")
+    if logs:
+        ad.log.info("Pulling cnss_diag logs %s", logs)
+        log_path = os.path.join(ad.log_path, test_name,
+                                "CNSS_DIAG_%s" % ad.serial)
+        utils.create_dir(log_path)
+        ad.pull_files(logs, log_path)
