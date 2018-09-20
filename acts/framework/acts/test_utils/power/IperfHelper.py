@@ -95,7 +95,7 @@ class IperfHelper(object):
 
             log.info('The average throughput is {}'.format(throughput))
 
-        except ValueError:
+        except:
             log.warning('Cannot get iperf result. Setting to 0')
             throughput = 0
         return throughput
