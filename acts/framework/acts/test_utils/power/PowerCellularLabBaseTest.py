@@ -13,56 +13,50 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import time
-import math
-import statistics
-import acts.test_utils.power.PowerBaseTest as PBT
 
-from enum import Enum
-from acts.controllers.anritsu_lib.md8475a import MD8475A
-from acts.controllers.anritsu_lib.md8475a import BtsNumber
-from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
-from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
-from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
-
-
-class TransmissionModeLTE(Enum):
-    ''' Transmission modes for LTE (e.g., TM1, TM4, ..)
-    
-    '''
-    TM1 = "TM1"
-    TM2 = "TM2"
-    TM3 = "TM3"
-    TM4 = "TM4"
-
-
-class SchedulingMode(Enum):
-    ''' Traffic scheduling modes (e.g., STATIC, DYNAMIC)
-    
-    '''
-    DYNAMIC = 0
-    STATIC = 1
-
+from acts.controllers.anritsu_lib.md8475a import MD8475A
+import acts.test_utils.power.PowerBaseTest as PBT
+from test_utils.power.tel_simulations.GsmSimulation import GsmSimulation
+from test_utils.power.tel_simulations.LteSimulation import LteSimulation
+from test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
 
 class PowerCellularLabBaseTest(PBT.PowerBaseTest):
-    """Base class for Cellular power related tests.
+    """ Base class for Cellular power related tests.
 
-    Inherited from the PowerBaseTest class
+    Inherits from PowerBaseTest so it has methods to collect power measurements.
+    On top of that, it provides functions to setup and control the Anritsu simulation.
+
     """
-    LTE_BASIC_SIM_FILE = ('C:\\Users\MD8475A\Documents\DAN_configs\ '
-                          'Anritsu_SIM_Bo.wnssp')
-    LTE_BASIC_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\ '
-                           'Anritsu_SIM_cell_config_ul_max_mcs_10mhz_b7.wnscp')
-    NUM_UPLINK_CAL_READS = 3
-    NUM_DOWNLINK_CAL_READS = 5
-    DOWNLINK_CAL_TARGET_POWER_DBM = -15
-    MAX_BTS_INPUT_POWER_DBM = 30
-    MAX_PHONE_OUTPUT_POWER_DBM = 23
-    SCHEDULING_DYNAMIC = 0
-    SCHEDULING_STATIC = 1
+
+    # List of test name keywords that indicate the RAT to be used
+
+    PARAM_SIM_TYPE_LTE = "lte"
+    PARAM_SIM_TYPE_UMTS = "umts"
+    PARAM_SIM_TYPE_GSM = "gsm"
+
+    def __init__(self, controllers):
+        """ Class initialization.
+
+        Sets class attributes to None.
+        """
+
+        super().__init__(controllers)
+
+        # Tests are sorted alphabetically so all the tests in the same band are grouped together
+        self.tests = sorted(self.tests)
+
+        self.simulation = None
+        self.anritsu = None
 
     def setup_class(self):
+        """ Executed before any test case is started.
+
+        Sets the device to rockbottom and connects to the anritsu callbox.
+
+        Returns:
+            False if connecting to the callbox fails.
+        """
 
         super().setup_class()
         if hasattr(self, 'network_file'):
@@ -71,13 +65,20 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.aux_network = self.networks['aux_network']
         if hasattr(self, 'packet_senders'):
             self.pkt_sender = self.packet_senders[0]
+
+        # Set DUT to rockbottom
+        self.dut_rockbottom()
+
         # Establish connection to Anritsu Callbox
         return self.connect_to_anritsu()
 
     def connect_to_anritsu(self):
-        """ Connects to Anritsu Callbox and gets handle object
-    
+        """ Connects to Anritsu Callbox and gets handle object.
+
+        Returns:
+            False if a connection with the callbox could not be started
         """
+
         try:
             self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
                                    self.wlan_option)
@@ -86,249 +87,125 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.log.error('Error in connecting to Anritsu Callbox')
             return False
 
-    def load_simple_LTE_config_files(self):
-        """ Configures Anritsu system for LTE simulation with 1 basetation
-    
-        Loads a simple LTE simulation enviroment with 1 basestation. It also 
-        creates the BTS handle so we can change the parameters as desired
-        """
-        self.anritsu.load_simulation_paramfile(self.LTE_BASIC_SIM_FILE)
-        self.anritsu.load_cell_paramfile(self.LTE_BASIC_CELL_FILE)
-        # Getting BTS1 since this sim only has 1 BTS
-        self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
+    def setup_test(self):
+        """ Executed before every test case.
 
-    def teardown_test(self):
-        """Tear down necessary objects after test case is finished.
+        Parses parameters from the test name and sets a simulation up according to those values.
+        Also takes care of attaching the phone to the base station. Because starting new simulations
+        and recalibrating takes some time, the same simulation object is kept between tests and is only
+        destroyed and re instantiated in case the RAT is different from the previous tests.
 
+        Children classes need to call the parent method first. This method will create the list self.parameters
+        with the keywords separated by underscores in the test name and will remove the ones that were consumed
+        for the simulation config. The setup_test methods in the children classes can then consume the remaining
+        values.
         """
-        super().teardown_test()
+
+        # Get list of parameters from the test name
+        self.parameters = self.current_test_name.split('_')
+
+        # Remove the 'test' keyword
+        self.parameters.remove('test')
+
+        # Changing cell parameters requires the phone to be detached
+        if self.simulation:
+            self.simulation.stop()
+
+        # Decide what type of simulation and instantiate it if needed
+        if self.consume_parameter(self.PARAM_SIM_TYPE_LTE):
+            self.init_simulation(self.PARAM_SIM_TYPE_LTE)
+        elif self.consume_parameter(self.PARAM_SIM_TYPE_UMTS):
+            self.init_simulation(self.PARAM_SIM_TYPE_UMTS)
+        elif self.consume_parameter(self.PARAM_SIM_TYPE_GSM):
+            self.init_simulation(self.PARAM_SIM_TYPE_GSM)
+        else:
+            self.log.error("Simulation type needs to be indicated in the test name.")
+            return False
+
+        # Parse simulation parameters
+        if not self.simulation.parse_parameters(self.parameters):
+            return False
+
+        # Attach the phone to the basestation
+        self.simulation.start()
+
+        # Make the device go to sleep
+        self.dut.droid.goToSleepNow()
+
+        return True
+
+    def consume_parameter(self, parameter_name, num_values=0):
+        """ Parses a parameter from the test name.
+
+        Allows the test to get parameters from its name. Will delete parameters from the list after
+        consuming them to ensure that they are not used twice.
+
+        Args:
+          parameter_name: keyword to look up in the test name
+          num_values: number of arguments following the parameter name in the test name
+        Returns:
+          A list containing the parameter name and the following num_values arguments
+        """
+
+        try:
+            i = self.parameters.index(parameter_name)
+        except ValueError:
+            # parameter_name is not set
+            return []
+
+        return_list = []
+
+        try:
+            for j in range(num_values+1):
+                return_list.append(self.parameters.pop(i))
+        except IndexError:
+            self.log.error("Parameter {} has to be followed by {} values.".format(parameter_name, num_values))
+            raise ValueError()
+
+        return return_list
+
 
     def teardown_class(self):
-        """Clean up the test class after tests finish running
+        """Clean up the test class after tests finish running.
+
+        Stop the simulation and then disconnect from the Anritsu Callbox.
 
         """
         super().teardown_class()
-        self.anritsu.stop_simulation()
-        self.anritsu.disconnect()
 
-    def uplink_calibration(self, bts):
-        """ Computes uplink path loss and returns the calibration value
-        
-        The bts needs to be set at the desired config (bandwidth, mode, etc) 
-        before running the calibration. The phone also neeeds to be attached
-        to the desired basesation for calibration
-        
+        if self.anritsu:
+            self.anritsu.stop_simulation()
+            self.anritsu.disconnect()
+
+    def init_simulation(self, sim_type):
+        """ Starts a new simulation only if needed.
+
+        Only starts a new simulation if type is different from the one running before.
+
         Args:
-            bts: basestation handle
-    
-        Returns:
-            Uplink calibration value and measured UL power
-        """
-        # Set BTS1 to maximum input allowed in order to do uplink calibration
-        target_power = self.MAX_PHONE_OUTPUT_POWER_DBM
-        initial_input_level = bts.input_level
-        initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        bts.input_level = self.MAX_BTS_INPUT_POWER_DBM
-        time.sleep(3)
-
-        # Set BTS to maximum input allowed in order to do uplink calibration
-        self.dut.droid.setScreenTimeout(1800)
-        self.dut.droid.wakeUpNow()
-
-        # Starting first the IP traffic (UDP): Using always APN 1
-        try:
-            cmd = 'OPERATEIPTRAFFIC START,1'
-            self.anritsu.send_command(cmd)
-        except AnritsuError as inst:
-            self.log.warning("{}\n".format(inst))  # Typically RUNNING already
-        time.sleep(4)
-
-        up_power_per_chain = []
-        # Get the number of chains
-        cmd = 'MONITOR? UL_PUSCH'
-        uplink_meas_power = self.anritsu.send_query(cmd)
-        str_power_chain = uplink_meas_power.split(',')
-        num_chains = len(str_power_chain)
-        for ichain in range(0, num_chains):
-            up_power_per_chain.append([])
-
-        for i in range(0, self.NUM_UPLINK_CAL_READS):
-            uplink_meas_power = self.anritsu.send_query(cmd)
-            str_power_chain = uplink_meas_power.split(',')
-
-            for ichain in range(0, num_chains):
-                if (str_power_chain[ichain] == 'DEACTIVE'):
-                    up_power_per_chain[ichain].append(float('nan'))
-                else:
-                    up_power_per_chain[ichain].append(
-                        float(str_power_chain[ichain]))
-
-            time.sleep(2)
-
-        # Stop the IP traffic (UDP)
-        try:
-            cmd = 'OPERATEIPTRAFFIC STOP,1'
-            self.anritsu.send_command(cmd)
-        except AnritsuError as inst:
-            self.log.warning("{}\n".format(inst))  # Typically STOPPED already
-        time.sleep(1.5)
-
-        # Reset phone and bts to original settings
-        self.dut.droid.goToSleepNow()
-        self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        bts.input_level = initial_input_level
-
-        # Phone only supports 1x1 Uplink so always chain 0
-        avg_up_power = statistics.mean(up_power_per_chain[0])
-        up_call_path_loss = target_power - avg_up_power
-
-        self.up_call_path_loss = up_call_path_loss
-        self.up_call_power_per_chain = up_power_per_chain
-
-        return up_power_per_chain[0], up_call_path_loss
-
-    def downlink_calibration(self, bts, rat='lteRsrp', num_RBs=0):
-        """ Computes downlink path loss and returns the calibration value
-        
-        The bts needs to be set at the desired config (bandwidth, mode, etc) 
-        before running the calibration. The phone also neeeds to be attached
-        to the desired basesation for calibration
-    
-        Args:
-            bts: basestation handle
-            rat: desired RAT to calibrate (currently only works for LTE)
-            num_RBs: Number of RBs in use. If set to 0, it will return RSRP
-    
-        Returns:
-            Dowlink calibration value and measured DL power. Note that the 
-            phone only reports RSRP of the primary chain
-        """
-        # Set BTS1 to maximum output level to minimize error
-        init_output_level = bts.output_level
-        initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        bts.output_level = self.DOWNLINK_CAL_TARGET_POWER_DBM
-        time.sleep(3)
-
-        # Set BTS to maximum input allowed in order to do uplink calibration
-        self.dut.droid.setScreenTimeout(1800)
-        self.dut.droid.goToSleepNow()
-
-        # Starting first the IP traffic (UDP): Using always APN 1
-        try:
-            cmd = 'OPERATEIPTRAFFIC START,1'
-            self.anritsu.send_command(cmd)
-        except AnritsuError as inst:
-            self.log.warning("{}\n".format(inst))  # Typically RUNNING already
-        time.sleep(4)
-
-        down_power_measured = []
-        for i in range(0, self.MAX_DOWNLINK_CAL_READS):
-            # For some reason, the RSRP gets updated on Screen ON event
-            self.dut.droid.wakeUpNow()
-            time.sleep(4)
-            signal_strength = get_telephony_signal_strength(self.dut)
-            down_power_measured.append(signal_strength[rat])
-            self.dut.droid.goToSleepNow()
-            time.sleep(4)
-
-        # Stop the IP traffic (UDP)
-        try:
-            cmd = 'OPERATEIPTRAFFIC STOP,1'
-            self.anritsu.send_command(cmd)
-        except AnritsuError as inst:
-            self.log.warning("{}\n".format(inst))  # Typically STOPPED already
-        time.sleep(1.5)
-
-        # Reset phone and bts to original settings
-        self.dut.droid.goToSleepNow()
-        self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        bts.output_level = init_output_level
-
-        self.down_power_measured_primary = []
-        self.down_call_path_loss_primary = []
-        self.down_rsrp_measured_primary = statistics.mean(down_power_measured)
-        # Returns either the RSRP or total power
-        if (num_RBs == 0):
-            avg_down_power = self.down_rsrp_measured_primary
-            down_call_path_loss = float('nan')
-        else:
-            avg_down_power = self.down_rsrp_measured_primary + 10 * math.log10(
-                12 * num_RBs)
-            down_call_path_loss = self.DOWNLINK_CAL_TARGET_POWER_DBM - avg_down_power
-            self.down_power_measured_primary = avg_down_power
-            self.down_call_path_loss_primary = down_call_path_loss
-
-        return down_power_measured, down_call_path_loss
-
-    def set_lte_channel_bandwidth(self, bts, bandwidth):
-        """ Sets the LTE channel bandwidth (MHz)
-    
-        Args:
-            bts: basestation handle
-            bandwidth: desired bandwidth (MHz)
-        """
-        if bandwidth == 20:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_20MHz
-        elif bandwidth == 15:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_15MHz
-        elif bandwidth == 10:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_10MHz
-        elif bandwidth == 5:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_5MHz
-        elif bandwidth == 3:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_3MHz
-        elif bandwidth == 1.4:
-            bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_1dot4MHz
-        else:
-            msg = "Bandwidth = {} MHz is not valid for LTE".format(bandwidth)
-            self.log.Error(msg)
-            raise ValueError(msg)
-
-    def set_lte_scheduling(self,
-                           bts,
-                           scheduling,
-                           mcs_dl=0,
-                           mcs_ul=0,
-                           nrb_dl=5,
-                           nrb_ul=5):
-        """ Sets the scheduling mode for LTE
-    
-        Args:
-            bts: basestation handle
-            scheduling: DYNAMIC or STATIC scheduling (Enum list)
-            mcs_dl: Downlink MCS (only for STATIC scheduling)
-            mcs_ul: Uplink MCS (only for STATIC scheduling)
-            nrb_dl: Number of RBs for downlink (only for STATIC scheduling)
-            nrb_ul: Number of RBs for uplink (only for STATIC scheduling)
+            type: defines the type of simulation to be started.
         """
 
-        if scheduling == SchedulingMode.DYNAMIC:
-            bts.lte_scheduling_mode = "DYNAMIC"
-        else:
-            bts.lte_scheduling_mode = "STATIC"
-            bts.packet_rate = BtsPacketRate.LTE_MANUAL
-            cmd = "TBSPATTERN OFF, " + bts._bts_number
-            self.anritsu.send_command(cmd)
-            bts.lte_mcs_dl = mcs_dl
-            bts.lte_mcs_ul = mcs_ul
-            bts.nrb_dl = nrb_dl
-            bts.nrb_ul = nrb_ul
+        if sim_type == self.PARAM_SIM_TYPE_LTE:
 
-    def set_lte_bts_mode(self, bts, tmode):
-        """ Sets the transmission mode for the LTE basestation
-    
-        Args:
-            bts: basestation handle
-            tmode: Enum list from class 'TransmissionModeLTE'
-        """
+            if self.simulation and type(self.simulation) is LteSimulation:
+                # The simulation object we already have is enough.
+                return
 
-        if tmode == TransmissionModeLTE.TM1:
-            bts.dl_antenna = 1
-            bts.transmode = TransmissionModeLTE.TM4
-        elif tmode == TransmissionModeLTE.TM4:
-            bts.dl_antenna = 2
-            bts.transmode = TransmissionModeLTE.TM1
-        else:
-            msg = "TM = {} is not valid for LTE".format(tmode)
-            self.log.Error(msg)
-            raise ValueError(msg)
+            # Instantiate a new simulation
+            self.simulation = LteSimulation(self.anritsu, self.log, self.dut)
+
+        elif sim_type == self.PARAM_SIM_TYPE_UMTS:
+
+            if self.simulation and type(self.simulation) is UmtsSimulation:
+                return
+
+            self.simulation = UmtsSimulation(self.anritsu, self.log, self.dut)
+
+        elif sim_type == self.PARAM_SIM_TYPE_GSM:
+
+            if self.simulation and type(self.simulation) is GsmSimulation:
+                return
+
+            self.simulation = GsmSimulation(self.anritsu, self.log, self.dut)
+
