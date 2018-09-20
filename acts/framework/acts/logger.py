@@ -30,9 +30,9 @@ log_line_format = "%(asctime)s.%(msecs).03d %(levelname)s %(message)s"
 # The micro seconds are added by the format string above,
 # so the time format does not include ms.
 log_line_time_format = "%Y-%m-%d %H:%M:%S"
-log_line_timestamp_len = 18
+log_line_timestamp_len = 23
 
-logline_timestamp_re = re.compile("\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d")
+logline_timestamp_re = re.compile("\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d")
 
 
 # yapf: disable
