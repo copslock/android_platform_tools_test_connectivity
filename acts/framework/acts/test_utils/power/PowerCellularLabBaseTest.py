@@ -14,12 +14,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import acts.test_utils.power.PowerBaseTest as PBT
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import MD8475A
-import acts.test_utils.power.PowerBaseTest as PBT
-from test_utils.power.tel_simulations.GsmSimulation import GsmSimulation
-from test_utils.power.tel_simulations.LteSimulation import LteSimulation
-from test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
+from acts.test_utils.power.tel_simulations.GsmSimulation import GsmSimulation
+from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
+from acts.test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
+
 
 class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     """ Base class for Cellular power related tests.

@@ -13,13 +13,13 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from acts.controllers.anritsu_lib.md8475a import BtsGprsMode
+from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
+from acts.test_utils.tel.anritsu_utils import GSM_BAND_DCS1800
+from acts.test_utils.tel.anritsu_utils import GSM_BAND_EGSM900
+from acts.test_utils.tel.anritsu_utils import GSM_BAND_GSM850
+from acts.test_utils.tel.anritsu_utils import GSM_BAND_RGSM900
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
-
-from acts.controllers.anritsu_lib.md8475a import BtsPacketRate, BtsGprsMode
-
-from test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
-from test_utils.tel.anritsu_utils import GSM_BAND_GSM850, GSM_BAND_EGSM900, GSM_BAND_DCS1800, GSM_BAND_RGSM900
-from test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 
 
 class GsmSimulation(BaseSimulation):
