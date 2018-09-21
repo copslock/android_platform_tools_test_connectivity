@@ -130,11 +130,17 @@ class BtsBandwidth(Enum):
     LTE_BANDWIDTH_15MHz = "15MHz"
     LTE_BANDWIDTH_20MHz = "20MHz"
 
+class BtsGprsMode(Enum):
+    ''' Values for Gprs Modes '''
+    NO_GPRS = "NO_GPRS"
+    GPRS = "GPRS"
+    EGPRS = "EGPRS"
 
 class BtsPacketRate(Enum):
     ''' Values for Cell Packet rate '''
     LTE_MANUAL = "MANUAL"
     LTE_BESTEFFORT = "BESTEFFORT"
+    WCDMA_DL384K_UL64K = "DL384K_UL64K"
     WCDMA_DLHSAUTO_REL7_UL384K = "DLHSAUTO_REL7_UL384K"
     WCDMA_DL18_0M_UL384K = "DL18_0M_UL384K"
     WCDMA_DL21_6M_UL384K = "DL21_6M_UL384K"
@@ -162,7 +168,7 @@ class BtsPacketRate(Enum):
     WCDMA_DL36_0M_UL5_76M = "DL36_0M_UL5_76M"
     WCDMA_DL43_2M_UL1_46M = "DL43_2M_UL1_46M"
     WCDMA_DL43_2M_UL2_0M = "DL43_2M_UL2_0M"
-    WCDMA_DL43_2M_UL5_76M = "L43_2M_UL5_76M"
+    WCDMA_DL43_2M_UL5_76M = "DL43_2M_UL5_76M"
 
 
 class BtsPacketWindowSize(Enum):
@@ -2994,6 +3000,84 @@ class _BaseTransceiverStation(object):
         """
         cmd = "CBCHPARAMSETUP {},{}".format(enable.value, self._bts_number)
         self._anritsu.send_command(cmd)
+
+    @property
+    def gsm_gprs_mode(self):
+        """ Gets the GSM connection mode
+
+        Args:
+            None
+
+        Returns:
+            A string indicating if connection is EGPRS, GPRS or non-GPRS
+        """
+        cmd = "GPRS? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @gsm_gprs_mode.setter
+    def gsm_gprs_mode(self, mode):
+        """ Sets the GPRS connection mode
+
+        Args:
+            mode: GPRS connection mode
+
+        Returns:
+            None
+        """
+
+        if not isinstance(mode, BtsGprsMode):
+            raise ValueError(' The parameter should be of type "BtsGprsMode"')
+        cmd = "GPRS {},{}".format(mode.value, self._bts_number)
+
+        self._anritsu.send_command(cmd)
+
+    @property
+    def gsm_slots(self):
+        """ Gets the GSM slot assignment
+
+        Args:
+            None
+
+        Returns:
+            A tuple indicating DL and UL slots.
+        """
+
+        cmd = "MLTSLTCFG? " + self._bts_number
+
+        response = self._anritsu.send_query(cmd)
+        split_response = response.split(',')
+
+        if not len(split_response) == 2:
+          raise ValueError(response)
+
+        return response[0], response[1]
+
+    @gsm_slots.setter
+    def gsm_slots(self, slots):
+        """ Sets the number of downlink / uplink slots for GSM
+
+        Args:
+            slots: a tuple containing two ints indicating (DL,UL)
+
+        Returns:
+            None
+        """
+
+        try:
+          dl, ul = slots
+          dl = int(dl)
+          ul = int(ul)
+        except:
+          raise ValueError('The parameter slot has to be a tuple containing two ints indicating (dl,ul) slots.')
+
+        # Validate
+        if dl < 1 or ul < 1 or dl + ul > 5:
+          raise ValueError('DL and UL slots have to be >= 1 and the sum <= 5.')
+
+        cmd = "MLTSLTCFG {},{},{}".format(dl, ul, self._bts_number)
+
+        self._anritsu.send_command(cmd)
+
 
 
 class _VirtualPhone(object):
