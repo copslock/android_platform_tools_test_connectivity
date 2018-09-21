@@ -13,11 +13,10 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
+from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 
-from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
-
-from test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 
 class UmtsSimulation(BaseSimulation):
     """ Simple UMTS simulation with only one basestation.

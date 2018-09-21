@@ -18,9 +18,9 @@ from enum import Enum
 
 from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
+from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
-from test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 
 
 class LteSimulation(BaseSimulation):
