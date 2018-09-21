@@ -6254,7 +6254,8 @@ def reset_device_password(ad, device_password=None):
 def get_sim_state(ad):
     try:
         state = ad.droid.telephonyGetSimState()
-    except:
+    except Exception as e:
+        ad.log.error(e)
         state = ad.adb.getprop("gsm.sim.state")
     return state
 
