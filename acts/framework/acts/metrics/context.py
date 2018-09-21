@@ -123,6 +123,10 @@ class TestContext(object):
             self.get_base_output_path(),
             self.get_output_dir())
 
+    @property
+    def identifier(self):
+        raise NotImplementedError()
+
     def _get_default_base_output_path(self):
         """Gets the default base output path.
 
@@ -164,9 +168,13 @@ class TestClassContext(TestContext):
         super().__init__()
         self.test_class = test_class
 
-    def get_test_class_name(self):
-        """Gets the name of the test class for this context."""
+    @property
+    def test_class_name(self):
         return self.test_class.__class__.__name__
+
+    @property
+    def identifier(self):
+        return self.test_class_name
 
     def _get_default_output_dir(self):
         """Gets the default output directory for this context.
@@ -174,18 +182,18 @@ class TestClassContext(TestContext):
         For TestClassContexts, this will be the name of the test class. This is
         in line with the ACTS logger itself.
         """
-        return self.get_test_class_name()
+        return self.test_class_name
 
 
 class TestCaseContext(TestContext):
     """A TestContext that represents a test case.
 
     Attributes:
-        test_case_name: The name of the test case that this context represents.
+        test_case_name: The method object of the test case.
         test_class: The test class instance enclosing the test case.
     """
 
-    def __init__(self, test_class, test_case_name):
+    def __init__(self, test_class, test_case):
         """Initializes a TestCaseContext for the given test case.
 
         Args:
@@ -195,11 +203,19 @@ class TestCaseContext(TestContext):
         """
         super().__init__()
         self.test_class = test_class
-        self.test_case_name = test_case_name
+        self.test_case = test_case
 
-    def get_test_class_name(self):
-        """Gets the name of the test class for this context."""
+    @property
+    def test_case_name(self):
+        return self.test_case.__name__
+
+    @property
+    def test_class_name(self):
         return self.test_class.__class__.__name__
+
+    @property
+    def identifier(self):
+        return '%s.%s' % (self.test_class_name, self.test_case_name)
 
     def _get_default_output_dir(self):
         """Gets the default output directory for this context.
@@ -209,5 +225,5 @@ class TestCaseContext(TestContext):
         itself.
         """
         return os.path.join(
-            self.get_test_class_name(),
+            self.test_class_name,
             self.test_case_name)

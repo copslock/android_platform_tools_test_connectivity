@@ -19,7 +19,6 @@ import os
 import tempfile
 
 from acts.event.decorators import subscribe
-from acts.event.event_bus import unregister
 from acts.event.event import TestCaseBeginEvent
 from acts.event.event import TestCaseEndEvent
 from acts.event.event import TestClassBeginEvent
@@ -254,11 +253,16 @@ class LoggerProxy(object):
     def _teardown_proxy(self, event):
         """Ends and removes the underlying logger.
 
+        If the underlying logger does not exist, no action is taken. We avoid
+        raising an error in this case with the implicit assumption that
+        _setup_proxy would have raised one already if logger creation failed.
+
         Args:
             event: The triggering event.
         """
-        self._logger.end(event)
-        self._logger = None
+        if self._logger:
+            self._logger.end(event)
+            self._logger = None
 
     def __getattr__(self, attr):
         """Forwards attribute access to the underlying logger.
@@ -321,8 +325,9 @@ class TestCaseLoggerProxy(LoggerProxy):
     @subscribe(TestClassEndEvent)
     def __on_test_class_end(self, event):
         """Cleans up the subscriptions at the end of a class."""
-        event_bus.unregister(self.__setup_proxy)
-        event_bus.unregister(self.__teardown_proxy)
+        event_bus.unregister(self.__on_test_case_begin)
+        event_bus.unregister(self.__on_test_case_end)
+        event_bus.unregister(self.__on_test_class_end)
 
 class TestClassLoggerProxy(LoggerProxy):
     """A LoggerProxy implementation to subscribe to test class events.
@@ -342,6 +347,6 @@ class TestClassLoggerProxy(LoggerProxy):
     @subscribe(TestClassEndEvent)
     def __on_test_class_end(self, event):
         """Tears down the proxy for a test class and removes subscriptions."""
-        self.__teardown_proxy(event)
-        event_bus.unregister(self.__setup_proxy)
-        event_bus.unregister(self.__teardown_proxy)
+        self._teardown_proxy(event)
+        event_bus.unregister(self.__on_test_class_begin)
+        event_bus.unregister(self.__on_test_class_end)
