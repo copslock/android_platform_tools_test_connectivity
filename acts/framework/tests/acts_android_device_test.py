@@ -383,12 +383,11 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         the calls.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        expected_msg = ("Android device .* does not have an ongoing adb logcat"
-                        " collection.")
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
+        expected_msg = ("Android device .* does not have an ongoing adb logcat")
+        # Expect warning msg if stop is called before start.
+        with self.assertLogs(level='WARNING') as log:
             ad.stop_adb_logcat()
+            self.assertRegex(log.output[0], expected_msg)
         ad.start_adb_logcat()
         # Verify start did the correct operations.
         self.assertTrue(ad.adb_logcat_process)
@@ -400,12 +399,12 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         start_proc_mock.assert_called_with(
             adb_cmd % (ad.serial, expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
-        expected_msg = ('Android device .* already has a running adb logcat '
-                        'thread. Cannot start another one.')
-        # Expect error if start is called back to back.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
+        expected_msg = ("Android device .* already has a running adb logcat")
+        # Expect warning msg if start is called back to back.
+        with self.assertLogs(level='WARNING') as log:
             ad.start_adb_logcat()
+            self.assertRegex(log.output[0], expected_msg)
+
         # Verify stop did the correct operations.
         ad.stop_adb_logcat()
         stop_proc_mock.assert_called_with("process")
@@ -431,12 +430,11 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.adb_logcat_param = "-b radio"
-        expected_msg = ("Android device .* does not have an ongoing adb logcat"
-                        " collection.")
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
+        expected_msg = ("Android device .* does not have an ongoing adb logcat")
+        # Expect warning msg if stop is called before start.
+        with self.assertLogs(level='WARNING') as log:
             ad.stop_adb_logcat()
+            self.assertRegex(log.output[0], expected_msg)
         ad.start_adb_logcat()
         # Verify start did the correct operations.
         self.assertTrue(ad.adb_logcat_process)
