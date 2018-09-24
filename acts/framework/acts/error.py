@@ -48,7 +48,7 @@ class ActsErrorCode:
     Sl4aApiError = 1002
     Sl4aConnectionError = 1003
     Sl4aProtocolError = 1004
-    Sl4aIsMissingError = 1005
+    Sl4aNotInstalledError = 1005
     Sl4aRpcTimeoutError = 1006
 
     # Util Errors 4000-9999
