@@ -52,7 +52,7 @@ class Sl4aProtocolError(Sl4aException):
     MISMATCHED_API_ID = 'Mismatched API id.'
 
 
-class Sl4aIsMissingError(Sl4aException):
+class Sl4aNotInstalledError(Sl4aException):
     """An error raised when an Sl4aClient is created without SL4A installed."""
 
 
