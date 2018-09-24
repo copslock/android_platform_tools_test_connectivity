@@ -112,6 +112,7 @@ class ProtoMetricPublisherTest(TestCase):
 
     def test_init_attributes(self):
         context = Mock()
+        context.get_full_output_path.return_value = 'output/path'
         publishes_binary = Mock()
         publishes_ascii = Mock()
         publishes_descriptor_binary = Mock()
@@ -134,7 +135,7 @@ class ProtoMetricPublisherTest(TestCase):
 
     def test_default_init_publishes_everything(self):
         context = Mock()
-
+        context.get_full_output_path.return_value = 'output/path'
         publisher = ProtoMetricPublisher(context)
 
         self.assertEqual(publisher.publishes_binary, True)
@@ -144,13 +145,13 @@ class ProtoMetricPublisherTest(TestCase):
 
     def test_get_output_path(self):
         context = Mock()
-        mock_output_path = Mock()
-        context.get_full_output_path.return_value = mock_output_path
+        context.get_full_output_path.return_value = 'output/path'
 
         publisher = ProtoMetricPublisher(context)
         output_path = publisher.get_output_path()
 
-        self.assertEqual(output_path, mock_output_path)
+        metrics_output_path = 'output/path/metrics'
+        self.assertEqual(output_path, metrics_output_path)
         context.get_full_output_path.assert_called_once_with()
 
     @patch(MAKEDIRS)
@@ -158,6 +159,7 @@ class ProtoMetricPublisherTest(TestCase):
     def test_publish_all_disabled(self, dump_string_to_file, makedirs):
         del makedirs
         context = Mock()
+        context.get_full_output_path.return_value = 'output/path'
         metrics = [Mock()]
         publisher = ProtoMetricPublisher(
             context,
@@ -175,8 +177,7 @@ class ProtoMetricPublisherTest(TestCase):
     def test_publish_makes_dirs(self, dump_string_to_file, makedirs):
         del dump_string_to_file
         context = Mock()
-        mock_output_path = Mock()
-        context.get_full_output_path.return_value = mock_output_path
+        context.get_full_output_path.return_value = 'output/path'
         metrics = [Mock()]
         publisher = ProtoMetricPublisher(
             context,
@@ -187,7 +188,8 @@ class ProtoMetricPublisherTest(TestCase):
 
         publisher.publish(metrics)
 
-        makedirs.assert_called_once_with(mock_output_path, exist_ok=True)
+        metrics_output_path= 'output/path/metrics'
+        makedirs.assert_called_once_with(metrics_output_path, exist_ok=True)
 
     @patch(MAKEDIRS)
     @patch(DUMP_STRING_TO_FILE)
@@ -208,7 +210,7 @@ class ProtoMetricPublisherTest(TestCase):
 
         publisher.publish([metric])
 
-        file_path = ('output/path/metric.' +
+        file_path = ('output/path/metrics/metric.' +
                     ProtoMetricPublisher.BINARY_EXTENSION)
         dump_string_to_file.assert_called_once_with(
             binary,
@@ -234,7 +236,7 @@ class ProtoMetricPublisherTest(TestCase):
 
         publisher.publish([metric])
 
-        file_path = ('output/path/metric.' +
+        file_path = ('output/path/metrics/metric.' +
                     ProtoMetricPublisher.ASCII_EXTENSION)
         dump_string_to_file.assert_called_once_with(
             ascii,
@@ -259,7 +261,7 @@ class ProtoMetricPublisherTest(TestCase):
 
         publisher.publish([metric])
 
-        file_path = ('output/path/metric.' +
+        file_path = ('output/path/metrics/metric.' +
                     ProtoMetricPublisher.BINARY_DESCRIPTOR_EXTENSION)
         dump_string_to_file.assert_called_once_with(
             descriptor_binary,
@@ -285,7 +287,7 @@ class ProtoMetricPublisherTest(TestCase):
 
         publisher.publish([metric])
 
-        file_path = ('output/path/metric.' +
+        file_path = ('output/path/metrics/metric.' +
                     ProtoMetricPublisher.ASCII_EXTENSION)
         dump_string_to_file.assert_called_once_with(
             descriptor_ascii,
@@ -314,9 +316,9 @@ class ProtoMetricPublisherTest(TestCase):
 
         publisher.publish([metric_1, metric_2])
 
-        file_path_1 = ('output/path/metric_1.' +
+        file_path_1 = ('output/path/metrics/metric_1.' +
                       ProtoMetricPublisher.BINARY_EXTENSION)
-        file_path_2 = ('output/path/metric_2.' +
+        file_path_2 = ('output/path/metrics/metric_2.' +
                       ProtoMetricPublisher.BINARY_EXTENSION)
 
         call_1 = call(binary_1, file_path_1, mode='wb')
