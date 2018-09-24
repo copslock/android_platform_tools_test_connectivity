@@ -216,7 +216,7 @@ class Sl4aManager(object):
         if not self._started:
             self._started = True
             if not self.is_sl4a_installed():
-                raise rpc_client.MissingSl4AError(
+                raise rpc_client.Sl4aIsMissingError(
                     'SL4A is not installed on device %s' % self.adb.serial)
             if self.adb.shell(
                     'ps | grep "S com.googlecode.android_scripting"'):
