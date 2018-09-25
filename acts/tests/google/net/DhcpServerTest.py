@@ -791,7 +791,9 @@ class DhcpServerTest(base_test.BaseTestClass):
             ], opts_padding=bytes(26))
         resp = self._get_response(req)
         self._assert_offer(resp)
-        self._assert_standard_offer_or_ack(resp)
+        # Don't test for hostname option: previous implementation would not
+        # set it in offer, which was not consistent with ack
+        self._assert_standard_offer_or_ack(resp, ignore_hostname=True)
         asserts.assert_equal(req_ip, get_yiaddr(resp))
 
     @test_tracker_info(uuid="d70bc043-84cb-4735-9123-c46c6d1ce5ac")
@@ -831,15 +833,19 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._run_debian_renewing(bcast=True)
 
     def _assert_standard_offer_or_ack(self, resp, renewing=False, bcast=False,
-            with_hostname=False):
+            ignore_hostname=False, with_hostname=False):
         # Responses to renew/rebind are always unicast to ciaddr even with
         # broadcast flag set (RFC does not define this behavior, but this is
         # more efficient and matches previous behavior)
         if bcast and not renewing:
             self._assert_broadcast(resp)
+            self._assert_broadcastbit(resp, isset=True)
         else:
+            # Previous implementation would set the broadcast flag but send a
+            # unicast reply if (bcast and renewing). This was not consistent and
+            # new implementation consistently clears the flag. Not testing for
+            # broadcast flag value to maintain compatibility.
             self._assert_unicast(resp)
-        self._assert_broadcastbit(resp, isset=bcast)
 
         bootp_resp = resp.getlayer(BOOTP)
         asserts.assert_equal(0, bootp_resp.hops)
@@ -863,7 +869,9 @@ class DhcpServerTest(base_test.BaseTestClass):
             'message-type', 'server_id', 'lease_time', 'renewal_time',
             'rebinding_time', 'subnet_mask', 'broadcast_address', 'router',
             'name_server']
-        if with_hostname:
+        if ignore_hostname:
+            opt_labels = [opt for opt in opt_labels if opt != 'hostname']
+        elif with_hostname:
             expected_opts.append('hostname')
         expected_opts.extend(['vendor_specific', 'end'])
         asserts.assert_equal(expected_opts, opt_labels)
