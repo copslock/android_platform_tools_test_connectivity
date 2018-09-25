@@ -14,13 +14,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import json
+import socket
 import threading
-
 import time
 from concurrent import futures
 
-from acts import logger
 from acts import error
+from acts import logger
+
+# The default timeout value when no timeout is set.
 SOCKET_TIMEOUT = 60
 
 # The Session UID when a UID has not been received yet.
@@ -50,8 +52,12 @@ class Sl4aProtocolError(Sl4aException):
     MISMATCHED_API_ID = 'Mismatched API id.'
 
 
-class MissingSl4AError(Sl4aException):
+class Sl4aNotInstalledError(Sl4aException):
     """An error raised when an Sl4aClient is created without SL4A installed."""
+
+
+class Sl4aRpcTimeoutError(Sl4aException):
+    """An error raised when an SL4A RPC has timed out."""
 
 
 class RpcClient(object):
@@ -169,8 +175,8 @@ class RpcClient(object):
                     self._working_connections.append(client)
                     return client
 
-            client_count = (
-                len(self._free_connections) + len(self._working_connections))
+            client_count = (len(self._free_connections) +
+                            len(self._working_connections))
             if client_count < self.max_connections:
                 with self._lock:
                     client_count = (len(self._free_connections) +
@@ -215,7 +221,7 @@ class RpcClient(object):
         """
         connection = self._get_free_connection()
         ticket = connection.get_new_ticket()
-
+        timed_out = False
         if timeout:
             connection.set_timeout(timeout)
         data = {'id': ticket, 'method': method, 'params': args}
@@ -250,10 +256,23 @@ class RpcClient(object):
                 self._log.warning('The connection was killed during cleanup:')
                 self._log.warning(e)
             raise Sl4aConnectionError(e)
+        except socket.timeout as err:
+            # If a socket connection has timed out, the socket can no longer be
+            # used. Close it out and remove the socket from the connection pool.
+            timed_out = True
+            self._log.warning('RPC "%s" (id: %s) timed out after %s seconds.',
+                              method, ticket, timeout or SOCKET_TIMEOUT)
+            self._log.debug(
+                'Closing timed out connection over %s' % connection.ports)
+            connection.close()
+            self._working_connections.remove(connection)
+            # Re-raise the error as an SL4A Error so end users can process it.
+            raise Sl4aRpcTimeoutError(err)
         finally:
-            if timeout:
-                connection.set_timeout(SOCKET_TIMEOUT)
-            self._release_working_connection(connection)
+            if not timed_out:
+                if timeout:
+                    connection.set_timeout(SOCKET_TIMEOUT)
+                self._release_working_connection(connection)
         result = json.loads(str(response, encoding='utf8'))
 
         if result['error']:

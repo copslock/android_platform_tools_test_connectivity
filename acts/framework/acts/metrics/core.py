@@ -108,6 +108,8 @@ class ProtoMetricPublisher(MetricPublisher):
     ASCII_DESCRIPTOR_EXTENSION = 'proto.desc'
     BINARY_DESCRIPTOR_EXTENSION = 'proto.desc.bin'
 
+    METRICS_DIR = 'metrics'
+
     def __init__(self,
                  context,
                  publishes_binary=True,
@@ -133,7 +135,8 @@ class ProtoMetricPublisher(MetricPublisher):
 
     def get_output_path(self):
         """Gets the output directory path of the metrics."""
-        return self.context.get_full_output_path()
+        return os.path.join(self.context.get_full_output_path(),
+                            self.METRICS_DIR)
 
     def publish(self, metrics):
         """Publishes the given list of metrics.

@@ -24,6 +24,7 @@ from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import monsoon
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
@@ -94,6 +95,8 @@ class PowerBaseTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
+        BlackboxMetricLogger.for_test_case(metric_name='avg_current',
+                                           result_attr='test_result')
 
     def setup_class(self):
 
