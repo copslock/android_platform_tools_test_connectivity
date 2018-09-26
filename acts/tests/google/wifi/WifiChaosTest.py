@@ -176,8 +176,9 @@ class WifiChaosTest(WifiBaseTest):
             except:
                 self.log.error("Connection to %s network failed on the %d "
                                "attempt." % (ssid, attempt))
-                self.dut.take_bug_report(ssid, begin_time)
-                self.dut.cat_adb_log(ssid, begin_time)
+                # TODO:(bmahadev) Uncomment after scan issue is fixed.
+                # self.dut.take_bug_report(ssid, begin_time)
+                # self.dut.cat_adb_log(ssid, begin_time)
                 raise signals.TestFailure("Failed to connect to %s" % ssid)
 
     def interop_base_test(self, ssid, hostname):
@@ -219,6 +220,8 @@ class WifiChaosTest(WifiBaseTest):
 
         rutils.turn_on_ap(self.pcap, ssid, rpm_port, rpm_ip=rpm_ip)
         self.log.info("Finished turning ON AP.")
+        # Experimental to check if 2G connects better.
+        time.sleep(30)
 
         self.run_connect_disconnect(network)
 
