@@ -28,6 +28,8 @@ import xlsxwriter
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
+from acts.controllers.utils_lib.ssh import connection
+from acts.controllers.utils_lib.ssh import settings
 from acts.test_utils.bt.bt_constants import (
     bluetooth_profile_connection_state_changed)
 from acts.test_utils.bt.bt_constants import bt_default_timeout
@@ -43,6 +45,7 @@ from acts.test_utils.bt.bt_test_utils import is_a2dp_snk_device_connected
 from acts.test_utils.bt.bt_test_utils import is_hfp_client_device_connected
 from acts.test_utils.bt.bt_test_utils import is_map_mce_device_connected
 from acts.test_utils.bt.bt_test_utils import is_map_mse_device_connected
+from acts.test_utils.bt.bt_test_utils import set_bt_scan_mode
 from acts.test_utils.car.car_telecom_utils import wait_for_active
 from acts.test_utils.car.car_telecom_utils import wait_for_dialing
 from acts.test_utils.car.car_telecom_utils import wait_for_not_in_call
@@ -62,63 +65,10 @@ from bokeh.layouts import column
 from bokeh.models import tools as bokeh_tools
 from bokeh.plotting import figure, output_file, save
 
-
 THROUGHPUT_THRESHOLD = 100
 AP_START_TIME = 10
 DISCOVERY_TIME = 10
 BLUETOOTH_WAIT_TIME = 2
-
-dropped_list = []
-count_list = []
-frame_list = []
-
-
-def a2dp_dumpsys_parser(file_path=None):
-    """Convenience function to parse a2dp dumpsys logs.
-
-    Args:
-        file_path: Path of dumpsys logs.
-
-    Returns:
-        dropped_list containing packet drop count for every iteration.
-        drop containing list of all packets dropped for test suite.
-    """
-    a2dp_dumpsys_info = []
-    if file_path:
-        with open(file_path) as dumpsys_file:
-            for line in dumpsys_file:
-                if "A2DP State:" in line:
-                    a2dp_dumpsys_info.append(line)
-                elif "Counts (max dropped)" not in line and len(
-                        a2dp_dumpsys_info) > 0:
-                    a2dp_dumpsys_info.append(line)
-                elif "Counts (max dropped)" in line:
-                    a2dp_dumpsys_info = ''.join(a2dp_dumpsys_info)
-                    a2dp_info = a2dp_dumpsys_info.split("\n")
-                    # Ex: Frames per packet (total/max/ave) : 5034 / 1 / 0
-                    frames = int(re.split("[':/()]", str(a2dp_info[-3]))[-3])
-                    if not frame_list:
-                        frame_list.append(frames)
-                    else:
-                        for i in range(len(frame_list)):
-                            frames = frames - frame_list[i]
-                        frame_list.append(frames)
-                    # Ex : Counts (flushed/dropped/dropouts) : 0 / 4 / 0
-                    count = int(re.split("[':/()]", str(a2dp_info[-2]))[-2])
-                    if count > 0:
-                        for i in range(len(count_list)):
-                            count = count - count_list[i]
-                        count_list.append(count)
-                        dropped_list.append((count / frame_list[-1]) * 100)
-                    else:
-                        dropped_list.append(count)
-                    logging.info(a2dp_dumpsys_info)
-                    return dropped_list
-    else:
-        drop = list(dropped_list)
-        for i in range(len(drop)):
-            dropped_list.remove(drop[i])
-        return drop
 
 
 def connect_ble(pri_ad, sec_ad):
@@ -144,11 +94,11 @@ def connect_ble(pri_ad, sec_ad):
             orchestrate_gatt_connection(pri_ad, sec_ad))
         bluetooth_gatt_list.append(bluetooth_gatt)
     except GattTestUtilsError as err:
-        logging.error(err)
+        pri_ad.log.error(err)
         return False
     adv_instances.append(adv_callback)
     connected_devices = sec_ad.droid.gattServerGetConnectedDevices(gatt_server)
-    logging.debug("Connected device = {}".format(connected_devices))
+    pri_ad.log.debug("Connected device = {}".format(connected_devices))
     return True
 
 
@@ -156,26 +106,24 @@ def collect_bluetooth_manager_dumpsys_logs(pri_ad, test_name):
     """Collect "adb shell dumpsys bluetooth_manager" logs.
 
     Args:
-        pri_ad : An android device.
+        pri_ad: An android device.
+        test_name: Current test case name.
 
     Returns:
-        True if dumpsys is successful, False otherwise.
+        Dumpsys file path.
     """
     dump_counter = 0
-    dumpsys_path = ''.join((pri_ad.log_path,
-                            "/BluetoothDumpsys_" + test_name))
+    dumpsys_path = ''.join((pri_ad.log_path, "/BluetoothDumpsys_" + test_name))
     create_dir(dumpsys_path)
-    while os.path.exists(dumpsys_path + "/" + "bluetooth_dumpsys_%s.txt" % dump_counter):
+    while os.path.exists(
+            dumpsys_path + "/" + "bluetooth_dumpsys_%s.txt" % dump_counter):
         dump_counter += 1
     out_file = "bluetooth_dumpsys_%s.txt" % dump_counter
     cmd = ''.join("adb -s {} shell dumpsys bluetooth_manager > {}/{}".format(
         pri_ad.serial, dumpsys_path, out_file))
     exe_cmd(cmd)
     file_path = "{}/{}".format(dumpsys_path, out_file)
-    if not a2dp_dumpsys_parser(file_path):
-        logging.error("Could not parse dumpsys logs")
-        return False
-    return True
+    return file_path
 
 
 def configure_and_start_ap(ap, network):
@@ -201,10 +149,10 @@ def configure_and_start_ap(ap, network):
 
 
 def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
-    """Connects pri droid to headset.
+    """Connects primary android device to headset.
 
     Args:
-        pri_ad: Android device initiating connection.
+        pri_droid: Android device initiating connection.
         dev_to_connect: Third party headset mac address.
         profiles_set: Profiles to be connected.
 
@@ -221,7 +169,7 @@ def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
 
     paired = False
     for paired_device in pri_droid.droid.bluetoothGetBondedDevices():
-        if paired_device['address'] ==  dev_to_connect:
+        if paired_device['address'] == dev_to_connect:
             paired = True
             break
 
@@ -233,7 +181,7 @@ def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
     end_time = time.time() + 10
     profile_connected = set()
     sec_addr = dev_to_connect
-    logging.info("Profiles to be connected {}".format(profiles_set))
+    pri_droid.log.info("Profiles to be connected {}".format(profiles_set))
 
     while (time.time() < end_time and
            not profile_connected.issuperset(profiles_set)):
@@ -268,18 +216,18 @@ def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
             profile_event = pri_droid.ed.pop_event(
                 bluetooth_profile_connection_state_changed,
                 bt_default_timeout + 10)
-            logging.info("Got event {}".format(profile_event))
+            pri_droid.log.info("Got event {}".format(profile_event))
         except Exception:
-            logging.error("Did not get {} profiles left {}".format(
+            pri_droid.log.error("Did not get {} profiles left {}".format(
                 bluetooth_profile_connection_state_changed, profile_connected))
             return False
         profile = profile_event['data']['profile']
         state = profile_event['data']['state']
         device_addr = profile_event['data']['addr']
-        if state == bt_profile_states['connected'] and \
-                        device_addr == dev_to_connect:
+        if state == bt_profile_states['connected'] and (
+                        device_addr == dev_to_connect):
             profile_connected.add(profile)
-        logging.info(
+        pri_droid.log.info(
             "Profiles connected until now {}".format(profile_connected))
     return True
 
@@ -297,45 +245,106 @@ def device_discoverable(pri_ad, sec_ad):
     pri_ad.droid.bluetoothMakeDiscoverable()
     scan_mode = pri_ad.droid.bluetoothGetScanMode()
     if scan_mode == bt_scan_mode_types['connectable_discoverable']:
-        logging.info("Primary device scan mode is "
+        pri_ad.log.info("Primary device scan mode is "
                      "SCAN_MODE_CONNECTABLE_DISCOVERABLE.")
     else:
-        logging.info("Primary device scan mode is not "
+        pri_ad.log.info("Primary device scan mode is not "
                      "SCAN_MODE_CONNECTABLE_DISCOVERABLE.")
         return False
     if sec_ad.droid.bluetoothStartDiscovery():
         time.sleep(DISCOVERY_TIME)
         droid_name = pri_ad.droid.bluetoothGetLocalName()
+        droid_address = pri_ad.droid.bluetoothGetLocalAddress()
         get_discovered_devices = sec_ad.droid.bluetoothGetDiscoveredDevices()
         find_flag = False
 
         if get_discovered_devices:
             for device in get_discovered_devices:
-                if 'name' in device and device['name'] == droid_name:
-                    logging.info("Primary device is in the discovery "
+                if 'name' in device and device['name'] == droid_name or (
+                        'address' in device and
+                        device["address"] == droid_address):
+                    pri_ad.log.info("Primary device is in the discovery "
                                  "list of secondary device.")
                     find_flag = True
                     break
         else:
-            logging.info("Secondary device get all the discovered devices "
+            pri_ad.log.info("Secondary device get all the discovered devices "
                          "list is empty")
             return False
     else:
-        logging.info("Secondary device start discovery process error.")
+        pri_ad.log.info("Secondary device start discovery process error.")
         return False
     if not find_flag:
         return False
     return True
 
 
+def device_discoverability(required_devices):
+    """Wrapper function to keep required_devices in discoverable mode.
+
+    Args:
+        required_devices: List of devices to be discovered.
+
+    Returns:
+        discovered_devices: List of BD_ADDR of devices in discoverable mode.
+    """
+    discovered_devices = []
+    if "AndroidDevice" in required_devices:
+        discovered_devices.extend(android_device_discoverability(required_devices["AndroidDevice"]))
+    if "RelayDevice" in required_devices:
+        discovered_devices.extend(
+            relay_device_discoverability(required_devices["RelayDevice"]))
+    return discovered_devices
+
+
+def android_device_discoverability(droid_dev):
+    """To keep android devices in discoverable mode.
+
+    Args:
+        droid_dev: Android device object.
+
+    Returns:
+        device_list: List of device discovered.
+    """
+    device_list = []
+    for device in range(len(droid_dev)):
+        inquiry_device = droid_dev[device]
+        if enable_bluetooth(inquiry_device.droid, inquiry_device.ed):
+            if set_bt_scan_mode(inquiry_device,
+                                bt_scan_mode_types['connectable_discoverable']):
+                device_list.append(
+                    inquiry_device.droid.bluetoothGetLocalAddress())
+            else:
+                droid_dev.log.error(
+                    "Device {} scan mode is not in"
+                    "SCAN_MODE_CONNECTABLE_DISCOVERABLE.".format(
+                    inquiry_device.droid.bluetoothGetLocalAddress()))
+    return device_list
+
+
+def relay_device_discoverability(relay_devices):
+    """To keep relay controlled devices in discoverable mode.
+
+    Args:
+        relay_devices: Relay object.
+
+    Returns:
+        mac_address: Mac address of relay controlled device.
+    """
+    relay_device = relay_devices[0]
+    relay_device.power_on()
+    relay_device.enter_pairing_mode()
+    return relay_device.mac_address
+
+
 def disconnect_headset_from_dev(pri_ad, sec_ad, profiles_list):
     """Disconnect primary from secondary on a specific set of profiles
 
     Args:
-        pri_ad - Primary android_device initiating disconnection
-        sec_ad - Secondary android droid (sl4a interface to keep the
+        pri_ad: Primary android_device initiating disconnection
+        sec_ad: Secondary android droid (sl4a interface to keep the
           method signature the same connect_pri_to_sec above)
-        profiles_list - List of profiles we want to disconnect from
+        profiles_list: List of profiles we want to disconnect from
 
     Returns:
         True on Success
@@ -369,13 +378,13 @@ def disconnect_headset_from_dev(pri_ad, sec_ad, profiles_list):
         except Exception:
             pri_ad.log.warning("Did not disconnect from Profiles")
             return True
-        
+
         profile = profile_event['data']['profile']
         state = profile_event['data']['state']
         device_addr = profile_event['data']['addr']
 
-        if state == bt_profile_states['disconnected'] and \
-                        device_addr == sec_ad:
+        if state == bt_profile_states['disconnected'] and (
+                        device_addr == sec_ad):
             profile_disconnected.add(profile)
         pri_ad.log.info(
             "Profiles disconnected so far {}".format(profile_disconnected))
@@ -396,6 +405,7 @@ def initiate_disconnect_from_hf(audio_receiver, pri_ad, sec_ad, duration):
     7. Wait for call is not present state.
 
     Args:
+        audio_receiver: An relay device object.
         pri_ad: An android device to disconnect call.
         sec_ad: An android device accepting call.
         duration: Duration of call in seconds.
@@ -409,21 +419,21 @@ def initiate_disconnect_from_hf(audio_receiver, pri_ad, sec_ad, duration):
     flag &= wait_for_dialing(logging, pri_ad)
     flag &= wait_for_ringing(logging, sec_ad)
     if not flag:
-        logging.error("Outgoing call did not get established")
+        pri_ad.log.error("Outgoing call did not get established")
         return False
 
     if not wait_and_answer_call(logging, sec_ad):
-        logging.error("Failed to answer call in second device.")
+        pri_ad.log.error("Failed to answer call in second device.")
         return False
     if not wait_for_active(logging, pri_ad):
-        logging.error("AG not in Active state.")
+        pri_ad.log.error("AG not in Active state.")
         return False
     if not wait_for_active(logging, sec_ad):
-        logging.error("RE not in Active state.")
+        pri_ad.log.error("RE not in Active state.")
         return False
     time.sleep(duration)
     if not hangup_call(logging, pri_ad):
-        logging.error("Failed to hangup call.")
+        pri_ad.log.error("Failed to hangup call.")
         return False
     flag = True
     flag &= wait_for_not_in_call(logging, pri_ad)
@@ -453,7 +463,7 @@ def initiate_disconnect_call_dut(pri_ad, sec_ad, duration, callee_number):
         True if successful, False otherwise.
     """
     if not initiate_call(logging, pri_ad, callee_number):
-        logging.error("Failed to initiate call")
+        pri_ad.log.error("Failed to initiate call")
         return False
     time.sleep(2)
 
@@ -461,22 +471,22 @@ def initiate_disconnect_call_dut(pri_ad, sec_ad, duration, callee_number):
     flag &= wait_for_dialing(logging, pri_ad)
     flag &= wait_for_ringing(logging, sec_ad)
     if not flag:
-        logging.error("Outgoing call did not get established")
+        pri_ad.log.error("Outgoing call did not get established")
         return False
 
     if not wait_and_answer_call(logging, sec_ad):
-        logging.error("Failed to answer call in second device.")
+        pri_ad.log.error("Failed to answer call in second device.")
         return False
     # Wait for AG, RE to go into an Active state.
     if not wait_for_active(logging, pri_ad):
-        logging.error("AG not in Active state.")
+        pri_ad.log.error("AG not in Active state.")
         return False
     if not wait_for_active(logging, sec_ad):
-        logging.error("RE not in Active state.")
+        pri_ad.log.error("RE not in Active state.")
         return False
     time.sleep(duration)
     if not hangup_call(logging, pri_ad):
-        logging.error("Failed to hangup call.")
+        pri_ad.log.error("Failed to hangup call.")
         return False
     flag = True
     flag &= wait_for_not_in_call(logging, pri_ad)
@@ -485,15 +495,36 @@ def initiate_disconnect_call_dut(pri_ad, sec_ad, duration, callee_number):
     return flag
 
 
-def iperf_result(result):
+def check_wifi_status(pri_ad, network, wifi_status_queue, duration):
+    """Function to check existence of wifi connection.
+
+    Args:
+        pri_ad: An android device.
+        network: network ssid .
+        wifi_status_queue: queue object to store results.
+        duration: No of seconds wifi connection check should happen.
+    """
+    start_time = time.time()
+    while time.time() < (start_time + duration):
+        if not wifi_connection_check(pri_ad, network["SSID"]):
+            wifi_status_queue.put(False)
+            pri_ad.adb.shell("killall iperf3")
+            subprocess.Popen(
+                "killall iperf3", stdout=subprocess.PIPE, shell=True)
+            wifi_test_device_init(pri_ad)
+            wifi_connect(pri_ad, network)
+    wifi_status_queue.put(True)
+
+
+def iperf_result(log, result):
     """Accepts the iperf result in json format and parse the output to
     get throughput value.
 
     Args:
-        result: contains the logs of iperf in json format.
+        log: Logger object.
+        result: iperf result's filepath.
 
     Returns:
-        tx_rate: Data sent from client.
         rx_rate: Data received from client.
     """
     try:
@@ -503,7 +534,9 @@ def iperf_result(result):
             if "}\n" in iperf_output:
                 iperf_output = iperf_output[0:iperf_output.index("}\n") + 1]
             iperf_string = ''.join(iperf_output)
+
             iperf_string = iperf_string.replace("-nan", '0')
+            iperf_string = iperf_string.replace("nan", '0')
             json_data = json.loads(iperf_string)
     except ValueError:
         with open(result, 'r') as f:
@@ -514,8 +547,13 @@ def iperf_result(result):
             json_data = json.loads(''.join(lines))
 
     if "error" in json_data:
-        logging.error(json_data["error"])
-        return False
+        #As of now this can be bypassed as this is not a failure which affects
+        # test.
+        if "OUT OF ORDER" in json_data["error"]:
+            pass
+        else:
+            log.error(json_data["error"])
+            return False
     protocol = json_data["start"]["test_start"]["protocol"]
     if protocol == "UDP":
         if "intervals" in json_data.keys():
@@ -526,7 +564,7 @@ def iperf_result(result):
             rx_rate = math.fsum(interval) / len(interval)
             return rx_rate
         else:
-            logging.error("Unable to retrive client results")
+            log.error("Unable to retrive client results")
     elif protocol == "TCP":
         rx_rate = json_data['end']['sum_received']['bits_per_second']
         return rx_rate / 1e6
@@ -546,7 +584,7 @@ def is_a2dp_connected(pri_ad, headset_mac_address):
     """
     devices = pri_ad.droid.bluetoothA2dpGetConnectedDevices()
     for device in devices:
-        logging.debug("A2dp Connected device {}".format(device["name"]))
+        pri_ad.log.debug("A2dp Connected device {}".format(device["name"]))
         if device["address"] == headset_mac_address:
             return True
     return False
@@ -567,8 +605,8 @@ def media_stream_check(pri_ad, duration, headset_mac_address):
     """
     while time.time() < duration:
         if not is_a2dp_connected(pri_ad, headset_mac_address):
-            logging.error("A2dp connection not active at {}".format(
-                pri_ad.droid.getBuildSerial()))
+            pri_ad.log.error('A2dp connection not active at %s',
+                    pri_ad.droid.getBuildSerial())
             return False
         time.sleep(1)
     return True
@@ -609,20 +647,20 @@ def music_play_and_check(pri_ad, headset_mac_address, music_to_play, duration):
     Returns:
         True if successful, False otherwise.
     """
-    logging.info("In music play and check")
+    pri_ad.log.debug("In music play and check")
     if not start_media_play(pri_ad, music_to_play):
-        logging.error("Start media play failed.")
+        pri_ad.log.error("Start media play failed.")
         return False
     stream_time = time.time() + duration
     if not media_stream_check(pri_ad, stream_time, headset_mac_address):
-        logging.error("A2DP Connection check failed.")
+        pri_ad.log.error("A2DP Connection check failed.")
         pri_ad.droid.mediaPlayStop()
         return False
     pri_ad.droid.mediaPlayStop()
     return True
 
 
-def music_play_and_check_via_app(pri_ad, headset_mac_address):
+def music_play_and_check_via_app(pri_ad, headset_mac_address, duration=5):
     """Starts google music player and check for A2DP connection.
 
     Steps:
@@ -632,6 +670,7 @@ def music_play_and_check_via_app(pri_ad, headset_mac_address):
     Args:
         pri_ad: An android device.
         headset_mac_address: Mac address of third party headset.
+        duration: Total time of music streaming.
 
     Returns:
         True if successful, False otherwise.
@@ -639,12 +678,15 @@ def music_play_and_check_via_app(pri_ad, headset_mac_address):
     pri_ad.adb.shell("am start com.google.android.music")
     time.sleep(3)
     pri_ad.adb.shell("input keyevent 85")
-
-    if not is_a2dp_connected(pri_ad, headset_mac_address):
-        logging.error("A2dp connection not active at {}".format(
-            pri_ad.droid.getBuildSerial()))
-        return False
-    return True
+    stream_time = time.time() + duration
+    try:
+        if not media_stream_check(pri_ad, stream_time, headset_mac_address):
+            pri_ad.log.error("A2dp connection not active at %s",
+                             pri_ad.droid.getBuildSerial())
+            return False
+    finally:
+        pri_ad.adb.shell("am force-stop com.google.android.music")
+        return True
 
 
 def get_phone_ip(ad):
@@ -673,13 +715,12 @@ def pair_dev_to_headset(pri_ad, dev_to_pair):
     bonded_devices = pri_ad.droid.bluetoothGetBondedDevices()
     for d in bonded_devices:
         if d['address'] == dev_to_pair:
-            pri_ad.log.info("Successfully bonded to device".format(
-                dev_to_pair))
+            pri_ad.log.info("Successfully bonded to device".format(dev_to_pair))
             return True
     pri_ad.droid.bluetoothStartDiscovery()
-    time.sleep(10) #Wait until device gets discovered
+    time.sleep(10)  #Wait until device gets discovered
     pri_ad.droid.bluetoothCancelDiscovery()
-    logging.info("discovered devices = {}".format(
+    pri_ad.log.debug("discovered devices = {}".format(
         pri_ad.droid.bluetoothGetDiscoveredDevices()))
     for device in pri_ad.droid.bluetoothGetDiscoveredDevices():
         if device['address'] == dev_to_pair:
@@ -688,15 +729,14 @@ def pair_dev_to_headset(pri_ad, dev_to_pair):
             pri_ad.log.info(result)
             end_time = time.time() + bt_default_timeout
             pri_ad.log.info("Verifying devices are bonded")
-            time.sleep(5) #Wait time untiol device gets paired.
+            time.sleep(5)  #Wait time until device gets paired.
             while time.time() < end_time:
                 bonded_devices = pri_ad.droid.bluetoothGetBondedDevices()
                 bonded = False
                 for d in bonded_devices:
                     if d['address'] == dev_to_pair:
                         pri_ad.log.info(
-                            "Successfully bonded to device".format(
-                                dev_to_pair))
+                            "Successfully bonded to device".format(dev_to_pair))
                         return True
     pri_ad.log.info("Failed to bond devices.")
     return False
@@ -714,38 +754,66 @@ def pair_and_connect_headset(pri_ad, headset_mac_address, profile_to_connect):
         True if pair and connect to headset successful, False otherwise.
     """
     if not pair_dev_to_headset(pri_ad, headset_mac_address):
-        logging.error("Could not pair to headset.")
+        pri_ad.log.error("Could not pair to headset.")
         return False
     # Wait until pairing gets over.
     time.sleep(2)
     if not connect_dev_to_headset(pri_ad, headset_mac_address,
                                   profile_to_connect):
-        logging.error("Could not connect to headset.")
+        pri_ad.log.error("Could not connect to headset.")
         return False
     return True
 
 
-def perform_classic_discovery(pri_ad, duration):
+def perform_classic_discovery(pri_ad, duration, file_name,
+                              dev_list=None):
     """Convenience function to start and stop device discovery.
 
     Args:
         pri_ad: An android device.
         duration: iperf duration of the test.
+        file_name: Json file to which result is dumped
+        dev_list: List of devices to be discoverable mode.
 
     Returns:
         True start and stop discovery is successful, False otherwise.
     """
+    if dev_list:
+        devices_required = device_discoverability(dev_list)
+    else:
+        devices_required = None
+    iter = 0
+    result = {}
+    result["discovered_devices"] = {}
+    discover_result = []
     start_time = time.time()
     while (time.time() < start_time + duration):
         if not pri_ad.droid.bluetoothStartDiscovery():
-            logging.info("Failed to start inquiry")
+            pri_ad.log.error("Failed to start inquiry")
             return False
         time.sleep(DISCOVERY_TIME)
         if not pri_ad.droid.bluetoothCancelDiscovery():
-            logging.info("Failed to cancel inquiry")
+            pri_ad.log.error("Failed to cancel inquiry")
             return False
-        logging.info("Discovered device list {}".format(
+        pri_ad.log.info("Discovered device list {}".format(
             pri_ad.droid.bluetoothGetDiscoveredDevices()))
+        if devices_required is not None:
+            result["discovered_devices"][iter] = []
+            devices_name = {
+                element.get('name', element['address'])
+                for element in pri_ad.droid.bluetoothGetDiscoveredDevices()
+                if element["address"] in devices_required
+            }
+            result["discovered_devices"][iter] = list(devices_name)
+            discover_result.extend(
+                [len(devices_name) == len(devices_required)])
+            iter += 1
+            with open(file_name, 'a') as results_file:
+                json.dump(result, results_file, indent=4)
+            if False in discover_result:
+                return False
+        else:
+            pri_ad.log.warning("No devices are kept in discoverable mode")
     return True
 
 
@@ -764,7 +832,7 @@ def connect_wlan_profile(pri_ad, network):
     wifi_test_device_init(pri_ad)
     wifi_connect(pri_ad, network)
     if not wifi_connection_check(pri_ad, network["SSID"]):
-        logging.error("Wifi connection does not exist.")
+        pri_ad.log.error("Wifi connection does not exist.")
         return False
     return True
 
@@ -780,13 +848,13 @@ def toggle_bluetooth(pri_ad, duration):
         True if successful, False otherwise.
     """
     start_time = time.time()
-    while (time.time() < start_time + duration):
+    while time.time() < start_time + duration:
         if not enable_bluetooth(pri_ad.droid, pri_ad.ed):
-            logging.error("Failed to enable bluetooth")
+            pri_ad.log.error("Failed to enable bluetooth")
             return False
         time.sleep(BLUETOOTH_WAIT_TIME)
         if not disable_bluetooth(pri_ad.droid):
-            logging.error("Failed to turn off bluetooth")
+            pri_ad.log.error("Failed to turn off bluetooth")
             return False
         time.sleep(BLUETOOTH_WAIT_TIME)
     return True
@@ -805,10 +873,10 @@ def toggle_screen_state(pri_ad, duration):
     start_time = time.time()
     while (time.time() < start_time + duration):
         if not pri_ad.ensure_screen_on():
-            logging.error("User window cannot come up")
+            pri_ad.log.error("User window cannot come up")
             return False
         if not pri_ad.go_to_sleep():
-            logging.info("Screen off")
+            pri_ad.log.info("Screen off")
     return True
 
 
@@ -831,7 +899,7 @@ def setup_tel_config(pri_ad, sec_ad, sim_conf_file):
     return pri_ad_num, sec_ad_num
 
 
-def start_fping(pri_ad, duration, failure_rate):
+def start_fping(pri_ad, duration, fping_params):
     """Starts fping to ping for DUT's ip address.
 
     Steps:
@@ -840,7 +908,7 @@ def start_fping(pri_ad, duration, failure_rate):
     Args:
         pri_ad: An android device object.
         duration: Duration of fping in seconds.
-        failure_rate: Fping packet drop tolerance value.
+        fping_params: List of parameters for fping to run.
 
     Returns:
         True if successful, False otherwise.
@@ -854,20 +922,54 @@ def start_fping(pri_ad, duration, failure_rate):
 
     full_out_path = os.path.join(fping_path, out_file_name)
     cmd = "fping {} -D -c {}".format(get_phone_ip(pri_ad), duration)
-    cmd = cmd.split()
-    with open(full_out_path, "w") as f:
-        subprocess.call(cmd, stderr=f, stdout=f)
-    result_file = open(full_out_path, "r")
-    lines = result_file.readlines()
-    res_line = lines[-1]
-    # Ex: res_line = "192.168.186.224 : xmt/rcv/%loss = 10/10/0%,
-    # min/avg/max = 36.7/251/1272"
-    loss_percent = re.split("[:/=,%]", res_line)
-    # %loss will be in 7th index of the list
-    if int(loss_percent[-8]) > failure_rate:
-        logging.error("Packet drop observed")
+    if fping_params["ssh_config"]:
+        ssh_settings = settings.from_config(fping_params["ssh_config"])
+        ssh_session = connection.SshConnection(ssh_settings)
+        try:
+            with open(full_out_path, 'w') as outfile:
+                job_result = ssh_session.run(cmd)
+                outfile.write(job_result.stdout)
+                outfile.write("\n")
+                outfile.writelines(job_result.stderr)
+        except Exception as err:
+            pri_ad.log.error("Fping run has been failed. = {}".format(err))
+            return False
+    else:
+        cmd = cmd.split()
+        with open(full_out_path, "w") as f:
+            subprocess.call(cmd, stderr=f, stdout=f)
+    result = parse_fping_results(fping_params["fping_drop_tolerance"],
+                    full_out_path)
+    return bool(result)
+
+
+def parse_fping_results(failure_rate, full_out_path):
+    """Calculates fping results.
+
+    Steps:
+    1. Read the file and calculate the results.
+
+    Args:
+        failure_rate: Fping packet drop tolerance value.
+        full_out_path: path where the fping results has been stored.
+
+    Returns:
+        loss_percent: loss percentage of fping packet.
+    """
+    try:
+        result_file = open(full_out_path, "r")
+        lines = result_file.readlines()
+        res_line = lines[-1]
+        # Ex: res_line = "192.168.186.224 : xmt/rcv/%loss = 10/10/0%,
+        # min/avg/max = 36.7/251/1272"
+        loss_percent = re.search("[0-9]+%", res_line)
+        if int(loss_percent.group().strip("%")) > failure_rate:
+            logging.error("Packet drop observed")
+            return False
+        return loss_percent.group()
+    except Exception as e:
+        logging.error("Error in parsing fping results : {}".format(e))
         return False
-    return True
 
 
 def start_media_play(pri_ad, music_file_to_play):
@@ -882,11 +984,11 @@ def start_media_play(pri_ad, music_file_to_play):
     """
     if not pri_ad.droid.mediaPlayOpen("file:///sdcard/Music/{}"
                                       .format(music_file_to_play)):
-        logging.error("Failed to play music")
+        pri_ad.log.error("Failed to play music")
         return False
 
     pri_ad.droid.mediaPlaySetLooping(True)
-    logging.info("Music is now playing on device {}".format(pri_ad.serial))
+    pri_ad.log.info("Music is now playing on device {}".format(pri_ad.serial))
     return True
 
 
@@ -933,7 +1035,7 @@ def wifi_connection_check(pri_ad, ssid):
     if (wifi_info["SSID"] == ssid and
             wifi_info["supplicant_state"] == "completed"):
         return True
-    logging.error("Wifi Connection check failed : {}".format(wifi_info))
+    pri_ad.log.error("Wifi Connection check failed : {}".format(wifi_info))
     return False
 
 
@@ -990,7 +1092,7 @@ def xlsheet(pri_ad, test_result, attenuation_range=range(0, 1, 1)):
                 worksheet.write(row + 1, col + i, cell)
 
 
-def bokeh_plot(plot,
+def bokeh_plot(bt_attenuation_range,
                data_sets,
                legends,
                fig_property,
@@ -999,6 +1101,7 @@ def bokeh_plot(plot,
     """Plot bokeh figs.
 
     Args:
+        bt_attenuation_range: range of BT attenuation.
         data_sets: data sets including lists of x_data and lists of y_data
         ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
             legends: list of legend for each curve
@@ -1015,73 +1118,167 @@ def bokeh_plot(plot,
         'red', 'green', 'blue', 'olive', 'orange', 'salmon', 'black', 'navy',
         'yellow', 'darkred', 'goldenrod'
     ]
-
-    for i, x_data, y_data, legend in zip(plot, data_sets[0], data_sets[1],
-                                         legends):
-
-        plot[i] = figure(
-            plot_width=1000,
-            plot_height=500,
-            title=fig_property['title'],
-            tools=TOOLS,
-            output_backend="webgl")
-        plot[i].add_tools(bokeh_tools.WheelZoomTool(dimensions="width"))
-        plot[i].add_tools(bokeh_tools.WheelZoomTool(dimensions="height"))
-
-        plot[i].xaxis.axis_label = fig_property['x_label']
-        plot[i].yaxis.axis_label = fig_property['y_label'][i]
-        plot[i].legend.location = "top_right"
-        plot[i].legend.click_policy = "hide"
-        plot[i].title.text_font_size = {'value': '15pt'}
-        if "Packet drops" in str(legend):
-            plot[i].line(
-                x_data,
-                y_data,
-                legend=str(legend),
-                line_width=3,
-                color=colors[i])
-            plot[i].circle(
-                x_data, y_data, legend=str(legend), fill_color=colors[i])
-
-        elif "Performance Results" in str(legend):
-            for x_data, y_data, legend in zip(data_sets[0], data_sets[1],
-                                              legends):
-                if "Packet drops" not in str(legend):
-                    plot[i].line(
-                        x_data,
-                        y_data,
-                        legend=str(legend),
-                        line_width=3,
-                        color=colors[i])
-                    plot[i].circle(
-                        x_data,
-                        y_data,
-                        legend=str(legend),
-                        fill_color=colors[i])
-            if shaded_region:
-                band_x = shaded_region["x_vector"]
-                band_x.extend(shaded_region["x_vector"][::-1])
-                band_y = shaded_region["lower_limit"]
-                band_y.extend(shaded_region["upper_limit"][::-1])
-                plot[i].patch(
-                    band_x,
-                    band_y,
-                    color='#7570B3',
-                    line_alpha=0.1,
-                    fill_alpha=0.1)
+    plot = []
+    for i in bt_attenuation_range:
+        if "Packet drop" in legends[i][0]:
+            plot_info = {0: "A2dp_packet_drop_plot", 1: "throughput_plot"}
         else:
-            plot[i].line(
-                x_data,
-                y_data,
-                legend=str(legend),
-                line_width=3,
-                color=colors[i])
-            plot[i].circle(
-                x_data, y_data, legend=str(legend), fill_color=colors[i])
+            plot_info = {0: "throughput_plot"}
+        for j in plot_info:
+            if "Packet drops" in legends[i][j]:
+                plot_i_j = figure(
+                    plot_width=1000,
+                    plot_height=500,
+                    title=fig_property['title'],
+                    tools=TOOLS)
+                plot_i_j.add_tools(
+                    bokeh_tools.WheelZoomTool(dimensions="width"))
+                plot_i_j.add_tools(
+                    bokeh_tools.WheelZoomTool(dimensions="height"))
+                plot_i_j.xaxis.axis_label = fig_property['x_label']
+                plot_i_j.yaxis.axis_label = fig_property['y_label'][j]
+                plot_i_j.legend.location = "top_right"
+                plot_i_j.legend.click_policy = "hide"
+                plot_i_j.title.text_font_size = {'value': '15pt'}
+                plot_i_j.line(
+                    data_sets[i]["a2dp_attenuation"],
+                    data_sets[i]["a2dp_packet_drops"],
+                    legend=legends[i][j],
+                    line_width=3,
+                    color=colors[j])
+                plot_i_j.circle(
+                    data_sets[i]["a2dp_attenuation"],
+                    data_sets[i]["a2dp_packet_drops"],
+                    legend=str(legends[i][j]),
+                    fill_color=colors[j])
+            elif "Performance Results" in legends[i][j]:
+                plot_i_j = figure(
+                    plot_width=1000,
+                    plot_height=500,
+                    title=fig_property['title'],
+                    tools=TOOLS)
+                plot_i_j.add_tools(
+                    bokeh_tools.WheelZoomTool(dimensions="width"))
+                plot_i_j.add_tools(
+                    bokeh_tools.WheelZoomTool(dimensions="height"))
+                plot_i_j.xaxis.axis_label = fig_property['x_label']
+                plot_i_j.yaxis.axis_label = fig_property['y_label'][j]
+                plot_i_j.legend.location = "top_right"
+                plot_i_j.legend.click_policy = "hide"
+                plot_i_j.title.text_font_size = {'value': '15pt'}
+
+                plot_i_j.line(
+                    data_sets[i]["user_attenuation"],
+                    data_sets[i]["user_throughput"],
+                    legend=legends[i][j],
+                    line_width=3,
+                    color=colors[j])
+                plot_i_j.circle(
+                    data_sets[i]["user_attenuation"],
+                    data_sets[i]["user_throughput"],
+                    legend=str(legends[i][j]),
+                    fill_color=colors[j])
+                plot_i_j.line(
+                    data_sets[i]["attenuation"],
+                    data_sets[i]["throughput_received"],
+                    legend=legends[i][j + 1],
+                    line_width=3,
+                    color=colors[j])
+                plot_i_j.circle(
+                    data_sets[i]["attenuation"],
+                    data_sets[i]["throughput_received"],
+                    legend=str(legends[i][j + 1]),
+                    fill_color=colors[j])
+                if shaded_region:
+                    band_x = shaded_region[i]["x_vector"]
+                    band_x.extend(shaded_region[i]["x_vector"][::-1])
+                    band_y = shaded_region[i]["lower_limit"]
+                    band_y.extend(shaded_region[i]["upper_limit"][::-1])
+                    plot_i_j.patch(
+                        band_x,
+                        band_y,
+                        color='#7570B3',
+                        line_alpha=0.1,
+                        fill_alpha=0.1)
+            else:
+                plot_i_j = figure(
+                    plot_width=1000,
+                    plot_height=500,
+                    title=fig_property['title'],
+                    tools=TOOLS)
+                plot_i_j.add_tools(
+                    bokeh_tools.WheelZoomTool(dimensions="width"))
+                plot_i_j.add_tools(
+                    bokeh_tools.WheelZoomTool(dimensions="height"))
+                plot_i_j.xaxis.axis_label = fig_property['x_label']
+                plot_i_j.yaxis.axis_label = fig_property['y_label'][j]
+                plot_i_j.legend.location = "top_right"
+                plot_i_j.legend.click_policy = "hide"
+                plot_i_j.title.text_font_size = {'value': '15pt'}
+
+                plot_i_j.line(
+                    data_sets[i]["attenuation"],
+                    data_sets[i]["throughput_received"],
+                    legend=legends[i][j],
+                    line_width=3,
+                    color=colors[j])
+                plot_i_j.circle(
+                    data_sets[i]["attenuation"],
+                    data_sets[i]["throughput_received"],
+                    legend=str(legends[i][j]),
+                    fill_color=colors[j])
+            plot.append(plot_i_j)
     if output_file_path is not None:
         output_file(output_file_path)
         save(column(plot))
     return plot
+
+
+class A2dpDumpsysParser():
+
+    def __init__(self):
+        self.count_list = []
+        self.frame_list = []
+
+    def parse(self, file_path):
+        """Convenience function to parse a2dp dumpsys logs.
+
+        Args:
+            file_path: Path of dumpsys logs.
+
+        Returns:
+            dropped_list containing packet drop count for every iteration.
+            drop containing list of all packets dropped for test suite.
+        """
+        a2dp_dumpsys_info = []
+        with open(file_path) as dumpsys_file:
+            for line in dumpsys_file:
+                if "A2DP State:" in line:
+                    a2dp_dumpsys_info.append(line)
+                elif "Counts (max dropped)" not in line and len(
+                        a2dp_dumpsys_info) > 0:
+                    a2dp_dumpsys_info.append(line)
+                elif "Counts (max dropped)" in line:
+                    a2dp_dumpsys_info = ''.join(a2dp_dumpsys_info)
+                    a2dp_info = a2dp_dumpsys_info.split("\n")
+                    # Ex: Frames per packet (total/max/ave) : 5034 / 1 / 0
+                    frames = int(re.split("[':/()]", str(a2dp_info[-3]))[-3])
+                    self.frame_list.append(frames)
+                    # Ex : Counts (flushed/dropped/dropouts) : 0 / 4 / 0
+                    count = int(re.split("[':/()]", str(a2dp_info[-2]))[-2])
+                    if count > 0:
+                        for i in range(len(self.count_list)):
+                            count = count - self.count_list[i]
+                        self.count_list.append(count)
+                        if len(self.frame_list) > 1:
+                            last_frame = self.frame_list[-2] - self.frame_list[-1]
+                            self.dropped_count = (count / last_frame) * 100
+                        else:
+                            self.dropped_count = (count / self.frame_list[-1]) * 100
+                    else:
+                        self.dropped_count = count
+                    logging.info(a2dp_dumpsys_info)
+                    return self.dropped_count
 
 
 class AudioCapture():
@@ -1093,12 +1290,17 @@ class AudioCapture():
             pri_ad: An android device object.
             test_params: Audio parameters fetched from config.
         """
+        device_list = []
         self.audio = pyaudio.PyAudio()
+        for i in range(self.audio.get_device_count()):
+            device_list.append(self.audio.get_device_info_by_index(i))
+        input_device = list(item for item in device_list
+                            if test_params['input_device'] in item['name'])
         self.audio_format = pyaudio.paInt16
         self.channels = test_params["channel"]
         self.chunk = test_params["chunk"]
         self.sample_rate = test_params["sample_rate"]
-        self.device_index = test_params["device_index"]
+        self.device_index = input_device[0]['index']
         self.pri_ad = pri_ad
         self.file_counter = 0
 
@@ -1106,9 +1308,9 @@ class AudioCapture():
         """Records the A2DP streaming.
 
         Args:
-            record_seconds:Number of seconds for recording.
+            seconds: Number of seconds for recording.
+            test_case_name: Name of the captured audio file.
         """
-        logging.info("In capture audio\n")
         stream = self.audio.open(
             format=self.audio_format,
             channels=self.channels,
@@ -1119,7 +1321,11 @@ class AudioCapture():
 
         frames = []
         for i in range(0, int(self.sample_rate / self.chunk * seconds)):
-            data = stream.read(self.chunk)
+            try:
+                data = stream.read(self.chunk)
+            except IOError as ex:
+                self.pri_ad.log.error("Cannot record audio :{}".format(ex))
+                return False
             frames.append(data)
 
         stream.stop_stream()
