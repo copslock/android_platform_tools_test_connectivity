@@ -21,15 +21,15 @@ from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 class WlanStandalonePerformanceTest(CoexPerformanceBaseTest):
 
     def __init__(self, controllers):
-        CoexPerformanceBaseTest.__init__(self, controllers)
+        super().__init__(controllers)
 
     def setup_class(self):
-        CoexPerformanceBaseTest.setup_class(self)
+        super().setup_class()
         req_params = ["iterations"]
         self.unpack_userparams(req_params)
 
     def setup_test(self):
-        CoexPerformanceBaseTest.setup_test(self)
+        super().setup_test()
         if not disable_bluetooth(self.pri_ad.droid):
             self.log.info("Failed to disable bluetooth")
             return False

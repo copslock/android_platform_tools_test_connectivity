@@ -20,6 +20,7 @@ Test Setup:
 
 One Android device.
 """
+
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
 from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
@@ -34,7 +35,7 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
 
     def setup_class(self):
         super().setup_class()
-        req_params = ["iterations", "fping_drop_tolerance"]
+        req_params = ["iterations", "fping_params"]
         self.unpack_userparams(req_params)
 
     def toogle_bluetooth_with_iperf(self):
@@ -51,7 +52,9 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
         self.run_iperf_and_get_result()
         for i in range(self.iterations):
             self.log.info("Bluetooth inquiry iteration : {}".format(i))
-            if not perform_classic_discovery(self.pri_ad, self.iperf["duration"]):
+            if not perform_classic_discovery(
+                    self.pri_ad, self.iperf["duration"], self.json_file,
+                    self.dev_list):
                 return False
         return self.teardown_result()
 
@@ -245,7 +248,7 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
         Test Id: Bt_CoEx_070
         """
         tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
-                                self.fping_drop_tolerance)),
+                        self.fping_params)),
                  (toggle_bluetooth, (self.pri_ad, self.iperf["duration"]))]
         if not multithread_func(self.log, tasks):
             return False
@@ -269,9 +272,10 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
         Test Id: Bt_CoEx_071
         """
         tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
-                                self.fping_drop_tolerance)),
-                 (perform_classic_discovery, (
-                     self.pri_ad, self.iperf["duration"]))]
+                               self.fping_params)),
+                 (perform_classic_discovery,
+                  (self.pri_ad, self.iperf["duration"], self.json_file,
+                   self.dev_list))]
         if not multithread_func(self.log, tasks):
             return False
         return True
