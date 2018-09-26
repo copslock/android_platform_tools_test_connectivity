@@ -45,13 +45,13 @@
 	"channel": "<Int denoting mono/streo>",
 	"sample_rate":"<Int denoting smaple rate of audio>",
 	"chunk": "<Int>",
-	"device_index": "index of the audio device connected",
 	//Music record duration in seconds,
 	//this should be +5 seconds 'music play time'.
 	"record_duration": "<Int>",
 	//Duration for how many seconds music should be played,
 	//this should be +5 seconds of iperf_duration.
-	"music_play_time": "<Int>"
+	"music_play_time": "<Int>",
+	"input_device":"<input device name>"
 },
 
 //Access point related parameters
@@ -63,6 +63,7 @@
 
 //Number of times a test case should run.
 "iterations":1,
+"required_devices":{"Relay_device":"<path for relay.json file>", "Android_device":["<list of Android device serial numbers>"]},
 "music_file":"<list of music file names>",
 "headset_mac_address" : "",
 "sim_conf_file":"simcard_list.json"

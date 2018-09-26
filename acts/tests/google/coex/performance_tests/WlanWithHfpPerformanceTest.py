@@ -29,17 +29,17 @@ from acts.test_utils.tel.tel_test_utils import initiate_call
 class WlanWithHfpPerformanceTest(CoexPerformanceBaseTest):
 
     def __init__(self, controllers):
-        CoexPerformanceBaseTest.__init__(self, controllers)
+        super().__init__(controllers)
 
     def setup_class(self):
-        CoexPerformanceBaseTest.setup_class(self)
+        super().setup_class()
         req_params = ["sim_conf_file"]
         self.unpack_userparams(req_params)
         self.ag_phone_number, self.re_phone_number = setup_tel_config(
             self.pri_ad, self.sec_ad, self.sim_conf_file)
 
     def setup_test(self):
-        CoexPerformanceBaseTest.setup_test(self)
+        super().setup_test()
         self.audio_receiver.enter_pairing_mode()
         if not pair_and_connect_headset(
                 self.pri_ad, self.audio_receiver.mac_address,
@@ -49,7 +49,7 @@ class WlanWithHfpPerformanceTest(CoexPerformanceBaseTest):
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
-        CoexPerformanceBaseTest.teardown_test(self)
+        super().teardown_test()
         self.audio_receiver.clean_up()
 
     def call_from_sec_ad_to_pri_ad_and_change_volume(self):
@@ -72,9 +72,8 @@ class WlanWithHfpPerformanceTest(CoexPerformanceBaseTest):
         if not self.audio_receiver.press_accept_call():
             self.log.error("Failed to answer call from HF.")
             return False
-        self.audio_receiver.press_volume_up()
-        time.sleep(2) #Wait until volume changes.
-        self.audio_receiver.press_volume_down()
+        if not self.change_volume():
+            return False
         time.sleep(self.iperf["duration"])
         if not hangup_call(self.log, self.pri_ad):
             self.log.error("Failed to hangup call.")
@@ -83,9 +82,10 @@ class WlanWithHfpPerformanceTest(CoexPerformanceBaseTest):
 
     def initiate_call_from_hf_with_iperf(self):
         """Wrapper function to start iperf and initiate call."""
-        tasks = [(initiate_disconnect_from_hf, (self.audio_receiver,
-                self.pri_ad, self.sec_ad, self.iperf["duartion"])),
-                (self.run_iperf_and_get_result, ())]
+        tasks = [(initiate_disconnect_from_hf,
+                  (self.audio_receiver, self.pri_ad, self.sec_ad,
+                   self.iperf["duartion"])), (self.run_iperf_and_get_result,
+                                              ())]
         if not self.set_attenuation_and_run_iperf(tasks):
             return False
         return self.teardown_result()
