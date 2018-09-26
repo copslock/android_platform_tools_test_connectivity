@@ -48,8 +48,9 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
     def setup_class(self):
         super().setup_class()
-        req_params = ["iterations", "audio_params", "music_file",
-                      "fping_drop_tolerance"]
+        req_params = [
+            "iterations", "audio_params", "music_file", "fping_params"
+        ]
         self.unpack_userparams(req_params)
         if hasattr(self, "music_file"):
             self.push_music_to_android_device(self.pri_ad)
@@ -57,7 +58,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
     def setup_test(self):
         super().setup_test()
         self.audio_receiver.enter_pairing_mode()
-        time.sleep(5) #Wait until device goes into pairing mode.
+        time.sleep(5)  #Wait until device goes into pairing mode.
         if not pair_and_connect_headset(
                 self.pri_ad, self.audio_receiver.mac_address,
                 set([BtEnum.BluetoothProfile.A2DP.value])):
@@ -118,7 +119,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
     def perform_classic_discovery_with_iperf(self):
         """Wrapper function to start iperf traffic and classic discovery"""
         self.run_iperf_and_get_result()
-        if not perform_classic_discovery(self.pri_ad, self.iperf["duration"]):
+        if not perform_classic_discovery(self.pri_ad, self.iperf["duration"],
+                                         self.json_file, self.dev_list):
             return False
         return self.teardown_result()
 
@@ -142,9 +144,10 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
-                 (self.run_iperf_and_get_result, ()),
-                 (perform_classic_discovery,
-                  (self.pri_ad, self.iperf["duration"]))]
+                 (self.run_iperf_and_get_result,
+                  ()), (perform_classic_discovery,
+                        (self.pri_ad, self.iperf["duration"], self.json_file,
+                         self.dev_list))]
         if not multithread_func(self.log, tasks):
             return False
         return self.teardown_result()
@@ -188,11 +191,12 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
                    self.current_test_name)),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
-                   self.music_file_to_play, self.audio_params["duration"])),
-                 (self.run_iperf_and_get_result, ()),
-                 (perform_classic_discovery,
-                  (self.pri_ad, self.iperf["duration"])),
-                 (self.avrcp_actions, ())]
+                   self.music_file_to_play,
+                   self.audio_params["music_play_time"])),
+                 (self.run_iperf_and_get_result,
+                  ()), (perform_classic_discovery,
+                        (self.pri_ad, self.iperf["duration"], self.json_file,
+                         self.dev_list)), (self.avrcp_actions, ())]
         if not multithread_func(self.log, tasks):
             return False
         return self.teardown_result()
@@ -208,9 +212,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
-                 (connect_ble, (self.pri_ad,
-                                self.sec_ad)), (self.run_iperf_and_get_result,
-                                                ())]
+                 (connect_ble, (self.pri_ad, self.inquiry_devices[0])),
+                 (self.run_iperf_and_get_result, ())]
         if not multithread_func(self.log, tasks):
             return False
         return self.teardown_result()
@@ -741,7 +744,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         Test Id: Bt_CoEx_076
         """
         tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
-                                self.fping_drop_tolerance)),
+                                self.fping_params)),
                  (self.connect_disconnect_headset, ())]
         if not multithread_func(self.log, tasks):
             return False
@@ -763,10 +766,10 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         Test Id: Bt_CoEx_077
         """
         tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
-                                self.fping_drop_tolerance)),
-                 (self.music_play_and_check, (
-                     self.pri_ad, self.audio_receiver.mac_address,
-                     self.music_file_to_play, self.iperf["duration"]))]
+                                self.fping_params)),
+                 (music_play_and_check,
+                  (self.pri_ad, self.audio_receiver.mac_address,
+                   self.music_file_to_play, self.iperf["duration"]))]
         if not multithread_func(self.log, tasks):
             return False
         return True
@@ -790,9 +793,9 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         Test Id: Bt_CoEx_079
         """
         tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
-                                self.fping_drop_tolerance)),
-                 (self.connect_disconnect_headset, ()),
-                 (toggle_screen_state, (self.pri_ad, self.iterations))]
+                                self.fping_params)),
+                 (self.connect_disconnect_headset,
+                  ()), (toggle_screen_state, (self.pri_ad, self.iterations))]
         if not multithread_func(self.log, tasks):
             return False
         return True
@@ -815,7 +818,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         Test Id: Bt_CoEx_080
         """
         tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
-                                self.fping_drop_tolerance)),
+                                self.fping_params)),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play, self.iperf["duration"])),

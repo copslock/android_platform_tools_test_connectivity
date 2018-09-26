@@ -31,19 +31,19 @@ class WlanWithBlePerformanceTest(CoexPerformanceBaseTest):
     gatt_server_list = []
 
     def __init__(self, controllers):
-        CoexPerformanceBaseTest.__init__(self, controllers)
+        super().__init__(controllers)
 
     def setup_class(self):
-        CoexPerformanceBaseTest.setup_class(self)
+        super().setup_class()
 
     def setup_test(self):
-        CoexPerformanceBaseTest.setup_test(self)
+        super().setup_test()
         self.pri_ad.droid.bluetoothDisableBLE()
         self.gatt_server_list = []
         self.adv_instances = []
 
     def teardown_test(self):
-        CoexPerformanceBaseTest.teardown_test(self)
+        super().teardown_test()
         for bluetooth_gatt in self.bluetooth_gatt_list:
             self.pri_ad.droid.gattClientClose(bluetooth_gatt)
         for gatt_server in self.gatt_server_list:
