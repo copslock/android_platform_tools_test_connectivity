@@ -70,7 +70,7 @@ class IPerfClient():
         self.iperf_process = None
         self.log_files = []
 
-    def start(self, iperf_args, ad, ip):
+    def start(self, iperf_args, ad, ip, test_name):
         """Starts iperf client on specified port.
 
         Args:
@@ -84,7 +84,7 @@ class IPerfClient():
         """
         iperf_cmd = "iperf3 -c {} ".format(ip) + iperf_args
         port = iperf_cmd.split(' ')[6]
-        log_path = os.path.join(ad.log_path, "iPerf{}".format(port))
+        log_path = os.path.join(ad.log_path, test_name, "iPerf{}".format(port))
         utils.create_dir(log_path)
         out_file_name = "IPerfClient,{},{}.log".format(port, len(
             self.log_files))
