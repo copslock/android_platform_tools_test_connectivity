@@ -540,7 +540,7 @@ class MD8475A(object):
         except socket.error:
             raise AnritsuError("Socket Error")
 
-    def send_command(self, command, sock_timeout=20):
+    def send_command(self, command, sock_timeout=120):
         """ Sends a Command message to Anritsu
 
         Args:
