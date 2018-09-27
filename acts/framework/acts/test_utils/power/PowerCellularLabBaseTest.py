@@ -50,6 +50,11 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         self.simulation = None
         self.anritsu = None
 
+        # If callbox version was not specified in the config files, set a default value
+        if not hasattr(self, "md8475_version"):
+            self.md8475_version = "A"
+
+
     def setup_class(self):
         """ Executed before any test case is started.
 
@@ -60,6 +65,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         """
 
         super().setup_class()
+
         if hasattr(self, 'network_file'):
             self.networks = self.unpack_custom_file(self.network_file, False)
             self.main_network = self.networks['main_network']
@@ -81,8 +87,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         """
 
         try:
+
             self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
-                                   self.wlan_option)
+                                   self.wlan_option, md8475_version=self.md8475_version)
             return True
         except AnritsuError:
             self.log.error('Error in connecting to Anritsu Callbox')
