@@ -1483,6 +1483,9 @@ class AndroidDevice:
 
     def exit_setup_wizard(self):
         if not self.is_user_setup_complete() or self.is_setupwizard_on():
+        # b/116709539 need this to prevent reboot after skip setup wizard
+            self.adb.shell(
+                "am start -a com.android.setupwizard.EXIT", ignore_status=True)
             self.adb.shell(
                 "pm disable %s" % self.get_setupwizard_package_name())
         # Wait up to 5 seconds for user_setup_complete to be updated
