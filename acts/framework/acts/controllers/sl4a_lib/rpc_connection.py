@@ -58,8 +58,9 @@ class RpcConnection(object):
 
         def _log_formatter(message):
             """Defines the formatting used in the logger."""
-            return '[SL4A Client|%s|%s] %s' % (self.adb.serial, self.uid,
-                                               message)
+            return '[SL4A Client|%s|%s|%s] %s' % (self.adb.serial,
+                                                  self.ports.client_port,
+                                                  self.uid, message)
 
         self.log = logger.create_logger(_log_formatter)
 
