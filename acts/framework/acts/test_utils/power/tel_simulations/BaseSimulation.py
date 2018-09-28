@@ -109,9 +109,14 @@ class BaseSimulation():
 
         """
 
-        self.anritsu.stop_simulation()
-
+        # Set the DUT to airplane mode so it doesn't see the cellular network going off
         toggle_airplane_mode(self.log, self.dut, True)
+
+        # Wait for APM to propagate
+        time.sleep(2)
+
+        # Stop the simulation
+        self.anritsu.stop_simulation()
 
     def parse_parameters(self, parameters):
         """ Configures simulation using a list of parameters.
