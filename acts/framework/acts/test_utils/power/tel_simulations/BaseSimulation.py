@@ -70,6 +70,11 @@ class BaseSimulation():
         self.sim_dl_power = None
         self.sim_ul_power = None
 
+        # Set to default APN
+        log.info("Setting preferred APN to anritsu1.com.")
+        dut.droid.telephonySetAPN("anritsu1.com", "anritsu1.com")
+
+
     def start(self):
         """ Start simulation.
 
