@@ -71,15 +71,25 @@ class BaseSimulation():
         self.sim_ul_power = None
 
     def start(self):
-        """ Start simulation and attach the DUT to the basestation
+        """ Start simulation.
 
-        Starts the simulation in the Anritsu Callbox and waits for the
-        UE to attach.
+        Starts the simulation in the Anritsu Callbox.
 
         """
 
+        # Make sure airplane mode is on so the phone won't attach right away
+        toggle_airplane_mode(self.log, self.dut, True)
+
         # Start simulation if it wasn't started
         self.anritsu.start_simulation()
+
+    def attach(self):
+        """ Attach the phone to the basestation.
+
+        Sets a good signal level, toggles airplane mode
+        and waits for the phone to attach.
+
+        """
 
         # Turn on airplane mode
         toggle_airplane_mode(self.log, self.dut, True)
@@ -101,6 +111,22 @@ class BaseSimulation():
             self.set_downlink_rx_power(self.sim_dl_power)
         if self.sim_ul_power:
             self.set_uplink_tx_power(self.sim_ul_power)
+
+    def detach(self):
+        """ Detach the phone from the basestation.
+
+        Turns airplane mode and resets basestation.
+        """
+
+        # Set the DUT to airplane mode so it doesn't see the cellular network going off
+        toggle_airplane_mode(self.log, self.dut, True)
+
+        # Wait for APM to propagate
+        time.sleep(2)
+
+        # Power off basestation
+        self.anritsu.set_simulation_state_to_poweroff()
+
 
     def stop(self):
         """  Detach phone from the basestation by stopping the simulation.
@@ -222,8 +248,8 @@ class BaseSimulation():
         if self.dl_path_loss and self.ul_path_loss:
             self.log.info("Measurements are already calibrated.")
 
-        # Start simulation if needed
-        self.start()
+        # Attach the phone to the base station
+        self.attach()
 
         # If downlink or uplink were not yet calibrated, do it now
         if not self.dl_path_loss:
@@ -231,8 +257,8 @@ class BaseSimulation():
         if not self.ul_path_loss:
             self.ul_path_loss = self.uplink_calibration(self.bts1)
 
-        # Stop simulation after calibrating
-        self.stop()
+        # Detach after calibrating
+        self.detach()
 
 
     def downlink_calibration(self, bts, rat = None, power_units_conversion_func = None):

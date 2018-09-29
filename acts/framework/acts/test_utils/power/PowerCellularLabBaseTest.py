@@ -13,6 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import time
 
 import acts.test_utils.power.PowerBaseTest as PBT
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
@@ -115,10 +116,6 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Remove the 'test' keyword
         self.parameters.remove('test')
 
-        # Changing cell parameters requires the phone to be detached
-        if self.simulation:
-            self.simulation.stop()
-
         # Decide what type of simulation and instantiate it if needed
         if self.consume_parameter(self.PARAM_SIM_TYPE_LTE):
             self.init_simulation(self.PARAM_SIM_TYPE_LTE)
@@ -130,12 +127,18 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.log.error("Simulation type needs to be indicated in the test name.")
             return False
 
-        # Parse simulation parameters
+        # Changing cell parameters requires the phone to be detached
+        self.simulation.detach()
+
+        # Parse simulation parameters. This may return false if incorrect values are passed.
         if not self.simulation.parse_parameters(self.parameters):
             return False
 
+        # Wait for new params to settle
+        time.sleep(4)
+
         # Attach the phone to the basestation
-        self.simulation.start()
+        self.simulation.attach()
 
         # Make the device go to sleep
         self.dut.droid.goToSleepNow()
@@ -194,26 +197,27 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             type: defines the type of simulation to be started.
         """
 
-        if sim_type == self.PARAM_SIM_TYPE_LTE:
+        simulation_dictionary = {
+            self.PARAM_SIM_TYPE_LTE: LteSimulation,
+            self.PARAM_SIM_TYPE_UMTS: UmtsSimulation,
+            self.PARAM_SIM_TYPE_GSM: GsmSimulation,
+        }
 
-            if self.simulation and type(self.simulation) is LteSimulation:
-                # The simulation object we already have is enough.
-                return
+        if not sim_type in simulation_dictionary:
+            raise ValueError("The provided simulation type is invalid.")
 
-            # Instantiate a new simulation
-            self.simulation = LteSimulation(self.anritsu, self.log, self.dut)
+        simulation_class = simulation_dictionary[sim_type]
 
-        elif sim_type == self.PARAM_SIM_TYPE_UMTS:
+        if isinstance(self.simulation, simulation_class):
+            # The simulation object we already have is enough.
+            return
 
-            if self.simulation and type(self.simulation) is UmtsSimulation:
-                return
+        if self.simulation:
+            # Make sure the simulation is stopped before loading a new one
+            self.simulation.stop()
 
-            self.simulation = UmtsSimulation(self.anritsu, self.log, self.dut)
+        # Instantiate a new simulation
+        self.simulation = simulation_class(self.anritsu, self.log, self.dut)
 
-        elif sim_type == self.PARAM_SIM_TYPE_GSM:
-
-            if self.simulation and type(self.simulation) is GsmSimulation:
-                return
-
-            self.simulation = GsmSimulation(self.anritsu, self.log, self.dut)
-
+        # Start the simulation
+        self.simulation.start()
