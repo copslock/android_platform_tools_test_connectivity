@@ -13,30 +13,24 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""This script shows simple examples of how to get started with bluetooth
-   low energy testing in acts.
+"""This scrip tests various BLE apis for Fuchsia devices.
 """
 
 import pprint
 import random
 import time
 
-from acts.controllers import android_device
-from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
-from acts.test_utils.bt.bt_constants import adv_succ
-from acts.test_utils.bt.bt_constants import scan_result
-from acts.test_utils.bt.bt_test_utils import cleanup_scanners_and_advertisers
-from acts.test_utils.bt.bt_test_utils import reset_bluetooth
+from acts.base_test import BaseTestClass
 
 
-class BleFuchsiaTest(BluetoothBaseTest):
+class BleFuchsiaTest(BaseTestClass):
     default_timeout = 10
     active_scan_callback_list = []
     active_adv_callback_list = []
     droid = None
 
     def __init__(self, controllers):
-        BluetoothBaseTest.__init__(self, controllers)
+        BaseTestClass.__init__(self, controllers)
 
         if (len(self.fuchsia_devices) < 2):
             self.log.error("BleFuchsiaTest Init: Not enough fuchsia devices.")
@@ -48,7 +42,6 @@ class BleFuchsiaTest(BluetoothBaseTest):
         self.fuchsia_adv.clean_up()
         self.fuchsia_scan.clean_up()
 
-    @BluetoothBaseTest.bt_test_wrap
     def test_fuchsia_publish_service(self):
         service_id = 0
         service_primary = True
@@ -63,7 +56,6 @@ class BleFuchsiaTest(BluetoothBaseTest):
 
         return True
 
-    @BluetoothBaseTest.bt_test_wrap
     def test_fuchsia_scan_fuchsia_adv(self):
         # Initialize advertising on fuchsia dveice with name and interval
         fuchsia_name = "testADV1234"
@@ -109,7 +101,6 @@ class BleFuchsiaTest(BluetoothBaseTest):
 
         return res
 
-    @BluetoothBaseTest.bt_test_wrap
     def test_fuchsia_gatt_fuchsia_periph(self):
         # Create random service with id, primary, and uuid
         service_id = 3
