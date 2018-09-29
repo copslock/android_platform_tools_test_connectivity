@@ -336,6 +336,10 @@ class BaseSimulation():
         # Calculate Path Loss
         down_call_path_loss = self.DOWNLINK_CAL_TARGET_POWER_DBM - avg_down_power
 
+        # Validate the result
+        if not 0 < down_call_path_loss < 100:
+            raise RuntimeError("Downlink calibration failed. The calculated path loss value was {} dBm.".format(down_call_path_loss))
+
         self.log.info("Measured downlink path loss: {} dB".format(down_call_path_loss))
 
         return down_call_path_loss
@@ -412,12 +416,13 @@ class BaseSimulation():
         # Phone only supports 1x1 Uplink so always chain 0
         avg_up_power = np.nanmean(up_power_per_chain[0])
         if np.isnan(avg_up_power):
-            raise ValueError("Calibration failed because the callbox reported the chain to be deactive.")
+            raise RuntimeError("Calibration failed because the callbox reported the chain to be deactive.")
 
         up_call_path_loss = target_power - avg_up_power
 
-        self.up_call_path_loss = up_call_path_loss
-        self.up_call_power_per_chain = up_power_per_chain
+        # Validate the result
+        if not 0 < up_call_path_loss < 100:
+            raise RuntimeError("Uplink calibration failed. The calculated path loss value was {} dBm.".format(up_call_path_loss))
 
         self.log.info("Measured uplink path loss: {} dB".format(up_call_path_loss))
 
