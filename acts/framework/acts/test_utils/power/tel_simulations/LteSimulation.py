@@ -104,9 +104,6 @@ class LteSimulation(BaseSimulation):
         else:
             log.info("Preferred network type set.")
 
-        set_preferred_apn_by_adb(self.dut, "anritsu1.com")
-        log.info("Prefered apn set to anritsu1.com")
-
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation using a list of parameters.
 

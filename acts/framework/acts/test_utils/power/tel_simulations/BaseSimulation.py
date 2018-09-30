@@ -70,16 +70,31 @@ class BaseSimulation():
         self.sim_dl_power = None
         self.sim_ul_power = None
 
-    def start(self):
-        """ Start simulation and attach the DUT to the basestation
+        # Set to default APN
+        log.info("Setting preferred APN to anritsu1.com.")
+        dut.droid.telephonySetAPN("anritsu1.com", "anritsu1.com")
 
-        Starts the simulation in the Anritsu Callbox and waits for the
-        UE to attach.
+
+    def start(self):
+        """ Start simulation.
+
+        Starts the simulation in the Anritsu Callbox.
 
         """
 
+        # Make sure airplane mode is on so the phone won't attach right away
+        toggle_airplane_mode(self.log, self.dut, True)
+
         # Start simulation if it wasn't started
         self.anritsu.start_simulation()
+
+    def attach(self):
+        """ Attach the phone to the basestation.
+
+        Sets a good signal level, toggles airplane mode
+        and waits for the phone to attach.
+
+        """
 
         # Turn on airplane mode
         toggle_airplane_mode(self.log, self.dut, True)
@@ -102,6 +117,22 @@ class BaseSimulation():
         if self.sim_ul_power:
             self.set_uplink_tx_power(self.sim_ul_power)
 
+    def detach(self):
+        """ Detach the phone from the basestation.
+
+        Turns airplane mode and resets basestation.
+        """
+
+        # Set the DUT to airplane mode so it doesn't see the cellular network going off
+        toggle_airplane_mode(self.log, self.dut, True)
+
+        # Wait for APM to propagate
+        time.sleep(2)
+
+        # Power off basestation
+        self.anritsu.set_simulation_state_to_poweroff()
+
+
     def stop(self):
         """  Detach phone from the basestation by stopping the simulation.
 
@@ -109,9 +140,14 @@ class BaseSimulation():
 
         """
 
-        self.anritsu.stop_simulation()
-
+        # Set the DUT to airplane mode so it doesn't see the cellular network going off
         toggle_airplane_mode(self.log, self.dut, True)
+
+        # Wait for APM to propagate
+        time.sleep(2)
+
+        # Stop the simulation
+        self.anritsu.stop_simulation()
 
     def parse_parameters(self, parameters):
         """ Configures simulation using a list of parameters.
@@ -217,8 +253,8 @@ class BaseSimulation():
         if self.dl_path_loss and self.ul_path_loss:
             self.log.info("Measurements are already calibrated.")
 
-        # Start simulation if needed
-        self.start()
+        # Attach the phone to the base station
+        self.attach()
 
         # If downlink or uplink were not yet calibrated, do it now
         if not self.dl_path_loss:
@@ -226,8 +262,8 @@ class BaseSimulation():
         if not self.ul_path_loss:
             self.ul_path_loss = self.uplink_calibration(self.bts1)
 
-        # Stop simulation after calibrating
-        self.stop()
+        # Detach after calibrating
+        self.detach()
 
 
     def downlink_calibration(self, bts, rat = None, power_units_conversion_func = None):
@@ -305,6 +341,10 @@ class BaseSimulation():
         # Calculate Path Loss
         down_call_path_loss = self.DOWNLINK_CAL_TARGET_POWER_DBM - avg_down_power
 
+        # Validate the result
+        if not 0 < down_call_path_loss < 100:
+            raise RuntimeError("Downlink calibration failed. The calculated path loss value was {} dBm.".format(down_call_path_loss))
+
         self.log.info("Measured downlink path loss: {} dB".format(down_call_path_loss))
 
         return down_call_path_loss
@@ -381,12 +421,13 @@ class BaseSimulation():
         # Phone only supports 1x1 Uplink so always chain 0
         avg_up_power = np.nanmean(up_power_per_chain[0])
         if np.isnan(avg_up_power):
-            raise ValueError("Calibration failed because the callbox reported the chain to be deactive.")
+            raise RuntimeError("Calibration failed because the callbox reported the chain to be deactive.")
 
         up_call_path_loss = target_power - avg_up_power
 
-        self.up_call_path_loss = up_call_path_loss
-        self.up_call_power_per_chain = up_power_per_chain
+        # Validate the result
+        if not 0 < up_call_path_loss < 100:
+            raise RuntimeError("Uplink calibration failed. The calculated path loss value was {} dBm.".format(up_call_path_loss))
 
         self.log.info("Measured uplink path loss: {} dB".format(up_call_path_loss))
 

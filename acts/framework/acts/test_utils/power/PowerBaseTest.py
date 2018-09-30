@@ -411,7 +411,7 @@ class PowerBaseTest(base_test.BaseTestClass):
                 # Retry loop to recover monsoon from error
                 retry_monsoon = 1
                 while retry_monsoon <= RECOVER_MONSOON_RETRY_COUNT:
-                    mon_status = self.monsoon_recover(self.mon_info.dut)
+                    mon_status = self.monsoon_recover()
                     if mon_status:
                         break
                     else:

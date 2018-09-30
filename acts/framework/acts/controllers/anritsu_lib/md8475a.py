@@ -516,7 +516,7 @@ class MD8475A(object):
         cmd = "IMSCSCFCALL {},{}".format(virtual_network_id, action)
         self.send_command(cmd)
 
-    def send_query(self, query, sock_timeout=10):
+    def send_query(self, query, sock_timeout=120):
         """ Sends a Query message to Anritsu and return response
 
         Args:
@@ -540,7 +540,7 @@ class MD8475A(object):
         except socket.error:
             raise AnritsuError("Socket Error")
 
-    def send_command(self, command, sock_timeout=20):
+    def send_command(self, command, sock_timeout=120):
         """ Sends a Command message to Anritsu
 
         Args:
