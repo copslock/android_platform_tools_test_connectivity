@@ -31,7 +31,7 @@ WifiEnums = wutils.WifiEnums
 WAIT_FOR_AUTO_CONNECT = 40
 WAIT_BEFORE_CONNECTION = 30
 
-TIMEOUT = 1
+TIMEOUT = 5
 PING_ADDR = 'www.google.com'
 
 class WifiStressTest(WifiBaseTest):
