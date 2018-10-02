@@ -43,6 +43,13 @@ class BaseSimulation():
     # after attaching to the base station.
     SETTLING_TIME = 10
 
+    # Time in seconds to wait for the phone to attach
+    # to the basestation after toggling airplane mode.
+    ATTACH_WAITING_TIME = 120
+
+    # Max retries before giving up attaching the phone
+    ATTACH_MAX_RETRIES = 3
+
     def __init__(self, anritsu, log, dut):
         """ Initializes the Simulation object.
 
@@ -94,6 +101,8 @@ class BaseSimulation():
         Sets a good signal level, toggles airplane mode
         and waits for the phone to attach.
 
+        Returns:
+            True if the phone was able to attach, False if not.
         """
 
         # Turn on airplane mode
@@ -103,19 +112,50 @@ class BaseSimulation():
         self.bts1.input_level = -10
         self.bts1.output_level = -30
 
-        # Turn off airplane mode
-        toggle_airplane_mode(self.log, self.dut, False)
+        # Try to attach the phone.
+        for i in range(self.ATTACH_MAX_RETRIES):
 
-        # Wait until the phone is attached
-        self.anritsu.wait_for_registration_state()
-        time.sleep(self.SETTLING_TIME)
-        self.log.info("UE attached to the callbox.")
+            try:
+
+                # Turn off airplane mode
+                toggle_airplane_mode(self.log, self.dut, False)
+
+                # Wait for the phone to attach.
+                self.anritsu.wait_for_registration_state(time_to_wait=self.ATTACH_WAITING_TIME)
+
+            except AnritsuError as e:
+
+                # The phone failed to attach
+                self.log.info("UE failed to attach on attempt number {}.".format(i + 1))
+                self.log.info("Error message: {}".format(str(e)))
+
+                # Turn airplane mode on to prepare the phone for a retry.
+                toggle_airplane_mode(self.log, self.dut, True)
+
+                # Wait for APM to propagate
+                time.sleep(2)
+
+                # Retry
+                if i < self.ATTACH_MAX_RETRIES - 1:
+                    # Retry
+                    continue
+                else:
+                    # No more retries left. Return False.
+                    return False
+
+            else:
+                # The phone attached successfully.
+                time.sleep(self.SETTLING_TIME)
+                self.log.info("UE attached to the callbox.")
+                break
 
         # Set signal levels obtained from the test parameters
         if self.sim_dl_power:
             self.set_downlink_rx_power(self.sim_dl_power)
         if self.sim_ul_power:
             self.set_uplink_tx_power(self.sim_ul_power)
+
+        return True
 
     def detach(self):
         """ Detach the phone from the basestation.
@@ -254,7 +294,9 @@ class BaseSimulation():
             self.log.info("Measurements are already calibrated.")
 
         # Attach the phone to the base station
-        self.attach()
+        if not self.attach():
+            self.log.info("Skipping calibration because the phone failed to attach.")
+            return
 
         # If downlink or uplink were not yet calibrated, do it now
         if not self.dl_path_loss:
