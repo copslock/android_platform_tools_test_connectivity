@@ -138,7 +138,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         time.sleep(4)
 
         # Attach the phone to the basestation
-        self.simulation.attach()
+        if not self.simulation.attach():
+            return False
 
         # Make the device go to sleep
         self.dut.droid.goToSleepNow()
