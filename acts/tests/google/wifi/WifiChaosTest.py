@@ -78,6 +78,8 @@ class WifiChaosTest(WifiBaseTest):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
+        # Set country code explicitly to "US".
+        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
 
         asserts.assert_true(
             self.lock_pcap(),
