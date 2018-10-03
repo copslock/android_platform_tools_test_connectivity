@@ -40,7 +40,7 @@ class WifiManagerTest(WifiBaseTest):
     """Tests for APIs in Android's WifiManager class.
 
     Test Bed Requirement:
-    * One Android device
+    * Two Android device
     * Several Wi-Fi networks visible to the device, including an open Wi-Fi
       network.
     """
@@ -50,7 +50,9 @@ class WifiManagerTest(WifiBaseTest):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
+        self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
+        wutils.wifi_test_device_init(self.dut_client)
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
@@ -66,6 +68,7 @@ class WifiManagerTest(WifiBaseTest):
             len(self.reference_networks) > 0,
             "Need at least one reference network with psk.")
         wutils.wifi_toggle_state(self.dut, True)
+        wutils.wifi_toggle_state(self.dut_client, True)
         if "iperf_server_address" in self.user_params:
             self.iperf_server = self.iperf_servers[0]
         self.wpapsk_2g = self.reference_networks[0]["2g"]
@@ -76,15 +79,18 @@ class WifiManagerTest(WifiBaseTest):
             self.iperf_server.start()
 
     def setup_test(self):
-        self.dut.droid.wakeLockAcquireBright()
-        self.dut.droid.wakeUpNow()
+        for ad in self.android_devices:
+            ad.droid.wakeLockAcquireBright()
+            ad.droid.wakeUpNow()
         wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
-        self.dut.droid.wakeLockRelease()
-        self.dut.droid.goToSleepNow()
+        for ad in self.android_devices:
+            ad.droid.wakeLockRelease()
+            ad.droid.goToSleepNow()
         self.turn_location_off_and_scan_toggle_off()
         wutils.reset_wifi(self.dut)
+        wutils.reset_wifi(self.dut_client)
 
     def teardown_class(self):
         if hasattr(self, 'iperf_server'):
@@ -887,3 +893,71 @@ class WifiManagerTest(WifiBaseTest):
         2. Connect to the network and validate internet connection.
         """
         wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["5g"])
+
+    @test_tracker_info(uuid="2a617fb4-1d8e-44e9-a500-a5456e1df83f")
+    def test_connect_to_2g_can_be_pinged(self):
+        """Verify DUT can be pinged by another device when it connects to 2GHz AP
+
+        Steps:
+        1. Ensure the 2GHz WPA-PSK network is visible in scan result.
+        2. Connect to the network and validate internet connection.
+        3. Check DUT can be pinged by another device
+        """
+        wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["2g"])
+        wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["2g"])
+        dut_address = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        asserts.assert_true(
+            acts.utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_address, timeout=20),
+            "%s ping %s failed" % (self.dut_client.serial, dut_address))
+
+    @test_tracker_info(uuid="94bdd657-649b-4a2c-89c3-3ec6ba18e08e")
+    def test_connect_to_5g_can_be_pinged(self):
+        """Verify DUT can be pinged by another device when it connects to 5GHz AP
+
+        Steps:
+        1. Ensure the 5GHz WPA-PSK network is visible in scan result.
+        2. Connect to the network and validate internet connection.
+        3. Check DUT can be pinged by another device
+        """
+        wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["5g"])
+        wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["5g"])
+        dut_address = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        asserts.assert_true(
+            acts.utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_address, timeout=20),
+            "%s ping %s failed" % (self.dut_client.serial, dut_address))
+
+    @test_tracker_info(uuid="d87359aa-c4da-4554-b5de-8e3fa852a6b0")
+    def test_sta_turn_off_screen_can_be_pinged(self):
+        """Verify DUT can be pinged by another device after idle for a while
+
+        Steps:
+        1. Ensure the 2GHz WPA-PSK network is visible in scan result.
+        2. DUT and DUT_Client connect to the network and validate internet connection.
+        3. Let DUT sleep for 5 minutes
+        4. Check DUT can be pinged by DUT_Client
+        """
+        # DUT connect to AP
+        wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["2g"])
+        wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["2g"])
+        # Check DUT and DUT_Client can ping each other successfully
+        dut_address = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        dut_client_address = self.dut_client.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        asserts.assert_true(
+            acts.utils.adb_shell_ping(self.dut, count=10, dest_ip=dut_client_address, timeout=20),
+            "ping DUT %s failed" % dut_client_address)
+        asserts.assert_true(
+            acts.utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_address, timeout=20),
+            "ping DUT %s failed" % dut_address)
+        # DUT turn off screen and go sleep for 5 mins
+        self.dut.droid.wakeLockRelease()
+        self.dut.droid.goToSleepNow()
+        # TODO(hsiuchangchen): find a way to check system already suspended
+        #                      instead of waiting 5 mins
+        self.log.info("Sleep for 5 minutes")
+        time.sleep(300)
+        # Verify DUT_Client can ping DUT when DUT sleeps
+        asserts.assert_true(
+            acts.utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_address, timeout=20),
+            "ping DUT %s failed" % dut_address)
+        self.dut.droid.wakeLockAcquireBright()
+        self.dut.droid.wakeUpNow()
