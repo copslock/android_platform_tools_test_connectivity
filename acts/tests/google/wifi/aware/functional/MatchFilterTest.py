@@ -174,7 +174,7 @@ class MatchFilterTest(AwareBaseTest):
         asserts.assert_true(
             len(fails) == 0,
             "Some match filter tests are failing",
-            extras=fails)
+            extras={"data": fails})
 
     ###############################################################
 

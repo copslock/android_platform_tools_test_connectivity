@@ -842,17 +842,18 @@ class MD8475A(object):
             else:
                 break
 
-    def wait_for_registration_state(self, bts=1):
+    def wait_for_registration_state(self, bts=1, time_to_wait = REGISTRATION_STATE_WAIT_TIME):
         """ Waits for UE registration state on Anritsu
 
         Args:
           bts: index of MD8475A BTS, eg 1, 2
+          time_to_wait: time to wait for the phone to get to registration state
 
         Returns:
             None
         """
         self.log.info("wait for IDLE/COMMUNICATION state on anritsu.")
-        time_to_wait = REGISTRATION_STATE_WAIT_TIME
+
         sleep_interval = 1
         sim_model = (self.get_simulation_model()).split(",")
         #wait 1 more round for GSM because of PS attach
@@ -871,17 +872,16 @@ class MD8475A(object):
                     "UE failed to register in {} seconds".format(time_to_wait))
             time.sleep(sleep_interval)
 
-    def wait_for_communication_state(self):
+    def wait_for_communication_state(self, time_to_wait = COMMUNICATION_STATE_WAIT_TIME):
         """ Waits for UE communication state on Anritsu
 
         Args:
-          None
+          time_to_wait: time to wait for the phone to get to communication state
 
         Returns:
             None
         """
         self.log.info("wait for COMMUNICATION state on anritsu")
-        time_to_wait = COMMUNICATION_STATE_WAIT_TIME
         sleep_interval = 1
         waiting_time = 0
 
