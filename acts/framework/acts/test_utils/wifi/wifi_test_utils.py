@@ -1679,21 +1679,13 @@ def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
     set_attns(attenuator, attn_val_name)
     logging.info("Wait %ss for roaming to finish.", ROAMING_TIMEOUT)
     time.sleep(ROAMING_TIMEOUT)
-    try:
-        # Wakeup device and verify connection.
-        dut.droid.wakeLockAcquireBright()
-        dut.droid.wakeUpNow()
-        cur_con = dut.droid.wifiGetConnectionInfo()
-        verify_wifi_connection_info(dut, expected_con)
-        expected_bssid = expected_con[WifiEnums.BSSID_KEY]
-        logging.info("Roamed to %s successfully", expected_bssid)
-        if not validate_connection(dut):
-            raise signals.TestFailure("Fail to connect to internet on %s" %
-                                      expected_ssid)
-    finally:
-        dut.droid.wifiLockRelease()
-        dut.droid.goToSleepNow()
 
+    verify_wifi_connection_info(dut, expected_con)
+    expected_bssid = expected_con[WifiEnums.BSSID_KEY]
+    logging.info("Roamed to %s successfully", expected_bssid)
+    if not validate_connection(dut):
+        raise signals.TestFailure("Fail to connect to internet on %s" %
+                                      expected_bssid)
 
 def create_softap_config():
     """Create a softap config with random ssid and password."""
