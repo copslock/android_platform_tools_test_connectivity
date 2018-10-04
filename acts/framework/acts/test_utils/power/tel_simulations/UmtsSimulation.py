@@ -94,6 +94,8 @@ class UmtsSimulation(BaseSimulation):
         else:
             log.info("Preferred network type set.")
 
+        self.release_version = None
+
     def parse_parameters(self, parameters):
         """ Configs an UMTS simulation using a list of parameters.
 
@@ -185,7 +187,16 @@ class UmtsSimulation(BaseSimulation):
 
 
     def set_release_version(self, bts, release_version):
+        """ Sets the release version.
 
+        Loads the cell parameter file matching the requested release version.
+        Does nothing is release version is already the one requested.
+
+        """
+
+        if release_version == self.release_version:
+            self.log.info("Release version is already {}.".format(release_version))
+            return
         if release_version == self.PARAM_RELEASE_VERSION_99:
 
             cell_parameter_file = self.UMTS_R99_CELL_FILE
@@ -205,4 +216,8 @@ class UmtsSimulation(BaseSimulation):
             raise ValueError("Invalid UMTS release version number.")
 
         self.anritsu.load_cell_paramfile(cell_parameter_file)
+
+        # Loading a cell parameter file stops the simulation, so we need to restart it
+        self.start()
+
         bts.packet_rate = packet_rate
