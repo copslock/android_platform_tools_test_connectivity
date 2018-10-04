@@ -23,7 +23,7 @@ import queue
 import threading
 import time
 from acts import utils
-
+import re
 from subprocess import call
 
 from acts.test_utils.bt.bt_constants import adv_fail
@@ -1486,3 +1486,7 @@ def _add_android_device_to_dictionary(android_device, profile_list,
             selector_dict[profile].append(android_device)
         else:
             selector_dict[profile] = [android_device]
+
+def get_bluetooth_crash_count(android_device):
+    out = android_device.adb.shell("dumpsys bluetooth_manager")
+    return int(re.search("crashed(.*\d)", out).group(1))

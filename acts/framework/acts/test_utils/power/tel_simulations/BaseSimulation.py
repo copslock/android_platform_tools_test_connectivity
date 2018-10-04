@@ -21,7 +21,7 @@ import numpy as np
 
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
-from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode, toggle_cell_data_roaming
 from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength, set_preferred_apn_by_adb
 
 class BaseSimulation():
@@ -81,6 +81,8 @@ class BaseSimulation():
         log.info("Setting preferred APN to anritsu1.com.")
         dut.droid.telephonySetAPN("anritsu1.com", "anritsu1.com")
 
+        # Enable roaming on the phone
+        toggle_cell_data_roaming(self.dut, True)
 
     def start(self):
         """ Start simulation.
