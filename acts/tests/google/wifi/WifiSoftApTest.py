@@ -65,6 +65,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.dut_client.droid.wifiEnableVerboseLogging(1)
         asserts.assert_equal(self.dut_client.droid.wifiGetVerboseLoggingLevel(), 1,
             "Failed to enable WiFi verbose logging on the client dut.")
+        wutils.wifi_toggle_state(self.dut_client, True)
 
     def teardown_class(self):
         wutils.stop_wifi_tethering(self.dut)
