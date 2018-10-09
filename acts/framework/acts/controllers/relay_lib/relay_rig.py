@@ -20,8 +20,10 @@ from acts.controllers.relay_lib.sain_smart_board import SainSmartBoard
 from acts.controllers.relay_lib.sain_smart_8_channel_usb_relay_board import SainSmart8ChannelUsbRelayBoard
 from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
 from acts.controllers.relay_lib.fugu_remote import FuguRemote
+from acts.controllers.relay_lib.headset import Headset
 from acts.controllers.relay_lib.i6s_headset import I6sHeadset
 from acts.controllers.relay_lib.logitech_headset import LogitechAudioReceiver
+from acts.controllers.relay_lib.skullcandy import Skullcandy
 from acts.controllers.relay_lib.sony_xb2_speaker import SonyXB2Speaker
 from acts.controllers.relay_lib.sony_xb20_speaker import SonyXB20Speaker
 from acts.controllers.relay_lib.tao_tronics_headset import TaoTronicsCarkit
@@ -73,6 +75,8 @@ class RelayRig:
         'SingleButtonDongle': lambda x, rig: SingleButtonDongle(x, rig),
         'ThreeButtonDongle': lambda x, rig: ThreeButtonDongle(x, rig),
         'EarstudioReceiver': lambda x, rig: EarstudioReceiver(x, rig),
+        'Headset': lambda x, rig: Headset(x, rig),
+        'Skullcandy': lambda x, rig: Skullcandy(x, rig),
     }
 
     def __init__(self, config):
