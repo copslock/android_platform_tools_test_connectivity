@@ -43,7 +43,7 @@ class WifiSoftApTest(WifiBaseTest):
         """
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
-        req_params = []
+        req_params = ["dbs_supported_models"]
         opt_param = ["open_network"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -69,6 +69,15 @@ class WifiSoftApTest(WifiBaseTest):
         asserts.assert_equal(self.dut_client.droid.wifiGetVerboseLoggingLevel(), 1,
             "Failed to enable WiFi verbose logging on the client dut.")
         wutils.wifi_toggle_state(self.dut_client, True)
+        if len(self.android_devices) > 2:
+            utils.sync_device_time(self.android_devices[2])
+            self.android_devices[2].droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+            self.android_devices[2].droid.wifiEnableVerboseLogging(1)
+            asserts.assert_equal(self.android_devices[2].droid.wifiGetVerboseLoggingLevel(), 1,
+                "Failed to enable WiFi verbose logging on the client dut.")
+        # Disable wifi for dbs supported models
+        if self.dut.model in self.dbs_supported_models:
+            wutils.wifi_toggle_state(self.dut, False)
 
     def teardown_class(self):
         wutils.stop_wifi_tethering(self.dut)
@@ -77,6 +86,10 @@ class WifiSoftApTest(WifiBaseTest):
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
+
+    def teardown_test(self):
+        if self.dut.droid.wifiIsApEnabled():
+            wutils.stop_wifi_tethering(self.dut)
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
@@ -151,7 +164,7 @@ class WifiSoftApTest(WifiBaseTest):
                                 "Failed to enable cell data for softap dut.")
 
     def validate_full_tether_startup(self, band=None, hidden=None,
-                                     test_clients=None):
+                                     test_ping=False, test_clients=None):
         """Test full startup of wifi tethering
 
         1. Report current state.
@@ -181,8 +194,13 @@ class WifiSoftApTest(WifiBaseTest):
             asserts.assert_true(ret != -1, "Add network %r failed" % config)
             self.dut_client.droid.wifiEnableNetwork(ret, 0)
         self.confirm_softap_in_scan_results(config[wutils.WifiEnums.SSID_KEY])
+        if test_ping:
+            self.validate_ping_between_softap_and_client(config)
         if test_clients:
-            self.validate_traffic_between_softap_clients(config)
+            if hasattr(self, 'arduino_wifi_dongles'):
+                self.validate_traffic_between_softap_clients(config)
+            if len(self.android_devices) > 2:
+                self.validate_ping_between_two_clients(config)
         wutils.stop_wifi_tethering(self.dut)
         asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
                              "SoftAp is still reported as running")
@@ -190,6 +208,61 @@ class WifiSoftApTest(WifiBaseTest):
             wutils.wait_for_wifi_state(self.dut, True)
         elif self.dut.droid.wifiCheckState():
             asserts.fail("Wifi was disabled before softap and now it is enabled")
+
+    def validate_ping_between_softap_and_client(self, config):
+        """Test ping between softap and its client.
+
+        Connect one android device to the wifi hotspot.
+        Verify they can ping each other.
+
+        Args:
+            config: wifi network config with SSID, password
+        """
+        wutils.wifi_connect(self.dut_client, config, check_connectivity=False)
+
+        dut_ip = self.dut.droid.connectivityGetIPv4Addresses("wlan0")[0]
+        dut_client_ip = self.dut_client.droid.connectivityGetIPv4Addresses("wlan0")[0]
+
+        self.dut.log.info("Try to ping %s" % dut_client_ip)
+        asserts.assert_true(
+            utils.adb_shell_ping(self.dut, count=10, dest_ip=dut_client_ip, timeout=20),
+            "%s ping %s failed" % (self.dut.serial, dut_client_ip))
+
+        self.dut_client.log.info("Try to ping %s" % dut_ip)
+        asserts.assert_true(
+            utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_ip, timeout=20),
+            "%s ping %s failed" % (self.dut_client.serial, dut_ip))
+
+        wutils.stop_wifi_tethering(self.dut)
+
+    def validate_ping_between_two_clients(self, config):
+        """Test ping between softap's clients.
+
+        Connect two android device to the wifi hotspot.
+        Verify the clients can ping each other.
+
+        Args:
+            config: wifi network config with SSID, password
+        """
+        # Connect DUT to Network
+        ad1 = self.dut_client
+        ad2 = self.android_devices[2]
+
+        wutils.wifi_connect(ad1, config, check_connectivity=False)
+        wutils.wifi_connect(ad2, config, check_connectivity=False)
+        ad1_ip = ad1.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        ad2_ip = ad2.droid.connectivityGetIPv4Addresses('wlan0')[0]
+
+        # Ping each other
+        ad1.log.info("Try to ping %s" % ad2_ip)
+        asserts.assert_true(
+            utils.adb_shell_ping(ad1, count=10, dest_ip=ad2_ip, timeout=20),
+            "%s ping %s failed" % (ad1.serial, ad2_ip))
+
+        ad2.log.info("Try to ping %s" % ad1_ip)
+        asserts.assert_true(
+            utils.adb_shell_ping(ad2, count=10, dest_ip=ad1_ip, timeout=20),
+            "%s ping %s failed" % (ad2.serial, ad1_ip))
 
     """ Tests Begin """
 
@@ -359,6 +432,52 @@ class WifiSoftApTest(WifiBaseTest):
                         "No wifi dongles connected. Skipping test")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G,
                                           test_clients=True)
+
+    @test_tracker_info(uuid="883dd5b1-50c6-4958-a50f-bb4bea77ccaf")
+    def test_full_tether_startup_2G_one_client_ping_softap(self):
+        """(AP) 1 Device can connect to 2G hotspot
+
+        Steps:
+        1. Turn on DUT's 2G softap
+        2. Client connects to the softap
+        3. Client and DUT ping each other
+        """
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G, test_ping=True)
+
+    @test_tracker_info(uuid="6604e848-99d6-422c-9fdc-2882642438b6")
+    def test_full_tether_startup_5G_one_client_ping_softap(self):
+        """(AP) 1 Device can connect to 5G hotspot
+
+        Steps:
+        1. Turn on DUT's 5G softap
+        2. Client connects to the softap
+        3. Client and DUT ping each other
+        """
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G, test_ping=True)
+
+    @test_tracker_info(uuid="17725ecd-f900-4cf7-8b2d-d7515b0a595c")
+    def test_softap_2G_two_clients_ping_each_other(self):
+        """Test for 2G hotspot with 2 clients
+
+        1. Turn on 2G hotspot
+        2. Two clients connect to the hotspot
+        3. Two clients ping each other
+        """
+        asserts.skip_if(len(self.android_devices) < 3,
+                        "No extra android devices. Skip test")
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G, test_clients=True)
+
+    @test_tracker_info(uuid="98c09888-1021-4f79-9065-b3cf9b132146")
+    def test_softap_5G_two_clients_ping_each_other(self):
+        """Test for 5G hotspot with 2 clients
+
+        1. Turn on 5G hotspot
+        2. Two clients connect to the hotspot
+        3. Two clients ping each other
+        """
+        asserts.skip_if(len(self.android_devices) < 3,
+                        "No extra android devices. Skip test")
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G, test_clients=True)
 
     """ Tests End """
 
