@@ -25,11 +25,8 @@ from acts.test_utils.coex.coex_test_utils import (
     collect_bluetooth_manager_dumpsys_logs)
 from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import wifi_connection_check
-from acts.test_utils.coex.coex_test_utils import xlsheet
-from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
-from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 
 
 class CoexPerformanceBaseTest(CoexBaseTest):
@@ -86,7 +83,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             self.log.info("Failed to disable bluetooth")
             return False
         self.destroy_android_and_relay_object()
-        self.rvr = None
+        self.rvr = {}
 
     def teardown_class(self):
         self.reset_wifi_and_store_results()
@@ -162,6 +159,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             else:
                 self.iperf_received.append(
                     float(self.iperf_variables.received[-1].strip("Mb/s")))
+            self.iperf_variables.received = []
         for i in range(self.num_atten - 1):
             self.attenuators[i].set_atten(0)
         if "a2dp_streaming" in self.current_test_name:
