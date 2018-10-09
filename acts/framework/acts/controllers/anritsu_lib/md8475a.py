@@ -402,6 +402,7 @@ class MD8475A(object):
         self.log = log_handle
         self._wlan = wlan
         port_number = 28002
+        self._md8475_version = md8475_version
         if md8475_version == "B":
             global TERMINATOR
             TERMINATOR = "\n"
