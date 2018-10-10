@@ -211,7 +211,7 @@ class CoexBaseTest(BaseTestClass):
         out_file_name = "{}/IPerfServer,{},{}.log".format(log_path,
                 server_port, self.tag,)
         self.tag = self.tag + 1
-        cmd = "adb -s {} shell {}".format(self.pri_ad.droid.getBuildSerial(),
+        cmd = "adb -s {} shell {}".format(self.pri_ad.serial,
                 self.iperf_server)
 
         def appender_iperf_logs(line):

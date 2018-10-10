@@ -175,7 +175,7 @@ def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
 
     if not paired:
         pri_droid.log.info("{} not paired to {}".format(
-            pri_droid.droid.getBuildSerial(), dev_to_connect))
+            pri_droid.serial, dev_to_connect))
         return False
 
     end_time = time.time() + 10
@@ -606,7 +606,7 @@ def media_stream_check(pri_ad, duration, headset_mac_address):
     while time.time() < duration:
         if not is_a2dp_connected(pri_ad, headset_mac_address):
             pri_ad.log.error('A2dp connection not active at %s',
-                    pri_ad.droid.getBuildSerial())
+                    pri_ad.serial)
             return False
         time.sleep(1)
     return True
@@ -682,7 +682,7 @@ def music_play_and_check_via_app(pri_ad, headset_mac_address, duration=5):
     try:
         if not media_stream_check(pri_ad, stream_time, headset_mac_address):
             pri_ad.log.error("A2dp connection not active at %s",
-                             pri_ad.droid.getBuildSerial())
+                             pri_ad.serial)
             return False
     finally:
         pri_ad.adb.shell("am force-stop com.google.android.music")

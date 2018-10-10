@@ -98,6 +98,7 @@ class RangeApSupporting11McTest(RttBaseTest):
                 extras=stats)
         asserts.explicit_pass("RTT test done", extras=stats)
 
+    @test_tracker_info(uuid="")
     def test_rtt_in_and_after_softap_mode(self):
         """Verify behavior when a SoftAP is enabled and then disabled on the
         device:
@@ -140,6 +141,11 @@ class RangeApSupporting11McTest(RttBaseTest):
             hidden=False)
         time.sleep(self.WAIT_FOR_CONFIG_CHANGES_SEC)
 
+        if dut.model not in self.dbs_supported_models:
+            rutils.wait_for_event(dut, rconsts.BROADCAST_WIFI_RTT_NOT_AVAILABLE)
+            asserts.assert_false(dut.droid.wifiIsRttAvailable(),
+                                 "RTT is available")
+
         events = rutils.run_ranging(dut, rtt_supporting_aps, self.NUM_ITER,
                                     self.TIME_BETWEEN_ITERATIONS)
         stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
@@ -168,6 +174,11 @@ class RangeApSupporting11McTest(RttBaseTest):
         wutils.wifi_toggle_state(dut, True)
         time.sleep(self.WAIT_FOR_CONFIG_CHANGES_SEC)
         wutils.stop_wifi_tethering(dut)
+
+        if dut.model not in self.dbs_supported_models:
+            rutils.wait_for_event(dut, rconsts.BROADCAST_WIFI_RTT_AVAILABLE)
+            asserts.assert_true(dut.droid.wifiIsRttAvailable(),
+                                "RTT is not available")
 
         events = rutils.run_ranging(dut, rtt_supporting_aps, self.NUM_ITER,
                                     self.TIME_BETWEEN_ITERATIONS)
