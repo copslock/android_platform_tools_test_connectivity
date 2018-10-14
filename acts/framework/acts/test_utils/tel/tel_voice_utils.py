@@ -366,19 +366,7 @@ def phone_setup_iwlan_for_subscription(log,
     if not wait_for_wfc_enabled(log, ad, max_time=MAX_WAIT_TIME_WFC_ENABLED):
         ad.log.error("WFC is not enabled")
         return False
-
-    if wait_for_network_rat_for_subscription(
-            log, ad, sub_id, RAT_FAMILY_WLAN,
-            voice_or_data=NETWORK_SERVICE_DATA):
-        ad.log.info(
-            "Data rat is in iwlan mode successfully with APM %s WFC %s",
-            is_airplane_mode, wfc_mode)
-        return True
-    else:
-        ad.log.error(
-            "Unable to bring data rat in iwlan mode with APM %s WFC %s",
-            is_airplane_mode, wfc_mode)
-        return False
+    return True
 
 
 def phone_setup_iwlan_cellular_preferred(log,
