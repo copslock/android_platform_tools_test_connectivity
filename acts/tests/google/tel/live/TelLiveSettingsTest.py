@@ -314,6 +314,7 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             if not ensure_phone_subscription(self.log, self.dut):
                 self.dut.log.error("Unable to find a valid subscription!")
                 result = False
+            time.sleep(15)
             new_carrier_id = self.dut.droid.telephonyGetSimCarrierId()
             new_carrier_name = self.dut.droid.telephonyGetSimCarrierIdName()
             msg = "After SIM power up, new_carrier_id = %s, " \
