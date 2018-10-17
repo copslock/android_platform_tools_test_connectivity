@@ -972,7 +972,12 @@ class GoogleWifiAP(WifiRetailAP):
             "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
             "5G_1": [36, 40, 44, 48, 149, 153, 157, 161, 165]
         }
-        self.BW_MODE_MAP = {"VHT20": 20, "VHT40": 40, "VHT80": 80}
+        self.BW_MODE_MAP = {
+            "legacy": 20,
+            "VHT20": 20,
+            "VHT40": 40,
+            "VHT80": 80
+        }
         self.default_settings = {
             "region": "United States",
             "brand": "Google",
@@ -1154,7 +1159,7 @@ class GoogleWifiAP(WifiRetailAP):
             interface = self.access_point.wlan_5g
             interface_short = "5"
 
-        if mode.lower() in ["legacy", "11a", "11b", "11g"]:
+        if "legacy" in mode.lower():
             cmd_string = "iw dev {0} set bitrates legacy-{1} {2} ht-mcs-{1} vht-mcs-{1}".format(
                 interface, interface_short, rate)
         elif "vht" in mode.lower():
