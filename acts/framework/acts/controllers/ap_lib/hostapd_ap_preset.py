@@ -54,8 +54,8 @@ def create_ap_preset(profile_name='whirlwind',
 
     # The Onhub uses wlan0, wlan1 as the WAN interfaces, while the Gale uses
     # wlan-2400mhz, wlan-5000mhz.
-    if iface_wlan_2g not in hotapd_constants.2G_INTERFACE_LIST or \
-       iface_wlan_5g not in hotapd_constants.5G_INTERFACE_LIST:
+    if iface_wlan_2g not in hotapd_constants.INTERFACE_2G_LIST or \
+       iface_wlan_5g not in hotapd_constants.INTERFACE_5G_LIST:
         raise ValueError('Incorrect interface name was passed.')
 
     force_wmm = None
