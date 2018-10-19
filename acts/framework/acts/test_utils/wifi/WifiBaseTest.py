@@ -410,6 +410,8 @@ class WifiBaseTest(BaseTestClass):
 
     def _generate_legacy_ap_config(self, network_list):
         bss_settings = []
+        wlan_2g = self.access_points[AP_1].wlan_2g
+        wlan_5g = self.access_points[AP_1].wlan_5g
         ap_settings = network_list.pop(0)
         # TODO:(bmahadev) This is a bug. We should not have to pop the first
         # network in the list and treat it as a separate case. Instead,
@@ -441,34 +443,36 @@ class WifiBaseTest(BaseTestClass):
                         name=network["SSID"],
                         ssid=network["SSID"],
                         hidden=network["hiddenSSID"]))
-
         if "password" in hostapd_config_settings:
             config = hostapd_ap_preset.create_ap_preset(
+                iface_wlan_2g=wlan_2g,
+                iface_wlan_5g=wlan_5g,
                 channel=ap_settings["channel"],
                 ssid=hostapd_config_settings["SSID"],
                 hidden=hostapd_config_settings["hiddenSSID"],
                 security=hostapd_security.Security(
                     security_mode=hostapd_config_settings["security"],
                     password=hostapd_config_settings["password"]),
-                bss_settings=bss_settings,
-                profile_name='whirlwind')
+                bss_settings=bss_settings)
         elif "wepKeys" in hostapd_config_settings:
             config = hostapd_ap_preset.create_ap_preset(
+                iface_wlan_2g=wlan_2g,
+                iface_wlan_5g=wlan_5g,
                 channel=ap_settings["channel"],
                 ssid=hostapd_config_settings["SSID"],
                 hidden=hostapd_config_settings["hiddenSSID"],
                 security=hostapd_security.Security(
                     security_mode=hostapd_config_settings["security"],
                     password=hostapd_config_settings["wepKeys"][0]),
-                bss_settings=bss_settings,
-                profile_name='whirlwind')
+                bss_settings=bss_settings)
         else:
             config = hostapd_ap_preset.create_ap_preset(
+                iface_wlan_2g=wlan_2g,
+                iface_wlan_5g=wlan_5g,
                 channel=ap_settings["channel"],
                 ssid=hostapd_config_settings["SSID"],
                 hidden=hostapd_config_settings["hiddenSSID"],
-                bss_settings=bss_settings,
-                profile_name='whirlwind')
+                bss_settings=bss_settings)
         return config
 
     def configure_packet_capture(
