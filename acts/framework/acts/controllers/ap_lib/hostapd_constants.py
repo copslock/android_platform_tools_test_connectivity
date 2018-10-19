@@ -36,6 +36,8 @@ WLAN0_STRING = 'wlan0'
 WLAN1_STRING = 'wlan1'
 WLAN2_STRING = 'wlan2'
 WLAN3_STRING = 'wlan3'
+WLAN0_GALE = 'wlan-2400mhz'
+WLAN1_GALE = 'wlan-5000mhz'
 WEP_STRING = 'wep'
 WEP_DEFAULT_KEY = 0
 WEP_HEX_LENGTH = [10, 26, 32, 58]
@@ -47,6 +49,8 @@ AP_SSID_LENGTH_2G = 8
 AP_PASSPHRASE_LENGTH_2G = 10
 AP_SSID_LENGTH_5G = 8
 AP_PASSPHRASE_LENGTH_5G = 10
+2G_INTERFACE_LIST = [WLAN0_STRING, WLAN0_GALE]
+5G_INTERFACE_LIST = [WLAN1_STRING, WLAN1_GALE]
 
 # A mapping of frequency to channel number.  This includes some
 # frequencies used outside the US.
