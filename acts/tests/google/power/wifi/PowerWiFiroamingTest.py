@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import copy
 import time
 from acts import utils
 from acts.controllers.ap_lib import hostapd_constants as hc
@@ -25,6 +26,11 @@ from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
 
 class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
+    def teardown_test(self):
+        # Delete the brconfigs attributes as this is duplicated with one of the
+        # ap's bridge interface config
+        delattr(self, 'brconfigs')
+        super().teardown_test()
 
     # Test cases
     @test_tracker_info(uuid='392622d3-0c5c-4767-afa2-abfb2058b0b8')
@@ -33,13 +39,17 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
         Change the attenuation level to trigger roaming between two APs
 
         """
-        self.log.info('Set attenuation to connect device to both APs')
-        self.set_attenuation(self.atten_level['zero_atten'])
         # Setup both APs
-        network_main = self.main_network[hc.BAND_2G]
-        network_aux = self.aux_network[hc.BAND_2G]
-        self.brconfigs_aux = self.setup_ap_connection(network_aux)
-        self.brconfigs_main = self.setup_ap_connection(network_main)
+        network_main = copy.deepcopy(self.main_network)[hc.BAND_2G]
+        network_aux = copy.deepcopy(self.aux_network)[hc.BAND_2G]
+        self.log.info('Set attenuation to connect device to the aux AP')
+        self.set_attenuation(self.atten_level[wc.AP_AUX])
+        self.brconfigs_aux = self.setup_ap_connection(
+            network_aux, ap=self.access_point_aux)
+        self.log.info('Set attenuation to connect device to the main AP')
+        self.set_attenuation(self.atten_level[wc.AP_MAIN])
+        self.brconfigs_main = self.setup_ap_connection(
+            network_main, ap=self.access_point_main)
         self.dut.droid.goToSleepNow()
         time.sleep(5)
         # Set attenuator to trigger roaming
@@ -51,20 +61,22 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
     def test_screenoff_fastroaming(self):
 
         # Setup the aux AP
-        network_main = self.main_network[hc.BAND_2G]
-        network_aux = self.aux_network[hc.BAND_2G]
+        network_main = copy.deepcopy(self.main_network)[hc.BAND_2G]
+        network_aux = copy.deepcopy(self.aux_network)[hc.BAND_2G]
         # Set the same SSID for the AUX AP for fastroaming purpose
         network_aux[wc.SSID] = network_main[wc.SSID]
         # Set attenuator to connect the phone to the aux AP
         self.log.info('Set attenuation to connect device to the aux AP')
         self.set_attenuation(self.atten_level[wc.AP_AUX])
-        self.brconfigs_aux = self.setup_ap_connection(network_aux)
+        self.brconfigs_aux = self.setup_ap_connection(
+            network_aux, ap=self.access_point_aux)
         # Set attenuator to connect the phone to main AP
         self.log.info('Set attenuation to connect device to the main AP')
         self.set_attenuation(self.atten_level[wc.AP_MAIN])
-        self.brconfigs_main = self.setup_ap_connection(network_main)
-        time.sleep(5)
+        self.brconfigs_main = self.setup_ap_connection(
+            network_main, ap=self.access_point_main)
         self.dut.droid.goToSleepNow()
+        time.sleep(5)
         # Trigger fastroaming
         self.dut.log.info('Trigger fastroaming now')
         self.set_attenuation(self.atten_level[wc.AP_AUX])
@@ -74,13 +86,19 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
     def test_screenoff_toggle_between_AP(self):
 
         # Set attenuator to connect phone to both networks
-        self.log.info('Set attenuation to connect device to both APs')
-        self.set_attenuation(self.atten_level[self.current_test_name])
+        network_main = copy.deepcopy(self.main_network)[hc.BAND_2G]
+        network_aux = copy.deepcopy(self.aux_network)[hc.BAND_2G]
         # Connect to both APs
         network_main = self.main_network[hc.BAND_2G]
         network_aux = self.aux_network[hc.BAND_2G]
-        self.brconfigs_main = self.setup_ap_connection(network_main)
-        self.brconfigs_aux = self.setup_ap_connection(network_aux)
+        self.log.info('Set attenuation to connect device to the main AP')
+        self.set_attenuation(self.atten_level[wc.AP_MAIN])
+        self.brconfigs_main = self.setup_ap_connection(
+            network_main, ap=self.access_point_main)
+        self.log.info('Set attenuation to connect device to the aux AP')
+        self.set_attenuation(self.atten_level[wc.AP_AUX])
+        self.brconfigs_aux = self.setup_ap_connection(
+            network_aux, ap=self.access_point_aux)
         self.mon_info.duration = self.toggle_interval
         self.dut.droid.goToSleepNow()
         time.sleep(5)
@@ -89,31 +107,35 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
         for i in range(self.toggle_times):
             self.dut.log.info('Connecting to %s' % network_main[wc.SSID])
             self.dut.droid.wifiConnect(network_main)
-            file_path, avg_current = wputils.monsoon_data_collect_save(
-                self.dut, self.mon_info, self.current_test_name)
+            file_path, avg_current = self.monsoon_data_collect_save()
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
-            file_path, avg_current = wputils.monsoon_data_collect_save(
-                self.dut, self.mon_info, self.current_test_name)
+            file_path, avg_current = self.monsoon_data_collect_save()
         [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
-        avg_current = dt.source.data['y0'][0]
+        self.test_result = dt.source.data['y0'][0]
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
-        wputils.pass_fail_check(self, avg_current)
+        self.pass_fail_check()
 
     @test_tracker_info(uuid='e5ff95c0-b17e-425c-a903-821ba555a9b9')
     def test_screenon_toggle_between_AP(self):
 
         # Set attenuator to connect phone to both networks
-        self.log.info('Set attenuation to connect device to both APs')
-        self.set_attenuation(self.atten_level[self.current_test_name])
+        network_main = copy.deepcopy(self.main_network)[hc.BAND_2G]
+        network_aux = copy.deepcopy(self.aux_network)[hc.BAND_2G]
         # Connect to both APs
         network_main = self.main_network[hc.BAND_2G]
         network_aux = self.aux_network[hc.BAND_2G]
-        self.brconfigs_main = self.setup_ap_connection(network_main)
-        self.brconfigs_aux = self.setup_ap_connection(network_aux)
+        self.log.info('Set attenuation to connect device to the main AP')
+        self.set_attenuation(self.atten_level[wc.AP_MAIN])
+        self.brconfigs_main = self.setup_ap_connection(
+            network_main, ap=self.access_point_main)
+        self.log.info('Set attenuation to connect device to the aux AP')
+        self.set_attenuation(self.atten_level[wc.AP_AUX])
+        self.brconfigs_aux = self.setup_ap_connection(
+            network_aux, ap=self.access_point_aux)
         self.mon_info.duration = self.toggle_interval
         time.sleep(5)
         # Toggle between two networks
@@ -121,31 +143,35 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
         for i in range(self.toggle_times):
             self.dut.log.info('Connecting to %s' % network_main[wc.SSID])
             self.dut.droid.wifiConnect(network_main)
-            file_path, avg_current = wputils.monsoon_data_collect_save(
-                self.dut, self.mon_info, self.current_test_name)
+            file_path, avg_current = self.monsoon_data_collect_save()
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
-            file_path, avg_current = wputils.monsoon_data_collect_save(
-                self.dut, self.mon_info, self.current_test_name)
+            file_path, avg_current = self.monsoon_data_collect_save()
         [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
-        avg_current = dt.source.data['y0'][0]
+        self.test_result = dt.source.data['y0'][0]
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
-        wputils.pass_fail_check(self, avg_current)
+        self.pass_fail_check()
 
     @test_tracker_info(uuid='a16ae337-326f-4d09-990f-42232c3c0dc4')
     def test_screenoff_wifi_wedge(self):
 
         # Set attenuator to connect phone to both networks
-        self.log.info('Set attenuation to connect device to both APs')
-        self.set_attenuation(self.atten_level['zero_atten'])
+        network_main = copy.deepcopy(self.main_network)[hc.BAND_2G]
+        network_aux = copy.deepcopy(self.aux_network)[hc.BAND_2G]
         # Connect to both APs
         network_main = self.main_network[hc.BAND_2G]
         network_aux = self.aux_network[hc.BAND_2G]
-        self.brconfigs_main = self.setup_ap_connection(network_main)
-        self.brconfigs_aux = self.setup_ap_connection(network_aux)
+        self.log.info('Set attenuation to connect device to the main AP')
+        self.set_attenuation(self.atten_level[wc.AP_MAIN])
+        self.brconfigs_main = self.setup_ap_connection(
+            network_main, ap=self.access_point_main)
+        self.log.info('Set attenuation to connect device to the aux AP')
+        self.set_attenuation(self.atten_level[wc.AP_AUX])
+        self.brconfigs_aux = self.setup_ap_connection(
+            network_aux, ap=self.access_point_aux)
         self.log.info('Forget network {}'.format(network_aux[wc.SSID]))
         wutils.wifi_forget_network(self.dut, network_aux[wc.SSID])
         self.log.info('Set attenuation to trigger wedge condition')
