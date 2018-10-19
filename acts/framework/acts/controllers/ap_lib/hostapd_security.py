@@ -30,7 +30,10 @@ class Security(object):
                  wpa2_cipher=hostapd_constants.WPA2_DEFAULT_CIPER,
                  wpa_group_rekey=hostapd_constants.WPA_GROUP_KEY_ROTATION_TIME,
                  wpa_strict_rekey=hostapd_constants.WPA_STRICT_REKEY_DEFAULT,
-                 wep_default_key=hostapd_constants.WEP_DEFAULT_KEY):
+                 wep_default_key=hostapd_constants.WEP_DEFAULT_KEY,
+                 radius_server_ip=None,
+                 radius_server_port=None,
+                 radius_server_secret=None):
         """Gather all of the security settings for WPA-PSK.  This could be
            expanded later.
 
@@ -53,12 +56,18 @@ class Security(object):
                               Options: True, False
                               Default: True
             wep_default_key: The wep key number to use when transmitting.
+            radius_server_ip: Radius server IP for Enterprise auth.
+            radius_server_port: Radius server port for Enterprise auth.
+            radius_server_secret: Radius server secret for Enterprise auth.
         """
         self.wpa_cipher = wpa_cipher
         self.wpa2_cipher = wpa2_cipher
         self.wpa_group_rekey = wpa_group_rekey
         self.wpa_strict_rekey = wpa_strict_rekey
         self.wep_default_key = wep_default_key
+        self.radius_server_ip = radius_server_ip
+        self.radius_server_port = radius_server_port
+        self.radius_server_secret = radius_server_secret
         if security_mode == hostapd_constants.WPA_STRING:
             security_mode = hostapd_constants.WPA1
         elif security_mode == hostapd_constants.WPA2_STRING:
@@ -67,6 +76,8 @@ class Security(object):
             security_mode = hostapd_constants.MIXED
         elif security_mode == hostapd_constants.WEP_STRING:
             security_mode = hostapd_constants.WEP
+        elif security_mode == hostapd_constants.ENT_STRING:
+            security_mode = hostapd_constants.ENT
         else:
             security_mode = None
         self.security_mode = security_mode
@@ -96,6 +107,13 @@ class Security(object):
             if self.security_mode == hostapd_constants.WEP:
                 settings['wep_default_key'] = self.wep_default_key
                 settings['wep_key' + str(self.wep_default_key)] = self.password
+            elif self.security_mode  == hostapd_constants.ENT:
+                settings['auth_server_addr'] = self.radius_server_ip
+                settings['auth_server_port'] = self.radius_server_port
+                settings['auth_server_shared_secret'] = self.radius_server_secret
+                settings['wpa_key_mgmt'] = hostapd_constants.ENT_KEY_MGMT
+                settings['ieee8021x'] = hostapd_constants.IEEE8021X
+                settings['wpa'] = hostapd_constants.WPA2
             else:
                 settings['wpa'] = self.security_mode
                 if len(self.password) == hostapd_constants.MAX_WPA_PSK_LENGTH:
