@@ -71,20 +71,21 @@ BLACKLIST = [
     'acts/framework/acts/controllers/buds_lib/data_storage/_sponge/sponge_client_lite.py',
 ]
 
+BLACKLIST_DIRECTORIES = [
+    'acts/framework/acts/test_utils/'
+]
+
 
 class ActsImportTestUtilsTest(unittest.TestCase):
-    """Test that all acts framework imports work.
-    """
+    """Test that all acts framework imports work."""
 
     def test_import_acts_successful(self):
-        """ Test that importing acts works.
-        """
+        """Test that importing ACTS works."""
         acts = import_acts()
         self.assertIsNotNone(acts)
 
     def test_import_framework_successful(self):
-        """ Dynamically test all imports from the framework.
-        """
+        """Dynamically test all imports from the framework."""
         acts = import_acts()
         if hasattr(acts, '__path__') and len(acts.__path__) > 0:
             acts_path = acts.__path__[0]
@@ -94,7 +95,8 @@ class ActsImportTestUtilsTest(unittest.TestCase):
         for root, _, files in os.walk(acts_path):
             for f in files:
                 full_path = os.path.join(root, f)
-                if any(full_path.endswith(e) for e in BLACKLIST):
+                if (any(full_path.endswith(e) for e in BLACKLIST) or
+                        any(e in full_path for e in BLACKLIST_DIRECTORIES)):
                     continue
 
                 path = os.path.relpath(os.path.join(root, f), os.getcwd())
@@ -107,5 +109,5 @@ class ActsImportTestUtilsTest(unittest.TestCase):
                         self.assertIsNotNone(module)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
