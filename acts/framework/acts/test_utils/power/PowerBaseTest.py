@@ -95,8 +95,8 @@ class PowerBaseTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
-        BlackboxMetricLogger.for_test_case(metric_name='avg_current',
-                                           result_attr='test_result')
+        BlackboxMetricLogger.for_test_case(
+            metric_name='avg_current', result_attr='test_result')
 
     def setup_class(self):
 
@@ -445,22 +445,28 @@ class PowerBaseTest(base_test.BaseTestClass):
         if retry_measure > MEASUREMENT_RETRY_COUNT:
             self.log.error('Test failed after maximum measurement retry')
 
-    def setup_ap_connection(self, network, bandwidth=80, connect=True):
+    def setup_ap_connection(self, network, bandwidth=80, connect=True,
+                            ap=None):
         """Setup AP and connect DUT to it.
 
         Args:
             network: the network config for the AP to be setup
             bandwidth: bandwidth of the WiFi network to be setup
             connect: indicator of if connect dut to the network after setup
+            ap: access point object, default is None to find the main AP
         Returns:
             self.brconfigs: dict for bridge interface configs
         """
         wutils.wifi_toggle_state(self.dut, True)
-        if hasattr(self, 'access_points'):
-            self.brconfigs = wputils.ap_setup(
-                self.access_point, network, bandwidth=bandwidth)
+        if not ap:
+            if hasattr(self, 'access_points'):
+                self.brconfigs = wputils.ap_setup(
+                    self.access_point, network, bandwidth=bandwidth)
+        else:
+            self.brconfigs = wputils.ap_setup(ap, network, bandwidth=bandwidth)
         if connect:
-            wutils.wifi_connect(self.dut, network)
+            wutils.wifi_connect(self.dut, network, num_of_tries=3)
+        return self.brconfigs
 
     def process_iperf_results(self):
         """Get the iperf results and process.
