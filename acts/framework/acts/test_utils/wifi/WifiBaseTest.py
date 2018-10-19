@@ -259,6 +259,8 @@ class WifiBaseTest(BaseTestClass):
             self.wpa_networks[ap_instance][band]["bssid"] = bssid
         if network["security"] == hostapd_constants.WEP_STRING:
             self.wep_networks[ap_instance][band]["bssid"] = bssid
+        if network["security"] == hostapd_constants.ENT_STRING:
+            self.ent_networks[ap_instance][band]["bssid"] = bssid
         if network["security"] == 'none':
             self.open_network[ap_instance][band]["bssid"] = bssid
 
@@ -303,6 +305,9 @@ class WifiBaseTest(BaseTestClass):
             mirror_ap=True,
             wpa_network=False,
             wep_network=False,
+            ent_network=False,
+            radius_conf_2g=None,
+            radius_conf_5g=None,
             ap_count=1):
         asserts.assert_true(
             len(self.user_params["AccessPoint"]) == 2,
@@ -327,6 +332,8 @@ class WifiBaseTest(BaseTestClass):
             self.user_params["wpa_networks"] = []
         if wep_network:
             self.user_params["wep_networks"] = []
+        if ent_network:
+            self.user_params["ent_networks"] = []
 
         for count in range(config_count):
 
@@ -388,6 +395,21 @@ class WifiBaseTest(BaseTestClass):
                     network_list_2g.append(networks_dict["2g"])
                     network_list_5g.append(networks_dict["5g"])
 
+                if ent_network:
+                    networks_dict = self.get_open_network(
+                                        mirror_ap,
+                                        self.user_params["ent_networks"],
+                                        hidden=hidden,
+                                        same_ssid=same_ssid)
+                    networks_dict["2g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["2g"].update(radius_conf_2g)
+                    networks_dict["5g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["5g"].update(radius_conf_5g)
+                    self.ent_networks = self.user_params["ent_networks"]
+
+                    network_list_2g.append(networks_dict["2g"])
+                    network_list_5g.append(networks_dict["5g"])
+
             orig_network_list_5g = copy.copy(network_list_5g)
             orig_network_list_2g = copy.copy(network_list_2g)
 
@@ -437,6 +459,17 @@ class WifiBaseTest(BaseTestClass):
                         security=hostapd_security.Security(
                             security_mode=network["security"],
                             password=network["wepKeys"][0])))
+            elif network["security"] == hostapd_constants.ENT_STRING:
+                bss_settings.append(
+                    hostapd_bss_settings.BssSettings(
+                        name=network["SSID"],
+                        ssid=network["SSID"],
+                        hidden=network["hiddenSSID"],
+                        security=hostapd_security.Security(
+                            security_mode=network["security"],
+                            radius_server_ip=network["radius_server_ip"],
+                            radius_server_port=network["radius_server_port"],
+                            radius_server_secret=network["radius_server_secret"])))
             else:
                 bss_settings.append(
                     hostapd_bss_settings.BssSettings(
