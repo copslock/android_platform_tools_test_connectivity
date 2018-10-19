@@ -34,7 +34,11 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
     """
 
     # Keywords for test name parameters
-    PARAM_TRAFFIC_PATTERN = 'pattern'
+    PARAM_DIRECTION = 'direction'
+    PARAM_DIRECTION_UL = 'ul'
+    PARAM_DIRECTION_DL = 'dl'
+    PARAM_DIRECTION_UL_DL = 'uldl'
+    PARAM_BANDWIDTH_LIMIT = 'blimit'
 
     # Iperf waiting time
     IPERF_MARGIN = 10
@@ -47,10 +51,12 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         super().__init__(controllers)
 
-        # Traffic pattern variables. Values are set later
-        # when reading config from test name.
-        self.traffic_pattern_dl = 0
-        self.traffic_pattern_ul = 0
+        # These variables are passed to iPerf when starting data
+        # traffic with the -b parameter to limit throughput on
+        # the application layer.
+        self.bandwidth_limit_dl = None
+        self.bandwidth_limit_ul = None
+
 
     def setup_test(self):
         """ Executed before every test case.
@@ -64,14 +70,38 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             return False
 
         try:
-            values = self.consume_parameter(self.PARAM_TRAFFIC_PATTERN, 2)
-            self.traffic_pattern_dl = int(values[1])
-            self.traffic_pattern_ul = int(values[2])
+            values = self.consume_parameter(self.PARAM_DIRECTION, 1)
+            self.traffic_direction = values[1]
         except:
-            self.log.error("The test name has to include parameter {} followed by two int values separated by an "
-                           "underscore indicating DL and UL traffic percentage.".format(self.PARAM_TRAFFIC_PATTERN))
+            self.log.error("The test name has to include parameter {} followed by {}/{}/{}.".format(
+                self.PARAM_DIRECTION,
+                self.PARAM_DIRECTION_UL,
+                self.PARAM_DIRECTION_DL,
+                self.PARAM_DIRECTION_UL_DL
+            ))
             return False
 
+
+        try:
+            values = self.consume_parameter(self.PARAM_BANDWIDTH_LIMIT, 2)
+
+            if values:
+              self.bandwidth_limit_dl = values[1]
+              self.bandwidth_limit_ul = values[2]
+            else:
+              self.bandwidth_limit_dl = 0
+              self.bandwidth_limit_ul = 0
+
+        except:
+            self.log.error(
+              "Parameter {} has to be followed by two strings indicating "
+              "downlink and uplink bandwidth limits for iPerf.".format(
+                self.PARAM_BANDWIDTH_LIMIT
+              )
+            )
+            return False
+
+        # No errors when parsing parameters
         return True
 
     def teardown_test(self):
@@ -130,20 +160,13 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         # Start iPerf traffic
         iperf_helpers = []
 
-        if self.traffic_pattern_ul > 0 and self.traffic_pattern_dl > 0:
-            # Bidirectional traffic
-            # Calculate traffic limit to do traffic shaping
-            max_t_ul = self.simulation.maximum_uplink_throughput() * 0.98 * self.traffic_pattern_ul / 100
-            max_t_dl = self.simulation.maximum_downlink_throughput() * 0.98 * self.traffic_pattern_dl / 100
-            # Initiate traffic
-            iperf_helpers.append(self.start_iperf_traffic(client_host, server_idx=len(iperf_helpers), traffic_direction='UL', bandwidth=max_t_ul))
-            iperf_helpers.append(self.start_iperf_traffic(client_host, server_idx=len(iperf_helpers), traffic_direction='DL', bandwidth=max_t_dl))
-        elif self.traffic_pattern_ul > 0:
-            # Uplink traffic
-            iperf_helpers.append(self.start_iperf_traffic(client_host, server_idx=len(iperf_helpers), traffic_direction='UL'))
-        elif self.traffic_pattern_dl > 0:
+        if self.traffic_direction in [self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_UL_DL]:
             # Downlink traffic
-            iperf_helpers.append(self.start_iperf_traffic(client_host, server_idx=len(iperf_helpers), traffic_direction='DL'))
+            iperf_helpers.append(self.start_iperf_traffic(client_host, server_idx=len(iperf_helpers), traffic_direction='DL', bandwidth=self.bandwidth_limit_dl))
+
+        if self.traffic_direction in [self.PARAM_DIRECTION_UL, self.PARAM_DIRECTION_UL_DL]:
+            # Uplink traffic
+            iperf_helpers.append(self.start_iperf_traffic(client_host, server_idx=len(iperf_helpers), traffic_direction='UL', bandwidth=self.bandwidth_limit_ul))
 
         return iperf_helpers
 
@@ -362,3 +385,4 @@ class PowerTelTetheringTest(PowerTelTrafficTest):
             return False
 
         return True
+
