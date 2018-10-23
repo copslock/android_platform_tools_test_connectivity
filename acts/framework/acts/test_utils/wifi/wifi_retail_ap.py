@@ -142,10 +142,7 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
             try:
                 self.visit(url)
             except:
-                try:
-                    self.visit("about:blank")
-                except:
-                    self.restart()
+                self.restart()
             if self.url.split("/")[-1] == url.split("/")[-1]:
                 break
             if idx == num_tries - 1:
