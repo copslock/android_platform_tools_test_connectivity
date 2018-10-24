@@ -358,8 +358,9 @@ class NetgearR7000AP(WifiRetailAP):
         self.config_page_nologin = "{}://{}:{}/WLG_wireless_dual_band_r10.htm".format(
             self.ap_settings["protocol"], self.ap_settings["ip_address"],
             self.ap_settings["port"])
-        self.config_page_advanced = "{}://{}:{}/WLG_adv_dual_band2.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["ip_address"],
+        self.config_page_advanced = "{}://{}:{}@{}:{}/WLG_adv_dual_band2.htm".format(
+            self.ap_settings["protocol"], self.ap_settings["admin_username"],
+            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
             self.ap_settings["port"])
         self.networks = ["2G", "5G_1"]
         self.channel_band_map = {
@@ -435,8 +436,6 @@ class NetgearR7000AP(WifiRetailAP):
                              600) as browser:
             # Visit URL
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
-            browser.visit_persistent(self.config_page_nologin,
-                                     BROWSER_WAIT_MED, 10)
 
             for key, value in self.config_page_fields.items():
                 if "status" in key:
@@ -603,11 +602,9 @@ class NetgearR7500AP(WifiRetailAP):
             self.ap_settings["protocol"], self.ap_settings["admin_username"],
             self.ap_settings["admin_password"], self.ap_settings["ip_address"],
             self.ap_settings["port"])
-        self.config_page_nologin = "{}://{}:{}/index.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["ip_address"],
-            self.ap_settings["port"])
-        self.config_page_advanced = "{}://{}:{}/adv_index.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["ip_address"],
+        self.config_page_advanced = "{}://{}:{}@{}:{}/adv_index.htm".format(
+            self.ap_settings["protocol"], self.ap_settings["admin_username"],
+            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
             self.ap_settings["port"])
         self.networks = ["2G", "5G_1"]
         self.channel_band_map = {
@@ -914,8 +911,9 @@ class NetgearR8000AP(NetgearR7000AP):
         self.config_page_nologin = "{}://{}:{}/WLG_wireless_dual_band_r8000.htm".format(
             self.ap_settings["protocol"], self.ap_settings["ip_address"],
             self.ap_settings["port"])
-        self.config_page_advanced = "{}://{}:{}/WLG_adv_dual_band2_r8000.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["ip_address"],
+        self.config_page_advanced = "{}://{}:{}@{}:{}/WLG_adv_dual_band2_r8000.htm".format(
+            self.ap_settings["protocol"], self.ap_settings["admin_username"],
+            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
             self.ap_settings["port"])
         self.networks = ["2G", "5G_1", "5G_2"]
         self.channel_band_map = {
