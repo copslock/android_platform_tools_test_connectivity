@@ -59,16 +59,6 @@ class DozeModeStatus:
     IDLE = "IDLE"
 
 
-class CapablityPerDevice:
-    energy_info_models = [
-        "shamu", "volantis", "volantisg", "angler", "bullhead", "ryu",
-        "marlin", "sailfish"
-    ]
-    tdls_models = [
-        "shamu", "hammerhead", "angler", "bullhead", "marlin", "sailfish"
-    ]
-
-
 ascii_letters_and_digits = string.ascii_letters + string.digits
 valid_filename_chars = "-_." + ascii_letters_and_digits
 
