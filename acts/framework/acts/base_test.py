@@ -145,21 +145,6 @@ class BaseTestClass(object):
                 self.log.warning(("Missing optional user param '%s' in "
                                   "configuration, continue."), name)
 
-        capablity_of_devices = utils.CapablityPerDevice
-        if "additional_energy_info_models" in self.user_params:
-            self.energy_info_models = (capablity_of_devices.energy_info_models
-                                       + self.additional_energy_info_models)
-        else:
-            self.energy_info_models = capablity_of_devices.energy_info_models
-        self.user_params["energy_info_models"] = self.energy_info_models
-
-        if "additional_tdls_models" in self.user_params:
-            self.tdls_models = (capablity_of_devices.energy_info_models +
-                                self.additional_tdls_models)
-        else:
-            self.tdls_models = capablity_of_devices.energy_info_models
-        self.user_params["tdls_models"] = self.tdls_models
-
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
