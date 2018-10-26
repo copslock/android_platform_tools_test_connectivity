@@ -16,7 +16,8 @@ import os
 import subprocess
 import sys
 from distutils.spawn import find_executable
-from google import protobuf
+from google.protobuf import text_format
+from google.protobuf import descriptor_pb2
 from importlib import import_module
 
 
@@ -94,7 +95,7 @@ def parse_proto_to_ascii(binary_proto_msg):
     Returns:
         The ascii format of the proto message.
     """
-    return protobuf.text_format.MessageToString(binary_proto_msg)
+    return text_format.MessageToString(binary_proto_msg)
 
 
 def to_descriptor_proto(proto):
@@ -105,6 +106,6 @@ def to_descriptor_proto(proto):
     Returns:
         The descriptor proto for the input meessage.
     """
-    descriptor_proto = protobuf.descriptor_pb2.DescriptorProto()
+    descriptor_proto = descriptor_pb2.DescriptorProto()
     proto.DESCRIPTOR.CopyToProto(descriptor_proto)
     return descriptor_proto
