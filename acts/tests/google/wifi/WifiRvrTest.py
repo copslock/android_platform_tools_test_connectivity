@@ -24,6 +24,7 @@ from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -47,6 +48,8 @@ class WifiRvrTest(base_test.BaseTestClass):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
+        self.failure_count_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='failure_count')
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -152,6 +155,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                     format(current_att, current_throughput,
                            throughput_limits["lower_limit"][idx],
                            throughput_limits["upper_limit"][idx]))
+        self.failure_count_metric.metric_value = failure_count
         if failure_count >= self.testclass_params["failure_count_tolerance"]:
             asserts.fail("Test failed. Found {} points outside limits.".format(
                 failure_count))
@@ -757,7 +761,7 @@ class WifiRvrTest(base_test.BaseTestClass):
 # Classes defining test suites
 class WifiRvr_2GHz_Test(WifiRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = ("test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_UL_ch1_VHT20",
                       "test_rvr_TCP_DL_ch6_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
                       "test_rvr_TCP_DL_ch11_VHT20",
@@ -766,7 +770,7 @@ class WifiRvr_2GHz_Test(WifiRvrTest):
 
 class WifiRvr_UNII1_Test(WifiRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = (
             "test_rvr_TCP_DL_ch36_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
             "test_rvr_TCP_DL_ch36_VHT40", "test_rvr_TCP_UL_ch36_VHT40",
@@ -779,7 +783,7 @@ class WifiRvr_UNII1_Test(WifiRvrTest):
 
 class WifiRvr_UNII3_Test(WifiRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = (
             "test_rvr_TCP_DL_ch149_VHT20", "test_rvr_TCP_UL_ch149_VHT20",
             "test_rvr_TCP_DL_ch149_VHT40", "test_rvr_TCP_UL_ch149_VHT40",
@@ -792,7 +796,7 @@ class WifiRvr_UNII3_Test(WifiRvrTest):
 
 class WifiRvr_SampleDFS_Test(WifiRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = (
             "test_rvr_TCP_DL_ch64_VHT20", "test_rvr_TCP_UL_ch64_VHT20",
             "test_rvr_TCP_DL_ch100_VHT20", "test_rvr_TCP_UL_ch100_VHT20",
@@ -805,7 +809,7 @@ class WifiRvr_SampleDFS_Test(WifiRvrTest):
 
 class WifiRvr_SampleUDP_Test(WifiRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = (
             "test_rvr_UDP_DL_ch6_VHT20", "test_rvr_UDP_UL_ch6_VHT20",
             "test_rvr_UDP_DL_ch36_VHT20", "test_rvr_UDP_UL_ch36_VHT20",
@@ -818,7 +822,7 @@ class WifiRvr_SampleUDP_Test(WifiRvrTest):
 
 class WifiRvr_TCP_All_Test(WifiRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = (
             "test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_UL_ch1_VHT20",
             "test_rvr_TCP_DL_ch6_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
@@ -841,7 +845,7 @@ class WifiRvr_TCP_All_Test(WifiRvrTest):
 
 class WifiRvr_TCP_Downlink_Test(WifiRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = (
             "test_rvr_TCP_DL_ch1_VHT20", "test_rvr_TCP_DL_ch6_VHT20",
             "test_rvr_TCP_DL_ch11_VHT20", "test_rvr_TCP_DL_ch36_VHT20",
@@ -856,7 +860,7 @@ class WifiRvr_TCP_Downlink_Test(WifiRvrTest):
 
 class WifiRvr_TCP_Uplink_Test(WifiRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = (
             "test_rvr_TCP_UL_ch1_VHT20", "test_rvr_TCP_UL_ch6_VHT20",
             "test_rvr_TCP_UL_ch11_VHT20", "test_rvr_TCP_UL_ch36_VHT20",
