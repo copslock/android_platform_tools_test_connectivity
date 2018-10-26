@@ -260,7 +260,10 @@ class WifiBaseTest(BaseTestClass):
         if network["security"] == hostapd_constants.WEP_STRING:
             self.wep_networks[ap_instance][band]["bssid"] = bssid
         if network["security"] == hostapd_constants.ENT_STRING:
-            self.ent_networks[ap_instance][band]["bssid"] = bssid
+            if "bssid" not in self.ent_networks[ap_instance][band]:
+                self.ent_networks[ap_instance][band]["bssid"] = bssid
+            else:
+                self.ent_networks_pwd[ap_instance][band]["bssid"] = bssid
         if network["security"] == 'none':
             self.open_network[ap_instance][band]["bssid"] = bssid
 
@@ -308,6 +311,8 @@ class WifiBaseTest(BaseTestClass):
             ent_network=False,
             radius_conf_2g=None,
             radius_conf_5g=None,
+            ent_network_pwd=False,
+            radius_conf_pwd=None,
             ap_count=1):
         asserts.assert_true(
             len(self.user_params["AccessPoint"]) == 2,
@@ -334,6 +339,8 @@ class WifiBaseTest(BaseTestClass):
             self.user_params["wep_networks"] = []
         if ent_network:
             self.user_params["ent_networks"] = []
+        if ent_network_pwd:
+            self.user_params["ent_networks_pwd"] = []
 
         for count in range(config_count):
 
@@ -406,6 +413,21 @@ class WifiBaseTest(BaseTestClass):
                     networks_dict["5g"]["security"] = hostapd_constants.ENT_STRING
                     networks_dict["5g"].update(radius_conf_5g)
                     self.ent_networks = self.user_params["ent_networks"]
+
+                    network_list_2g.append(networks_dict["2g"])
+                    network_list_5g.append(networks_dict["5g"])
+
+                if ent_network_pwd:
+                    networks_dict = self.get_open_network(
+                                        mirror_ap,
+                                        self.user_params["ent_networks_pwd"],
+                                        hidden=hidden,
+                                        same_ssid=same_ssid)
+                    networks_dict["2g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["2g"].update(radius_conf_pwd)
+                    networks_dict["5g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["5g"].update(radius_conf_pwd)
+                    self.ent_networks_pwd = self.user_params["ent_networks_pwd"]
 
                     network_list_2g.append(networks_dict["2g"])
                     network_list_5g.append(networks_dict["5g"])
