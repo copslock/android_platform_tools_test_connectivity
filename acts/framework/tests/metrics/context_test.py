@@ -29,6 +29,14 @@ from acts.metrics.context import TestClassContext
 LOGGING = 'acts.metrics.context.logging'
 
 
+class TestClass:
+    def __init__(self):
+        self.test_name = self.test_case.__name__
+
+    def test_case(self):
+        pass
+
+
 class ModuleTest(TestCase):
     """Unit tests for the context module."""
 
@@ -140,9 +148,10 @@ class TestCaseContextTest(TestCase):
     """Unit tests for the TestCaseContext class."""
 
     def test_init_attributes(self):
-        test_class = Mock()
         test_case = Mock()
         test_case.__name__ = 'test_case_name'
+        test_class = Mock()
+        test_class.test_name = test_case.__name__
         context = TestCaseContext(test_class, test_case)
 
         self.assertEqual(context.test_class, test_class)
@@ -159,9 +168,6 @@ class TestCaseContextTest(TestCase):
         self.assertEqual(context.test_class_name, TestClass.__name__)
 
     def test_get_output_dir_is_class_and_test_case_name(self):
-        class TestClass:
-            def test_case(self):
-                pass
         test_class = TestClass()
         test_case = TestClass.test_case
         context = TestCaseContext(test_class, test_case)
@@ -170,9 +176,6 @@ class TestCaseContextTest(TestCase):
         self.assertEqual(context.get_output_dir(), output_dir)
 
     def test_identifier_is_class_and_test_case_name(self):
-        class TestClass:
-            def test_case(self):
-                pass
         test_class = TestClass()
         test_case = TestClass.test_case
         context = TestCaseContext(test_class, test_case)
