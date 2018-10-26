@@ -37,7 +37,7 @@ class TestCaseEvent(TestEvent):
 
     @property
     def test_case_name(self):
-        return self.test_case.__name__
+        return self.test_class.test_name
 
     @property
     def test_class_name(self):
