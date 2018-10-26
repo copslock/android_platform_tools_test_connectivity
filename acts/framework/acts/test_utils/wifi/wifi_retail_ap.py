@@ -444,7 +444,7 @@ class NetgearR7000AP(WifiRetailAP):
                     config_item = browser.find_by_name(value)
                     self.ap_settings["{}_{}".format(key[1], key[0])] = int(
                         config_item.first.checked)
-                    browser.visit_persistent(self.config_page_nologin,
+                    browser.visit_persistent(self.config_page,
                                              BROWSER_WAIT_MED, 10)
                 else:
                     config_item = browser.find_by_name(value)

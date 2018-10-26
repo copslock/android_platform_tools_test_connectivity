@@ -25,6 +25,8 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 WifiEnums = wutils.WifiEnums
 
@@ -53,7 +55,7 @@ class WifiStressTest(WifiBaseTest):
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
-            "stress_count", "stress_hours"]
+            "stress_count", "stress_hours", "attn_vals", "pno_interval"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
@@ -78,6 +80,8 @@ class WifiStressTest(WifiBaseTest):
         self.dut.droid.wakeUpNow()
 
     def teardown_test(self):
+        if self.dut.droid.wifiIsApEnabled():
+            wutils.stop_wifi_tethering(self.dut)
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
@@ -159,6 +163,90 @@ class WifiStressTest(WifiBaseTest):
             raise signals.TestFailure("Youtube video did not start. Current WiFi "
                 "state is %d" % self.dut.droid.wifiCheckState())
 
+    def add_networks(self, ad, networks):
+        """Add Wi-Fi networks to an Android device and verify the networks were
+        added correctly.
+
+        Args:
+            ad: the AndroidDevice object to add networks to.
+            networks: a list of dicts, each dict represents a Wi-Fi network.
+        """
+        for network in networks:
+            ret = ad.droid.wifiAddNetwork(network)
+            asserts.assert_true(ret != -1, "Failed to add network %s" %
+                                network)
+            ad.droid.wifiEnableNetwork(ret, 0)
+        configured_networks = ad.droid.wifiGetConfiguredNetworks()
+        self.log.debug("Configured networks: %s", configured_networks)
+
+    def connect_and_verify_connected_bssid(self, expected_bssid):
+        """Start a scan to get the DUT connected to an AP and verify the DUT
+        is connected to the correct BSSID.
+
+        Args:
+            expected_bssid: Network bssid to which connection.
+
+        Returns:
+            True if connection to given network happen, else return False.
+        """
+        #force start a single scan so we don't have to wait for the
+        #WCM scheduled scan.
+        wutils.start_wifi_connection_scan(self.dut)
+        #wait for connection
+        time.sleep(20)
+        #verify connection
+        actual_network = self.dut.droid.wifiGetConnectionInfo()
+        self.log.info("Actual network: %s", actual_network)
+        try:
+            asserts.assert_equal(expected_bssid,
+                                 actual_network[WifiEnums.BSSID_KEY])
+        except:
+           msg = "Device did not connect to any network."
+           raise signals.TestFailure(msg)
+
+    def set_attns(self, attn_val_name):
+        """Sets attenuation values on attenuators used in this test.
+
+        Args:
+            attn_val_name: Name of the attenuation value pair to use.
+        """
+        self.log.info("Set attenuation values to %s", self.attn_vals[attn_val_name])
+        try:
+            self.attenuators[0].set_atten(self.attn_vals[attn_val_name][0])
+            self.attenuators[1].set_atten(self.attn_vals[attn_val_name][1])
+            self.attenuators[2].set_atten(95)
+            self.attenuators[3].set_atten(95)
+        except:
+            self.log.error("Failed to set attenuation values %s.", attn_val_name)
+            raise
+
+    def trigger_pno_and_assert_connect(self, attn_val_name, expected_con):
+        """Sets attenuators to disconnect current connection to trigger PNO.
+        Validate that the DUT connected to the new SSID as expected after PNO.
+
+        Args:
+            attn_val_name: Name of the attenuation value pair to use.
+            expected_con: The expected info of the network to we expect the DUT
+                to roam to.
+        """
+        connection_info = self.dut.droid.wifiGetConnectionInfo()
+        self.log.info("Triggering PNO connect from %s to %s",
+                      connection_info[WifiEnums.SSID_KEY],
+                      expected_con[WifiEnums.SSID_KEY])
+        self.set_attns(attn_val_name)
+        self.log.info("Wait %ss for PNO to trigger.", self.pno_interval)
+        time.sleep(self.pno_interval)
+        try:
+            self.log.info("Connected to %s network after PNO interval"
+                          % self.dut.droid.wifiGetConnectionInfo())
+            expected_ssid = expected_con[WifiEnums.SSID_KEY]
+            verify_con = {WifiEnums.SSID_KEY: expected_ssid}
+            wutils.verify_wifi_connection_info(self.dut, verify_con)
+            self.log.info("Connected to %s successfully after PNO",
+                          expected_ssid)
+        finally:
+            pass
+
     """Tests"""
 
     @test_tracker_info(uuid="cd0016c6-58cf-4361-b551-821c0b8d2554")
@@ -178,6 +266,28 @@ class WifiStressTest(WifiBaseTest):
             except:
                 signals.TestFailure(details="", extras={"Iterations":"%d" %
                     self.stress_count, "Pass":"%d" %count})
+        raise signals.TestPass(details="", extras={"Iterations":"%d" %
+            self.stress_count, "Pass":"%d" %(count+1)})
+
+    @test_tracker_info(uuid="4e591cec-9251-4d52-bc6e-6621507524dc")
+    def test_stress_toggle_wifi_state_bluetooth_on(self):
+        """Toggle WiFi state ON and OFF for N times when bluetooth ON."""
+        enable_bluetooth(self.dut.droid, self.dut.ed)
+        for count in range(self.stress_count):
+            """Test toggling wifi"""
+            try:
+                self.log.debug("Going from on to off.")
+                wutils.wifi_toggle_state(self.dut, False)
+                self.log.debug("Going from off to on.")
+                startTime = time.time()
+                wutils.wifi_toggle_state(self.dut, True)
+                startup_time = time.time() - startTime
+                self.log.debug("WiFi was enabled on the device in %s s." %
+                    startup_time)
+            except:
+                signals.TestFailure(details="", extras={"Iterations":"%d" %
+                    self.stress_count, "Pass":"%d" %count})
+        disable_bluetooth(self.dut.droid)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
@@ -301,6 +411,7 @@ class WifiStressTest(WifiBaseTest):
                 ret = self.dut.droid.wifiAddNetwork(network)
                 asserts.assert_true(ret != -1, "Add network %r failed" % network)
                 self.dut.droid.wifiEnableNetwork(ret, 0)
+            self.dut.droid.wifiStartScan()
             time.sleep(WAIT_FOR_AUTO_CONNECT)
             cur_network = self.dut.droid.wifiGetConnectionInfo()
             cur_ssid = cur_network[WifiEnums.SSID_KEY]
@@ -392,3 +503,48 @@ class WifiStressTest(WifiBaseTest):
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %((count+1)*2)})
 
+    @test_tracker_info(uuid="e8ae8cd2-c315-4c08-9eb3-83db65b78a58")
+    def test_stress_network_selector_2G_connection(self):
+        """
+            1. Add one saved 2G network to DUT.
+            2. Move the DUT in range.
+            3. Verify the DUT is connected to the network.
+            4. Move the DUT out of range
+            5. Repeat step 2-4
+        """
+        for attenuator in self.attenuators:
+            attenuator.set_atten(95)
+
+        # add a saved network to DUT
+        networks = [self.reference_networks[0]['2g']]
+        self.add_networks(self.dut, networks)
+
+        for count in range(self.stress_count):
+            # move the DUT in range
+            self.attenuators[0].set_atten(0)
+            # verify
+            self.connect_and_verify_connected_bssid(self.reference_networks[0]['2g']['bssid'])
+            # move the DUT out of range
+            self.attenuators[0].set_atten(95)
+        raise signals.TestPass(details="", extras={"Iterations":"%d" %
+            self.stress_count, "Pass":"%d" %(count+1)})
+
+    @test_tracker_info(uuid="5d5d14cb-3cd1-4b3d-8c04-0d6f4b764b6b")
+    def test_stress_pno_connection_to_2g(self):
+        """Test PNO triggered autoconnect to a network for N times
+
+        Steps:
+        1. Save 2Ghz valid network configuration in the device.
+        2. Attenuate 5Ghz network and wait for a few seconds to trigger PNO.
+        3. Check the device connected to 2Ghz network automatically.
+        4. Repeat step 2-3
+        """
+        networks = [self.reference_networks[0]['2g']]
+        self.add_networks(self.dut, networks)
+        for count in range(self.stress_count):
+            self.trigger_pno_and_assert_connect("a_on_b_off", self.reference_networks[0]['2g'])
+            self.set_attns("b_on_a_off")
+            time.sleep(10)
+        wutils.set_attns(self.attenuators, "default")
+        raise signals.TestPass(details="", extras={"Iterations":"%d" %
+            self.stress_count, "Pass":"%d" %(count+1)})
