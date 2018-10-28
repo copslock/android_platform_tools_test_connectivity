@@ -29,6 +29,8 @@ from acts.libs.logging.log_stream import LogStyles
 
 class TestClass(object):
     """Dummy class for TestEvents"""
+    def __init__(self):
+        self.test_name = self.test_case.__name__
 
     def test_case(self):
         """Dummy test case for test events."""
@@ -285,7 +287,7 @@ class LogStreamTest(unittest.TestCase):
 
         created_log_stream = log_stream._log_streams[self._testMethodName]
         created_log_stream.on_test_case_begin(
-            TestCaseBeginEvent(TestClass, TestClass.test_case))
+            TestCaseBeginEvent(TestClass(), TestClass.test_case))
 
         self.assertEqual(len(created_log_stream._test_case_log_handlers), 1)
 
@@ -317,7 +319,7 @@ class LogStreamModuleTests(unittest.TestCase):
 
     @staticmethod
     def create_test_case_event():
-        return TestCaseBeginEvent(TestClass, TestClass.test_case)
+        return TestCaseBeginEvent(TestClass(), TestClass.test_case)
 
     @mock.patch('os.path.exists')
     @mock.patch('os.mkdir')

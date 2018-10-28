@@ -28,6 +28,7 @@ from acts.controllers.relay_lib.tao_tronics_headset import TaoTronicsCarkit
 from acts.controllers.relay_lib.ak_xb10_speaker import AkXB10Speaker
 from acts.controllers.relay_lib.dongles import SingleButtonDongle
 from acts.controllers.relay_lib.dongles import ThreeButtonDongle
+from acts.controllers.relay_lib.earstudio_receiver import EarstudioReceiver
 
 
 class RelayRig:
@@ -71,6 +72,7 @@ class RelayRig:
         'AkXB10Speaker': lambda x, rig: AkXB10Speaker(x, rig),
         'SingleButtonDongle': lambda x, rig: SingleButtonDongle(x, rig),
         'ThreeButtonDongle': lambda x, rig: ThreeButtonDongle(x, rig),
+        'EarstudioReceiver': lambda x, rig: EarstudioReceiver(x, rig),
     }
 
     def __init__(self, config):
