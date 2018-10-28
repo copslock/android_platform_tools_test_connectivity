@@ -259,6 +259,11 @@ class WifiBaseTest(BaseTestClass):
             self.wpa_networks[ap_instance][band]["bssid"] = bssid
         if network["security"] == hostapd_constants.WEP_STRING:
             self.wep_networks[ap_instance][band]["bssid"] = bssid
+        if network["security"] == hostapd_constants.ENT_STRING:
+            if "bssid" not in self.ent_networks[ap_instance][band]:
+                self.ent_networks[ap_instance][band]["bssid"] = bssid
+            else:
+                self.ent_networks_pwd[ap_instance][band]["bssid"] = bssid
         if network["security"] == 'none':
             self.open_network[ap_instance][band]["bssid"] = bssid
 
@@ -303,6 +308,11 @@ class WifiBaseTest(BaseTestClass):
             mirror_ap=True,
             wpa_network=False,
             wep_network=False,
+            ent_network=False,
+            radius_conf_2g=None,
+            radius_conf_5g=None,
+            ent_network_pwd=False,
+            radius_conf_pwd=None,
             ap_count=1):
         asserts.assert_true(
             len(self.user_params["AccessPoint"]) == 2,
@@ -327,6 +337,10 @@ class WifiBaseTest(BaseTestClass):
             self.user_params["wpa_networks"] = []
         if wep_network:
             self.user_params["wep_networks"] = []
+        if ent_network:
+            self.user_params["ent_networks"] = []
+        if ent_network_pwd:
+            self.user_params["ent_networks_pwd"] = []
 
         for count in range(config_count):
 
@@ -388,6 +402,36 @@ class WifiBaseTest(BaseTestClass):
                     network_list_2g.append(networks_dict["2g"])
                     network_list_5g.append(networks_dict["5g"])
 
+                if ent_network:
+                    networks_dict = self.get_open_network(
+                                        mirror_ap,
+                                        self.user_params["ent_networks"],
+                                        hidden=hidden,
+                                        same_ssid=same_ssid)
+                    networks_dict["2g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["2g"].update(radius_conf_2g)
+                    networks_dict["5g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["5g"].update(radius_conf_5g)
+                    self.ent_networks = self.user_params["ent_networks"]
+
+                    network_list_2g.append(networks_dict["2g"])
+                    network_list_5g.append(networks_dict["5g"])
+
+                if ent_network_pwd:
+                    networks_dict = self.get_open_network(
+                                        mirror_ap,
+                                        self.user_params["ent_networks_pwd"],
+                                        hidden=hidden,
+                                        same_ssid=same_ssid)
+                    networks_dict["2g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["2g"].update(radius_conf_pwd)
+                    networks_dict["5g"]["security"] = hostapd_constants.ENT_STRING
+                    networks_dict["5g"].update(radius_conf_pwd)
+                    self.ent_networks_pwd = self.user_params["ent_networks_pwd"]
+
+                    network_list_2g.append(networks_dict["2g"])
+                    network_list_5g.append(networks_dict["5g"])
+
             orig_network_list_5g = copy.copy(network_list_5g)
             orig_network_list_2g = copy.copy(network_list_2g)
 
@@ -410,6 +454,8 @@ class WifiBaseTest(BaseTestClass):
 
     def _generate_legacy_ap_config(self, network_list):
         bss_settings = []
+        wlan_2g = self.access_points[AP_1].wlan_2g
+        wlan_5g = self.access_points[AP_1].wlan_5g
         ap_settings = network_list.pop(0)
         # TODO:(bmahadev) This is a bug. We should not have to pop the first
         # network in the list and treat it as a separate case. Instead,
@@ -435,38 +481,72 @@ class WifiBaseTest(BaseTestClass):
                         security=hostapd_security.Security(
                             security_mode=network["security"],
                             password=network["wepKeys"][0])))
+            elif network["security"] == hostapd_constants.ENT_STRING:
+                bss_settings.append(
+                    hostapd_bss_settings.BssSettings(
+                        name=network["SSID"],
+                        ssid=network["SSID"],
+                        hidden=network["hiddenSSID"],
+                        security=hostapd_security.Security(
+                            security_mode=network["security"],
+                            radius_server_ip=network["radius_server_ip"],
+                            radius_server_port=network["radius_server_port"],
+                            radius_server_secret=network["radius_server_secret"])))
             else:
                 bss_settings.append(
                     hostapd_bss_settings.BssSettings(
                         name=network["SSID"],
                         ssid=network["SSID"],
                         hidden=network["hiddenSSID"]))
-
         if "password" in hostapd_config_settings:
             config = hostapd_ap_preset.create_ap_preset(
+                iface_wlan_2g=wlan_2g,
+                iface_wlan_5g=wlan_5g,
                 channel=ap_settings["channel"],
                 ssid=hostapd_config_settings["SSID"],
                 hidden=hostapd_config_settings["hiddenSSID"],
                 security=hostapd_security.Security(
                     security_mode=hostapd_config_settings["security"],
                     password=hostapd_config_settings["password"]),
-                bss_settings=bss_settings,
-                profile_name='whirlwind')
+                bss_settings=bss_settings)
         elif "wepKeys" in hostapd_config_settings:
             config = hostapd_ap_preset.create_ap_preset(
+                iface_wlan_2g=wlan_2g,
+                iface_wlan_5g=wlan_5g,
                 channel=ap_settings["channel"],
                 ssid=hostapd_config_settings["SSID"],
                 hidden=hostapd_config_settings["hiddenSSID"],
                 security=hostapd_security.Security(
                     security_mode=hostapd_config_settings["security"],
                     password=hostapd_config_settings["wepKeys"][0]),
-                bss_settings=bss_settings,
-                profile_name='whirlwind')
+                bss_settings=bss_settings)
         else:
             config = hostapd_ap_preset.create_ap_preset(
+                iface_wlan_2g=wlan_2g,
+                iface_wlan_5g=wlan_5g,
                 channel=ap_settings["channel"],
                 ssid=hostapd_config_settings["SSID"],
                 hidden=hostapd_config_settings["hiddenSSID"],
-                bss_settings=bss_settings,
-                profile_name='whirlwind')
+                bss_settings=bss_settings)
         return config
+
+    def configure_packet_capture(
+            self,
+            channel_5g=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            channel_2g=hostapd_constants.AP_DEFAULT_CHANNEL_2G):
+        """Configure packet capture for 2G and 5G bands.
+
+        Args:
+            channel_5g: Channel to set the monitor mode to for 5G band.
+            channel_2g: Channel to set the monitor mode to for 2G band.
+        """
+        self.packet_capture = self.packet_capture[0]
+        result = self.packet_capture.configure_monitor_mode(
+            hostapd_constants.BAND_2G, channel_2g)
+        if not result:
+            raise ValueError("Failed to configure channel for 2G band")
+
+        result = self.packet_capture.configure_monitor_mode(
+            hostapd_constants.BAND_5G, channel_5g)
+        if not result:
+            raise ValueError("Failed to configure channel for 5G band.")
