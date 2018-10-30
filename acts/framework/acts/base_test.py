@@ -459,6 +459,11 @@ class BaseTestClass(object):
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
+            # TODO(markdr): pass the signal that was raised.
+            # Currently, this passes the TestSignal class, rather than the
+            # signal that was raised by the test case (or signal.TestPass if
+            # no signal was raised). This should be updated such that the signal
+            # is passed along to the event.
             event_bus.post(TestCaseEndEvent(
                 self, test_func, signals.TestSignal))
             if not is_generate_trigger:
