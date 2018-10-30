@@ -27,7 +27,7 @@ import time
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
-from acts.test_utils.coex.coex_test_utils import AudioCapture
+from acts.test_utils.coex.coex_test_utils import avrcp_actions
 from acts.test_utils.coex.coex_test_utils import connect_ble
 from acts.test_utils.coex.coex_test_utils import connect_dev_to_headset
 from acts.test_utils.coex.coex_test_utils import disconnect_headset_from_dev
@@ -48,12 +48,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
     def setup_class(self):
         super().setup_class()
-        req_params = [
-            "iterations", "audio_params", "music_file", "fping_params"
-        ]
+        req_params = ["iterations", "fping_params"]
         self.unpack_userparams(req_params)
-        if hasattr(self, "music_file"):
-            self.push_music_to_android_device(self.pri_ad)
 
     def setup_test(self):
         super().setup_test()
@@ -64,11 +60,9 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
                 set([BtEnum.BluetoothProfile.A2DP.value])):
             self.log.error("Failed to pair and connect to headset")
             return False
-        self.audio = AudioCapture(self.pri_ad, self.audio_params)
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
-        self.audio.terminate_pyaudio()
         self.audio_receiver.clean_up()
         super().teardown_test()
 
@@ -94,7 +88,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
             if not disconnect_headset_from_dev(
                     self.pri_ad, self.audio_receiver.mac_address,
-                    [BtEnum.BluetoothProfile.A2DP.value]):
+                [BtEnum.BluetoothProfile.A2DP.value]):
                 self.log.error("Failed to disconnect headset.")
                 return False
         return True
@@ -137,26 +131,22 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """Wrapper function to start iperf traffic, music streaming and
         classic discovery.
         """
-        tasks = [(self.audio.capture_audio,
-                  (self.audio_params["record_duration"],
-                   self.current_test_name)),
+        tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
-                 (self.run_iperf_and_get_result,
-                  ()), (perform_classic_discovery,
-                        (self.pri_ad, self.iperf["duration"], self.json_file,
-                         self.dev_list))]
+                 (self.run_iperf_and_get_result, ()),
+                 (perform_classic_discovery,
+                  (self.pri_ad, self.iperf["duration"], self.json_file,
+                   self.dev_list))]
         if not multithread_func(self.log, tasks):
             return False
         return self.teardown_result()
 
     def music_streaming_with_iperf(self):
         """Wrapper function to start iperf traffic and music streaming."""
-        tasks = [(self.audio.capture_audio,
-                  (self.audio_params["record_duration"],
-                   self.current_test_name)),
+        tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play,
@@ -170,14 +160,13 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """Wrapper function to start iperf traffic, music streaming and avrcp
         controls.
         """
-        tasks = [(self.audio.capture_audio,
-                  (self.audio_params["record_duration"],
-                   self.current_test_name)),
+        tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
-                 (self.avrcp_actions, ()), (self.run_iperf_and_get_result, ())]
+                 (avrcp_actions, (self.pri_ad, self.audio_receiver)),
+                 (self.run_iperf_and_get_result, ())]
         if not multithread_func(self.log, tasks):
             return False
         return self.teardown_result()
@@ -186,17 +175,16 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """Wrapper function to start iperf traffic, music streaming, bluetooth
         discovery and avrcp controls.
         """
-        tasks = [(self.audio.capture_audio,
-                  (self.audio_params["record_duration"],
-                   self.current_test_name)),
+        tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
-                 (self.run_iperf_and_get_result,
-                  ()), (perform_classic_discovery,
-                        (self.pri_ad, self.iperf["duration"], self.json_file,
-                         self.dev_list)), (self.avrcp_actions, ())]
+                 (self.run_iperf_and_get_result, ()),
+                 (perform_classic_discovery,
+                  (self.pri_ad, self.iperf["duration"], self.json_file,
+                   self.dev_list)),
+                 (avrcp_actions, (self.pri_ad, self.audio_receiver))]
         if not multithread_func(self.log, tasks):
             return False
         return self.teardown_result()
@@ -205,9 +193,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """Wrapper function to start iperf traffic, music streaming and ble
         connection.
         """
-        tasks = [(self.audio.capture_audio,
-                  (self.audio_params["record_duration"],
-                   self.current_test_name)),
+        tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play,
@@ -765,11 +751,13 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_077
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+        tasks = [(self.audio.capture_audio, ()),
+                 (start_fping, (self.pri_ad, self.iperf["duration"],
                                 self.fping_params)),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
-                   self.music_file_to_play, self.iperf["duration"]))]
+                   self.music_file_to_play,
+                   self.audio_params["music_play_time"]))]
         if not multithread_func(self.log, tasks):
             return False
         return True
@@ -794,8 +782,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """
         tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
                                 self.fping_params)),
-                 (self.connect_disconnect_headset,
-                  ()), (toggle_screen_state, (self.pri_ad, self.iterations))]
+                 (self.connect_disconnect_headset, ()),
+                 (toggle_screen_state, (self.pri_ad, self.iperf["duration"]))]
         if not multithread_func(self.log, tasks):
             return False
         return True
@@ -817,12 +805,14 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
         Test Id: Bt_CoEx_080
         """
-        tasks = [(start_fping, (self.pri_ad, self.iperf["duration"],
+        tasks = [(self.audio.capture_audio, ()),
+                 (start_fping, (self.pri_ad, self.iperf["duration"],
                                 self.fping_params)),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
-                   self.music_file_to_play, self.iperf["duration"])),
-                 (toggle_screen_state, (self.pri_ad, self.iterations))]
+                   self.music_file_to_play,
+                   self.audio_params["music_play_time"])),
+                 (toggle_screen_state, (self.pri_ad, self.iperf["duration"]))]
         if not multithread_func(self.log, tasks):
             return False
         return True
