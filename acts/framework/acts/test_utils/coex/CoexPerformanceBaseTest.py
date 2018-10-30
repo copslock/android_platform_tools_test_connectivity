@@ -72,6 +72,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         super().setup_test()
 
     def teardown_test(self):
+        if "a2dp_streaming" in self.current_test_name:
+            self.audio.terminate_and_store_audio_results()
         self.performance_baseline_check()
         self.attenuators[self.num_atten - 1].set_atten(0)
         for i in range(self.num_atten - 1):
@@ -124,7 +126,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         return True
 
     def rvr_throughput(self, called_func=None):
-        """Sets attenaution and runs the function passed.
+        """Sets attenuation and runs the function passed.
 
         Args:
             called_func: Functions object to run parallely.
@@ -263,8 +265,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                     self.rvr[bt_atten]["a2dp_packet_drop"])
             y_label.insert(0, "Packets Dropped")
         fig_property["y_label"] = y_label
-        output_file_path = os.path.join(self.pri_ad.log_path,
-                                        '%s.html' % test_name)
+        output_file_path = os.path.join(self.pri_ad.log_path, test_name,
+                                        "attenuation_plot.html")
         bokeh_plot(
             list(self.bt_attenuation_range),
             data_sets,

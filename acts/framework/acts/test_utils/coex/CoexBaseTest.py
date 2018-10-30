@@ -29,6 +29,7 @@ from acts.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 from acts.test_utils.coex.coex_test_utils import A2dpDumpsysParser
+from acts.test_utils.coex.audio_test_utils import SshAudioCapture
 from acts.test_utils.coex.coex_test_utils import check_wifi_status
 from acts.test_utils.coex.coex_test_utils import (
     collect_bluetooth_manager_dumpsys_logs)
@@ -36,6 +37,7 @@ from acts.test_utils.coex.coex_test_utils import configure_and_start_ap
 from acts.test_utils.coex.coex_test_utils import iperf_result
 from acts.test_utils.coex.coex_test_utils import get_phone_ip
 from acts.test_utils.coex.coex_test_utils import parse_fping_results
+from acts.test_utils.coex.coex_test_utils import push_music_to_android_device
 from acts.test_utils.coex.coex_test_utils import wifi_connection_check
 from acts.test_utils.coex.coex_test_utils import xlsheet
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -48,7 +50,7 @@ from acts.utils import create_dir
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
 IPERF_SERVER_WAIT_TIME = 5
-AVRCP_WAIT_TIME = 2
+AVRCP_WAIT_TIME = 3
 
 
 class CoexBaseTest(BaseTestClass):
@@ -62,6 +64,7 @@ class CoexBaseTest(BaseTestClass):
             self.third_ad = self.android_devices[2]
 
     class IperfVariables:
+
         def __init__(self, current_test_name):
             self.iperf_started = False
             self.bidirectional_client_path = None
@@ -76,7 +79,6 @@ class CoexBaseTest(BaseTestClass):
                 self.is_bidirectional = True
 
     def setup_class(self):
-        self.tag = 0
         self.counter = 0
         self.thread_list = []
         if not setup_multiple_devices_for_bt_test(self.android_devices):
@@ -85,7 +87,7 @@ class CoexBaseTest(BaseTestClass):
         req_params = ["network", "iperf"]
         opt_params = [
             "AccessPoint", "RetailAccessPoints", "RelayDevice", "IPerfClient",
-            "required_devices"
+            "required_devices", "audio_params"
         ]
         self.unpack_userparams(req_params, opt_params)
         if hasattr(self, "RelayDevice"):
@@ -97,7 +99,8 @@ class CoexBaseTest(BaseTestClass):
             self.ap = self.access_points[0]
             configure_and_start_ap(self.ap, self.network)
         elif hasattr(self, "RetailAccessPoints"):
-            self.retail_access_points = retail_ap.create(self.RetailAccessPoints)
+            self.retail_access_points = retail_ap.create(
+                self.RetailAccessPoints)
             self.retail_access_point = self.retail_access_points[0]
             band = self.retail_access_point.band_lookup_by_channel(
                 self.network["channel"])
@@ -109,16 +112,28 @@ class CoexBaseTest(BaseTestClass):
             self.iperf_client = self.iperf_clients[0]
         else:
             self.log.warning("Iperfclient is not given in config file")
+        if hasattr(self, "audio_params"):
+            if self.audio_params["music_file"]:
+                self.music_file_to_play = push_music_to_android_device(
+                    self.pri_ad, self.audio_params)
+                if not self.music_file_play:
+                    self.log.error("Music file push failed.")
+                    return False
+        else:
+            self.log.warning("No Music files pushed to play.")
+
         wifi_test_device_init(self.pri_ad)
         wifi_connect(self.pri_ad, self.network)
 
     def setup_test(self):
+        self.tag = 0
         self.result = {}
         self.dev_list = {}
         self.iperf_variables = self.IperfVariables(self.current_test_name)
         self.a2dp_dumpsys = A2dpDumpsysParser()
-        self.json_file = "{}/{}.json".format(self.pri_ad.log_path,
-                                             self.current_test_name)
+        log_path = os.path.join(self.pri_ad.log_path, self.current_test_name)
+        create_dir(log_path)
+        self.json_file = os.path.join(log_path, "test_results.json")
         for a in self.android_devices:
             a.ed.clear_all_events()
         if not wifi_connection_check(self.pri_ad, self.network["SSID"]):
@@ -129,17 +144,21 @@ class CoexBaseTest(BaseTestClass):
             return False
         if hasattr(self, "required_devices"):
             if "discovery" in self.current_test_name or (
-                    "inquiry" in self.current_test_name or (
-                    "ble" in self.current_test_name)):
+                    "inquiry" in self.current_test_name or
+                ("ble" in self.current_test_name)):
                 self.create_android_relay_object()
         else:
             self.log.warning("required_devices is not given in config file")
+        if "a2dp_streaming" in self.current_test_name:
+            self.audio = SshAudioCapture(self.audio_params, log_path)
 
     def teardown_test(self):
+        if "a2dp_streaming" in self.current_test_name:
+            self.audio.terminate_and_store_audio_results()
         self.parsing_results()
         self.teardown_result()
         with open(self.json_file, 'a') as results_file:
-            json.dump(self.result, results_file, indent=4)
+            json.dump(self.result, results_file, indent=4, sort_keys=True)
         if not disable_bluetooth(self.pri_ad.droid):
             self.log.info("Failed to disable bluetooth")
             return False
@@ -151,6 +170,7 @@ class CoexBaseTest(BaseTestClass):
         self.reset_wifi_and_store_results()
 
     def reset_wifi_and_store_results(self):
+        """Resets wifi and store test results."""
         reset_wifi(self.pri_ad)
         wifi_toggle_state(self.pri_ad, False)
         json_result = self.results.json_str()
@@ -173,8 +193,8 @@ class CoexBaseTest(BaseTestClass):
         devices has android device and relay device."""
         if hasattr(self, "required_devices"):
             if "discovery" in self.current_test_name or (
-                            "inquiry" in self.current_test_name or (
-                                "ble" in self.current_test_name)):
+                    "inquiry" in self.current_test_name or
+                ("ble" in self.current_test_name)):
                 if hasattr(self, "inquiry_devices"):
                     for device in range(len(self.inquiry_devices)):
                         inquiry_device = self.inquiry_devices[device]
@@ -194,7 +214,7 @@ class CoexBaseTest(BaseTestClass):
             self.counter = +1
         if "a2dp_streaming" in self.current_test_name:
             file_path = collect_bluetooth_manager_dumpsys_logs(
-                    self.pri_ad, self.current_test_name)
+                self.pri_ad, self.current_test_name)
             self.result["a2dp_packet_drop"] = (
                 self.a2dp_dumpsys.parse(file_path))
 
@@ -208,18 +228,21 @@ class CoexBaseTest(BaseTestClass):
                                 "iPerf{}".format(server_port))
         self.iperf_server = "iperf3 -s -p {} -J".format(server_port)
         create_dir(log_path)
-        out_file_name = "{}/IPerfServer,{},{}.log".format(log_path,
-                server_port, self.tag,)
+        out_file_name = "{}/IPerfServer,{},{}.log".format(
+            log_path,
+            server_port,
+            self.tag,
+        )
         self.tag = self.tag + 1
-        cmd = "adb -s {} shell {}".format(self.pri_ad.serial,
-                self.iperf_server)
+        cmd = "adb -s {} shell {}".format(self.pri_ad.serial, self.iperf_server)
 
         def appender_iperf_logs(line):
             with open(out_file_name, 'a') as f:
                 f.writelines(line)
                 f.writelines("\n")
 
-        process = Process(cmd.split()).set_on_output_callback(appender_iperf_logs)
+        process = Process(
+            cmd.split()).set_on_output_callback(appender_iperf_logs)
         process.start()
 
         self.iperf_process.extend(
@@ -244,13 +267,14 @@ class CoexBaseTest(BaseTestClass):
         self.wifi_status_queue = queue.Queue()
         args = [
             lambda: check_wifi_status(self.pri_ad, self.network,
-                                      self.wifi_status_queue, self.iperf["duration"])
+                                      self.wifi_status_queue,
+                                      self.iperf["duration"])
         ]
         self.run_thread(args)
 
         if self.iperf_variables.is_bidirectional:
-            self.iperf_variables.bidirectional_server_path = self.start_iperf_server_on_shell(
-                self.iperf["port_2"])
+            self.iperf_variables.bidirectional_server_path = (
+                self.start_iperf_server_on_shell(self.iperf["port_2"]))
         self.iperf_variables.iperf_server_path = self.start_iperf_server_on_shell(
             self.iperf["port_1"])
         if self.iperf_variables.protocol == "tcp":
@@ -271,15 +295,15 @@ class CoexBaseTest(BaseTestClass):
                 self.iperf["duration"], self.iperf["port_2"],
                 self.iperf["tcp_window_size"])
         elif self.iperf_variables.protocol == "udp" and (
-                    self.iperf_variables.is_bidirectional):
+                self.iperf_variables.is_bidirectional):
             self.bidirectional_args = ("-t {} -p {} -u {} -R -J".format(
-                                           self.iperf["duration"],
-                                           self.iperf["port_2"],
-                                           self.iperf["udp_bandwidth"]))
+                self.iperf["duration"], self.iperf["port_2"],
+                self.iperf["udp_bandwidth"]))
         if self.iperf_variables.is_bidirectional:
             args = [
                 lambda: self.run_iperf(self.iperf_args),
-                lambda: self.run_iperf(self.bidirectional_args, bidirectional=True)
+                lambda: self.run_iperf(self.bidirectional_args,
+                                       bidirectional=True)
             ]
             self.run_thread(args)
         else:
@@ -297,8 +321,9 @@ class CoexBaseTest(BaseTestClass):
         """
         ip = get_phone_ip(self.pri_ad)
         if bidirectional:
-            self.iperf_variables.bidirectional_client_path = self.iperf_client.start(
-                    self.bidirectional_args, self.pri_ad, ip, self.current_test_name)
+            self.iperf_variables.bidirectional_client_path = (
+                self.iperf_client.start(self.bidirectional_args, self.pri_ad,
+                                        ip, self.current_test_name))
         else:
             self.iperf_variables.iperf_client_path = self.iperf_client.start(
                 iperf_args, self.pri_ad, ip, self.current_test_name)
@@ -319,28 +344,25 @@ class CoexBaseTest(BaseTestClass):
                         self.iperf_variables.bidirectional_client_path)
                 else:
                     received = iperf_result(
-                        self.log,
-                        self.iperf_variables.iperf_client_path)
+                        self.log, self.iperf_variables.iperf_client_path)
             else:
-                received = iperf_result(
-                    self.log,
-                    self.iperf_variables.iperf_server_path)
+                received = iperf_result(self.log,
+                                        self.iperf_variables.iperf_server_path)
         else:
             if bidirectional:
                 received = iperf_result(
-                    self.log,
-                    self.iperf_variables.bidirectional_client_path)
+                    self.log, self.iperf_variables.bidirectional_client_path)
             else:
-                received = iperf_result(
-                    self.log,
-                    self.iperf_variables.iperf_client_path)
+                received = iperf_result(self.log,
+                                        self.iperf_variables.iperf_client_path)
 
         if not received:
             self.log.error("Iperf failed/stopped")
             self.flag_list.append(False)
             self.iperf_variables.received.append("Iperf Failed")
         else:
-            self.iperf_variables.received.append(str(round(received, 2)) + "Mb/s")
+            self.iperf_variables.received.append(
+                str(round(received, 2)) + "Mb/s")
             self.log.info("Throughput: {} Mb/s".format(received))
             self.flag_list.append(True)
         self.result["throughput"] = self.iperf_variables.received
@@ -353,9 +375,8 @@ class CoexBaseTest(BaseTestClass):
             record: The records.TestResultRecord object
             begin_time: Logline format timestamp taken when the test started.
         """
-        self.log.info(
-            "Test {} failed, Fetching Btsnoop logs and bugreport".format(
-                test_name))
+        self.log.info("Test {} failed, Fetching Btsnoop logs and bugreport".
+                      format(test_name))
         take_btsnoop_logs(self.android_devices, self, test_name)
         self._take_bug_report(test_name, begin_time)
         record.extras = self.iperf_variables.received
@@ -421,61 +442,6 @@ class CoexBaseTest(BaseTestClass):
             if thread_id.is_alive():
                 thread_id.join()
         self.stop_iperf_server_on_shell()
-
-    def push_music_to_android_device(self, ad):
-        """Add music to Android device as specified by the test config
-
-        Args:
-            ad: Android device
-
-        Returns:
-            True on success, False on failure
-        """
-        self.log.info("Pushing music to the Android device")
-        music_path_str = "music_file"
-        android_music_path = "/sdcard/Music/"
-        if music_path_str not in self.user_params:
-            self.log.error("Need music for audio testcases")
-            return False
-        music_path = self.user_params[music_path_str]
-        if type(music_path) is list:
-            self.log.info("Media ready to push as is.")
-        if type(music_path) is list:
-            for item in music_path:
-                self.music_file_to_play = item
-                ad.adb.push("{} {}".format(item, android_music_path))
-        return True
-
-    def avrcp_actions(self):
-        """Performs avrcp controls like volume up, volume down, skip next and
-        skip previous.
-
-        Returns: True if successful, otherwise False.
-        """
-        if "Volume_up" and "Volume_down" in (
-                self.relay_devices[0].relays.keys()):
-            current_volume = self.pri_ad.droid.getMediaVolume()
-            self.audio_receiver.press_volume_up()
-            if current_volume == self.pri_ad.droid.getMediaVolume():
-                self.log.error("Increase volume failed")
-                return False
-            time.sleep(AVRCP_WAIT_TIME)
-            current_volume = self.pri_ad.droid.getMediaVolume()
-            self.audio_receiver.press_volume_down()
-            if current_volume == self.pri_ad.droid.getMediaVolume():
-                self.log.error("Decrease volume failed")
-                return False
-        else:
-            self.log.warning("No volume control pins specfied in relay config.")
-
-        if "Next" and "Previous" in self.relay_devices[0].relays.keys():
-            self.audio_receiver.press_next()
-            time.sleep(AVRCP_WAIT_TIME)
-            self.audio_receiver.press_previous()
-            time.sleep(AVRCP_WAIT_TIME)
-        else:
-            self.log.warning("No track change pins specfied in relay config.")
-        return True
 
     def get_call_volume(self):
         """Function to get call volume when bluetooth headset connected.
