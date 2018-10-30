@@ -26,7 +26,7 @@ import time
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
-from acts.test_utils.coex.coex_test_utils import AudioCapture
+from acts.test_utils.coex.coex_test_utils import avrcp_actions
 from acts.test_utils.coex.coex_test_utils import music_play_and_check
 from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
 from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
@@ -37,16 +37,8 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
     def __init__(self, controllers):
         super().__init__(controllers)
 
-    def setup_class(self):
-        super().setup_class()
-        req_params = ["audio_params", "music_file"]
-        self.unpack_userparams(req_params)
-        if hasattr(self, "music_file"):
-            self.push_music_to_android_device(self.pri_ad)
-
     def setup_test(self):
         super().setup_test()
-        self.audio_receiver.power_on()
         self.audio_receiver.enter_pairing_mode()
         time.sleep(5)
         if not pair_and_connect_headset(
@@ -54,19 +46,15 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
                 set([BtEnum.BluetoothProfile.A2DP.value])):
             self.log.error("Failed to pair and connect to headset")
             return False
-        self.audio = AudioCapture(self.pri_ad, self.audio_params)
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
-        self.audio.terminate_pyaudio()
         self.audio_receiver.clean_up()
         super().teardown_test()
 
     def initiate_music_streaming_to_headset_with_iperf(self):
         """Initiate music streaming to headset and start iperf traffic."""
-        tasks = [(self.audio.capture_audio,
-                  (self.audio_params["record_duration"],
-                   self.current_test_name)),
+        tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play,
@@ -92,14 +80,13 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
         """Starts iperf traffic based on test and initiate music streaming and
         check for avrcp controls.
         """
-        tasks = [(self.audio.capture_audio,
-                  (self.audio_params["record_duration"],
-                   self.current_test_name)),
+        tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
                   (self.pri_ad, self.audio_receiver.mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
-                 (self.run_iperf_and_get_result, ()), (self.avrcp_actions, ())]
+                 (self.run_iperf_and_get_result, ()),
+                 (avrcp_actions, (self.pri_ad, self.audio_receiver))]
         if not self.set_attenuation_and_run_iperf(tasks):
             return False
         return self.teardown_result()
