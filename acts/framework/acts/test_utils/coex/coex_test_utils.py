@@ -18,11 +18,9 @@ import json
 import logging
 import math
 import os
-import pyaudio
 import re
 import subprocess
 import time
-import wave
 import xlsxwriter
 
 from acts.controllers.ap_lib import hostapd_config
@@ -56,6 +54,7 @@ from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
+from acts.test_utils.wifi.wifi_power_test_utils import bokeh_plot
 from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
@@ -1150,7 +1149,7 @@ def xlsheet(pri_ad, test_result, attenuation_range=range(0, 1, 1)):
                 worksheet.write(row + 1, col + i, cell)
 
 
-def bokeh_plot(bt_attenuation_range,
+def bokeh_chart_plot(bt_attenuation_range,
                data_sets,
                legends,
                fig_property,
@@ -1177,6 +1176,8 @@ def bokeh_plot(bt_attenuation_range,
         'yellow', 'darkred', 'goldenrod'
     ]
     plot = []
+    data = [[], []]
+    legend = []
     for i in bt_attenuation_range:
         if "Packet drop" in legends[i][0]:
             plot_info = {0: "A2dp_packet_drop_plot", 1: "throughput_plot"}
@@ -1184,31 +1185,35 @@ def bokeh_plot(bt_attenuation_range,
             plot_info = {0: "throughput_plot"}
         for j in plot_info:
             if "Packet drops" in legends[i][j]:
-                plot_i_j = figure(
-                    plot_width=1000,
-                    plot_height=500,
-                    title=fig_property['title'],
-                    tools=TOOLS)
-                plot_i_j.add_tools(
-                    bokeh_tools.WheelZoomTool(dimensions="width"))
-                plot_i_j.add_tools(
-                    bokeh_tools.WheelZoomTool(dimensions="height"))
-                plot_i_j.xaxis.axis_label = fig_property['x_label']
-                plot_i_j.yaxis.axis_label = fig_property['y_label'][j]
-                plot_i_j.legend.location = "top_right"
-                plot_i_j.legend.click_policy = "hide"
-                plot_i_j.title.text_font_size = {'value': '15pt'}
-                plot_i_j.line(
-                    data_sets[i]["a2dp_attenuation"],
-                    data_sets[i]["a2dp_packet_drops"],
-                    legend=legends[i][j],
-                    line_width=3,
-                    color=colors[j])
-                plot_i_j.circle(
-                    data_sets[i]["a2dp_attenuation"],
-                    data_sets[i]["a2dp_packet_drops"],
-                    legend=str(legends[i][j]),
-                    fill_color=colors[j])
+                if data_sets[i]["a2dp_packet_drops"]:
+                    plot_i_j = figure(
+                        plot_width=1000,
+                        plot_height=500,
+                        title=fig_property['title'],
+                        tools=TOOLS)
+
+                    plot_i_j.add_tools(
+                        bokeh_tools.WheelZoomTool(dimensions="width"))
+                    plot_i_j.add_tools(
+                        bokeh_tools.WheelZoomTool(dimensions="height"))
+                    plot_i_j.xaxis.axis_label = fig_property['x_label']
+                    plot_i_j.yaxis.axis_label = fig_property['y_label'][j]
+                    plot_i_j.legend.location = "top_right"
+                    plot_i_j.legend.click_policy = "hide"
+                    plot_i_j.title.text_font_size = {'value': '15pt'}
+
+                    plot_i_j.line(
+                        data_sets[i]["a2dp_attenuation"],
+                        data_sets[i]["a2dp_packet_drops"],
+                        legend=legends[i][j],
+                        line_width=3,
+                        color=colors[j])
+                    plot_i_j.circle(
+                        data_sets[i]["a2dp_attenuation"],
+                        data_sets[i]["a2dp_packet_drops"],
+                        legend=str(legends[i][j]),
+                        fill_color=colors[j])
+                    plot.append(plot_i_j)
             elif "Performance Results" in legends[i][j]:
                 plot_i_j = figure(
                     plot_width=1000,
@@ -1224,7 +1229,9 @@ def bokeh_plot(bt_attenuation_range,
                 plot_i_j.legend.location = "top_right"
                 plot_i_j.legend.click_policy = "hide"
                 plot_i_j.title.text_font_size = {'value': '15pt'}
-
+                data[0].insert(0, data_sets[i]["attenuation"])
+                data[1].insert(0, data_sets[i]["throughput_received"])
+                legend.insert(0, legends[i][j + 1])
                 plot_i_j.line(
                     data_sets[i]["user_attenuation"],
                     data_sets[i]["user_throughput"],
@@ -1258,6 +1265,7 @@ def bokeh_plot(bt_attenuation_range,
                         color='#7570B3',
                         line_alpha=0.1,
                         fill_alpha=0.1)
+                plot.append(plot_i_j)
             else:
                 plot_i_j = figure(
                     plot_width=1000,
@@ -1273,7 +1281,9 @@ def bokeh_plot(bt_attenuation_range,
                 plot_i_j.legend.location = "top_right"
                 plot_i_j.legend.click_policy = "hide"
                 plot_i_j.title.text_font_size = {'value': '15pt'}
-
+                data[0].insert(0, data_sets[i]["attenuation"])
+                data[1].insert(0, data_sets[i]["throughput_received"])
+                legend.insert(0, legends[i][j])
                 plot_i_j.line(
                     data_sets[i]["attenuation"],
                     data_sets[i]["throughput_received"],
@@ -1285,7 +1295,11 @@ def bokeh_plot(bt_attenuation_range,
                     data_sets[i]["throughput_received"],
                     legend=str(legends[i][j]),
                     fill_color=colors[j])
-            plot.append(plot_i_j)
+                plot.append(plot_i_j)
+    fig_property['y_label'] = "Throughput (Mbps)"
+    all_plot = bokeh_plot(data, legend, fig_property, shaded_region=None,
+            output_file_path=None)
+    plot.insert(0, all_plot)
     if output_file_path is not None:
         output_file(output_file_path)
         save(column(plot))
