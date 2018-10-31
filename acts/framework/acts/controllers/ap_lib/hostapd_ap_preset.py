@@ -15,17 +15,17 @@
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
 
-
-def create_ap_preset(profile_name,
+def create_ap_preset(profile_name='whirlwind',
+                     iface_wlan_2g=None,
+                     iface_wlan_5g=None,
                      channel=None,
                      dtim=2,
                      frequency=None,
                      security=None,
                      ssid=None,
+                     hidden=False,
                      vht_bandwidth=80,
-                     bss_settings=[],
-                     iface_wlan_2g=hostapd_constants.WLAN0_STRING,
-                     iface_wlan_5g=hostapd_constants.WLAN1_STRING):
+                     bss_settings=[]):
     """AP preset config generator.  This a wrapper for hostapd_config but
        but supplies the default settings for the preset that is selected.
 
@@ -48,6 +48,15 @@ def create_ap_preset(profile_name,
 
     Returns: A hostapd_config object that can be used by the hostapd object.
     """
+
+    if not iface_wlan_2g or not iface_wlan_5g:
+        raise ValueError('WLAN interface for 2G and/or 5G is missing.')
+
+    # The Onhub uses wlan0, wlan1 as the WAN interfaces, while the Gale uses
+    # wlan-2400mhz, wlan-5000mhz.
+    if iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST or \
+       iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST:
+        raise ValueError('Incorrect interface name was passed.')
 
     force_wmm = None
     force_wmm = None
@@ -82,6 +91,7 @@ def create_ap_preset(profile_name,
             ]
             config = hostapd_config.HostapdConfig(
                 ssid=ssid,
+                hidden=hidden,
                 security=security,
                 interface=interface,
                 mode=mode,
@@ -129,6 +139,7 @@ def create_ap_preset(profile_name,
             ]
             config = hostapd_config.HostapdConfig(
                 ssid=ssid,
+                hidden=hidden,
                 security=security,
                 interface=interface,
                 mode=mode,

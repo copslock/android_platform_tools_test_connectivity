@@ -32,10 +32,11 @@ install_requires = [
     'pyserial',
     'shellescape',
     'protobuf',
+    'requests',
     'roman',
     'scapy-python3',
     'pylibftdi',
-    'xlsxwriter'
+    'xlsxwriter',
 ]
 
 if sys.version_info < (3, ):

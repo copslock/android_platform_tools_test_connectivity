@@ -15,8 +15,9 @@
 #   limitations under the License.
 
 import logging
-import time
+import os
 import pprint
+import time
 
 from enum import IntEnum
 from queue import Empty
@@ -25,6 +26,8 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.controllers import attenuator
+from acts.controllers.ap_lib.hostapd_constants import BAND_2G
+from acts.controllers.ap_lib.hostapd_constants import BAND_5G
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.tel import tel_defines
 
@@ -1678,21 +1681,13 @@ def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
     set_attns(attenuator, attn_val_name)
     logging.info("Wait %ss for roaming to finish.", ROAMING_TIMEOUT)
     time.sleep(ROAMING_TIMEOUT)
-    try:
-        # Wakeup device and verify connection.
-        dut.droid.wakeLockAcquireBright()
-        dut.droid.wakeUpNow()
-        cur_con = dut.droid.wifiGetConnectionInfo()
-        verify_wifi_connection_info(dut, expected_con)
-        expected_bssid = expected_con[WifiEnums.BSSID_KEY]
-        logging.info("Roamed to %s successfully", expected_bssid)
-        if not validate_connection(dut):
-            raise signals.TestFailure("Fail to connect to internet on %s" %
-                                      expected_ssid)
-    finally:
-        dut.droid.wifiLockRelease()
-        dut.droid.goToSleepNow()
 
+    verify_wifi_connection_info(dut, expected_con)
+    expected_bssid = expected_con[WifiEnums.BSSID_KEY]
+    logging.info("Roamed to %s successfully", expected_bssid)
+    if not validate_connection(dut):
+        raise signals.TestFailure("Fail to connect to internet on %s" %
+                                      expected_bssid)
 
 def create_softap_config():
     """Create a softap config with random ssid and password."""
@@ -1704,3 +1699,94 @@ def create_softap_config():
         WifiEnums.PWD_KEY: ap_password,
     }
     return config
+
+def start_pcap(pcap, wifi_band, log_path, test_name):
+    """Start packet capture in monitor mode.
+
+    Args:
+        pcap: packet capture object
+        wifi_band: '2g' or '5g' or 'dual'
+        log_path: current test log path
+        test_name: test name to be used for pcap file name
+
+    Returns:
+        Dictionary with pid of the tcpdump process as key and log path
+        of the file name as the value
+    """
+    log_dir = os.path.join(log_path, test_name)
+    utils.create_dir(log_dir)
+    if wifi_band == 'dual':
+        bands = [BAND_2G, BAND_5G]
+    else:
+        bands = [wifi_band]
+    pids = {}
+    for band in bands:
+        pid = pcap.start_packet_capture(band, log_dir, test_name)
+        pids[pid] = os.path.join(log_dir, test_name)
+    return pids
+
+def stop_pcap(pcap, pids, test_status=None):
+    """Stop packet capture in monitor mode.
+
+    Since, the pcap logs in monitor mode can be very large, we will
+    delete them if they are not required. 'test_status' if True, will delete
+    the pcap files. If False, we will keep them.
+
+    Args:
+        pcap: packet capture object
+        pids: dictionary returned by start_pcap
+        test_status: status of the test case
+    """
+    for pid, fname in pids.items():
+        pcap.stop_packet_capture(pid)
+
+    if test_status:
+        os.system('rm -rf %s' % os.path.dirname(fname))
+
+def start_cnss_diags(ads):
+    for ad in ads:
+        start_cnss_diag(ad)
+
+def start_cnss_diag(ad):
+    """Start cnss_diag to record extra wifi logs
+
+    Args:
+        ad: android device object.
+    """
+    if ad.model in wifi_constants.DEVICES_USING_LEGACY_PROP:
+        prop = wifi_constants.LEGACY_CNSS_DIAG_PROP
+    else:
+        prop = wifi_constants.CNSS_DIAG_PROP
+    if ad.adb.getprop(prop) != 'true':
+        ad.adb.shell("find /data/vendor/wifi/cnss_diag/wlan_logs/ -type f -delete")
+        ad.adb.shell("setprop %s true" % prop, ignore_status=True)
+
+def stop_cnss_diags(ads):
+    for ad in ads:
+        stop_cnss_diag(ad)
+
+def stop_cnss_diag(ad):
+    """Stops cnss_diag
+
+    Args:
+        ad: android device object.
+    """
+    if ad.model in wifi_constants.DEVICES_USING_LEGACY_PROP:
+        prop = wifi_constants.LEGACY_CNSS_DIAG_PROP
+    else:
+        prop = wifi_constants.CNSS_DIAG_PROP
+    ad.adb.shell("setprop %s false" % prop, ignore_status=True)
+
+def get_cnss_diag_log(ad, test_name=""):
+    """Pulls the cnss_diag logs in the wlan_logs dir
+    Args:
+        ad: android device object.
+        test_name: test case name
+    """
+    logs = ad.get_file_names("/data/vendor/wifi/cnss_diag/wlan_logs/")
+    if logs:
+        ad.log.info("Pulling cnss_diag logs %s", logs)
+        log_path = os.path.join(ad.log_path, test_name,
+                                "CNSS_DIAG_%s" % ad.serial)
+        utils.create_dir(log_path)
+        ad.pull_files(logs, log_path)
