@@ -69,6 +69,40 @@ THROUGHPUT_THRESHOLD = 100
 AP_START_TIME = 10
 DISCOVERY_TIME = 10
 BLUETOOTH_WAIT_TIME = 2
+AVRCP_WAIT_TIME = 3
+
+
+def avrcp_actions(pri_ad, audio_receiver):
+    """Performs avrcp controls like volume up, volume down, skip next and
+    skip previous.
+
+    Returns: True if successful, otherwise False.
+    """
+    if "Volume_up" and "Volume_down" in (audio_receiver.relays.keys()):
+        current_volume = pri_ad.droid.getMediaVolume()
+        audio_receiver.press_volume_up()
+        time.sleep(AVRCP_WAIT_TIME)
+        if current_volume == pri_ad.droid.getMediaVolume():
+            pri_ad.log.error("Increase volume failed")
+            return False
+        time.sleep(AVRCP_WAIT_TIME)
+        current_volume = pri_ad.droid.getMediaVolume()
+        audio_receiver.press_volume_down()
+        time.sleep(AVRCP_WAIT_TIME)
+        if current_volume == pri_ad.droid.getMediaVolume():
+            pri_ad.log.error("Decrease volume failed")
+            return False
+    else:
+        pri_ad.log.warning("No volume control pins specfied in relay config.")
+
+    if "Next" and "Previous" in audio_receiver.relays.keys():
+        audio_receiver.press_next()
+        time.sleep(AVRCP_WAIT_TIME)
+        audio_receiver.press_previous()
+        time.sleep(AVRCP_WAIT_TIME)
+    else:
+        pri_ad.log.warning("No track change pins specfied in relay config.")
+    return True
 
 
 def connect_ble(pri_ad, sec_ad):
@@ -113,16 +147,17 @@ def collect_bluetooth_manager_dumpsys_logs(pri_ad, test_name):
         Dumpsys file path.
     """
     dump_counter = 0
-    dumpsys_path = ''.join((pri_ad.log_path, "/BluetoothDumpsys_" + test_name))
+    dumpsys_path = os.path.join(pri_ad.log_path, test_name, "BluetoothDumpsys")
     create_dir(dumpsys_path)
     while os.path.exists(
-            dumpsys_path + "/" + "bluetooth_dumpsys_%s.txt" % dump_counter):
+            os.path.join(dumpsys_path,
+                         "bluetooth_dumpsys_%s.txt" % dump_counter)):
         dump_counter += 1
     out_file = "bluetooth_dumpsys_%s.txt" % dump_counter
-    cmd = ''.join("adb -s {} shell dumpsys bluetooth_manager > {}/{}".format(
-        pri_ad.serial, dumpsys_path, out_file))
+    cmd = "adb -s {} shell dumpsys bluetooth_manager > {}/{}".format(
+        pri_ad.serial, dumpsys_path, out_file)
     exe_cmd(cmd)
-    file_path = "{}/{}".format(dumpsys_path, out_file)
+    file_path = os.path.join(dumpsys_path, out_file)
     return file_path
 
 
@@ -174,8 +209,8 @@ def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
             break
 
     if not paired:
-        pri_droid.log.info("{} not paired to {}".format(
-            pri_droid.serial, dev_to_connect))
+        pri_droid.log.info("{} not paired to {}".format(pri_droid.serial,
+                                                        dev_to_connect))
         return False
 
     end_time = time.time() + 10
@@ -225,7 +260,7 @@ def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
         state = profile_event['data']['state']
         device_addr = profile_event['data']['addr']
         if state == bt_profile_states['connected'] and (
-                        device_addr == dev_to_connect):
+                device_addr == dev_to_connect):
             profile_connected.add(profile)
         pri_droid.log.info(
             "Profiles connected until now {}".format(profile_connected))
@@ -246,10 +281,10 @@ def device_discoverable(pri_ad, sec_ad):
     scan_mode = pri_ad.droid.bluetoothGetScanMode()
     if scan_mode == bt_scan_mode_types['connectable_discoverable']:
         pri_ad.log.info("Primary device scan mode is "
-                     "SCAN_MODE_CONNECTABLE_DISCOVERABLE.")
+                        "SCAN_MODE_CONNECTABLE_DISCOVERABLE.")
     else:
         pri_ad.log.info("Primary device scan mode is not "
-                     "SCAN_MODE_CONNECTABLE_DISCOVERABLE.")
+                        "SCAN_MODE_CONNECTABLE_DISCOVERABLE.")
         return False
     if sec_ad.droid.bluetoothStartDiscovery():
         time.sleep(DISCOVERY_TIME)
@@ -264,12 +299,12 @@ def device_discoverable(pri_ad, sec_ad):
                         'address' in device and
                         device["address"] == droid_address):
                     pri_ad.log.info("Primary device is in the discovery "
-                                 "list of secondary device.")
+                                    "list of secondary device.")
                     find_flag = True
                     break
         else:
             pri_ad.log.info("Secondary device get all the discovered devices "
-                         "list is empty")
+                            "list is empty")
             return False
     else:
         pri_ad.log.info("Secondary device start discovery process error.")
@@ -290,7 +325,8 @@ def device_discoverability(required_devices):
     """
     discovered_devices = []
     if "AndroidDevice" in required_devices:
-        discovered_devices.extend(android_device_discoverability(required_devices["AndroidDevice"]))
+        discovered_devices.extend(
+            android_device_discoverability(required_devices["AndroidDevice"]))
     if "RelayDevice" in required_devices:
         discovered_devices.extend(
             relay_device_discoverability(required_devices["RelayDevice"]))
@@ -318,7 +354,7 @@ def android_device_discoverability(droid_dev):
                 droid_dev.log.error(
                     "Device {} scan mode is not in"
                     "SCAN_MODE_CONNECTABLE_DISCOVERABLE.".format(
-                    inquiry_device.droid.bluetoothGetLocalAddress()))
+                        inquiry_device.droid.bluetoothGetLocalAddress()))
     return device_list
 
 
@@ -384,7 +420,7 @@ def disconnect_headset_from_dev(pri_ad, sec_ad, profiles_list):
         device_addr = profile_event['data']['addr']
 
         if state == bt_profile_states['disconnected'] and (
-                        device_addr == sec_ad):
+                device_addr == sec_ad):
             profile_disconnected.add(profile)
         pri_ad.log.info(
             "Profiles disconnected so far {}".format(profile_disconnected))
@@ -605,8 +641,7 @@ def media_stream_check(pri_ad, duration, headset_mac_address):
     """
     while time.time() < duration:
         if not is_a2dp_connected(pri_ad, headset_mac_address):
-            pri_ad.log.error('A2dp connection not active at %s',
-                    pri_ad.serial)
+            pri_ad.log.error('A2dp connection not active at %s', pri_ad.serial)
             return False
         time.sleep(1)
     return True
@@ -647,6 +682,8 @@ def music_play_and_check(pri_ad, headset_mac_address, music_to_play, duration):
     Returns:
         True if successful, False otherwise.
     """
+    pri_ad.droid.setMediaVolume(pri_ad.droid.getMaxMediaVolume() - 1)
+    pri_ad.log.info("current volume = {}".format(pri_ad.droid.getMediaVolume()))
     pri_ad.log.debug("In music play and check")
     if not start_media_play(pri_ad, music_to_play):
         pri_ad.log.error("Start media play failed.")
@@ -681,8 +718,7 @@ def music_play_and_check_via_app(pri_ad, headset_mac_address, duration=5):
     stream_time = time.time() + duration
     try:
         if not media_stream_check(pri_ad, stream_time, headset_mac_address):
-            pri_ad.log.error("A2dp connection not active at %s",
-                             pri_ad.serial)
+            pri_ad.log.error("A2dp connection not active at %s", pri_ad.serial)
             return False
     finally:
         pri_ad.adb.shell("am force-stop com.google.android.music")
@@ -765,8 +801,7 @@ def pair_and_connect_headset(pri_ad, headset_mac_address, profile_to_connect):
     return True
 
 
-def perform_classic_discovery(pri_ad, duration, file_name,
-                              dev_list=None):
+def perform_classic_discovery(pri_ad, duration, file_name, dev_list=None):
     """Convenience function to start and stop device discovery.
 
     Args:
@@ -787,7 +822,7 @@ def perform_classic_discovery(pri_ad, duration, file_name,
     result["discovered_devices"] = {}
     discover_result = []
     start_time = time.time()
-    while (time.time() < start_time + duration):
+    while time.time() < start_time + duration:
         if not pri_ad.droid.bluetoothStartDiscovery():
             pri_ad.log.error("Failed to start inquiry")
             return False
@@ -805,8 +840,7 @@ def perform_classic_discovery(pri_ad, duration, file_name,
                 if element["address"] in devices_required
             }
             result["discovered_devices"][iter] = list(devices_name)
-            discover_result.extend(
-                [len(devices_name) == len(devices_required)])
+            discover_result.extend([len(devices_name) == len(devices_required)])
             iter += 1
             with open(file_name, 'a') as results_file:
                 json.dump(result, results_file, indent=4)
@@ -871,7 +905,7 @@ def toggle_screen_state(pri_ad, duration):
         True if successful, False otherwise.
     """
     start_time = time.time()
-    while (time.time() < start_time + duration):
+    while time.time() < start_time + duration:
         if not pri_ad.ensure_screen_on():
             pri_ad.log.error("User window cannot come up")
             return False
@@ -939,7 +973,7 @@ def start_fping(pri_ad, duration, fping_params):
         with open(full_out_path, "w") as f:
             subprocess.call(cmd, stderr=f, stdout=f)
     result = parse_fping_results(fping_params["fping_drop_tolerance"],
-                    full_out_path)
+                                 full_out_path)
     return bool(result)
 
 
@@ -982,8 +1016,8 @@ def start_media_play(pri_ad, music_file_to_play):
     Returns:
         True:If media player start music, False otherwise.
     """
-    if not pri_ad.droid.mediaPlayOpen("file:///sdcard/Music/{}"
-                                      .format(music_file_to_play)):
+    if not pri_ad.droid.mediaPlayOpen(
+            "file:///sdcard/Music/{}".format(music_file_to_play)):
         pri_ad.log.error("Failed to play music")
         return False
 
@@ -1037,6 +1071,30 @@ def wifi_connection_check(pri_ad, ssid):
         return True
     pri_ad.log.error("Wifi Connection check failed : {}".format(wifi_info))
     return False
+
+
+def push_music_to_android_device(ad, audio_params):
+    """Add music to Android device as specified by the test config
+
+    Args:
+        ad: Android device
+        audio_params: Music file to push.
+
+    Returns:
+        True on success, False on failure
+    """
+    ad.log.info("Pushing music to the Android device")
+    android_music_path = "/sdcard/Music/"
+    music_path = audio_params["music_file"]
+    if type(music_path) is list:
+        ad.log.info("Media ready to push as is.")
+        for item in music_path:
+            music_file_to_play = item
+            ad.adb.push(item, android_music_path)
+        return music_file_to_play
+    else:
+        ad.log.error("Music file should be of type list")
+        return False
 
 
 def xlsheet(pri_ad, test_result, attenuation_range=range(0, 1, 1)):
@@ -1271,86 +1329,13 @@ class A2dpDumpsysParser():
                             count = count - self.count_list[i]
                         self.count_list.append(count)
                         if len(self.frame_list) > 1:
-                            last_frame = self.frame_list[-2] - self.frame_list[-1]
+                            last_frame = self.frame_list[-2] - self.frame_list[
+                                -1]
                             self.dropped_count = (count / last_frame) * 100
                         else:
-                            self.dropped_count = (count / self.frame_list[-1]) * 100
+                            self.dropped_count = (
+                                count / self.frame_list[-1]) * 100
                     else:
                         self.dropped_count = count
                     logging.info(a2dp_dumpsys_info)
                     return self.dropped_count
-
-
-class AudioCapture():
-
-    def __init__(self, pri_ad, test_params):
-        """Creates object to pyaudio and defines audio parameters.
-
-        Args:
-            pri_ad: An android device object.
-            test_params: Audio parameters fetched from config.
-        """
-        device_list = []
-        self.audio = pyaudio.PyAudio()
-        for i in range(self.audio.get_device_count()):
-            device_list.append(self.audio.get_device_info_by_index(i))
-        input_device = list(item for item in device_list
-                            if test_params['input_device'] in item['name'])
-        self.audio_format = pyaudio.paInt16
-        self.channels = test_params["channel"]
-        self.chunk = test_params["chunk"]
-        self.sample_rate = test_params["sample_rate"]
-        self.device_index = input_device[0]['index']
-        self.pri_ad = pri_ad
-        self.file_counter = 0
-
-    def capture_audio(self, seconds, test_case_name):
-        """Records the A2DP streaming.
-
-        Args:
-            seconds: Number of seconds for recording.
-            test_case_name: Name of the captured audio file.
-        """
-        stream = self.audio.open(
-            format=self.audio_format,
-            channels=self.channels,
-            rate=self.sample_rate,
-            input=True,
-            frames_per_buffer=self.chunk,
-            input_device_index=self.device_index)
-
-        frames = []
-        for i in range(0, int(self.sample_rate / self.chunk * seconds)):
-            try:
-                data = stream.read(self.chunk)
-            except IOError as ex:
-                self.pri_ad.log.error("Cannot record audio :{}".format(ex))
-                return False
-            frames.append(data)
-
-        stream.stop_stream()
-        stream.close()
-        status = self.write_record_file(frames, test_case_name)
-        return status
-
-    def write_record_file(self, frames, test_case_name):
-        """Writes the recorded audio into the file.
-
-        Args:
-            frames: Recorded audio frames.
-            test_case_name: Name of the test case.
-        """
-        wave_filename = test_case_name + '_' + str(self.file_counter) + ".wav"
-        wave_filename = "{}/{}".format(self.pri_ad.log_path, wave_filename)
-        wf = wave.open(wave_filename, 'wb')
-        wf.setnchannels(self.channels)
-        wf.setsampwidth(self.audio.get_sample_size(self.audio_format))
-        wf.setframerate(self.sample_rate)
-        wf.writeframes(b''.join(frames))
-        wf.close()
-        self.file_counter = self.file_counter + 1
-        return True
-
-    def terminate_pyaudio(self):
-        """Terminates the pulse audio instance."""
-        self.audio.terminate()

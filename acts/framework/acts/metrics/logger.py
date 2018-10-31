@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import inspect
+import logging
 import os
 import tempfile
 
@@ -260,8 +261,22 @@ class LoggerProxy(object):
         Args:
             event: The triggering event.
         """
-        if self._logger:
-            self._logger.end(event)
+
+        # Here, we surround the logger's end() function with a catch-all try
+        # statement. This prevents logging failures from crashing the test class
+        # before all test cases have completed. Note that this has not been
+        # added to _setup_proxy. Failure in teardown is more likely due to
+        # failure to receive metric data (e.g., was unable to be gathered), or
+        # failure to log to the correct proto (e.g., incorrect format).
+
+        # noinspection PyBroadException
+        try:
+            if self._logger:
+                self._logger.end(event)
+        except Exception:
+            logging.exception('Unable to properly close logger %s.' %
+                              self._logger.__class__.__name__)
+        finally:
             self._logger = None
 
     def __getattr__(self, attr):
