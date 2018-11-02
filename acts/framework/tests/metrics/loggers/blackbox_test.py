@@ -92,7 +92,8 @@ class BlackboxMetricLoggerTest(TestCase):
         logger.end(self.event)
 
         self.assertEqual(result.test_identifier, self.context.identifier)
-        self.assertEqual(result.metric_key, self.context.identifier)
+        self.assertEqual(result.metric_key, '%s.%s' % (self.context.identifier,
+                                                       self.TEST_METRIC_NAME))
         self.assertEqual(result.metric_value, self.context.test_class.result)
 
     @patch(COMPILE_IMPORT_PROTO)
@@ -162,7 +163,8 @@ class BlackboxMetricLoggerTest(TestCase):
 
         logger.end(self.event)
 
-        self.assertEqual(result.metric_key, metric_key)
+        expected_metric_key = '%s.%s' % (metric_key, self.TEST_METRIC_NAME)
+        self.assertEqual(result.metric_key, expected_metric_key)
 
     @patch('acts.metrics.loggers.blackbox.ProtoMetric')
     @patch(COMPILE_IMPORT_PROTO)
@@ -230,7 +232,7 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         metric = self.__get_only_arg(args_list[0])
         self.assertEqual(metric.name, 'blackbox_my_metric')
         self.assertEqual(metric.data.test_identifier, 'MyTest.test_case')
-        self.assertEqual(metric.data.metric_key, 'MyTest.test_case')
+        self.assertEqual(metric.data.metric_key, 'MyTest.test_case.my_metric')
         self.assertEqual(metric.data.metric_value, result)
 
     @patch('acts.metrics.logger.ProtoMetricPublisher')
@@ -260,7 +262,7 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
             {'MyTest.test_case'})
         self.assertEqual(
             {metric.data.metric_key for metric in metrics},
-            {'MyTest.test_case'})
+            {'MyTest.test_case.my_metric_1', 'MyTest.test_case.my_metric_2'})
         self.assertEqual(
             {metric.data.metric_value for metric in metrics},
             {result})
@@ -284,7 +286,7 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         args_list = publisher_cls().publish.call_args_list
         self.assertEqual(len(args_list), 1)
         metric = self.__get_only_arg(args_list[0])
-        self.assertEqual(metric.data.metric_key, 'my_metric_key')
+        self.assertEqual(metric.data.metric_key, 'my_metric_key.my_metric')
 
     @patch('acts.metrics.logger.ProtoMetricPublisher')
     def test_test_case_metric_with_custom_result_attr(self, publisher_cls):
