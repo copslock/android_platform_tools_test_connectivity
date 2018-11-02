@@ -25,6 +25,7 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -53,6 +54,19 @@ class WifiRssiTest(base_test.BaseTestClass):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
+        test_metrics = [
+            "signal_poll_rssi_shift", "signal_poll_avg_rssi_shift",
+            "scan_rssi_shift", "chain_0_rssi_shift", "chain_1_rssi_shift",
+            "signal_poll_rssi_error", "signal_poll_avg_rssi_error",
+            "scan_rssi_error", "chain_0_rssi_error", "chain_1_rssi_error",
+            "signal_poll_rssi_stdev", "chain_0_rssi_stdev",
+            "chain_1_rssi_stdev"
+        ]
+        for metric in test_metrics:
+            setattr(
+                self,
+                "{}_metric".format(metric),
+                BlackboxMetricLogger.for_test_case(metric_name=metric))
 
     def setup_class(self):
         self.dut = self.android_devices[0]
@@ -85,6 +99,14 @@ class WifiRssiTest(base_test.BaseTestClass):
         Args:
             postprocessed_results: compiled arrays of RSSI measurements
         """
+        # Set Blackbox metric values
+        self.signal_poll_rssi_stdev_metric.metric_value = max(
+            postprocessed_results["signal_poll_rssi"]["stdev"])
+        self.chain_0_rssi_stdev_metric.metric_value = max(
+            postprocessed_results["chain_0_rssi"]["stdev"])
+        self.chain_1_rssi_stdev_metric.metric_value = max(
+            postprocessed_results["chain_1_rssi"]["stdev"])
+        # Evaluate test pass/fail
         test_failed = any([
             stdev > self.test_params["stdev_tolerance"]
             for stdev in postprocessed_results["signal_poll_rssi"]["stdev"]
@@ -147,6 +169,14 @@ class WifiRssiTest(base_test.BaseTestClass):
                 else:
                     avg_error = RSSI_ERROR_VAL
                     avg_shift = RSSI_ERROR_VAL
+                # Set Blackbox metric values
+                setattr(
+                    getattr(self, "{}_error_metric".format(key)),
+                    "metric_value", avg_error)
+                setattr(
+                    getattr(self, "{}_shift_metric".format(key)),
+                    "metric_value", avg_shift)
+                # Evaluate test pass/fail
                 rssi_failure = (avg_error > self.test_params["abs_tolerance"]
                                 ) or math.isnan(avg_error)
                 if rssi_failure and key in rssi_under_test:
@@ -165,7 +195,6 @@ class WifiRssiTest(base_test.BaseTestClass):
                         "{} passed ({} error = {:.2f} dB, "
                         "shift = {:.2f} dB)\n").format(key, error_type,
                                                        avg_error, avg_shift)
-
         if test_failed:
             asserts.fail(test_message)
         asserts.explicit_pass(test_message)
@@ -909,7 +938,7 @@ class WifiRssiTest(base_test.BaseTestClass):
 
 class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = ("test_rssi_stability_ch1_VHT20_ActiveTraffic",
                       "test_rssi_vs_atten_ch1_VHT20_ActiveTraffic",
                       "test_rssi_stability_ch2_VHT20_ActiveTraffic",
@@ -924,7 +953,7 @@ class WifiRssi_2GHz_ActiveTraffic_Test(WifiRssiTest):
 
 class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = ("test_rssi_stability_ch36_VHT20_ActiveTraffic",
                       "test_rssi_vs_atten_ch36_VHT20_ActiveTraffic",
                       "test_rssi_stability_ch36_VHT40_ActiveTraffic",
