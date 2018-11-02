@@ -126,7 +126,11 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
         self.quit()
         self.__enter__()
 
-    def visit_persistent(self, url, page_load_timeout, num_tries):
+    def visit_persistent(self,
+                         url,
+                         page_load_timeout,
+                         num_tries,
+                         backup_url="about:blank"):
         """Method to visit webpages and retry upon failure.
 
         The function visits a web page and checks the the resulting URL matches
@@ -136,15 +140,20 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
             url: the intended url
             page_load_timeout: timeout for page visits
             num_tries: number of tries before url is declared unreachable
+            backup_url: url to visit if first url is not reachable. This can be
+            use to simply refresh the browser and try again or to re-login to
+            the AP
         """
         self.driver.set_page_load_timeout(page_load_timeout)
         for idx in range(num_tries):
             try:
                 self.visit(url)
+                if self.url.split("/")[-1] == url.split("/")[-1]:
+                    break
+                else:
+                    self.visit(backup_url)
             except:
                 self.restart()
-            if self.url.split("/")[-1] == url.split("/")[-1]:
-                break
             if idx == num_tries - 1:
                 self.log.error("URL unreachable. Current URL: {}".format(
                     self.url))
@@ -479,7 +488,7 @@ class NetgearR7000AP(WifiRetailAP):
             # Visit URL
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
             browser.visit_persistent(self.config_page_nologin,
-                                     BROWSER_WAIT_MED, 10)
+                                     BROWSER_WAIT_MED, 10, self.config_page)
 
             # Update region, and power/bandwidth for each network
             for key, value in self.config_page_fields.items():
@@ -815,7 +824,7 @@ class NetgearR7500AP(WifiRetailAP):
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
             browser.visit_persistent(self.config_page_advanced,
                                      BROWSER_WAIT_MED, 10)
-            time.sleep(BROWSER_WAIT_SHORT)
+            time.sleep(BROWSER_WAIT_MED)
             wireless_button = browser.find_by_id("advanced_bt").first
             wireless_button.click()
             time.sleep(BROWSER_WAIT_SHORT)
@@ -853,6 +862,7 @@ class NetgearR7500AP(WifiRetailAP):
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
             browser.visit_persistent(self.config_page_advanced,
                                      BROWSER_WAIT_MED, 10)
+            time.sleep(BROWSER_WAIT_MED)
             wireless_button = browser.find_by_id("advanced_bt").first
             wireless_button.click()
             time.sleep(BROWSER_WAIT_SHORT)
