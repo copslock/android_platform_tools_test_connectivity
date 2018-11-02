@@ -78,8 +78,11 @@ class BlackboxMetricLogger(MetricLogger):
         extracts an identifier from the context.
         """
         if self.metric_key:
-            return self.metric_key
-        return self.context.identifier
+            key = self.metric_key
+        else:
+            key = self.context.identifier
+        key = '%s.%s' % (key, self.metric_name)
+        return key
 
     def _get_file_name(self):
         """Gets the base file name to publish to."""
