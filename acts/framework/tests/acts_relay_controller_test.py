@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import copy
-import os
 import shutil
 import tempfile
 import unittest
@@ -32,6 +31,7 @@ from acts.controllers.relay_lib.relay_board import RelayBoard
 from acts.controllers.relay_lib.relay_device import RelayDevice
 from acts.controllers.relay_lib.relay_rig import RelayRig
 from acts.controllers.relay_lib.sain_smart_board import SainSmartBoard
+from mock import patch
 
 
 class MockBoard(RelayBoard):
@@ -307,14 +307,20 @@ class ActsSainSmartBoardTest(unittest.TestCase):
             self.ss_board.get_relay_status(self.r0.position), RelayState.NO)
 
     def test_set_on(self):
-        os.utime(self.test_dir[7:] + '01', (0, 0))
-        self.ss_board.set(self.r0.position, RelayState.NC)
-        self.assertNotEqual(os.stat(self.test_dir[7:] + '01').st_atime, 0)
+        patch_path = 'acts.controllers.relay_lib.sain_smart_board.urlopen'
+        with patch(patch_path) as urlopen:
+            board = SainSmartBoard(self.config)
+            board.status_dict = {}
+            board.set(self.r0.position, RelayState.NC)
+        urlopen.assert_called_once_with('%s%s' % (self.ss_board.base_url, '01'))
 
     def test_set_off(self):
-        os.utime(self.test_dir[7:] + '00', (0, 0))
-        self.ss_board.set(self.r0.position, RelayState.NO)
-        self.assertNotEqual(os.stat(self.test_dir[7:] + '00').st_atime, 0)
+        patch_path = 'acts.controllers.relay_lib.sain_smart_board.urlopen'
+        with patch(patch_path) as urlopen:
+            board = SainSmartBoard(self.config)
+            board.status_dict = {}
+            board.set(self.r0.position, RelayState.NO)
+        urlopen.assert_called_once_with('%s%s' % (self.ss_board.base_url, '00'))
 
     def test_connection_error_no_tux(self):
         default_status_msg = self.STATUS_MSG
