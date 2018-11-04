@@ -46,12 +46,12 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         # Define metrics to be uploaded to BlackBox
-        BlackboxMetricLogger.for_test_case(
-            metric_name='min_throughput', result_attr='min_throughput')
-        BlackboxMetricLogger.for_test_case(
-            metric_name='avg_throughput', result_attr='avg_throughput')
-        BlackboxMetricLogger.for_test_case(
-            metric_name='std_dev_percent', result_attr='std_dev_percent')
+        self.min_throughput_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='min_throughput')
+        self.avg_throughput_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='avg_throughput')
+        self.std_dev_percent_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='std_dev_percent')
 
         # Generate test cases
         modes = [(6, "VHT20"), (36, "VHT20"), (36, "VHT40"), (36, "VHT80"),
@@ -99,31 +99,34 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             meta data
         """
         #TODO(@oelayach): Check throughput vs RvR golden file
-        self.avg_throughput = test_result_dict["iperf_results"][
-            "avg_throughput"]
-        self.min_throughput = test_result_dict["iperf_results"][
-            "min_throughput"]
-        self.std_dev_percent = (
+        avg_throughput = test_result_dict["iperf_results"]["avg_throughput"]
+        min_throughput = test_result_dict["iperf_results"]["min_throughput"]
+        std_dev_percent = (
             test_result_dict["iperf_results"]["std_deviation"] /
             test_result_dict["iperf_results"]["avg_throughput"]) * 100
+        # Set blackbox metrics
+        self.avg_throughput_metric.metric_value = avg_throughput
+        self.min_throughput_metric.metric_value = min_throughput
+        self.std_dev_percent_metric.metric_value = std_dev_percent
+        # Evaluate pass/fail
         min_throughput_check = (
-            (self.min_throughput / self.avg_throughput) *
+            (min_throughput / avg_throughput) *
             100) > self.test_params["min_throughput_threshold"]
-        std_deviation_check = self.std_dev_percent < self.test_params["std_deviation_threshold"]
+        std_deviation_check = std_dev_percent < self.test_params["std_deviation_threshold"]
 
         if min_throughput_check and std_deviation_check:
             asserts.explicit_pass(
                 "Test Passed. Throughput at {0:.2f}dB attenuation is stable. "
                 "Mean throughput is {1:.2f} Mbps with a standard deviation of "
                 "{2:.2f}% and dips down to {3:.2f} Mbps.".format(
-                    self.atten_level, self.avg_throughput,
-                    self.std_dev_percent, self.min_throughput))
+                    self.atten_level, avg_throughput, std_dev_percent,
+                    min_throughput))
         asserts.fail(
             "Test Failed. Throughput at {0:.2f}dB attenuation is unstable. "
             "Mean throughput is {1:.2f} Mbps with a standard deviation of "
             "{2:.2f}% and dips down to {3:.2f} Mbps.".format(
-                self.atten_level, self.avg_throughput, self.std_dev_percent,
-                self.min_throughput))
+                self.atten_level, avg_throughput, std_dev_percent,
+                min_throughput))
 
     def post_process_results(self, test_result):
         """Extracts results and saves plots and JSON formatted results.
