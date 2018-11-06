@@ -14,14 +14,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import scapy.all as scapy
 import time
+
+import scapy.all as scapy
+
 from acts.test_utils.power import IperfHelper as IPH
 from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
-from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
-from acts.test_utils.wifi import wifi_test_utils as wutils
 
 
 class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
@@ -57,7 +56,6 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         self.bandwidth_limit_dl = None
         self.bandwidth_limit_ul = None
 
-
     def setup_test(self):
         """ Executed before every test case.
 
@@ -73,32 +71,28 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             values = self.consume_parameter(self.PARAM_DIRECTION, 1)
             self.traffic_direction = values[1]
         except:
-            self.log.error("The test name has to include parameter {} followed by {}/{}/{}.".format(
-                self.PARAM_DIRECTION,
-                self.PARAM_DIRECTION_UL,
-                self.PARAM_DIRECTION_DL,
-                self.PARAM_DIRECTION_UL_DL
-            ))
+            self.log.error("The test name has to include parameter {} "
+                           "followed by {}/{}/{}.".format(
+                               self.PARAM_DIRECTION, self.PARAM_DIRECTION_UL,
+                               self.PARAM_DIRECTION_DL,
+                               self.PARAM_DIRECTION_UL_DL))
             return False
-
 
         try:
             values = self.consume_parameter(self.PARAM_BANDWIDTH_LIMIT, 2)
 
             if values:
-              self.bandwidth_limit_dl = values[1]
-              self.bandwidth_limit_ul = values[2]
+                self.bandwidth_limit_dl = values[1]
+                self.bandwidth_limit_ul = values[2]
             else:
-              self.bandwidth_limit_dl = 0
-              self.bandwidth_limit_ul = 0
+                self.bandwidth_limit_dl = 0
+                self.bandwidth_limit_ul = 0
 
         except:
             self.log.error(
-              "Parameter {} has to be followed by two strings indicating "
-              "downlink and uplink bandwidth limits for iPerf.".format(
-                self.PARAM_BANDWIDTH_LIMIT
-              )
-            )
+                "Parameter {} has to be followed by two strings indicating "
+                "downlink and uplink bandwidth limits for iPerf.".format(
+                    self.PARAM_BANDWIDTH_LIMIT))
             return False
 
         # No errors when parsing parameters
@@ -134,7 +128,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         throughput = []
         for iph in client_iperf_helper:
             print('Setting: {}\n'.format(iph.iperf_args))
-            throughput.append(iph.process_iperf_results(self.dut, self.log, self.iperf_servers, self.test_name))
+            throughput.append(
+                iph.process_iperf_results(self.dut, self.log,
+                                          self.iperf_servers, self.test_name))
 
         # Check if power measurement is below the required value
         # self.pass_fail_check()
@@ -148,35 +144,54 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         pattern config in the current test.
 
         Args:
-            client_host: Android device handler in which to start the iperf client.
+            client_host: device handler in which to start the iperf client.
 
         Returns:
             A list of iperf helpers.
         """
 
         # The iPerf server is hosted in this computer
-        self.iperf_server_address = scapy.get_if_addr(self.pkt_sender.interface)
+        self.iperf_server_address = scapy.get_if_addr(
+            self.pkt_sender.interface)
 
         # Start iPerf traffic
         iperf_helpers = []
 
-        if self.traffic_direction in [self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_UL_DL]:
+        if self.traffic_direction in [
+                self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_UL_DL
+        ]:
             # Downlink traffic
-            iperf_helpers.append(self.start_iperf_traffic(client_host, server_idx=len(iperf_helpers), traffic_direction='DL', bandwidth=self.bandwidth_limit_dl))
+            iperf_helpers.append(
+                self.start_iperf_traffic(
+                    client_host,
+                    server_idx=len(iperf_helpers),
+                    traffic_direction='DL',
+                    bandwidth=self.bandwidth_limit_dl))
 
-        if self.traffic_direction in [self.PARAM_DIRECTION_UL, self.PARAM_DIRECTION_UL_DL]:
+        if self.traffic_direction in [
+                self.PARAM_DIRECTION_UL, self.PARAM_DIRECTION_UL_DL
+        ]:
             # Uplink traffic
-            iperf_helpers.append(self.start_iperf_traffic(client_host, server_idx=len(iperf_helpers), traffic_direction='UL', bandwidth=self.bandwidth_limit_ul))
+            iperf_helpers.append(
+                self.start_iperf_traffic(
+                    client_host,
+                    server_idx=len(iperf_helpers),
+                    traffic_direction='UL',
+                    bandwidth=self.bandwidth_limit_ul))
 
         return iperf_helpers
 
-    def start_iperf_traffic(self, client_host, server_idx, traffic_direction, bandwidth = 0):
+    def start_iperf_traffic(self,
+                            client_host,
+                            server_idx,
+                            traffic_direction,
+                            bandwidth=0):
         """Starts iPerf data traffic.
 
         Starts an iperf client in an android device and a server locally.
 
         Args:
-            client_host: android device handler in which to start the iperf client
+            client_host: device handler in which to start the iperf client
             server_idx: id of the iperf server to connect to
             traffic_direction: has to be either 'UL' or 'DL'
             bandwidth: bandwidth limit for data traffic
@@ -187,7 +202,8 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         config = {
             'traffic_type': 'TCP',
-            'duration': self.mon_duration + self.mon_offset + self.IPERF_MARGIN,
+            'duration':
+            self.mon_duration + self.mon_offset + self.IPERF_MARGIN,
             'start_meas_time': 4,
             'server_idx': server_idx,
             'port': self.iperf_servers[server_idx].port,
@@ -204,7 +220,8 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         self.iperf_servers[server_idx].start()
 
         # Start the client in the android device
-        wputils.run_iperf_client_nonblocking(client_host, self.iperf_server_address, iph.iperf_args)
+        wputils.run_iperf_client_nonblocking(
+            client_host, self.iperf_server_address, iph.iperf_args)
 
         return iph
 
@@ -236,7 +253,6 @@ class PowerTelRvRTest(PowerTelTrafficTest):
         if not super().setup_test():
             return False
 
-
         # Get which power value to sweep from config
 
         try:
@@ -249,11 +265,11 @@ class PowerTelRvRTest(PowerTelTrafficTest):
             else:
                 raise ValueError()
         except:
-            self.log.error("The test name has to include parameter {} followed by either {} or {}.".format(
-                self.PARAM_SWEEP,
-                self.PARAM_SWEEP_DOWNLINK,
-                self.PARAM_SWEEP_UPLINK)
-            )
+            self.log.error(
+                "The test name has to include parameter {} followed by "
+                "either {} or {}.".format(self.PARAM_SWEEP,
+                                          self.PARAM_SWEEP_DOWNLINK,
+                                          self.PARAM_SWEEP_UPLINK))
             return False
 
         return True
