@@ -306,8 +306,7 @@ class WifiStressTest(WifiBaseTest):
            Steps:
                1. Scan and connect to a network.
                2. Run IPerf to download data for few hours.
-               3. Run IPerf to upload data for few hours.
-               4. Verify no WiFi disconnects/data interruption.
+               3. Verify no WiFi disconnects/data interruption.
 
         """
         try:
@@ -316,15 +315,6 @@ class WifiStressTest(WifiBaseTest):
             # Download data for 5 hours.
             sec = self.stress_hours * 60 * 60
             args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
-            self.log.info("Running iperf client {}".format(args))
-            result, data = self.dut.run_iperf_client(self.iperf_server_address,
-                args, timeout=sec+1)
-            if not result:
-                self.log.debug("Error occurred in iPerf traffic.")
-                self.run_ping(sec)
-            # Start IPerf traffic from phone to server.
-            # Upload data for 5 hours.
-            args = "-p {} -t {}".format(self.iperf_server.port, sec)
             self.log.info("Running iperf client {}".format(args))
             result, data = self.dut.run_iperf_client(self.iperf_server_address,
                 args, timeout=sec+1)
