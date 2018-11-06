@@ -35,9 +35,18 @@ class BaseSimulation():
 
     NUM_UPLINK_CAL_READS = 3
     NUM_DOWNLINK_CAL_READS = 5
-    DOWNLINK_CAL_TARGET_POWER_DBM = -15
+    DOWNLINK_CAL_TARGET_POWER_DBM = {
+                                    'A': -15.0,
+                                    'B': -35.0
+                                    }
     MAX_BTS_INPUT_POWER_DBM = 30
     MAX_PHONE_OUTPUT_POWER_DBM = 23
+    DOWNLINK_MAX_POWER = {
+                         'A': -10.0,
+                         'B': -30.0
+                         }
+
+    UPLINK_MIN_POWER = -60.0
 
     # Time in seconds to wait for the phone to settle
     # after attaching to the base station.
@@ -69,6 +78,9 @@ class BaseSimulation():
         # Gets BTS1 since this sim only has 1 BTS
         self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
 
+        # Store the current calibrated band
+        self.current_calibrated_band = None
+
         # Path loss measured during calibration
         self.dl_path_loss = None
         self.ul_path_loss = None
@@ -94,6 +106,9 @@ class BaseSimulation():
         # Make sure airplane mode is on so the phone won't attach right away
         toggle_airplane_mode(self.log, self.dut, True)
 
+        # Wait for airplane mode setting to propagate
+        time.sleep(2)
+
         # Start simulation if it wasn't started
         self.anritsu.start_simulation()
 
@@ -110,8 +125,12 @@ class BaseSimulation():
         # Turn on airplane mode
         toggle_airplane_mode(self.log, self.dut, True)
 
+        # Wait for airplane mode setting to propagate
+        time.sleep(2)
+
         # Provide a good signal power for the phone to attach easily
         self.bts1.input_level = -10
+        time.sleep(2)
         self.bts1.output_level = -30
 
         # Try to attach the phone.
@@ -135,7 +154,7 @@ class BaseSimulation():
                 toggle_airplane_mode(self.log, self.dut, True)
 
                 # Wait for APM to propagate
-                time.sleep(2)
+                time.sleep(3)
 
                 # Retry
                 if i < self.ATTACH_MAX_RETRIES - 1:
@@ -154,8 +173,10 @@ class BaseSimulation():
         # Set signal levels obtained from the test parameters
         if self.sim_dl_power:
             self.set_downlink_rx_power(self.sim_dl_power)
+            time.sleep(2)
         if self.sim_ul_power:
             self.set_uplink_tx_power(self.sim_ul_power)
+            time.sleep(2)
 
         return True
 
@@ -252,14 +273,20 @@ class BaseSimulation():
         # Try to use measured path loss value. If this was not set, it will throw an TypeError exception
         try:
             calibrated_power = round(power + self.dl_path_loss)
-            self.log.info("Requested DL Rx power of {} dBm, setting callbox Tx power at {} dBm".format(power, calibrated_power))
+            if calibrated_power > self.DOWNLINK_MAX_POWER[self.anritsu._md8475_version]:
+                self.log.warning("Cannot achieve phone DL Rx power of {} dBm. Requested TX power of {} dBm exceeds callbox limit!".format(power, calibrated_power))
+                calibrated_power = self.DOWNLINK_MAX_POWER[self.anritsu._md8475_version]
+                self.log.warning("Setting callbox Tx power to max possible ({} dBm)".format(calibrated_power))
+
+            self.log.info("Requested phone DL Rx power of {} dBm, setting callbox Tx power at {} dBm".format(power, calibrated_power))
             self.bts1.output_level = calibrated_power
+            time.sleep(2)
             # Power has to be a natural number so calibration wont be exact. Inform the actual
             # received power after rounding.
-            self.log.info("Downlink received power is {}".format(calibrated_power - self.dl_path_loss))
+            self.log.info("Phone downlink received power is {0:.2f} dBm".format(calibrated_power - self.dl_path_loss))
         except TypeError:
             self.bts1.output_level = round(power)
-            self.log.info("Downlink received power set to {} (link is uncalibrated).".format(round(power)))
+            self.log.info("Phone downlink received power set to {} (link is uncalibrated).".format(round(power)))
 
     def set_uplink_tx_power(self, signal_level):
         """ Sets uplink tx power using calibration if available
@@ -278,14 +305,20 @@ class BaseSimulation():
         # Try to use measured path loss value. If this was not set, it will throw an TypeError exception
         try:
             calibrated_power = round(power - self.ul_path_loss)
-            self.log.info("Requested UL Tx power of {} dBm, setting callbox Rx power at {} dBm".format(power, calibrated_power))
+            if calibrated_power < self.UPLINK_MIN_POWER:
+                self.log.warning("Cannot achieve phone UL Tx power of {} dBm. Requested UL power of {} dBm exceeds callbox limit!".format(power, calibrated_power))
+                calibrated_power = self.UPLINK_MIN_POWER
+                self.log.warning("Setting UL Tx power to min possible ({} dBm)".format(calibrated_power))
+
+            self.log.info("Requested phone UL Tx power of {} dBm, setting callbox Rx power at {} dBm".format(power, calibrated_power))
             self.bts1.input_level = calibrated_power
+            time.sleep(2)
             # Power has to be a natural number so calibration wont be exact. Inform the actual
             # transmitted power after rounding.
-            self.log.info("Uplink transmitted power is {}".format(calibrated_power + self.ul_path_loss))
+            self.log.info("Phone uplink transmitted power is {0:.2f} dBm".format(calibrated_power + self.ul_path_loss))
         except TypeError:
             self.bts1.input_level = round(power)
-            self.log.info("Uplink transmitted power set to {} (link is uncalibrated).".format(round(power)))
+            self.log.info("Phone uplink transmitted power set to {} (link is uncalibrated).".format(round(power)))
 
     def calibrate(self):
         """ Calculates UL and DL path loss if it wasn't done before.
@@ -308,6 +341,7 @@ class BaseSimulation():
 
         # Detach after calibrating
         self.detach()
+        time.sleep(2)
 
 
     def downlink_calibration(self, bts, rat = None, power_units_conversion_func = None):
@@ -332,15 +366,15 @@ class BaseSimulation():
         if not rat:
             raise ValueError("The parameter 'rat' has to indicate the RAT being used as reported by the phone.")
 
-        # Set BTS to maximum output level to minimize error
+        # Set BTS to a good output level to minimize measurement error
         init_output_level = bts.output_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        bts.output_level = self.DOWNLINK_CAL_TARGET_POWER_DBM
-        time.sleep(3)
+        bts.output_level = self.DOWNLINK_CAL_TARGET_POWER_DBM[self.anritsu._md8475_version]
 
-        # Set BTS to maximum input allowed in order to do uplink calibration
+        # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
         self.dut.droid.goToSleepNow()
+        time.sleep(2)
 
         # Starting first the IP traffic (UDP): Using always APN 1
         try:
@@ -358,7 +392,7 @@ class BaseSimulation():
             signal_strength = get_telephony_signal_strength(self.dut)
             down_power_measured.append(signal_strength[rat])
             self.dut.droid.goToSleepNow()
-            time.sleep(4)
+            time.sleep(5)
 
         # Stop the IP traffic (UDP)
         try:
@@ -366,12 +400,13 @@ class BaseSimulation():
             self.anritsu.send_command(cmd)
         except AnritsuError as inst:
             self.log.warning("{}\n".format(inst))  # Typically STOPPED already
-        time.sleep(1.5)
+        time.sleep(2)
 
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
         bts.output_level = init_output_level
+        time.sleep(2)
 
         # Calculate the mean of the measurements
         reported_asu_power = np.nanmean(down_power_measured)
@@ -383,7 +418,7 @@ class BaseSimulation():
             avg_down_power = reported_asu_power
 
         # Calculate Path Loss
-        down_call_path_loss = self.DOWNLINK_CAL_TARGET_POWER_DBM - avg_down_power
+        down_call_path_loss = self.DOWNLINK_CAL_TARGET_POWER_DBM[self.anritsu._md8475_version] - avg_down_power
 
         # Validate the result
         if not 0 < down_call_path_loss < 100:
@@ -408,16 +443,16 @@ class BaseSimulation():
             Uplink calibration value and measured UL power
         """
 
-        # Set BTS1 to maximum input allowed in order to do uplink calibration
+        # Set BTS1 to maximum input allowed in order to perform uplink calibration
         target_power = self.MAX_PHONE_OUTPUT_POWER_DBM
         initial_input_level = bts.input_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
         bts.input_level = self.MAX_BTS_INPUT_POWER_DBM
-        time.sleep(3)
 
-        # Set BTS to maximum input allowed in order to do uplink calibration
+        # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
         self.dut.droid.wakeUpNow()
+        time.sleep(2)
 
         # Starting first the IP traffic (UDP): Using always APN 1
         try:
@@ -447,7 +482,7 @@ class BaseSimulation():
                     up_power_per_chain[ichain].append(
                         float(str_power_chain[ichain]))
 
-            time.sleep(2)
+            time.sleep(3)
 
         # Stop the IP traffic (UDP)
         try:
@@ -455,12 +490,13 @@ class BaseSimulation():
             self.anritsu.send_command(cmd)
         except AnritsuError as inst:
             self.log.warning("{}\n".format(inst))  # Typically STOPPED already
-        time.sleep(1.5)
+        time.sleep(2)
 
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
         bts.input_level = initial_input_level
+        time.sleep(2)
 
         # Phone only supports 1x1 Uplink so always chain 0
         avg_up_power = np.nanmean(up_power_per_chain[0])
@@ -489,11 +525,11 @@ class BaseSimulation():
             calibrate_if_necessary: run calibration procedure if true and new band is different to current
         """
 
-        current_band = bts.band
-
         # Change band only if it is needed
-        if current_band != band:
+        if band != self.current_calibrated_band:
             bts.band = band
+            self.current_calibrated_band = band
+            time.sleep(5)  # It takes some time to propagate the new band
 
             # If band is being changed, then invalidate calibration
             self.dl_path_loss = None

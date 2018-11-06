@@ -135,7 +135,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             return False
 
         # Wait for new params to settle
-        time.sleep(4)
+        time.sleep(5)
 
         # Attach the phone to the basestation
         if not self.simulation.attach():
