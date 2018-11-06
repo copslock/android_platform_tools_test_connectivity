@@ -14,13 +14,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import time
 from enum import Enum
 
 from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
-from acts.test_utils.tel.tel_test_utils import set_preferred_apn_by_adb
 
 
 class LteSimulation(BaseSimulation):
@@ -31,14 +31,10 @@ class LteSimulation(BaseSimulation):
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
     # the same configuration manually.
-
-    LTE_BASIC_SIM_FILE = ('C:\\Users\MD8475A\Documents\DAN_configs\\'
-                          'SIM_default_LTE.wnssp')
-    LTE_BASIC_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\'
-                           'CELL_LTE_config.wnscp')
+    LTE_BASIC_SIM_FILE = 'SIM_default_LTE'
+    LTE_BASIC_CELL_FILE = 'CELL_LTE_config'
 
     # Simulation config keywords contained in the test name
-
     PARAM_BW = "bw"
     PARAM_SCHEDULING = "scheduling"
     PARAM_TM = "tm"
@@ -62,18 +58,16 @@ class LteSimulation(BaseSimulation):
         DYNAMIC = 0
         STATIC = 1
 
-    # RSRP signal levels thresholds (as reported by Android). Units are dBm/15KHz
-
+    # RSRP signal levels thresholds (as reported by Android) in dBm/15KHz.
+    # Excellent is set to -75 since callbox B Tx power is limited to -30 dBm
     downlink_rsrp_dictionary = {
-        'excellent': -60,
+        'excellent': -75,
         'high': -110,
         'medium': -115,
         'weak': -120
     }
 
-    # Transmitted output power for the phone
-    # Units are dBm
-
+    # Transmitted output power for the phone (dBm)
     uplink_signal_level_dictionary = {
         'max': 23,
         'high': 13,
@@ -94,13 +88,21 @@ class LteSimulation(BaseSimulation):
         """
 
         super().__init__(anritsu, log, dut)
+        base_path = 'C:\\Users\MD8475' + self.anritsu._md8475_version + '\Documents\DAN_configs\\'
 
-        anritsu.load_simulation_paramfile(self.LTE_BASIC_SIM_FILE)
-        anritsu.load_cell_paramfile(self.LTE_BASIC_CELL_FILE)
+        if self.anritsu._md8475_version == 'A':
+            self.sim_file_path = base_path + self.LTE_BASIC_SIM_FILE + '.wnssp'
+            self.cell_file_path = base_path + self.LTE_BASIC_CELL_FILE + '.wnscp'
+        else:
+            self.sim_file_path = base_path + self.LTE_BASIC_SIM_FILE + '.wnssp2'
+            self.cell_file_path = base_path + self.LTE_BASIC_CELL_FILE + '.wnscp2'
+
+        anritsu.load_simulation_paramfile(self.sim_file_path)
+        anritsu.load_cell_paramfile(self.cell_file_path)
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(NETWORK_MODE_LTE_ONLY,
             dut.droid.subscriptionGetDefaultSubId()):
-            log.error("Coold not set preferred network type.")
+            log.error("Couldn't set preferred network type.")
         else:
             log.info("Preferred network type set.")
 
@@ -119,10 +121,10 @@ class LteSimulation(BaseSimulation):
             return False
 
         # Setup band
-
         try:
           values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
           band = values[1]
+
         except:
           self.log.error("The test name needs to include parameter {} followed by required band.".format(self.PARAM_BAND))
           return False
@@ -130,15 +132,12 @@ class LteSimulation(BaseSimulation):
           self.set_band(self.bts1, band, calibrate_if_necessary=True)
 
         # Setup bandwidth
-
         try:
           values = self.consume_parameter(parameters, self.PARAM_BW, 1)
-
           bw = float(values[1])
 
           if bw == 14:
               bw = 1.4
-
         except:
           self.log.error("The test name needs to include parameter {} followed by an int value "
                          "(to indicate 1.4 MHz use 14).".format(self.PARAM_BW))
@@ -147,7 +146,6 @@ class LteSimulation(BaseSimulation):
             self.set_channel_bandwidth(self.bts1, bw)
 
         # Setup transmission mode
-
         try:
             values = self.consume_parameter(parameters, self.PARAM_TM, 1)
 
@@ -161,7 +159,6 @@ class LteSimulation(BaseSimulation):
                 tm = LteSimulation.TransmissionMode.TM4
             else:
                 raise ValueError()
-
         except:
             self.log.error("The test name needs to include parameter {} followed by an int value from 1 to 4 indicating"
                            " transmission mode.".format(self.PARAM_TM))
@@ -170,7 +167,6 @@ class LteSimulation(BaseSimulation):
             self.set_transmission_mode(self.bts1, tm)
 
         # Setup scheduling mode
-
         try:
             values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
 
@@ -178,7 +174,6 @@ class LteSimulation(BaseSimulation):
                 scheduling = LteSimulation.SchedulingMode.DYNAMIC
             elif values[1] == "static":
                 scheduling = LteSimulation.SchedulingMode.STATIC
-
         except:
             self.log.error(
                 "The test name needs to include parameter {} followed by either "
@@ -188,7 +183,6 @@ class LteSimulation(BaseSimulation):
             self.set_scheduling_mode(self.bts1, scheduling)
 
         # Setup uplink power
-
         try:
             values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
 
@@ -196,7 +190,6 @@ class LteSimulation(BaseSimulation):
                 raise ValueError("Invalid signal level value.")
             else:
                 power = self.uplink_signal_level_dictionary[values[1]]
-
         except:
             self.log.error(
                 "The test name needs to include parameter {} followed by one the following values: {}.".format(
@@ -210,7 +203,6 @@ class LteSimulation(BaseSimulation):
             self.sim_ul_power = power
 
         # Setup downlink power
-
         try:
             values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
 
@@ -218,7 +210,6 @@ class LteSimulation(BaseSimulation):
                 raise ValueError("Invalid signal level value.")
             else:
                 power = self.downlink_rsrp_dictionary[values[1]]
-
         except:
             self.log.error(
                 "The test name needs to include parameter {} followed by one the following values: {}.".format(
@@ -273,41 +264,35 @@ class LteSimulation(BaseSimulation):
         return super().downlink_calibration(bts, rat='lteRsrp', power_units_conversion_func=self.rsrp_to_signal_power)
 
     def rsrp_to_signal_power(self, rsrp, bts):
-        """ Converts rsrp to signal power
+        """ Converts rsrp to total band signal power
 
-        RSRP is measured per subcarrier, so linear power needs to be multiplied
-        by the number of subcarriers in the channel.
+        RSRP is measured per subcarrier, so total band power needs to be multiplied
+        by the number of subcarriers being used.
 
         Args:
             rsrp: desired rsrp in dBm
             bts: basestation handler for which the unit conversion is done
 
         Returns:
-            Transmitted signal power in dBm
+            Total band signal power in dBm
         """
 
         bandwidth = bts.bandwidth
 
-        if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:
-            # 100 RBs
-            power = rsrp + 18.57
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:
-            # 75 RBs
-            power = rsrp + 22.55
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:
-            # 50 RBs
-            power = rsrp + 24.77
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:
-            # 25 RBs
-            power = rsrp + 27.78
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:
-            # 15 RBs
-            power = rsrp + 29.54
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:
-            # 6 RBs
+        if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:       # 100 RBs
             power = rsrp + 30.79
+        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:     # 75 RBs
+            power = rsrp + 29.54
+        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:     # 50 RBs
+            power = rsrp + 27.78
+        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:      # 25 RBs
+            power = rsrp + 24.77
+        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:      # 15 RBs
+            power = rsrp + 22.55
+        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:  # 6 RBs
+            power = rsrp + 18.57
         else:
-            raise ValueError("Invalidad bandwith value.")
+            raise ValueError("Invalid bandwidth value.")
 
         return power
 
@@ -381,6 +366,7 @@ class LteSimulation(BaseSimulation):
             msg = "TM = {} is not valid for LTE".format(tmode)
             self.log.error(msg)
             raise ValueError(msg)
+        time.sleep(5)  # It takes some time to propagate the new settings
 
     def set_scheduling_mode(self,
                             bts,
@@ -413,6 +399,7 @@ class LteSimulation(BaseSimulation):
                 bts.lte_mcs_ul = mcs_ul
                 bts.nrb_dl = nrb_dl
                 bts.nrb_ul = nrb_ul
+        time.sleep(5)  # It takes some time to propagate the new settings
 
     def set_channel_bandwidth(self, bts, bandwidth):
         """ Sets the LTE channel bandwidth (MHz)
@@ -437,4 +424,29 @@ class LteSimulation(BaseSimulation):
             msg = "Bandwidth = {} MHz is not valid for LTE".format(bandwidth)
             self.log.Error(msg)
             raise ValueError(msg)
+        time.sleep(5)  # It takes some time to propagate the new settings
 
+    def calibrate(self):
+        """ Calculates UL and DL path loss if it wasn't done before
+
+        This method overrides the baseclass specifically for LTE calibration.
+        For LTE cal, the simulation is set to TM1 and 1 antenna.
+
+        """
+
+        # Set in TM1 mode and 1 antenna for downlink calibration for LTE
+        init_dl_antenna = None
+        init_transmode = None
+        if int(self.bts1.dl_antenna) != 1:
+            init_dl_antenna = self.bts1.dl_antenna
+            init_transmode = self.bts1.transmode
+            self.bts1.dl_antenna = 1
+            self.bts1.transmode = "TM1"
+            time.sleep(5)  # It takes some time to propagate the new settings
+
+        super().calibrate()
+
+        if init_dl_antenna is not None:
+            self.bts1.dl_antenna = init_dl_antenna
+            self.bts1.transmode = init_transmode
+            time.sleep(5)  # It takes some time to propagate the new settings
