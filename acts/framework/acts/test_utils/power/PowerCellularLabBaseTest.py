@@ -74,6 +74,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         if hasattr(self, 'packet_senders'):
             self.pkt_sender = self.packet_senders[0]
 
+        # Load calibration tables
+        self.calibration_table = self.unpack_custom_file(
+            self.user_params["calibration_table"],
+            False
+        )
+
         # Set DUT to rockbottom
         self.dut_rockbottom()
 
@@ -217,8 +223,16 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             # Make sure the simulation is stopped before loading a new one
             self.simulation.stop()
 
+        # If the calibration table doesn't have an entry for this simulation
+        # type add an empty one
+        if sim_type not in self.calibration_table:
+            self.calibration_table[sim_type] = {}
+
         # Instantiate a new simulation
-        self.simulation = simulation_class(self.anritsu, self.log, self.dut)
+        self.simulation = simulation_class(self.anritsu,
+                                           self.log,
+                                           self.dut,
+                                           self.calibration_table[sim_type])
 
         # Start the simulation
         self.simulation.start()

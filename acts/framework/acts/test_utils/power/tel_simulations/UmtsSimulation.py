@@ -71,7 +71,7 @@ class UmtsSimulation(BaseSimulation):
         'edge': 23
     }
 
-    def __init__(self, anritsu, log, dut):
+    def __init__(self, anritsu, log, dut, calibration_table):
         """ Configures Anritsu system for UMTS simulation with 1 basetation
 
         Loads a simple UMTS simulation enviroment with 1 basestation. It also
@@ -81,10 +81,12 @@ class UmtsSimulation(BaseSimulation):
             anritsu: the Anritsu callbox controller
             log: a logger handle
             dut: the android device handler
+            calibration_table: a dictionary containing path losses for
+                different bands.
 
         """
 
-        super().__init__(anritsu, log, dut)
+        super().__init__(anritsu, log, dut, calibration_table)
 
         anritsu.load_simulation_paramfile(self.UMTS_BASIC_SIM_FILE)
 
@@ -119,7 +121,7 @@ class UmtsSimulation(BaseSimulation):
           self.log.error("The test name needs to include parameter {} followed by required band.".format(self.PARAM_BAND))
           return False
         else:
-          self.set_band(self.bts1, band, calibrate_if_necessary=False)
+          self.set_band(self.bts1, band)
 
         # Setup release version
 
