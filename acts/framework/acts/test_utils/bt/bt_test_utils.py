@@ -26,6 +26,11 @@ from acts import utils
 import re
 from subprocess import call
 
+from acts.test_utils.bt.bt_constants import bits_per_samples
+from acts.test_utils.bt.bt_constants import channel_modes
+from acts.test_utils.bt.bt_constants import codec_types
+from acts.test_utils.bt.bt_constants import codec_priorities
+from acts.test_utils.bt.bt_constants import sample_rates
 from acts.test_utils.bt.bt_constants import adv_fail
 from acts.test_utils.bt.bt_constants import adv_succ
 from acts.test_utils.bt.bt_constants import advertising_set_started
@@ -44,6 +49,7 @@ from acts.test_utils.bt.bt_constants import batch_scan_not_supported_list
 from acts.test_utils.bt.bt_constants import batch_scan_result
 from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
 from acts.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
+from acts.test_utils.bt.bt_constants import bluetooth_a2dp_codec_config_changed
 from acts.test_utils.bt.bt_constants import bluetooth_off
 from acts.test_utils.bt.bt_constants import bluetooth_on
 from acts.test_utils.bt.bt_constants import \
@@ -1487,6 +1493,86 @@ def _add_android_device_to_dictionary(android_device, profile_list,
         else:
             selector_dict[profile] = [android_device]
 
+
 def get_bluetooth_crash_count(android_device):
     out = android_device.adb.shell("dumpsys bluetooth_manager")
     return int(re.search("crashed(.*\d)", out).group(1))
+
+
+def set_bluetooth_codec(
+        android_device,
+        codec_type,
+        sample_rate,
+        bits_per_sample,
+        channel_mode,
+        codec_specific_1=0):
+    """Sets the A2DP codec configuration on the AndroidDevice.
+
+    Args:
+        android_device (acts.controllers.android_device.AndroidDevice): the
+            android device for which to switch the codec.
+        codec_type (str): the desired codec type. Must be a key in
+            bt_constants.codec_types.
+        sample_rate (str): the desired sample rate. Must be a key in
+            bt_constants.sample_rates.
+        bits_per_sample (str): the desired bits per sample. Must be a key in
+            bt_constants.bits_per_samples.
+        channel_mode (str): the desired channel mode. Must be a key in
+            bt_constants.channel_modes.
+        codec_specific_1 (int): the desired bit rate (quality) for LDAC codec.
+    Returns:
+        bool: True if the codec config was successfully changed to the desired
+            values. Else False.
+    """
+    message = (
+        "Set Android Device A2DP Bluetooth codec configuration:\n"
+        "\tCodec: {codec_type}\n"
+        "\tSample Rate: {sample_rate}\n"
+        "\tBits per Sample: {bits_per_sample}\n"
+        "\tChannel Mode: {channel_mode}".format(
+            codec_type=codec_type,
+            sample_rate=sample_rate,
+            bits_per_sample=bits_per_sample,
+            channel_mode=channel_mode
+        )
+    )
+    android_device.log.info(message)
+
+    # Send SL4A command
+    droid, ed = android_device.droid, android_device.ed
+    if not droid.bluetoothA2dpSetCodecConfigPreference(
+        codec_types[codec_type],
+        sample_rates[str(sample_rate)],
+        bits_per_samples[str(bits_per_sample)],
+        channel_modes[channel_mode],
+        codec_specific_1
+    ):
+        android_device.log.error("SL4A command failed. Codec config was not "
+                                 "changed.")
+        return False
+    try:
+        ed.pop_event(bluetooth_a2dp_codec_config_changed, bt_default_timeout)
+    except Exception:
+        android_device.log.error("SL4A event not registered. Codec config was "
+                                 "not changed.")
+        return False
+
+    # Validate codec value through ADB
+    command = "dumpsys bluetooth_manager | grep -i 'current codec'"
+    out = android_device.adb.shell(command)
+    split_out = out.split(": ")
+    if len(split_out) != 2:
+        android_device.log.warning("Could not verify codec config change "
+                                   "through ADB.")
+    elif split_out[1].strip() != codec_type:
+        android_device.log.error(
+            "Codec config was not changed.\n"
+            "\tExpected codec: {exp}\n"
+            "\tActual codec: {act}".format(
+                exp=codec_type,
+                act=split_out[1].strip()
+            )
+        )
+        return False
+    android_device.log.info("Bluetooth codec successfully changed.")
+    return True
