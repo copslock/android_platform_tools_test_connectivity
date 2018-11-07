@@ -75,7 +75,7 @@ class LteSimulation(BaseSimulation):
         'low': -20
     }
 
-    def __init__(self, anritsu, log, dut):
+    def __init__(self, anritsu, log, dut, calibration_table):
         """ Configures Anritsu system for LTE simulation with 1 basetation
 
         Loads a simple LTE simulation enviroment with 1 basestation.
@@ -84,10 +84,12 @@ class LteSimulation(BaseSimulation):
             anritsu: the Anritsu callbox controller
             log: a logger handle
             dut: the android device handler
+            calibration_table: a dictionary containing path losses for
+                different bands.
 
         """
 
-        super().__init__(anritsu, log, dut)
+        super().__init__(anritsu, log, dut, calibration_table)
         base_path = 'C:\\Users\MD8475' + self.anritsu._md8475_version + '\Documents\DAN_configs\\'
 
         if self.anritsu._md8475_version == 'A':
@@ -96,9 +98,6 @@ class LteSimulation(BaseSimulation):
         else:
             self.sim_file_path = base_path + self.LTE_BASIC_SIM_FILE + '.wnssp2'
             self.cell_file_path = base_path + self.LTE_BASIC_CELL_FILE + '.wnscp2'
-
-        anritsu.load_simulation_paramfile(self.sim_file_path)
-        anritsu.load_cell_paramfile(self.cell_file_path)
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(NETWORK_MODE_LTE_ONLY,
             dut.droid.subscriptionGetDefaultSubId()):
@@ -129,7 +128,7 @@ class LteSimulation(BaseSimulation):
           self.log.error("The test name needs to include parameter {} followed by required band.".format(self.PARAM_BAND))
           return False
         else:
-          self.set_band(self.bts1, band, calibrate_if_necessary=True)
+          self.set_band(self.bts1, band)
 
         # Setup bandwidth
         try:

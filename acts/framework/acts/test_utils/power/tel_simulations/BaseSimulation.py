@@ -59,7 +59,7 @@ class BaseSimulation():
     # Max retries before giving up attaching the phone
     ATTACH_MAX_RETRIES = 3
 
-    def __init__(self, anritsu, log, dut):
+    def __init__(self, anritsu, log, dut, calibration_table):
         """ Initializes the Simulation object.
 
         Keeps a reference to the callbox, log and dut handlers and
@@ -69,11 +69,14 @@ class BaseSimulation():
             anritsu: the Anritsu callbox controller
             log: a logger handle
             dut: the android device handler
+            calibration_table: a dictionary containing path losses for
+                different bands.
         """
 
         self.anritsu = anritsu
         self.log = log
         self.dut = dut
+        self.calibration_table = calibration_table
 
         # Gets BTS1 since this sim only has 1 BTS
         self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
@@ -514,7 +517,7 @@ class BaseSimulation():
         return up_call_path_loss
 
 
-    def set_band(self, bts, band, calibrate_if_necessary=False):
+    def set_band(self, bts, band):
         """ Sets the band used for communication.
 
         When moving to a new band, recalibrate the link.
@@ -522,7 +525,6 @@ class BaseSimulation():
         Args:
             bts: basestation handle
             band: desired band
-            calibrate_if_necessary: run calibration procedure if true and new band is different to current
         """
 
         # Change band only if it is needed
@@ -531,14 +533,20 @@ class BaseSimulation():
             self.current_calibrated_band = band
             time.sleep(5)  # It takes some time to propagate the new band
 
-            # If band is being changed, then invalidate calibration
+            # Invalidate the calibration values
             self.dl_path_loss = None
             self.ul_path_loss = None
 
-        # self.dl_path_loss and self.ul_path_loss may be None if calibration was never done or if it was invalidated
-        # in the previous lines.
-        if calibrate_if_necessary and (not self.dl_path_loss or not self.ul_path_loss):
-            self.calibrate()
+        # self.dl_path_loss and self.ul_path_loss will be none if the band has
+        # just changed or calibration for this band failed in previous tests.
+        if not self.dl_path_loss or not self.ul_path_loss:
+            # Try loading the path loss values from the calibration table. If
+            # they are not available, use the automated calibration procedure.
+            try:
+                self.dl_path_loss = self.calibration_table[band]["dl"]
+                self.ul_path_loss = self.calibration_table[band]["ul"]
+            except KeyError:
+                self.calibrate()
 
     def maximum_downlink_throughput(self):
         """ Calculates maximum achievable downlink throughput in the current simulation state.
