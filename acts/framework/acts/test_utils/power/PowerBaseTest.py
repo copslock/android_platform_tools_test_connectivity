@@ -96,7 +96,7 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         base_test.BaseTestClass.__init__(self, controllers)
         BlackboxMetricLogger.for_test_case(
-            metric_name='avg_current', result_attr='test_result')
+            metric_name='avg_power', result_attr='power_consumption')
 
     def setup_class(self):
 
@@ -108,7 +108,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon_data_path = os.path.join(self.log_path, 'Monsoon')
         self.mon = self.monsoons[0]
         self.mon.set_max_current(8.0)
-        self.mon.set_voltage(4.2)
+        self.mon.set_voltage(PHONE_BATTERY_VOLTAGE)
         self.mon.attach_device(self.dut)
 
         # Unpack the test/device specific parameters
@@ -143,6 +143,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         """Set up test specific parameters or configs.
 
         """
+        # Reset the power consumption to 0 before each tests
+        self.power_consumption = 0
         # Set the device into rockbottom state
         self.dut_rockbottom()
         # Wait for extra time if needed for the first test
@@ -286,6 +288,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         # Collecting current measurement data and plot
         begin_time = utils.get_current_epoch_time()
         self.file_path, self.test_result = self.monsoon_data_collect_save()
+        self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
         wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
         # Take Bugreport
         if self.bug_report:

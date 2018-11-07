@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import fnmatch
 import logging
 import os
 import traceback
@@ -645,16 +646,15 @@ class BaseTestClass(object):
 
         One of these test cases lists will be executed, shown here in priority
         order:
-        1. The test_names list, which is passed from cmd line. Invalid names
-           are guarded by cmd line arg parsing.
+        1. The test_names list, which is passed from cmd line.
         2. The self.tests list defined in test class. Invalid names are
            ignored.
         3. All function that matches test case naming convention in the test
            class.
 
         Args:
-            test_names: A list of string that are test case names requested in
-                cmd line.
+            test_names: A list of string that are test case names/patterns
+             requested in cmd line.
 
         Returns:
             The test results object of this class.
@@ -663,15 +663,23 @@ class BaseTestClass(object):
         self.log.info("==========> %s <==========", self.TAG)
         event_bus.post(TestClassBeginEvent(self))
         # Devise the actual test cases to run in the test class.
-        if not test_names:
-            if self.tests:
-                # Specified by run list in class.
-                test_names = list(self.tests)
-            else:
-                # No test case specified by user, execute all in the test class
-                test_names = self._get_all_test_names()
-        self.results.requested = test_names
-        tests = self._get_test_funcs(test_names)
+        if self.tests:
+            # Specified by run list in class.
+            valid_tests = list(self.tests)
+        else:
+            # No test case specified by user, execute all in the test class
+            valid_tests = self._get_all_test_names()
+        if test_names:
+            # Match test cases with any of the user-specified patterns
+            matches = []
+            for valid_test in valid_tests:
+                if any(fnmatch.fnmatch(valid_test, test_name)
+                       for test_name in test_names):
+                    matches.append(valid_test)
+        else:
+            matches = valid_tests
+        self.results.requested = matches
+        tests = self._get_test_funcs(matches)
         # A TestResultRecord used for when setup_class fails.
         # Setup for the class.
         try:
