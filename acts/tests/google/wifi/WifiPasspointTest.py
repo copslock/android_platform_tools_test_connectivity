@@ -195,7 +195,8 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
             self.install_passpoint_profile(passpoint_config)
             time.sleep(DEFAULT_TIMEOUT)
         configs = self.dut.droid.getPasspointConfigs()
-        if not len(configs) or len(configs) != len(self.passpoint_networks):
+        #  It is length -1 because ATT profile will be handled separately
+        if not len(configs) or len(configs) != len(self.passpoint_networks[:2]):
             raise signals.TestFailure("Failed to fetch some or all of the"
                                       " configured passpoint networks.")
         for config in configs:
@@ -250,7 +251,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
             expected_ssid = self.passpoint_networks[1][WifiEnums.SSID_KEY]
 
         # Remove the current Passpoint profile.
-        for network in self.passpoint_networks:
+        for network in self.passpoint_networks[:2]:
             if network[WifiEnums.SSID_KEY] == current_ssid:
                 if not wutils.delete_passpoint(self.dut, network["fqdn"]):
                     raise signals.TestFailure("Failed to delete Passpoint"
