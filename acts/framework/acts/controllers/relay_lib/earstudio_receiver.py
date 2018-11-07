@@ -15,12 +15,14 @@
 #   limitations under the License.
 
 import enum
+import time
 
 from acts.controllers.relay_lib.devices.bluetooth_relay_device import BluetoothRelayDevice
 
 SHORT_PRESS_WAIT_TIME = 0.5
 MEDIUM_PRESS_WAIT_TIME = 3.0
 LONG_PRESS_WAIT_TIME = 4.5
+WAIT_FOR_EFFECT_TIME = 1
 
 
 class Buttons(enum.Enum):
@@ -47,6 +49,7 @@ class EarstudioReceiver(BluetoothRelayDevice):
         been connected before. GREEN LED blinks twice every 0.5 seconds.
         """
         self.relays[Buttons.PLAY_PAUSE.value].set_nc_for(MEDIUM_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def power_off(self):
         """Power off the Earstudio device.
@@ -55,6 +58,7 @@ class EarstudioReceiver(BluetoothRelayDevice):
         it is off.
         """
         self.relays[Buttons.PLAY_PAUSE.value].set_nc_for(LONG_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def press_play_pause(self):
         """Toggle audio play state.
@@ -63,6 +67,7 @@ class EarstudioReceiver(BluetoothRelayDevice):
         playback.
         """
         self.relays[Buttons.PLAY_PAUSE.value].set_nc_for(SHORT_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def press_accept_call(self):
         """Receive incoming call.
@@ -71,6 +76,7 @@ class EarstudioReceiver(BluetoothRelayDevice):
         "Call-receiving sound" when received.
         """
         self.relays[Buttons.PLAY_PAUSE.value].set_nc_for(SHORT_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def press_reject_call(self):
         """Reject incoming call.
@@ -78,6 +84,7 @@ class EarstudioReceiver(BluetoothRelayDevice):
         "Call-rejection sound" when refused.
         """
         self.relays[Buttons.PLAY_PAUSE.value].set_nc_for(MEDIUM_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def press_end_call(self):
         """End ongoing call.
@@ -85,10 +92,12 @@ class EarstudioReceiver(BluetoothRelayDevice):
         "Call-end sound" when ended.
         """
         self.relays[Buttons.PLAY_PAUSE.value].set_nc_for(SHORT_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def press_next(self):
         """Skip to the next track."""
         self.relays[Buttons.NEXT.value].set_nc_for(SHORT_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def toggle_ambient_mode(self):
         """Turn ambient mode on/off.
@@ -98,10 +107,12 @@ class EarstudioReceiver(BluetoothRelayDevice):
         app.
         """
         self.relays[Buttons.NEXT.value].set_nc_for(MEDIUM_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def press_previous(self):
         """Rewind to beginning of current or previous track."""
         self.relays[Buttons.PREVIOUS.value].set_nc_for(SHORT_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def enter_pairing_mode(self):
         """Enter BlueTooth pairing mode.
@@ -111,6 +122,7 @@ class EarstudioReceiver(BluetoothRelayDevice):
         this mode.
         """
         self.relays[Buttons.PREVIOUS.value].set_nc_for(MEDIUM_PRESS_WAIT_TIME)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def press_volume_up(self, press_duration=SHORT_PRESS_WAIT_TIME):
         """Turn up the volume.
@@ -121,6 +133,7 @@ class EarstudioReceiver(BluetoothRelayDevice):
           press_duration (int|float): how long to hold button for.
         """
         self.relays[Buttons.VOLUME_UP.value].set_nc_for(press_duration)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
 
     def press_volume_down(self, press_duration=SHORT_PRESS_WAIT_TIME):
         """Turn down the volume.
@@ -132,3 +145,4 @@ class EarstudioReceiver(BluetoothRelayDevice):
           press_duration (int|float): how long to hold button for.
         """
         self.relays[Buttons.VOLUME_DOWN.value].set_nc_for(press_duration)
+        time.sleep(WAIT_FOR_EFFECT_TIME)
