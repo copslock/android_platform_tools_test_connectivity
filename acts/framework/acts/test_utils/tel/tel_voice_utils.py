@@ -882,11 +882,6 @@ def phone_idle_iwlan_for_subscription(log, ad, sub_id):
         ad: Android device object.
         sub_id: subscription id.
     """
-    if not wait_for_network_rat_for_subscription(
-            log, ad, sub_id, RAT_FAMILY_WLAN,
-            voice_or_data=NETWORK_SERVICE_DATA):
-        ad.log.error("data rat not in iwlan mode.")
-        return False
     if not wait_for_wfc_enabled(log, ad, MAX_WAIT_TIME_WFC_ENABLED):
         ad.log.error("Failed to <report wfc enabled true> within %s seconds.",
                      MAX_WAIT_TIME_WFC_ENABLED)
