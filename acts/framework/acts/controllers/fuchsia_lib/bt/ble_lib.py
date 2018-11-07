@@ -14,17 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import collections
-import json
-import logging
-import math
-import os
-import random
-import re
-import requests
-import socket
-import time
-
 from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 
@@ -66,7 +55,7 @@ class FuchsiaBleLib(BaseLib):
         self.test_counter += 1
         return self.send_command(test_id, test_cmd, test_args)
 
-    def bleStartBleScan(self, scan_time_ms, scan_filter, scan_count):
+    def bleStartBleScan(self, scan_filter):
         """Starts a BLE scan
 
         Args:
@@ -75,14 +64,38 @@ class FuchsiaBleLib(BaseLib):
             scan_count: int, Number of devices to scan for before termination.
 
         Returns:
+            None if pass, err if fail.
+        """
+        test_cmd = "bluetooth.BleStartScan"
+        test_args = {
+            "filter": scan_filter,
+        }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def bleStopBleScan(self):
+        """Stops a BLE scan
+
+        Returns:
             Dictionary, List of devices discovered, error string if error.
         """
-        test_cmd = "bluetooth.BleScan"
-        test_args = {
-            "scan_time_ms": scan_time_ms,
-            "filter": scan_filter,
-            "scan_count": scan_count
-        }
+        test_cmd = "bluetooth.BleStopScan"
+        test_args = {}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def bleGetDiscoveredDevices(self):
+        """Stops a BLE scan
+
+        Returns:
+            Dictionary, List of devices discovered, error string if error.
+        """
+        test_cmd = "bluetooth.BleGetDiscoveredDevices"
+        test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
