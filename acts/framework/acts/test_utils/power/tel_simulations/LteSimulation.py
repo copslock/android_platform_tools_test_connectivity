@@ -45,6 +45,7 @@ class LteSimulation(BaseSimulation):
     PARAM_UL_PW = 'pul'
     PARAM_DL_PW = 'pdl'
     PARAM_BAND = "band"
+    PARAM_MIMO = "mimo"
 
     class TransmissionMode(Enum):
         ''' Transmission modes for LTE (e.g., TM1, TM4, ..)
@@ -54,6 +55,16 @@ class LteSimulation(BaseSimulation):
         TM2 = "TM2"
         TM3 = "TM3"
         TM4 = "TM4"
+        TM7 = "TM7"
+        TM8 = "TM8"
+        TM9 = "TM9"
+
+    class MimoMode(Enum):
+        """ Mimo modes """
+
+        MIMO_1x1 = "1x1"
+        MIMO_2x2 = "2x2"
+        MIMO_4x4 = "4x4"
 
     class SchedulingMode(Enum):
         ''' Traffic scheduling modes (e.g., STATIC, DYNAMIC)
@@ -172,6 +183,20 @@ class LteSimulation(BaseSimulation):
           return False
         else:
             self.set_channel_bandwidth(self.bts1, bw)
+
+        # Setup mimo mode
+
+        values = self.consume_parameter(parameters, self.PARAM_MIMO, 1)
+
+        for mimo_mode in LteSimulation.MimoMode:
+            if values[1] == mimo_mode.value:
+                mimo = mimo_mode
+                break
+        else:
+            raise ValueError("The {} parameter needs to be followed by either "
+                             "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
+
+        self.set_mimo_mode(self.bts1, mimo)
 
         # Setup transmission mode
         try:
@@ -430,17 +455,76 @@ class LteSimulation(BaseSimulation):
             tmode: Enum list from class 'TransmissionModeLTE'
         """
 
-        if tmode == self.TransmissionMode.TM1:
-            bts.dl_antenna = 1
-            bts.transmode = "TM1"
-        elif tmode == self.TransmissionMode.TM4:
-            bts.dl_antenna = 2
-            bts.transmode = "TM4"
-        else:
-            msg = "TM = {} is not valid for LTE".format(tmode)
-            self.log.error(msg)
-            raise ValueError(msg)
+        # If the selected transmission mode does not support the number of DL
+        # antennas, throw an exception.
+        if (tmode in [self.TransmissionMode.TM1, self.TransmissionMode.TM7]
+                and bts.dl_antenna != '1'):
+            # TM1 and TM7 only support 1 DL antenna
+            raise ValueError("{} allows only one DL antenna. Change the "
+                             "number of DL antennas before setting the "
+                             "transmission mode.".format(tmode.value))
+        elif tmode == self.TransmissionMode.TM8 and bts.dl_antenna != '2':
+            # TM8 requires 2 DL antennas
+            raise ValueError("TM2 requires two DL antennas. Change the "
+                             "number of DL antennas before setting the "
+                             "transmission mode.")
+        elif (tmode in [self.TransmissionMode.TM2, self.TransmissionMode.TM3,
+                       self.TransmissionMode.TM4, self.TransmissionMode.TM9]
+                and bts.dl_antenna == '1'):
+            # TM2, TM3, TM4 and TM9 require 2 or 4 DL antennas
+            raise ValueError("{} requires at least two DL atennas. Change the "
+                             "number of DL antennas before setting the "
+                             "transmission mode.".format(tmode.value))
+
+        # The TM mode is allowed for the current number of DL antennas, so it
+        # is safe to change this setting now
+        bts.transmode = tmode.value
+
         time.sleep(5)  # It takes some time to propagate the new settings
+
+    def set_mimo_mode(self, bts, mimo):
+        """ Sets the number of DL antennas for the desired MIMO mode.
+
+        Args:
+            bts: basestation handle
+            mimo: object of class MimoMode
+        """
+
+        # If the requested mimo mode is not compatible with the current TM,
+        # warn the user before changing the value.
+
+        if mimo == self.MimoMode.MIMO_1x1:
+            if bts.transmode not in [self.TransmissionMode.TM1,
+                                     self.TransmissionMode.TM7]:
+                self.log.warning("Using only 1 DL antennas is not allowed with "
+                                 "the current transmission mode. Changing the "
+                                 "number of DL antennas will override this "
+                                 "setting.")
+            bts.dl_antenna = 1
+        elif mimo == self.MimoMode.MIMO_2x2:
+            if bts.transmode not in [self.TransmissionMode.TM2,
+                                     self.TransmissionMode.TM3,
+                                     self.TransmissionMode.TM4,
+                                     self.TransmissionMode.TM8,
+                                     self.TransmissionMode.TM9]:
+                self.log.warning("Using two DL antennas is not allowed with "
+                                 "the current transmission mode. Changing the "
+                                 "number of DL antennas will override this "
+                                 "setting.")
+            bts.dl_antenna = 2
+        elif mimo == self.MimoMode.MIMO_4x4:
+            if bts.transmode not in [self.TransmissionMode.TM2,
+                                     self.TransmissionMode.TM3,
+                                     self.TransmissionMode.TM4,
+                                     self.TransmissionMode.TM9]:
+                self.log.warning("Using four DL antennas is not allowed with "
+                                 "the current transmission mode. Changing the "
+                                 "number of DL antennas will override this "
+                                 "setting.")
+
+            bts.dl_antenna = 4
+        else:
+            RuntimeError("The requested MIMO mode is not supported.")
 
     def set_scheduling_mode(self,
                             bts,
