@@ -396,7 +396,7 @@ class TelephonyBaseTest(BaseTestClass):
         extract_test_log(self.log, ad.adb_logcat_file_path,
                          os.path.join(self.log_path, test_name,
                                       "%s_%s.logcat" % (ad.serial, test_name)),
-                         '%s"' % test_name)
+                         "%s" % test_name)
         ad.adb.wait_for_device()
         result = True
 
