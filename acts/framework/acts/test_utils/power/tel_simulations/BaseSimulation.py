@@ -548,6 +548,17 @@ class BaseSimulation():
             except KeyError:
                 self.calibrate()
 
+            # Complete the calibration table with the new values to be used in
+            # the next tests.
+            if band not in self.calibration_table:
+                self.calibration_table = {}
+
+            if "dl" not in self.calibration_table[band] and self.dl_path_loss:
+                self.calibration_table[band]["dl"] = self.dl_path_loss
+
+            if "ul" not in self.calibration_table[band] and self.ul_path_loss:
+                self.calibration_table[band]["ul"] = self.ul_path_loss
+
     def maximum_downlink_throughput(self):
         """ Calculates maximum achievable downlink throughput in the current simulation state.
 
