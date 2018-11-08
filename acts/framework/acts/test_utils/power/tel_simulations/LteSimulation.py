@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import time
+import math
 from enum import Enum
 
 from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
@@ -37,6 +38,9 @@ class LteSimulation(BaseSimulation):
     # Simulation config keywords contained in the test name
     PARAM_BW = "bw"
     PARAM_SCHEDULING = "scheduling"
+    PARAM_SCHEDULING_STATIC = "static"
+    PARAM_SCHEDULING_DYNAMIC = "dynamic"
+    PARAM_PATTERN = "pattern"
     PARAM_TM = "tm"
     PARAM_UL_PW = 'pul'
     PARAM_DL_PW = 'pdl'
@@ -75,7 +79,32 @@ class LteSimulation(BaseSimulation):
         'low': -20
     }
 
-    def __init__(self, anritsu, log, dut):
+    # Total RBs for each bandwidth
+
+    total_rbs_dictionary = {
+        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 100,
+        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 75,
+        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 50,
+        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 25,
+        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 15,
+        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 6
+    }
+
+
+    # RB groups for each bandwidth
+
+    rbg_dictionary = {
+        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 4,
+        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 4,
+        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 3,
+        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 2,
+        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 2,
+        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 1
+    }
+
+
+    def __init__(self, anritsu, log, dut, calibration_table):
+
         """ Configures Anritsu system for LTE simulation with 1 basetation
 
         Loads a simple LTE simulation enviroment with 1 basestation.
@@ -84,10 +113,12 @@ class LteSimulation(BaseSimulation):
             anritsu: the Anritsu callbox controller
             log: a logger handle
             dut: the android device handler
+            calibration_table: a dictionary containing path losses for
+                different bands.
 
         """
 
-        super().__init__(anritsu, log, dut)
+        super().__init__(anritsu, log, dut, calibration_table)
         base_path = 'C:\\Users\MD8475' + self.anritsu._md8475_version + '\Documents\DAN_configs\\'
 
         if self.anritsu._md8475_version == 'A':
@@ -96,9 +127,6 @@ class LteSimulation(BaseSimulation):
         else:
             self.sim_file_path = base_path + self.LTE_BASIC_SIM_FILE + '.wnssp2'
             self.cell_file_path = base_path + self.LTE_BASIC_CELL_FILE + '.wnscp2'
-
-        anritsu.load_simulation_paramfile(self.sim_file_path)
-        anritsu.load_cell_paramfile(self.cell_file_path)
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(NETWORK_MODE_LTE_ONLY,
             dut.droid.subscriptionGetDefaultSubId()):
@@ -129,7 +157,7 @@ class LteSimulation(BaseSimulation):
           self.log.error("The test name needs to include parameter {} followed by required band.".format(self.PARAM_BAND))
           return False
         else:
-          self.set_band(self.bts1, band, calibrate_if_necessary=True)
+          self.set_band(self.bts1, band)
 
         # Setup bandwidth
         try:
@@ -170,17 +198,63 @@ class LteSimulation(BaseSimulation):
         try:
             values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
 
-            if values[1] == "dynamic":
+            if values[1] == self.PARAM_SCHEDULING_DYNAMIC:
                 scheduling = LteSimulation.SchedulingMode.DYNAMIC
-            elif values[1] == "static":
+            elif values[1] == self.PARAM_SCHEDULING_STATIC:
                 scheduling = LteSimulation.SchedulingMode.STATIC
-        except:
+
+        except ValueError:
             self.log.error(
                 "The test name needs to include parameter {} followed by either "
                                    "dynamic or static.".format(self.PARAM_SCHEDULING))
             return False
+
+        if scheduling == LteSimulation.SchedulingMode.STATIC:
+
+            try:
+
+                values = self.consume_parameter(parameters,
+                                                self.PARAM_PATTERN,
+                                                2)
+                dl_pattern = int(values[1])
+                ul_pattern = int(values[2])
+
+            except ValueError:
+
+                self.log.error(
+                    "When scheduling mode is set to static the parameter {} "
+                    "has to be included followed by two ints separated by an "
+                    "underscore indicating downlink and uplink percentages of"
+                    " total rbs.".format(
+                        self.PARAM_PATTERN
+                    )
+                )
+
+                return False
+
+            else:
+
+                if not (0 <= dl_pattern <= 100 and 0 <= ul_pattern <= 100):
+
+                    self.log.error(
+                        "The scheduling pattern parameters need to be two "
+                        "positive numbers between 0 and 100."
+                    )
+                    return False
+
+                dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(self.bts1,
+                                                                    dl_pattern,
+                                                                    ul_pattern)
+
+                self.set_scheduling_mode(self.bts1,
+                                         LteSimulation.SchedulingMode.STATIC,
+                                         nrb_dl=dl_rbs,
+                                         nrb_ul=ul_rbs)
+
         else:
-            self.set_scheduling_mode(self.bts1, scheduling)
+
+            self.set_scheduling_mode(self.bts1,
+                                     LteSimulation.SchedulingMode.DYNAMIC)
 
         # Setup uplink power
         try:
@@ -371,11 +445,11 @@ class LteSimulation(BaseSimulation):
     def set_scheduling_mode(self,
                             bts,
                             scheduling,
-                            packet_rate=BtsPacketRate.LTE_BESTEFFORT,
-                            mcs_dl=0,
-                            mcs_ul=0,
-                            nrb_dl=5,
-                            nrb_ul=5):
+                            packet_rate=BtsPacketRate.LTE_MANUAL,
+                            mcs_dl=27,
+                            mcs_ul=23,
+                            nrb_dl=0,
+                            nrb_ul=0):
         """ Sets the scheduling mode for LTE
 
         Args:
@@ -400,6 +474,108 @@ class LteSimulation(BaseSimulation):
                 bts.nrb_dl = nrb_dl
                 bts.nrb_ul = nrb_ul
         time.sleep(5)  # It takes some time to propagate the new settings
+
+    def allocation_percentages_to_rbs(self, bts, dl, ul):
+        """ Converts usage percentages to number of DL/UL RBs
+
+        Because not any number of DL/UL RBs can be obtained for a certain
+        bandwidth, this function calculates the number of RBs that most
+        closely matches the desired DL/UL percentages.
+
+        Args:
+            dl: desired percentage of downlink RBs
+            ul: desired percentage of uplink RBs
+        Returns:
+            a tuple indicating the number of downlink and uplink RBs
+        """
+
+        # Validate the arguments
+        if (not 0 <= dl <= 100) or (not 0 <= ul <= 100):
+            raise ValueError("The percentage of DL and UL RBs have to be two "
+                             "positive between 0 and 100.")
+
+        # Get the available number of RBs for the channel bandwidth
+        bw = bts.bandwidth
+        max_rbs = self.total_rbs_dictionary[bw]
+
+        def percentage_to_amount(min_val, max_val, percentage):
+            """ Returns the integer between min_val and max_val that is closest
+            to percentage/100*max_val
+            """
+
+            # Calculate the value that corresponds to the required percentage.
+            closest_int = round(max_val * percentage / 100)
+            # Cannot be less than min_val
+            closest_int = max(closest_int, min_val)
+            # RBs cannot be more than max_rbs
+            closest_int = min(closest_int, max_val)
+
+            return closest_int
+
+
+        # Calculate the number of DL RBs
+
+        if dl == 100:
+            # If 100% is requested, max_rbs can be used
+            dl_rbs = max_rbs
+        elif dl == 0:
+            # Minimum DL RBs is 1
+            dl_rbs = 1
+        else:
+            # Get the number of DL RBs that corresponds to
+            #  the required percentage.
+            desired_dl_rbs = percentage_to_amount(min_val=1,
+                                                  max_val=max_rbs,
+                                                  percentage=dl)
+
+            # DL RBs have to be a multiple of the number of RBs in a RBG
+            dl_rbs = desired_dl_rbs - desired_dl_rbs % self.rbg_dictionary[bw]
+
+        # Calculate the number of UL RBs
+
+        if ul == 100:
+            # If 100% is requested, max_rbs can be used
+            ul_rbs = max_rbs
+        elif ul == 0:
+            # Minimum UL RBs is 1
+            ul_rbs = 1
+        else:
+            # Get the number of UL RBs that corresponds
+            # to the required percentage
+            desired_ul_rbs = percentage_to_amount(min_val=1,
+                                                  max_val=max_rbs,
+                                                  percentage=ul)
+
+            # Create a list of all possible UL RBs assignment
+            # The standard allows any number that can be written as
+            # 2**a * 3**b * 5**c for any combination of a, b and c.
+
+            def pow_range(max_value, base):
+              """ Returns a range of all possible powers of base under
+                  the given max_value.
+              """
+              return range(int(math.ceil(math.log(max_value, base))))
+
+            possible_ul_rbs = [2**a * 3**b * 5**c
+                                for a in pow_range(max_rbs, 2)
+                                for b in pow_range(max_rbs, 3)
+                                for c in pow_range(max_rbs, 5)
+                                if 2**a * 3**b * 5**c <= max_rbs]
+
+            # Find the value in the list that is closest to desired_ul_rbs
+            differences = [abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs]
+            ul_rbs = possible_ul_rbs[differences.index(min(differences))]
+
+        # Report what are the obtained RB percentages
+        self.log.info("Requested a {}% / {}% RB allocation. Closest possible "
+                      "percentages are {}% / {}%.".format(
+            dl, ul,
+            round(100*dl_rbs/max_rbs),
+            round(100*ul_rbs/max_rbs)
+        ))
+
+        return dl_rbs, ul_rbs
+
 
     def set_channel_bandwidth(self, bts, bandwidth):
         """ Sets the LTE channel bandwidth (MHz)

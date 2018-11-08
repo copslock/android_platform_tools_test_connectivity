@@ -1749,7 +1749,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                     self.log, self.provider, [self.clients[0]], 10, 5):
                 return False
         finally:
-            if not wifi_tethering_cleanup(self.log, ads[0], [ads[1]]):
+            if not wifi_tethering_cleanup(self.log, self.provider, [self.clients[0]]):
                 return False
         return True
 
@@ -2113,7 +2113,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not call_setup_teardown(
                     self.log,
                     self.clients[0],
-                    provider,
+                    self.provider,
                     ad_hangup=None,
                     verify_callee_func=provider_in_call_check_func):
                 self.log.error("Setup Call Failed.")
@@ -2302,7 +2302,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("WiFi Tethering failed.")
                 return False
 
-            if not ads[0].droid.wifiIsApEnabled():
+            if not self.provider.droid.wifiIsApEnabled():
                 self.log.error("Provider WiFi tethering stopped.")
                 return False
 

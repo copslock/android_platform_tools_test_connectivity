@@ -41,7 +41,24 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
 
         super().__init__(controllers)
 
-        self.wifi_band = WIFI_CONFIG_APBAND_2G
+        # Initialize values
+        self.wifi_band = None
+        self.network = {"SSID": "Pixel_1030", "password": "1234567890"}
+
+    def setup_class(self):
+        """ Executed before any test case is started.
+
+        Set country code for client and host devices.
+
+        """
+
+        if not super().setup_class():
+            return False
+
+        # Both devices need to have a country code in order
+        # to use the 5 GHz band.
+        self.android_devices[0].droid.wifiSetCountryCode('US')
+        self.android_devices[1].droid.wifiSetCountryCode('US')
 
     def power_tel_tethering_test(self):
         """ Measure power and throughput during data transmission.
@@ -52,13 +69,6 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
         """
 
         # Setup tethering
-
-        # The second device needs to have a country code to be able to
-        # use the 5GHz band
-        self.android_devices[1].droid.wifiSetCountryCode('US')
-
-        self.network = {"SSID": "Pixel_1030", "password": "1234567890"}
-
         wutils.start_wifi_tethering(
             self.dut, self.network[wutils.WifiEnums.SSID_KEY],
             self.network[wutils.WifiEnums.PWD_KEY], self.wifi_band)
