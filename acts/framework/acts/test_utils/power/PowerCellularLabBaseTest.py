@@ -45,9 +45,6 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         super().__init__(controllers)
 
-        # Tests are sorted alphabetically so all the tests in the same band are grouped together
-        self.tests = sorted(self.tests)
-
         self.simulation = None
         self.anritsu = None
 
