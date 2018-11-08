@@ -18,7 +18,7 @@ import time
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.wifi import wifi_test_utils as wutils
-from google.power.tel.lab.PowerTelTrafficTest import PowerTelTrafficTest
+from PowerTelTrafficTest import PowerTelTrafficTest
 
 
 class PowerTelHotspotTest(PowerTelTrafficTest):
@@ -27,6 +27,9 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
     Treated as a different case of data traffic. Inherits from
     PowerTelTrafficTest and only needs to make a change in the measurement step.
     """
+
+    # Class config parameters
+    CONFIG_KEY_WIFI = 'hotspot_network'
 
     # Test name configuration keywords
     PARAM_WIFI_BAND = "wifiband"
@@ -43,7 +46,6 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
 
         # Initialize values
         self.wifi_band = None
-        self.network = {"SSID": "Pixel_1030", "password": "1234567890"}
 
     def setup_class(self):
         """ Executed before any test case is started.
@@ -54,6 +56,36 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
 
         if not super().setup_class():
             return False
+
+        # If an SSID and password are indicated in the configuration parameters,
+        # use those. If not, use default parameters and warn the user.
+
+        if hasattr(self, self.CONFIG_KEY_WIFI):
+
+            self.network = getattr(self, self.CONFIG_KEY_WIFI)
+
+            if not (wutils.WifiEnums.SSID_KEY in self.network
+                    and wutils.WifiEnums.PWD_KEY in self.network):
+                raise RuntimeError(
+                    "The '{}' key in the configuration file needs"
+                    " to contain the '{}' and '{}' fields.".format(
+                        self.CONFIG_KEY_WIFI, wutils.WifiEnums.SSID_KEY,
+                        wutils.WifiEnums.PWD_KEY))
+        else:
+
+            self.log.warning(
+                "The configuration file doesn't indicate an SSID "
+                "password for the hotspot. Using default values. "
+                "To configured the SSID and pwd include a the key"
+                " {} containing the '{}' and '{}' fields.".format(
+                    self.CONFIG_KEY_WIFI,
+                    wutils.WifiEnums.SSID_KEY,
+                    wutils.WifiEnums.PWD_KEY))
+
+            self.network = {
+                wutils.WifiEnums.SSID_KEY: "Pixel_1030",
+                wutils.WifiEnums.PWD_KEY: "1234567890"
+            }
 
         # Both devices need to have a country code in order
         # to use the 5 GHz band.
