@@ -457,6 +457,18 @@ class WifiPingTest(base_test.BaseTestClass):
     def test_slow_ping_rtt_ch1_VHT20(self):
         self._test_ping_rtt()
 
+    def test_fast_ping_rtt_ch6_VHT20(self):
+        self._test_ping_rtt()
+
+    def test_slow_ping_rtt_ch6_VHT20(self):
+        self._test_ping_rtt()
+
+    def test_fast_ping_rtt_ch11_VHT20(self):
+        self._test_ping_rtt()
+
+    def test_slow_ping_rtt_ch11_VHT20(self):
+        self._test_ping_rtt()
+
     def test_fast_ping_rtt_ch36_VHT20(self):
         self._test_ping_rtt()
 
