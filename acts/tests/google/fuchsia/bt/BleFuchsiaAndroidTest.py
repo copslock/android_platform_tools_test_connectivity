@@ -22,7 +22,9 @@ import random
 import time
 
 from acts.controllers import android_device
+from acts.test_utils.fuchsia.bt_test_utils import le_scan_for_device_by_name
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
+from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
 from acts.test_utils.bt.bt_constants import adv_succ
 from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
 from acts.test_utils.bt.bt_constants import scan_result
@@ -50,6 +52,8 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
 
     def _start_generic_advertisement_include_device_name(self):
         self.ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
+        self.ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
+            ble_advertise_settings_modes['low_latency'])
         advertise_data = self.ad.droid.bleBuildAdvertiseData()
         advertise_settings = self.ad.droid.bleBuildAdvertiseSettings()
         advertise_callback = self.ad.droid.bleGenBleAdvertiseCallback()
@@ -69,35 +73,9 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
         adv_callback = self._start_generic_advertisement_include_device_name()
         droid_name = self.ad.droid.bluetoothGetLocalName()
         self.log.info("Android device name: {}".format(droid_name))
-
-        # Generate input params for command
-        scan_time = 30000
-        scan_filter = {"name_substring": "Pixel"}
-        scan_count = 1
-        scan_res = self.fd.ble_lib.bleStartBleScan(scan_time, scan_filter,
-                                                   scan_count)
-
-        # Get the result and validate
-        self.log.info("Scan res: {}".format(scan_res))
-
-        try:
-            scan_res = scan_res["result"]
-            #Validate result
-            res = False
-            for device in scan_res:
-                name, did, connectable = device["name"], device["id"], device[
-                    "connectable"]
-                if (name):
-                    self.log.info(
-                        "Discovered device with name: {}".format(name))
-                if (name == droid_name):
-                    self.log.info(
-                        "Successfully found android device advertising! name, id: {}, {}"
-                        .format(name, did))
-                    res = True
-
-        except:
-            self.log.error("Failed to discovered android device")
+        res = True
+        if not le_scan_for_device_by_name(
+                self.fd, self.log, sample_android_name, self.default_timeout):
             res = False
 
         #Print clients to validate results are saved
@@ -119,37 +97,13 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
         droid_name = self.ad.droid.bluetoothGetLocalName()
         self.log.info("Android device name: {}".format(droid_name))
 
-        # Generate input params for command
-        # Set scan time for 30 seconds (30,000 ms) and filter by android name
-        # Resolve scan after device is found (scan_count = 1)
-        scan_time_ms = 30000
-        scan_filter = {"name_substring": droid_name}
-        scan_count = 1
-        scan_res = self.fd.ble_lib.bleStartBleScan(scan_time_ms, scan_filter,
-                                                   scan_count)
+        scan_result = le_scan_for_device_by_name(
+            self.fd, self.log, sample_android_name, self.default_timeout)
+        if not scan_result:
+            return False
 
-        # Get the result and validate
-        self.log.info("Scan res: {}".format(scan_res))
-
-        try:
-            scan_res = scan_res["result"]
-            #Validate result
-            res = False
-            for device in scan_res:
-                name, did, connectable = device["name"], device["id"], device[
-                    "connectable"]
-                if (name):
-                    self.log.info(
-                        "Discovered device with name: {}".format(name))
-                if (name == droid_name):
-                    self.log.info(
-                        "Successfully found android device advertising! name, id: {}, {}"
-                        .format(name, did))
-                    res = True
-
-        except:
-            self.log.error("Failed to discovered Android device")
-            res = False
+        name, did, connectable = scan_result["name"], scan_result[
+            "id"], scan_result["connectable"]
 
         connect = self.fd.ble_lib.bleConnectToPeripheral(did)
         self.log.info("Connecting returned status: {}".format(connect))
@@ -166,7 +120,7 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
         #Stop android advertising + cleanup sl4f
         self.ad.droid.bleStopBleAdvertising(adv_callback)
 
-        return res
+        return True
 
     # Currently, this test doesn't work. The android device does not scan
     # TODO(): Debug android scan
