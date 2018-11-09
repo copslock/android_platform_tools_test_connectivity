@@ -112,7 +112,8 @@ class LteSimulation(BaseSimulation):
         BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 1
     }
 
-    def __init__(self, anritsu, log, dut, calibration_table):
+    def __init__(self, anritsu, log, dut, test_config, calibration_table):
+
         """ Configures Anritsu system for LTE simulation with 1 basetation
 
         Loads a simple LTE simulation enviroment with 1 basestation.
@@ -121,12 +122,13 @@ class LteSimulation(BaseSimulation):
             anritsu: the Anritsu callbox controller
             log: a logger handle
             dut: the android device handler
+            test_config: test configuration obtained from the config file
             calibration_table: a dictionary containing path losses for
                 different bands.
 
         """
 
-        super().__init__(anritsu, log, dut, calibration_table)
+        super().__init__(anritsu, log, dut, test_config, calibration_table)
         base_path = "C:\\Users\MD8475{}\Documents\DAN_configs\\".format(
             self.anritsu._md8475_version)
 
