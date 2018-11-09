@@ -32,10 +32,10 @@ class GsmSimulation(BaseSimulation):
     # the same configuration manually.
 
     GSM_BASIC_SIM_FILE = ('C:\\Users\MD8475A\Documents\DAN_configs\\'
-                           'SIM_default_GSM.wnssp')
+                          'SIM_default_GSM.wnssp')
 
     GSM_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\'
-                            'CELL_GSM_config.wnscp')
+                     'CELL_GSM_config.wnscp')
 
     # Test name parameters
 
@@ -72,8 +72,9 @@ class GsmSimulation(BaseSimulation):
         anritsu.load_simulation_paramfile(self.GSM_BASIC_SIM_FILE)
         self.anritsu.load_cell_paramfile(self.GSM_CELL_FILE)
 
-        if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(NETWORK_MODE_GSM_ONLY,
-            dut.droid.subscriptionGetDefaultSubId()):
+        if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
+                NETWORK_MODE_GSM_ONLY,
+                dut.droid.subscriptionGetDefaultSubId()):
             log.error("Coold not set preferred network type.")
         else:
             log.info("Preferred network type set.")
@@ -95,13 +96,15 @@ class GsmSimulation(BaseSimulation):
         # Setup band
 
         try:
-          values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
-          band = self.bands_parameter_mapping[values[1]]
+            values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
+            band = self.bands_parameter_mapping[values[1]]
         except:
-          self.log.error("The test name needs to include parameter {} followed by required band.".format(self.PARAM_BAND))
-          return False
+            self.log.error(
+                "The test name needs to include parameter {} followed by the "
+                "required band.".format(self.PARAM_BAND))
+            return False
         else:
-          self.set_band(self.bts1, band)
+            self.set_band(self.bts1, band)
 
         # Setup GPRS mode
 
@@ -112,27 +115,26 @@ class GsmSimulation(BaseSimulation):
         elif self.consume_parameter(parameters, self.PARAM_NO_GPRS):
             self.bts1.gsm_gprs_mode = BtsGprsMode.NO_GPRS
         else:
-            self.log.error("GPRS mode needs to be indicated in the test name with either {}, {} or {}.".format(
-                self.PARAM_GPRS,
-                self.PARAM_EGPRS,
-                self.PARAM_NO_GPRS
-            ))
+            self.log.error(
+                "GPRS mode needs to be indicated in the test name with either "
+                "{}, {} or {}.".format(self.PARAM_GPRS, self.PARAM_EGPRS,
+                                       self.PARAM_NO_GPRS))
             return False
 
         # Setup slot allocation
 
         try:
-          values = self.consume_parameter(parameters, self.PARAM_SLOTS, 2)
-          dl = int(values[1])
-          ul = int(values[2])
+            values = self.consume_parameter(parameters, self.PARAM_SLOTS, 2)
+            dl = int(values[1])
+            ul = int(values[2])
         except:
-          self.log.error("The test name needs to include parameter {} followed by two int values indicating DL and UL slots.".format(self.PARAM_SLOTS))
-          return False
+            self.log.error(
+                "The test name needs to include parameter {} followed by two "
+                "int values indicating DL and UL slots.".format(
+                    self.PARAM_SLOTS))
+            return False
         else:
             self.bts1.gsm_slots = (dl, ul)
 
         # No errors were found
         return True
-
-
-
