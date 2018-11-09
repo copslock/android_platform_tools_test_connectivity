@@ -72,6 +72,10 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         self.calibration_table = self.unpack_custom_file(
             self.user_params["calibration_table"], False)
 
+        # Store the value of the key to access the test config in the
+        # user_params dictionary.
+        self.PARAMS_KEY = self.TAG + "_params"
+
         # Set DUT to rockbottom
         self.dut_rockbottom()
 
@@ -234,6 +238,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         # Instantiate a new simulation
         self.simulation = simulation_class(self.anritsu, self.log, self.dut,
+                                           self.user_params[self.PARAMS_KEY],
                                            self.calibration_table[sim_type])
 
         # Start the simulation

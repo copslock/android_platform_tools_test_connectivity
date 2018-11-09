@@ -52,7 +52,7 @@ class GsmSimulation(BaseSimulation):
         '1900': GSM_BAND_RGSM900
     }
 
-    def __init__(self, anritsu, log, dut, calibration_table):
+    def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for GSM simulation with 1 basetation
 
         Loads a simple LTE simulation enviroment with 1 basestation. It also
@@ -62,12 +62,13 @@ class GsmSimulation(BaseSimulation):
             anritsu: the Anritsu callbox controller
             log: a logger handle
             dut: the android device handler
+            test_config: test configuration obtained from the config file
             calibration_table: a dictionary containing path losses for
                 different bands.
 
         """
 
-        super().__init__(anritsu, log, dut, calibration_table)
+        super().__init__(anritsu, log, dut, test_config, calibration_table)
 
         anritsu.load_simulation_paramfile(self.GSM_BASIC_SIM_FILE)
         self.anritsu.load_cell_paramfile(self.GSM_CELL_FILE)
