@@ -101,7 +101,6 @@ class LteSimulation(BaseSimulation):
         BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 6
     }
 
-
     # RB groups for each bandwidth
 
     rbg_dictionary = {
@@ -113,9 +112,7 @@ class LteSimulation(BaseSimulation):
         BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 1
     }
 
-
     def __init__(self, anritsu, log, dut, calibration_table):
-
         """ Configures Anritsu system for LTE simulation with 1 basetation
 
         Loads a simple LTE simulation enviroment with 1 basestation.
@@ -130,17 +127,23 @@ class LteSimulation(BaseSimulation):
         """
 
         super().__init__(anritsu, log, dut, calibration_table)
-        base_path = 'C:\\Users\MD8475' + self.anritsu._md8475_version + '\Documents\DAN_configs\\'
+        base_path = "C:\\Users\MD8475{}\Documents\DAN_configs\\".format(
+            self.anritsu._md8475_version)
 
         if self.anritsu._md8475_version == 'A':
-            self.sim_file_path = base_path + self.LTE_BASIC_SIM_FILE + '.wnssp'
-            self.cell_file_path = base_path + self.LTE_BASIC_CELL_FILE + '.wnscp'
+            self.sim_file_path = "{}{}.wnssp".format(base_path,
+                                                     self.LTE_BASIC_SIM_FILE)
+            self.cell_file_path = "{}{}.wnscp".format(base_path,
+                                                      self.LTE_BASIC_CELL_FILE)
         else:
-            self.sim_file_path = base_path + self.LTE_BASIC_SIM_FILE + '.wnssp2'
-            self.cell_file_path = base_path + self.LTE_BASIC_CELL_FILE + '.wnscp2'
+            self.sim_file_path = "{}{}.wnssp2".format(base_path,
+                                                      self.LTE_BASIC_SIM_FILE)
+            self.cell_file_path = "{}{}.wnscp2".format(
+                base_path, self.LTE_BASIC_CELL_FILE)
 
-        if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(NETWORK_MODE_LTE_ONLY,
-            dut.droid.subscriptionGetDefaultSubId()):
+        if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
+                NETWORK_MODE_LTE_ONLY,
+                dut.droid.subscriptionGetDefaultSubId()):
             log.error("Couldn't set preferred network type.")
         else:
             log.info("Preferred network type set.")
@@ -161,26 +164,29 @@ class LteSimulation(BaseSimulation):
 
         # Setup band
         try:
-          values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
-          band = values[1]
+            values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
+            band = values[1]
 
         except:
-          self.log.error("The test name needs to include parameter {} followed by required band.".format(self.PARAM_BAND))
-          return False
+            self.log.error(
+                "The test name needs to include parameter {} followed by "
+                "the required band.".format(self.PARAM_BAND))
+            return False
         else:
-          self.set_band(self.bts1, band)
+            self.set_band(self.bts1, band)
 
         # Setup bandwidth
         try:
-          values = self.consume_parameter(parameters, self.PARAM_BW, 1)
-          bw = float(values[1])
+            values = self.consume_parameter(parameters, self.PARAM_BW, 1)
+            bw = float(values[1])
 
-          if bw == 14:
-              bw = 1.4
+            if bw == 14:
+                bw = 1.4
         except:
-          self.log.error("The test name needs to include parameter {} followed by an int value "
-                         "(to indicate 1.4 MHz use 14).".format(self.PARAM_BW))
-          return False
+            self.log.error(
+                "The test name needs to include parameter {} followed by an int"
+                " value (to indicate 1.4 MHz use 14).".format(self.PARAM_BW))
+            return False
         else:
             self.set_channel_bandwidth(self.bts1, bw)
 
@@ -213,15 +219,18 @@ class LteSimulation(BaseSimulation):
             else:
                 raise ValueError()
         except:
-            self.log.error("The test name needs to include parameter {} followed by an int value from 1 to 4 indicating"
-                           " transmission mode.".format(self.PARAM_TM))
+            self.log.error(
+                "The test name needs to include parameter {} followed by an int"
+                " value from 1 to 4 indicating transmission mode.".format(
+                    self.PARAM_TM))
             return False
         else:
             self.set_transmission_mode(self.bts1, tm)
 
         # Setup scheduling mode
         try:
-            values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
+            values = self.consume_parameter(parameters, self.PARAM_SCHEDULING,
+                                            1)
 
             if values[1] == self.PARAM_SCHEDULING_DYNAMIC:
                 scheduling = LteSimulation.SchedulingMode.DYNAMIC
@@ -230,16 +239,15 @@ class LteSimulation(BaseSimulation):
 
         except ValueError:
             self.log.error(
-                "The test name needs to include parameter {} followed by either "
-                                   "dynamic or static.".format(self.PARAM_SCHEDULING))
+                "The test name needs to include parameter {} followed by either"
+                " dynamic or static.".format(self.PARAM_SCHEDULING))
             return False
 
         if scheduling == LteSimulation.SchedulingMode.STATIC:
 
             try:
 
-                values = self.consume_parameter(parameters,
-                                                self.PARAM_PATTERN,
+                values = self.consume_parameter(parameters, self.PARAM_PATTERN,
                                                 2)
                 dl_pattern = int(values[1])
                 ul_pattern = int(values[2])
@@ -250,10 +258,7 @@ class LteSimulation(BaseSimulation):
                     "When scheduling mode is set to static the parameter {} "
                     "has to be included followed by two ints separated by an "
                     "underscore indicating downlink and uplink percentages of"
-                    " total rbs.".format(
-                        self.PARAM_PATTERN
-                    )
-                )
+                    " total rbs.".format(self.PARAM_PATTERN))
 
                 return False
 
@@ -263,18 +268,17 @@ class LteSimulation(BaseSimulation):
 
                     self.log.error(
                         "The scheduling pattern parameters need to be two "
-                        "positive numbers between 0 and 100."
-                    )
+                        "positive numbers between 0 and 100.")
                     return False
 
-                dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(self.bts1,
-                                                                    dl_pattern,
-                                                                    ul_pattern)
+                dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
+                    self.bts1, dl_pattern, ul_pattern)
 
-                self.set_scheduling_mode(self.bts1,
-                                         LteSimulation.SchedulingMode.STATIC,
-                                         nrb_dl=dl_rbs,
-                                         nrb_ul=ul_rbs)
+                self.set_scheduling_mode(
+                    self.bts1,
+                    LteSimulation.SchedulingMode.STATIC,
+                    nrb_dl=dl_rbs,
+                    nrb_ul=ul_rbs)
 
         else:
 
@@ -291,14 +295,15 @@ class LteSimulation(BaseSimulation):
                 power = self.uplink_signal_level_dictionary[values[1]]
         except:
             self.log.error(
-                "The test name needs to include parameter {} followed by one the following values: {}.".format(
-                    self.PARAM_UL_PW,
-                    ["\n" + val for val in self.uplink_signal_level_dictionary.keys()]
-                ))
+                "The test name needs to include parameter {} followed by one "
+                "the following values: {}.".format(self.PARAM_UL_PW, [
+                    "\n" + val
+                    for val in self.uplink_signal_level_dictionary.keys()
+                ]))
             return False
         else:
-            # Power is not set on the callbox until after the simulation is started. Will save this value in
-            # a variable and use it lated
+            # Power is not set on the callbox until after the simulation is
+            # started. Will save this value in a variable and use it lated
             self.sim_ul_power = power
 
         # Setup downlink power
@@ -311,19 +316,18 @@ class LteSimulation(BaseSimulation):
                 power = self.downlink_rsrp_dictionary[values[1]]
         except:
             self.log.error(
-                "The test name needs to include parameter {} followed by one the following values: {}.".format(
-                    self.PARAM_DL_PW,
-                    ["\n" + val for val in self.downlink_rsrp_dictionary.keys()]
-                ))
+                "The test name needs to include parameter {} followed by one "
+                "the following values: {}.".format(self.PARAM_DL_PW, [
+                    "\n" + val for val in self.downlink_rsrp_dictionary.keys()
+                ]))
             return False
         else:
-            # Power is not set on the callbox until after the simulation is started. Will save this value in
-            # a variable and use it later
+            # Power is not set on the callbox until after the simulation is
+            # started. Will save this value in a variable and use it later
             self.sim_dl_power = power
 
         # No errors were found
         return True
-
 
     def set_downlink_rx_power(self, rsrp):
         """ Sets downlink rx power in RSRP using calibration
@@ -337,13 +341,17 @@ class LteSimulation(BaseSimulation):
 
         power = self.rsrp_to_signal_power(rsrp, self.bts1)
 
-        self.log.info("Setting downlink signal level to {} RSRP ({} dBm)".format(rsrp, power))
+        self.log.info(
+            "Setting downlink signal level to {} RSRP ({} dBm)".format(
+                rsrp, power))
 
         # Use parent method to set signal level
         super().set_downlink_rx_power(power)
 
-
-    def downlink_calibration(self, bts, rat = None, power_units_conversion_func = None):
+    def downlink_calibration(self,
+                             bts,
+                             rat=None,
+                             power_units_conversion_func=None):
         """ Computes downlink path loss and returns the calibration value
 
         The bts needs to be set at the desired config (bandwidth, mode, etc)
@@ -353,20 +361,24 @@ class LteSimulation(BaseSimulation):
         Args:
             bts: basestation handle
             rat: ignored, replaced by 'lteRsrp'
-            power_units_conversion_func: ignored, replaced by self.rsrp_to_signal_power
+            power_units_conversion_func: ignored, replaced by
+                self.rsrp_to_signal_power
 
         Returns:
             Dowlink calibration value and measured DL power. Note that the
             phone only reports RSRP of the primary chain
         """
 
-        return super().downlink_calibration(bts, rat='lteRsrp', power_units_conversion_func=self.rsrp_to_signal_power)
+        return super().downlink_calibration(
+            bts,
+            rat='lteRsrp',
+            power_units_conversion_func=self.rsrp_to_signal_power)
 
     def rsrp_to_signal_power(self, rsrp, bts):
         """ Converts rsrp to total band signal power
 
-        RSRP is measured per subcarrier, so total band power needs to be multiplied
-        by the number of subcarriers being used.
+        RSRP is measured per subcarrier, so total band power needs to be
+        multiplied by the number of subcarriers being used.
 
         Args:
             rsrp: desired rsrp in dBm
@@ -378,15 +390,15 @@ class LteSimulation(BaseSimulation):
 
         bandwidth = bts.bandwidth
 
-        if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:       # 100 RBs
+        if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:  # 100 RBs
             power = rsrp + 30.79
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:     # 75 RBs
+        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:  # 75 RBs
             power = rsrp + 29.54
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:     # 50 RBs
+        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:  # 50 RBs
             power = rsrp + 27.78
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:      # 25 RBs
+        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:  # 25 RBs
             power = rsrp + 24.77
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:      # 15 RBs
+        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:  # 15 RBs
             power = rsrp + 22.55
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:  # 6 RBs
             power = rsrp + 18.57
@@ -396,7 +408,8 @@ class LteSimulation(BaseSimulation):
         return power
 
     def maximum_downlink_throughput(self):
-        """ Calculates maximum achievable downlink throughput in the current simulation state.
+        """ Calculates maximum achievable downlink throughput in the current
+            simulation state.
 
         Returns:
             Maximum throughput in mbps.
@@ -422,7 +435,8 @@ class LteSimulation(BaseSimulation):
             raise ValueError("Invalid bandwidth value.")
 
     def maximum_uplink_throughput(self):
-        """ Calculates maximum achievable uplink throughput in the current simulation state.
+        """ Calculates maximum achievable uplink throughput in the current
+            simulation state.
 
         Returns:
             Maximum throughput in mbps.
@@ -446,7 +460,6 @@ class LteSimulation(BaseSimulation):
         else:
             raise ValueError("Invalid bandwidth value.")
 
-
     def set_transmission_mode(self, bts, tmode):
         """ Sets the transmission mode for the LTE basetation
 
@@ -468,9 +481,10 @@ class LteSimulation(BaseSimulation):
             raise ValueError("TM2 requires two DL antennas. Change the "
                              "number of DL antennas before setting the "
                              "transmission mode.")
-        elif (tmode in [self.TransmissionMode.TM2, self.TransmissionMode.TM3,
-                       self.TransmissionMode.TM4, self.TransmissionMode.TM9]
-                and bts.dl_antenna == '1'):
+        elif (tmode in [
+                self.TransmissionMode.TM2, self.TransmissionMode.TM3,
+                self.TransmissionMode.TM4, self.TransmissionMode.TM9
+        ] and bts.dl_antenna == '1'):
             # TM2, TM3, TM4 and TM9 require 2 or 4 DL antennas
             raise ValueError("{} requires at least two DL atennas. Change the "
                              "number of DL antennas before setting the "
@@ -494,29 +508,31 @@ class LteSimulation(BaseSimulation):
         # warn the user before changing the value.
 
         if mimo == self.MimoMode.MIMO_1x1:
-            if bts.transmode not in [self.TransmissionMode.TM1,
-                                     self.TransmissionMode.TM7]:
-                self.log.warning("Using only 1 DL antennas is not allowed with "
-                                 "the current transmission mode. Changing the "
-                                 "number of DL antennas will override this "
-                                 "setting.")
+            if bts.transmode not in [
+                    self.TransmissionMode.TM1, self.TransmissionMode.TM7
+            ]:
+                self.log.warning(
+                    "Using only 1 DL antennas is not allowed with "
+                    "the current transmission mode. Changing the "
+                    "number of DL antennas will override this "
+                    "setting.")
             bts.dl_antenna = 1
         elif mimo == self.MimoMode.MIMO_2x2:
-            if bts.transmode not in [self.TransmissionMode.TM2,
-                                     self.TransmissionMode.TM3,
-                                     self.TransmissionMode.TM4,
-                                     self.TransmissionMode.TM8,
-                                     self.TransmissionMode.TM9]:
+            if bts.transmode not in [
+                    self.TransmissionMode.TM2, self.TransmissionMode.TM3,
+                    self.TransmissionMode.TM4, self.TransmissionMode.TM8,
+                    self.TransmissionMode.TM9
+            ]:
                 self.log.warning("Using two DL antennas is not allowed with "
                                  "the current transmission mode. Changing the "
                                  "number of DL antennas will override this "
                                  "setting.")
             bts.dl_antenna = 2
         elif mimo == self.MimoMode.MIMO_4x4:
-            if bts.transmode not in [self.TransmissionMode.TM2,
-                                     self.TransmissionMode.TM3,
-                                     self.TransmissionMode.TM4,
-                                     self.TransmissionMode.TM9]:
+            if bts.transmode not in [
+                    self.TransmissionMode.TM2, self.TransmissionMode.TM3,
+                    self.TransmissionMode.TM4, self.TransmissionMode.TM9
+            ]:
                 self.log.warning("Using four DL antennas is not allowed with "
                                  "the current transmission mode. Changing the "
                                  "number of DL antennas will override this "
@@ -596,7 +612,6 @@ class LteSimulation(BaseSimulation):
 
             return closest_int
 
-
         # Calculate the number of DL RBs
 
         if dl == 100:
@@ -608,9 +623,8 @@ class LteSimulation(BaseSimulation):
         else:
             # Get the number of DL RBs that corresponds to
             #  the required percentage.
-            desired_dl_rbs = percentage_to_amount(min_val=1,
-                                                  max_val=max_rbs,
-                                                  percentage=dl)
+            desired_dl_rbs = percentage_to_amount(
+                min_val=1, max_val=max_rbs, percentage=dl)
 
             # DL RBs have to be a multiple of the number of RBs in a RBG
             dl_rbs = desired_dl_rbs - desired_dl_rbs % self.rbg_dictionary[bw]
@@ -626,40 +640,39 @@ class LteSimulation(BaseSimulation):
         else:
             # Get the number of UL RBs that corresponds
             # to the required percentage
-            desired_ul_rbs = percentage_to_amount(min_val=1,
-                                                  max_val=max_rbs,
-                                                  percentage=ul)
+            desired_ul_rbs = percentage_to_amount(
+                min_val=1, max_val=max_rbs, percentage=ul)
 
             # Create a list of all possible UL RBs assignment
             # The standard allows any number that can be written as
             # 2**a * 3**b * 5**c for any combination of a, b and c.
 
             def pow_range(max_value, base):
-              """ Returns a range of all possible powers of base under
+                """ Returns a range of all possible powers of base under
                   the given max_value.
               """
-              return range(int(math.ceil(math.log(max_value, base))))
+                return range(int(math.ceil(math.log(max_value, base))))
 
-            possible_ul_rbs = [2**a * 3**b * 5**c
-                                for a in pow_range(max_rbs, 2)
-                                for b in pow_range(max_rbs, 3)
-                                for c in pow_range(max_rbs, 5)
-                                if 2**a * 3**b * 5**c <= max_rbs]
+            possible_ul_rbs = [
+                2**a * 3**b * 5**c
+                for a in pow_range(max_rbs, 2) for b in pow_range(max_rbs, 3)
+                for c in pow_range(max_rbs, 5) if 2**a * 3**b * 5**c <= max_rbs
+            ]
 
             # Find the value in the list that is closest to desired_ul_rbs
-            differences = [abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs]
+            differences = [
+                abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs
+            ]
             ul_rbs = possible_ul_rbs[differences.index(min(differences))]
 
         # Report what are the obtained RB percentages
         self.log.info("Requested a {}% / {}% RB allocation. Closest possible "
                       "percentages are {}% / {}%.".format(
-            dl, ul,
-            round(100*dl_rbs/max_rbs),
-            round(100*ul_rbs/max_rbs)
-        ))
+                          dl, ul,
+                          round(100 * dl_rbs / max_rbs),
+                          round(100 * ul_rbs / max_rbs)))
 
         return dl_rbs, ul_rbs
-
 
     def set_channel_bandwidth(self, bts, bandwidth):
         """ Sets the LTE channel bandwidth (MHz)
