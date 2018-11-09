@@ -20,6 +20,12 @@ WIFI_DISCONNECTED = "WifiNetworkDisconnected"
 SUPPLICANT_CON_CHANGED = "SupplicantConnectionChanged"
 WIFI_STATE_CHANGED = "WifiStateChanged"
 WIFI_FORGET_NW_SUCCESS = "WifiManagerForgetNetworkOnSuccess"
+WIFI_NETWORK_REQUEST_MATCH_CB_ON_MATCH = "WifiManagerNetworkRequestMatchCallbackOnMatch"
+WIFI_NETWORK_REQUEST_MATCH_CB_ON_CONNECT_SUCCESS = "WifiManagerNetworkRequestMatchCallbackOnUserSelectionConnectSuccess"
+WIFI_NETWORK_REQUEST_MATCH_CB_ON_CONNECT_FAILURE = "WifiManagerNetworkRequestMatchCallbackOnUserSelectionConnectFailure"
+WIFI_NETWORK_CB_ON_AVAILABLE = "WifiManagerNetworkCallbackOnAvailable"
+WIFI_NETWORK_CB_ON_UNAVAILABLE = "WifiManagerNetworkCallbackOnUnavailable"
+WIFI_NETWORK_CB_ON_LOST = "WifiManagerNetworkCallbackOnLost"
 
 # These constants will be used by the ACTS wifi tests.
 CONNECT_BY_CONFIG_SUCCESS = 'WifiManagerConnectByConfigOnSuccess'
@@ -34,3 +40,6 @@ SSID = "SSID"
 DEVICES_USING_LEGACY_PROP = ["sailfish", "marlin", "walleye", "taimen", "muskie"]
 CNSS_DIAG_PROP = "persist.vendor.sys.cnss.diag_txt"
 LEGACY_CNSS_DIAG_PROP = "persist.sys.cnss.diag_txt"
+
+# Delay before registering the match callback.
+NETWORK_REQUEST_CB_REGISTER_DELAY_SEC = 2
