@@ -64,10 +64,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         super().setup_class()
 
-        if hasattr(self, 'network_file'):
-            self.networks = self.unpack_custom_file(self.network_file, False)
-            self.main_network = self.networks['main_network']
-            self.aux_network = self.networks['aux_network']
+        # Gets the name of the interface from which packets are sent
         if hasattr(self, 'packet_senders'):
             self.pkt_sender = self.packet_senders[0]
 
