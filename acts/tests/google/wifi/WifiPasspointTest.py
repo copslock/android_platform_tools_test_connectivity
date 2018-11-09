@@ -33,9 +33,12 @@ from acts.utils import force_airplane_mode
 WifiEnums = wutils.WifiEnums
 
 DEFAULT_TIMEOUT = 10
+OSU_TEST_TIMEOUT = 300
 GLOBAL_RE = 0
 BOINGO = 1
 ATT = 2
+
+OSU_BOINGO = 0
 UNKNOWN_FQDN = "@#@@!00fffffx"
 
 class WifiPasspointTest(acts.base_test.BaseTestClass):
@@ -290,5 +293,51 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         self.install_passpoint_profile(passpoint_config)
         ssid = passpoint_config[WifiEnums.SSID_KEY]
         self.check_passpoint_connection(ssid)
+        self.get_configured_passpoint_and_delete()
+        wutils.wait_for_disconnect(self.dut)
+
+    def test_start_subscription_provisioning(self):
+        """Start subscription provisioning with a default provider."""
+
+        self.unpack_userparams(('osu_configs',))
+        asserts.assert_true(
+            len(self.osu_configs) > 0,
+            "Need at least one osu config.")
+        osu_config = self.osu_configs[OSU_BOINGO]
+        # Clear all previous events.
+        self.dut.ed.clear_all_events()
+        self.dut.droid.startSubscriptionProvisioning(osu_config)
+        start_time = time.time()
+        while time.time() < start_time + OSU_TEST_TIMEOUT:
+            dut_event = self.dut.ed.pop_event("onProvisioningCallback",
+                                              DEFAULT_TIMEOUT * 18)
+            if dut_event['data']['tag'] == 'success':
+                self.log.info("Passpoint Provisioning Success")
+                break
+            if dut_event['data']['tag'] == 'failure':
+                raise signals.TestFailure(
+                    "Passpoint Provisioning is failed with %s" %
+                    dut_event['data'][
+                        'reason'])
+                break
+            if dut_event['data']['tag'] == 'status':
+                self.log.info(
+                    "Passpoint Provisioning status %s" % dut_event['data'][
+                        'status'])
+
+        # Clear all previous events.
+        self.dut.ed.clear_all_events()
+
+        # Verify device connects to the Passpoint network.
+        time.sleep(DEFAULT_TIMEOUT)
+
+        current_passpoint = self.dut.droid.wifiGetConnectionInfo()
+        if current_passpoint[WifiEnums.SSID_KEY] not in osu_config[
+            "expected_ssids"]:
+            raise signals.TestFailure("Device did not connect to the %s"
+                                      " passpoint network" % osu_config[
+                                          "expected_ssids"])
+
+        # Delete the Passpoint profile.
         self.get_configured_passpoint_and_delete()
         wutils.wait_for_disconnect(self.dut)
