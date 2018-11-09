@@ -31,13 +31,13 @@ class UmtsSimulation(BaseSimulation):
                            'SIM_default_WCDMA.wnssp')
 
     UMTS_R99_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\'
-                            'CELL_WCDMA_R99_config.wnscp')
+                          'CELL_WCDMA_R99_config.wnscp')
 
     UMTS_R7_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\'
-                            'CELL_WCDMA_R7_config.wnscp')
+                         'CELL_WCDMA_R7_config.wnscp')
 
     UMTS_R8_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\'
-                            'CELL_WCDMA_R8_config.wnscp')
+                         'CELL_WCDMA_R8_config.wnscp')
 
     # Test name parameters
     PARAM_RELEASE_VERSION = "r"
@@ -90,8 +90,9 @@ class UmtsSimulation(BaseSimulation):
 
         anritsu.load_simulation_paramfile(self.UMTS_BASIC_SIM_FILE)
 
-        if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(NETWORK_MODE_WCDMA_ONLY,
-            dut.droid.subscriptionGetDefaultSubId()):
+        if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
+                NETWORK_MODE_WCDMA_ONLY,
+                dut.droid.subscriptionGetDefaultSubId()):
             log.error("Coold not set preferred network type.")
         else:
             log.info("Preferred network type set.")
@@ -101,7 +102,7 @@ class UmtsSimulation(BaseSimulation):
     def parse_parameters(self, parameters):
         """ Configs an UMTS simulation using a list of parameters.
 
-        Calls the parent method first, then consumes parameters specific to UMTS.
+        Calls the parent method and consumes parameters specific to UMTS.
 
         Args:
             parameters: list of parameters
@@ -115,35 +116,43 @@ class UmtsSimulation(BaseSimulation):
         # Setup band
 
         try:
-          values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
-          band = values[1]
+            values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
+            band = values[1]
         except:
-          self.log.error("The test name needs to include parameter {} followed by required band.".format(self.PARAM_BAND))
-          return False
+            self.log.error(
+                "The test name needs to include parameter {} followed by the "
+                "required band.".format(self.PARAM_BAND))
+            return False
         else:
-          self.set_band(self.bts1, band)
+            self.set_band(self.bts1, band)
 
         # Setup release version
 
         try:
-          values = self.consume_parameter(parameters, self.PARAM_RELEASE_VERSION, 1)
+            values = self.consume_parameter(parameters,
+                                            self.PARAM_RELEASE_VERSION, 1)
 
-          if values[1] in [self.PARAM_RELEASE_VERSION_7, self.PARAM_RELEASE_VERSION_8, self.PARAM_RELEASE_VERSION_99]:
-              release_version = values[1]
-          else:
-              raise ValueError()
+            if values[1] in [
+                    self.PARAM_RELEASE_VERSION_7, self.PARAM_RELEASE_VERSION_8,
+                    self.PARAM_RELEASE_VERSION_99
+            ]:
+                release_version = values[1]
+            else:
+                raise ValueError()
 
         except:
-          self.log.error("The test name needs to include the parameter {} followed by valid release version."
-                         .format(self.PARAM_RELEASE_VERSION))
-          return False
+            self.log.error(
+                "The test name needs to include the parameter {} followed by a "
+                "valid release version.".format(self.PARAM_RELEASE_VERSION))
+            return False
         else:
             self.set_release_version(self.bts1, release_version)
 
             # Setup uplink power
 
             try:
-                values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
+                values = self.consume_parameter(parameters, self.PARAM_UL_PW,
+                                                1)
 
                 if values[1] not in self.uplink_signal_level_dictionary:
                     raise ValueError("Invalid signal level value.")
@@ -152,20 +161,24 @@ class UmtsSimulation(BaseSimulation):
 
             except:
                 self.log.error(
-                    "The test name needs to include parameter {} followed by one the following values: {}.".format(
-                        self.PARAM_UL_PW,
-                        ["\n" + val for val in self.uplink_signal_level_dictionary.keys()]
-                    ))
+                    "The test name needs to include parameter {} followed by "
+                    "one the following values: {}.".format(
+                        self.PARAM_UL_PW, [
+                            "\n" + val
+                            for val in
+                            self.uplink_signal_level_dictionary.keys()
+                        ]))
                 return False
             else:
-                # Power is not set on the callbox until after the simulation is started. Will save this value in
-                # a variable and use it lated
+                # Power is not set on the callbox until after the simulation is
+                # started. Will save this value in a variable and use it later
                 self.sim_ul_power = power
 
             # Setup downlink power
 
             try:
-                values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
+                values = self.consume_parameter(parameters, self.PARAM_DL_PW,
+                                                1)
 
                 if values[1] not in self.downlink_rscp_dictionary:
                     raise ValueError("Invalid signal level value.")
@@ -174,19 +187,20 @@ class UmtsSimulation(BaseSimulation):
 
             except:
                 self.log.error(
-                    "The test name needs to include parameter {} followed by one the following values: {}.".format(
-                        self.PARAM_DL_PW,
-                        ["\n" + val for val in self.downlink_rscp_dictionary.keys()]
-                    ))
+                    "The test name needs to include parameter {} followed by "
+                    "one of the following values: {}.".format(
+                        self.PARAM_DL_PW, [
+                            "\n" + val
+                            for val in self.downlink_rscp_dictionary.keys()
+                        ]))
                 return False
             else:
-                # Power is not set on the callbox until after the simulation is started. Will save this value in
-                # a variable and use it later
+                # Power is not set on the callbox until after the simulation is
+                # started. Will save this value in a variable and use it later
                 self.sim_dl_power = power
 
         # No errors were found
         return True
-
 
     def set_release_version(self, bts, release_version):
         """ Sets the release version.
@@ -197,7 +211,8 @@ class UmtsSimulation(BaseSimulation):
         """
 
         if release_version == self.release_version:
-            self.log.info("Release version is already {}.".format(release_version))
+            self.log.info(
+                "Release version is already {}.".format(release_version))
             return
         if release_version == self.PARAM_RELEASE_VERSION_99:
 
@@ -219,7 +234,7 @@ class UmtsSimulation(BaseSimulation):
 
         self.anritsu.load_cell_paramfile(cell_parameter_file)
 
-        # Loading a cell parameter file stops the simulation, so we need to restart it
+        # Loading a cell parameter file stops the simulation
         self.start()
 
         bts.packet_rate = packet_rate
