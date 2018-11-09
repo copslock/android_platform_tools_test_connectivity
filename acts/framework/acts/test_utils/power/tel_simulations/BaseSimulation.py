@@ -59,7 +59,7 @@ class BaseSimulation():
     # Max retries before giving up attaching the phone
     ATTACH_MAX_RETRIES = 3
 
-    def __init__(self, anritsu, log, dut, calibration_table):
+    def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Initializes the Simulation object.
 
         Keeps a reference to the callbox, log and dut handlers and
@@ -69,6 +69,7 @@ class BaseSimulation():
             anritsu: the Anritsu callbox controller
             log: a logger handle
             dut: the android device handler
+            test_config: test configuration obtained from the config file
             calibration_table: a dictionary containing path losses for
                 different bands.
         """
