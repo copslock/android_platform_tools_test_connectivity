@@ -1723,7 +1723,7 @@ def call_reject_leave_message_for_subscription(
 
         # ensure that all internal states are updated in telecom
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
-        ad_callee.ed.ad.ed.clear_events(EventCallStateChanged)
+        ad_callee.ed.clear_events(EventCallStateChanged)
 
         if verify_caller_func and not verify_caller_func(log, ad_caller):
             ad_caller.log.error("Caller not in correct state!")
