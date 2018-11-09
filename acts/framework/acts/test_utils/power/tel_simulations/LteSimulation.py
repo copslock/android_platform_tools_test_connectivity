@@ -143,6 +143,9 @@ class LteSimulation(BaseSimulation):
             self.cell_file_path = "{}{}.wnscp2".format(
                 base_path, self.LTE_BASIC_CELL_FILE)
 
+        anritsu.load_simulation_paramfile(self.sim_file_path)
+        anritsu.load_cell_paramfile(self.cell_file_path)
+
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_LTE_ONLY,
                 dut.droid.subscriptionGetDefaultSubId()):
