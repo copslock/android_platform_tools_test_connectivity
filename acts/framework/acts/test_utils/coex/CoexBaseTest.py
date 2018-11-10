@@ -29,7 +29,6 @@ from acts.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 from acts.test_utils.coex.coex_test_utils import A2dpDumpsysParser
-from acts.test_utils.coex.audio_test_utils import SshAudioCapture
 from acts.test_utils.coex.coex_test_utils import check_wifi_status
 from acts.test_utils.coex.coex_test_utils import (
     collect_bluetooth_manager_dumpsys_logs)
@@ -116,7 +115,7 @@ class CoexBaseTest(BaseTestClass):
             if self.audio_params["music_file"]:
                 self.music_file_to_play = push_music_to_android_device(
                     self.pri_ad, self.audio_params)
-                if not self.music_file_play:
+                if not self.music_file_to_play:
                     self.log.error("Music file push failed.")
                     return False
         else:
@@ -131,9 +130,10 @@ class CoexBaseTest(BaseTestClass):
         self.dev_list = {}
         self.iperf_variables = self.IperfVariables(self.current_test_name)
         self.a2dp_dumpsys = A2dpDumpsysParser()
-        log_path = os.path.join(self.pri_ad.log_path, self.current_test_name)
-        create_dir(log_path)
-        self.json_file = os.path.join(log_path, "test_results.json")
+        self.log_path = os.path.join(self.pri_ad.log_path,
+                self.current_test_name)
+        create_dir(self.log_path)
+        self.json_file = os.path.join(self.log_path, "test_results.json")
         for a in self.android_devices:
             a.ed.clear_all_events()
         if not wifi_connection_check(self.pri_ad, self.network["SSID"]):
@@ -143,18 +143,14 @@ class CoexBaseTest(BaseTestClass):
             self.log.error("Failed to enable bluetooth")
             return False
         if hasattr(self, "required_devices"):
-            if "discovery" in self.current_test_name or (
+            if ("discovery" in self.current_test_name or
                     "inquiry" in self.current_test_name or
-                ("ble" in self.current_test_name)):
+                    "ble" in self.current_test_name):
                 self.create_android_relay_object()
         else:
             self.log.warning("required_devices is not given in config file")
-        if "a2dp_streaming" in self.current_test_name:
-            self.audio = SshAudioCapture(self.audio_params, log_path)
 
     def teardown_test(self):
-        if "a2dp_streaming" in self.current_test_name:
-            self.audio.terminate_and_store_audio_results()
         self.parsing_results()
         self.teardown_result()
         with open(self.json_file, 'a') as results_file:
@@ -192,9 +188,9 @@ class CoexBaseTest(BaseTestClass):
         """Destroys android device object and relay device object if required
         devices has android device and relay device."""
         if hasattr(self, "required_devices"):
-            if "discovery" in self.current_test_name or (
+            if ("discovery" in self.current_test_name or
                     "inquiry" in self.current_test_name or
-                ("ble" in self.current_test_name)):
+                    "ble" in self.current_test_name):
                 if hasattr(self, "inquiry_devices"):
                     for device in range(len(self.inquiry_devices)):
                         inquiry_device = self.inquiry_devices[device]
@@ -217,6 +213,8 @@ class CoexBaseTest(BaseTestClass):
                 self.pri_ad, self.current_test_name)
             self.result["a2dp_packet_drop"] = (
                 self.a2dp_dumpsys.parse(file_path))
+            if self.result["a2dp_packet_drop"] == 0:
+                self.result["a2dp_packet_drop"] = None
 
     def start_iperf_server_on_shell(self, server_port):
         """Starts iperf server on android device with specified.
