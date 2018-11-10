@@ -567,7 +567,7 @@ class BaseSimulation():
             # Complete the calibration table with the new values to be used in
             # the next tests.
             if band not in self.calibration_table:
-                self.calibration_table = {}
+                self.calibration_table[band] = {}
 
             if "dl" not in self.calibration_table[band] and self.dl_path_loss:
                 self.calibration_table[band]["dl"] = self.dl_path_loss
