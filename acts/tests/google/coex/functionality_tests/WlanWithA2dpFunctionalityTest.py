@@ -26,6 +26,7 @@ import time
 
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.coex.audio_test_utils import SshAudioCapture
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
 from acts.test_utils.coex.coex_test_utils import avrcp_actions
 from acts.test_utils.coex.coex_test_utils import connect_ble
@@ -37,6 +38,7 @@ from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
 from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
 from acts.test_utils.coex.coex_test_utils import start_fping
 from acts.test_utils.coex.coex_test_utils import toggle_screen_state
+
 
 BLUETOOTH_WAIT_TIME = 2
 
@@ -53,6 +55,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
     def setup_test(self):
         super().setup_test()
+        if "a2dp_streaming" in self.current_test_name:
+            self.audio = SshAudioCapture(self.audio_params, self.log_path)
         self.audio_receiver.enter_pairing_mode()
         time.sleep(5)  #Wait until device goes into pairing mode.
         if not pair_and_connect_headset(
@@ -64,6 +68,11 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
         self.audio_receiver.clean_up()
+        if "a2dp_streaming" in self.current_test_name:
+            analysis_path = self.audio.audio_quality_analysis(self.log_path)
+            with open(analysis_path) as f:
+                self.result["audio_artifacts"] = f.readline()
+            self.audio.terminate_and_store_audio_results()
         super().teardown_test()
 
     def connect_disconnect_a2dp_headset(self):
