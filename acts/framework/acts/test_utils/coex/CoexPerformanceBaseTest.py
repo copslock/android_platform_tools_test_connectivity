@@ -20,7 +20,7 @@ import time
 
 from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
-from acts.test_utils.coex.coex_test_utils import bokeh_plot
+from acts.test_utils.coex.coex_test_utils import bokeh_chart_plot
 from acts.test_utils.coex.coex_test_utils import (
     collect_bluetooth_manager_dumpsys_logs)
 from acts.test_utils.coex.coex_test_utils import multithread_func
@@ -72,8 +72,6 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         super().setup_test()
 
     def teardown_test(self):
-        if "a2dp_streaming" in self.current_test_name:
-            self.audio.terminate_and_store_audio_results()
         self.performance_baseline_check()
         self.attenuators[self.num_atten - 1].set_atten(0)
         for i in range(self.num_atten - 1):
@@ -114,10 +112,12 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             if "a2dp_streaming" in self.current_test_name:
                 (self.rvr[bt_atten]["throughput_received"],
                  self.rvr[bt_atten]["a2dp_packet_drop"]) = (
-                    self.rvr_throughput(called_func))
+                     self.rvr_throughput(bt_atten, called_func))
+                if all(x <= 0 for x in self.a2dp_dropped_list):
+                    self.rvr[bt_atten]["a2dp_packet_drop"] = []
             else:
                 self.rvr[bt_atten]["throughput_received"] = (
-                    self.rvr_throughput(called_func))
+                    self.rvr_throughput(bt_atten, called_func))
             self.rvr[bt_atten]["fixed_attenuation"] = (
                 self.test_params["fixed_attenuation"][str(
                     self.network["channel"])])
@@ -125,10 +125,11 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         self.rvr["bt_attenuation"] = list(self.bt_attenuation_range)
         return True
 
-    def rvr_throughput(self, called_func=None):
+    def rvr_throughput(self, bt_atten, called_func=None):
         """Sets attenuation and runs the function passed.
 
         Args:
+            bt_atten: Bluetooth attenuation.
             called_func: Functions object to run parallely.
 
         Returns:
@@ -137,6 +138,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         self.iperf_received = []
         self.iperf_variables.received = []
         self.a2dp_dropped_list = []
+        self.rvr[bt_atten]["audio_artifacts"] = {}
         for atten in self.attenuation_range:
             self.log.info("Setting attenuation = {}".format(atten))
             for i in range(self.num_atten - 1):
@@ -151,8 +153,11 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             else:
                 self.run_iperf_and_get_result()
             if "a2dp_streaming" in self.current_test_name:
+                analysis_path = self.audio.audio_quality_analysis(self.log_path)
+                with open(analysis_path) as f:
+                    self.rvr[bt_atten]["audio_artifacts"][atten] = f.readline()
                 file_path = collect_bluetooth_manager_dumpsys_logs(
-                        self.pri_ad, self.current_test_name)
+                    self.pri_ad, self.current_test_name)
                 self.a2dp_dropped_list.append(
                     self.a2dp_dumpsys.parse(file_path))
             self.teardown_result()
@@ -196,7 +201,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         """
         data_sets = {}
         test_name = self.current_test_name
-        x_label = 'Attenuation (dB)'
+        x_label = 'WIFI Attenuation (dB)'
+        y_label = []
         legends = {}
         fig_property = {
             "title": test_name,
@@ -204,14 +210,14 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             "linewidth": 3,
             "markersize": 10
         }
-        y_label = []
+
         for bt_atten in self.bt_attenuation_range:
             data_sets[bt_atten] = {}
             legends[bt_atten] = []
             total_atten = self.total_attenuation(self.rvr[bt_atten])
             y_label.insert(0, 'Throughput (Mbps)')
             legends[bt_atten].insert(
-                0, str(self.current_test_name + (" @ {}dB".format(bt_atten))))
+                0, str("BT Attenuation @ %sdB" % bt_atten))
             data_sets[bt_atten]["attenuation"] = total_atten
             data_sets[bt_atten]["throughput_received"] = (
                 self.rvr[bt_atten]["throughput_received"])
@@ -267,7 +273,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         fig_property["y_label"] = y_label
         output_file_path = os.path.join(self.pri_ad.log_path, test_name,
                                         "attenuation_plot.html")
-        bokeh_plot(
+        bokeh_chart_plot(
             list(self.bt_attenuation_range),
             data_sets,
             legends,

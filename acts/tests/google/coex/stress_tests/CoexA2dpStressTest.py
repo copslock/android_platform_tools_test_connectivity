@@ -25,6 +25,7 @@ import time
 
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.coex.audio_test_utils import SshAudioCapture
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
 from acts.test_utils.coex.coex_test_utils import connect_dev_to_headset
 from acts.test_utils.coex.coex_test_utils import disconnect_headset_from_dev
@@ -45,6 +46,8 @@ class CoexA2dpStressTest(CoexBaseTest):
 
     def setup_test(self):
         super().setup_test()
+        if "a2dp_streaming" in self.current_test_name:
+            self.audio = SshAudioCapture(self.audio_params, self.log_path)
         self.audio_receiver.pairing_mode()
         time.sleep(5)  #Wait time until headset goes into pairing mode.
         if not pair_and_connect_headset(
@@ -56,6 +59,11 @@ class CoexA2dpStressTest(CoexBaseTest):
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
         self.audio_receiver.clean_up()
+        if "a2dp_streaming" in self.current_test_name:
+            analysis_path = self.audio.audio_quality_analysis(self.log_path)
+            with open(analysis_path) as f:
+                self.result["audio_artifacts"] = f.readline()
+            self.audio.terminate_and_store_audio_results()
         super().teardown_test()
 
     def connect_disconnect_headset(self):
