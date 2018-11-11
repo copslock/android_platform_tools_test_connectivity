@@ -27,7 +27,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     """ Base class for Cellular power related tests.
 
     Inherits from PowerBaseTest so it has methods to collect power measurements.
-    On top of that, it provides functions to setup and control the Anritsu simulation.
+    Provides methods to setup and control the Anritsu simulation.
 
     """
 
@@ -45,16 +45,13 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         super().__init__(controllers)
 
-        # Tests are sorted alphabetically so all the tests in the same band are grouped together
-        self.tests = sorted(self.tests)
-
         self.simulation = None
         self.anritsu = None
 
-        # If callbox version was not specified in the config files, set a default value
+        # If callbox version was not specified in the config files,
+        # set a default value
         if not hasattr(self, "md8475_version"):
             self.md8475_version = "A"
-
 
     def setup_class(self):
         """ Executed before any test case is started.
@@ -67,18 +64,17 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         super().setup_class()
 
-        if hasattr(self, 'network_file'):
-            self.networks = self.unpack_custom_file(self.network_file, False)
-            self.main_network = self.networks['main_network']
-            self.aux_network = self.networks['aux_network']
+        # Gets the name of the interface from which packets are sent
         if hasattr(self, 'packet_senders'):
             self.pkt_sender = self.packet_senders[0]
 
         # Load calibration tables
         self.calibration_table = self.unpack_custom_file(
-            self.user_params["calibration_table"],
-            False
-        )
+            self.user_params["calibration_table"], False)
+
+        # Store the value of the key to access the test config in the
+        # user_params dictionary.
+        self.PARAMS_KEY = self.TAG + "_params"
 
         # Set DUT to rockbottom
         self.dut_rockbottom()
@@ -95,8 +91,11 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         try:
 
-            self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
-                                   self.wlan_option, md8475_version=self.md8475_version)
+            self.anritsu = MD8475A(
+                self.md8475a_ip_address,
+                self.log,
+                self.wlan_option,
+                md8475_version=self.md8475_version)
             return True
         except AnritsuError:
             self.log.error('Error in connecting to Anritsu Callbox')
@@ -105,15 +104,18 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     def setup_test(self):
         """ Executed before every test case.
 
-        Parses parameters from the test name and sets a simulation up according to those values.
-        Also takes care of attaching the phone to the base station. Because starting new simulations
-        and recalibrating takes some time, the same simulation object is kept between tests and is only
-        destroyed and re instantiated in case the RAT is different from the previous tests.
+        Parses parameters from the test name and sets a simulation up according
+        to those values. Also takes care of attaching the phone to the base
+        station. Because starting new simulations and recalibrating takes some
+        time, the same simulation object is kept between tests and is only
+        destroyed and re instantiated in case the RAT is different from the
+        previous tests.
 
-        Children classes need to call the parent method first. This method will create the list self.parameters
-        with the keywords separated by underscores in the test name and will remove the ones that were consumed
-        for the simulation config. The setup_test methods in the children classes can then consume the remaining
-        values.
+        Children classes need to call the parent method first. This method will
+        create the list self.parameters with the keywords separated by
+        underscores in the test name and will remove the ones that were consumed
+        for the simulation config. The setup_test methods in the children
+        classes can then consume the remaining values.
         """
 
         # Get list of parameters from the test name
@@ -130,13 +132,15 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         elif self.consume_parameter(self.PARAM_SIM_TYPE_GSM):
             self.init_simulation(self.PARAM_SIM_TYPE_GSM)
         else:
-            self.log.error("Simulation type needs to be indicated in the test name.")
+            self.log.error(
+                "Simulation type needs to be indicated in the test name.")
             return False
 
         # Changing cell parameters requires the phone to be detached
         self.simulation.detach()
 
-        # Parse simulation parameters. This may return false if incorrect values are passed.
+        # Parse simulation parameters.
+        # This may return false if incorrect values are passed.
         if not self.simulation.parse_parameters(self.parameters):
             return False
 
@@ -155,14 +159,16 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     def consume_parameter(self, parameter_name, num_values=0):
         """ Parses a parameter from the test name.
 
-        Allows the test to get parameters from its name. Will delete parameters from the list after
-        consuming them to ensure that they are not used twice.
+        Allows the test to get parameters from its name. Deletes parameters from
+        the list after consuming them to ensure that they are not used twice.
 
         Args:
-          parameter_name: keyword to look up in the test name
-          num_values: number of arguments following the parameter name in the test name
+            parameter_name: keyword to look up in the test name
+            num_values: number of arguments following the parameter name in the
+                test name
         Returns:
-          A list containing the parameter name and the following num_values arguments
+            A list containing the parameter name and the following num_values
+            arguments.
         """
 
         try:
@@ -174,14 +180,15 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         return_list = []
 
         try:
-            for j in range(num_values+1):
+            for j in range(num_values + 1):
                 return_list.append(self.parameters.pop(i))
         except IndexError:
-            self.log.error("Parameter {} has to be followed by {} values.".format(parameter_name, num_values))
+            self.log.error(
+                "Parameter {} has to be followed by {} values.".format(
+                    parameter_name, num_values))
             raise ValueError()
 
         return return_list
-
 
     def teardown_class(self):
         """Clean up the test class after tests finish running.
@@ -198,7 +205,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     def init_simulation(self, sim_type):
         """ Starts a new simulation only if needed.
 
-        Only starts a new simulation if type is different from the one running before.
+        Only starts a new simulation if type is different from the one running
+        before.
 
         Args:
             type: defines the type of simulation to be started.
@@ -229,9 +237,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.calibration_table[sim_type] = {}
 
         # Instantiate a new simulation
-        self.simulation = simulation_class(self.anritsu,
-                                           self.log,
-                                           self.dut,
+        self.simulation = simulation_class(self.anritsu, self.log, self.dut,
+                                           self.user_params[self.PARAMS_KEY],
                                            self.calibration_table[sim_type])
 
         # Start the simulation

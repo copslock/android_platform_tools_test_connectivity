@@ -26,6 +26,7 @@ import time
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.coex.CoexPerformanceBaseTest import CoexPerformanceBaseTest
+from acts.test_utils.coex.audio_test_utils import SshAudioCapture
 from acts.test_utils.coex.coex_test_utils import avrcp_actions
 from acts.test_utils.coex.coex_test_utils import music_play_and_check
 from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
@@ -39,6 +40,8 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
 
     def setup_test(self):
         super().setup_test()
+        if "a2dp_streaming" in self.current_test_name:
+            self.audio = SshAudioCapture(self.audio_params, self.log_path)
         self.audio_receiver.enter_pairing_mode()
         time.sleep(5)
         if not pair_and_connect_headset(
@@ -48,6 +51,8 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
             return False
 
     def teardown_test(self):
+        if "a2dp_streaming" in self.current_test_name:
+            self.audio.terminate_and_store_audio_results()
         clear_bonded_devices(self.pri_ad)
         self.audio_receiver.clean_up()
         super().teardown_test()

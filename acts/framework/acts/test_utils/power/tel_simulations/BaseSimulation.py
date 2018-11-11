@@ -48,6 +48,9 @@ class BaseSimulation():
 
     UPLINK_MIN_POWER = -60.0
 
+    # Key to read the calibration setting from the test_config dictionary.
+    KEY_CALIBRATION = "calibration"
+
     # Time in seconds to wait for the phone to settle
     # after attaching to the base station.
     SETTLING_TIME = 10
@@ -59,7 +62,7 @@ class BaseSimulation():
     # Max retries before giving up attaching the phone
     ATTACH_MAX_RETRIES = 3
 
-    def __init__(self, anritsu, log, dut, calibration_table):
+    def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Initializes the Simulation object.
 
         Keeps a reference to the callbox, log and dut handlers and
@@ -69,6 +72,7 @@ class BaseSimulation():
             anritsu: the Anritsu callbox controller
             log: a logger handle
             dut: the android device handler
+            test_config: test configuration obtained from the config file
             calibration_table: a dictionary containing path losses for
                 different bands.
         """
@@ -77,6 +81,17 @@ class BaseSimulation():
         self.log = log
         self.dut = dut
         self.calibration_table = calibration_table
+
+        # Turn calibration on or off depending on the test config value. If the
+        # key is not present, set to False by default
+        if self.KEY_CALIBRATION not in test_config:
+            self.log.warning("The '{} 'key is not set in the testbed "
+                             "parameters. Setting to off by default. To "
+                             "turn calibration on, include the key with "
+                             "a true/false value.".format(self.KEY_CALIBRATION))
+
+        self.calibration_required = test_config.get(self.KEY_CALIBRATION, False)
+
 
         # Gets BTS1 since this sim only has 1 BTS
         self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
@@ -539,7 +554,8 @@ class BaseSimulation():
 
         # self.dl_path_loss and self.ul_path_loss will be none if the band has
         # just changed or calibration for this band failed in previous tests.
-        if not self.dl_path_loss or not self.ul_path_loss:
+        if (self.calibration_required and
+                (not self.dl_path_loss or not self.ul_path_loss)):
             # Try loading the path loss values from the calibration table. If
             # they are not available, use the automated calibration procedure.
             try:
@@ -547,6 +563,17 @@ class BaseSimulation():
                 self.ul_path_loss = self.calibration_table[band]["ul"]
             except KeyError:
                 self.calibrate()
+
+            # Complete the calibration table with the new values to be used in
+            # the next tests.
+            if band not in self.calibration_table:
+                self.calibration_table = {}
+
+            if "dl" not in self.calibration_table[band] and self.dl_path_loss:
+                self.calibration_table[band]["dl"] = self.dl_path_loss
+
+            if "ul" not in self.calibration_table[band] and self.ul_path_loss:
+                self.calibration_table[band]["ul"] = self.ul_path_loss
 
     def maximum_downlink_throughput(self):
         """ Calculates maximum achievable downlink throughput in the current simulation state.
