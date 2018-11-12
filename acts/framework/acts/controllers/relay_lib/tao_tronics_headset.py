@@ -16,12 +16,10 @@
 
 import enum
 import time
-from acts.controllers.relay_lib.errors import RelayConfigError
-from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
-from acts.controllers.relay_lib.helpers import validate_key
+
+from acts.controllers.relay_lib.devices.bluetooth_relay_device import BluetoothRelayDevice
 
 WAIT_TIME = 0.05
-MISSING_RELAY_MSG = 'Relay config for Tao tronics carkit "%s" missing relay "%s".'
 
 
 class Buttons(enum.Enum):
@@ -32,27 +30,15 @@ class Buttons(enum.Enum):
     VOLUME_DOWN = "Volume_down"
 
 
-class TaoTronicsCarkit(GenericRelayDevice):
+class TaoTronicsCarkit(BluetoothRelayDevice):
 
     def __init__(self, config, relay_rig):
-        GenericRelayDevice.__init__(self, config, relay_rig)
-        self.mac_address = validate_key('mac_address', config, str,
-                                        'TaoTronicsCarkit')
-        for button in Buttons:
-            self.ensure_config_contains_relay(button.value)
+        BluetoothRelayDevice.__init__(self, config, relay_rig)
+        self._ensure_config_contains_relays(button.value for button in Buttons)
 
     def setup(self):
-        GenericRelayDevice.setup(self)
-
-    def ensure_config_contains_relay(self, relay_name):
-        """
-        Throws an error if the relay does not exist.
-
-        Args:
-            relay_name:relay_name to be checked.
-        """
-        if relay_name not in self.relays:
-            raise RelayConfigError(MISSING_RELAY_MSG % (self.name, relay_name))
+        """Sets all relays to their default state (off)."""
+        BluetoothRelayDevice.setup(self)
 
     def press_play_pause(self):
         """
