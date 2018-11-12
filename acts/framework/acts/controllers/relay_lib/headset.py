@@ -15,55 +15,33 @@
 #   limitations under the License.
 import time
 import enum
-import logging
-from acts.controllers.relay_lib.generic_relay_device import GenericRelayDevice
-from acts.controllers.relay_lib.errors import RelayConfigError
-from acts.controllers.relay_lib.helpers import validate_key
+
+from acts.controllers.relay_lib.devices.bluetooth_relay_device import BluetoothRelayDevice
 
 PAIRING_MODE_WAIT_TIME = 9
 POWER_TOGGLE_WAIT_TIME = 2
-MISSING_RELAY_MSG = 'Relay config for Headset "%s" missing relay "%s".'
 
-log = logging
 
 class Buttons(enum.Enum):
     POWER = 'Power'
 
-class Headset(GenericRelayDevice):
+
+class Headset(BluetoothRelayDevice):
     """Headset with same Power and Pair Button.
 
     Wraps the button presses, as well as the special features like pairing.
     """
-
     def __init__(self, config, relay_rig):
-        GenericRelayDevice.__init__(self, config, relay_rig)
-
-        self.mac_address = validate_key('mac_address', config, str, 'sony_xb20')
-
-        for button in Buttons:
-            self.ensure_config_contains_relay(button.value)
-
-    def ensure_config_contains_relay(self, relay_name):
-        """Throws an error if the relay does not exist."""
-        if relay_name not in self.relays:
-            raise RelayConfigError(MISSING_RELAY_MSG % (self.name, relay_name))
+        BluetoothRelayDevice.__init__(self, config, relay_rig)
+        self._ensure_config_contains_relays(button.value for button in Buttons)
 
     def _hold_button(self, button, seconds):
         self.hold_down(button.value)
         time.sleep(seconds)
         self.release(button.value)
 
-
     def power_off(self):
         self._hold_button(Buttons.POWER, POWER_TOGGLE_WAIT_TIME)
 
     def turn_power_on_and_enter_pairing_mode(self):
         self._hold_button(Buttons.POWER, PAIRING_MODE_WAIT_TIME)
-
-    def setup(self):
-        """Sets all relays to their default state (off)."""
-        GenericRelayDevice.setup(self)
-
-    def clean_up(self):
-        """Sets all relays to their default state (off)."""
-        GenericRelayDevice.clean_up(self)
