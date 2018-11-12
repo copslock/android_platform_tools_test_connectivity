@@ -37,6 +37,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     PARAM_SIM_TYPE_UMTS = "umts"
     PARAM_SIM_TYPE_GSM = "gsm"
 
+    # User param keywords
+    KEY_CALIBRATION_TABLE = "calibration_table"
+
     def __init__(self, controllers):
         """ Class initialization.
 
@@ -47,6 +50,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         self.simulation = None
         self.anritsu = None
+        self.calibration_table = {}
 
         # If callbox version was not specified in the config files,
         # set a default value
@@ -69,8 +73,10 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.pkt_sender = self.packet_senders[0]
 
         # Load calibration tables
-        self.calibration_table = self.unpack_custom_file(
-            self.user_params["calibration_table"], False)
+        # Load calibration tables
+        if self.KEY_CALIBRATION_TABLE in self.user_params:
+            self.calibration_table = self.unpack_custom_file(
+                self.user_params[self.KEY_CALIBRATION_TABLE], False)
 
         # Store the value of the key to access the test config in the
         # user_params dictionary.
