@@ -28,6 +28,7 @@ from acts.test_utils.coex.coex_test_utils import A2dpDumpsysParser
 from acts.test_utils.coex.audio_test_utils import SshAudioCapture
 from acts.test_utils.coex.coex_test_utils import (
     collect_bluetooth_manager_dumpsys_logs)
+from acts.test_utils.coex.coex_test_utils import is_a2dp_connected
 from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
 from acts.test_utils.coex.coex_test_utils import push_music_to_android_device
@@ -112,6 +113,11 @@ class BtRangeBaseTest(BaseTestClass):
                 return False
             if called_func:
                 if not multithread_func(self.log, called_func):
+                    if not is_a2dp_connected(self.pri_ad,
+                                             self.headset_mac_address):
+                        self.log.error(
+                            'A2DP Connection dropped at %s attenuation',
+                            bt_atten)
                     return False
             if "a2dp_streaming" in self.current_test_name:
                 file_path = collect_bluetooth_manager_dumpsys_logs(
