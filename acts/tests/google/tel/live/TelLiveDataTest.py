@@ -2832,7 +2832,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                         "Client should have Internet Access.")
                     return False
         finally:
-            self.cliets[0].droid.telephonyToggleDataConnection(True)
+            self.clients[0].droid.telephonyToggleDataConnection(True)
             wifi_reset(self.log, self.clients[0])
             if self.provider.droid.wifiIsApEnabled():
                 stop_wifi_tethering(self.log, self.provider)
