@@ -97,6 +97,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         base_test.BaseTestClass.__init__(self, controllers)
         BlackboxMetricLogger.for_test_case(
             metric_name='avg_power', result_attr='power_consumption')
+        self.start_meas_time = 0
 
     def setup_class(self):
 
@@ -490,8 +491,13 @@ class PowerBaseTest(base_test.BaseTestClass):
             iperf_file = self.iperf_server.log_files[-1]
         try:
             iperf_result = ipf.IPerfResult(iperf_file)
-            throughput = (math.fsum(iperf_result.instantaneous_rates[:-1]) /
-                          len(iperf_result.instantaneous_rates[:-1])) * 8
+
+            # Compute the throughput in Mbit/s
+            throughput = (math.fsum(
+                iperf_result.instantaneous_rates[self.start_meas_time:-1]
+            ) / len(iperf_result.instantaneous_rates[self.start_meas_time:-1])
+                          ) * 8 * (1.024**2)
+
             self.log.info('The average throughput is {}'.format(throughput))
         except ValueError:
             self.log.warning('Cannot get iperf result. Setting to 0')
