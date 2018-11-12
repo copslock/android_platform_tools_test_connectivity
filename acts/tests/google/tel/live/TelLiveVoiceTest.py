@@ -3396,7 +3396,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         if not verify_internet_connection(self.log, ads[0]):
-            ads[0].error("Internet connection is not available")
+            ads[0].log.error("Internet connection is not available")
             return False
 
         if call_direction == DIRECTION_MOBILE_ORIGINATED:
