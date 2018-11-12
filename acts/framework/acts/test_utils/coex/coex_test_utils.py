@@ -1343,8 +1343,8 @@ class A2dpDumpsysParser():
                             count = count - self.count_list[i]
                         self.count_list.append(count)
                         if len(self.frame_list) > 1:
-                            last_frame = self.frame_list[-2] - self.frame_list[
-                                -1]
+                            last_frame = self.frame_list[-1] - self.frame_list[
+                                -2]
                             self.dropped_count = (count / last_frame) * 100
                         else:
                             self.dropped_count = (
