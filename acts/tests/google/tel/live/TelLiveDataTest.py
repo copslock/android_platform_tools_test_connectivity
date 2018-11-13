@@ -2533,7 +2533,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if toggle:
                 wifi_toggle_state(self.log, ad, True)
 
-            wifi_connect(self.log, ad, self.wifi_network_ssid,
+            ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                          self.wifi_network_pass)
 
             if not wait_for_wifi_data_connection(
@@ -2832,7 +2832,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                         "Client should have Internet Access.")
                     return False
         finally:
-            self.cliets[0].droid.telephonyToggleDataConnection(True)
+            self.clients[0].droid.telephonyToggleDataConnection(True)
             wifi_reset(self.log, self.clients[0])
             if self.provider.droid.wifiIsApEnabled():
                 stop_wifi_tethering(self.log, self.provider)
