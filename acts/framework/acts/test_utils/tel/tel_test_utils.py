@@ -29,6 +29,7 @@ from acts import signals
 from acts import utils
 from queue import Empty
 from acts.asserts import abort_all
+from acts.asserts import fail
 from acts.controllers.adb import AdbError
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
@@ -548,6 +549,10 @@ def get_telephony_signal_strength(ad):
         ad.log.error(e)
         signal_strength = {}
     out = ad.adb.shell("dumpsys telephony.registry | grep -i signalstrength")
+    if out is None:
+        msg = "Signal Strength is Null."
+        fail(msg)
+
     signals = re.findall(r"(-*\d+)", out)
     for i, val in enumerate(
         ("gsmSignalStrength", "gsmBitErrorRate", "cdmaDbm", "cdmaEcio",
