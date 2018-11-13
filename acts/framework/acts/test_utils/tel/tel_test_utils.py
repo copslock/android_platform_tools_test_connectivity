@@ -4623,8 +4623,8 @@ def ensure_network_generation_for_subscription(
             ad.telephony["subscription"][sub_id]["phone_type"])
     except KeyError as e:
         ad.log.error("Failed to find a rat_family entry for generation %s"
-                     " for subscriber %s with error %s", generation,
-                     ad.telephony["subscription"][sub_id], e)
+                     " for subscriber id %s with error %s", generation,
+                     sub_id, e)
         return False
 
     if not set_preferred_network_mode_pref(log, ad, sub_id,
