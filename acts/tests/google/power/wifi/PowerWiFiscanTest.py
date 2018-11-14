@@ -53,6 +53,11 @@ class PowerWiFiscanTest(PWBT.PowerWiFiBaseTest):
             'wifi': WIFI_SCAN
         }
 
+    def setup_test(self):
+        super().setup_test()
+        # Reset attenuation to minimum
+        self.set_attenuation([0, 0, 0, 0])
+
     def scan_setup(self):
         """Setup for scan based on the type of scan.
 
@@ -130,11 +135,6 @@ class PowerWiFiscanTest(PWBT.PowerWiFiBaseTest):
 
     @test_tracker_info(uuid='288b3add-8925-4803-81c0-53debf157ffc')
     def test_screen_OFF_WiFi_Disconnected_band_5g_RSSI_none_scan_apk_singleshot(
-            self):
-        self.wifi_scan_test_func()
-
-    @test_tracker_info(uuid='f401c66c-e515-4f51-8ef2-2a03470d8ff2')
-    def test_screen_OFF_WiFi_Disconnected_band_5g_RSSI_high_scan_apk_background(
             self):
         self.wifi_scan_test_func()
 
