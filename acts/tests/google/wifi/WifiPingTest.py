@@ -22,6 +22,7 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -42,6 +43,10 @@ class WifiPingTest(base_test.BaseTestClass):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
+        self.ping_range_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='ping_range')
+        self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='ping_rtt')
         self.tests = (
             "test_ping_range_ch1_VHT20", "test_fast_ping_rtt_ch1_VHT20",
             "test_slow_ping_rtt_ch1_VHT20", "test_ping_range_ch6_VHT20",
@@ -64,20 +69,20 @@ class WifiPingTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.client_dut = self.android_devices[-1]
-        req_params = ["ping_test_params", "testbed_params"]
-        opt_params = [
-            "main_network", "RetailAccessPoints", "golden_files_list"
+        req_params = [
+            "ping_test_params", "testbed_params", "main_network",
+            "RetailAccessPoints"
         ]
+        opt_params = ["golden_files_list"]
         self.unpack_userparams(req_params, opt_params)
         self.test_params = self.ping_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         # iperf server doubles as ping server to reduce config parameters
         self.iperf_server = self.iperf_servers[0]
-        if hasattr(self, "RetailAccessPoints"):
-            self.access_points = retail_ap.create(self.RetailAccessPoints)
-            self.access_point = self.access_points[0]
-            self.log.info("Access Point Configuration: {}".format(
-                self.access_point.ap_settings))
+        self.access_points = retail_ap.create(self.RetailAccessPoints)
+        self.access_point = self.access_points[0]
+        self.log.info("Access Point Configuration: {}".format(
+            self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, "results")
         utils.create_dir(self.log_path)
         if not hasattr(self, "golden_files_list"):
@@ -116,7 +121,9 @@ class WifiPingTest(base_test.BaseTestClass):
                 ((100 - self.test_params["rtt_test_percentile"]) / 100))]
             for x in sorted_rtt
         ]
-
+        # Set blackbox metric
+        self.ping_rtt_metric.metric_value = max(rtt_at_test_percentile)
+        # Evaluate test pass/fail
         test_failed = False
         for idx, rtt in enumerate(rtt_at_test_percentile):
             if rtt > self.test_params["rtt_threshold"] * 1000:
@@ -157,6 +164,9 @@ class WifiPingTest(base_test.BaseTestClass):
         ]
         attenuation_at_range = self.atten_range[ping_loss_above_threshold.index(
             0) - 1] + ping_range_result["fixed_attenuation"]
+        # Set Blackbox metric
+        self.ping_range_metric.metric_value = attenuation_at_range
+        # Evaluate test pass/fail
         if attenuation_at_range - rvr_range < -self.test_params["range_gap_threshold"]:
             asserts.fail(
                 "Attenuation at range is {}dB. Golden range is {}dB".format(
@@ -319,8 +329,9 @@ class WifiPingTest(base_test.BaseTestClass):
             self.access_point.ap_settings))
 
         # Set attenuator to 0 dB
-        [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
-
+        for atten in atten_levels:
+            for attenuator in self.attenuators:
+                attenuator.set_atten(0)
         # Resest, configure, and connect DUT
         wutils.reset_wifi(self.client_dut)
         self.client_dut.droid.wifiSetCountryCode(
@@ -339,10 +350,8 @@ class WifiPingTest(base_test.BaseTestClass):
         test_result["fixed_attenuation"] = self.testbed_params[
             "fixed_attenuation"][str(channel)]
         for atten in atten_levels:
-            [
-                self.attenuators[i].set_atten(atten)
-                for i in range(self.num_atten)
-            ]
+            for attenuator in self.attenuators:
+                attenuator.set_atten(atten)
             time.sleep(self.SHORT_SLEEP)
             current_ping_stats = self.get_ping_stats(0, ping_duration,
                                                      ping_interval, ping_size)
@@ -455,6 +464,18 @@ class WifiPingTest(base_test.BaseTestClass):
         self._test_ping_rtt()
 
     def test_slow_ping_rtt_ch1_VHT20(self):
+        self._test_ping_rtt()
+
+    def test_fast_ping_rtt_ch6_VHT20(self):
+        self._test_ping_rtt()
+
+    def test_slow_ping_rtt_ch6_VHT20(self):
+        self._test_ping_rtt()
+
+    def test_fast_ping_rtt_ch11_VHT20(self):
+        self._test_ping_rtt()
+
+    def test_slow_ping_rtt_ch11_VHT20(self):
         self._test_ping_rtt()
 
     def test_fast_ping_rtt_ch36_VHT20(self):
