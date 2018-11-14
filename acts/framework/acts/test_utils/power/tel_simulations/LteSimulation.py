@@ -47,6 +47,9 @@ class LteSimulation(BaseSimulation):
     PARAM_BAND = "band"
     PARAM_MIMO = "mimo"
 
+    # Test config keywords
+    KEY_TBS_PATTERN = "tbs_pattern_on"
+
     class TransmissionMode(Enum):
         ''' Transmission modes for LTE (e.g., TM1, TM4, ..)
 
@@ -113,7 +116,6 @@ class LteSimulation(BaseSimulation):
     }
 
     def __init__(self, anritsu, log, dut, test_config, calibration_table):
-
         """ Configures Anritsu system for LTE simulation with 1 basetation
 
         Loads a simple LTE simulation enviroment with 1 basestation.
@@ -152,6 +154,14 @@ class LteSimulation(BaseSimulation):
             log.error("Couldn't set preferred network type.")
         else:
             log.info("Preferred network type set.")
+
+        # Get TBS pattern setting from the test configuration
+        if self.KEY_TBS_PATTERN not in test_config:
+            self.log.warning("The key '{}' is not set in the config file. "
+                             "Setting to true by default.".format(
+                                 self.KEY_TBS_PATTERN))
+
+        self.tbs_pattern_on = test_config.get(self.KEY_TBS_PATTERN, True)
 
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation using a list of parameters.
@@ -571,7 +581,9 @@ class LteSimulation(BaseSimulation):
         else:
             bts.lte_scheduling_mode = "STATIC"
             bts.packet_rate = packet_rate
-            cmd = "TBSPATTERN OFF, " + bts._bts_number
+            cmd = "TBSPATTERN {}, {}".format("FULLALLOCATION"
+                                             if self.tbs_pattern_on else "OFF",
+                                             bts._bts_number)
             self.anritsu.send_command(cmd)
             if packet_rate == BtsPacketRate.LTE_MANUAL:
                 bts.lte_mcs_dl = mcs_dl
