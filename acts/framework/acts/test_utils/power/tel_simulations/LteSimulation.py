@@ -76,6 +76,13 @@ class LteSimulation(BaseSimulation):
         DYNAMIC = 0
         STATIC = 1
 
+    class DuplexMode(Enum):
+        ''' DL/UL Duplex mode
+
+        '''
+        FDD = "FDD"
+        TDD = "TDD"
+
     # RSRP signal levels thresholds (as reported by Android) in dBm/15KHz.
     # Excellent is set to -75 since callbox B Tx power is limited to -30 dBm
     downlink_rsrp_dictionary = {
@@ -740,3 +747,29 @@ class LteSimulation(BaseSimulation):
             self.bts1.dl_antenna = init_dl_antenna
             self.bts1.transmode = init_transmode
             time.sleep(5)  # It takes some time to propagate the new settings
+
+    def get_dupplex_mode(self, band):
+        """ Determines if the band uses FDD or TDD duplex mode
+
+        Args:
+            band: a band number
+        Returns:
+            an variable of class DuplexMode indicating if band is FDD or TDD
+        """
+
+        if 33 <= int(band) <= 46:
+            return self.DuplexMode.TDD
+        else:
+            return self.DuplexMode.FDD
+
+    def set_band(self, bts, band):
+        """ Sets the right duplex mode before switching to a new band.
+
+        Args:
+            bts: basestation handle
+            band: desired band
+        """
+
+        bts.duplex_mode = self.get_dupplex_mode(band).value
+
+        super().set_band(bts, band)
