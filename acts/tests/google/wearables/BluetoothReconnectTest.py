@@ -21,6 +21,7 @@ import time
 from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.controllers.buds_lib.test_actions.apollo_acts import ApolloTestActions
+from acts.signals import TestPass
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.bt.bt_test_utils import enable_bluetooth
@@ -29,7 +30,6 @@ from acts.utils import set_location_service
 class BluetoothReconnectTest(BaseTestClass):
     """Class representing a TestCase object for handling execution of tests."""
 
-    # TODO: add ACTS style metrics logging
     def __init__(self, configs):
         BaseTestClass.__init__(self, configs)
         # sanity check of the dut devices.
@@ -66,20 +66,27 @@ class BluetoothReconnectTest(BaseTestClass):
         # Make sure devices are paired and connected
         clear_bonded_devices(self.phone)
         self.apollo_act.factory_reset()
+        # Store metrics
+        metrics = {}
 
         # Buffer between reset and pairing
         time.sleep(5)
 
         self.phone.droid.bluetoothDiscoverAndBond(self.dut_bt_addr)
+        connect_start_time = time.time()
         paired_and_connected = self.apollo_act.wait_for_bluetooth_a2dp_hfp()
+        connect_end_time = time.time()
         asserts.assert_true(paired_and_connected,
-                            "Failed to pair and connect devices")
+                            "Failed to pair and connect devices",
+                            extras=metrics)
+        metrics['pair_and_connect_time'] = connect_end_time - connect_start_time
 
         # Disconnect Bluetooth from the phone side
         self.log.info("Disabling Bluetooth on phone")
         bluetooth_disabled = disable_bluetooth(self.phone.droid)
         asserts.assert_true(bluetooth_disabled,
-                            "Failed to disconnect Bluetooth from phone")
+                            "Failed to disconnect Bluetooth from phone",
+                            extras=metrics)
         self.log.info("Bluetooth disabled on phone")
 
         # Buffer between disconnect and reconnect
@@ -88,11 +95,18 @@ class BluetoothReconnectTest(BaseTestClass):
         # Reconnect Bluetooth from the phone side
         self.log.info("Enabling Bluetooth on phone")
         bluetooth_enabled = enable_bluetooth(self.phone.droid, self.phone.ed)
+        reconnect_start_time = time.time()
         asserts.assert_true(bluetooth_enabled,
-                            "Failed to reconnect Bluetooth from phone")
+                            "Failed to reconnect Bluetooth from phone",
+                            extras=metrics)
         self.log.info("Bluetooth enabled on phone")
 
         # Verify that the devices have reconnected
         devices_reconnected = self.apollo_act.wait_for_bluetooth_a2dp_hfp()
+        reconnect_end_time = time.time()
         asserts.assert_true(devices_reconnected,
-                            "Bluetooth profiles failed to reconnect")
+                            "Bluetooth profiles failed to reconnect",
+                            extras=metrics)
+        metrics['reconnect_time'] = reconnect_end_time - reconnect_start_time
+        raise TestPass("Successfully connected and reconnected",
+                       extras=metrics)
