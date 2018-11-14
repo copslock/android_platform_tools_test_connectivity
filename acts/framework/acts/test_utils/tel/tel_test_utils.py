@@ -29,6 +29,7 @@ from acts import signals
 from acts import utils
 from queue import Empty
 from acts.asserts import abort_all
+from acts.asserts import fail
 from acts.controllers.adb import AdbError
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
@@ -548,6 +549,10 @@ def get_telephony_signal_strength(ad):
         ad.log.error(e)
         signal_strength = {}
     out = ad.adb.shell("dumpsys telephony.registry | grep -i signalstrength")
+    if out is None:
+        msg = "Signal Strength is Null."
+        fail(msg)
+
     signals = re.findall(r"(-*\d+)", out)
     for i, val in enumerate(
         ("gsmSignalStrength", "gsmBitErrorRate", "cdmaDbm", "cdmaEcio",
@@ -4623,8 +4628,8 @@ def ensure_network_generation_for_subscription(
             ad.telephony["subscription"][sub_id]["phone_type"])
     except KeyError as e:
         ad.log.error("Failed to find a rat_family entry for generation %s"
-                     " for subscriber %s with error %s", generation,
-                     ad.telephony["subscription"][sub_id], e)
+                     " for subscriber id %s with error %s", generation,
+                     sub_id, e)
         return False
 
     if not set_preferred_network_mode_pref(log, ad, sub_id,
