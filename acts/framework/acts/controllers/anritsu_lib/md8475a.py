@@ -1671,6 +1671,33 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def duplex_mode(self):
+        """ Gets the Duplex Mode of the cell
+
+        Args:
+            None
+
+        Returns:
+            Duplex mode
+        """
+        cmd = "DUPLEXMODE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @duplex_mode.setter
+    def duplex_mode(self, mode):
+        """ Sets the duplex mode for the cell
+
+        Args:
+            mode: string indicating FDD or TDD
+
+        Returns:
+            None
+        """
+        cmd = "DUPLEXMODE {},{}".format(mode, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+
+    @property
     def dl_antenna(self):
         """ Gets the DL ANTENNA count of the cell
 
