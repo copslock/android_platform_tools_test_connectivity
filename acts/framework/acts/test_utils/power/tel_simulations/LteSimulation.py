@@ -612,6 +612,7 @@ class LteSimulation(BaseSimulation):
         closely matches the desired DL/UL percentages.
 
         Args:
+            bts: base station handle
             dl: desired percentage of downlink RBs
             ul: desired percentage of uplink RBs
         Returns:
@@ -625,6 +626,8 @@ class LteSimulation(BaseSimulation):
 
         # Get the available number of RBs for the channel bandwidth
         bw = bts.bandwidth
+        # Get the current transmission mode
+        tm = bts.transmode
         max_rbs = self.total_rbs_dictionary[bw]
 
         def percentage_to_amount(min_val, max_val, percentage):
@@ -643,56 +646,53 @@ class LteSimulation(BaseSimulation):
 
         # Calculate the number of DL RBs
 
-        if dl == 100:
-            # If 100% is requested, max_rbs can be used
-            dl_rbs = max_rbs
-        elif dl == 0:
-            # Minimum DL RBs is 1
-            dl_rbs = 1
-        else:
-            # Get the number of DL RBs that corresponds to
-            #  the required percentage.
-            desired_dl_rbs = percentage_to_amount(
-                min_val=1, max_val=max_rbs, percentage=dl)
+        # Get the number of DL RBs that corresponds to
+        #  the required percentage.
+        desired_dl_rbs = percentage_to_amount(
+            min_val=1, max_val=max_rbs, percentage=dl)
 
-            # DL RBs have to be a multiple of the number of RBs in a RBG
-            dl_rbs = desired_dl_rbs - desired_dl_rbs % self.rbg_dictionary[bw]
+        if (tm == self.TransmissionMode.TM3.value
+                or tm == self.TransmissionMode.TM4.value):
+
+            # For TM3 and TM4 the number of DL RBs needs to be max_rbs or a
+            # multiple of the RBG size
+
+            if desired_dl_rbs == max_rbs:
+                dl_rbs = max_rbs
+            else:
+                dl_rbs = (math.ceil(desired_dl_rbs / self.rbg_dictionary[bw]) *
+                          self.rbg_dictionary[bw])
+
+        else:
+            # The other TMs allow any number of RBs between 1 and max_rbs
+            dl_rbs = desired_dl_rbs
 
         # Calculate the number of UL RBs
 
-        if ul == 100:
-            # If 100% is requested, max_rbs can be used
-            ul_rbs = max_rbs
-        elif ul == 0:
-            # Minimum UL RBs is 1
-            ul_rbs = 1
-        else:
-            # Get the number of UL RBs that corresponds
-            # to the required percentage
-            desired_ul_rbs = percentage_to_amount(
-                min_val=1, max_val=max_rbs, percentage=ul)
+        # Get the number of UL RBs that corresponds
+        # to the required percentage
+        desired_ul_rbs = percentage_to_amount(
+            min_val=1, max_val=max_rbs, percentage=ul)
 
-            # Create a list of all possible UL RBs assignment
-            # The standard allows any number that can be written as
-            # 2**a * 3**b * 5**c for any combination of a, b and c.
+        # Create a list of all possible UL RBs assignment
+        # The standard allows any number that can be written as
+        # 2**a * 3**b * 5**c for any combination of a, b and c.
 
-            def pow_range(max_value, base):
-                """ Returns a range of all possible powers of base under
-                  the given max_value.
-              """
-                return range(int(math.ceil(math.log(max_value, base))))
+        def pow_range(max_value, base):
+            """ Returns a range of all possible powers of base under
+              the given max_value.
+          """
+            return range(int(math.ceil(math.log(max_value, base))))
 
-            possible_ul_rbs = [
-                2**a * 3**b * 5**c
-                for a in pow_range(max_rbs, 2) for b in pow_range(max_rbs, 3)
-                for c in pow_range(max_rbs, 5) if 2**a * 3**b * 5**c <= max_rbs
-            ]
+        possible_ul_rbs = [
+            2**a * 3**b * 5**c
+            for a in pow_range(max_rbs, 2) for b in pow_range(max_rbs, 3)
+            for c in pow_range(max_rbs, 5) if 2**a * 3**b * 5**c <= max_rbs
+        ]
 
-            # Find the value in the list that is closest to desired_ul_rbs
-            differences = [
-                abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs
-            ]
-            ul_rbs = possible_ul_rbs[differences.index(min(differences))]
+        # Find the value in the list that is closest to desired_ul_rbs
+        differences = [abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs]
+        ul_rbs = possible_ul_rbs[differences.index(min(differences))]
 
         # Report what are the obtained RB percentages
         self.log.info("Requested a {}% / {}% RB allocation. Closest possible "
