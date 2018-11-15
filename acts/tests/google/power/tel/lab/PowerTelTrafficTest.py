@@ -129,11 +129,32 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         # Collect throughput measurement
         throughput = []
+
         for iph in client_iperf_helper:
-            print('Setting: {}\n'.format(iph.iperf_args))
-            throughput.append(
-                iph.process_iperf_results(self.dut, self.log,
-                                          self.iperf_servers, self.test_name))
+            self.log.info("Getting {} throughput".format(
+                iph.traffic_direction))
+            iperf_result = iph.process_iperf_results(
+                self.dut, self.log, self.iperf_servers, self.test_name)
+            try:
+                if iph.traffic_direction == "UL":
+                    expected_t = self.simulation.maximum_uplink_throughput()
+                elif iph.traffic_direction == "DL":
+                    expected_t = self.simulation.maximum_downlink_throughput()
+                else:
+                    raise RuntimeError("Unexpected traffic direction value.")
+
+                if not 0.90 < iperf_result / expected_t < 1.10:
+                    self.log.warning("Throughput differed more than 10% from "
+                                     "the expected value!. {}/{} = {}".format(
+                                         iperf_result, expected_t,
+                                         iperf_result / expected_t))
+            except NotImplementedError:
+                # Some simulation classes might not have implemented the max
+                # throughput calculation yet
+                self.log.debug("Expected throughput is not available for the "
+                               "current simulation class.")
+
+            throughput.append(iperf_result)
 
         # Check if power measurement is below the required value
         # self.pass_fail_check()
