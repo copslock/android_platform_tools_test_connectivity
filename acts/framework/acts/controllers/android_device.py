@@ -1422,8 +1422,8 @@ class AndroidDevice:
         package = self.adb.shell(
             "pm list packages -f | grep -E {} | grep {}".format(
                 packages_to_skip, android_package_name))
-        wizard_package = re.split("=", package)[1]
-        activity = re.search("(.*?).apk", package, re.IGNORECASE).groups()[0]
+        wizard_package = package.split('=')[1]
+        activity = package.split('=')[0].split('/')[-2]
         self.log.info("%s/.%sActivity" % (wizard_package, activity))
         return "%s/.%sActivity" % (wizard_package, activity)
 
