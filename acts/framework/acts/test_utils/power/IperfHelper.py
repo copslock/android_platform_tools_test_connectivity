@@ -44,6 +44,7 @@ class IperfHelper(object):
             self.start_meas_time = config['start_meas_time']
         else:
             self.start_meas_time = 0
+        self.window = getattr(config, "window", None)
 
         iperf_args = '-i 1 -t {} -p {} -J'.format(self.duration, self.port)
 
@@ -55,6 +56,10 @@ class IperfHelper(object):
         # Set bandwidth in Mbit/s
         if self.bandwidth is not None:
             iperf_args = iperf_args + ' -b {}M'.format(self.bandwidth)
+
+        # Set the TCP window size
+        if self.window:
+            iperf_args += ' -w {}M'.format(self.window)
 
         # Parse the client side data to a file saved on the phone
         self.results_filename_phone = self.IPERF_CLIENT_RESULT_FILE_LOC_PHONE \
