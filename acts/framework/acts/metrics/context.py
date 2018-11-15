@@ -119,10 +119,9 @@ class TestContext(object):
         Returns:
             The output path.
         """
-        path = os.path.join(self.get_base_output_path(), self.get_output_dir())
-        if not os.path.exists(path):
-            os.makedirs(path, exist_ok=True)
-        return path
+        return os.path.join(
+            self.get_base_output_path(),
+            self.get_output_dir())
 
     @property
     def identifier(self):
@@ -190,7 +189,7 @@ class TestCaseContext(TestContext):
     """A TestContext that represents a test case.
 
     Attributes:
-        test_case: The method object of the test case.
+        test_case_name: The method object of the test case.
         test_class: The test class instance enclosing the test case.
     """
 
@@ -200,7 +199,7 @@ class TestCaseContext(TestContext):
         Args:
             test_class: A test class object. Must be an instance of the test
                         class, not the class object itself.
-            test_case: The string name of the test case.
+            test_case_name: The string name of the test case.
         """
         super().__init__()
         self.test_class = test_class
