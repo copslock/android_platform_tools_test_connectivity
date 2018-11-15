@@ -24,6 +24,7 @@ from acts.test_utils.wifi import wifi_constants as wc
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
+PHONE_BATTERY_VOLTAGE = 4.2
 
 class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
     def teardown_test(self):
@@ -57,31 +58,6 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
         self.set_attenuation(self.atten_level[self.current_test_name])
         self.measure_power_and_validate()
 
-    @test_tracker_info(uuid='2fec5208-043a-410a-8fd2-6784d70a3587')
-    def test_screenoff_fastroaming(self):
-
-        # Setup the aux AP
-        network_main = copy.deepcopy(self.main_network)[hc.BAND_2G]
-        network_aux = copy.deepcopy(self.aux_network)[hc.BAND_2G]
-        # Set the same SSID for the AUX AP for fastroaming purpose
-        network_aux[wc.SSID] = network_main[wc.SSID]
-        # Set attenuator to connect the phone to the aux AP
-        self.log.info('Set attenuation to connect device to the aux AP')
-        self.set_attenuation(self.atten_level[wc.AP_AUX])
-        self.brconfigs_aux = self.setup_ap_connection(
-            network_aux, ap=self.access_point_aux)
-        # Set attenuator to connect the phone to main AP
-        self.log.info('Set attenuation to connect device to the main AP')
-        self.set_attenuation(self.atten_level[wc.AP_MAIN])
-        self.brconfigs_main = self.setup_ap_connection(
-            network_main, ap=self.access_point_main)
-        self.dut.droid.goToSleepNow()
-        time.sleep(5)
-        # Trigger fastroaming
-        self.dut.log.info('Trigger fastroaming now')
-        self.set_attenuation(self.atten_level[wc.AP_AUX])
-        self.measure_power_and_validate()
-
     @test_tracker_info(uuid='a0459b7c-74ce-4adb-8e55-c5365bc625eb')
     def test_screenoff_toggle_between_AP(self):
 
@@ -113,6 +89,7 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             file_path, avg_current = self.monsoon_data_collect_save()
         [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
         self.test_result = dt.source.data['y0'][0]
+        self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)
@@ -149,6 +126,7 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             file_path, avg_current = self.monsoon_data_collect_save()
         [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
         self.test_result = dt.source.data['y0'][0]
+        self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)
