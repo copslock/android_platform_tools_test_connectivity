@@ -21,12 +21,12 @@ import unittest
 from unittest import TestCase
 from acts.event.event import TestCaseEvent
 from acts.event.event import TestClassEvent
-from acts.context import get_context_for_event
-from acts.context import TestContext
-from acts.context import TestCaseContext
-from acts.context import TestClassContext
+from acts.metrics.context import get_context_for_event
+from acts.metrics.context import TestContext
+from acts.metrics.context import TestCaseContext
+from acts.metrics.context import TestClassContext
 
-LOGGING = 'acts.context.logging'
+LOGGING = 'acts.metrics.context.logging'
 
 
 class TestClass:
@@ -94,7 +94,7 @@ class TestContextTest(TestCase):
 
         self.assertEqual(context.get_output_dir(), mock_dir)
 
-    def test_get_full_output_path_returns_correct_path(self):
+    def test_get_full_output_path(self):
         context = TestContext()
         path = 'base/path'
         dir = 'output/dir'
@@ -103,23 +103,6 @@ class TestContextTest(TestCase):
 
         full_path = 'base/path/output/dir'
         self.assertEqual(context.get_full_output_path(), full_path)
-
-    @patch('os.path.exists')
-    @patch('os.makedirs')
-    def test_get_full_output_path_makes_directory(self, makedirs, exists):
-        exists.return_value = False
-
-        context = TestContext()
-        path = 'base/path'
-        dir = 'output/dir'
-        context.set_base_output_path(path)
-        context.set_output_dir(dir)
-
-        full_path = 'base/path/output/dir'
-        context.get_full_output_path()
-
-        self.assertTrue(makedirs.called)
-        self.assertEqual(makedirs.call_args[0][0], full_path)
 
     def test_identifier_not_implemented(self):
         context = TestContext()
