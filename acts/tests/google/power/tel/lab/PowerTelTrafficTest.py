@@ -42,6 +42,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
     # Iperf waiting time
     IPERF_MARGIN = 10
 
+    # Constant used to calculate the tcp window size from total throughput
+    TCP_WINDOW_FRACTION = 15
+
     def __init__(self, controllers):
         """ Class initialization.
 
@@ -157,6 +160,17 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         # Start iPerf traffic
         iperf_helpers = []
 
+        # Calculate TCP windows as a fraction of the expected throughput
+        # Some simulation classes don't implement this method yed
+        try:
+            dl_tcp_window = (self.simulation.maximum_downlink_throughput() /
+                             self.TCP_WINDOW_FRACTION)
+            ul_tcp_window = (self.simulation.maximum_uplink_throughput() /
+                             self.TCP_WINDOW_FRACTION)
+        except NotImplementedError:
+            dl_tcp_window = None
+            ul_tcp_window = None
+
         if self.traffic_direction in [
                 self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_UL_DL
         ]:
@@ -166,6 +180,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                     client_host,
                     server_idx=len(iperf_helpers),
                     traffic_direction='DL',
+                    window=dl_tcp_window,
                     bandwidth=self.bandwidth_limit_dl))
 
         if self.traffic_direction in [
@@ -177,6 +192,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                     client_host,
                     server_idx=len(iperf_helpers),
                     traffic_direction='UL',
+                    window=ul_tcp_window,
                     bandwidth=self.bandwidth_limit_ul))
 
         return iperf_helpers
@@ -185,7 +201,8 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                             client_host,
                             server_idx,
                             traffic_direction,
-                            bandwidth=0):
+                            bandwidth=0,
+                            window=None):
         """Starts iPerf data traffic.
 
         Starts an iperf client in an android device and a server locally.
@@ -195,6 +212,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             server_idx: id of the iperf server to connect to
             traffic_direction: has to be either 'UL' or 'DL'
             bandwidth: bandwidth limit for data traffic
+            window: the tcp window. if None, no window will be passed to iperf
 
         Returns:
             An IperfHelper object for the started client/server pair.
@@ -207,7 +225,8 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             'start_meas_time': 4,
             'server_idx': server_idx,
             'port': self.iperf_servers[server_idx].port,
-            'traffic_direction': traffic_direction
+            'traffic_direction': traffic_direction,
+            'window': window
         }
 
         # If bandwidth is equal to zero then no bandwith requirements are set

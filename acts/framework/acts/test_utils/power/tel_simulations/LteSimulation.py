@@ -76,6 +76,13 @@ class LteSimulation(BaseSimulation):
         DYNAMIC = 0
         STATIC = 1
 
+    class DuplexMode(Enum):
+        ''' DL/UL Duplex mode
+
+        '''
+        FDD = "FDD"
+        TDD = "TDD"
+
     # RSRP signal levels thresholds (as reported by Android) in dBm/15KHz.
     # Excellent is set to -75 since callbox B Tx power is limited to -30 dBm
     downlink_rsrp_dictionary = {
@@ -432,20 +439,22 @@ class LteSimulation(BaseSimulation):
         """
 
         bandwidth = self.bts1.bandwidth
+        rb_ratio = float(
+            self.bts1.nrb_dl) / self.total_rbs_dictionary[bandwidth]
         chains = float(self.bts1.dl_antenna)
 
         if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:
-            return 71.11 * chains
+            return 71.11 * chains * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:
-            return 52.75 * chains
+            return 52.75 * chains * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:
-            return 29.88 * chains
+            return 29.88 * chains * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:
-            return 14.11 * chains
+            return 14.11 * chains * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:
-            return 5.34 * chains
+            return 5.34 * chains * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:
-            return 0.842 * chains
+            return 0.842 * chains * rb_ratio
         else:
             raise ValueError("Invalid bandwidth value.")
 
@@ -459,19 +468,21 @@ class LteSimulation(BaseSimulation):
         """
 
         bandwidth = self.bts1.bandwidth
+        rb_ratio = float(
+            self.bts1.nrb_ul) / self.total_rbs_dictionary[bandwidth]
 
         if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:
-            return 51.02
+            return 51.02 * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:
-            return 37.88
+            return 37.88 * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:
-            return 25.45
+            return 25.45 * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:
-            return 17.57
+            return 17.57 * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:
-            return 7.99
+            return 7.99 * rb_ratio
         elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:
-            return 2.98
+            return 2.98 * rb_ratio
         else:
             raise ValueError("Invalid bandwidth value.")
 
@@ -740,3 +751,29 @@ class LteSimulation(BaseSimulation):
             self.bts1.dl_antenna = init_dl_antenna
             self.bts1.transmode = init_transmode
             time.sleep(5)  # It takes some time to propagate the new settings
+
+    def get_dupplex_mode(self, band):
+        """ Determines if the band uses FDD or TDD duplex mode
+
+        Args:
+            band: a band number
+        Returns:
+            an variable of class DuplexMode indicating if band is FDD or TDD
+        """
+
+        if 33 <= int(band) <= 46:
+            return self.DuplexMode.TDD
+        else:
+            return self.DuplexMode.FDD
+
+    def set_band(self, bts, band):
+        """ Sets the right duplex mode before switching to a new band.
+
+        Args:
+            bts: basestation handle
+            band: desired band
+        """
+
+        bts.duplex_mode = self.get_dupplex_mode(band).value
+
+        super().set_band(bts, band)
