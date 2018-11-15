@@ -177,28 +177,26 @@ class UmtsSimulation(BaseSimulation):
 
             # Setup downlink power
 
-            try:
-                values = self.consume_parameter(parameters, self.PARAM_DL_PW,
-                                                1)
+            values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
 
+            if values:
                 if values[1] not in self.downlink_rscp_dictionary:
-                    raise ValueError("Invalid signal level value.")
+                    self.log.error("Invalid signal level value {}.".format(
+                        values[1]))
+                    return False
                 else:
                     power = self.downlink_rscp_dictionary[values[1]]
-
-            except:
-                self.log.error(
-                    "The test name needs to include parameter {} followed by "
-                    "one of the following values: {}.".format(
-                        self.PARAM_DL_PW, [
-                            "\n" + val
-                            for val in self.downlink_rscp_dictionary.keys()
-                        ]))
-                return False
             else:
-                # Power is not set on the callbox until after the simulation is
-                # started. Will save this value in a variable and use it later
-                self.sim_dl_power = power
+                # Use default value
+                power = self.downlink_rscp_dictionary['excellent']
+                self.log.error(
+                    "No DL signal level value was indicated in the test "
+                    "parameters. Using default value of {} RSRP.".format(
+                        power))
+
+            # Power is not set on the callbox until after the simulation is
+            # started. Will save this value in a variable and use it later
+            self.sim_dl_power = power
 
         # No errors were found
         return True
