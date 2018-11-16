@@ -224,6 +224,12 @@ class LteSimulation(BaseSimulation):
             raise ValueError("The {} parameter needs to be followed by either "
                              "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
 
+        if (mimo == LteSimulation.MimoMode.MIMO_4x4
+                and self.anritsu._md8475_version == 'A'):
+            self.log.error("The test requires 4x4 MIMO, but that is not "
+                           "supported by the MD8475A callbox.")
+            return False
+
         self.set_mimo_mode(self.bts1, mimo)
 
         # Setup transmission mode
