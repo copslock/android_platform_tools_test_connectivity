@@ -73,8 +73,8 @@ class LteSimulation(BaseSimulation):
         ''' Traffic scheduling modes (e.g., STATIC, DYNAMIC)
 
         '''
-        DYNAMIC = 0
-        STATIC = 1
+        DYNAMIC = "DYNAMIC"
+        STATIC = "STATIC"
 
     class DuplexMode(Enum):
         ''' DL/UL Duplex mode
@@ -323,11 +323,19 @@ class LteSimulation(BaseSimulation):
                 dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
                     self.bts1, dl_pattern, ul_pattern)
 
+                if self.tbs_pattern_on and bw != 1.4:
+                    mcs_dl = 28
+                else:
+                    mcs_dl = 27
+
                 self.set_scheduling_mode(
                     self.bts1,
                     LteSimulation.SchedulingMode.STATIC,
+                    packet_rate=BtsPacketRate.LTE_MANUAL,
                     nrb_dl=dl_rbs,
-                    nrb_ul=ul_rbs)
+                    nrb_ul=ul_rbs,
+                    mcs_ul=23,
+                    mcs_dl=mcs_dl)
 
         else:
 
@@ -599,11 +607,11 @@ class LteSimulation(BaseSimulation):
     def set_scheduling_mode(self,
                             bts,
                             scheduling,
-                            packet_rate=BtsPacketRate.LTE_MANUAL,
-                            mcs_dl=27,
-                            mcs_ul=23,
-                            nrb_dl=0,
-                            nrb_ul=0):
+                            packet_rate=None,
+                            mcs_dl=None,
+                            mcs_ul=None,
+                            nrb_dl=None,
+                            nrb_ul=None):
         """ Sets the scheduling mode for LTE
 
         Args:
@@ -615,20 +623,30 @@ class LteSimulation(BaseSimulation):
             nrb_ul: Number of RBs for uplink (only for STATIC scheduling)
         """
 
-        if scheduling == self.SchedulingMode.DYNAMIC:
-            bts.lte_scheduling_mode = "DYNAMIC"
-        else:
-            bts.lte_scheduling_mode = "STATIC"
+        bts.lte_scheduling_mode = scheduling.value
+
+        if scheduling == self.SchedulingMode.STATIC:
+
+            if not packet_rate:
+                raise RuntimeError("Packet rate needs to be indicated when "
+                                   "selecting static scheduling.")
+
             bts.packet_rate = packet_rate
-            cmd = "TBSPATTERN {}, {}".format("FULLALLOCATION"
-                                             if self.tbs_pattern_on else "OFF",
-                                             bts._bts_number)
-            self.anritsu.send_command(cmd)
+            bts.tbs_pattern = "FULLALLOCATION" if self.tbs_pattern_on else "OFF"
+
             if packet_rate == BtsPacketRate.LTE_MANUAL:
+
+                if not (mcs_dl and mcs_ul and nrb_dl and nrb_ul):
+                    raise RuntimeError("When using manual packet rate the "
+                                       "number of dl/ul RBs and the dl/ul "
+                                       "MCS needs to be indicated with the "
+                                       "optional arguments.")
+
                 bts.lte_mcs_dl = mcs_dl
                 bts.lte_mcs_ul = mcs_ul
                 bts.nrb_dl = nrb_dl
                 bts.nrb_ul = nrb_ul
+
         time.sleep(5)  # It takes some time to propagate the new settings
 
     def allocation_percentages_to_rbs(self, bts, dl, ul):
