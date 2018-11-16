@@ -477,22 +477,37 @@ class LteSimulation(BaseSimulation):
         bandwidth = self.bts1.bandwidth
         rb_ratio = float(
             self.bts1.nrb_dl) / self.total_rbs_dictionary[bandwidth]
-        chains = float(self.bts1.dl_antenna)
+        streams = float(self.bts1.dl_antenna)
+        mcs = self.bts1.lte_mcs_dl
 
-        if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:
-            return 71.11 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:
-            return 52.75 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:
-            return 29.88 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:
-            return 14.11 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:
-            return 5.34 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:
-            return 0.842 * chains * rb_ratio
+        if (self.tbs_pattern_on
+                and (mcs == "28" or
+                     (bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value
+                      and mcs == "27"))):
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.94,
+                BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 9.96,
+                BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 17.0,
+                BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 34.7,
+                BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 52.7,
+                BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 72.2
+            }[bandwidth]
+        elif not self.tbs_pattern_on and mcs == "27":
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.87,
+                BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 7.7,
+                BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 14.4,
+                BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 28.7,
+                BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 42.3,
+                BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 57.7
+            }[bandwidth]
         else:
-            raise ValueError("Invalid bandwidth value.")
+            raise NotImplementedError(
+                "The calculation for tbs pattern = {} "
+                "and mcs = {} is not implemented.".format(
+                    "FULLALLOCATION" if self.tbs_pattern_on else "OFF", mcs))
+
+        return max_rate_per_stream * streams * rb_ratio
 
     def maximum_uplink_throughput(self):
         """ Calculates maximum achievable uplink throughput in the current
@@ -506,21 +521,24 @@ class LteSimulation(BaseSimulation):
         bandwidth = self.bts1.bandwidth
         rb_ratio = float(
             self.bts1.nrb_ul) / self.total_rbs_dictionary[bandwidth]
+        mcs = self.bts1.lte_mcs_ul
 
-        if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:
-            return 51.02 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:
-            return 37.88 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:
-            return 25.45 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:
-            return 17.57 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:
-            return 7.99 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:
-            return 2.98 * rb_ratio
+        if mcs == "23":
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.85,
+                BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 7.18,
+                BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 12.1,
+                BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 24.5,
+                BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 36.5,
+                BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 49.1
+            }[bandwidth]
         else:
-            raise ValueError("Invalid bandwidth value.")
+            raise NotImplementedError("The calculation fir mcs = {} is not "
+                                      "implemented.".format(
+                                          "FULLALLOCATION" if
+                                          self.tbs_pattern_on else "OFF", mcs))
+
+        return max_rate_per_stream * rb_ratio
 
     def set_transmission_mode(self, bts, tmode):
         """ Sets the transmission mode for the LTE basetation
