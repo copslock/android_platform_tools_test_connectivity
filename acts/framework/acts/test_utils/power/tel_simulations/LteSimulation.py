@@ -122,6 +122,27 @@ class LteSimulation(BaseSimulation):
         BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 1
     }
 
+    # Table of minimum number of RBs. This is needed to achieve peak
+    # throughput.
+
+    min_dl_rbs_dictionary = {
+        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 16,
+        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 12,
+        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 9,
+        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 4,
+        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 4,
+        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2
+    }
+
+    min_ul_rbs_dictionary = {
+        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 8,
+        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 6,
+        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 4,
+        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 2,
+        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 2,
+        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 1
+    }
+
     def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for LTE simulation with 1 basetation
 
@@ -634,7 +655,10 @@ class LteSimulation(BaseSimulation):
         bw = bts.bandwidth
         # Get the current transmission mode
         tm = bts.transmode
+        # Get min and max values from tables
         max_rbs = self.total_rbs_dictionary[bw]
+        min_dl_rbs = self.min_dl_rbs_dictionary[bw]
+        min_ul_rbs = self.min_ul_rbs_dictionary[bw]
 
         def percentage_to_amount(min_val, max_val, percentage):
             """ Returns the integer between min_val and max_val that is closest
@@ -655,7 +679,7 @@ class LteSimulation(BaseSimulation):
         # Get the number of DL RBs that corresponds to
         #  the required percentage.
         desired_dl_rbs = percentage_to_amount(
-            min_val=1, max_val=max_rbs, percentage=dl)
+            min_val=min_dl_rbs, max_val=max_rbs, percentage=dl)
 
         if (tm == self.TransmissionMode.TM3.value
                 or tm == self.TransmissionMode.TM4.value):
@@ -678,7 +702,7 @@ class LteSimulation(BaseSimulation):
         # Get the number of UL RBs that corresponds
         # to the required percentage
         desired_ul_rbs = percentage_to_amount(
-            min_val=1, max_val=max_rbs, percentage=ul)
+            min_val=min_ul_rbs, max_val=max_rbs, percentage=ul)
 
         # Create a list of all possible UL RBs assignment
         # The standard allows any number that can be written as
