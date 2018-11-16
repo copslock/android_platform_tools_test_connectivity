@@ -19,6 +19,7 @@ import logging
 import tempfile
 from os import path
 
+from acts.context import get_context_for_event
 from acts.event import event_bus
 from acts.event import subscription_bundle
 from acts.event.decorators import subscribe
@@ -27,7 +28,6 @@ from acts.event.event import TestCaseEndEvent
 from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.libs.proto.proto_utils import compile_import_proto
-from acts.metrics.context import get_context_for_event
 from acts.metrics.core import ProtoMetricPublisher
 
 
