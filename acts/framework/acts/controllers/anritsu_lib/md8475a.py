@@ -130,11 +130,13 @@ class BtsBandwidth(Enum):
     LTE_BANDWIDTH_15MHz = "15MHz"
     LTE_BANDWIDTH_20MHz = "20MHz"
 
+
 class BtsGprsMode(Enum):
     ''' Values for Gprs Modes '''
     NO_GPRS = "NO_GPRS"
     GPRS = "GPRS"
     EGPRS = "EGPRS"
+
 
 class BtsPacketRate(Enum):
     ''' Values for Cell Packet rate '''
@@ -843,7 +845,9 @@ class MD8475A(object):
             else:
                 break
 
-    def wait_for_registration_state(self, bts=1, time_to_wait = REGISTRATION_STATE_WAIT_TIME):
+    def wait_for_registration_state(self,
+                                    bts=1,
+                                    time_to_wait=REGISTRATION_STATE_WAIT_TIME):
         """ Waits for UE registration state on Anritsu
 
         Args:
@@ -873,7 +877,8 @@ class MD8475A(object):
                     "UE failed to register in {} seconds".format(time_to_wait))
             time.sleep(sleep_interval)
 
-    def wait_for_communication_state(self, time_to_wait = COMMUNICATION_STATE_WAIT_TIME):
+    def wait_for_communication_state(
+            self, time_to_wait=COMMUNICATION_STATE_WAIT_TIME):
         """ Waits for UE communication state on Anritsu
 
         Args:
@@ -1695,7 +1700,6 @@ class _BaseTransceiverStation(object):
         """
         cmd = "DUPLEXMODE {},{}".format(mode, self._bts_number)
         self._anritsu.send_command(cmd)
-
 
     @property
     def dl_antenna(self):
@@ -3076,7 +3080,7 @@ class _BaseTransceiverStation(object):
         split_response = response.split(',')
 
         if not len(split_response) == 2:
-          raise ValueError(response)
+            raise ValueError(response)
 
         return response[0], response[1]
 
@@ -3092,20 +3096,23 @@ class _BaseTransceiverStation(object):
         """
 
         try:
-          dl, ul = slots
-          dl = int(dl)
-          ul = int(ul)
+            dl, ul = slots
+            dl = int(dl)
+            ul = int(ul)
         except:
-          raise ValueError('The parameter slot has to be a tuple containing two ints indicating (dl,ul) slots.')
+            raise ValueError(
+                'The parameter slot has to be a tuple containing two ints '
+                'indicating (dl,ul) slots.'
+            )
 
         # Validate
         if dl < 1 or ul < 1 or dl + ul > 5:
-          raise ValueError('DL and UL slots have to be >= 1 and the sum <= 5.')
+            raise ValueError(
+                'DL and UL slots have to be >= 1 and the sum <= 5.')
 
         cmd = "MLTSLTCFG {},{},{}".format(dl, ul, self._bts_number)
 
         self._anritsu.send_command(cmd)
-
 
 
 class _VirtualPhone(object):
