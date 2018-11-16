@@ -264,8 +264,8 @@ class _LogStream(object):
 
         Terminology:
             Log-level: any of [DEBUG, INFO, WARNING, ERROR, CRITICAL].
-            Log Location: any of [MONOLITH, TESTCLASS,
-                                  TESTCASE, TO_STDOUT, TO_ACTS_LOG].
+            Log Location: any of [MONOLITH_LOG, TESTCLASS_LOG,
+                                  TESTCASE_LOG, TO_STDOUT, TO_ACTS_LOG].
 
         Styles are invalid when any of the below criteria are met:
             A log-level is not set within an element of the list.
@@ -284,20 +284,25 @@ class _LogStream(object):
             raise InvalidStyleSetError('{LogStyle Set: %s} %s' %
                                        (_log_styles_list, message))
 
+        # Store the log locations that have already been set per level.
         levels_dict = {}
         for log_style in _log_styles_list:
             for level in LogStyles.LOG_LEVELS:
                 if log_style & level:
                     levels_dict[level] = levels_dict.get(level, LogStyles.NONE)
+                    # Check that a log-level, log location pair has not yet
+                    # been set.
                     for log_location in LogStyles.LOG_LOCATIONS:
                         if log_style & log_location:
                             if log_location & levels_dict[level]:
                                 invalid_style_error(
-                                    'The log location %s for log level %s has ' 
+                                    'The log location %s for log level %s has '
                                     'been set multiple times' %
                                     (log_location, level))
                             else:
                                 levels_dict[level] |= log_location
+                    # Check that for a given log-level, not both TESTCLASS_LOG
+                    # and TESTCASE_LOG have been set.
                     if not ~levels_dict[level] & (
                             LogStyles.TESTCLASS_LOG | LogStyles.TESTCASE_LOG):
                         invalid_style_error(
