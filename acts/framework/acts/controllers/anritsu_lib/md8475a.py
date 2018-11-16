@@ -2614,6 +2614,32 @@ class _BaseTransceiverStation(object):
             time.sleep(1)
 
     @property
+    def tbs_pattern(self):
+        """ Gets the TBS Pattern setting for the LTE cell
+
+        Args:
+            None
+
+        Returns:
+            TBS Pattern setting
+        """
+        cmd = "TBSPATTERN? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @tbs_pattern.setter
+    def tbs_pattern(self, pattern):
+        """ Sets the TBS Pattern setting for the LTE cell
+
+        Args:
+            mode: "FULLALLOCATION" or "OFF"
+
+        Returns:
+            None
+        """
+        cmd = "TBSPATTERN {}, {}".format(pattern, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def lte_mcs_dl(self):
         """ Gets the Modulation and Coding scheme (DL) of the LTE cell
 
