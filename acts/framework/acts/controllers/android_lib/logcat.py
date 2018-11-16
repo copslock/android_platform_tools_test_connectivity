@@ -90,9 +90,9 @@ def create_logcat_keepalive_process(serial, extra_params=''):
         A acts.libs.proc.process.Process object.
     """
     logger = log_stream.create_logger('AndroidDevice%s' % serial,
-                                      LogStyles.LOG_DEBUG |
-                                      LogStyles.TESTCASE_LOG |
-                                      LogStyles.MONOLITH_LOG)
+                                      log_styles=(LogStyles.LOG_DEBUG |
+                                                  LogStyles.TESTCASE_LOG |
+                                                  LogStyles.MONOLITH_LOG))
     process = Process('adb -s %s logcat -T 1 -b all -v year %s' % (
         serial, extra_params), shell=True)
     timestamp_tracker = TimestampTracker()
