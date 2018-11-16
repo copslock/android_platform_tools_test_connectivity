@@ -17,8 +17,8 @@ import logging
 import unittest
 
 import mock
-import os
 from acts.event.event import TestCaseBeginEvent
+from acts.event.event import TestClassBeginEvent
 
 from acts.libs.logging import log_stream
 from acts.libs.logging.log_stream import AlsoToLogHandler
@@ -56,8 +56,7 @@ class LogStreamTest(unittest.TestCase):
 
     # __validate_style
 
-    def test_validate_styles_raises_when_same_location_set_multiple_times(
-            self, *_):
+    def test_validate_styles_raises_when_same_location_set_multiple_times(self):
         """Tests that a style is invalid if it sets the same handler twice.
 
         If the error is NOT raised, then a LogStream can create a Logger that
@@ -66,10 +65,26 @@ class LogStreamTest(unittest.TestCase):
         with self.assertRaises(InvalidStyleSetError) as catch:
             log_stream.create_logger(
                 self._testMethodName,
-                [LogStyles.LOG_DEBUG | LogStyles.MONOLITH_LOG,
-                 LogStyles.LOG_DEBUG | LogStyles.MONOLITH_LOG])
+                log_styles=[LogStyles.LOG_DEBUG | LogStyles.MONOLITH_LOG,
+                            LogStyles.LOG_DEBUG | LogStyles.MONOLITH_LOG])
         self.assertTrue(
-            'has been set' in catch.exception.args[0],
+            'has been set multiple' in catch.exception.args[0],
+            msg='__validate_styles did not raise the expected error message')
+
+    def test_validate_styles_raises_when_both_testclass_and_testcase_set(self):
+        """Tests that a style is invalid if both TESTCLASS_LOG and TESTCASE_LOG
+        locations are set for the same log level.
+
+        If the error is NOT raised, then a LogStream can create a Logger that
+        has multiple LogHandlers trying to write to the same file.
+        """
+        with self.assertRaises(InvalidStyleSetError) as catch:
+            log_stream.create_logger(
+                self._testMethodName,
+                log_styles=[LogStyles.LOG_DEBUG | LogStyles.TESTCASE_LOG,
+                            LogStyles.LOG_DEBUG | LogStyles.TESTCLASS_LOG])
+        self.assertTrue(
+            'Both TESTCLASS_LOG' in catch.exception.args[0],
             msg='__validate_styles did not raise the expected error message')
 
     def test_validate_styles_raises_when_no_level_exists(self):
@@ -80,7 +95,7 @@ class LogStreamTest(unittest.TestCase):
         """
         with self.assertRaises(InvalidStyleSetError) as catch:
             log_stream.create_logger(self._testMethodName,
-                                     [LogStyles.MONOLITH_LOG])
+                                     log_styles=[LogStyles.MONOLITH_LOG])
 
         self.assertTrue(
             'log level' in catch.exception.args[0],
@@ -94,7 +109,7 @@ class LogStreamTest(unittest.TestCase):
         """
         with self.assertRaises(InvalidStyleSetError) as catch:
             log_stream.create_logger(self._testMethodName,
-                                     [LogStyles.LOG_INFO])
+                                     log_styles=[LogStyles.LOG_INFO])
 
         self.assertTrue(
             'log location' in catch.exception.args[0],
@@ -113,7 +128,7 @@ class LogStreamTest(unittest.TestCase):
                 self._testMethodName,
                 # Added LOG_DEBUG here to prevent the no_level_exists raise from
                 # occurring.
-                [LogStyles.LOG_DEBUG + LogStyles.ROTATE_LOGS])
+                log_styles=[LogStyles.LOG_DEBUG + LogStyles.ROTATE_LOGS])
 
         self.assertTrue(
             'log type' in catch.exception.args[0],
@@ -122,43 +137,95 @@ class LogStreamTest(unittest.TestCase):
     # __handle_style
 
     def test_handle_style_create_test_case_descriptors(self):
-        """Tests that handle_style creates the correct test case descriptors.
+        """Tests that handle_style creates the correct test case descriptors
+        and the outer-level test class descriptors.
 
-        Testcase descriptors are only created on TESTCASE_LOG logstyles.
+        The above descriptors are only created on TESTCASE_LOG logstyles.
         """
         info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
 
         with self.patch('FileHandler'):
-            log_stream.create_logger(self._testMethodName, info_testcase_log)
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_testcase_log)
 
         created_stream = log_stream._log_streams[self._testMethodName]
-        handler_descriptors = created_stream._test_case_handler_descriptors
+        case_descriptors = created_stream._test_case_handler_descriptors
+        class_descriptors = created_stream._test_class_only_handler_descriptors
 
-        self.assertEqual(len(handler_descriptors), 1,
-                         'There should be exactly 1 testcase handler created.')
-        self.assertEqual(handler_descriptors[0]._level, logging.INFO)
+        self.assertEqual(len(case_descriptors), 1,
+                         'There should be exactly 1 testcase handler'
+                         'descriptor created.')
+        self.assertEqual(len(class_descriptors), 1,
+                         'There should be exactly 1 test class only handler'
+                         'descriptor created.')
+        self.assertEqual(case_descriptors[0]._level, logging.INFO)
+        self.assertEqual(class_descriptors[0]._level, logging.INFO)
 
     def test_handle_style_does_not_create_test_case_descriptors(self):
-        """Tests that handle_style does not create testcase descriptors without
-        LogStyle.TESTCASE_LOG.
+        """Tests that handle_style does not create test case and test class
+        only descriptors without LogStyle.TESTCASE_LOG.
         """
-        info_monolith_log = LogStyles.LOG_INFO + LogStyles.MONOLITH_LOG
+        info_monolith_log = (LogStyles.LOG_INFO + LogStyles.MONOLITH_LOG +
+                             LogStyles.TESTCLASS_LOG)
 
         with self.patch('FileHandler'):
-            log_stream.create_logger(self._testMethodName, info_monolith_log)
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_monolith_log)
 
         created_stream = log_stream._log_streams[self._testMethodName]
-        handler_descriptors = created_stream._test_case_handler_descriptors
+        case_descriptors = created_stream._test_case_handler_descriptors
+        class_descriptors = created_stream._test_class_only_handler_descriptors
 
-        self.assertEqual(len(handler_descriptors), 0,
+        self.assertEqual(len(case_descriptors), 0,
                          'Testcase handlers should not be created without a '
                          'TESTCASE_LOG LogStyle.')
+        self.assertEqual(len(class_descriptors), 0,
+                         'Test class only handlers should not be created '
+                         'without a TESTCASE_LOG LogStyle.')
+
+    def test_handle_style_create_test_class_descriptors(self):
+        """Tests that handle_style creates the correct test class descriptors.
+
+        The above descriptors are only created on TESTCLASS_LOG logstyles.
+        """
+        info_testclass_log = LogStyles.LOG_INFO + LogStyles.TESTCLASS_LOG
+
+        with self.patch('FileHandler'):
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_testclass_log)
+
+        created_stream = log_stream._log_streams[self._testMethodName]
+        class_descriptors = created_stream._test_class_handler_descriptors
+
+        self.assertEqual(len(class_descriptors), 1,
+                         'There should be exactly 1 test class handler'
+                         'descriptor created.')
+        self.assertEqual(class_descriptors[0]._level, logging.INFO)
+
+    def test_handle_style_does_not_create_test_class_descriptors(self):
+        """Tests that handle_style does not create test class descriptors
+        without LogStyle.TESTCLASS_LOG.
+        """
+        info_monolith_log = (LogStyles.LOG_INFO + LogStyles.MONOLITH_LOG +
+                             LogStyles.TESTCASE_LOG)
+
+        with self.patch('FileHandler'):
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_monolith_log)
+
+        created_stream = log_stream._log_streams[self._testMethodName]
+        class_descriptors = created_stream._test_class_handler_descriptors
+
+        self.assertEqual(len(class_descriptors), 0,
+                         'Test class handlers should not be created without a '
+                         'TESTCLASS_LOG LogStyle.')
 
     def test_handle_style_to_acts_log_creates_handler(self):
         """Tests that using the flag TO_ACTS_LOG creates an AlsoToLogHandler."""
         info_acts_log = LogStyles.LOG_INFO + LogStyles.TO_ACTS_LOG
 
-        log = log_stream.create_logger(self._testMethodName, info_acts_log)
+        log = log_stream.create_logger(self._testMethodName,
+                                       log_styles=info_acts_log)
 
         self.assertTrue(isinstance(log.handlers[0], AlsoToLogHandler))
 
@@ -168,7 +235,8 @@ class LogStreamTest(unittest.TestCase):
         info_acts_log = (LogStyles.LOG_DEBUG + LogStyles.LOG_INFO +
                          LogStyles.TO_ACTS_LOG)
 
-        log = log_stream.create_logger(self._testMethodName, info_acts_log)
+        log = log_stream.create_logger(self._testMethodName,
+                                       log_styles=info_acts_log)
 
         self.assertTrue(isinstance(log.handlers[0], AlsoToLogHandler))
         self.assertEqual(log.handlers[0].level, logging.DEBUG)
@@ -177,7 +245,8 @@ class LogStreamTest(unittest.TestCase):
         """Tests that using the flag TO_STDOUT creates a StreamHandler."""
         info_acts_log = LogStyles.LOG_INFO + LogStyles.TO_STDOUT
 
-        log = log_stream.create_logger(self._testMethodName, info_acts_log)
+        log = log_stream.create_logger(self._testMethodName,
+                                       log_styles=info_acts_log)
 
         self.assertTrue(isinstance(log.handlers[0], logging.StreamHandler))
 
@@ -187,7 +256,8 @@ class LogStreamTest(unittest.TestCase):
 
         expected = mock.MagicMock()
         with self.patch('FileHandler', return_value=expected):
-            log = log_stream.create_logger(self._testMethodName, info_acts_log)
+            log = log_stream.create_logger(self._testMethodName,
+                                           log_styles=info_acts_log)
 
         self.assertEqual(log.handlers[0], expected)
 
@@ -198,7 +268,8 @@ class LogStreamTest(unittest.TestCase):
 
         expected = mock.MagicMock()
         with self.patch('RotatingFileHandler', return_value=expected):
-            log = log_stream.create_logger(self._testMethodName, info_acts_log)
+            log = log_stream.create_logger(self._testMethodName,
+                                           log_styles=info_acts_log)
 
         self.assertEqual(log.handlers[0], expected)
 
@@ -265,12 +336,39 @@ class LogStreamTest(unittest.TestCase):
         self.assertTrue(dummy_obj.logger.removeHandler.called)
         self.assertTrue(handler.close.called)
 
+    # __create_handlers_from_descriptors
+
+    @mock.patch('os.path.exists')
+    @mock.patch('os.mkdir')
+    def test_create_handlers_from_descriptors(self, *_):
+        """Tests that the handlers generated from the descriptors are added
+        to the associated logger and the given handlers list."""
+        info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
+        with self.patch('FileHandler'):
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_testcase_log)
+
+        created_log_stream = log_stream._log_streams[self._testMethodName]
+        descriptors = created_log_stream._test_case_handler_descriptors
+        testcase_handlers = []
+        num_logger_handlers = len(created_log_stream.logger.handlers)
+        created_log_stream._LogStream__create_handlers_from_descriptors(
+            descriptors, testcase_handlers,
+            TestCaseBeginEvent(TestClass(), TestClass.test_case))
+
+        self.assertNotEqual(len(created_log_stream.logger.handlers) -
+                            num_logger_handlers, 0,
+                            'No handlers added to the logger')
+        self.assertNotEqual(len(testcase_handlers), 0,
+                            'Handler list not populated.')
+
     # on_test_case_end
 
     def test_on_test_case_end_removes_all_handlers(self):
         info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
         with self.patch('FileHandler'):
-            log_stream.create_logger(self._testMethodName, info_testcase_log)
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_testcase_log)
 
         created_log_stream = log_stream._log_streams[self._testMethodName]
         created_log_stream.on_test_case_end('')
@@ -278,12 +376,37 @@ class LogStreamTest(unittest.TestCase):
         self.assertEqual(len(created_log_stream._test_case_log_handlers), 0,
                          'The test case log handlers were not cleared.')
 
-    # on_test_case_begin
-
-    def test_on_test_case_begin_creates_new_handlers(self):
+    @mock.patch('os.path.exists')
+    @mock.patch('os.mkdir')
+    def test_on_test_case_end_enables_class_level_handlers(self, *_):
         info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
         with self.patch('FileHandler'):
-            log_stream.create_logger(self._testMethodName, info_testcase_log)
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_testcase_log)
+
+        created_log_stream = log_stream._log_streams[self._testMethodName]
+        created_log_stream.on_test_class_begin(TestClassBeginEvent(TestClass()))
+        for handler in created_log_stream.logger.handlers:
+            created_log_stream.logger.removeHandler(handler)
+        created_log_stream.on_test_case_end('')
+
+        self.assertNotEqual(
+            len(created_log_stream._test_class_only_log_handlers), 0,
+            'The test class only log handlers list is empty.')
+        for handler in created_log_stream._test_class_only_log_handlers:
+            self.assertIn(handler, created_log_stream.logger.handlers,
+                          'A class level handler is not enabled on test case'
+                          'end.')
+
+    # on_test_case_begin
+
+    @mock.patch('os.path.exists')
+    @mock.patch('os.mkdir')
+    def test_on_test_case_begin_creates_new_handlers(self, *_):
+        info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
+        with self.patch('FileHandler'):
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_testcase_log)
 
         created_log_stream = log_stream._log_streams[self._testMethodName]
         created_log_stream.on_test_case_begin(
@@ -291,12 +414,74 @@ class LogStreamTest(unittest.TestCase):
 
         self.assertEqual(len(created_log_stream._test_case_log_handlers), 1)
 
+    @mock.patch('os.path.exists')
+    @mock.patch('os.mkdir')
+    def test_on_test_case_begin_disables_class_level_handlers(self, *_):
+        info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
+        with self.patch('FileHandler'):
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_testcase_log)
+
+        created_log_stream = log_stream._log_streams[self._testMethodName]
+
+        created_log_stream.on_test_class_begin(
+            TestClassBeginEvent(TestClass()))
+        created_log_stream.on_test_case_begin(
+            TestCaseBeginEvent(TestClass(), TestClass.test_case))
+
+        self.assertNotEqual(
+            len(created_log_stream._test_class_only_log_handlers), 0,
+            'The test class only log handlers list is empty.')
+        self.assertEqual(len(created_log_stream.logger.handlers), 1,
+                         'A class level handler is not disabled on test case'
+                         'begin.')
+
+    # on_test_class_end
+
+    def test_on_test_class_end_removes_all_handlers(self):
+        testclass_log = [
+            LogStyles.LOG_INFO + LogStyles.TESTCLASS_LOG,
+            LogStyles.LOG_DEBUG + LogStyles.TESTCASE_LOG]
+        with self.patch('FileHandler'):
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=testclass_log)
+
+        created_log_stream = log_stream._log_streams[self._testMethodName]
+        created_log_stream.on_test_class_end('')
+
+        self.assertEqual(len(created_log_stream._test_class_log_handlers), 0,
+                         'The test class log handlers were not cleared.')
+        self.assertEqual(len(created_log_stream._test_class_only_log_handlers),
+                         0, 'The test class only log handlers were not '
+                            'cleared.')
+
+    # on_test_class_begin
+
+    @mock.patch('os.path.exists')
+    @mock.patch('os.mkdir')
+    def test_on_test_class_begin_creates_new_handlers(self, *_):
+        testclass_log = [
+            LogStyles.LOG_INFO + LogStyles.TESTCLASS_LOG,
+            LogStyles.LOG_DEBUG + LogStyles.TESTCASE_LOG]
+        with self.patch('FileHandler'):
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=testclass_log)
+
+        created_log_stream = log_stream._log_streams[self._testMethodName]
+        created_log_stream.on_test_class_begin(
+            TestClassBeginEvent(TestClass()))
+
+        self.assertEqual(len(created_log_stream._test_class_log_handlers), 1)
+        self.assertEqual(len(created_log_stream._test_class_only_log_handlers),
+                         1)
+
     # cleanup
 
     def test_cleanup_removes_all_handlers(self):
         info_testcase_log = LogStyles.LOG_INFO + LogStyles.MONOLITH_LOG
         with self.patch('FileHandler'):
-            log_stream.create_logger(self._testMethodName, info_testcase_log)
+            log_stream.create_logger(self._testMethodName,
+                                     log_styles=info_testcase_log)
 
         created_log_stream = log_stream._log_streams[self._testMethodName]
         created_log_stream.cleanup()
@@ -315,49 +500,48 @@ class LogStreamModuleTests(unittest.TestCase):
     def setUp(self):
         log_stream._log_streams = {}
 
+    # _on_test_class_begin
+
+    @staticmethod
+    def create_test_class_event():
+        return TestClassBeginEvent(TestClass())
+
+    def test_on_test_class_begin_delegates_calls_to_log_streams(self):
+        """Tests on_test_class_begin calls on_test_class_begin on each log_stream.
+        """
+        log_stream._log_streams = {
+            'a': mock.Mock(),
+            'b': mock.Mock()
+        }
+
+        log_stream._on_test_class_begin(self.create_test_class_event())
+
+        self.assertTrue(log_stream._log_streams['a'].on_test_class_begin.called)
+        self.assertTrue(log_stream._log_streams['b'].on_test_class_begin.called)
+
+    # _on_test_class_end
+
+    def test_on_test_class_end_delegates_calls_to_log_streams(self):
+        """Tests on_test_class_end calls on_test_class_end on each log_stream.
+        """
+        log_stream._log_streams = {
+            'a': mock.Mock(),
+            'b': mock.Mock()
+        }
+
+        log_stream._on_test_class_end(self.create_test_class_event())
+
+        self.assertTrue(log_stream._log_streams['a'].on_test_class_end.called)
+        self.assertTrue(log_stream._log_streams['b'].on_test_class_end.called)
+
     # _on_test_case_begin
 
     @staticmethod
     def create_test_case_event():
         return TestCaseBeginEvent(TestClass(), TestClass.test_case)
 
-    @mock.patch('os.path.exists')
-    @mock.patch('os.mkdir')
-    def test_on_test_case_begin_makes_directory_if_not_exists(self, mkdir,
-                                                              exists):
+    def test_on_test_case_begin_delegates_calls_to_log_streams(self):
         """Tests on_test_case_begin calls on_test_case_begin on each log_stream.
-
-        Note that we mock os.mkdir to prevent file IO.
-        """
-        exists.return_value = False
-
-        log_stream._on_test_case_begin(self.create_test_case_event())
-
-        self.assertTrue(mkdir.called)
-        self.assertEqual(mkdir.call_args[0][0], os.path.join(logging.log_path,
-                                                             'test_case'))
-
-    @mock.patch('os.path.exists')
-    @mock.patch('os.mkdir')
-    def test_on_test_case_begin_does_not_create_dir_if_it_exists(self, mkdir,
-                                                                 exists):
-        """Tests on_test_case_begin calls on_test_case_begin on each log_stream.
-
-        Note that we mock os.mkdir to prevent file IO.
-        """
-        exists.return_value = True
-
-        log_stream._on_test_case_begin(self.create_test_case_event())
-
-        self.assertTrue(exists.called)
-        self.assertFalse(mkdir.called)
-
-    @mock.patch('os.path.exists')
-    @mock.patch('os.mkdir')
-    def test_on_test_case_begin_delegates_calls_to_log_streams(self, *_):
-        """Tests on_test_case_begin calls on_test_case_begin on each log_stream.
-
-        Note that we mock os.mkdir to prevent file IO.
         """
         log_stream._log_streams = {
             'a': mock.Mock(),
@@ -371,12 +555,8 @@ class LogStreamModuleTests(unittest.TestCase):
 
     # _on_test_case_end
 
-    @mock.patch('os.path.exists')
-    @mock.patch('os.mkdir')
-    def test_on_test_case_end_delegates_calls_to_log_streams(self, *_):
+    def test_on_test_case_end_delegates_calls_to_log_streams(self):
         """Tests on_test_case_begin calls on_test_case_begin on each log_stream.
-
-        Note that we mock os.mkdir to prevent file IO.
         """
         log_stream._log_streams = {
             'a': mock.Mock(),
@@ -399,7 +579,7 @@ class LogStreamModuleTests(unittest.TestCase):
             'a': previous
         }
         expected = mock.Mock()
-        expected.logger.name = 'a'
+        expected.name = 'a'
         log_stream._set_logger(expected)
 
         self.assertEqual(log_stream._log_streams['a'], expected)
