@@ -36,7 +36,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
     PARAM_DIRECTION = 'direction'
     PARAM_DIRECTION_UL = 'ul'
     PARAM_DIRECTION_DL = 'dl'
-    PARAM_DIRECTION_UL_DL = 'uldl'
+    PARAM_DIRECTION_DL_UL = 'dlul'
     PARAM_BANDWIDTH_LIMIT = 'blimit'
 
     # Iperf waiting time
@@ -78,7 +78,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                            "followed by {}/{}/{}.".format(
                                self.PARAM_DIRECTION, self.PARAM_DIRECTION_UL,
                                self.PARAM_DIRECTION_DL,
-                               self.PARAM_DIRECTION_UL_DL))
+                               self.PARAM_DIRECTION_DL_UL))
             return False
 
         try:
@@ -193,7 +193,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             ul_tcp_window = None
 
         if self.traffic_direction in [
-                self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_UL_DL
+                self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_DL_UL
         ]:
             # Downlink traffic
             iperf_helpers.append(
@@ -205,7 +205,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                     bandwidth=self.bandwidth_limit_dl))
 
         if self.traffic_direction in [
-                self.PARAM_DIRECTION_UL, self.PARAM_DIRECTION_UL_DL
+                self.PARAM_DIRECTION_UL, self.PARAM_DIRECTION_DL_UL
         ]:
             # Uplink traffic
             iperf_helpers.append(
