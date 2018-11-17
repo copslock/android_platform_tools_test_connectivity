@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import re
 import sys
 import time
 
@@ -120,6 +121,12 @@ class WifiChaosTest(WifiBaseTest):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
+    def on_pass(self, test_name, begin_time):
+        wutils.stop_pcap(self.pcap, self.pcap_pid, False)
+
+    def on_fail(self, test_name, begin_time):
+        wutils.stop_pcap(self.pcap, self.pcap_pid, False)
+
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
@@ -206,6 +213,21 @@ class WifiChaosTest(WifiBaseTest):
                     self.unlock_and_turn_off_ap(hostname, rpm_port, rpm_ip)
                 raise signals.TestFailure("Failed to connect to %s" % ssid)
 
+    def get_band_and_chan(self, ssid):
+        """Get the band and channel information from SSID.
+
+        Args:
+            ssid: SSID of the network.
+
+        """
+        ssid_info = ssid.split('_')
+        self.band = ssid_info[-1]
+        for item in ssid_info:
+            if 'ch' in item:
+                self.chan = re.search(r'(\d+)',item).group(0)
+                return
+        raise signals.TestFailure("Channel information not found in SSID.")
+
     def interop_base_test(self, ssid, hostname):
         """Base test for all the connect-disconnect interop tests.
 
@@ -252,7 +274,12 @@ class WifiChaosTest(WifiBaseTest):
         # Experimental. Some APs take upto a min to come online.
         time.sleep(60)
 
-        self.run_connect_disconnect(network, hostname, rpm_port, rpm_ip, release_ap)
+        self.get_band_and_chan(ssid)
+        self.pcap.configure_monitor_mode(self.band, self.chan)
+        self.pcap_pid = wutils.start_pcap(
+                self.pcap, self.band.lower(), self.log_path, self.test_name)
+        self.run_connect_disconnect(network, hostname, rpm_port, rpm_ip,
+                                    release_ap)
 
         # Un-lock only if it's a single band AP or we are running the last band.
         if release_ap:
