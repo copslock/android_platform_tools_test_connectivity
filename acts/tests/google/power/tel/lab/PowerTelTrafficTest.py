@@ -148,6 +148,11 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                                      "the expected value!. {}/{} = {}".format(
                                          iperf_result, expected_t,
                                          iperf_result / expected_t))
+                else:
+                    self.log.info(
+                        "Throughput is within a 10% margin."
+                        "The expected value is {} Mbits.".format(expected_t))
+
             except NotImplementedError:
                 # Some simulation classes might not have implemented the max
                 # throughput calculation yet
