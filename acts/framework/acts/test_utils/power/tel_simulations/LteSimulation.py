@@ -73,8 +73,8 @@ class LteSimulation(BaseSimulation):
         ''' Traffic scheduling modes (e.g., STATIC, DYNAMIC)
 
         '''
-        DYNAMIC = 0
-        STATIC = 1
+        DYNAMIC = "DYNAMIC"
+        STATIC = "STATIC"
 
     class DuplexMode(Enum):
         ''' DL/UL Duplex mode
@@ -117,6 +117,27 @@ class LteSimulation(BaseSimulation):
         BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 4,
         BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 4,
         BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 3,
+        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 2,
+        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 2,
+        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 1
+    }
+
+    # Table of minimum number of RBs. This is needed to achieve peak
+    # throughput.
+
+    min_dl_rbs_dictionary = {
+        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 16,
+        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 12,
+        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 9,
+        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 4,
+        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 4,
+        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2
+    }
+
+    min_ul_rbs_dictionary = {
+        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 8,
+        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 6,
+        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 4,
         BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 2,
         BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 2,
         BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 1
@@ -224,6 +245,12 @@ class LteSimulation(BaseSimulation):
             raise ValueError("The {} parameter needs to be followed by either "
                              "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
 
+        if (mimo == LteSimulation.MimoMode.MIMO_4x4
+                and self.anritsu._md8475_version == 'A'):
+            self.log.error("The test requires 4x4 MIMO, but that is not "
+                           "supported by the MD8475A callbox.")
+            return False
+
         self.set_mimo_mode(self.bts1, mimo)
 
         # Setup transmission mode
@@ -296,11 +323,19 @@ class LteSimulation(BaseSimulation):
                 dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
                     self.bts1, dl_pattern, ul_pattern)
 
+                if self.tbs_pattern_on and bw != 1.4:
+                    mcs_dl = 28
+                else:
+                    mcs_dl = 27
+
                 self.set_scheduling_mode(
                     self.bts1,
                     LteSimulation.SchedulingMode.STATIC,
+                    packet_rate=BtsPacketRate.LTE_MANUAL,
                     nrb_dl=dl_rbs,
-                    nrb_ul=ul_rbs)
+                    nrb_ul=ul_rbs,
+                    mcs_ul=23,
+                    mcs_dl=mcs_dl)
 
         else:
 
@@ -329,24 +364,25 @@ class LteSimulation(BaseSimulation):
             self.sim_ul_power = power
 
         # Setup downlink power
-        try:
-            values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
+        values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
 
+        if values:
             if values[1] not in self.downlink_rsrp_dictionary:
-                raise ValueError("Invalid signal level value.")
+                self.log.error("Invalid signal level value {}.".format(
+                    values[1]))
+                return False
             else:
                 power = self.downlink_rsrp_dictionary[values[1]]
-        except:
-            self.log.error(
-                "The test name needs to include parameter {} followed by one "
-                "the following values: {}.".format(self.PARAM_DL_PW, [
-                    "\n" + val for val in self.downlink_rsrp_dictionary.keys()
-                ]))
-            return False
         else:
-            # Power is not set on the callbox until after the simulation is
-            # started. Will save this value in a variable and use it later
-            self.sim_dl_power = power
+            # Use default value
+            power = self.downlink_rsrp_dictionary['excellent']
+            self.log.error(
+                "No DL signal level value was indicated in the test parameters."
+                " Using default value of {} RSRP.".format(power))
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Will save this value in a variable and use it later
+        self.sim_dl_power = power
 
         # No errors were found
         return True
@@ -441,22 +477,37 @@ class LteSimulation(BaseSimulation):
         bandwidth = self.bts1.bandwidth
         rb_ratio = float(
             self.bts1.nrb_dl) / self.total_rbs_dictionary[bandwidth]
-        chains = float(self.bts1.dl_antenna)
+        streams = float(self.bts1.dl_antenna)
+        mcs = self.bts1.lte_mcs_dl
 
-        if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:
-            return 71.11 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:
-            return 52.75 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:
-            return 29.88 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:
-            return 14.11 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:
-            return 5.34 * chains * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:
-            return 0.842 * chains * rb_ratio
+        if (self.tbs_pattern_on
+                and (mcs == "28" or
+                     (bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value
+                      and mcs == "27"))):
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.94,
+                BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 9.96,
+                BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 17.0,
+                BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 34.7,
+                BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 52.7,
+                BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 72.2
+            }[bandwidth]
+        elif not self.tbs_pattern_on and mcs == "27":
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.87,
+                BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 7.7,
+                BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 14.4,
+                BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 28.7,
+                BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 42.3,
+                BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 57.7
+            }[bandwidth]
         else:
-            raise ValueError("Invalid bandwidth value.")
+            raise NotImplementedError(
+                "The calculation for tbs pattern = {} "
+                "and mcs = {} is not implemented.".format(
+                    "FULLALLOCATION" if self.tbs_pattern_on else "OFF", mcs))
+
+        return max_rate_per_stream * streams * rb_ratio
 
     def maximum_uplink_throughput(self):
         """ Calculates maximum achievable uplink throughput in the current
@@ -470,21 +521,24 @@ class LteSimulation(BaseSimulation):
         bandwidth = self.bts1.bandwidth
         rb_ratio = float(
             self.bts1.nrb_ul) / self.total_rbs_dictionary[bandwidth]
+        mcs = self.bts1.lte_mcs_ul
 
-        if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:
-            return 51.02 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:
-            return 37.88 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:
-            return 25.45 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:
-            return 17.57 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:
-            return 7.99 * rb_ratio
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:
-            return 2.98 * rb_ratio
+        if mcs == "23":
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.85,
+                BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 7.18,
+                BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 12.1,
+                BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 24.5,
+                BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 36.5,
+                BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 49.1
+            }[bandwidth]
         else:
-            raise ValueError("Invalid bandwidth value.")
+            raise NotImplementedError("The calculation fir mcs = {} is not "
+                                      "implemented.".format(
+                                          "FULLALLOCATION" if
+                                          self.tbs_pattern_on else "OFF", mcs))
+
+        return max_rate_per_stream * rb_ratio
 
     def set_transmission_mode(self, bts, tmode):
         """ Sets the transmission mode for the LTE basetation
@@ -571,11 +625,11 @@ class LteSimulation(BaseSimulation):
     def set_scheduling_mode(self,
                             bts,
                             scheduling,
-                            packet_rate=BtsPacketRate.LTE_MANUAL,
-                            mcs_dl=27,
-                            mcs_ul=23,
-                            nrb_dl=0,
-                            nrb_ul=0):
+                            packet_rate=None,
+                            mcs_dl=None,
+                            mcs_ul=None,
+                            nrb_dl=None,
+                            nrb_ul=None):
         """ Sets the scheduling mode for LTE
 
         Args:
@@ -587,20 +641,30 @@ class LteSimulation(BaseSimulation):
             nrb_ul: Number of RBs for uplink (only for STATIC scheduling)
         """
 
-        if scheduling == self.SchedulingMode.DYNAMIC:
-            bts.lte_scheduling_mode = "DYNAMIC"
-        else:
-            bts.lte_scheduling_mode = "STATIC"
+        bts.lte_scheduling_mode = scheduling.value
+
+        if scheduling == self.SchedulingMode.STATIC:
+
+            if not packet_rate:
+                raise RuntimeError("Packet rate needs to be indicated when "
+                                   "selecting static scheduling.")
+
             bts.packet_rate = packet_rate
-            cmd = "TBSPATTERN {}, {}".format("FULLALLOCATION"
-                                             if self.tbs_pattern_on else "OFF",
-                                             bts._bts_number)
-            self.anritsu.send_command(cmd)
+            bts.tbs_pattern = "FULLALLOCATION" if self.tbs_pattern_on else "OFF"
+
             if packet_rate == BtsPacketRate.LTE_MANUAL:
+
+                if not (mcs_dl and mcs_ul and nrb_dl and nrb_ul):
+                    raise RuntimeError("When using manual packet rate the "
+                                       "number of dl/ul RBs and the dl/ul "
+                                       "MCS needs to be indicated with the "
+                                       "optional arguments.")
+
                 bts.lte_mcs_dl = mcs_dl
                 bts.lte_mcs_ul = mcs_ul
                 bts.nrb_dl = nrb_dl
                 bts.nrb_ul = nrb_ul
+
         time.sleep(5)  # It takes some time to propagate the new settings
 
     def allocation_percentages_to_rbs(self, bts, dl, ul):
@@ -611,6 +675,7 @@ class LteSimulation(BaseSimulation):
         closely matches the desired DL/UL percentages.
 
         Args:
+            bts: base station handle
             dl: desired percentage of downlink RBs
             ul: desired percentage of uplink RBs
         Returns:
@@ -624,7 +689,12 @@ class LteSimulation(BaseSimulation):
 
         # Get the available number of RBs for the channel bandwidth
         bw = bts.bandwidth
+        # Get the current transmission mode
+        tm = bts.transmode
+        # Get min and max values from tables
         max_rbs = self.total_rbs_dictionary[bw]
+        min_dl_rbs = self.min_dl_rbs_dictionary[bw]
+        min_ul_rbs = self.min_ul_rbs_dictionary[bw]
 
         def percentage_to_amount(min_val, max_val, percentage):
             """ Returns the integer between min_val and max_val that is closest
@@ -642,56 +712,53 @@ class LteSimulation(BaseSimulation):
 
         # Calculate the number of DL RBs
 
-        if dl == 100:
-            # If 100% is requested, max_rbs can be used
-            dl_rbs = max_rbs
-        elif dl == 0:
-            # Minimum DL RBs is 1
-            dl_rbs = 1
-        else:
-            # Get the number of DL RBs that corresponds to
-            #  the required percentage.
-            desired_dl_rbs = percentage_to_amount(
-                min_val=1, max_val=max_rbs, percentage=dl)
+        # Get the number of DL RBs that corresponds to
+        #  the required percentage.
+        desired_dl_rbs = percentage_to_amount(
+            min_val=min_dl_rbs, max_val=max_rbs, percentage=dl)
 
-            # DL RBs have to be a multiple of the number of RBs in a RBG
-            dl_rbs = desired_dl_rbs - desired_dl_rbs % self.rbg_dictionary[bw]
+        if (tm == self.TransmissionMode.TM3.value
+                or tm == self.TransmissionMode.TM4.value):
+
+            # For TM3 and TM4 the number of DL RBs needs to be max_rbs or a
+            # multiple of the RBG size
+
+            if desired_dl_rbs == max_rbs:
+                dl_rbs = max_rbs
+            else:
+                dl_rbs = (math.ceil(desired_dl_rbs / self.rbg_dictionary[bw]) *
+                          self.rbg_dictionary[bw])
+
+        else:
+            # The other TMs allow any number of RBs between 1 and max_rbs
+            dl_rbs = desired_dl_rbs
 
         # Calculate the number of UL RBs
 
-        if ul == 100:
-            # If 100% is requested, max_rbs can be used
-            ul_rbs = max_rbs
-        elif ul == 0:
-            # Minimum UL RBs is 1
-            ul_rbs = 1
-        else:
-            # Get the number of UL RBs that corresponds
-            # to the required percentage
-            desired_ul_rbs = percentage_to_amount(
-                min_val=1, max_val=max_rbs, percentage=ul)
+        # Get the number of UL RBs that corresponds
+        # to the required percentage
+        desired_ul_rbs = percentage_to_amount(
+            min_val=min_ul_rbs, max_val=max_rbs, percentage=ul)
 
-            # Create a list of all possible UL RBs assignment
-            # The standard allows any number that can be written as
-            # 2**a * 3**b * 5**c for any combination of a, b and c.
+        # Create a list of all possible UL RBs assignment
+        # The standard allows any number that can be written as
+        # 2**a * 3**b * 5**c for any combination of a, b and c.
 
-            def pow_range(max_value, base):
-                """ Returns a range of all possible powers of base under
-                  the given max_value.
-              """
-                return range(int(math.ceil(math.log(max_value, base))))
+        def pow_range(max_value, base):
+            """ Returns a range of all possible powers of base under
+              the given max_value.
+          """
+            return range(int(math.ceil(math.log(max_value, base))))
 
-            possible_ul_rbs = [
-                2**a * 3**b * 5**c
-                for a in pow_range(max_rbs, 2) for b in pow_range(max_rbs, 3)
-                for c in pow_range(max_rbs, 5) if 2**a * 3**b * 5**c <= max_rbs
-            ]
+        possible_ul_rbs = [
+            2**a * 3**b * 5**c
+            for a in pow_range(max_rbs, 2) for b in pow_range(max_rbs, 3)
+            for c in pow_range(max_rbs, 5) if 2**a * 3**b * 5**c <= max_rbs
+        ]
 
-            # Find the value in the list that is closest to desired_ul_rbs
-            differences = [
-                abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs
-            ]
-            ul_rbs = possible_ul_rbs[differences.index(min(differences))]
+        # Find the value in the list that is closest to desired_ul_rbs
+        differences = [abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs]
+        ul_rbs = possible_ul_rbs[differences.index(min(differences))]
 
         # Report what are the obtained RB percentages
         self.log.info("Requested a {}% / {}% RB allocation. Closest possible "
