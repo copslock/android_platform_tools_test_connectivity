@@ -21,7 +21,7 @@ from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts.test_utils.tel.tel_test_utils import disable_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import stop_qxdm_logger
 
 WifiEnums = wutils.WifiEnums
 
@@ -92,7 +92,7 @@ class WifiCrashStressTest(WifiBaseTest):
         # Legacy pixels use persist.sys.modem.diag.mdlog.
         ad.adb.shell(
             "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
-        disable_qxdm_logger(ad)
+        stop_qxdm_logger(ad)
         cmd = ('am instrument -w -e request "4b 25 03 b0 00" '
                '"com.google.mdstest/com.google.mdstest.instrument.'
                'ModemCommandInstrumentation"')
