@@ -69,12 +69,18 @@ roaming_attn = {
 class WifiEnums():
 
     SSID_KEY = "SSID"
+    SSID_PATTERN_KEY = "ssidPattern"
     NETID_KEY = "network_id"
     BSSID_KEY = "BSSID"
+    BSSID_PATTERN_KEY = "bssidPattern"
     PWD_KEY = "password"
     frequency_key = "frequency"
     APBAND_KEY = "apBand"
     HIDDEN_KEY = "hiddenSSID"
+    IS_APP_INTERACTION_REQUIRED = "isAppInteractionRequired"
+    IS_USER_INTERACTION_REQUIRED = "isUserInteractionRequired"
+    IS_METERED = "isMetered"
+    PRIORITY = "priority"
 
     WIFI_CONFIG_APBAND_2G = 0
     WIFI_CONFIG_APBAND_5G = 1
@@ -1051,7 +1057,68 @@ def _toggle_wifi_and_wait_for_reconnection(ad, network, num_of_tries=1):
         ad.droid.wifiStopTrackingStateChange()
 
 
-def wait_for_connect(ad, ssid=None, id=None, tries=1):
+def wait_for_connect(ad, expected_ssid=None, expected_id=None, tries=2,
+                     assert_on_fail=True):
+    """Wait for a connect event.
+
+    This will directly fail a test if anything goes wrong.
+
+    Args:
+        ad: An Android device object.
+        expected_ssid: SSID of the network to connect to.
+        expected_id: Network Id of the network to connect to.
+        tries: An integer that is the number of times to try before failing.
+        assert_on_fail: If True, error checks in this function will raise test
+                        failure signals.
+
+    Returns:
+        Returns a value only if assert_on_fail is false.
+        Returns True if the connection was successful, False otherwise.
+    """
+    return _assert_on_fail_handler(
+        _wait_for_connect, assert_on_fail, ad, expected_ssid, expected_id,
+        tries)
+
+
+def _wait_for_connect(ad, expected_ssid=None, expected_id=None, tries=2):
+    """Wait for a connect event.
+
+    Args:
+        ad: An Android device object.
+        expected_ssid: SSID of the network to connect to.
+        expected_id: Network Id of the network to connect to.
+        tries: An integer that is the number of times to try before failing.
+    """
+    ad.droid.wifiStartTrackingStateChange()
+    try:
+        connect_result = _wait_for_connect_event(
+            ad, ssid=expected_ssid, id=expected_id, tries=tries)
+        asserts.assert_true(connect_result,
+                            "Failed to connect to Wi-Fi network %s" %
+                            expected_ssid)
+        ad.log.debug("Wi-Fi connection result: %s.", connect_result)
+        actual_ssid = connect_result['data'][WifiEnums.SSID_KEY]
+        if expected_ssid:
+            asserts.assert_equal(actual_ssid, expected_ssid,
+                                 "Connected to the wrong network")
+        actual_id = connect_result['data'][WifiEnums.NETID_KEY]
+        if expected_id:
+            asserts.assert_equal(actual_id, expected_id,
+                                 "Connected to the wrong network")
+        ad.log.info("Connected to Wi-Fi network %s.", actual_ssid)
+    except Empty:
+        asserts.fail("Failed to start connection process to %s" %
+                     expected_ssid)
+    except Exception as error:
+        ad.log.error("Failed to connect to %s with error %s", expected_ssid,
+                     error)
+        raise signals.TestFailure("Failed to connect to %s network" %
+                                  expected_ssid)
+    finally:
+        ad.droid.wifiStopTrackingStateChange()
+
+
+def _wait_for_connect_event(ad, ssid=None, id=None, tries=1):
     """Wait for a connect event on queue and pop when available.
 
     Args:
@@ -1212,7 +1279,8 @@ def _wifi_connect(ad, network, num_of_tries=1, check_connectivity=True):
     ad.log.info("Starting connection process to %s", expected_ssid)
     try:
         event = ad.ed.pop_event(wifi_constants.CONNECT_BY_CONFIG_SUCCESS, 30)
-        connect_result = wait_for_connect(ad, ssid=expected_ssid, tries=num_of_tries)
+        connect_result = _wait_for_connect_event(
+            ad, ssid=expected_ssid, tries=num_of_tries)
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network %s on %s" %
                             (network, ad.serial))
@@ -1286,7 +1354,8 @@ def _wifi_connect_by_id(ad, network_id, num_of_tries=1):
     ad.log.info("Starting connection to network with id %d", network_id)
     try:
         event = ad.ed.pop_event(wifi_constants.CONNECT_BY_NETID_SUCCESS, 60)
-        connect_result = wait_for_connect(ad, id=network_id, tries=num_of_tries)
+        connect_result = _wait_for_connect_event(
+            ad, id=network_id, tries=num_of_tries)
         asserts.assert_true(connect_result,
                             "Failed to connect to Wi-Fi network using network id")
         ad.log.debug("Wi-Fi connection result: %s", connect_result)
@@ -1314,6 +1383,162 @@ def _wifi_connect_by_id(ad, network_id, num_of_tries=1):
                       network_id, error)
         raise signals.TestFailure("Failed to connect to network with network"
                                   " id %d" % network_id)
+    finally:
+        ad.droid.wifiStopTrackingStateChange()
+
+
+def wifi_connect_using_network_request(ad, network, network_specifier,
+                                       num_of_tries=3, assert_on_fail=True):
+    """Connect an Android device to a wifi network using network request.
+
+    Trigger a network request with the provided network specifier,
+    wait for the "onMatch" event, ensure that the scan results in "onMatch"
+    event contain the specified network, then simulate the user granting the
+    request with the specified network selected. Then wait for the "onAvailable"
+    network callback indicating successful connection to network.
+
+    This will directly fail a test if anything goes wrong.
+
+    Args:
+        ad: android_device object to initiate connection on.
+        network_specifier: A dictionary representing the network specifier to
+                           use.
+        network: A dictionary representing the network to connect to. The
+                 dictionary must have the key "SSID".
+        num_of_tries: An integer that is the number of times to try before
+                      delaring failure.
+        assert_on_fail: If True, error checks in this function will raise test
+                        failure signals.
+
+    Returns:
+        Returns a value only if assert_on_fail is false.
+        Returns True if the connection was successful, False otherwise.
+    """
+    _assert_on_fail_handler(_wifi_connect_using_network_request, assert_on_fail,
+                            ad, network, network_specifier, num_of_tries)
+
+
+def _wifi_connect_using_network_request(ad, network, network_specifier,
+                                        num_of_tries=3):
+    """Connect an Android device to a wifi network using network request.
+
+    Trigger a network request with the provided network specifier,
+    wait for the "onMatch" event, ensure that the scan results in "onMatch"
+    event contain the specified network, then simulate the user granting the
+    request with the specified network selected. Then wait for the "onAvailable"
+    network callback indicating successful connection to network.
+
+    Args:
+        ad: android_device object to initiate connection on.
+        network_specifier: A dictionary representing the network specifier to
+                           use.
+        network: A dictionary representing the network to connect to. The
+                 dictionary must have the key "SSID".
+        num_of_tries: An integer that is the number of times to try before
+                      delaring failure.
+    """
+    ad.droid.wifiRequestNetworkWithSpecifier(network_specifier)
+    ad.log.info("Sent network request with %s", network_specifier)
+    # Need a delay here because UI interaction should only start once wifi
+    # starts processing the request.
+    time.sleep(wifi_constants.NETWORK_REQUEST_CB_REGISTER_DELAY_SEC)
+    _wait_for_wifi_connect_after_network_request(ad, network, num_of_tries)
+
+
+def wait_for_wifi_connect_after_network_request(ad, network, num_of_tries=3,
+                                                assert_on_fail=True):
+    """
+    Simulate and verify the connection flow after initiating the network
+    request.
+
+    Wait for the "onMatch" event, ensure that the scan results in "onMatch"
+    event contain the specified network, then simulate the user granting the
+    request with the specified network selected. Then wait for the "onAvailable"
+    network callback indicating successful connection to network.
+
+    Args:
+        ad: android_device object to initiate connection on.
+        network: A dictionary representing the network to connect to. The
+                 dictionary must have the key "SSID".
+        num_of_tries: An integer that is the number of times to try before
+                      delaring failure.
+        assert_on_fail: If True, error checks in this function will raise test
+                        failure signals.
+
+    Returns:
+        Returns a value only if assert_on_fail is false.
+        Returns True if the connection was successful, False otherwise.
+    """
+    _assert_on_fail_handler(_wait_for_wifi_connect_after_network_request,
+                            assert_on_fail, ad, network, num_of_tries)
+
+
+def _wait_for_wifi_connect_after_network_request(ad, network, num_of_tries=3):
+    """
+    Simulate and verify the connection flow after initiating the network
+    request.
+
+    Wait for the "onMatch" event, ensure that the scan results in "onMatch"
+    event contain the specified network, then simulate the user granting the
+    request with the specified network selected. Then wait for the "onAvailable"
+    network callback indicating successful connection to network.
+
+    Args:
+        ad: android_device object to initiate connection on.
+        network: A dictionary representing the network to connect to. The
+                 dictionary must have the key "SSID".
+        num_of_tries: An integer that is the number of times to try before
+                      delaring failure.
+    """
+    asserts.assert_true(WifiEnums.SSID_KEY in network,
+                        "Key '%s' must be present in network definition." %
+                        WifiEnums.SSID_KEY)
+    ad.droid.wifiStartTrackingStateChange()
+    expected_ssid = network[WifiEnums.SSID_KEY]
+    ad.droid.wifiRegisterNetworkRequestMatchCallback()
+    # Wait for the platform to scan and return a list of networks
+    # matching the request
+    try:
+        matched_network = None
+        for _ in [0,  num_of_tries]:
+            on_match_event = ad.ed.pop_event(
+                wifi_constants.WIFI_NETWORK_REQUEST_MATCH_CB_ON_MATCH, 60)
+            asserts.assert_true(on_match_event,
+                                "Network request on match not received.")
+            matched_scan_results = on_match_event["data"]
+            ad.log.debug("Network request on match results %s",
+                         matched_scan_results)
+            matched_network = match_networks(
+                {WifiEnums.SSID_KEY: network[WifiEnums.SSID_KEY]},
+                matched_scan_results)
+            if matched_network:
+                break;
+
+        asserts.assert_true(
+            matched_network, "Target network %s not found" % network)
+
+        ad.droid.wifiSendUserSelectionForNetworkRequestMatch(network)
+        ad.log.info("Sent user selection for network request %s",
+                    expected_ssid)
+
+        # Wait for the platform to connect to the network.
+        on_available_event = ad.ed.pop_event(
+            wifi_constants.WIFI_NETWORK_CB_ON_AVAILABLE, 60)
+        asserts.assert_true(on_available_event,
+                            "Network request on available not received.")
+        connected_network = on_available_event["data"]
+        ad.log.info("Connected to network %s", connected_network)
+        asserts.assert_equal(connected_network[WifiEnums.SSID_KEY],
+                             expected_ssid,
+                             "Connected to the wrong network."
+                             "Expected %s, but got %s." %
+                             (network, connected_network))
+    except Empty:
+        asserts.fail("Failed to connect to %s" % expected_ssid)
+    except Exception as error:
+        ad.log.error("Failed to connect to %s with error %s",
+                     (expected_ssid, error))
+        raise signals.TestFailure("Failed to connect to %s network" % network)
     finally:
         ad.droid.wifiStopTrackingStateChange()
 
@@ -1362,7 +1587,8 @@ def _wifi_passpoint_connect(ad, passpoint_network, num_of_tries=1):
     ad.log.info("Starting connection process to passpoint %s", expected_ssid)
 
     try:
-        connect_result = wait_for_connect(ad, expected_ssid, num_of_tries)
+        connect_result = _wait_for_connect_event(
+            ad, expected_ssid, num_of_tries)
         asserts.assert_true(connect_result,
                             "Failed to connect to WiFi passpoint network %s on"
                             " %s" % (expected_ssid, ad.serial))
