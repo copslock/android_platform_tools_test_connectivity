@@ -39,6 +39,7 @@ def create(configs):
     """
     SUPPORTED_APS = {
         ("Netgear", "R7000"): "NetgearR7000AP",
+        ("Netgear", "R7000NA"): "NetgearR7000NAAP",
         ("Netgear", "R7500"): "NetgearR7500AP",
         ("Netgear", "R7800"): "NetgearR7800AP",
         ("Netgear", "R8000"): "NetgearR8000AP",
@@ -588,6 +589,15 @@ class NetgearR7000AP(WifiRetailAP):
                 time.sleep(BROWSER_WAIT_EXTRA_LONG)
                 browser.visit_persistent(self.config_page,
                                          BROWSER_WAIT_EXTRA_LONG, 10)
+
+
+class NetgearR7000NAAP(NetgearR7000AP):
+    """Class that implements Netgear R7000 NA AP."""
+
+    def init_gui_data(self):
+        """Function to initialize data used while interacting with web GUI"""
+        super.init_gui_data()
+        self.region_map["11"] = "North America"
 
 
 class NetgearR7500AP(WifiRetailAP):
