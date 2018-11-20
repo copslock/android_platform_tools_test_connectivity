@@ -49,6 +49,8 @@ class LteSimulation(BaseSimulation):
 
     # Test config keywords
     KEY_TBS_PATTERN = "tbs_pattern_on"
+    KEY_DL_256_QAM = "256_qam_dl"
+    KEY_UL_64_QAM = "64_qam_ul"
 
     class TransmissionMode(Enum):
         ''' Transmission modes for LTE (e.g., TM1, TM4, ..)
@@ -191,6 +193,40 @@ class LteSimulation(BaseSimulation):
 
         self.tbs_pattern_on = test_config.get(self.KEY_TBS_PATTERN, True)
 
+        # Get the 256-QAM setting from the test configuration
+        if self.KEY_DL_256_QAM not in test_config:
+            self.log.warning("The key '{}' is not set in the config file. "
+                             "Setting to false by default.".format(
+                                 self.KEY_DL_256_QAM))
+
+        self.dl_256_qam = test_config.get(self.KEY_DL_256_QAM, False)
+
+        if self.dl_256_qam:
+            if anritsu._md8475_version == 'A':
+                self.log.warning("The key '{}' is set to true but MD8475A "
+                                 "callbox doesn't support that modulation "
+                                 "order.".format(self.KEY_DL_256_QAM))
+                self.dl_256_qam = False
+            else:
+                self.bts1.lte_dl_modulation_order = "256QAM"
+
+        # Get the 64-QAM setting from the test configuration
+        if self.KEY_UL_64_QAM not in test_config:
+            self.log.warning("The key '{}' is not set in the config file. "
+                             "Setting to false by default.".format(
+                                 self.KEY_UL_64_QAM))
+
+        self.ul_64_qam = test_config.get(self.KEY_UL_64_QAM, False)
+
+        if self.ul_64_qam:
+            if anritsu._md8475_version == 'A':
+                self.log.warning("The key '{}' is set to true but MD8475A "
+                                 "callbox doesn't support that modulation "
+                                 "order.".format(self.KEY_UL_64_QAM))
+                self.ul_64_qam = False
+            else:
+                self.bts1.lte_ul_modulation_order = "64QAM"
+
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation using a list of parameters.
 
@@ -323,10 +359,17 @@ class LteSimulation(BaseSimulation):
                 dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
                     self.bts1, dl_pattern, ul_pattern)
 
-                if self.tbs_pattern_on and bw != 1.4:
+                if self.dl_256_qam and bw == 1.4:
+                    mcs_dl = 26
+                elif not self.dl_256_qam and self.tbs_pattern_on and bw != 1.4:
                     mcs_dl = 28
                 else:
                     mcs_dl = 27
+
+                if self.ul_64_qam:
+                    mcs_ul = 28
+                else:
+                    mcs_ul = 23
 
                 self.set_scheduling_mode(
                     self.bts1,
@@ -334,7 +377,7 @@ class LteSimulation(BaseSimulation):
                     packet_rate=BtsPacketRate.LTE_MANUAL,
                     nrb_dl=dl_rbs,
                     nrb_ul=ul_rbs,
-                    mcs_ul=23,
+                    mcs_ul=mcs_ul,
                     mcs_dl=mcs_dl)
 
         else:
@@ -480,19 +523,21 @@ class LteSimulation(BaseSimulation):
         streams = float(self.bts1.dl_antenna)
         mcs = self.bts1.lte_mcs_dl
 
-        if (self.tbs_pattern_on
-                and (mcs == "28" or
-                     (bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value
-                      and mcs == "27"))):
+        max_rate_per_stream = None
+
+        if not self.dl_256_qam and self.tbs_pattern_on and mcs == "28":
             max_rate_per_stream = {
-                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.94,
                 BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 9.96,
                 BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 17.0,
                 BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 34.7,
                 BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 52.7,
                 BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 72.2
-            }[bandwidth]
-        elif not self.tbs_pattern_on and mcs == "27":
+            }.get(bandwidth, None)
+        if not self.dl_256_qam and self.tbs_pattern_on and mcs == "27":
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.94,
+            }.get(bandwidth, None)
+        elif not self.dl_256_qam and not self.tbs_pattern_on and mcs == "27":
             max_rate_per_stream = {
                 BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.87,
                 BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 7.7,
@@ -500,8 +545,33 @@ class LteSimulation(BaseSimulation):
                 BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 28.7,
                 BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 42.3,
                 BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 57.7
-            }[bandwidth]
-        else:
+            }.get(bandwidth, None)
+        elif self.dl_256_qam and self.tbs_pattern_on and mcs == "27":
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 13.2,
+                BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 22.9,
+                BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 46.3,
+                BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 72.2,
+                BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 93.9
+            }.get(bandwidth, None)
+        elif self.dl_256_qam and self.tbs_pattern_on and mcs == "26":
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 3.96,
+            }.get(bandwidth, None)
+        elif self.dl_256_qam and not self.tbs_pattern_on and mcs == "27":
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 11.3,
+                BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 19.8,
+                BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 44.1,
+                BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 68.1,
+                BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 88.4
+            }.get(bandwidth, None)
+        elif self.dl_256_qam and not self.tbs_pattern_on and mcs == "26":
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 3.96,
+            }.get(bandwidth, None)
+
+        if not max_rate_per_stream:
             raise NotImplementedError(
                 "The calculation for tbs pattern = {} "
                 "and mcs = {} is not implemented.".format(
@@ -523,7 +593,8 @@ class LteSimulation(BaseSimulation):
             self.bts1.nrb_ul) / self.total_rbs_dictionary[bandwidth]
         mcs = self.bts1.lte_mcs_ul
 
-        if mcs == "23":
+        max_rate_per_stream = None
+        if mcs == "23" and not self.ul_64_qam:
             max_rate_per_stream = {
                 BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.85,
                 BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 7.18,
@@ -531,8 +602,18 @@ class LteSimulation(BaseSimulation):
                 BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 24.5,
                 BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 36.5,
                 BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 49.1
-            }[bandwidth]
-        else:
+            }.get(bandwidth, None)
+        elif mcs == "28" and self.ul_64_qam:
+            max_rate_per_stream = {
+                BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 4.2,
+                BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 10.5,
+                BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 17.2,
+                BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 35.3,
+                BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 53.0,
+                BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 72.6
+            }.get(bandwidth, None)
+
+        if not max_rate_per_stream:
             raise NotImplementedError("The calculation fir mcs = {} is not "
                                       "implemented.".format(
                                           "FULLALLOCATION" if
