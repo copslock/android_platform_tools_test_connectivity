@@ -2692,6 +2692,58 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def lte_dl_modulation_order(self):
+        """ Gets the DL modulation order of the LTE cell
+
+        Args:
+            None
+
+        Returns:
+            The DL modulation order
+        """
+        cmd = "DLRMC_MOD? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @lte_dl_modulation_order.setter
+    def lte_dl_modulation_order(self, order):
+        """ Sets the DL modulation order of the LTE cell
+
+        Args:
+            order: the DL modulation order of the LTE cell
+
+        Returns:
+            None
+        """
+        cmd = "DLRMC_MOD {},{}".format(order, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def lte_ul_modulation_order(self):
+        """ Gets the UL modulation order of the LTE cell
+
+        Args:
+            None
+
+        Returns:
+            The UL modulation order
+        """
+        cmd = "ULRMC_MOD? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @lte_ul_modulation_order.setter
+    def lte_ul_modulation_order(self, order):
+        """ Sets the UL modulation order of the LTE cell
+
+        Args:
+            order: the UL modulation order of the LTE cell
+
+        Returns:
+            None
+        """
+        cmd = "ULRMC_MOD {},{}".format(order, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def nrb_dl(self):
         """ Gets the Downlink N Resource Block of the cell
 
