@@ -369,6 +369,8 @@ class BaseSimulation():
         """ Calculates UL and DL path loss if it wasn't done before.
 
         """
+        # SET TBS pattern for calibration
+        self.bts1.tbs_pattern = "FULLALLOCATION" if self.tbs_pattern_on else "OFF"
 
         if self.dl_path_loss and self.ul_path_loss:
             self.log.info("Measurements are already calibrated.")
@@ -430,12 +432,13 @@ class BaseSimulation():
         time.sleep(2)
 
         # Starting first the IP traffic (UDP): Using always APN 1
-        try:
-            cmd = 'OPERATEIPTRAFFIC START,1'
-            self.anritsu.send_command(cmd)
-        except AnritsuError as inst:
-            self.log.warning("{}\n".format(inst))  # Typically RUNNING already
-        time.sleep(4)
+        if not self.tbs_pattern_on:
+            try:
+                cmd = 'OPERATEIPTRAFFIC START,1'
+                self.anritsu.send_command(cmd)
+            except AnritsuError as inst:
+                self.log.warning("{}\n".format(inst))  # Typically RUNNING already
+            time.sleep(4)
 
         down_power_measured = []
         for i in range(0, self.NUM_DL_CAL_READS):
@@ -448,12 +451,13 @@ class BaseSimulation():
             time.sleep(5)
 
         # Stop the IP traffic (UDP)
-        try:
-            cmd = 'OPERATEIPTRAFFIC STOP,1'
-            self.anritsu.send_command(cmd)
-        except AnritsuError as inst:
-            self.log.warning("{}\n".format(inst))  # Typically STOPPED already
-        time.sleep(2)
+        if not self.tbs_pattern_on:
+            try:
+                cmd = 'OPERATEIPTRAFFIC STOP,1'
+                self.anritsu.send_command(cmd)
+            except AnritsuError as inst:
+                self.log.warning("{}\n".format(inst))  # Typically STOPPED already
+            time.sleep(2)
 
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
@@ -514,12 +518,13 @@ class BaseSimulation():
         time.sleep(2)
 
         # Starting first the IP traffic (UDP): Using always APN 1
-        try:
-            cmd = 'OPERATEIPTRAFFIC START,1'
-            self.anritsu.send_command(cmd)
-        except AnritsuError as inst:
-            self.log.warning("{}\n".format(inst))  # Typically RUNNING already
-        time.sleep(4)
+        if not self.tbs_pattern_on:
+            try:
+                cmd = 'OPERATEIPTRAFFIC START,1'
+                self.anritsu.send_command(cmd)
+            except AnritsuError as inst:
+                self.log.warning("{}\n".format(inst))  # Typically RUNNING already
+            time.sleep(4)
 
         up_power_per_chain = []
         # Get the number of chains
@@ -544,12 +549,13 @@ class BaseSimulation():
             time.sleep(3)
 
         # Stop the IP traffic (UDP)
-        try:
-            cmd = 'OPERATEIPTRAFFIC STOP,1'
-            self.anritsu.send_command(cmd)
-        except AnritsuError as inst:
-            self.log.warning("{}\n".format(inst))  # Typically STOPPED already
-        time.sleep(2)
+        if not self.tbs_pattern_on:
+            try:
+                cmd = 'OPERATEIPTRAFFIC STOP,1'
+                self.anritsu.send_command(cmd)
+            except AnritsuError as inst:
+                self.log.warning("{}\n".format(inst))  # Typically STOPPED already
+            time.sleep(2)
 
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
