@@ -15,6 +15,8 @@
 #   limitations under the License.
 
 import pprint
+import queue
+import threading
 import time
 
 import acts.base_test
@@ -74,6 +76,8 @@ class WifiStressTest(WifiBaseTest):
             self.iperf_server = self.iperf_servers[0]
         if hasattr(self, 'iperf_server'):
             self.iperf_server.start()
+            if(len(self.iperf_servers) > 1):
+                self.iperf_servers[1].start()
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
@@ -94,13 +98,15 @@ class WifiStressTest(WifiBaseTest):
         wutils.reset_wifi(self.dut)
         if hasattr(self, 'iperf_server'):
             self.iperf_server.stop()
+            if(len(self.iperf_servers) > 1):
+                self.iperf_servers[1].stop()
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
 
     """Helper Functions"""
 
-    def scan_and_connect_by_ssid(self, network):
+    def scan_and_connect_by_ssid(self, ad, network):
         """Scan for network and connect using network information.
 
         Args:
@@ -108,9 +114,8 @@ class WifiStressTest(WifiBaseTest):
 
         """
         ssid = network[WifiEnums.SSID_KEY]
-        wutils.start_wifi_connection_scan_and_ensure_network_found(self.dut,
-            ssid)
-        wutils.wifi_connect(self.dut, network, num_of_tries=3)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(ad, ssid)
+        wutils.wifi_connect(ad, network, num_of_tries=3)
 
     def scan_and_connect_by_id(self, network, net_id):
         """Scan for network and connect using network id.
@@ -247,6 +252,19 @@ class WifiStressTest(WifiBaseTest):
         finally:
             pass
 
+    def run_long_traffic(self, sec, args, q):
+        try:
+            # Start IPerf traffic
+            self.log.info("Running iperf client {}".format(args))
+            result, data = self.dut.run_iperf_client(self.iperf_server_address,
+                args, timeout=sec+1)
+            if not result:
+                self.log.debug("Error occurred in iPerf traffic.")
+                self.run_ping(sec)
+            q.put(True)
+        except:
+            q.put(False)
+
     """Tests"""
 
     @test_tracker_info(uuid="cd0016c6-58cf-4361-b551-821c0b8d2554")
@@ -335,37 +353,32 @@ class WifiStressTest(WifiBaseTest):
                4. Verify no WiFi disconnects/data interruption.
 
         """
-        try:
-            self.scan_and_connect_by_ssid(self.wpa_5g)
-            # Start IPerf traffic from server to phone.
-            # Download data for 5 hours.
-            sec = self.stress_hours * 60 * 60
-            args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
-            self.log.info("Running iperf client {}".format(args))
-            start_time = time.time()
-            result, data = self.dut.run_iperf_client(self.iperf_server_address,
-                args, timeout=sec+1)
-            if not result:
-                self.log.debug("Error occurred in iPerf traffic.")
-                start_time = time.time()
-                self.run_ping(sec)
-            # Start IPerf traffic from phone to server.
-            # Upload data for 5 hours.
-            args = "-p {} -t {}".format(self.iperf_server.port, sec)
-            self.log.info("Running iperf client {}".format(args))
-            result, data = self.dut.run_iperf_client(self.iperf_server_address,
-                args, timeout=sec+1)
-            if not result:
-                self.log.debug("Error occurred in iPerf traffic.")
-                self.run_ping(sec)
-        except:
-            total_time = time.time() - start_time
-            raise signals.TestFailure("Network long-connect failed."
-                "WiFi State = %d" %self.dut.droid.wifiCheckState(),
-                extras={"Total Hours":"%d" %self.stress_hours,
-                    "Seconds Run":"%d" %total_time})
+        self.scan_and_connect_by_ssid(self.dut, self.wpa_5g)
+        self.scan_and_connect_by_ssid(self.dut_client, self.wpa_5g)
+
+        q = queue.Queue()
+        sec = self.stress_hours * 60 * 60
+        start_time = time.time()
+
+        dl_args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
+        dl = threading.Thread(target=self.run_long_traffic, args=(sec, dl_args, q))
+        dl.start()
+        if(len(self.iperf_servers) > 1):
+            ul_args = "-p {} -t {}".format(self.iperf_servers[1].port, sec)
+            ul = threading.Thread(target=self.run_long_traffic, args=(sec, ul_args, q))
+            ul.start()
+
+        dl.join()
+        if(len(self.iperf_servers) > 1):
+            ul.join()
+
         total_time = time.time() - start_time
         self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
+        while(q.qsize() > 0):
+            if not q.get():
+                raise signals.TestFailure("Network long-connect failed.",
+                    extras={"Total Hours":"%d" %self.stress_hours,
+                    "Seconds Run":"%d" %total_time})
         raise signals.TestPass(details="", extras={"Total Hours":"%d" %
             self.stress_hours, "Seconds Run":"%d" %total_time})
 
@@ -386,7 +399,7 @@ class WifiStressTest(WifiBaseTest):
                   "https://www.youtube.com/watch?v=rN6nlNC9WQA",
                   "https://www.youtube.com/watch?v=U--7hxRNPvk"]
         try:
-            self.scan_and_connect_by_ssid(self.wpa_5g)
+            self.scan_and_connect_by_ssid(self.dut, self.wpa_5g)
             start_time = time.time()
             for video in videos:
                 self.start_youtube_video(url=video, secs=10*60)
@@ -494,7 +507,7 @@ class WifiStressTest(WifiBaseTest):
         AP1_network = self.reference_networks[0]["5g"]
         AP2_network = self.reference_networks[1]["5g"]
         wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
-        self.scan_and_connect_by_ssid(AP1_network)
+        self.scan_and_connect_by_ssid(self.dut, AP1_network)
         # Reduce iteration to half because each iteration does two roams.
         for count in range(int(self.stress_count/2)):
             self.log.info("Roaming iteration %d, from %s to %s", count,
