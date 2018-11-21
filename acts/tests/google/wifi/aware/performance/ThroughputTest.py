@@ -82,8 +82,7 @@ class ThroughputTest(AwareBaseTest):
         result, data = init_dut.run_iperf_server("-D")
         asserts.assert_true(result, "Can't start iperf3 server")
 
-        result, data = resp_dut.run_iperf_client(
-            "%s%%%s" % (init_ipv6, resp_aware_if), "-6 -J")
+        result, data = resp_dut.run_iperf_client("%s" % init_ipv6, "-6 -J")
         self.log.debug(data)
         asserts.assert_true(result,
                             "Failure starting/running iperf3 in client mode")
@@ -118,8 +117,8 @@ class ThroughputTest(AwareBaseTest):
         result, data = dut.run_iperf_server("-D -p %d" % port)
         asserts.assert_true(result, "Can't start iperf3 server")
 
-        result, data = peer_dut.run_iperf_client(
-            "%s%%%s" % (dut_ipv6, peer_aware_if), "-6 -J -p %d" % port)
+        result, data = peer_dut.run_iperf_client("%s" % dut_ipv6,
+                                                 "-6 -J -p %d" % port)
         self.log.debug(data)
         q.put((result, data))
 
@@ -309,28 +308,43 @@ class ThroughputTest(AwareBaseTest):
             init_req_keys.append(init_req_key)
 
             # Wait for network
-            init_net_event = autils.wait_for_event_with_keys(
+            init_net_event_nc = autils.wait_for_event_with_keys(
+                init_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+            resp_net_event_nc = autils.wait_for_event_with_keys(
+                resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+            # note that Init <-> Resp since IPv6 are of peer's!
+            resp_ipv6 = init_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+            init_ipv6 = resp_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+
+            init_net_event_lp = autils.wait_for_event_with_keys(
                 init_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-            resp_net_event = autils.wait_for_event_with_keys(
+            resp_net_event_lp = autils.wait_for_event_with_keys(
                 resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
-            resp_aware_ifs.append(
-                resp_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
-            init_aware_ifs.append(
-                init_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+            resp_aware_ifs.append(resp_net_event_lp["data"][
+                cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+            init_aware_ifs.append(init_net_event_lp["data"][
+                cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
 
-            resp_aware_ipv6s.append(
-                autils.get_ipv6_addr(resp_dut, resp_aware_ifs[-1]))
-            init_aware_ipv6s.append(
-                autils.get_ipv6_addr(init_dut, init_aware_ifs[-1]))
+            resp_aware_ipv6s.append(resp_ipv6)
+            init_aware_ipv6s.append(init_ipv6)
 
         self.log.info("Initiator interfaces/ipv6: %s / %s", init_aware_ifs,
                       init_aware_ipv6s)

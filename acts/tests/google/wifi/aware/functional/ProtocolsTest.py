@@ -31,15 +31,14 @@ class ProtocolsTest(AwareBaseTest):
     def __init__(self, controllers):
         AwareBaseTest.__init__(self, controllers)
 
-    def run_ping6(self, dut, peer_ipv6, dut_if):
+    def run_ping6(self, dut, peer_ipv6):
         """Run a ping6 over the specified device/link
 
     Args:
       dut: Device on which to execute ping6
-      peer_ipv6: IPv6 address of the peer to ping
-      dut_if: interface name on the dut
+      peer_ipv6: Scoped IPv6 address of the peer to ping
     """
-        cmd = "ping6 -c 3 -W 5 %s%%%s" % (peer_ipv6, dut_if)
+        cmd = "ping6 -c 3 -W 5 %s" % peer_ipv6
         results = dut.adb.shell(cmd)
         self.log.info("cmd='%s' -> '%s'", cmd, results)
         if results == "":
@@ -63,8 +62,8 @@ class ProtocolsTest(AwareBaseTest):
                       resp_ipv6)
 
         # run ping6
-        self.run_ping6(init_dut, resp_ipv6, init_aware_if)
-        self.run_ping6(resp_dut, init_ipv6, resp_aware_if)
+        self.run_ping6(init_dut, resp_ipv6)
+        self.run_ping6(resp_dut, init_ipv6)
 
         # clean-up
         resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
@@ -91,8 +90,8 @@ class ProtocolsTest(AwareBaseTest):
         self.log.info("Interface addresses (IPv6): P=%s, S=%s", p_ipv6, s_ipv6)
 
         # run ping6
-        self.run_ping6(p_dut, s_ipv6, p_aware_if)
-        self.run_ping6(s_dut, p_ipv6, s_aware_if)
+        self.run_ping6(p_dut, s_ipv6)
+        self.run_ping6(s_dut, p_ipv6)
 
         # clean-up
         p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
@@ -119,8 +118,8 @@ class ProtocolsTest(AwareBaseTest):
         self.log.info("Interface addresses (IPv6): P=%s, S=%s", p_ipv6, s_ipv6)
 
         # run ping6
-        self.run_ping6(p_dut, s_ipv6, p_aware_if)
-        self.run_ping6(s_dut, p_ipv6, s_aware_if)
+        self.run_ping6(p_dut, s_ipv6)
+        self.run_ping6(s_dut, p_ipv6)
 
         # clean-up
         p_dut.droid.connectivityUnregisterNetworkCallback(p_req_key)
@@ -178,9 +177,8 @@ class ProtocolsTest(AwareBaseTest):
 
         # run ping6
         for i in range(max_ndp):
-            self.run_ping6(dut, peers_ipv6s[i], dut_aware_if)
-            self.run_ping6(self.android_devices[i + 1], dut_ipv6,
-                           peers_aware_ifs[i])
+            self.run_ping6(dut, peers_ipv6s[i])
+            self.run_ping6(self.android_devices[i + 1], dut_ipv6)
 
         # cleanup
         for i in range(max_ndp):
@@ -248,6 +246,12 @@ class ProtocolsTest(AwareBaseTest):
             # out to get clean IPv6
             init_ipv6_nsd = event_nsd["data"][nconsts.NSD_SERVICE_INFO_HOST][
                 1:]
+
+            # mDNS doesn't seem to return a scoped host so strip it out of the
+            # local result (for now)
+            scope_index = init_ipv6.find("%")
+            if scope_index != -1:
+                init_ipv6 = init_ipv6[:scope_index]
 
             asserts.assert_equal(
                 init_ipv6, init_ipv6_nsd,
