@@ -105,7 +105,7 @@ class WifiCrashStressTest(WifiBaseTest):
             "SSR didn't happened %s %s" % (subsystem, timestamp))
 
     """Tests"""
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b5a982ef-10ef-4f36-a1b5-1e5d1fec06a4")
     def test_firmware_crash_wifi_reconnect_stress(self):
         """Firmware crash stress test for station mode
 
@@ -124,7 +124,7 @@ class WifiCrashStressTest(WifiBaseTest):
             self.trigger_wifi_firmware_crash(self.dut)
             wutils.connect_to_wifi_network(self.dut, self.network)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="204a921b-b0de-47f7-9b70-9384317051c8")
     def test_firmware_crash_softap_reconnect_stress(self):
         """Firmware crash stress test for softap mode
 
@@ -169,7 +169,7 @@ class WifiCrashStressTest(WifiBaseTest):
                 "%s ping %s failed" % (self.dut_client.serial, dut_addr))
         wutils.stop_wifi_tethering(self.dut)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="4b7f2d89-82be-41de-9277-e938cc1c318b")
     def test_firmware_crash_concurrent_reconnect_stress(self):
         """Firmware crash stress test for concurrent mode
 
