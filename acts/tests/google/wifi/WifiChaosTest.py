@@ -223,7 +223,8 @@ class WifiChaosTest(WifiBaseTest):
         ssid_info = ssid.split('_')
         self.band = ssid_info[-1]
         for item in ssid_info:
-            if 'ch' in item:
+            # Skip over the router model part.
+            if 'ch' in item and item != ssid_info[0]:
                 self.chan = re.search(r'(\d+)',item).group(0)
                 return
         raise signals.TestFailure("Channel information not found in SSID.")
