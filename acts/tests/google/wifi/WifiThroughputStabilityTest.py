@@ -282,15 +282,16 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_target = {}
         rssi_high_low = test_name.split("_")[3]
         if rssi_high_low == "low":
-            # Get 0 Mbps attenuation and backoff by low_rssi_backoff_from_range
-            atten_idx = golden_results["throughput_receive"].index(0)
-            max_atten = golden_results["attenuation"][atten_idx]
-            test_target[
-                "target_attenuation"] = max_atten - self.test_params["low_rssi_backoff_from_range"]
-            tput_idx = golden_results["attenuation"].index(
-                test_target["target_attenuation"])
+            # Get last test point where throughput is above self.test_params["low_rssi_backoff_from_range"]
+            throughput_below_target = [
+                x < self.test_params["low_rssi_backoff_from_range"]
+                for x in golden_results["throughput_receive"]
+            ]
+            atten_idx = throughput_below_target.index(1) - 1
+            test_target["target_attenuation"] = golden_results["attenuation"][
+                atten_idx]
             test_target["target_throughput"] = golden_results[
-                "throughput_receive"][tput_idx]
+                "throughput_receive"][atten_idx]
         if rssi_high_low == "high":
             # Test at lowest attenuation point
             test_target["target_attenuation"] = golden_results["attenuation"][
