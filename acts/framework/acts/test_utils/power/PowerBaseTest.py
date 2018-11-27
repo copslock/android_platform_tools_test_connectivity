@@ -470,7 +470,9 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.brconfigs = wputils.ap_setup(ap, network, bandwidth=bandwidth)
         if connect:
             wutils.wifi_connect(self.dut, network, num_of_tries=3)
-        return self.brconfigs
+
+        if ap or (not ap and hasattr(self, 'access_points')):
+            return self.brconfigs
 
     def process_iperf_results(self):
         """Get the iperf results and process.
