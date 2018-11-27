@@ -37,6 +37,7 @@ from acts import utils
 
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
 from acts.controllers.fuchsia_lib.bt.bta_lib import FuchsiaBtaLib
+from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -132,11 +133,14 @@ class FuchsiaDevice:
         self.test_counter = 0
 
         # Grab commands from FuchsiaBleLib
-        setattr(self, "ble_lib",
-                FuchsiaBleLib(self.address, self.test_counter, self.client_id))
+        self.ble_lib = FuchsiaBleLib(self.address, self.test_counter,
+                                     self.client_id)
         # Grab commands from FuchsiaBtaLib
-        setattr(self, "bta_lib",
-                FuchsiaBtaLib(self.address, self.test_counter, self.client_id))
+        self.bta_lib = FuchsiaBtaLib(self.address, self.test_counter,
+                                     self.client_id)
+        # Grab commands from FuchsiaGattcLib
+        self.gattc_lib = FuchsiaGattcLib(self.address, self.test_counter,
+                                         self.client_id)
 
         #Init server
         self.init_server_connection()
