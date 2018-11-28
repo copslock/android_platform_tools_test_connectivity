@@ -122,10 +122,12 @@ class WifiChaosTest(WifiBaseTest):
         self.dut.droid.wakeUpNow()
 
     def on_pass(self, test_name, begin_time):
-        wutils.stop_pcap(self.pcap, self.pcap_pid, False)
+        wutils.stop_pcap(self.pcap, self.pcap_pid, True)
 
     def on_fail(self, test_name, begin_time):
         wutils.stop_pcap(self.pcap, self.pcap_pid, False)
+        self.dut.take_bug_report(test_name, begin_time)
+        self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
