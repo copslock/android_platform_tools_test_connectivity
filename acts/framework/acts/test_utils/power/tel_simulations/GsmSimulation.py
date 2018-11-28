@@ -96,16 +96,15 @@ class GsmSimulation(BaseSimulation):
 
         # Setup band
 
-        try:
-            values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
-            band = self.bands_parameter_mapping[values[1]]
-        except:
+        values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
+
+        if not values:
             self.log.error(
-                "The test name needs to include parameter {} followed by the "
-                "required band.".format(self.PARAM_BAND))
+                "The test name needs to include parameter '{}' followed by "
+                "the required band number.".format(self.PARAM_BAND))
             return False
-        else:
-            self.set_band(self.bts1, band)
+
+        self.set_band(self.bts1, values[1])
 
         # Setup GPRS mode
 
@@ -124,18 +123,16 @@ class GsmSimulation(BaseSimulation):
 
         # Setup slot allocation
 
-        try:
-            values = self.consume_parameter(parameters, self.PARAM_SLOTS, 2)
-            dl = int(values[1])
-            ul = int(values[2])
-        except:
+        values = self.consume_parameter(parameters, self.PARAM_SLOTS, 2)
+
+        if not values:
             self.log.error(
                 "The test name needs to include parameter {} followed by two "
                 "int values indicating DL and UL slots.".format(
                     self.PARAM_SLOTS))
             return False
-        else:
-            self.bts1.gsm_slots = (dl, ul)
+
+        self.bts1.gsm_slots = (int(values[1]), int(values[2]))
 
         # No errors were found
         return True
