@@ -23,6 +23,8 @@ from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_DATA
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_STATE_CHECK
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_FOR_STATE_CHANGE
 from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_test_utils import start_youtube_video
 from acts.test_utils.tel.tel_test_utils import start_wifi_tethering
@@ -42,6 +44,8 @@ from acts.test_utils.tel.tel_test_utils import wait_for_data_attach_for_subscrip
 from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts.test_utils.tel.tel_test_utils import get_service_state_by_adb
+from acts.test_utils.tel.tel_test_utils import wait_for_state
 
 
 def wifi_tethering_cleanup(log, provider, client_list):
@@ -327,6 +331,20 @@ def airplane_mode_test(log, ad, retries=3):
             ad.log.error("Failed initial attach")
             return False
 
+        if not wait_for_state(
+                get_service_state_by_adb,
+                "IN_SERVICE",
+                MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                WAIT_TIME_BETWEEN_STATE_CHECK,
+                log,
+                ad):
+            ad.log.error("Current service state is not 'IN_SERVICE'.")
+            return False
+
+        if not ad.droid.connectivityNetworkIsConnected():
+            ad.log.error("Network is NOT connected!")
+            return False
+
         if not wait_for_cell_data_connection(log, ad, True):
             ad.log.error("Failed to enable data connection.")
             return False
@@ -350,6 +368,20 @@ def airplane_mode_test(log, ad, retries=3):
         log.info("Step3: disable airplane mode and ensure attach")
         if not toggle_airplane_mode(log, ad, False):
             ad.log.error("Failed to disable Airplane Mode")
+            return False
+
+        if not wait_for_state(
+                get_service_state_by_adb,
+                "IN_SERVICE",
+                MAX_WAIT_TIME_FOR_STATE_CHANGE,
+                WAIT_TIME_BETWEEN_STATE_CHECK,
+                log,
+                ad):
+            ad.log.error("Current service state is not 'IN_SERVICE'.")
+            return False
+
+        if not ad.droid.connectivityNetworkIsConnected():
+            ad.log.error("Network is NOT connected!")
             return False
 
         if not wait_for_cell_data_connection(log, ad, True):
