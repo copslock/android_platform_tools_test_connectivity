@@ -27,7 +27,7 @@ GO_IP_ADDRESS = '192.168.49.1'
 DEFAULT_TIMEOUT = 30
 DEFAULT_SLEEPTIME = 5
 DEFAULT_FUNCTION_SWITCH_TIME = 10
-
+DEFAULT_SERVICE_WAITING_TIME = 20
 ######################################################
 # Wifi P2p sl4a Event String
 ######################################################
@@ -38,3 +38,50 @@ CONNECTION_INFO_AVAILABLE_EVENT = "WifiP2pOnConnectionInfoAvailable"
 ONGOING_PEER_INFO_AVAILABLE_EVENT = "WifiP2pOnOngoingPeerAvailable"
 ONGOING_PEER_SET_SUCCESS_EVENT = "WifiP2psetP2pPeerConfigureOnSuccess"
 CONNECT_SUCCESS_EVENT = "WifiP2pConnectOnSuccess"
+
+
+######################################################
+# Wifi P2p local service event
+####################################################
+
+DNSSD_EVENT = "WifiP2pOnDnsSdServiceAvailable"
+DNSSD_TXRECORD_EVENT = "WifiP2pOnDnsSdTxtRecordAvailable"
+UPNP_EVENT = "WifiP2pOnUpnpServiceAvailable"
+
+DNSSD_EVENT_INSTANCENAME_KEY = "InstanceName"
+DNSSD_EVENT_REGISTRATIONTYPE_KEY = "RegistrationType"
+DNSSD_TXRECORD_EVENT_FULLDOMAINNAME_KEY = "FullDomainName"
+DNSSD_TXRECORD_EVENT_TXRECORDMAP_KEY = "TxtRecordMap"
+UPNP_EVENT_SERVICELIST_KEY = "ServiceList"
+
+######################################################
+# Wifi P2p local service type
+####################################################
+P2P_LOCAL_SERVICE_UPNP = 0
+P2P_LOCAL_SERVICE_IPP  = 1
+P2P_LOCAL_SERVICE_AFP  = 2
+
+######################################################
+# Wifi P2p UPnP MediaRenderer local service
+######################################################
+class UpnpTestData():
+    AVTransport = "urn:schemas-upnp-org:service:AVTransport:1"
+    ConnectionManager = "urn:schemas-upnp-org:service:ConnectionManager:1"
+    serviceType = "urn:schemas-upnp-org:device:MediaRenderer:1"
+    uuid = "6859dede-8574-59ab-9332-123456789011"
+    rootdevice = "upnp:rootdevice"
+
+######################################################
+# Wifi P2p Bonjour IPP & AFP local service
+######################################################
+class IppTestData():
+    ippInstanceName = "MyPrinter";
+    ippRegistrationType = "_ipp._tcp";
+    ippDomainName = "myprinter._ipp._tcp.local.";
+    ipp_txtRecord = {"txtvers":"1", "pdl": "application/postscript"}
+
+class AfpTestData():
+    afpInstanceName = "Example";
+    afpRegistrationType = "_afpovertcp._tcp";
+    afpDomainName = "example._afpovertcp._tcp.local.";
+    afp_txtRecord = {}

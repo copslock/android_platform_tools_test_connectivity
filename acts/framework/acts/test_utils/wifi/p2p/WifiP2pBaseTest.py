@@ -82,13 +82,15 @@ class WifiP2pBaseTest(BaseTestClass):
             ad.ed.clear_all_events()
 
     def teardown_test(self):
-        # Clear p2p group info
         for ad in self.android_devices:
+            # Clear p2p group info
             ad.droid.wifiP2pRequestPersistentGroupInfo()
             event = ad.ed.pop_event("WifiP2pOnPersistentGroupInfoAvailable",
                     p2pconsts.DEFAULT_TIMEOUT)
             for network in event['data']:
                 ad.droid.wifiP2pDeletePersistentGroup(network['NetworkId'])
+            # Clear p2p local service
+            ad.droid.wifiP2pClearLocalServices()
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
 
