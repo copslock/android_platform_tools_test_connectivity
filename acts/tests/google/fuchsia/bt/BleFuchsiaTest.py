@@ -111,13 +111,13 @@ class BleFuchsiaTest(BaseTestClass):
         name, did, connectable = scan_result["name"], scan_result[
             "id"], scan_result["connectable"]
 
-        connect = self.fuchsia_scan.ble_lib.bleConnectToPeripheral(did)
+        connect = self.fuchsia_scan.gattc_lib.bleConnectToPeripheral(did)
         self.log.info("Connecting returned status: {}".format(connect))
 
-        services = self.fuchsia_scan.ble_lib.bleListServices(did)
+        services = self.fuchsia_scan.gattc_lib.listServices(did)
         self.log.info("Listing services returned: {}".format(services))
 
-        dconnect = self.fuchsia_scan.ble_lib.bleDisconnectPeripheral(did)
+        dconnect = self.fuchsia_scan.gattc_lib.bleDisconnectPeripheral(did)
         self.log.info("Disconnect status: {}".format(dconnect))
 
         # Stop fuchsia advertising
