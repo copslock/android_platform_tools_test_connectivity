@@ -54,6 +54,13 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
         time.sleep(4)
         return True
 
+    def setup_test(self):
+        if not bt_test_utils.connect_pri_to_sec(
+            self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value])):
+            return False
+        # Grace time for connection to complete.
+        time.sleep(3)
+
     def message_delivered(self, device):
         try:
             self.MCE.ed.pop_event(EventSmsDeliverSuccess, 15)
@@ -97,15 +104,11 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
     @test_tracker_info(uuid='0858347a-e649-4f18-85b6-6990cc311dee')
     @BluetoothBaseTest.bt_test_wrap
     def test_send_message(self):
-        bt_test_utils.connect_pri_to_sec(
-            self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value]))
         return self.send_message([self.REMOTE])
 
     @test_tracker_info(uuid='b25caa53-3c7f-4cfa-a0ec-df9a8f925fe5')
     @BluetoothBaseTest.bt_test_wrap
     def test_receive_message(self):
-        bt_test_utils.connect_pri_to_sec(
-            self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value]))
         self.MSE.log.info("Start Tracking SMS.")
         self.MSE.droid.smsStartTrackingIncomingSmsMessage()
         self.REMOTE.log.info("Ready to send")
@@ -130,6 +133,9 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
     @test_tracker_info(uuid='19444142-1d07-47dc-860b-f435cba46fca')
     @BluetoothBaseTest.bt_test_wrap
     def test_send_message_failure_no_map_connection(self):
+        if not bt_test_utils.disconnect_pri_from_sec(
+            self.MCE, self.MSE, [BtEnum.BluetoothProfile.MAP_MCE.value]):
+            return False
         return not self.send_message([self.REMOTE])
 
     @test_tracker_info(uuid='c7e569c0-9f6c-49a4-8132-14bc544ccb53')
@@ -148,8 +154,6 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
     @test_tracker_info(uuid='8cdb4a54-3f18-482f-be3d-acda9c4cbeed')
     @BluetoothBaseTest.bt_test_wrap
     def test_disconnect_failure_send_message(self):
-        connected = bt_test_utils.connect_pri_to_sec(
-            self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value]))
         addr = self.MSE.droid.bluetoothGetLocalAddress()
         if bt_test_utils.is_map_mce_device_connected(self.MCE, addr):
             connected = True
@@ -167,8 +171,6 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
     @test_tracker_info(uuid='2d79a896-b1c1-4fb7-9924-db8b5c698be5')
     @BluetoothBaseTest.bt_test_wrap
     def manual_test_send_message_to_contact(self):
-        bt_test_utils.connect_pri_to_sec(
-            self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value]))
         contacts = self.MCE.droid.contactsGetContactIds()
         self.log.info(contacts)
         selected_contact = self.MCE.droid.contactsDisplayContactPickList()
@@ -181,6 +183,4 @@ class BtCarMapMceTest(BluetoothCarHfpBaseTest):
     @test_tracker_info(uuid='8ce9a7dd-3b5e-4aee-a897-30740e2439c3')
     @BluetoothBaseTest.bt_test_wrap
     def test_send_message_to_multiple_phones(self):
-        bt_test_utils.connect_pri_to_sec(
-            self.MCE, self.MSE, set([BtEnum.BluetoothProfile.MAP_MCE.value]))
         return self.send_message([self.REMOTE, self.REMOTE])

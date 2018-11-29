@@ -125,7 +125,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         if hasattr(self, 'attenuators'):
             self.num_atten = self.attenuators[0].instrument.num_atten
             self.atten_level = self.unpack_custom_file(self.attenuation_file)
-        self.set_attenuation(INITIAL_ATTEN)
+            self.set_attenuation(INITIAL_ATTEN)
         self.threshold = self.unpack_custom_file(self.threshold_file)
         self.mon_info = self.create_monsoon_info()
 
@@ -451,11 +451,11 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.brconfigs: dict for bridge interface configs
         """
         wutils.wifi_toggle_state(self.dut, True)
-        self.brconfigs = wputils.ap_setup(
-            self.access_point, network, bandwidth=bandwidth)
+        if hasattr(self, 'access_points'):
+            self.brconfigs = wputils.ap_setup(
+                self.access_point, network, bandwidth=bandwidth)
         if connect:
             wutils.wifi_connect(self.dut, network)
-        return self.brconfigs
 
     def process_iperf_results(self):
         """Get the iperf results and process.
