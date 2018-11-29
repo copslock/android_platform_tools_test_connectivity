@@ -1702,6 +1702,32 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def uldl_configuration(self):
+        """ Gets the UL/DL pattern configuration for TDD bands
+
+        Args:
+            None
+
+        Returns:
+            Configuration number
+        """
+        cmd = "ULDLCONFIGURATION? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @uldl_configuration.setter
+    def uldl_configuration(self, configuration):
+        """ Sets the UL/DL pattern configuration for TDD bands
+
+        Args:
+            configuration: configuration number, from 0 to 6
+
+        Returns:
+            None
+        """
+        cmd = "ULDLCONFIGURATION {},{}".format(configuration, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def dl_antenna(self):
         """ Gets the DL ANTENNA count of the cell
 
