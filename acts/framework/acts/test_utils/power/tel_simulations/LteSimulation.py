@@ -322,14 +322,19 @@ class LteSimulation(BaseSimulation):
 
         values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
 
-        if values and values[1] == self.PARAM_SCHEDULING_DYNAMIC:
+        if not values:
+            scheduling = LteSimulation.SchedulingMode.STATIC
+            self.log.warning(
+                "The test name does not include the '{}' parameter. Setting to "
+                "static by default.".format(self.PARAM_SCHEDULING))
+        elif values[1] == self.PARAM_SCHEDULING_DYNAMIC:
             scheduling = LteSimulation.SchedulingMode.DYNAMIC
-        elif values and values[1] == self.PARAM_SCHEDULING_STATIC:
+        elif values[1] == self.PARAM_SCHEDULING_STATIC:
             scheduling = LteSimulation.SchedulingMode.STATIC
         else:
             self.log.error(
-                "The test name needs to include parameter {} followed by either"
-                " dynamic or static.".format(self.PARAM_SCHEDULING))
+                "The test name parameter '{}' has to be followed by either "
+                "'dynamic' or 'static'.".format(self.PARAM_SCHEDULING))
             return False
 
         if scheduling == LteSimulation.SchedulingMode.STATIC:
@@ -337,15 +342,17 @@ class LteSimulation(BaseSimulation):
             values = self.consume_parameter(parameters, self.PARAM_PATTERN, 2)
 
             if not values:
-                self.log.error(
-                    "When scheduling mode is set to static the parameter {} "
-                    "has to be included followed by two ints separated by an "
-                    "underscore indicating downlink and uplink percentages of"
-                    " total rbs.".format(self.PARAM_PATTERN))
-                return False
-
-            dl_pattern = int(values[1])
-            ul_pattern = int(values[2])
+                self.log.warning(
+                    "The '{}' parameter was not set, using 100% RBs for both "
+                    "DL and UL. To set the percentages of total RBs include "
+                    "the '{}' parameter followed by two ints separated by an "
+                    "underscore indicating downlink and uplink percentages."
+                    .format(self.PARAM_PATTERN, self.PARAM_PATTERN))
+                dl_pattern = 100
+                ul_pattern = 100
+            else:
+                dl_pattern = int(values[1])
+                ul_pattern = int(values[2])
 
             if not (0 <= dl_pattern <= 100 and 0 <= ul_pattern <= 100):
                 self.log.error(
