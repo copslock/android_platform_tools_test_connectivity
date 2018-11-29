@@ -82,6 +82,7 @@ from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
@@ -1146,6 +1147,15 @@ class TelLiveDataTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        for a in self.android_devices:
+            a.adb.shell("setprop persist.bluetooth.btsnoopenable true")
+            if not toggle_airplane_mode_by_adb(self.log, a, True):
+                self.log.error("Failed to toggle airplane mode on")
+                return False
+            if not toggle_airplane_mode_by_adb(log, a, False):
+                self.log.error("Failed to toggle airplane mode off")
+                return False
+
         if not self._test_setup_tethering(RAT_2G):
             self.log.error("Verify 3G Internet access failed.")
             return False

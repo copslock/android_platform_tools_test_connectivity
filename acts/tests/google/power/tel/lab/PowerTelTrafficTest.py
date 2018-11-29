@@ -70,10 +70,13 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         if not super().setup_test():
             return False
 
-        try:
-            values = self.consume_parameter(self.PARAM_DIRECTION, 1)
+        # Traffic direction
+
+        values = self.consume_parameter(self.PARAM_DIRECTION, 1)
+
+        if values:
             self.traffic_direction = values[1]
-        except:
+        else:
             self.log.error("The test name has to include parameter {} "
                            "followed by {}/{}/{}.".format(
                                self.PARAM_DIRECTION, self.PARAM_DIRECTION_UL,
@@ -81,22 +84,22 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                                self.PARAM_DIRECTION_DL_UL))
             return False
 
-        try:
-            values = self.consume_parameter(self.PARAM_BANDWIDTH_LIMIT, 2)
+        # Bandwidth limit
 
-            if values:
-                self.bandwidth_limit_dl = values[1]
-                self.bandwidth_limit_ul = values[2]
-            else:
-                self.bandwidth_limit_dl = 0
-                self.bandwidth_limit_ul = 0
+        values = self.consume_parameter(self.PARAM_BANDWIDTH_LIMIT, 2)
 
-        except:
+        if values:
+            self.bandwidth_limit_dl = values[1]
+            self.bandwidth_limit_ul = values[2]
+        else:
+            self.bandwidth_limit_dl = 0
+            self.bandwidth_limit_ul = 0
             self.log.error(
-                "Parameter {} has to be followed by two strings indicating "
-                "downlink and uplink bandwidth limits for iPerf.".format(
-                    self.PARAM_BANDWIDTH_LIMIT))
-            return False
+                "No bandwidth limit was indicated in the test parameters. "
+                "Setting to default value of 0 (no limit to bandwidth). To set "
+                "a different value include parameter '{}' followed by two "
+                "strings indicating downlink and uplink bandwidth limits for "
+                "iPerf.".format(self.PARAM_BANDWIDTH_LIMIT))
 
         # No errors when parsing parameters
         return True
@@ -148,6 +151,11 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                                      "the expected value!. {}/{} = {}".format(
                                          iperf_result, expected_t,
                                          iperf_result / expected_t))
+                else:
+                    self.log.info(
+                        "Throughput is within a 10% margin."
+                        "The expected value is {} Mbits.".format(expected_t))
+
             except NotImplementedError:
                 # Some simulation classes might not have implemented the max
                 # throughput calculation yet

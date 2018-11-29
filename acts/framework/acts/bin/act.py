@@ -241,18 +241,19 @@ def main(argv):
         args.config[0], args.testbed, args.testpaths, args.logpath,
         args.test_args, args.random, args.test_case_iterations)
 
+    log = logging.getLogger()
     try:
         new_parsed_args = ConfigGenerator().generate_configs()
 
         for old_config, new_config in zip(parsed_configs, new_parsed_args):
             if not old_config.items() <= new_config.items():
-                logging.warning('Backward compat broken:\n%s\n%s' % (
+                log.warning('Backward compat broken:\n%s\n%s' % (
                     old_config, new_config))
     except SystemExit as e:
-        logging.warning('Unable to parse command line flags: %s' %
+        log.warning('Unable to parse command line flags: %s' %
                         traceback.format_exc(e))
     except Exception as e:
-        logging.warning('Failed to generate configs through the new system: '
+        log.warning('Failed to generate configs through the new system: '
                         '%s' % traceback.format_exc(e))
 
     # Prepare args for test runs

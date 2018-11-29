@@ -116,87 +116,65 @@ class UmtsSimulation(BaseSimulation):
 
         # Setup band
 
-        try:
-            values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
-            band = values[1]
-        except:
+        values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
+
+        if not values:
             self.log.error(
-                "The test name needs to include parameter {} followed by the "
-                "required band.".format(self.PARAM_BAND))
+                "The test name needs to include parameter '{}' followed by "
+                "the required band number.".format(self.PARAM_BAND))
             return False
-        else:
-            self.set_band(self.bts1, band)
+
+        self.set_band(self.bts1, values[1])
 
         # Setup release version
 
-        try:
-            values = self.consume_parameter(parameters,
-                                            self.PARAM_RELEASE_VERSION, 1)
+        values = self.consume_parameter(parameters, self.PARAM_RELEASE_VERSION,
+                                        1)
 
-            if values[1] in [
-                    self.PARAM_RELEASE_VERSION_7, self.PARAM_RELEASE_VERSION_8,
-                    self.PARAM_RELEASE_VERSION_99
-            ]:
-                release_version = values[1]
-            else:
-                raise ValueError()
-
-        except:
+        if not values or values[1] not in [
+                self.PARAM_RELEASE_VERSION_7, self.PARAM_RELEASE_VERSION_8,
+                self.PARAM_RELEASE_VERSION_99
+        ]:
             self.log.error(
                 "The test name needs to include the parameter {} followed by a "
                 "valid release version.".format(self.PARAM_RELEASE_VERSION))
             return False
-        else:
-            self.set_release_version(self.bts1, release_version)
 
-            # Setup uplink power
+        self.set_release_version(self.bts1, values[1])
 
-            try:
-                values = self.consume_parameter(parameters, self.PARAM_UL_PW,
-                                                1)
+        # Setup uplink power
 
-                if values[1] not in self.uplink_signal_level_dictionary:
-                    raise ValueError("Invalid signal level value.")
-                else:
-                    power = self.uplink_signal_level_dictionary[values[1]]
+        values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
+        if not values or values[1] not in self.uplink_signal_level_dictionary:
+            self.log.error(
+                "The test name needs to include parameter {} followed by "
+                "one the following values: {}.".format(self.PARAM_UL_PW, [
+                    "\n" + val
+                    for val in self.uplink_signal_level_dictionary.keys()
+                ]))
+            return False
 
-            except:
-                self.log.error(
-                    "The test name needs to include parameter {} followed by "
-                    "one the following values: {}.".format(
-                        self.PARAM_UL_PW, [
-                            "\n" + val
-                            for val in
-                            self.uplink_signal_level_dictionary.keys()
-                        ]))
-                return False
-            else:
-                # Power is not set on the callbox until after the simulation is
-                # started. Will save this value in a variable and use it later
-                self.sim_ul_power = power
+        # Power is not set on the callbox until after the simulation is
+        # started. Will save this value in a variable and use it later
+        self.sim_ul_power = self.uplink_signal_level_dictionary[values[1]]
 
-            # Setup downlink power
+        # Setup downlink power
 
-            values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
+        values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
 
-            if values:
-                if values[1] not in self.downlink_rscp_dictionary:
-                    self.log.error("Invalid signal level value {}.".format(
-                        values[1]))
-                    return False
-                else:
-                    power = self.downlink_rscp_dictionary[values[1]]
-            else:
-                # Use default value
-                power = self.downlink_rscp_dictionary['excellent']
-                self.log.error(
-                    "No DL signal level value was indicated in the test "
-                    "parameters. Using default value of {} RSRP.".format(
-                        power))
+        if not values or values[1] not in self.downlink_rscp_dictionary:
+            self.log.error(
+                "The test name needs to include parameter {} followed by "
+                "one of the following values: {}.".format(
+                    self.PARAM_DL_PW, [
+                        "\n" + val
+                        for val in self.downlink_rscp_dictionary.keys()
+                    ]))
+            return False
 
-            # Power is not set on the callbox until after the simulation is
-            # started. Will save this value in a variable and use it later
-            self.sim_dl_power = power
+        # Power is not set on the callbox until after the simulation is
+        # started. Will save this value in a variable and use it later
+        self.sim_dl_power = self.downlink_rscp_dictionary[values[1]]
 
         # No errors were found
         return True
