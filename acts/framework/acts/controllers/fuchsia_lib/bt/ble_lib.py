@@ -36,7 +36,10 @@ class FuchsiaBleLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def bleStartBleAdvertising(self, advertising_data, interval):
+    def bleStartBleAdvertising(self,
+                               advertising_data,
+                               interval,
+                               connectable=True):
         """BleStartAdvertising command
 
         Args:
@@ -49,104 +52,11 @@ class FuchsiaBleLib(BaseLib):
         test_cmd = "ble_advertise_facade.BleAdvertise"
         test_args = {
             "advertising_data": advertising_data,
-            "interval_ms": interval
+            "interval_ms": interval,
+            "connectable": connectable
         }
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def bleStartBleScan(self, scan_filter):
-        """Starts a BLE scan
-
-        Args:
-            scan_time_ms: int, Amount of time to scan for.
-            scan_filter: dictionary, Device filter for a scan.
-            scan_count: int, Number of devices to scan for before termination.
-
-        Returns:
-            None if pass, err if fail.
-        """
-        test_cmd = "bluetooth.BleStartScan"
-        test_args = {
-            "filter": scan_filter,
-        }
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def bleStopBleScan(self):
-        """Stops a BLE scan
-
-        Returns:
-            Dictionary, List of devices discovered, error string if error.
-        """
-        test_cmd = "bluetooth.BleStopScan"
-        test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def bleGetDiscoveredDevices(self):
-        """Stops a BLE scan
-
-        Returns:
-            Dictionary, List of devices discovered, error string if error.
-        """
-        test_cmd = "bluetooth.BleGetDiscoveredDevices"
-        test_args = {}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def bleConnectToPeripheral(self, id):
-        """Connects to a peripheral specified by id.
-
-        Args:
-            id: string, Peripheral identifier to connect to.
-
-        Returns:
-            Dictionary, List of Service Info if success, error string if error.
-        """
-        test_cmd = "bluetooth.BleConnectPeripheral"
-        test_args = {"identifier": id}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def bleDisconnectPeripheral(self, id):
-        """Disconnects from a peripheral specified by id.
-
-        Args:
-            id: string, Peripheral identifier to disconnect from.
-
-        Returns:
-            Dictionary, None if success, error string if error.
-        """
-        test_cmd = "bluetooth.BleDisconnectPeripheral"
-        test_args = {"identifier": id}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def bleListServices(self, id):
-        """Lists services of a peripheral specified by id.
-
-        Args:
-            id: string, Peripheral identifier to list services.
-
-        Returns:
-            Dictionary, List of Service Info if success, error string if error.
-        """
-        test_cmd = "bluetooth.BleListServices"
-        test_args = {"identifier": id}
-        test_id = self.build_id(self.test_counter)
-        self.test_counter += 1
-
         return self.send_command(test_id, test_cmd, test_args)
 
     def blePublishService(self, id_, primary, type_, service_id):
