@@ -105,13 +105,13 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
         name, did, connectable = scan_result["name"], scan_result[
             "id"], scan_result["connectable"]
 
-        connect = self.fd.ble_lib.bleConnectToPeripheral(did)
+        connect = self.fd.gattc_lib.bleConnectToPeripheral(did)
         self.log.info("Connecting returned status: {}".format(connect))
 
-        services = self.fd.ble_lib.bleListServices(did)
+        services = self.fd.gattc_lib.listServices(did)
         self.log.info("Listing services returned: {}".format(services))
 
-        dconnect = self.fd.ble_lib.bleDisconnectPeripheral(did)
+        dconnect = self.fd.gattc_lib.bleDisconnectPeripheral(did)
         self.log.info("Disconnect status: {}".format(dconnect))
 
         #Print clients to validate results are saved
