@@ -34,7 +34,7 @@ def le_scan_for_device_by_name(fd, log, search_name, timeout):
     found_device = None
     while time.time() < end_time and not found_device:
         time.sleep(1)
-        scan_res = fd.ble_lib.bleGetDiscoveredDevices()['result']
+        scan_res = fd.gattc_lib.bleGetDiscoveredDevices()['result']
         for device in scan_res:
             name, did, connectable = device["name"], device["id"], device[
                 "connectable"]
