@@ -103,7 +103,7 @@ class ProtoMetricPublisher(MetricPublisher):
         publishes_descriptor_ascii: Whether to publish the ascii descriptor.
     """
 
-    ASCII_EXTENSION = 'proto'
+    ASCII_EXTENSION = 'proto.data'
     BINARY_EXTENSION = 'proto.bin'
     ASCII_DESCRIPTOR_EXTENSION = 'proto.desc'
     BINARY_DESCRIPTOR_EXTENSION = 'proto.desc.bin'
