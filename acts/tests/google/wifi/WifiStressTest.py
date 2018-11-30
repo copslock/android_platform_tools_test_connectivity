@@ -19,7 +19,7 @@ import time
 
 import acts.base_test
 import acts.test_utils.wifi.wifi_test_utils as wutils
-import acts.utils
+import acts.test_utils.tel.tel_test_utils as tutils
 
 from acts import asserts
 from acts import signals
@@ -134,6 +134,31 @@ class WifiStressTest(WifiBaseTest):
         if "100% packet loss" in result:
             raise signals.TestFailure("100% packet loss during ping")
 
+    def start_youtube_video(self, url=None, secs=60):
+        """Start a youtube video and check if it's playing.
+
+        Args:
+            url: The URL of the youtube video to play.
+            secs: Time to play video in seconds.
+
+        """
+        ad = self.dut
+        ad.log.info("Start a youtube video")
+        ad.ensure_screen_on()
+        video_played = False
+        for count in range(2):
+            ad.unlock_screen()
+            ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
+            if tutils.wait_for_state(ad.droid.audioIsMusicActive, True, 15, 1):
+                ad.log.info("Started a video in youtube.")
+                # Play video for given seconds.
+                time.sleep(secs)
+                video_played = True
+                break
+        if not video_played:
+            raise signals.TestFailure("Youtube video did not start. Current WiFi "
+                "state is %d" % self.dut.droid.wifiCheckState())
+
     """Tests"""
 
     @test_tracker_info(uuid="cd0016c6-58cf-4361-b551-821c0b8d2554")
@@ -206,17 +231,54 @@ class WifiStressTest(WifiBaseTest):
             sec = self.stress_hours * 60 * 60
             args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
             self.log.info("Running iperf client {}".format(args))
+            start_time = time.time()
             result, data = self.dut.run_iperf_client(self.iperf_server_address,
                 args, timeout=sec+1)
             if not result:
                 self.log.debug("Error occurred in iPerf traffic.")
+                start_time = time.time()
                 self.run_ping(sec)
         except:
+            total_time = time.time() - start_time
             raise signals.TestFailure("Network long-connect failed."
-                "Look at logs", extras={"Total Hours":"%d" %self.stress_hours,
-                    "Seconds Run":"UNKNOWN"})
+                "WiFi State = %d" %self.dut.droid.wifiCheckState(),
+                extras={"Total Hours":"%d" %self.stress_hours,
+                    "Seconds Run":"%d" %total_time})
+        total_time = time.time() - start_time
+        self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
         raise signals.TestPass(details="", extras={"Total Hours":"%d" %
-            self.stress_hours, "Seconds":"%d" %sec})
+            self.stress_hours, "Seconds Run":"%d" %total_time})
+
+    def test_stress_youtube_5g(self):
+        """Test to connect to network and play various youtube videos.
+
+           Steps:
+               1. Scan and connect to a network.
+               2. Loop through and play a list of youtube videos.
+               3. Verify no WiFi disconnects/data interruption.
+
+        """
+        # List of Youtube 4K videos.
+        videos = ["https://www.youtube.com/watch?v=TKmGU77INaM",
+                  "https://www.youtube.com/watch?v=WNCl-69POro",
+                  "https://www.youtube.com/watch?v=dVkK36KOcqs",
+                  "https://www.youtube.com/watch?v=0wCC3aLXdOw",
+                  "https://www.youtube.com/watch?v=rN6nlNC9WQA",
+                  "https://www.youtube.com/watch?v=U--7hxRNPvk"]
+        try:
+            self.scan_and_connect_by_ssid(self.wpa_5g)
+            start_time = time.time()
+            for video in videos:
+                self.start_youtube_video(url=video, secs=10*60)
+        except:
+            total_time = time.time() - start_time
+            raise signals.TestFailure("The youtube stress test has failed."
+                "WiFi State = %d" %self.dut.droid.wifiCheckState(),
+                extras={"Total Hours":"1", "Seconds Run":"%d" %total_time})
+        total_time = time.time() - start_time
+        self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
+        raise signals.TestPass(details="", extras={"Total Hours":"1",
+            "Seconds Run":"%d" %total_time})
 
     @test_tracker_info(uuid="d367c83e-5b00-4028-9ed8-f7b875997d13")
     def test_stress_wifi_failover(self):
@@ -232,6 +294,7 @@ class WifiStressTest(WifiBaseTest):
 
         """
         for count in range(int(self.stress_count/4)):
+            wutils.reset_wifi(self.dut)
             ssids = list()
             for network in self.networks:
                 ssids.append(network[WifiEnums.SSID_KEY])
@@ -294,7 +357,8 @@ class WifiStressTest(WifiBaseTest):
             wutils.stop_wifi_tethering(self.dut)
             asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
                                  "SoftAp failed to shutdown!")
-            time.sleep(TIMEOUT)
+            # Give some time for WiFi to come back to previous state.
+            time.sleep(2)
             cur_wifi_state = self.dut.droid.wifiCheckState()
             if initial_wifi_state != cur_wifi_state:
                raise signals.TestFailure("Wifi state was %d before softAP and %d now!" %

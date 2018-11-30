@@ -26,6 +26,7 @@ from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.ap_lib import dhcp_server
 from acts.controllers.ap_lib import hostapd
 from acts.controllers.ap_lib import hostapd_config
+from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.utils_lib.commands import ip
 from acts.controllers.utils_lib.commands import route
 from acts.controllers.utils_lib.commands import shell
@@ -308,15 +309,19 @@ class AccessPoint(object):
 
         return interface
 
-    def get_bssid_from_ssid(self, ssid):
+    def get_bssid_from_ssid(self, ssid, band):
         """Gets the BSSID from a provided SSID
 
         Args:
-            ssid: An SSID string
+            ssid: An SSID string.
+            band: 2G or 5G Wifi band.
         Returns: The BSSID if on the AP or None if SSID could not be found.
         """
+        if band == hostapd_constants.BAND_2G:
+            interfaces = [self.wlan_2g, ssid]
+        else:
+            interfaces = [self.wlan_5g, ssid]
 
-        interfaces = [self.wlan_2g, self.wlan_5g, ssid]
         # Get the interface name associated with the given ssid.
         for interface in interfaces:
             cmd = "iw dev %s info|grep ssid|awk -F' ' '{print $2}'" % (
