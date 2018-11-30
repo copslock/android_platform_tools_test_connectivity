@@ -49,6 +49,8 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_UMTS
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_CDMA_EVDO
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_test_utils import call_reject_leave_message
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
@@ -205,6 +207,80 @@ def two_phone_call_short_seq(log,
             log.error("Call Iteration Failed")
             return False
 
+    return True
+
+
+def two_phone_call_msim_short_seq(log,
+                             phone_a,
+                             phone_a_idle_func,
+                             phone_a_in_call_check_func,
+                             phone_b,
+                             phone_b_idle_func,
+                             phone_b_in_call_check_func,
+                             call_sequence_func=None,
+                             wait_time_in_call=WAIT_TIME_IN_CALL):
+    """Call process short sequence.
+    1. Ensure phone idle and in idle_func check return True.
+    2. Call from PhoneA to PhoneB, accept on PhoneB.
+    3. Check phone state, hangup on PhoneA.
+    4. Ensure phone idle and in idle_func check return True.
+    5. Call from PhoneA to PhoneB, accept on PhoneB.
+    6. Check phone state, hangup on PhoneB.
+
+    Args:
+        phone_a: PhoneA's android device object.
+        phone_a_idle_func: function to check PhoneA's idle state.
+        phone_a_in_call_check_func: function to check PhoneA's in-call state.
+        phone_b: PhoneB's android device object.
+        phone_b_idle_func: function to check PhoneB's idle state.
+        phone_b_in_call_check_func: function to check PhoneB's in-call state.
+        call_sequence_func: default parameter, not implemented.
+        wait_time_in_call: time to wait in call.
+            This is optional, default is WAIT_TIME_IN_CALL
+
+    Returns:
+        True: if call sequence succeed.
+        False: for errors
+    """
+    ads = [phone_a, phone_b]
+
+    call_params = [
+        (ads[0], ads[1], ads[0], phone_a_in_call_check_func,
+         phone_b_in_call_check_func),
+        (ads[0], ads[1], ads[1], phone_a_in_call_check_func,
+         phone_b_in_call_check_func),
+    ]
+
+    for param in call_params:
+        # Make sure phones are idle.
+        ensure_phones_idle(log, ads)
+        if phone_a_idle_func and not phone_a_idle_func(log, phone_a):
+            phone_a.log.error("Phone A Failed to Reselect")
+            return False
+        if phone_b_idle_func and not phone_b_idle_func(log, phone_b):
+            phone_b.log.error("Phone B Failed to Reselect")
+            return False
+
+        # TODO: b/26337871 Need to use proper API to check phone registered.
+        time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
+
+        # Make call.
+        log.info("--> Call test: %s to %s <--", phone_a.serial, phone_b.serial)
+        slots = 2
+        for slot in range(slots):
+            set_subid_for_outgoing_call(
+                            ads[0], get_subid_from_slot_index(log,ads[0],slot))
+            set_subid_for_outgoing_call(
+                            ads[1], get_subid_from_slot_index(log,ads[1],slot))
+            time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
+            if not call_setup_teardown(log, *param,slot_id_callee = slot,
+                                       wait_time_in_call=wait_time_in_call):
+                log.error("Call Iteration Failed")
+                return False
+            if not call_setup_teardown(log, *param,slot_id_callee = 1-slot,
+                                       wait_time_in_call=wait_time_in_call):
+                log.error("Call Iteration Failed")
+                return False
     return True
 
 
@@ -709,6 +785,11 @@ def phone_setup_voice_general(log, ad):
     """
     return phone_setup_voice_general_for_subscription(
         log, ad, get_outgoing_voice_sub_id(ad))
+
+
+def phone_setup_voice_general_for_slot(log,ad,slot_id):
+    return phone_setup_voice_general_for_subscription(
+        log, ad, get_subid_from_slot_index(log,ad,slot_id))
 
 
 def phone_setup_voice_general_for_subscription(log, ad, sub_id):
