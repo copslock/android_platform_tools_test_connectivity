@@ -131,7 +131,8 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
                          url,
                          page_load_timeout,
                          num_tries,
-                         backup_url="about:blank"):
+                         backup_url="about:blank",
+                         check_for_element=None):
         """Method to visit webpages and retry upon failure.
 
         The function visits a web page and checks the the resulting URL matches
@@ -142,19 +143,31 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
             page_load_timeout: timeout for page visits
             num_tries: number of tries before url is declared unreachable
             backup_url: url to visit if first url is not reachable. This can be
-            use to simply refresh the browser and try again or to re-login to
+            used to simply refresh the browser and try again or to re-login to
             the AP
+            check_for_element: element id to check for existence on page
         """
         self.driver.set_page_load_timeout(page_load_timeout)
         for idx in range(num_tries):
             try:
                 self.visit(url)
-                if self.url.split("/")[-1] == url.split("/")[-1]:
-                    break
-                else:
-                    self.visit(backup_url)
             except:
                 self.restart()
+
+            page_reached = self.url.split("/")[-1] == url.split("/")[-1]
+            if check_for_element:
+                time.sleep(BROWSER_WAIT_MED)
+                element = self.find_by_id(check_for_element)
+                if not element:
+                    page_reached = 0
+            if page_reached:
+                break
+            else:
+                try:
+                    self.visit(backup_url)
+                except:
+                    self.restart()
+
             if idx == num_tries - 1:
                 self.log.error("URL unreachable. Current URL: {}".format(
                     self.url))
@@ -443,7 +456,7 @@ class NetgearR7000AP(WifiRetailAP):
     def read_ap_settings(self):
         """Function to read ap settings."""
         with BlockingBrowser(self.ap_settings["headless_browser"],
-                             600) as browser:
+                             900) as browser:
             # Visit URL
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
 
@@ -485,7 +498,7 @@ class NetgearR7000AP(WifiRetailAP):
         self.configure_radio_on_off()
         # Configure radios
         with BlockingBrowser(self.ap_settings["headless_browser"],
-                             600) as browser:
+                             900) as browser:
             # Visit URL
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
             browser.visit_persistent(self.config_page_nologin,
@@ -563,7 +576,7 @@ class NetgearR7000AP(WifiRetailAP):
     def configure_radio_on_off(self):
         """Helper configuration function to turn radios on/off."""
         with BlockingBrowser(self.ap_settings["headless_browser"],
-                             600) as browser:
+                             900) as browser:
             # Visit URL
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
             browser.visit_persistent(self.config_page_advanced,
@@ -698,10 +711,12 @@ class NetgearR7500AP(WifiRetailAP):
         # Get radio configuration. Note that if both radios are off, the below
         # code will result in an error
         with BlockingBrowser(self.ap_settings["headless_browser"],
-                             600) as browser:
-            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
-            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
-            time.sleep(BROWSER_WAIT_SHORT)
+                             900) as browser:
+            browser.visit_persistent(
+                self.config_page,
+                BROWSER_WAIT_MED,
+                10,
+                check_for_element="wireless")
             wireless_button = browser.find_by_id("wireless").first
             wireless_button.click()
             time.sleep(BROWSER_WAIT_MED)
@@ -743,10 +758,12 @@ class NetgearR7500AP(WifiRetailAP):
         self.configure_radio_on_off()
         # Configure radios
         with BlockingBrowser(self.ap_settings["headless_browser"],
-                             600) as browser:
-            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
-            browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
-            time.sleep(BROWSER_WAIT_SHORT)
+                             900) as browser:
+            browser.visit_persistent(
+                self.config_page,
+                BROWSER_WAIT_MED,
+                10,
+                check_for_element="wireless")
             wireless_button = browser.find_by_id("wireless").first
             wireless_button.click()
             time.sleep(BROWSER_WAIT_MED)
@@ -830,13 +847,15 @@ class NetgearR7500AP(WifiRetailAP):
     def configure_radio_on_off(self):
         """Helper configuration function to turn radios on/off."""
         with BlockingBrowser(self.ap_settings["headless_browser"],
-                             600) as browser:
+                             900) as browser:
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
-            browser.visit_persistent(self.config_page_advanced,
-                                     BROWSER_WAIT_MED, 10)
-            time.sleep(BROWSER_WAIT_MED)
-            wireless_button = browser.find_by_id("advanced_bt").first
-            wireless_button.click()
+            browser.visit_persistent(
+                self.config_page_advanced,
+                BROWSER_WAIT_MED,
+                10,
+                check_for_element="advanced_bt")
+            advanced_button = browser.find_by_id("advanced_bt").first
+            advanced_button.click()
             time.sleep(BROWSER_WAIT_SHORT)
             wireless_button = browser.find_by_id("wladv").first
             wireless_button.click()
@@ -868,13 +887,15 @@ class NetgearR7500AP(WifiRetailAP):
     def read_radio_on_off(self):
         """Helper configuration function to read radio status."""
         with BlockingBrowser(self.ap_settings["headless_browser"],
-                             600) as browser:
+                             900) as browser:
             browser.visit_persistent(self.config_page, BROWSER_WAIT_MED, 10)
-            browser.visit_persistent(self.config_page_advanced,
-                                     BROWSER_WAIT_MED, 10)
-            time.sleep(BROWSER_WAIT_MED)
-            wireless_button = browser.find_by_id("advanced_bt").first
-            wireless_button.click()
+            browser.visit_persistent(
+                self.config_page_advanced,
+                BROWSER_WAIT_MED,
+                10,
+                check_for_element="advanced_bt")
+            advanced_button = browser.find_by_id("advanced_bt").first
+            advanced_button.click()
             time.sleep(BROWSER_WAIT_SHORT)
             wireless_button = browser.find_by_id("wladv").first
             wireless_button.click()
