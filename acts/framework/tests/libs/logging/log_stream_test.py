@@ -56,7 +56,9 @@ class LogStreamTest(unittest.TestCase):
 
     # __validate_style
 
-    def test_validate_styles_raises_when_same_location_set_multiple_times(self):
+    @mock.patch('os.makedirs')
+    def test_validate_styles_raises_when_same_location_set_multiple_times(
+            self, *_):
         """Tests that a style is invalid if it sets the same handler twice.
 
         If the error is NOT raised, then a LogStream can create a Logger that
@@ -71,7 +73,9 @@ class LogStreamTest(unittest.TestCase):
             'has been set multiple' in catch.exception.args[0],
             msg='__validate_styles did not raise the expected error message')
 
-    def test_validate_styles_raises_when_both_testclass_and_testcase_set(self):
+    @mock.patch('os.makedirs')
+    def test_validate_styles_raises_when_both_testclass_and_testcase_set(
+            self, *_):
         """Tests that a style is invalid if both TESTCLASS_LOG and TESTCASE_LOG
         locations are set for the same log level.
 
@@ -87,7 +91,8 @@ class LogStreamTest(unittest.TestCase):
             'Both TESTCLASS_LOG' in catch.exception.args[0],
             msg='__validate_styles did not raise the expected error message')
 
-    def test_validate_styles_raises_when_no_level_exists(self):
+    @mock.patch('os.makedirs')
+    def test_validate_styles_raises_when_no_level_exists(self, *_):
         """Tests that a style is invalid if it does not contain a log level.
 
         If the style does not contain a log level, then there is no way to
@@ -101,7 +106,8 @@ class LogStreamTest(unittest.TestCase):
             'log level' in catch.exception.args[0],
             msg='__validate_styles did not raise the expected error message')
 
-    def test_validate_styles_raises_when_no_location_exists(self):
+    @mock.patch('os.makedirs')
+    def test_validate_styles_raises_when_no_location_exists(self, *_):
         """Tests that a style is invalid if it does not contain a log level.
 
         If the style does not contain a log level, then there is no way to
@@ -115,7 +121,8 @@ class LogStreamTest(unittest.TestCase):
             'log location' in catch.exception.args[0],
             msg='__validate_styles did not raise the expected error message')
 
-    def test_validate_styles_raises_when_rotate_logs_no_file_handler(self):
+    @mock.patch('os.makedirs')
+    def test_validate_styles_raises_when_rotate_logs_no_file_handler(self, *_):
         """Tests that a LogStyle cannot set ROTATE_LOGS without *_LOG flag.
 
         If the LogStyle contains ROTATE_LOGS, it must be associated with a log
@@ -136,7 +143,8 @@ class LogStreamTest(unittest.TestCase):
 
     # __handle_style
 
-    def test_handle_style_create_test_case_descriptors(self):
+    @mock.patch('os.makedirs')
+    def test_handle_style_create_test_case_descriptors(self, *_):
         """Tests that handle_style creates the correct test case descriptors
         and the outer-level test class descriptors.
 
@@ -161,7 +169,8 @@ class LogStreamTest(unittest.TestCase):
         self.assertEqual(case_descriptors[0]._level, logging.INFO)
         self.assertEqual(class_descriptors[0]._level, logging.INFO)
 
-    def test_handle_style_does_not_create_test_case_descriptors(self):
+    @mock.patch('os.makedirs')
+    def test_handle_style_does_not_create_test_case_descriptors(self, *_):
         """Tests that handle_style does not create test case and test class
         only descriptors without LogStyle.TESTCASE_LOG.
         """
@@ -183,7 +192,8 @@ class LogStreamTest(unittest.TestCase):
                          'Test class only handlers should not be created '
                          'without a TESTCASE_LOG LogStyle.')
 
-    def test_handle_style_create_test_class_descriptors(self):
+    @mock.patch('os.makedirs')
+    def test_handle_style_create_test_class_descriptors(self, *_):
         """Tests that handle_style creates the correct test class descriptors.
 
         The above descriptors are only created on TESTCLASS_LOG logstyles.
@@ -202,7 +212,8 @@ class LogStreamTest(unittest.TestCase):
                          'descriptor created.')
         self.assertEqual(class_descriptors[0]._level, logging.INFO)
 
-    def test_handle_style_does_not_create_test_class_descriptors(self):
+    @mock.patch('os.makedirs')
+    def test_handle_style_does_not_create_test_class_descriptors(self, *_):
         """Tests that handle_style does not create test class descriptors
         without LogStyle.TESTCLASS_LOG.
         """
@@ -220,7 +231,8 @@ class LogStreamTest(unittest.TestCase):
                          'Test class handlers should not be created without a '
                          'TESTCLASS_LOG LogStyle.')
 
-    def test_handle_style_to_acts_log_creates_handler(self):
+    @mock.patch('os.makedirs')
+    def test_handle_style_to_acts_log_creates_handler(self, *_):
         """Tests that using the flag TO_ACTS_LOG creates an AlsoToLogHandler."""
         info_acts_log = LogStyles.LOG_INFO + LogStyles.TO_ACTS_LOG
 
@@ -229,7 +241,8 @@ class LogStreamTest(unittest.TestCase):
 
         self.assertTrue(isinstance(log.handlers[0], AlsoToLogHandler))
 
-    def test_handle_style_to_acts_log_creates_handler_is_lowest_level(self):
+    @mock.patch('os.makedirs')
+    def test_handle_style_to_acts_log_creates_handler_is_lowest_level(self, *_):
         """Tests that using the flag TO_ACTS_LOG creates an AlsoToLogHandler
         that is set to the lowest LogStyles level."""
         info_acts_log = (LogStyles.LOG_DEBUG + LogStyles.LOG_INFO +
@@ -241,7 +254,8 @@ class LogStreamTest(unittest.TestCase):
         self.assertTrue(isinstance(log.handlers[0], AlsoToLogHandler))
         self.assertEqual(log.handlers[0].level, logging.DEBUG)
 
-    def test_handle_style_to_stdout_creates_stream_handler(self):
+    @mock.patch('os.makedirs')
+    def test_handle_style_to_stdout_creates_stream_handler(self, *_):
         """Tests that using the flag TO_STDOUT creates a StreamHandler."""
         info_acts_log = LogStyles.LOG_INFO + LogStyles.TO_STDOUT
 
@@ -250,6 +264,7 @@ class LogStreamTest(unittest.TestCase):
 
         self.assertTrue(isinstance(log.handlers[0], logging.StreamHandler))
 
+    @mock.patch('os.makedirs')
     def test_handle_style_creates_file_handler(self, *_):
         """Tests handle_style creates a FileHandler for the MONOLITH_LOG."""
         info_acts_log = LogStyles.LOG_INFO + LogStyles.MONOLITH_LOG
@@ -261,7 +276,8 @@ class LogStreamTest(unittest.TestCase):
 
         self.assertEqual(log.handlers[0], expected)
 
-    def test_handle_style_creates_rotating_file_handler(self):
+    @mock.patch('os.makedirs')
+    def test_handle_style_creates_rotating_file_handler(self, *_):
         """Tests handle_style creates a FileHandler for the ROTATE_LOGS."""
         info_acts_log = (LogStyles.LOG_INFO + LogStyles.ROTATE_LOGS +
                          LogStyles.MONOLITH_LOG)
@@ -275,7 +291,8 @@ class LogStreamTest(unittest.TestCase):
 
     # __create_rotating_file_handler
 
-    def test_create_rotating_file_handler_does_what_it_says_it_does(self):
+    @mock.patch('os.makedirs')
+    def test_create_rotating_file_handler_does_what_it_says_it_does(self, *_):
         """Tests that __create_rotating_file_handler does exactly that."""
         expected = mock.MagicMock()
 
@@ -289,7 +306,8 @@ class LogStreamTest(unittest.TestCase):
 
     # __get_file_handler_creator
 
-    def test_get_file_handler_creator_returns_rotating_file_handler(self):
+    @mock.patch('os.makedirs')
+    def test_get_file_handler_creator_returns_rotating_file_handler(self, *_):
         """Tests the function returns a RotatingFileHandler when the log_style
         has LogStyle.ROTATE_LOGS."""
         expected = mock.MagicMock()
@@ -304,7 +322,8 @@ class LogStreamTest(unittest.TestCase):
         self.assertEqual(expected, fh_creator('/d/u/m/m/y/p/a/t/h'),
                          'The function did not return a RotatingFileHandler.')
 
-    def test_get_file_handler_creator_returns_file_handler(self):
+    @mock.patch('os.makedirs')
+    def test_get_file_handler_creator_returns_file_handler(self, *_):
         """Tests the function returns a FileHandler when the log_style does NOT
         have LogStyle.ROTATE_LOGS."""
         expected = mock.MagicMock()
@@ -319,7 +338,8 @@ class LogStreamTest(unittest.TestCase):
 
     # __get_lowest_log_level
 
-    def test_get_lowest_level_gets_lowest_level(self):
+    @mock.patch('os.makedirs')
+    def test_get_lowest_level_gets_lowest_level(self, *_):
         """Tests __get_lowest_level returns the lowest LogStyle level given."""
         level = _LogStream._LogStream__get_lowest_log_level(
             LogStyles.ALL_LEVELS)
@@ -327,7 +347,8 @@ class LogStreamTest(unittest.TestCase):
 
     # __remove_handler
 
-    def test_remove_handler_removes_a_handler(self):
+    @mock.patch('os.makedirs')
+    def test_remove_handler_removes_a_handler(self, *_):
         dummy_obj = mock.Mock()
         dummy_obj.logger = mock.Mock()
         handler = mock.Mock()
@@ -338,8 +359,7 @@ class LogStreamTest(unittest.TestCase):
 
     # __create_handlers_from_descriptors
 
-    @mock.patch('os.path.exists')
-    @mock.patch('os.mkdir')
+    @mock.patch('os.makedirs')
     def test_create_handlers_from_descriptors(self, *_):
         """Tests that the handlers generated from the descriptors are added
         to the associated logger and the given handlers list."""
@@ -364,7 +384,8 @@ class LogStreamTest(unittest.TestCase):
 
     # on_test_case_end
 
-    def test_on_test_case_end_removes_all_handlers(self):
+    @mock.patch('os.makedirs')
+    def test_on_test_case_end_removes_all_handlers(self, *_):
         info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
         with self.patch('FileHandler'):
             log_stream.create_logger(self._testMethodName,
@@ -376,8 +397,7 @@ class LogStreamTest(unittest.TestCase):
         self.assertEqual(len(created_log_stream._test_case_log_handlers), 0,
                          'The test case log handlers were not cleared.')
 
-    @mock.patch('os.path.exists')
-    @mock.patch('os.mkdir')
+    @mock.patch('os.makedirs')
     def test_on_test_case_end_enables_class_level_handlers(self, *_):
         info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
         with self.patch('FileHandler'):
@@ -400,8 +420,7 @@ class LogStreamTest(unittest.TestCase):
 
     # on_test_case_begin
 
-    @mock.patch('os.path.exists')
-    @mock.patch('os.mkdir')
+    @mock.patch('os.makedirs')
     def test_on_test_case_begin_creates_new_handlers(self, *_):
         info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
         with self.patch('FileHandler'):
@@ -414,8 +433,7 @@ class LogStreamTest(unittest.TestCase):
 
         self.assertEqual(len(created_log_stream._test_case_log_handlers), 1)
 
-    @mock.patch('os.path.exists')
-    @mock.patch('os.mkdir')
+    @mock.patch('os.makedirs')
     def test_on_test_case_begin_disables_class_level_handlers(self, *_):
         info_testcase_log = LogStyles.LOG_INFO + LogStyles.TESTCASE_LOG
         with self.patch('FileHandler'):
@@ -438,7 +456,8 @@ class LogStreamTest(unittest.TestCase):
 
     # on_test_class_end
 
-    def test_on_test_class_end_removes_all_handlers(self):
+    @mock.patch('os.makedirs')
+    def test_on_test_class_end_removes_all_handlers(self, *_):
         testclass_log = [
             LogStyles.LOG_INFO + LogStyles.TESTCLASS_LOG,
             LogStyles.LOG_DEBUG + LogStyles.TESTCASE_LOG]
@@ -457,8 +476,7 @@ class LogStreamTest(unittest.TestCase):
 
     # on_test_class_begin
 
-    @mock.patch('os.path.exists')
-    @mock.patch('os.mkdir')
+    @mock.patch('os.makedirs')
     def test_on_test_class_begin_creates_new_handlers(self, *_):
         testclass_log = [
             LogStyles.LOG_INFO + LogStyles.TESTCLASS_LOG,
@@ -477,7 +495,8 @@ class LogStreamTest(unittest.TestCase):
 
     # cleanup
 
-    def test_cleanup_removes_all_handlers(self):
+    @mock.patch('os.makedirs')
+    def test_cleanup_removes_all_handlers(self, *_):
         info_testcase_log = LogStyles.LOG_INFO + LogStyles.MONOLITH_LOG
         with self.patch('FileHandler'):
             log_stream.create_logger(self._testMethodName,
