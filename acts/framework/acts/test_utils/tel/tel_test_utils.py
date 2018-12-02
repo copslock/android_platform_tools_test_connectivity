@@ -161,7 +161,7 @@ from acts.test_utils.tel.tel_lookup_tables import rat_family_for_generation
 from acts.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
 from acts.test_utils.tel.tel_subscription_utils import \
-    get_default_data_sub_id
+    get_default_data_sub_id, get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import \
     get_outgoing_message_sub_id
 from acts.test_utils.tel.tel_subscription_utils import \
@@ -613,6 +613,19 @@ def is_sim_ready_by_adb(log, ad):
 
 def wait_for_sim_ready_by_adb(log, ad, wait_time=90):
     return _wait_for_droid_in_state(log, ad, wait_time, is_sim_ready_by_adb)
+
+
+def is_sims_ready_by_adb(log, ad):
+    states = list(ad.adb.getprop("gsm.sim.state").split(","))
+    ad.log.info("gsm.sim.state = %s", states)
+    for state in states:
+        if state != SIM_STATE_READY and state != SIM_STATE_LOADED:
+            return False
+    return True
+
+
+def wait_for_sims_ready_by_adb(log, ad, wait_time=90):
+    return _wait_for_droid_in_state(log, ad, wait_time, is_sims_ready_by_adb)
 
 
 def get_service_state_by_adb(log, ad):
@@ -1860,7 +1873,8 @@ def call_setup_teardown(log,
                         wait_time_in_call=WAIT_TIME_IN_CALL,
                         incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
                         dialing_number_length=None,
-                        video_state=None):
+                        video_state=None,
+                        slot_id_callee=None):
     """ Call process, including make a phone call from caller,
     accept from callee, and hang up. The call is on default voice subscription
 
@@ -1882,6 +1896,7 @@ def call_setup_teardown(log,
             if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
             else, do nothing.
         dialing_number_length: the number of digits used for dialing
+        slot_id_callee : the slot if of the callee to call to
 
     Returns:
         True if call process without any error.
@@ -1889,7 +1904,11 @@ def call_setup_teardown(log,
 
     """
     subid_caller = get_outgoing_voice_sub_id(ad_caller)
-    subid_callee = get_incoming_voice_sub_id(ad_callee)
+    if slot_id_callee is None:
+        subid_callee = get_incoming_voice_sub_id(ad_callee)
+    else:
+        subid_callee = get_subid_from_slot_index(log, ad_callee, slot_id_callee)
+
     return call_setup_teardown_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_hangup,
         verify_caller_func, verify_callee_func, wait_time_in_call,
@@ -4000,7 +4019,8 @@ def sms_send_receive_verify(log,
                             ad_rx,
                             array_message,
                             max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE,
-                            expected_result=True):
+                            expected_result=True,
+                            slot_id_rx=None):
     """Send SMS, receive SMS, and verify content and sender's number.
 
         Send (several) SMS from droid_tx to droid_rx.
@@ -4012,9 +4032,14 @@ def sms_send_receive_verify(log,
         ad_tx: Sender's Android Device Object
         ad_rx: Receiver's Android Device Object
         array_message: the array of message to send/receive
+        slot_id_rx: the slot on the Receiver's android device (0/1)
     """
     subid_tx = get_outgoing_message_sub_id(ad_tx)
-    subid_rx = get_incoming_message_sub_id(ad_rx)
+    if slot_id_rx is None:
+        subid_rx = get_incoming_message_sub_id(ad_rx)
+    else:
+        subid_rx = get_subid_from_slot_index(log, ad_rx, slot_id_rx)
+
     result = sms_send_receive_verify_for_subscription(
         log, ad_tx, ad_rx, subid_tx, subid_rx, array_message, max_wait_time)
     if result != expected_result:

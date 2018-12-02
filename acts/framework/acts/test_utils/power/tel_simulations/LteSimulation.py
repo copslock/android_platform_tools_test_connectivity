@@ -36,6 +36,7 @@ class LteSimulation(BaseSimulation):
     LTE_BASIC_CELL_FILE = 'CELL_LTE_config'
 
     # Simulation config keywords contained in the test name
+    PARAM_FRAME_CONFIG = "tddconfig"
     PARAM_BW = "bw"
     PARAM_SCHEDULING = "scheduling"
     PARAM_SCHEDULING_STATIC = "static"
@@ -251,7 +252,24 @@ class LteSimulation(BaseSimulation):
                 "the required band number.".format(self.PARAM_BAND))
             return False
 
-        self.set_band(self.bts1, values[1])
+        band = values[1]
+
+        self.set_band(self.bts1, band)
+
+        # Set DL/UL frame configuration
+        if self.get_duplex_mode(band) == self.DuplexMode.TDD:
+            try:
+                values = self.consume_parameter(parameters,
+                                                self.PARAM_FRAME_CONFIG, 1)
+                frame_config = int(values[1])
+            except:
+                self.log.error("When a TDD band is selected the frame "
+                               "structure has to be indicated with the '{}' "
+                               "parameter followed by a number from 0 to 6."
+                               .format(self.PARAM_FRAME_CONFIG))
+                return False
+
+            self.set_dlul_configuration(self.bts1, frame_config)
 
         # Setup bandwidth
 
@@ -322,14 +340,19 @@ class LteSimulation(BaseSimulation):
 
         values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
 
-        if values and values[1] == self.PARAM_SCHEDULING_DYNAMIC:
+        if not values:
+            scheduling = LteSimulation.SchedulingMode.STATIC
+            self.log.warning(
+                "The test name does not include the '{}' parameter. Setting to "
+                "static by default.".format(self.PARAM_SCHEDULING))
+        elif values[1] == self.PARAM_SCHEDULING_DYNAMIC:
             scheduling = LteSimulation.SchedulingMode.DYNAMIC
-        elif values and values[1] == self.PARAM_SCHEDULING_STATIC:
+        elif values[1] == self.PARAM_SCHEDULING_STATIC:
             scheduling = LteSimulation.SchedulingMode.STATIC
         else:
             self.log.error(
-                "The test name needs to include parameter {} followed by either"
-                " dynamic or static.".format(self.PARAM_SCHEDULING))
+                "The test name parameter '{}' has to be followed by either "
+                "'dynamic' or 'static'.".format(self.PARAM_SCHEDULING))
             return False
 
         if scheduling == LteSimulation.SchedulingMode.STATIC:
@@ -337,15 +360,17 @@ class LteSimulation(BaseSimulation):
             values = self.consume_parameter(parameters, self.PARAM_PATTERN, 2)
 
             if not values:
-                self.log.error(
-                    "When scheduling mode is set to static the parameter {} "
-                    "has to be included followed by two ints separated by an "
-                    "underscore indicating downlink and uplink percentages of"
-                    " total rbs.".format(self.PARAM_PATTERN))
-                return False
-
-            dl_pattern = int(values[1])
-            ul_pattern = int(values[2])
+                self.log.warning(
+                    "The '{}' parameter was not set, using 100% RBs for both "
+                    "DL and UL. To set the percentages of total RBs include "
+                    "the '{}' parameter followed by two ints separated by an "
+                    "underscore indicating downlink and uplink percentages."
+                    .format(self.PARAM_PATTERN, self.PARAM_PATTERN))
+                dl_pattern = 100
+                ul_pattern = 100
+            else:
+                dl_pattern = int(values[1])
+                ul_pattern = int(values[2])
 
             if not (0 <= dl_pattern <= 100 and 0 <= ul_pattern <= 100):
                 self.log.error(
@@ -869,6 +894,22 @@ class LteSimulation(BaseSimulation):
             raise ValueError(msg)
         time.sleep(5)  # It takes some time to propagate the new settings
 
+    def set_dlul_configuration(self, bts, config):
+        """ Sets the frame structure for TDD bands.
+
+        Args:
+            config: the desired frame structure. An int between 0 and 6.
+        """
+
+        if not 0 <= config <= 6:
+            raise ValueError("The frame structure configuration has to be a "
+                             "number between 0 and 6")
+
+        bts.uldl_configuration = config
+
+        # Wait for the setting to propagate
+        time.sleep(5)
+
     def calibrate(self):
         """ Calculates UL and DL path loss if it wasn't done before
 
@@ -894,7 +935,7 @@ class LteSimulation(BaseSimulation):
             self.bts1.transmode = init_transmode
             time.sleep(5)  # It takes some time to propagate the new settings
 
-    def get_dupplex_mode(self, band):
+    def get_duplex_mode(self, band):
         """ Determines if the band uses FDD or TDD duplex mode
 
         Args:
@@ -916,6 +957,6 @@ class LteSimulation(BaseSimulation):
             band: desired band
         """
 
-        bts.duplex_mode = self.get_dupplex_mode(band).value
+        bts.duplex_mode = self.get_duplex_mode(band).value
 
         super().set_band(bts, band)

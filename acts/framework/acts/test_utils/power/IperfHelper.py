@@ -16,7 +16,7 @@
 
 import os
 import statistics
-
+import time
 import acts.controllers.iperf_server as ipf
 
 
@@ -75,6 +75,10 @@ class IperfHelper(object):
         Returns:
              throughput: the average throughput (Mbit/s).
         """
+        # Stopping the server (as safety to get the result file)
+        iperf_servers[self.server_idx].stop()
+        time.sleep(1)
+
         # Get IPERF results and add this to the plot title
         RESULTS_DESTINATION = os.path.join(
             iperf_servers[self.server_idx].log_path,
