@@ -43,7 +43,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
     IPERF_MARGIN = 10
 
     # Constant used to calculate the tcp window size from total throughput
-    TCP_WINDOW_FRACTION = 30
+    TCP_WINDOW_FRACTION = 40
 
     def __init__(self, controllers):
         """ Class initialization.
