@@ -146,27 +146,26 @@ class LogcatTest(unittest.TestCase):
 
     def test_create_logcat_keepalive_process_creates_a_new_logger(self):
         with self.patch('log_stream') as log_stream, self.patch('Process'):
-            logcat.create_logcat_keepalive_process('S3R14L', 'path')
+            logcat.create_logcat_keepalive_process('S3R14L')
+
         self.assertEqual(log_stream.create_logger.call_args[0][0],
-                         'adblog_S3R14L')
-        self.assertEqual(log_stream.create_logger.call_args[1]['base_path'],
-                         'path')
+                         'AndroidDeviceS3R14L')
 
     def test_create_logcat_keepalive_process_creates_a_new_process(self):
         with self.patch('log_stream'), self.patch('Process') as process:
-            logcat.create_logcat_keepalive_process('S3R14L', 'path')
+            logcat.create_logcat_keepalive_process('S3R14L')
 
         self.assertIn('S3R14L', process.call_args[0][0])
 
     def test_create_logcat_keepalive_process_sets_output_callback(self):
         with self.patch('log_stream'), self.patch('Process'):
-            process = logcat.create_logcat_keepalive_process('S3R14L', 'path')
+            process = logcat.create_logcat_keepalive_process('S3R14L')
 
         self.assertEqual(process.set_on_output_callback.called, True)
 
     def test_create_logcat_keepalive_process_sets_on_terminate_callback(self):
         with self.patch('log_stream'), self.patch('Process'):
-            process = logcat.create_logcat_keepalive_process('S3R14L', 'path')
+            process = logcat.create_logcat_keepalive_process('S3R14L')
 
         self.assertEqual(process.set_on_terminate_callback.called, True)
 
