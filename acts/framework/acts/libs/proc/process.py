@@ -108,14 +108,6 @@ class Process(object):
     def _get_timeout_left(timeout, start_time):
         return max(.1, timeout - (time.time() - start_time))
 
-    def is_running(self):
-        """Checks that the underlying Popen process is still running
-
-        Returns:
-            True if the process is running.
-        """
-        return self._process is not None and self._process.poll() is None
-
     def wait(self, kill_timeout=60.0):
         """Waits for the process to finish execution.
 
@@ -162,7 +154,7 @@ class Process(object):
 
         start_time = time.time()
 
-        if self.is_running():
+        if self._process is not None and self._process.poll() is None:
             self._process.kill()
         self.wait(self._get_timeout_left(timeout, start_time))
 
