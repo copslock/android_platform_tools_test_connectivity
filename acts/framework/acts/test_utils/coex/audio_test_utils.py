@@ -14,24 +14,30 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import functools
 import logging
 import os
+from soundfile import SoundFile
 
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+from acts.test_utils.audio_analysis_lib.audio_analysis import max_THDN
+from acts.test_utils.audio_analysis_lib.audio_analysis import THDN
 from acts.test_utils.audio_analysis_lib.check_quality import quality_analysis
 from acts.test_utils.coex.audio_capture import AudioCapture
+from acts.test_utils.coex.audio_capture import RECORD_FILE_TEMPLATE
 
+ANALYSIS_FILE_TEMPLATE = "audio_analysis_%s.txt"
 bits_per_sample = 32
 
 
 class SshAudioCapture(AudioCapture):
 
     def __init__(self, test_params, path):
-        super().__init__(test_params, path)
+        super(SshAudioCapture, self).__init__(test_params, path)
         self.remote_path = path
 
-    def capture_audio(self):
+    def capture_audio(self, trim_beginning=0, trim_end=0):
         if self.audio_params["ssh_config"]:
             ssh_settings = settings.from_config(
                 self.audio_params["ssh_config"])
@@ -53,7 +59,7 @@ class SshAudioCapture(AudioCapture):
                         self.remote_path))
             return bool(job_result.stdout)
         else:
-            return self.capture_and_store_audio()
+            return self.capture_and_store_audio(trim_beginning, trim_end)
 
     def terminate_and_store_audio_results(self):
         """Terminates audio and stores audio files."""
@@ -62,13 +68,49 @@ class SshAudioCapture(AudioCapture):
         else:
             self.terminate_audio()
 
+    def THDN(self, win_size=None, step_size=None, q=1, fund_freq=None):
+        """Calculate THD+N value for most recently recorded file.
+        Args:
+            win_size: analysis window size (must be less than length of
+                signal). Used with step size to analyze signal piece by
+                piece. If not specified, entire signal will be analyzed.
+            step_size: number of samples to move window per-analysis. If not
+                specified, entire signal will be analyzed.
+            q: quality factor for the notch filter used to remove fundamental
+                frequency from signal to isolate noise.
+            fund_freq: the fundamental frequency to remove from the signal.
+                If not specified, will be detected using FFT.
+        Returns:
+            channel_results: dict containing THD+N values for each channel in
+                latest recorded file.
+        """
+        if not (win_size and step_size):
+            fn = THDN
+        else:
+            fn = functools.partial(max_THDN, win_size=win_size,
+                                   step_size=step_size)
+        latest_file_path = self.record_file_template % (self.last_fileno())
+        wave_file = SoundFile(latest_file_path)
+        signal = wave_file.read()
+        channels = wave_file.channels
+        sample_rate = wave_file.samplerate
+        channel_results = {}
+        if channels == 1:
+            channel_results[0] = fn(signal=signal, sample_rate=sample_rate,
+                                    q=q, fund_freq=fund_freq)
+        else:
+            for ch_no, channel in enumerate(signal.transpose()):
+                channel_results[ch_no] = fn(signal=channel,
+                                            sample_rate=sample_rate,
+                                            q=q, fund_freq=fund_freq)
+        return channel_results
+
     def audio_quality_analysis(self, path):
         """Measures audio quality based on the audio file given as input."""
         dest_file_path = os.path.join(path,
-                "recorded_audio_%s.wav" % self.file_counter)
+                RECORD_FILE_TEMPLATE % self.last_fileno())
         analysis_path = os.path.join(path,
-                "audio_analysis_%s.txt" % self.file_counter)
-        self.file_counter += 1
+                ANALYSIS_FILE_TEMPLATE % self.last_fileno())
         try:
             quality_analysis(
                 filename=dest_file_path,

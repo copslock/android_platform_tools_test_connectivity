@@ -17,7 +17,10 @@
 
 import logging
 import numpy
-import operator
+import sys
+from scipy.signal import blackmanharris
+from scipy.signal import iirnotch
+from scipy.signal import lfilter
 
 # The default block size of pattern matching.
 ANOMALY_DETECTION_BLOCK_SIZE = 120
@@ -434,3 +437,71 @@ def _get_correlation_index(golden_signal, test_signal):
     # contain only one number.
     correlation = numpy.correlate(golden_signal, test_signal, 'valid')[0]
     return correlation / (norm_golden * norm_test)
+
+
+def fundamental_freq(signal, sample_rate):
+    """Return fundamental frequency of signal by finding max in freq domain.
+    """
+    dft = numpy.fft.rfft(signal)
+    fund_freq = sample_rate * (numpy.argmax(numpy.abs(dft)) / len(signal))
+    return fund_freq
+
+
+def rms(array):
+    """Return the root mean square of array.
+    """
+    return numpy.sqrt(numpy.mean(numpy.absolute(array)**2))
+
+
+def THDN(signal, sample_rate, q, fund_freq):
+    """Measure the THD+N for a signal and return the results.
+    Subtract mean to center signal around 0, remove fundamental frequency from
+    dft using notch filter and transform back into signal to get noise. Compute
+    ratio of RMS of noise signal to RMS of entire signal.
+
+    Args:
+        signal: array of values representing an audio signal.
+        sample_rate: sample rate in Hz of the signal.
+        q: quality factor for the notch filter.
+        fund_freq: fundamental frequency of the signal. All other frequencies
+            are noise. If not specified, will be calculated using FFT.
+    Returns:
+        THDN: THD+N ratio calculated from the ratio of RMS of pure harmonics
+            and noise signal to RMS of original signal.
+    """
+    # Normalize and window signal.
+    signal -= numpy.mean(signal)
+    windowed = signal * blackmanharris(len(signal))
+    # Find fundamental frequency to remove if not specified.
+    fund_freq = fund_freq or fundamental_freq(windowed, sample_rate)
+    # Create notch filter to isolate noise.
+    w0 = fund_freq / (sample_rate / 2.0)
+    b, a = iirnotch(w0, q)
+    noise = lfilter(b, a, windowed)
+    # Calculate THD+N.
+    THDN = rms(noise) / rms(windowed)
+    return THDN
+
+
+def max_THDN(signal, sample_rate, step_size, window_size, q, fund_freq):
+    """Analyze signal with moving window and find maximum THD+N value.
+    Args:
+        signal: array representing the signal
+        sample_rate: sample rate of the signal.
+        step_size: how many samples to move the window by for each analysis.
+        window_size: how many samples to analyze each time.
+        q: quality factor for the notch filter.
+        fund_freq: fundamental frequency of the signal. All other frequencies
+            are noise. If not specified, will be calculated using FFT.
+    Returns:
+        greatest_THDN: the greatest THD+N value found across all windows
+    """
+    greatest_THDN = 0
+    cur = 0
+    while cur + window_size < len(signal):
+        window = signal[cur:cur + window_size]
+        res = THDN(window, sample_rate, q, fund_freq)
+        cur += step_size
+        if res > greatest_THDN:
+            greatest_THDN = res
+    return greatest_THDN
