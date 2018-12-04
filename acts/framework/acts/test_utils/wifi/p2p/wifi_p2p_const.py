@@ -38,6 +38,7 @@ CONNECTION_INFO_AVAILABLE_EVENT = "WifiP2pOnConnectionInfoAvailable"
 ONGOING_PEER_INFO_AVAILABLE_EVENT = "WifiP2pOnOngoingPeerAvailable"
 ONGOING_PEER_SET_SUCCESS_EVENT = "WifiP2psetP2pPeerConfigureOnSuccess"
 CONNECT_SUCCESS_EVENT = "WifiP2pConnectOnSuccess"
+CREATE_GROUP_SUCCESS_EVENT = "WifiP2pCreateGroupOnSuccess"
 
 
 ######################################################
@@ -60,6 +61,11 @@ UPNP_EVENT_SERVICELIST_KEY = "ServiceList"
 P2P_LOCAL_SERVICE_UPNP = 0
 P2P_LOCAL_SERVICE_IPP  = 1
 P2P_LOCAL_SERVICE_AFP  = 2
+
+######################################################
+# Wifi P2p group capability
+######################################################
+P2P_GROUP_CAPAB_GROUP_OWNER = 1
 
 ######################################################
 # Wifi P2p UPnP MediaRenderer local service

@@ -94,7 +94,7 @@ def is_go(ad):
     return False
 
 #trigger p2p connect to ad2 from ad1
-def p2p_connect(ad1, ad2, isReconnect, wpsSetup):
+def p2p_connect(ad1, ad2, isReconnect, wpsSetup, isJoinExistingGroup=False):
     """trigger p2p connect to ad2 from ad1
 
     Args:
@@ -106,7 +106,10 @@ def p2p_connect(ad1, ad2, isReconnect, wpsSetup):
     """
     ad1.log.info("Create p2p connection from %s to %s via wps: %s" %
             (ad1.name, ad2.name, wpsSetup))
-    find_p2p_device(ad1, ad2)
+    if isJoinExistingGroup:
+        find_p2p_group_owner(ad1, ad2)
+    else:
+        find_p2p_device(ad1, ad2)
     time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
     wifi_p2p_config = {WifiP2PEnums.WifiP2pConfig.DEVICEADDRESS_KEY:
             ad2.deviceAddress, WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY:
@@ -165,6 +168,39 @@ def p2p_connect(ad1, ad2, isReconnect, wpsSetup):
     ad2.ed.pop_event(p2pconsts.CONNECTED_EVENT,
             p2pconsts.DEFAULT_TIMEOUT)
 
+def p2p_connect_with_config(ad1, ad2, network_name, passphrase, band):
+    """trigger p2p connect to ad2 from ad1 with config
+
+    Args:
+        ad1: The android device
+        ad2: The android device
+        network_name: the network name of the desired group.
+        passphrase: the passphrase of the desired group.
+        band: the operating band of the desired group.
+    """
+    ad1.log.info("Create p2p connection from %s to %s" %
+            (ad1.name, ad2.name))
+    find_p2p_device(ad1, ad2)
+    time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
+    wifi_p2p_config = {
+            WifiP2PEnums.WifiP2pConfig.NETWORK_NAME: network_name,
+            WifiP2PEnums.WifiP2pConfig.PASSPHRASE: passphrase,
+            WifiP2PEnums.WifiP2pConfig.GROUP_BAND: band,
+            WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY: {
+                    WifiP2PEnums.WpsInfo.WPS_SETUP_KEY: WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC
+            }
+    }
+    ad1.droid.wifiP2pConnect(wifi_p2p_config)
+    ad1.ed.pop_event(p2pconsts.CONNECT_SUCCESS_EVENT,
+            p2pconsts.DEFAULT_TIMEOUT)
+    time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
+
+    #wait connected event
+    ad1.ed.pop_event(p2pconsts.CONNECTED_EVENT,
+            p2pconsts.DEFAULT_TIMEOUT)
+    ad2.ed.pop_event(p2pconsts.CONNECTED_EVENT,
+            p2pconsts.DEFAULT_TIMEOUT)
+
 def find_p2p_device(ad1, ad2):
     """Check an Android device ad1 can discover an Android device ad2
 
@@ -182,6 +218,30 @@ def find_p2p_device(ad1, ad2):
         p2p_find_result = is_discovered(ad1_event, ad2)
     asserts.assert_true(p2p_find_result,
             "DUT didn't discovered peer:%s device"% (ad2.name))
+
+def find_p2p_group_owner(ad1, ad2):
+    """Check an Android device ad1 can discover an Android device ad2 which
+       is a group owner
+
+    Args:
+        ad1: The android device
+        ad2: The android device which is a group owner
+    """
+    ad2.droid.wifiP2pStopPeerDiscovery();
+    time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
+    ad1.droid.wifiP2pDiscoverPeers()
+    p2p_find_result = False
+    while not p2p_find_result:
+        ad1_event = ad1.ed.pop_event(p2pconsts.PEER_AVAILABLE_EVENT,
+                p2pconsts.P2P_FIND_TIMEOUT)
+        ad1.log.debug(ad1_event['data'])
+        for device in ad1_event['data']['Peers']:
+            if (device['Name'] == ad2.name and
+                    int(device['GroupCapability']) & p2pconsts.P2P_GROUP_CAPAB_GROUP_OWNER):
+                ad2.deviceAddress = device['Address']
+                p2p_find_result = True
+    asserts.assert_true(p2p_find_result,
+            "DUT didn't discovered group owner peer:%s device"% (ad2.name))
 
 def createP2pLocalService(ad, serviceCategory):
     """Based on serviceCategory to create p2p local service
@@ -425,6 +485,36 @@ def genExpectTestData(serviceType, queryString1, queryString2):
 
     return expectServiceList
 
+def p2p_create_group(ad):
+    """Create a group as Group Owner
+
+    Args:
+        ad: The android device
+    """
+    ad.droid.wifiP2pCreateGroup()
+    ad.ed.pop_event(p2pconsts.CREATE_GROUP_SUCCESS_EVENT,
+            p2pconsts.DEFAULT_TIMEOUT)
+    time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
+
+def p2p_create_group_with_config(ad, network_name, passphrase, band):
+    """Create a group as Group Owner
+
+    Args:
+        ad: The android device
+    """
+    wifi_p2p_config = {
+            WifiP2PEnums.WifiP2pConfig.NETWORK_NAME: network_name,
+            WifiP2PEnums.WifiP2pConfig.PASSPHRASE: passphrase,
+            WifiP2PEnums.WifiP2pConfig.GROUP_BAND: band,
+            WifiP2PEnums.WifiP2pConfig.WPSINFO_KEY: {
+                    WifiP2PEnums.WpsInfo.WPS_SETUP_KEY: WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC
+            }
+    }
+    ad.droid.wifiP2pCreateGroupWithConfig(wifi_p2p_config)
+    ad.ed.pop_event(p2pconsts.CREATE_GROUP_SUCCESS_EVENT,
+            p2pconsts.DEFAULT_TIMEOUT)
+    time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
+
 class WifiP2PEnums():
 
     class WifiP2pConfig():
@@ -432,6 +522,9 @@ class WifiP2PEnums():
         WPSINFO_KEY = "wpsInfo"
         GO_INTENT_KEY = "groupOwnerIntent"
         NETID_KEY = "netId"
+        NETWORK_NAME = "networkName"
+        PASSPHRASE = "passphrase"
+        GROUP_BAND = "groupOwnerBand"
 
     class WpsInfo():
         WPS_SETUP_KEY = "setup"
