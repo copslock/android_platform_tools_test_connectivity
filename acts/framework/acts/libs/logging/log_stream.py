@@ -84,7 +84,7 @@ class LogStyles:
 
 
 _log_streams = dict()
-
+_null_handler = logging.NullHandler()
 
 @subscribe_static(TestClassBeginEvent)
 def _on_test_class_begin(event):
@@ -110,8 +110,9 @@ def _on_test_case_end(event):
         log_stream.on_test_case_end(event)
 
 
-def create_logger(name, log_name=None, log_styles=LogStyles.NONE,
-                  stream_format=None, file_format=None):
+def create_logger(name, log_name=None, base_path=None,
+                  log_styles=LogStyles.NONE, stream_format=None,
+                  file_format=None):
     """Creates a Python Logger object with the given attributes.
 
     Creation through this method will automatically manage the logger in the
@@ -122,6 +123,7 @@ def create_logger(name, log_name=None, log_styles=LogStyles.NONE,
         name: The name of the LogStream. Used as the file name prefix.
         log_name: The name of the underlying logger. Use LogStream name as
             default.
+        base_path: The base path used by the logger.
         log_styles: An integer or array of integers that are the sum of
             corresponding flag values in LogStyles. Examples include:
 
@@ -134,15 +136,15 @@ def create_logger(name, log_name=None, log_styles=LogStyles.NONE,
         stream_format: Format used for log output to stream
         file_format: Format used for log output to files
     """
-    log_stream = _LogStream(name, log_name, log_styles, stream_format,
-                            file_format)
+    if name in _log_streams:
+        _log_streams[name].cleanup()
+    log_stream = _LogStream(name, log_name, base_path, log_styles,
+                            stream_format, file_format)
     _set_logger(log_stream)
     return log_stream.logger
 
 
 def _set_logger(log_stream):
-    if log_stream.name in _log_streams:
-        _log_streams[log_stream.name].cleanup()
     _log_streams[log_stream.name] = log_stream
     return log_stream
 
@@ -218,13 +220,16 @@ class _LogStream(object):
                 handler.setFormatter(self._file_format)
             return handler
 
-    def __init__(self, name, log_name=None, log_styles=LogStyles.NONE,
-                 stream_format=None, file_format=None):
+    def __init__(self, name, log_name=None, base_path=None,
+                 log_styles=LogStyles.NONE, stream_format=None,
+                 file_format=None):
         """Creates a LogStream.
 
         Args:
             name: The name of the LogStream. Used as the file name prefix.
             log_name: The name of the underlying logger. Use LogStream name
+                as default.
+            base_path: The base path used by the logger. Use logging.log_path
                 as default.
             log_styles: An integer or array of integers that are the sum of
                 corresponding flag values in LogStyles. Examples include:
@@ -243,9 +248,13 @@ class _LogStream(object):
             self.logger = logging.getLogger(log_name)
         else:
             self.logger = logging.getLogger(name)
+        # Add a NullHandler to suppress unwanted console output
+        self.logger.addHandler(_null_handler)
+        self.logger.propagate = False
+        self.base_path = base_path or logging.log_path
+        os.makedirs(self.base_path, exist_ok=True)
         self.stream_format = stream_format
         self.file_format = file_format
-        self.logger.propagate = False
         self._test_case_handler_descriptors = []
         self._test_case_log_handlers = []
         self._test_class_handler_descriptors = []
@@ -372,18 +381,20 @@ class _LogStream(object):
             if log_style & LogStyles.TESTCLASS_LOG:
                 self._test_class_handler_descriptors.append(descriptor)
             if log_style & LogStyles.MONOLITH_LOG:
-                handler = descriptor.create(logging.log_path)
+                handler = descriptor.create(self.base_path)
                 self.logger.addHandler(handler)
 
     def __remove_handler(self, handler):
-        """Removes a handler from the logger."""
-        handler.close()
-        self.logger.removeHandler(handler)
+        """Removes a handler from the logger, unless it's a NullHandler."""
+        if handler is not _null_handler:
+            handler.close()
+            self.logger.removeHandler(handler)
 
     def __create_handlers_from_descriptors(self, descriptors, handlers, event):
         """Create new handlers as described in the descriptors list"""
         if descriptors:
             event_context = context.get_context_for_event(event)
+            event_context.set_base_output_path(self.base_path)
             output_path = event_context.get_full_output_path()
             for descriptor in descriptors:
                 handler = descriptor.create(output_path)
