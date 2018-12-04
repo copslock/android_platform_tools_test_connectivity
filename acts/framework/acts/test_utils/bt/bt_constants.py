@@ -189,7 +189,7 @@ codec_types = {
     'SBC': 0,
     'AAC': 1,
     'APTX': 2,
-    'APTX_HD': 3,
+    'APTX-HD': 3,
     'LDAC': 4,
     'MAX': 5,
     'INVALID': 1000000
