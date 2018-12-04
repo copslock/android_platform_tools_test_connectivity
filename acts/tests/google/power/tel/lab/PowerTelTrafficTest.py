@@ -18,6 +18,7 @@ import time
 
 import scapy.all as scapy
 
+import asserts
 from acts.test_utils.power import IperfHelper as IPH
 from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
@@ -58,6 +59,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         # the application layer.
         self.bandwidth_limit_dl = None
         self.bandwidth_limit_ul = None
+
+        # Throughput obtained from iPerf
+        self.iperf_results = None
 
     def setup_test(self):
         """ Executed before every test case.
@@ -122,7 +126,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         """
 
         # Start data traffic
-        client_iperf_helper = self.start_tel_traffic(self.dut)
+        iperf_helpers = self.start_tel_traffic(self.dut)
 
         # Measure power
         self.collect_power_data()
@@ -131,43 +135,74 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         time.sleep(self.IPERF_MARGIN + 2)
 
         # Collect throughput measurement
-        throughput = []
+        self.iperf_results = self.get_iperf_results(self.dut, iperf_helpers)
 
-        for iph in client_iperf_helper:
-            self.log.info("Getting {} throughput".format(
+        # Check if power measurement is below the required value
+        self.pass_fail_check()
+
+        return self.test_result, self.iperf_results
+
+    def get_iperf_results(self, device, iperf_helpers):
+        """ Pulls iperf results from the device.
+
+        Args:
+            device: the device from which iperf results need to be pulled.
+
+        Returns:
+            a dictionary containing DL/UL throughput in Mbit/s.
+        """
+
+        throughput = {}
+
+        for iph in iperf_helpers:
+
+            self.log.info("Getting {} throughput results.".format(
                 iph.traffic_direction))
+
             iperf_result = iph.process_iperf_results(
-                self.dut, self.log, self.iperf_servers, self.test_name)
+                device, self.log, self.iperf_servers, self.test_name)
+
+            throughput[iph.traffic_direction] = iperf_result
+
+        return throughput
+
+    def pass_fail_check(self):
+        """ Checks power consumption and throughput.
+
+        Uses the base class method to check power consumption. Also, compares
+        the obtained throughput with the expected value provided by the
+        simulation class.
+
+        """
+
+        for direction, throughput in self.iperf_results.items():
             try:
-                if iph.traffic_direction == "UL":
+                if direction == "UL":
                     expected_t = self.simulation.maximum_uplink_throughput()
-                elif iph.traffic_direction == "DL":
+                elif direction == "DL":
                     expected_t = self.simulation.maximum_downlink_throughput()
                 else:
                     raise RuntimeError("Unexpected traffic direction value.")
-
-                if not 0.90 < iperf_result / expected_t < 1.10:
-                    self.log.warning("Throughput differed more than 10% from "
-                                     "the expected value!. {}/{} = {}".format(
-                                         iperf_result, expected_t,
-                                         iperf_result / expected_t))
-                else:
-                    self.log.info(
-                        "Throughput is within a 10% margin."
-                        "The expected value is {} Mbits.".format(expected_t))
-
             except NotImplementedError:
                 # Some simulation classes might not have implemented the max
-                # throughput calculation yet
+                # throughput calculation yet.
                 self.log.debug("Expected throughput is not available for the "
                                "current simulation class.")
+            else:
 
-            throughput.append(iperf_result)
+                self.log.info(
+                    "The expected {} throughput is {} Mbit/s.".format(
+                        direction, expected_t))
+                asserts.assert_true(
+                    0.90 < throughput / expected_t < 1.10,
+                    "{} throughput differed more than 10% from the expected "
+                    "value! ({}/{} = {})".format(direction,
+                                                 round(throughput, 3),
+                                                 round(expected_t, 3),
+                                                 round(throughput / expected_t,
+                                                       3)))
 
-        # Check if power measurement is below the required value
-        # self.pass_fail_check()
-
-        return self.test_result, throughput
+        super().pass_fail_check()
 
     def start_tel_traffic(self, client_host):
         """ Starts iPerf in the indicated device and initiates traffic.

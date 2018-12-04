@@ -301,6 +301,12 @@ class PowerBaseTest(base_test.BaseTestClass):
         The threshold is provided in the config file. In this class, result is
         current in mA.
         """
+
+        if not self.threshold or self.test_name not in self.threshold:
+            self.log.error("No threshold is provided for the test '{}' in "
+                           "the configuration file.".format(self.test_name))
+            return
+
         current_threshold = self.threshold[self.test_name]
         if self.test_result:
             asserts.assert_true(
