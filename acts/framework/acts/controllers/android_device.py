@@ -28,11 +28,11 @@ import time
 
 from acts import error
 from acts import logger as acts_logger
-from acts import signals
 from acts import tracelogger
 from acts import utils
 from acts.controllers import adb
 from acts.controllers import fastboot
+from acts.controllers.android_lib import logcat
 from acts.controllers.sl4a_lib import sl4a_manager
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
@@ -422,7 +422,6 @@ class AndroidDevice:
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
-        utils.create_dir(self.log_path)
         self.log = tracelogger.TraceLogger(
             AndroidDeviceLoggerAdapter(logging.getLogger(),
                                        {'serial': serial}))
@@ -432,8 +431,7 @@ class AndroidDevice:
         self.fastboot = fastboot.FastbootProxy(
             serial, ssh_connection=ssh_connection)
         self.adb_logcat_file_path = os.path.join(
-            log_path_base, 'AndroidDevice%s' % serial,
-            "adblog,{},{}.txt".format(self.model, serial))
+            self.log_path, "adblog_%s_debug.txt" % serial)
         if not self.is_bootloader:
             self.root_adb()
         self._ssh_connection = ssh_connection
@@ -623,10 +621,9 @@ class AndroidDevice:
         """Whether there is an ongoing adb logcat collection.
         """
         if self.adb_logcat_process:
-            try:
-                utils._assert_subprocess_running(self.adb_logcat_process)
+            if self.adb_logcat_process.is_running():
                 return True
-            except Exception:
+            else:
                 # if skip_sl4a is true, there is no sl4a session
                 # if logcat died due to device reboot and sl4a session has
                 # not restarted there is no droid.
@@ -758,12 +755,17 @@ class AndroidDevice:
         current time.
 
         Args:
-            tag: An identifier of the time period, usualy the name of a test.
+            tag: An identifier of the time period, usually the name of a test.
             begin_time: Epoch time of the beginning of the time period.
+            dest_path: Destination path of the excerpt file.
         """
         log_begin_time = acts_logger.epoch_to_log_line_timestamp(begin_time)
         log_end_time = acts_logger.get_log_line_timestamp()
         self.log.debug("Extracting adb log from logcat.")
+        if not os.path.exists(self.adb_logcat_file_path):
+            self.log.warn("Logcat file %s does not exist." %
+                          self.adb_logcat_file_path)
+            return
         adb_excerpt_path = os.path.join(self.log_path, dest_path)
         utils.create_dir(adb_excerpt_path)
         f_name = os.path.basename(self.adb_logcat_file_path)
@@ -801,12 +803,6 @@ class AndroidDevice:
     def start_adb_logcat(self):
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
-
-        Args:
-            cont_logcat_file: Specifies whether to continue the previous logcat
-                              file.  This allows for start_adb_logcat to act
-                              as a restart logcat function if it is noticed
-                              logcat is no longer running.
         """
         if self.is_adb_logcat_on:
             self.log.warn(
@@ -821,23 +817,10 @@ class AndroidDevice:
             extra_params = self.adb_logcat_param
         else:
             extra_params = "-b all"
-        last_timestamp = None
-        if os.path.exists(self.adb_logcat_file_path):
-            output = job.run("tail %s" % self.adb_logcat_file_path)
-            if output.stdout and output.exit_status != 1:
-                timestamps = re.findall(r"(.*\d+-\d+ \d+:\d+:\d+.\d+)",
-                                        output.stdout)
-                if timestamps:
-                    last_timestamp = timestamps[-1]
-        if last_timestamp:
-            begin_at = '-T "%s"' % last_timestamp
-        else:
-            begin_at = '-T 1'
 
-        # TODO(markdr): Pull 'adb -s %SERIAL' from the AdbProxy object.
-        cmd = "adb -s {} logcat {} -v year {} >> {}".format(
-            self.serial, begin_at, extra_params, self.adb_logcat_file_path)
-        self.adb_logcat_process = utils.start_standing_subprocess(cmd)
+        self.adb_logcat_process = logcat.create_logcat_keepalive_process(
+            self.serial, self.log_path, extra_params)
+        self.adb_logcat_process.start()
 
     def stop_adb_logcat(self):
         """Stops the adb logcat collection subprocess.
@@ -850,7 +833,7 @@ class AndroidDevice:
         # Set the last timestamp to the current timestamp. This may cause
         # a race condition that allows the same line to be logged twice,
         # but it does not pose a problem for our logging purposes.
-        utils.stop_standing_subprocess(self.adb_logcat_process)
+        self.adb_logcat_process.stop()
         self.adb_logcat_process = None
 
     def get_apk_uid(self, apk_name):
@@ -1277,7 +1260,7 @@ class AndroidDevice:
         output = job.run(
             "grep '%s' %s" % (matching_string, self.adb_logcat_file_path),
             ignore_status=True)
-        if not output.stdout or output.exit_status == 1:
+        if not output.stdout or output.exit_status != 0:
             return []
         if begin_time:
             log_begin_time = acts_logger.epoch_to_log_line_timestamp(
