@@ -123,12 +123,10 @@ class LteCaSimulation(LteSimulation):
                                    "requested CA configuration")
                     return False
 
-                self.set_band(
+                self.set_band_with_defaults(
                     self.bts[bts_index],
                     band,
                     calibrate_if_necessary=bts_index == 0)
-
-                self.set_channel_bandwidth(self.bts[bts_index], 20)
 
                 bts_index += 1
 
@@ -139,7 +137,7 @@ class LteCaSimulation(LteSimulation):
                                    "requested CA configuration")
                     return False
 
-                self.set_band(
+                self.set_band_with_defaults(
                     self.bts[bts_index],
                     band,
                     calibrate_if_necessary=bts_index == 0)
@@ -147,12 +145,6 @@ class LteCaSimulation(LteSimulation):
                     self.bts[bts_index + 1],
                     band,
                     calibrate_if_necessary=False)
-
-                self.set_channel_bandwidth(self.bts[bts_index], 20)
-                self.set_channel_bandwidth(self.bts[bts_index], 20)
-
-                self.bts[bts_index + 1].dl_channel = str(
-                    int(self.bts[bts_index + 1].dl_channel) + 20 * 10 - 2)
 
                 bts_index += 2
 
@@ -170,8 +162,60 @@ class LteCaSimulation(LteSimulation):
                            " carrier aggregation sim.")
             return False
 
+        # Get the bw for each carrier
+        # This is an optional parameter, by default the maximum bandwidth for
+        # each band will be selected.
+
+        values = self.consume_parameter(parameters, self.PARAM_BW,
+                                        self.num_carriers)
+
+        bts_index = 0
+
+        for ca in ca_configs:
+
+            band = int(ca[:-1])
+            ca_class = ca[-1]
+
+            if values:
+                bw = int(values[1 + bts_index])
+            else:
+                bw = max(self.allowed_bandwidth_dictionary[band])
+
+            self.set_channel_bandwidth(self.bts[bts_index], bw)
+            bts_index += 1
+
+            if ca_class.upper() == 'C':
+
+                self.set_channel_bandwidth(self.bts[bts_index], bw)
+
+                self.bts[bts_index].dl_channel = str(
+                    int(self.bts[bts_index - 1].dl_channel) + bw * 10 - 2)
+
+                bts_index += 1
+
         # No errors were found
         return True
+
+    def set_band_with_defaults(self, bts, band, calibrate_if_necessary=True):
+        """ Switches to the given band restoring default values
+
+        Ensures the base station is switched from a different band so
+        band-dependent default values are restored.
+
+        Args:
+            bts: basestation handle
+            band: desired band
+            calibrate_if_necessary: if False calibration will be skipped
+
+        """
+
+        # If the band is already the desired band, temporarily switch to
+        # another band to trigger restoring default values.
+        if int(bts.band) == band:
+            # Using bands 1 and 2 but it could be any others
+            bts.band = '1' if band != 1 else '2'
+
+        self.set_band(bts, band, calibrate_if_necessary=calibrate_if_necessary)
 
     def start_test_case(self):
         """ Attaches the phone to all the other basestations.
@@ -186,8 +230,8 @@ class LteCaSimulation(LteSimulation):
         testcase.power_control = TestPowerControl.POWER_CONTROL_DISABLE
         testcase.measurement_LTE = TestMeasurement.MEASUREMENT_DISABLE
 
-        for bts_index in range(1, self.num_carriers):
-            self.bts[bts_index].dl_cc_enabled = True
+        for bts_index in range(1, len(self.bts)):
+            self.bts[bts_index].dl_cc_enabled = bts_index < self.num_carriers
 
         self.anritsu.start_testcase()
 
