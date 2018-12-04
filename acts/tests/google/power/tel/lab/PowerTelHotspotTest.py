@@ -46,6 +46,7 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
 
         # Initialize values
         self.wifi_band = None
+        self.iperf_results = None
 
     def setup_class(self):
         """ Executed before any test case is started.
@@ -109,7 +110,7 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
             self.android_devices[1], self.network, check_connectivity=False)
 
         # Start data traffic
-        client_iperf_helper = self.start_tel_traffic(self.android_devices[1])
+        iperf_helpers = self.start_tel_traffic(self.android_devices[1])
 
         # Measure power
         self.collect_power_data()
@@ -118,10 +119,8 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
         time.sleep(self.IPERF_MARGIN + 2)
 
         # Collect throughput measurement
-        for iph in client_iperf_helper:
-            print('Setting: {}\n'.format(iph.iperf_args))
-            iph.process_iperf_results(self.android_devices[1], self.log,
-                                      self.iperf_servers, self.test_name)
+        self.iperf_results = self.get_iperf_results(self.android_devices[1],
+                                                    iperf_helpers)
 
         # Checks if power is below the required threshold.
         self.pass_fail_check()
