@@ -261,6 +261,9 @@ class _TelTables():
         '24201': tel_defines.CARRIER_TEL,
         '24212': tel_defines.CARRIER_TEL,
 
+        #Canada Freedom
+        '302490': tel_defines.CARRIER_FRE,
+
         #Telstra (Australia)
         '50501': tel_defines.CARRIER_TSA
     }
