@@ -194,12 +194,22 @@ class DataPathTest(AwareBaseTest):
         elif encr_type == self.ENCR_TYPE_PMK:
             pmk = self.PMK
 
+        port = 1234
+        transport_protocol = 6  # TCP/IP
+
         # Publisher: request network
-        p_req_key = self.request_network(
-            p_dut,
-            p_dut.droid.wifiAwareCreateNetworkSpecifier(
-                p_disc_id, peer_id_on_pub
-                if use_peer_id else None, passphrase, pmk))
+        if encr_type == self.ENCR_TYPE_OPEN:
+            p_req_key = self.request_network(
+                p_dut,
+                p_dut.droid.wifiAwareCreateNetworkSpecifier(
+                    p_disc_id, peer_id_on_pub
+                    if use_peer_id else None, passphrase, pmk))
+        else:
+            p_req_key = self.request_network(
+                p_dut,
+                p_dut.droid.wifiAwareCreateNetworkSpecifier(
+                    p_disc_id, peer_id_on_pub if use_peer_id else None,
+                    passphrase, pmk, port, transport_protocol))
 
         # Subscriber: request network
         s_req_key = self.request_network(
@@ -242,6 +252,10 @@ class DataPathTest(AwareBaseTest):
             # note that Pub <-> Sub since IPv6 are of peer's!
             s_ipv6 = p_net_event_nc["data"][aconsts.NET_CAP_IPV6]
             p_ipv6 = s_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+
+            self.verify_network_info(
+                p_net_event_nc["data"], s_net_event_nc["data"],
+                encr_type == self.ENCR_TYPE_OPEN, port, transport_protocol)
 
             p_net_event_lp = autils.wait_for_event_with_keys(
                 p_dut, cconsts.EVENT_NETWORK_CALLBACK,
@@ -569,6 +583,36 @@ class DataPathTest(AwareBaseTest):
         # clean-up
         resp_dut.droid.connectivityUnregisterNetworkCallback(resp_req_key)
         init_dut.droid.connectivityUnregisterNetworkCallback(init_req_key)
+
+    def verify_network_info(self, p_data, s_data, open, port,
+                            transport_protocol):
+        """Verify that the port and transport protocol information is correct.
+            - should only exist on subscriber (received from publisher)
+              and match transmitted values
+            - should only exist on an encrypted NDP
+
+        Args:
+            p_data, s_data: Pub and Sub (respectively) net cap event data.
+            open: True if NDP unencrypted, False if encrypted.
+            port: Expected port value.
+            transport_protocol: Expected transport protocol value.
+        """
+        asserts.assert_true(aconsts.NET_CAP_PORT not in p_data,
+                            "port info not expected on Pub")
+        asserts.assert_true(aconsts.NET_CAP_TRANSPORT_PROTOCOL not in p_data,
+                            "transport protocol info not expected on Pub")
+        if open:
+            asserts.assert_true(aconsts.NET_CAP_PORT not in s_data,
+                                "port info not expected on Sub (open NDP)")
+            asserts.assert_true(
+                aconsts.NET_CAP_TRANSPORT_PROTOCOL not in s_data,
+                "transport protocol info not expected on Sub (open NDP)")
+        else:
+            asserts.assert_equal(s_data[aconsts.NET_CAP_PORT], port,
+                                 "Port info does not match on Sub (from Pub)")
+            asserts.assert_equal(
+                s_data[aconsts.NET_CAP_TRANSPORT_PROTOCOL], transport_protocol,
+                "Transport protocol info does not match on Sub (from Pub)")
 
     #######################################
     # Positive In-Band (IB) tests key:

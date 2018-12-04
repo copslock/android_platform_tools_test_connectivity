@@ -151,6 +151,8 @@ CAP_SUPPORTED_CIPHER_SUITES = "supportedCipherSuites"
 ######################################################
 
 NET_CAP_IPV6 = "aware_ipv6"
+NET_CAP_PORT = "aware_port"
+NET_CAP_TRANSPORT_PROTOCOL = "aware_transport_protocol"
 
 ######################################################
 
