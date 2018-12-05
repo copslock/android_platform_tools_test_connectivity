@@ -48,6 +48,7 @@ from acts.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC_MODE_CHANGE
 from acts.test_utils.tel.tel_defines import CARRIER_UNKNOWN
+from acts.test_utils.tel.tel_defines import CARRIER_FRE
 from acts.test_utils.tel.tel_defines import COUNTRY_CODE_LIST
 from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
 from acts.test_utils.tel.tel_defines import DATA_STATE_DISCONNECTED
@@ -4646,6 +4647,9 @@ def ensure_network_generation_for_subscription(
         network_preference = network_preference_for_generation(
             generation, ad.telephony["subscription"][sub_id]["operator"],
             ad.telephony["subscription"][sub_id]["phone_type"])
+        if ad.telephony["subscription"][sub_id]["operator"] == CARRIER_FRE \
+            and generation == GEN_4G:
+            network_preference = NETWORK_MODE_LTE_ONLY
         ad.log.info("Network preference for %s is %s", generation,
                     network_preference)
         rat_family = rat_family_for_generation(

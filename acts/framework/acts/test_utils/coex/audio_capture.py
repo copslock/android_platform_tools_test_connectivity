@@ -21,6 +21,8 @@ import os
 import pyaudio
 import wave
 
+RECORD_FILE_TEMPLATE = 'recorded_audio_%s.wav'
+
 
 class AudioCapture:
 
@@ -44,12 +46,14 @@ class AudioCapture:
         self.audio_params = test_params
         self.file_counter = 0
         self.path = path
+        self.record_file_template = os.path.join(path, RECORD_FILE_TEMPLATE)
 
-    def capture_and_store_audio(self):
+    def capture_and_store_audio(self, trim_beginning=0, trim_end=0):
         """Records the A2DP streaming.
 
         Args:
-            args: Audio parameters and test name.
+            trim_beginning: how many seconds to trim from the beginning
+            trim_end: how many seconds to trim from the end
         """
         self.device_index = self.input_device['index']
         stream = self.audio.open(
@@ -61,19 +65,32 @@ class AudioCapture:
             input_device_index=self.device_index)
 
         frames = []
-        for i in range(self.sample_rate // self.chunk *
-                       self.audio_params['record_duration']):
+        b_chunks = trim_beginning * (self.sample_rate // self.chunk)
+        e_chunks = trim_end * (self.sample_rate // self.chunk)
+        total_chunks = self.sample_rate // self.chunk * self.audio_params[
+            'record_duration']
+        for i in range(total_chunks):
             try:
                 data = stream.read(self.chunk, exception_on_overflow=False)
             except IOError as ex:
                 logging.error("Cannot record audio :{}".format(ex))
                 return False
-            frames.append(data)
+            if b_chunks <= i < total_chunks - e_chunks:
+                frames.append(data)
 
         stream.stop_stream()
         stream.close()
         status = self.write_record_file(frames)
         return status
+
+    def last_fileno(self):
+        return self.next_fileno() - 1
+
+    def next_fileno(self):
+        counter = 0
+        while os.path.exists(self.record_file_template % counter):
+            counter += 1
+        return counter
 
     def write_record_file(self, frames):
         """Writes the recorded audio into the file.
@@ -81,18 +98,8 @@ class AudioCapture:
         Args:
             frames: Recorded audio frames.
         """
-        if self.path == "~/":
-            while os.path.exists("recorded_audio_%s.wav" % self.file_counter):
-                self.file_counter += 1
-            file_name = "recorded_audio_%s.wav" % self.file_counter
-        else:
-            while os.path.exists(
-                    os.path.join(self.path,
-                                 "recorded_audio_%s.wav" % self.file_counter)):
-                self.file_counter += 1
-            file_name = os.path.join(
-                self.path, "recorded_audio_%s.wav" % self.file_counter)
-
+        file_name = self.record_file_template % self.next_fileno()
+        logging.info('writing to %s' % file_name)
         wf = wave.open(file_name, 'wb')
         wf.setnchannels(self.channels)
         wf.setsampwidth(self.audio.get_sample_size(self.audio_format))
