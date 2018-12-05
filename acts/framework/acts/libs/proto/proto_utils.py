@@ -53,7 +53,7 @@ def compile_proto(proto_path, output_dir):
     output_filename = os.path.basename(proto_path).replace('.proto', '_pb2.py')
     output_path = os.path.join(output_dir, output_filename)
     # Compiling proto
-    logging.info('Generating %s' % output_path)
+    logging.debug('Generating %s' % output_path)
     protoc_command = [
         protoc, '-I=%s' % (input_dir), '--python_out=%s' % (output_dir),
         proto_path
