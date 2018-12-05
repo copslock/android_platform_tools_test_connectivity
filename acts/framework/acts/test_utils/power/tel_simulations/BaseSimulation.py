@@ -583,7 +583,7 @@ class BaseSimulation():
 
         return up_call_path_loss
 
-    def set_band(self, bts, band):
+    def set_band(self, bts, band, calibrate_if_necessary=True):
         """ Sets the band used for communication.
 
         When moving to a new band, recalibrate the link.
@@ -591,22 +591,19 @@ class BaseSimulation():
         Args:
             bts: basestation handle
             band: desired band
+            calibrate_if_necessary: if False calibration will be skipped
         """
 
         # Change band only if it is needed
-        if band != self.current_calibrated_band:
-            bts.band = band
-            self.current_calibrated_band = band
-            time.sleep(5)  # It takes some time to propagate the new band
+        bts.band = band
+        time.sleep(5)  # It takes some time to propagate the new band
 
-            # Invalidate the calibration values
-            self.dl_path_loss = None
-            self.ul_path_loss = None
+        # Invalidate the calibration values
+        self.dl_path_loss = None
+        self.ul_path_loss = None
 
-        # self.dl_path_loss and self.ul_path_loss will be none if the band has
-        # just changed or calibration for this band failed in previous tests.
-        if (self.calibration_required and
-                (not self.dl_path_loss or not self.ul_path_loss)):
+        # Only calibrate when required.
+        if self.calibration_required and calibrate_if_necessary:
             # Try loading the path loss values from the calibration table. If
             # they are not available, use the automated calibration procedure.
             try:
@@ -649,3 +646,15 @@ class BaseSimulation():
             Maximum throughput in mbps
         """
         raise NotImplementedError()
+
+    def start_test_case(self):
+        """ Starts a test case in the current simulation.
+
+        Requires the phone to be attached.
+
+        Returns:
+            True if the case was successfully started.
+
+        """
+
+        return True
