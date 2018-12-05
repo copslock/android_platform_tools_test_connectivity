@@ -20,6 +20,10 @@ from threading import Thread
 import time
 
 
+class ProcessError(Exception):
+    """Raised when invalid operations are run on a Process."""
+
+
 class Process(object):
     """A Process object used to run various commands.
 
@@ -33,7 +37,7 @@ class Process(object):
         _on_output_callback: The callback to call when output is received.
         _on_terminate_callback: The callback to call when the process terminates
                                 without stop() being called first.
-        _started: Whether or not the Process is in the running state.
+        _started: Whether or not start() was called.
         _stopped: Whether or not stop() was called.
     """
 
@@ -52,6 +56,7 @@ class Process(object):
         self._on_output_callback = lambda *args, **kw: None
         self._on_terminate_callback = lambda *args, **kw: ''
 
+        self._started = False
         self._stopped = False
 
     def set_on_output_callback(self, on_output_callback):
@@ -92,8 +97,10 @@ class Process(object):
 
     def start(self):
         """Starts the process's execution."""
+        if self._started:
+            raise ProcessError('Process has already started.')
+        self._started = True
         self._process = None
-        self._stopped = False
 
         self._listening_thread = Thread(target=self._exec_loop)
         self._listening_thread.start()
@@ -103,6 +110,8 @@ class Process(object):
         while self._process is None:
             if time.time() > time_up_at:
                 raise OSError('Unable to open process!')
+
+        self._stopped = False
 
     @staticmethod
     def _get_timeout_left(timeout, start_time):
@@ -116,21 +125,8 @@ class Process(object):
         """
         return self._process is not None and self._process.poll() is None
 
-    def wait(self, kill_timeout=60.0):
-        """Waits for the process to finish execution.
-
-        If the process has reached the kill_timeout, the process will be killed
-        instead.
-
-        Args:
-            kill_timeout: The amount of time to wait until killing the process.
-        """
-        try:
-            self._process.wait(kill_timeout)
-        except subprocess.TimeoutExpired:
-            self._stopped = True
-            self._process.kill()
-
+    def _join_threads(self):
+        """Waits for the threads associated with the process to terminate."""
         if self._listening_thread is not None:
             self._listening_thread.join()
             self._listening_thread = None
@@ -139,7 +135,31 @@ class Process(object):
             self._redirection_thread.join()
             self._redirection_thread = None
 
-    def stop(self, timeout=60.0):
+    def wait(self, kill_timeout=60.0):
+        """Waits for the process to finish execution.
+
+        If the process has reached the kill_timeout, the process will be killed
+        instead.
+
+        Note: the on_self_terminate callback will NOT be called when calling
+        this function.
+
+        Args:
+            kill_timeout: The amount of time to wait until killing the process.
+        """
+        if self._stopped:
+            raise ProcessError('Process is already being stopped.')
+        self._stopped = True
+
+        try:
+            self._process.wait(kill_timeout)
+        except subprocess.TimeoutExpired:
+            self._process.kill()
+        finally:
+            self._join_threads()
+            self._started = False
+
+    def stop(self):
         """Stops the process.
 
         This command is effectively equivalent to kill, but gives time to clean
@@ -147,18 +167,8 @@ class Process(object):
 
         Note: the on_self_terminate callback will NOT be called when calling
         this function.
-
-        Args:
-            timeout: The amount of time to wait for the program output to finish
-                     being handled.
         """
-        self._stopped = True
-
-        start_time = time.time()
-
-        if self.is_running():
-            self._process.kill()
-        self.wait(self._get_timeout_left(timeout, start_time))
+        self.wait(0)
 
     def _redirect_output(self):
         """Redirects the output from the command into the on_output_callback."""
