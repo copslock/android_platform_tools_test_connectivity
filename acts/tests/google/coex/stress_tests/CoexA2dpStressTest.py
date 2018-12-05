@@ -32,6 +32,7 @@ from acts.test_utils.coex.coex_test_utils import disconnect_headset_from_dev
 from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import music_play_and_check
 from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
+from acts.test_utils.coex.coex_test_utils import push_music_to_android_device
 
 
 class CoexA2dpStressTest(CoexBaseTest):
@@ -41,24 +42,35 @@ class CoexA2dpStressTest(CoexBaseTest):
 
     def setup_class(self):
         super().setup_class()
-        req_params = ["iterations"]
+        req_params = ["iterations", "audio_params", "headset_mac_address"]
         self.unpack_userparams(req_params)
+        if hasattr(self, "audio_params"):
+            if self.audio_params["music_file"]:
+                self.music_file_to_play = push_music_to_android_device(
+                    self.pri_ad, self.audio_params)
+                if not self.music_file_to_play:
+                    self.log.error("Music file push failed.")
+                    return False
+        else:
+            self.log.warning("No Music files pushed to play.")
 
     def setup_test(self):
         super().setup_test()
         if "a2dp_streaming" in self.current_test_name:
             self.audio = SshAudioCapture(self.audio_params, self.log_path)
-        self.audio_receiver.pairing_mode()
+        if hasattr(self, "RelayDevice"):
+            self.audio_receiver.pairing_mode()
         time.sleep(5)  #Wait time until headset goes into pairing mode.
         if not pair_and_connect_headset(
-                self.pri_ad, self.audio_receiver.mac_address,
+                self.pri_ad, self.headset_mac_address,
                 set([BtEnum.BluetoothProfile.A2DP.value])):
             self.log.error("Failed to pair and connect to headset")
             return False
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
-        self.audio_receiver.clean_up()
+        if hasattr(self, "RelayDevice"):
+            self.audio_receiver.clean_up()
         if "a2dp_streaming" in self.current_test_name:
             analysis_path = self.audio.audio_quality_analysis(self.log_path)
             with open(analysis_path) as f:
@@ -75,10 +87,10 @@ class CoexA2dpStressTest(CoexBaseTest):
         for i in range(self.iterations):
             self.log.info("Headset connect/disconnect iteration={}".format(i))
             self.pri_ad.droid.bluetoothConnectBonded(
-                self.audio_receiver.mac_address)
+                self.headset_mac_address)
             time.sleep(2)  #Wait time until device gets connected.
             self.pri_ad.droid.bluetoothDisconnectConnected(
-                self.audio_receiver.mac_address)
+                self.headset_mac_address)
         return True
 
     def connect_disconnect_a2dp_headset(self):
@@ -95,16 +107,16 @@ class CoexA2dpStressTest(CoexBaseTest):
         """
         for i in range(self.iterations):
             if not connect_dev_to_headset(self.pri_ad,
-                                          self.audio_receiver.mac_address,
+                                          self.headset_mac_address,
                                           {BtEnum.BluetoothProfile.A2DP.value}):
                 self.log.error("Failure to connect A2dp headset.")
                 return False
 
             if not disconnect_headset_from_dev(
-                    self.pri_ad, self.audio_receiver.mac_address,
+                    self.pri_ad, self.headset_mac_address,
                 [BtEnum.BluetoothProfile.A2DP.value]):
                 self.log.error("Could not disconnect {}".format(
-                    self.audio_receiver.mac_address))
+                    self.headset_mac_address))
                 return False
         return True
 
@@ -130,7 +142,7 @@ class CoexA2dpStressTest(CoexBaseTest):
         """Wrapper function to start iperf traffic and music streaming."""
         tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
-                  (self.pri_ad, self.audio_receiver.mac_address,
+                  (self.pri_ad, self.headset_mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
                  (self.run_iperf_and_get_result, ())]
