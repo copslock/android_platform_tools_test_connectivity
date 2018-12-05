@@ -162,19 +162,19 @@ class LteSimulation(BaseSimulation):
         """
 
         super().__init__(anritsu, log, dut, test_config, calibration_table)
-        base_path = "C:\\Users\MD8475{}\Documents\DAN_configs\\".format(
+        self.file_path = 'C:\\Users\\MD8475{}\\Documents\\DAN_configs\\'.format(
             self.anritsu._md8475_version)
 
         if self.anritsu._md8475_version == 'A':
-            self.sim_file_path = "{}{}.wnssp".format(base_path,
+            self.sim_file_path = "{}{}.wnssp".format(self.file_path,
                                                      self.LTE_BASIC_SIM_FILE)
-            self.cell_file_path = "{}{}.wnscp".format(base_path,
+            self.cell_file_path = "{}{}.wnscp".format(self.file_path,
                                                       self.LTE_BASIC_CELL_FILE)
         else:
-            self.sim_file_path = "{}{}.wnssp2".format(base_path,
+            self.sim_file_path = "{}{}.wnssp2".format(self.file_path,
                                                       self.LTE_BASIC_SIM_FILE)
             self.cell_file_path = "{}{}.wnscp2".format(
-                base_path, self.LTE_BASIC_CELL_FILE)
+                self.file_path, self.LTE_BASIC_CELL_FILE)
 
         anritsu.load_simulation_paramfile(self.sim_file_path)
         anritsu.load_cell_paramfile(self.cell_file_path)
@@ -949,14 +949,15 @@ class LteSimulation(BaseSimulation):
         else:
             return self.DuplexMode.FDD
 
-    def set_band(self, bts, band):
+    def set_band(self, bts, band, calibrate_if_necessary=True):
         """ Sets the right duplex mode before switching to a new band.
 
         Args:
             bts: basestation handle
             band: desired band
+            calibrate_if_necessary: if False calibration will be skipped
         """
 
         bts.duplex_mode = self.get_duplex_mode(band).value
 
-        super().set_band(bts, band)
+        super().set_band(bts, band, calibrate_if_necessary)

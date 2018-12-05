@@ -109,6 +109,7 @@ class BtsNumber(Enum):
     BTS2 = "BTS2"
     BTS3 = "BTS3"
     BTS4 = "BTS4"
+    BTS5 = "BTS5"
 
 
 class BtsTechnology(Enum):
@@ -2319,6 +2320,33 @@ class _BaseTransceiverStation(object):
             None
         """
         cmd = "DLCHAN {},{}".format(channel, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def dl_cc_enabled(self):
+        """ Checks if component carrier is enabled or disabled
+
+        Args:
+            None
+
+        Returns:
+            True if enabled, False if disabled
+        """
+        return (self._anritsu.send_query("TESTDLCC?" + self._bts_number) ==
+                "ENABLE")
+
+    @dl_cc_enabled.setter
+    def dl_cc_enabled(self, enabled):
+        """ Enables or disables the component carrier
+
+        Args:
+            enabled: True if it should be enabled, False if disabled
+
+        Returns:
+            None
+        """
+        cmd = "TESTDLCC {},{}".format("ENABLE" if enabled else "DISABLE",
+                                      self._bts_number)
         self._anritsu.send_command(cmd)
 
     @property
