@@ -130,7 +130,7 @@ def get_log_file_timestamp(delta=None):
     Returns:
         A timestamp in log file name format with an offset.
     """
-    return _get_timestamp("%Y-%m-%d-%Y_%H-%M-%S-%f", delta)
+    return _get_timestamp("%Y-%m-%d_%H-%M-%S-%f", delta)
 
 
 def _setup_test_logger(log_path, prefix=None):
