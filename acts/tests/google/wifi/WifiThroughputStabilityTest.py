@@ -235,7 +235,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                 self.iperf_args,
                 timeout=self.test_params["iperf_duration"] + TEST_TIMEOUT)
         except:
-            self.log.warning("TimeoutError: Iperf measurement timed out.")
+            self.log.error("TimeoutError: Iperf measurement timed out.")
         client_output_path = os.path.join(self.iperf_server.log_path,
                                           "iperf_client_output_{}".format(
                                               self.current_test_name))
