@@ -193,6 +193,78 @@ class LteCaSimulation(LteSimulation):
 
                 bts_index += 1
 
+        # Get the TM for each carrier
+        # This is an optional parameter, by the default value depends on the
+        # MIMO mode for each carrier
+
+        tm_values = self.consume_parameter(parameters, self.PARAM_TM,
+                                           self.num_carriers)
+
+        # Get the MIMO mode for each carrier
+
+        mimo_values = self.consume_parameter(parameters, self.PARAM_MIMO,
+                                             self.num_carriers)
+
+        if not mimo_values:
+            self.log.error("The test parameter '{}' has to be included in the "
+                           "test name followed by the MIMO mode for each "
+                           "carrier separated by underscores.".format(
+                               self.PARAM_MIMO))
+            return False
+
+        if len(mimo_values) != self.num_carriers + 1:
+            self.log.error("The test parameter '{}' has to be followed by "
+                           "a number of MIMO mode values equal to the number "
+                           "of carriers being used.".format(self.PARAM_MIMO))
+            return False
+
+        for bts_index in range(self.num_carriers):
+
+            # Parse and set the requested MIMO mode
+
+            for mimo_mode in LteSimulation.MimoMode:
+                if mimo_values[bts_index + 1] == mimo_mode.value:
+                    requested_mimo = mimo_mode
+                    break
+            else:
+                self.log.error("The mimo mode must be one of %s." %
+                               {elem.value
+                                for elem in LteSimulation.MimoMode})
+                return False
+
+            if (requested_mimo == LteSimulation.MimoMode.MIMO_4x4
+                    and self.anritsu._md8475_version == 'A'):
+                self.log.error("The test requires 4x4 MIMO, but that is not "
+                               "supported by the MD8475A callbox.")
+                return False
+
+            self.set_mimo_mode(self.bts[bts_index], requested_mimo)
+
+            # Parse and set the requested TM
+
+            if tm_values:
+                for tm in LteSimulation.TransmissionMode:
+                    if tm_values[bts_index + 1] == tm.value[2:]:
+                        requested_tm = tm
+                        break
+                else:
+                    self.log.error(
+                        "The TM must be one of %s." %
+                        {elem.value
+                         for elem in LteSimulation.MimoMode})
+                    return False
+            else:
+                # Provide default values if the TM parameter is not set
+                if requested_mimo == LteSimulation.MimoMode.MIMO_1x1:
+                    requested_tm = LteSimulation.TransmissionMode.TM1
+                else:
+                    requested_tm = LteSimulation.TransmissionMode.TM3
+
+            self.set_transmission_mode(self.bts[bts_index], requested_tm)
+
+            self.log.info("Cell {} was set to {} and {} MIMO.".format(
+                bts_index + 1, requested_tm.value, requested_mimo.value))
+
         # No errors were found
         return True
 
