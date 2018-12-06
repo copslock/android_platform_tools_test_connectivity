@@ -120,7 +120,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                     "Received post connection broadcast")
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="bda8ed20-4382-4380-831a-64cf77eca108")
     def test_connect_to_wpa_psk_2g(self):
         """ Adds a network suggestion and ensure that the device connected.
 
@@ -141,6 +141,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         wutils.wait_for_disconnect(self.dut)
 
 
+    @test_tracker_info(uuid="b1d27eea-23c8-4c4f-b944-ef118e4cc35f")
     def test_connect_to_wpa_psk_2g_with_post_connection_broadcast(self):
         """ Adds a network suggestion and ensure that the device connected.
 
@@ -164,6 +165,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         wutils.wait_for_disconnect(self.dut)
 
 
+    @test_tracker_info(uuid="a036a24d-29c0-456d-ae6a-afdde34da710")
     def test_connect_to_wpa_psk_5g_reboot_config_store(self):
         """
         Adds a network suggestion and ensure that the device connects to it
