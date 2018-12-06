@@ -17,6 +17,7 @@
 import inspect
 import logging
 import tempfile
+import traceback
 from os import path
 
 from acts.context import get_context_for_event
@@ -275,8 +276,9 @@ class LoggerProxy(object):
             if self._logger:
                 self._logger.end(event)
         except Exception:
-            logging.exception('Unable to properly close logger %s.' %
-                              self._logger.__class__.__name__)
+            logging.error('Unable to properly close logger %s.' %
+                          self._logger.__class__.__name__)
+            logging.debug("\n%s" % traceback.format_exc())
         finally:
             self._logger = None
 

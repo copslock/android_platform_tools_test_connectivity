@@ -131,8 +131,6 @@ class BluetoothBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def setup_class(self):
-        self.device_selector = get_device_selector_dictionary(
-            self.android_devices)
         if "reboot_between_test_class" in self.user_params:
             threads = []
             for a in self.android_devices:
@@ -144,6 +142,8 @@ class BluetoothBaseTest(BaseTestClass):
                 t.join()
         if not setup_multiple_devices_for_bt_test(self.android_devices):
             return False
+        self.device_selector = get_device_selector_dictionary(
+            self.android_devices)
         if "bluetooth_proto_path" in self.user_params:
             from google import protobuf
 

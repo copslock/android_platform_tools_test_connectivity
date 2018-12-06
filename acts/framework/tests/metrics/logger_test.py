@@ -24,7 +24,8 @@ from acts.metrics.logger import MetricLogger
 COMPILE_IMPORT_PROTO = 'acts.metrics.logger.compile_import_proto'
 CREATE_FROM_INSTANCE = (
     'acts.metrics.logger.subscription_bundle.create_from_instance')
-LOGGING_EXCEPTION = 'logging.exception'
+LOGGING_ERROR = 'logging.error'
+LOGGING_DEBUG = 'logging.debug'
 GET_CONTEXT_FOR_EVENT = 'acts.metrics.logger.get_context_for_event'
 GET_FILE = 'acts.metrics.logger.inspect.getfile'
 MKDTEMP = 'acts.metrics.logger.tempfile.mkdtemp'
@@ -213,10 +214,11 @@ class LoggerProxyTest(TestCase):
         logger.end.assert_called_once_with(event)
         self.assertIsNone(proxy._logger)
 
-    @patch(LOGGING_EXCEPTION)
+    @patch(LOGGING_DEBUG)
+    @patch(LOGGING_ERROR)
     @patch(CREATE_FROM_INSTANCE)
     def test_teardown_proxy_logs_upon_exception(self, create_from_instance,
-                                                logging_exception):
+                                                logging_error, logging_debug):
         logger_cls = Mock()
         logger_args = (Mock(),)
         logger_kwargs = {'mock': Mock()}
@@ -233,7 +235,8 @@ class LoggerProxyTest(TestCase):
         proxy._setup_proxy(event)
         proxy._teardown_proxy(event)
 
-        self.assertTrue(logging_exception.called)
+        self.assertTrue(logging_error.called)
+        self.assertTrue(logging_debug.called)
         self.assertIsNone(proxy._logger)
 
     @patch(CREATE_FROM_INSTANCE)
