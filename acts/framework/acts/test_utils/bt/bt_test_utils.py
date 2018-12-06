@@ -192,6 +192,44 @@ def clear_bonded_devices(ad):
     return True
 
 
+def connect_phone_to_headset(android, headset, timeout=bt_default_timeout,
+                             connection_check_period=10):
+    """Connects android phone to bluetooth headset.
+    Headset object must have methods power_on and enter_pairing_mode,
+    and attribute mac_address.
+
+    Args:
+        android: AndroidDevice object with SL4A installed.
+        headset: Object with attribute mac_address and methods power_on and
+            enter_pairing_mode.
+        timeout: Seconds to wait for devices to connect.
+        connection_check_period: how often to check for connection once the
+            SL4A connect RPC has been sent.
+    Returns:
+        connected (bool): True if devices are paired and connected by end of
+        method. False otherwise.
+    """
+    connected = is_a2dp_src_device_connected(android, headset.mac_address)
+    log.info('Devices connected before pair attempt: %s' % connected)
+    start_time = time.time()
+    # If already connected, skip pair and connect attempt.
+    while not connected and (time.time() - start_time < timeout):
+        bonded_info = android.droid.bluetoothA2dpGetConnectedDevices()
+        if headset.mac_address not in [info["address"] for info in bonded_info]:
+            # Turn on headset and initiate pairing mode.
+            headset.enter_pairing_mode()
+            # Use SL4A to pair and connect with headset.
+            android.droid.bluetoothDiscoverAndBond(headset.mac_address)
+        else:  # Device is bonded but not connected
+            android.droid.bluetoothConnectBonded(headset.mac_address)
+        log.info('Waiting for connection...')
+        time.sleep(connection_check_period)
+        # Check for connection.
+        connected = is_a2dp_src_device_connected(android, headset.mac_address)
+    log.info('Devices connected after pair attempt: %s' % connected)
+    return connected
+
+
 def connect_pri_to_sec(pri_ad, sec_ad, profiles_set, attempts=2):
     """Connects pri droid to secondary droid.
 
@@ -299,7 +337,6 @@ def _connect_pri_to_sec(pri_ad, sec_ad, profiles_set):
         profile = profile_event['data']['profile']
         state = profile_event['data']['state']
         device_addr = profile_event['data']['addr']
-
         if state == bt_profile_states['connected'] and \
                 device_addr == sec_ad.droid.bluetoothGetLocalAddress():
             profile_connected.add(profile)
@@ -620,7 +657,7 @@ def get_device_selector_dictionary(android_device_list):
         for profile, uuid_const in sig_uuid_constants.items():
             uuid_check = sig_uuid_constants['BASE_UUID'].format(
                 uuid_const).lower()
-            if uuid_check in uuids:
+            if uuids and uuid_check in uuids:
                 if profile in selector_dict:
                     selector_dict[profile].append(ad)
                 else:
@@ -1165,9 +1202,8 @@ def set_bluetooth_codec(
     try:
         ed.pop_event(bluetooth_a2dp_codec_config_changed, bt_default_timeout)
     except Exception:
-        android_device.log.error("SL4A event not registered. Codec config was "
-                                 "not changed.")
-        return False
+        android_device.log.warning("SL4A event not registered. Codec config "
+                                   "may not have been changed.")
 
     # Validate codec value through ADB
     command = "dumpsys bluetooth_manager | grep -i 'current codec'"
@@ -1176,7 +1212,7 @@ def set_bluetooth_codec(
     if len(split_out) != 2:
         android_device.log.warning("Could not verify codec config change "
                                    "through ADB.")
-    elif split_out[1].strip() != codec_type:
+    elif split_out[1].strip().upper() != codec_type:
         android_device.log.error(
             "Codec config was not changed.\n"
             "\tExpected codec: {exp}\n"
