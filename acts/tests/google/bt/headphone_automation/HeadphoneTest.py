@@ -85,6 +85,11 @@ class HeadphoneTest(BluetoothBaseTest):
             for headphone in self.relay_devices:
                 headphone.setup()
 
+        # Turn of the Power Supply for the headphones.
+        if hasattr(self, 'relay_devices'):
+            power_supply = self.relay_devices[-1]
+            power_supply.power_off()
+
         super(HeadphoneTest, self).setup_class()
         return clear_bonded_devices(self.ad)
 
@@ -93,6 +98,7 @@ class HeadphoneTest(BluetoothBaseTest):
             for headphone in self.headphone_list:
                 headphone.power_off()
                 headphone.clean_up()
+
         return clear_bonded_devices(self.ad)
 
     @property
@@ -122,9 +128,11 @@ class HeadphoneTest(BluetoothBaseTest):
               Priority: 0
         """
         for headphone in self.headphone_list:
+            self.log.info("Start testing on  " + headphone.name )
 
             if self._discover_and_pair(headphone) is False:
                 # The device is probably not in pairing mode, put in pairing mode.
+
                 headphone.turn_power_on_and_enter_pairing_mode()
                 time.sleep(6)
                 if self._discover_and_pair(headphone) is False:
