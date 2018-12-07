@@ -38,7 +38,33 @@ class Sl4aStartError(Sl4aException):
 
 
 class Sl4aApiError(Sl4aException):
-    """Raised when remote API reports an error."""
+    """Raised when remote API reports an error.
+
+    This error mirrors the JSON-RPC 2.0 spec for Error Response objects.
+
+    Attributes:
+        code: The error code returned by SL4A. Not to be confused with
+            ActsError's error_code.
+        message: The error message returned by SL4A.
+        data: The extra data, if any, returned by SL4A.
+    """
+
+    def __init__(self, message, code=-1, data=None, rpc_name=''):
+        self.message = message
+        self.code = code
+        if data is None:
+            self.data = {}
+        else:
+            self.data = data
+        self.rpc_name = rpc_name
+
+    def __str__(self):
+        if self.data:
+            return 'Error in RPC %s %s:%s:%s' % (self.rpc_name, self.code,
+                                                 self.message, self.data)
+        else:
+            return 'Error in RPC %s %s:%s' % (self.rpc_name, self.code,
+                                              self.message)
 
 
 class Sl4aConnectionError(Sl4aException):
@@ -277,14 +303,17 @@ class RpcClient(object):
 
         if result['error']:
             error_object = result['error']
-            if (error_object.get('code', None) and
-                    error_object.get('message', None)):
-                self._log.error('Received Sl4aError %s:%s' % (
-                    error_object['code'], error_object['message']))
-            err_msg = 'RPC call %s to device failed with error %s' % (
-                method, error_object.get('data', error_object))
-            self._log.error(err_msg)
-            raise Sl4aApiError(err_msg)
+            if isinstance(error_object, dict):
+                # Uses JSON-RPC 2.0 Format
+                sl4a_api_error = Sl4aApiError(error_object.get('message', None),
+                                              error_object.get('code', -1),
+                                              error_object.get('data', {}),
+                                              rpc_name=method)
+            else:
+                # Fallback on JSON-RPC 1.0 Format
+                sl4a_api_error = Sl4aApiError(error_object, rpc_name=method)
+            self._log.warning(sl4a_api_error)
+            raise sl4a_api_error
         if result['id'] != ticket:
             self._log.error('RPC method %s with mismatched api id %s', method,
                             result['id'])
