@@ -188,6 +188,13 @@ class LteCaSimulation(LteSimulation):
 
                 self.set_channel_bandwidth(self.bts[bts_index], bw)
 
+                # Temporarily adding this line to workaround a bug in the
+                # Anritsu callbox in which the channel number needs to be set
+                # to a different value before setting it to the final one.
+                self.bts[bts_index].dl_channel = str(
+                    int(self.bts[bts_index - 1].dl_channel) + bw * 10 - 1)
+                time.sleep(8)
+
                 self.bts[bts_index].dl_channel = str(
                     int(self.bts[bts_index - 1].dl_channel) + bw * 10 - 2)
 
