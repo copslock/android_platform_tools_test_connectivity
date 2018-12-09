@@ -23,7 +23,7 @@ from acts.controllers.relay_lib.fugu_remote import FuguRemote
 from acts.controllers.relay_lib.headset import Headset
 from acts.controllers.relay_lib.i6s_headset import I6sHeadset
 from acts.controllers.relay_lib.logitech_headset import LogitechAudioReceiver
-from acts.controllers.relay_lib.headset import PowerSupply
+from acts.controllers.relay_lib.power_supply import PowerSupply
 from acts.controllers.relay_lib.skullcandy import Skullcandy
 from acts.controllers.relay_lib.sony_xb2_speaker import SonyXB2Speaker
 from acts.controllers.relay_lib.sony_xb20_speaker import SonyXB20Speaker

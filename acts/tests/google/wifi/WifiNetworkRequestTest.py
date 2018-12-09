@@ -107,7 +107,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
                 "Device did not disconnect from the network")
 
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="d70c8380-61ba-48a3-b76c-a0b55ce4eabf")
     def test_connect_to_wpa_psk_2g_with_ssid(self):
         """
         Initiates a connection to network via network request with specific SSID
@@ -122,7 +122,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wifi_connect_using_network_request(self.dut, self.wpa_psk_2g,
                                                   self.wpa_psk_2g)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="44f2bf40-a282-4413-b8f2-3abb3caa49ee")
     def test_connect_to_open_5g_with_ssid(self):
         """
         Initiates a connection to network via network request with specific SSID
@@ -136,7 +136,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wifi_connect_using_network_request(self.dut, self.open_5g,
                                                   self.open_5g)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="09d1823e-4f85-42f8-8c20-de7637f6d4be")
     def test_connect_to_wpa_psk_5g_with_ssid_pattern(self):
         """
         Initiates a connection to network via network request with SSID pattern
@@ -157,7 +157,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wifi_connect_using_network_request(self.dut, self.wpa_psk_5g,
                                                   network_specifier)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="52216329-06f1-45ef-8d5f-de8b02d9f975")
     def test_connect_to_open_5g_after_connecting_to_wpa_psk_2g(self):
         """
         Initiates a connection to network via network request with SSID pattern
@@ -187,21 +187,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wifi_connect_using_network_request(self.dut, self.open_5g,
                                                   self.open_5g)
 
-    def test_connect_to_open_5g_with_ssid(self):
-        """
-        Initiates a connection to network via network request with specific SSID
-
-        Steps:
-        1. Send a network specifier with the specific SSID of Open 5G network.
-        2. Wait for platform to scan and find matching networks.
-        3. Simulate user selecting the network.
-        4. Ensure that the device connects to the network.
-        """
-        wutils.wifi_connect_using_network_request(self.dut, self.open_5g,
-                                                  self.open_5g)
-
-
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="f28b5dc9-771f-42ef-8178-e55e9a16f5c7")
     def test_connect_to_wpa_psk_5g_while_connecting_to_open_2g(self):
         """
         Initiates a connection to network via network request with specific SSID
@@ -223,7 +209,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wifi_connect_using_network_request(self.dut, self.wpa_psk_5g,
                                                   self.wpa_psk_5g)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="2ab82a98-37da-4b27-abb6-578bedebccdc")
     def test_connect_to_open_5g_while_connected_to_wpa_psk_2g(self):
         """
         Initiates a connection to network via network request with specific SSID
@@ -257,7 +243,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wait_for_wifi_connect_after_network_request(self.dut,
                                                            self.open_5g)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="2f90a266-f04d-4932-bb5b-d075bedfd56d")
     def test_match_failure_with_invalid_ssid_pattern(self):
         """
         Initiates a connection to network via network request with SSID pattern

@@ -594,7 +594,6 @@ class BaseSimulation():
             calibrate_if_necessary: if False calibration will be skipped
         """
 
-        # Change band only if it is needed
         bts.band = band
         time.sleep(5)  # It takes some time to propagate the new band
 
