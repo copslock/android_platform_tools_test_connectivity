@@ -1113,6 +1113,8 @@ class GattConnectTest(BluetoothBaseTest):
             if  mac_address_pre_restart != mac_address_post_restart:
                 break
 
+        self.cen_ad.droid.bleStopBleScan(scan_callback)
+
         # Steps 4: Try to connect to the first mac address
         gatt_callback = self.cen_ad.droid.gattCreateGattCallback()
         self.log.info(
