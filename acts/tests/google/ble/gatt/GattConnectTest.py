@@ -1096,16 +1096,22 @@ class GattConnectTest(BluetoothBaseTest):
         self.per_ad.droid.bleStartBleAdvertising(
             advertise_callback, advertise_data, advertise_settings)
 
-        try:
-            mac_address_post_restart = self.cen_ad.ed.pop_event(
-                expected_event_name, self.default_timeout)['data']['Result'][
-                    'deviceInfo']['address']
-            self.log.info(
-                "Peripheral advertisement found with mac address: {}".format(
-                    mac_address_post_restart))
-        except Empty:
-            self.log.info("Peripheral advertisement not found")
-            test_result = False
+        mac_address_post_restart = mac_address_pre_restart
+
+        while True:
+            try:
+                mac_address_post_restart = self.cen_ad.ed.pop_event(
+                    expected_event_name, self.default_timeout)['data']['Result'][
+                        'deviceInfo']['address']
+                self.log.info(
+                    "Peripheral advertisement found with mac address: {}".format(
+                        mac_address_post_restart))
+            except Empty:
+                self.log.info("Peripheral advertisement not found")
+                test_result = False
+
+            if  mac_address_pre_restart != mac_address_post_restart:
+                break
 
         # Steps 4: Try to connect to the first mac address
         gatt_callback = self.cen_ad.droid.gattCreateGattCallback()
@@ -1128,8 +1134,12 @@ class GattConnectTest(BluetoothBaseTest):
 
         # Step 5: Cancel connection request.
         self.cen_ad.droid.gattClientDisconnect(bluetooth_gatt)
+        close_gatt_client(self.cen_ad, bluetooth_gatt)
+        if bluetooth_gatt in self.bluetooth_gatt_list:
+            self.bluetooth_gatt_list.remove(bluetooth_gatt)
 
         # Step 6: Connect to second mac address.
+        gatt_callback = self.cen_ad.droid.gattCreateGattCallback()
         self.log.info(
             "Gatt Connect to mac address {}.".format(mac_address_post_restart))
         bluetooth_gatt = self.cen_ad.droid.gattClientConnectGatt(
@@ -1152,4 +1162,8 @@ class GattConnectTest(BluetoothBaseTest):
         except Empty:
             self.log.error("No connection update was found.")
             return False
-        return self.cen_ad.droid.gattClientDisconnect(bluetooth_gatt)
+
+        self.per_ad.droid.bleStopBleAdvertising(advertise_callback)
+
+        return self._orchestrate_gatt_disconnection(bluetooth_gatt,
+                                                    gatt_callback)
