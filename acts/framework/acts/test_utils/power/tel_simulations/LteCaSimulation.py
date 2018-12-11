@@ -447,3 +447,12 @@ class LteCaSimulation(LteSimulation):
             time.sleep(10)
 
         return True
+
+    def maximum_downlink_throughput(self):
+        """ Calculates maximum downlink throughput as the sum of all the active
+        carriers.
+        """
+
+        return sum(
+            self.bts_maximum_downlink_throughtput(self.bts[bts_index])
+            for bts_index in range(self.num_carriers))
