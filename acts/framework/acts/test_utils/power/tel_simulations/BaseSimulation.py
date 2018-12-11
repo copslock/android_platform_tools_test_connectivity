@@ -187,10 +187,10 @@ class BaseSimulation():
 
         # Set signal levels obtained from the test parameters
         if self.sim_dl_power:
-            self.set_downlink_rx_power(self.sim_dl_power)
+            self.set_downlink_rx_power(self.bts1, self.sim_dl_power)
             time.sleep(2)
         if self.sim_ul_power:
-            self.set_uplink_tx_power(self.sim_ul_power)
+            self.set_uplink_tx_power(self.bts1, self.sim_ul_power)
             time.sleep(2)
 
         return True
@@ -277,10 +277,11 @@ class BaseSimulation():
 
         return return_list
 
-    def set_downlink_rx_power(self, signal_level):
+    def set_downlink_rx_power(self, bts, signal_level):
         """ Sets downlink rx power using calibration if available
 
         Args:
+            bts: the base station in which to change the signal level
             signal_level: desired downlink received power, can be either a
             key value pair, an int or a float
         """
@@ -310,7 +311,7 @@ class BaseSimulation():
             self.log.info(
                 "Requested phone DL Rx power of {} dBm, setting callbox Tx "
                 "power at {} dBm".format(power, calibrated_power))
-            self.bts1.output_level = calibrated_power
+            bts.output_level = calibrated_power
             time.sleep(2)
             # Power has to be a natural number so calibration wont be exact.
             # Inform the actual received power after rounding.
@@ -318,14 +319,15 @@ class BaseSimulation():
                 "Phone downlink received power is {0:.2f} dBm".format(
                     calibrated_power - self.dl_path_loss))
         except TypeError:
-            self.bts1.output_level = round(power)
+            bts.output_level = round(power)
             self.log.info("Phone downlink received power set to {} (link is "
                           "uncalibrated).".format(round(power)))
 
-    def set_uplink_tx_power(self, signal_level):
+    def set_uplink_tx_power(self, bts, signal_level):
         """ Sets uplink tx power using calibration if available
 
         Args:
+            bts: the base station in which to change the signal level
             signal_level: desired uplink transmitted power, can be either a
             key value pair, an int or a float
         """
@@ -353,7 +355,7 @@ class BaseSimulation():
             self.log.info(
                 "Requested phone UL Tx power of {} dBm, setting callbox Rx "
                 "power at {} dBm".format(power, calibrated_power))
-            self.bts1.input_level = calibrated_power
+            bts.input_level = calibrated_power
             time.sleep(2)
             # Power has to be a natural number so calibration wont be exact.
             # Inform the actual transmitted power after rounding.
@@ -361,7 +363,7 @@ class BaseSimulation():
                 "Phone uplink transmitted power is {0:.2f} dBm".format(
                     calibrated_power + self.ul_path_loss))
         except TypeError:
-            self.bts1.input_level = round(power)
+            bts.input_level = round(power)
             self.log.info("Phone uplink transmitted power set to {} (link is "
                           "uncalibrated).".format(round(power)))
 

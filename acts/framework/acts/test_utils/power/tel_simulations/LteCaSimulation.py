@@ -272,6 +272,28 @@ class LteCaSimulation(LteSimulation):
             self.log.info("Cell {} was set to {} and {} MIMO.".format(
                 bts_index + 1, requested_tm.value, requested_mimo.value))
 
+        # Get uplink power
+
+        ul_power = self.get_uplink_power_from_parameters(parameters)
+
+        if not ul_power:
+            return False
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_ul_power = ul_power
+
+        # Get downlink power
+
+        dl_power = self.get_downlink_power_from_parameters(parameters)
+
+        if not dl_power:
+            return False
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_dl_power = dl_power
+
         # No errors were found
         return True
 
@@ -295,6 +317,22 @@ class LteCaSimulation(LteSimulation):
             bts.band = '1' if band != 1 else '2'
 
         self.set_band(bts, band, calibrate_if_necessary=calibrate_if_necessary)
+
+    def set_downlink_rx_power(self, bts, rsrp):
+        """ Sets downlink rx power in RSRP using calibration for every cell
+
+        Calls the method in the parent class for each base station.
+
+        Args:
+            bts: this argument is ignored, as all the basestations need to have
+                the same downlink rx power
+            rsrp: desired rsrp, contained in a key value pair
+        """
+
+        for bts_index in range(self.num_carriers):
+            self.log.info("Setting DL power for BTS{}.".format(bts_index + 1))
+            # Use parent method to set signal level
+            super().set_downlink_rx_power(self.bts[bts_index], rsrp)
 
     def start_test_case(self):
         """ Attaches the phone to all the other basestations.
