@@ -374,9 +374,9 @@ class PowerTelRvRTest(PowerTelTrafficTest):
         for pw in sweep_range:
 
             if self.sweep == self.PARAM_SWEEP_DOWNLINK:
-                self.simulation.set_downlink_rx_power(pw)
+                self.simulation.set_downlink_rx_power(self.simulation.bts1, pw)
             elif self.sweep == self.PARAM_SWEEP_UPLINK:
-                self.simulation.set_uplink_tx_power(pw)
+                self.simulation.set_uplink_tx_power(self.simulation.bts1, pw)
 
             i, t = self.power_tel_traffic_test()
             self.log.info("---------------------")

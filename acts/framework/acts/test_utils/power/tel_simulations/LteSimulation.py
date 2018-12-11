@@ -473,7 +473,33 @@ class LteSimulation(BaseSimulation):
             self.set_scheduling_mode(self.bts1,
                                      LteSimulation.SchedulingMode.DYNAMIC)
 
-        # Setup uplink power
+        # Get uplink power
+
+        ul_power = self.get_uplink_power_from_parameters(parameters)
+
+        if not ul_power:
+            return False
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_ul_power = ul_power
+
+        # Get downlink power
+
+        dl_power = self.get_downlink_power_from_parameters(parameters)
+
+        if not dl_power:
+            return False
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_dl_power = dl_power
+
+        # No errors were found
+        return True
+
+    def get_uplink_power_from_parameters(self, parameters):
+        """ Reads uplink power from a list of parameters. """
 
         values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
 
@@ -484,13 +510,12 @@ class LteSimulation(BaseSimulation):
                     "\n" + val
                     for val in self.uplink_signal_level_dictionary.keys()
                 ]))
-            return False
+            return None
 
-        # Power is not set on the callbox until after the simulation is
-        # started. Will save this value in a variable and use it lated
-        self.sim_ul_power = self.uplink_signal_level_dictionary[values[1]]
+        return self.uplink_signal_level_dictionary[values[1]]
 
-        # Setup downlink power
+    def get_downlink_power_from_parameters(self, parameters):
+        """ Reads downlink power from a list of parameters. """
 
         values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
 
@@ -498,41 +523,36 @@ class LteSimulation(BaseSimulation):
             if values[1] not in self.downlink_rsrp_dictionary:
                 self.log.error("Invalid signal level value {}.".format(
                     values[1]))
-                return False
+                return None
             else:
-                power = self.downlink_rsrp_dictionary[values[1]]
+                return self.downlink_rsrp_dictionary[values[1]]
         else:
             # Use default value
             power = self.downlink_rsrp_dictionary['excellent']
             self.log.error(
                 "No DL signal level value was indicated in the test parameters."
                 " Using default value of {} RSRP.".format(power))
+            return power
 
-        # Power is not set on the callbox until after the simulation is
-        # started. Will save this value in a variable and use it later
-        self.sim_dl_power = power
-
-        # No errors were found
-        return True
-
-    def set_downlink_rx_power(self, rsrp):
+    def set_downlink_rx_power(self, bts, rsrp):
         """ Sets downlink rx power in RSRP using calibration
 
         Lte simulation overrides this method so that it can convert from
         RSRP to total signal power transmitted from the basestation.
 
         Args:
+            bts: the base station in which to change the signal level
             rsrp: desired rsrp, contained in a key value pair
         """
 
-        power = self.rsrp_to_signal_power(rsrp, self.bts1)
+        power = self.rsrp_to_signal_power(rsrp, bts)
 
         self.log.info(
             "Setting downlink signal level to {} RSRP ({} dBm)".format(
                 rsrp, power))
 
         # Use parent method to set signal level
-        super().set_downlink_rx_power(power)
+        super().set_downlink_rx_power(bts, power)
 
     def downlink_calibration(self,
                              bts,
