@@ -279,6 +279,7 @@ class GattConnectTest(BluetoothBaseTest):
         autoconnect = False
         mac_address, adv_callback, scan_callback = (
             get_mac_address_of_generic_advertisement(self.cen_ad, self.per_ad))
+        self.adv_instances.append(adv_callback)
         try:
             bluetooth_gatt, gatt_callback = setup_gatt_connection(
                 self.cen_ad, mac_address, autoconnect)
@@ -357,6 +358,7 @@ class GattConnectTest(BluetoothBaseTest):
                 transport=gatt_transport['auto'],
                 opportunistic=False)
             self.cen_ad.droid.bleStopBleScan(scan_callback)
+            self.adv_instances.append(adv_callback)
             self.bluetooth_gatt_list.append(bluetooth_gatt_1)
         except GattTestUtilsError as err:
             self.log.error(err)
