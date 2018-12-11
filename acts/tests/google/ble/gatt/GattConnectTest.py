@@ -933,11 +933,22 @@ class GattConnectTest(BluetoothBaseTest):
                                     and device['name'] == target_name):
                                 bonded = True
                                 break
+
+        # Dual mode devices will establish connection over the classic transport,
+        # in order to establish bond over both transports, and do SDP. Starting
+        # disconnection before all this is finished is not safe, might lead to
+        # race conditions, i.e. bond over classic tranport shows up after LE
+        # bond is already removed.
+        time.sleep(4)
+
         for ad in [self.cen_ad, self.per_ad]:
             if not clear_bonded_devices(ad):
                 return False
-            # Necessary sleep time for entries to update unbonded state
-            time.sleep(2)
+
+        # Necessary sleep time for entries to update unbonded state
+        time.sleep(2)
+
+        for ad in [self.cen_ad, self.per_ad]:
             bonded_devices = ad.droid.bluetoothGetBondedDevices()
             if len(bonded_devices) > 0:
                 self.log.error(
