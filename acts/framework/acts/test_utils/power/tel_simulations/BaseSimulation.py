@@ -237,11 +237,9 @@ class BaseSimulation():
 
         Args:
             parameters: list of parameters
-        Returns:
-            False if there was an error while parsing parameters
         """
 
-        return True
+        pass
 
     def consume_parameter(self, parameters, parameter_name, num_values=0):
         """ Parses a parameter from a list.
@@ -271,10 +269,9 @@ class BaseSimulation():
             for j in range(num_values + 1):
                 return_list.append(parameters.pop(i))
         except IndexError:
-            self.log.error(
+            raise ValueError(
                 "Parameter {} has to be followed by {} values.".format(
                     parameter_name, num_values))
-            raise ValueError()
 
         return return_list
 
@@ -657,10 +654,6 @@ class BaseSimulation():
         """ Starts a test case in the current simulation.
 
         Requires the phone to be attached.
-
-        Returns:
-            True if the case was successfully started.
-
         """
 
-        return True
+        pass
