@@ -16,7 +16,7 @@
 
 import logging
 import os
-import pprint
+import shutil
 import time
 
 from enum import IntEnum
@@ -1926,48 +1926,37 @@ def create_softap_config():
     }
     return config
 
-def start_pcap(pcap, wifi_band, log_path, test_name):
+def start_pcap(pcap, wifi_band, log_path):
     """Start packet capture in monitor mode.
 
     Args:
         pcap: packet capture object
         wifi_band: '2g' or '5g' or 'dual'
-        log_path: current test log path
-        test_name: test name to be used for pcap file name
-
-    Returns:
-        Dictionary with pid of the tcpdump process as key and log path
-        of the file name as the value
+        log_path: base logging directory
     """
-    log_dir = os.path.join(log_path, test_name)
-    utils.create_dir(log_dir)
     if wifi_band == 'dual':
         bands = [BAND_2G, BAND_5G]
     else:
         bands = [wifi_band]
-    pids = {}
     for band in bands:
-        pid = pcap.start_packet_capture(band, log_dir, test_name)
-        pids[pid] = os.path.join(log_dir, test_name)
-    return pids
+        pcap.start_packet_capture(band, log_path)
 
-def stop_pcap(pcap, pids, test_status=None):
-    """Stop packet capture in monitor mode.
-
-    Since, the pcap logs in monitor mode can be very large, we will
-    delete them if they are not required. 'test_status' if True, will delete
-    the pcap files. If False, we will keep them.
+def stop_pcap(pcap, log_path, results):
+    """Stop packet capture in monitor mode. Deletes pcap files from passing
+    test cases.
 
     Args:
         pcap: packet capture object
-        pids: dictionary returned by start_pcap
-        test_status: status of the test case
+        log_path: base logging directory
+        results: test records for the test class
     """
-    for pid, fname in pids.items():
-        pcap.stop_packet_capture(pid)
-
-    if test_status:
-        os.system('rm -rf %s' % os.path.dirname(fname))
+    pcap.stop_packet_capture()
+    # Since the pcap logs in monitor mode can be very large, we will
+    # delete them if they are not required, i.e. if the test case passes
+    for record in results.passed:
+        pcap_dir = os.path.join(log_path, record.test_class,
+                                record.test_name)
+        shutil.rmtree(pcap_dir)
 
 def start_cnss_diags(ads):
     for ad in ads:
