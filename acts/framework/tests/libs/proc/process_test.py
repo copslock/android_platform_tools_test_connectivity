@@ -18,7 +18,7 @@ import unittest
 import mock
 import subprocess
 from acts.libs.proc.process import Process
-
+from acts.libs.proc.process import ProcessError
 
 class FakeThread(object):
     def __init__(self, target=None):
@@ -78,6 +78,25 @@ class ProcessTest(unittest.TestCase):
 
     # start
 
+    def test_start_raises_if_called_back_to_back(self):
+        """Tests that start raises an exception if it has already been called
+        prior.
+
+        This is required to prevent references to processes and threads from
+        being overwritten, potentially causing ACTS to hang."""
+        process = Process('cmd')
+
+        # Here we need the thread to start the process object.
+        class FakeThreadImpl(FakeThread):
+            def _on_start(self):
+                process._process = mock.Mock()
+
+        with self.patch('Thread', FakeThreadImpl):
+            process.start()
+            expected_msg = 'Process has already started.'
+            with self.assertRaisesRegex(ProcessError, expected_msg):
+                process.start()
+
     def test_start_starts_listening_thread(self):
         """Tests that start starts the _exec_popen_loop function."""
         process = Process('cmd')
@@ -94,6 +113,17 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual(process._listening_thread.target, process._exec_loop)
 
     # wait
+
+    def test_wait_raises_if_called_back_to_back(self):
+        """Tests that wait raises an exception if it has already been called
+        prior."""
+        process = Process('cmd')
+        process._process = mock.Mock()
+
+        process.wait(0)
+        expected_msg = 'Process is already being stopped.'
+        with self.assertRaisesRegex(ProcessError, expected_msg):
+            process.wait(0)
 
     def test_wait_kills_after_timeout(self):
         """Tests that if a TimeoutExpired error is thrown during wait, the
@@ -207,6 +237,7 @@ class ProcessTest(unittest.TestCase):
         process._process = mock.Mock()
         process._process.poll.return_value = None
         process._process.kill = test_call_order
+        process._process.wait.side_effect = subprocess.TimeoutExpired('', '')
 
         process.stop()
 
