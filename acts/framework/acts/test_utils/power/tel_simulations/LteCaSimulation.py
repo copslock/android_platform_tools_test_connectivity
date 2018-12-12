@@ -17,6 +17,7 @@ import re
 import time
 
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
+from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.controllers.anritsu_lib.md8475a import TestProcedure
 from acts.controllers.anritsu_lib.md8475a import TestPowerControl
 from acts.controllers.anritsu_lib.md8475a import TestMeasurement
@@ -272,6 +273,110 @@ class LteCaSimulation(LteSimulation):
             self.log.info("Cell {} was set to {} and {} MIMO.".format(
                 bts_index + 1, requested_tm.value, requested_mimo.value))
 
+        # Get uplink power
+
+        ul_power = self.get_uplink_power_from_parameters(parameters)
+
+        if not ul_power:
+            return False
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_ul_power = ul_power
+
+        # Get downlink power
+
+        dl_power = self.get_downlink_power_from_parameters(parameters)
+
+        if not dl_power:
+            return False
+
+        # Power is not set on the callbox until after the simulation is
+        # started. Saving this value in a variable for later
+        self.sim_dl_power = dl_power
+
+        # Setup scheduling mode
+
+        values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
+
+        if not values:
+            scheduling = LteSimulation.SchedulingMode.STATIC
+            self.log.warning(
+                "The test name does not include the '{}' parameter. Setting to "
+                "{} by default.".format(scheduling.value,
+                                        self.PARAM_SCHEDULING))
+        else:
+            for scheduling_mode in LteSimulation.SchedulingMode:
+                if values[1].upper() == scheduling_mode.value:
+                    scheduling = scheduling_mode
+                    break
+            else:
+                self.log.error(
+                    "The test name parameter '{}' has to be followed by one of "
+                    "{}.".format(
+                        self.PARAM_SCHEDULING,
+                        {elem.value
+                         for elem in LteSimulation.SchedulingMode}))
+                return False
+
+        if scheduling == LteSimulation.SchedulingMode.STATIC:
+
+            values = self.consume_parameter(parameters, self.PARAM_PATTERN, 2)
+
+            if not values:
+                self.log.warning(
+                    "The '{}' parameter was not set, using 100% RBs for both "
+                    "DL and UL. To set the percentages of total RBs include "
+                    "the '{}' parameter followed by two ints separated by an "
+                    "underscore indicating downlink and uplink percentages."
+                    .format(self.PARAM_PATTERN, self.PARAM_PATTERN))
+                dl_pattern = 100
+                ul_pattern = 100
+            else:
+                dl_pattern = int(values[1])
+                ul_pattern = int(values[2])
+
+            if (dl_pattern, ul_pattern) not in [(0, 100), (100, 0), (100,
+                                                                     100)]:
+                self.log.error(
+                    "Only full RB allocation for DL or UL is supported in CA "
+                    "sims. The allowed combinations are 100/0, 0/100 and "
+                    "100/100.")
+                return False
+
+            if self.dl_256_qam and bw == 1.4:
+                mcs_dl = 26
+            elif not self.dl_256_qam and self.tbs_pattern_on and bw != 1.4:
+                mcs_dl = 28
+            else:
+                mcs_dl = 27
+
+            if self.ul_64_qam:
+                mcs_ul = 28
+            else:
+                mcs_ul = 23
+
+            for bts_index in range(self.num_carriers):
+
+                dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
+                    self.bts[bts_index], dl_pattern, ul_pattern)
+
+                self.set_scheduling_mode(
+                    self.bts[bts_index],
+                    LteSimulation.SchedulingMode.STATIC,
+                    packet_rate=BtsPacketRate.LTE_MANUAL,
+                    nrb_dl=dl_rbs,
+                    nrb_ul=ul_rbs,
+                    mcs_ul=mcs_ul,
+                    mcs_dl=mcs_dl)
+
+        else:
+
+            for bts_index in range(self.num_carriers):
+
+                self.set_scheduling_mode(self.bts[bts_index],
+                                         LteSimulation.SchedulingMode.DYNAMIC)
+
         # No errors were found
         return True
 
@@ -295,6 +400,22 @@ class LteCaSimulation(LteSimulation):
             bts.band = '1' if band != 1 else '2'
 
         self.set_band(bts, band, calibrate_if_necessary=calibrate_if_necessary)
+
+    def set_downlink_rx_power(self, bts, rsrp):
+        """ Sets downlink rx power in RSRP using calibration for every cell
+
+        Calls the method in the parent class for each base station.
+
+        Args:
+            bts: this argument is ignored, as all the basestations need to have
+                the same downlink rx power
+            rsrp: desired rsrp, contained in a key value pair
+        """
+
+        for bts_index in range(self.num_carriers):
+            self.log.info("Setting DL power for BTS{}.".format(bts_index + 1))
+            # Use parent method to set signal level
+            super().set_downlink_rx_power(self.bts[bts_index], rsrp)
 
     def start_test_case(self):
         """ Attaches the phone to all the other basestations.
