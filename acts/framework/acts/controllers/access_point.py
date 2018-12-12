@@ -162,6 +162,7 @@ class AccessPoint(object):
         # interfaces need to be brought down as part of the AP initialization
         # process, otherwise test would fail.
         try:
+            self.ssh.run('stop wpasupplicant')
             self.ssh.run('stop hostapd')
         except job.Error:
             self.log.debug('No hostapd running')
