@@ -83,10 +83,11 @@ class BaseSimulation():
             self.log.warning("The '{} 'key is not set in the testbed "
                              "parameters. Setting to off by default. To "
                              "turn calibration on, include the key with "
-                             "a true/false value.".format(self.KEY_CALIBRATION))
+                             "a true/false value.".format(
+                                 self.KEY_CALIBRATION))
 
-        self.calibration_required = test_config.get(self.KEY_CALIBRATION, False)
-
+        self.calibration_required = test_config.get(self.KEY_CALIBRATION,
+                                                    False)
 
         # Gets BTS1 since this sim only has 1 BTS
         self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
@@ -439,7 +440,8 @@ class BaseSimulation():
                 cmd = 'OPERATEIPTRAFFIC START,1'
                 self.anritsu.send_command(cmd)
             except AnritsuError as inst:
-                self.log.warning("{}\n".format(inst))  # Typically RUNNING already
+                self.log.warning(
+                    "{}\n".format(inst))  # Typically RUNNING already
             time.sleep(4)
 
         down_power_measured = []
@@ -458,7 +460,8 @@ class BaseSimulation():
                 cmd = 'OPERATEIPTRAFFIC STOP,1'
                 self.anritsu.send_command(cmd)
             except AnritsuError as inst:
-                self.log.warning("{}\n".format(inst))  # Typically STOPPED already
+                self.log.warning(
+                    "{}\n".format(inst))  # Typically STOPPED already
             time.sleep(2)
 
         # Reset phone and bts to original settings
@@ -525,7 +528,8 @@ class BaseSimulation():
                 cmd = 'OPERATEIPTRAFFIC START,1'
                 self.anritsu.send_command(cmd)
             except AnritsuError as inst:
-                self.log.warning("{}\n".format(inst))  # Typically RUNNING already
+                self.log.warning(
+                    "{}\n".format(inst))  # Typically RUNNING already
             time.sleep(4)
 
         up_power_per_chain = []
@@ -556,7 +560,8 @@ class BaseSimulation():
                 cmd = 'OPERATEIPTRAFFIC STOP,1'
                 self.anritsu.send_command(cmd)
             except AnritsuError as inst:
-                self.log.warning("{}\n".format(inst))  # Typically STOPPED already
+                self.log.warning(
+                    "{}\n".format(inst))  # Typically STOPPED already
             time.sleep(2)
 
         # Reset phone and bts to original settings
