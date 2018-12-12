@@ -3234,8 +3234,7 @@ class _BaseTransceiverStation(object):
         except:
             raise ValueError(
                 'The parameter slot has to be a tuple containing two ints '
-                'indicating (dl,ul) slots.'
-            )
+                'indicating (dl,ul) slots.')
 
         # Validate
         if dl < 1 or ul < 1 or dl + ul > 5:
