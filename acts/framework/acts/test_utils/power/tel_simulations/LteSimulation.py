@@ -622,11 +622,24 @@ class LteSimulation(BaseSimulation):
 
         """
 
-        bandwidth = self.bts1.bandwidth
-        rb_ratio = float(
-            self.bts1.nrb_dl) / self.total_rbs_dictionary[bandwidth]
-        streams = float(self.bts1.dl_antenna)
-        mcs = self.bts1.lte_mcs_dl
+        return self.bts_maximum_downlink_throughtput(self.bts1)
+
+    def bts_maximum_downlink_throughtput(self, bts):
+        """ Calculates maximum achievable downlink throughput for the selected
+        basestation.
+
+        Args:
+            bts: basestation handle
+
+        Returns:
+            Maximum throughput in mbps.
+
+        """
+
+        bandwidth = bts.bandwidth
+        rb_ratio = float(bts.nrb_dl) / self.total_rbs_dictionary[bandwidth]
+        streams = float(bts.dl_antenna)
+        mcs = bts.lte_mcs_dl
 
         max_rate_per_stream = None
 
@@ -693,10 +706,23 @@ class LteSimulation(BaseSimulation):
 
         """
 
-        bandwidth = self.bts1.bandwidth
-        rb_ratio = float(
-            self.bts1.nrb_ul) / self.total_rbs_dictionary[bandwidth]
-        mcs = self.bts1.lte_mcs_ul
+        return self.bts_maximum_uplink_throughtput(self.bts1)
+
+    def bts_maximum_uplink_throughtput(self, bts):
+        """ Calculates maximum achievable uplink throughput for the selected
+        basestation.
+
+        Args:
+            bts: basestation handle
+
+        Returns:
+            Maximum throughput in mbps.
+
+        """
+
+        bandwidth = bts.bandwidth
+        rb_ratio = float(bts.nrb_ul) / self.total_rbs_dictionary[bandwidth]
+        mcs = bts.lte_mcs_ul
 
         max_rate_per_stream = None
         if mcs == "23" and not self.ul_64_qam:
