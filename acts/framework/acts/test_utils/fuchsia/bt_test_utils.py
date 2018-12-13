@@ -29,7 +29,7 @@ def le_scan_for_device_by_name(fd, log, search_name, timeout):
         The dictionary of device information.
     """
     scan_filter = {"name_substring": search_name}
-    fd.ble_lib.bleStartBleScan(scan_filter)
+    fd.gattc_lib.bleStartBleScan(scan_filter)
     end_time = time.time() + timeout
     found_device = None
     while time.time() < end_time and not found_device:
@@ -42,7 +42,7 @@ def le_scan_for_device_by_name(fd, log, search_name, timeout):
                 log.info("Successfully found advertisement! name, id: {}, {}".
                          format(name, did))
                 found_device = device
-    fd.ble_lib.bleStopBleScan()
+    fd.gattc_lib.bleStopBleScan()
     if not found_device:
         log.error("Failed to find device with name {}.".format(search_name))
         return found_device
