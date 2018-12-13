@@ -80,13 +80,21 @@ class BlackboxMetricLogger(MetricLogger):
         if self.metric_key:
             key = self.metric_key
         else:
-            key = self.context.identifier
+            key = self._get_blackbox_identifier()
         key = '%s.%s' % (key, self.metric_name)
         return key
 
     def _get_file_name(self):
         """Gets the base file name to publish to."""
         return 'blackbox_%s' % self.metric_name
+
+    def _get_blackbox_identifier(self):
+        """Returns the testcase identifier, as expected by Blackbox."""
+        # b/119787228: Blackbox requires function names to look like Java
+        # functions.
+        identifier = self.context.identifier
+        parts = identifier.rsplit('.', 1)
+        return '#'.join(parts)
 
     def end(self, event):
         """Creates and publishes a ProtoMetric with blackbox data.
@@ -98,7 +106,7 @@ class BlackboxMetricLogger(MetricLogger):
             event: The triggering event.
         """
         result = self.proto_module.ActsBlackboxMetricResult()
-        result.test_identifier = self.context.identifier
+        result.test_identifier = self._get_blackbox_identifier()
         result.metric_key = self._get_metric_key()
         if self.result_attr is None or self.metric_value is not None:
             result.metric_value = self.metric_value
