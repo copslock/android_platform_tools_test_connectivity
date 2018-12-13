@@ -192,6 +192,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log, ads[0], ads[1], [("Test Message", "Basic Message Body",
                                         None)]
         ]
+        if get_operator_name(self.log, ads[0]) in ["spt", "Sprint"]:
+            args.append(30)
         if not mms_send_receive_verify(*args):
             self.log.info("MMS send in call is suspended.")
             if not mms_receive_verify_after_call_hangup(*args):
