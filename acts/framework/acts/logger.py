@@ -203,7 +203,7 @@ def _setup_test_logger(log_path, prefix=None):
         prefix: A prefix for each log line in terminal.
     """
     logging.log_path = log_path
-    log_styles = [LogStyles.LOG_DEBUG + LogStyles.TO_STDOUT,
+    log_styles = [LogStyles.LOG_INFO + LogStyles.TO_STDOUT,
                   LogStyles.DEFAULT_LEVELS + LogStyles.MONOLITH_LOG]
     terminal_format = log_line_format
     if prefix:
