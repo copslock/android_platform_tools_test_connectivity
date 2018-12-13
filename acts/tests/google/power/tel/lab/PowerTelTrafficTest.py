@@ -18,7 +18,7 @@ import time
 
 import scapy.all as scapy
 
-import asserts
+from acts import asserts
 from acts.test_utils.power import IperfHelper as IPH
 from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
