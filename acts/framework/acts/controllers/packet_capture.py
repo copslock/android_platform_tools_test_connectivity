@@ -18,12 +18,8 @@ from acts import logger
 from acts.controllers.ap_lib.hostapd_constants import AP_DEFAULT_CHANNEL_2G
 from acts.controllers.ap_lib.hostapd_constants import AP_DEFAULT_CHANNEL_5G
 from acts.controllers.utils_lib.ssh import connection
-from acts.controllers.utils_lib.ssh import formatter
 from acts.controllers.utils_lib.ssh import settings
-from acts.libs.logging import log_stream
-from acts.libs.proc.process import Process
 
-import logging
 import os
 import threading
 import time
@@ -48,14 +44,29 @@ SSID = 'SSID'
 def create(configs):
     return [PacketCapture(c) for c in configs]
 
-
 def destroy(pcaps):
     for pcap in pcaps:
         pcap.close()
 
-
 def get_info(pcaps):
     return [pcap.ssh_settings.hostname for pcap in pcaps]
+
+
+class PcapProperties(object):
+    """Class to maintain packet capture properties after starting tcpdump.
+
+    Attributes:
+        pid: proccess id of tcpdump
+        pcap_dir: tmp dir location where pcap files are saved
+        pcap_file: pcap file name
+        pcap_thread: thread used to push files to logpath
+    """
+    def __init__(self, pid, pcap_dir, pcap_file, pcap_thread):
+        """Initialize object."""
+        self.pid = pid
+        self.pcap_dir = pcap_dir
+        self.pcap_file = pcap_file
+        self.pcap_thread = pcap_thread
 
 
 class PacketCaptureError(Exception):
@@ -70,7 +81,7 @@ class PacketCapture(object):
     wifi networks; 'wlan2' which is a dual band interface.
 
     Attributes:
-        pcap: dict that specifies packet capture processes for a band.
+        pcap: dict that specifies packet capture properties for a band.
         tmp_dirs: list of tmp directories created for pcap files.
     """
     def __init__(self, configs):
@@ -88,7 +99,8 @@ class PacketCapture(object):
         self._create_interface(MON_5G, 'monitor')
         self._create_interface(SCAN_IFACE, 'managed')
 
-        self.pcap_processes = dict()
+        self.pcap_properties = dict()
+        self._pcap_stop_lock = threading.Lock()
         self.tmp_dirs = []
 
     def _create_interface(self, iface, mode):
@@ -144,6 +156,62 @@ class PacketCapture(object):
                 scan_networks.append(network)
                 network = {}
         return scan_networks
+
+    def _check_if_tcpdump_started(self, pcap_log):
+        """Check if tcpdump started.
+
+        This method ensures that tcpdump has started successfully.
+        We look for 'listening on' from the stdout indicating that tcpdump
+        is started.
+
+        Args:
+            pcap_log: log file that has redirected output of starting tcpdump.
+
+        Returns:
+            True/False if tcpdump is started or not.
+        """
+        curr_time = time.time()
+        timeout = 3
+        find_str = 'listening on'
+        while time.time() < curr_time + timeout:
+            result = self.ssh.run('grep "%s" %s' % (find_str, pcap_log),
+                                  ignore_status=True)
+            if result.stdout and find_str in result.stdout:
+                return True
+            time.sleep(1)
+        return False
+
+    def _pull_pcap(self, band, pcap_file, log_path):
+        """Pulls pcap files to test log path from onhub.
+
+        Called by start_packet_capture(). This method moves a pcap file to log
+        path once it has reached 50MB.
+
+        Args:
+            index: param that indicates if the tcpdump is stopped.
+            pcap_file: pcap file to move.
+            log_path: log path to move the pcap file to.
+        """
+        curr_no = 0
+        while True:
+            next_no = curr_no + 1
+            curr_fno = '%02i' % curr_no
+            next_fno = '%02i' % next_no
+            curr_file = '%s%s' % (pcap_file, curr_fno)
+            next_file = '%s%s' % (pcap_file, next_fno)
+
+            result = self.ssh.run('ls %s' % next_file, ignore_status=True)
+            if not result.stderr and next_file in result.stdout:
+                self.ssh.pull_file(log_path, curr_file)
+                self.ssh.run('rm -rf %s' % curr_file, ignore_status=True)
+                curr_no += 1
+                continue
+
+            with self._pcap_stop_lock:
+                if band not in self.pcap_properties:
+                    self.ssh.pull_file(log_path, curr_file)
+                    break
+            time.sleep(2) # wait before looking for file again
 
     def get_wifi_scan_results(self):
         """Starts a wifi scan on wlan2 interface.
@@ -201,40 +269,72 @@ class PacketCapture(object):
             return False
         return True
 
-    def start_packet_capture(self, band, log_path):
+    def start_packet_capture(self, band, log_path, pcap_file):
         """Start packet capture for band.
 
         band = 2G starts tcpdump on 'mon0' interface.
         band = 5G starts tcpdump on 'mon1' interface.
 
+        This method splits the pcap file every 50MB for 100 files.
+        Since, the size of the pcap file could become large, each split file
+        is moved to log_path once a new file is generated. This ensures that
+        there is no crash on the onhub router due to lack of space.
+
         Args:
             band: '2g' or '2G' and '5g' or '5G'.
-            log_path: base logging directory
+            log_path: test log path to save the pcap file.
+            pcap_file: name of the pcap file.
+
+        Returns:
+            pid: process id of the tcpdump.
         """
         band = band.upper()
-        if band not in BAND_IFACE.keys() or band in self.pcap_processes:
+        if band not in BAND_IFACE.keys() or band in self.pcap_properties:
             self.log.error("Invalid band or packet capture already running")
+            return None
+
+        pcap_dir = self.ssh.run('mktemp -d', ignore_status=True).stdout.rstrip()
+        self.tmp_dirs.append(pcap_dir)
+        pcap_file = os.path.join(pcap_dir, "%s_%s.pcap" % (pcap_file, band))
+        pcap_log = os.path.join(pcap_dir, "%s.log" % pcap_file)
+
+        cmd = 'tcpdump -i %s -W 100 -C 50 -w %s > %s 2>&1 & echo $!' % (
+            BAND_IFACE[band], pcap_file, pcap_log)
+        result = self.ssh.run(cmd, ignore_status=True)
+        if not self._check_if_tcpdump_started(pcap_log):
+            self.log.error("Failed to start packet capture")
+            return None
+
+        pcap_thread = threading.Thread(target=self._pull_pcap,
+                                       args=(band, pcap_file, log_path))
+        pcap_thread.start()
+
+        pid = int(result.stdout)
+        self.pcap_properties[band] = PcapProperties(
+            pid, pcap_dir, pcap_file, pcap_thread)
+        return pid
+
+    def stop_packet_capture(self, pid):
+        """Stop the packet capture.
+
+        Args:
+            pid: process id of tcpdump to kill.
+        """
+        for key, val in self.pcap_properties.items():
+            if val.pid == pid:
+                break
+        else:
+            self.log.error("Failed to stop tcpdump. Invalid PID %s" % pid)
             return
 
-        pcap_logger = log_stream.create_logger(
-            band, base_path=log_path,
-            log_styles=(log_stream.LogStyles.LOG_DEBUG +
-                        log_stream.LogStyles.TESTCASE_LOG))
-        pcap_logger.setLevel(logging.DEBUG)
-        cmd = formatter.SshFormatter().format_command(
-            'tcpdump -i %s -l' %
-            (BAND_IFACE[band]), None, self.ssh_settings)
-        pcap_proc = Process(cmd)
-        pcap_proc.set_on_output_callback(lambda msg: pcap_logger.debug(msg))
-        pcap_proc.start()
-
-        self.pcap_processes[band] = pcap_proc
-
-    def stop_packet_capture(self):
-        """Stop the packet capture."""
-        for band in list(self.pcap_processes.keys()):
-            self.pcap_processes[band].stop()
-            del self.pcap_processes[band]
+        pcap_dir = val.pcap_dir
+        pcap_thread = val.pcap_thread
+        self.ssh.run('kill %s' % pid, ignore_status=True)
+        with self._pcap_stop_lock:
+            del self.pcap_properties[key]
+        pcap_thread.join()
+        self.ssh.run('rm -rf %s' % pcap_dir, ignore_status=True)
+        self.tmp_dirs.remove(pcap_dir)
 
     def close(self):
         """Cleanup.
@@ -243,4 +343,6 @@ class PacketCapture(object):
         """
         self._cleanup_interface(MON_2G)
         self._cleanup_interface(MON_5G)
+        for tmp_dir in self.tmp_dirs:
+            self.ssh.run('rm -rf %s' % tmp_dir, ignore_status=True)
         self.ssh.close()

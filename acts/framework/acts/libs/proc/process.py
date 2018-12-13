@@ -125,18 +125,24 @@ class Process(object):
         Args:
             kill_timeout: The amount of time to wait until killing the process.
         """
+        start_time = time.time()
+
         try:
             self._process.wait(kill_timeout)
         except subprocess.TimeoutExpired:
             self._stopped = True
             self._process.kill()
 
+        time_left = self._get_timeout_left(kill_timeout, start_time)
+
         if self._listening_thread is not None:
-            self._listening_thread.join()
+            self._listening_thread.join(timeout=time_left)
             self._listening_thread = None
 
+        time_left = self._get_timeout_left(kill_timeout, start_time)
+
         if self._redirection_thread is not None:
-            self._redirection_thread.join()
+            self._redirection_thread.join(timeout=time_left)
             self._redirection_thread = None
 
     def stop(self, timeout=60.0):

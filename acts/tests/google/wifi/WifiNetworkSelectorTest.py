@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import logging
-import os
 import time
 
 import acts.signals as signals
@@ -48,7 +47,6 @@ class WifiNetworkSelectorTest(WifiBaseTest):
 
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
-        self.pcap_log_path = None
 
     def setup_class(self):
         self.dut = self.android_devices[0]
@@ -63,8 +61,6 @@ class WifiNetworkSelectorTest(WifiBaseTest):
 
         if hasattr(self, 'packet_capture'):
             self.configure_packet_capture()
-            self.pcap_log_path = os.path.join(self.log_path, 'PacketCapture')
-            wutils.start_pcap(self.packet_capture, 'dual', self.pcap_log_path)
 
     def setup_test(self):
         #reset and clear all saved networks on the DUT
@@ -77,20 +73,26 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.dut.droid.wakeUpNow()
         self.dut.ed.clear_all_events()
 
+        if hasattr(self, 'packet_capture'):
+            self.pcap_pids = wutils.start_pcap(
+                self.packet_capture, 'dual', self.log_path, self.test_name)
+
     def teardown_test(self):
         #turn off the screen
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
 
+    def on_pass(self, test_name, begin_time):
+        if hasattr(self, 'packet_capture'):
+            wutils.stop_pcap(self.packet_capture, self.pcap_pids, True)
+
     def on_fail(self, test_name, begin_time):
+        if hasattr(self, 'packet_capture'):
+            wutils.stop_pcap(self.packet_capture, self.pcap_pids, False)
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
-        if hasattr(self, 'packet_capture'):
-            wutils.stop_pcap(self.packet_capture, self.pcap_log_path,
-                             self.results)
-
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
