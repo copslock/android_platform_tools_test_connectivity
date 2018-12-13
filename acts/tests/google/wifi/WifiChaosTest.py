@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import re
 import sys
 import time
@@ -85,6 +86,8 @@ class WifiChaosTest(WifiBaseTest):
         asserts.assert_true(
             self.lock_pcap(),
             "Could not lock a Packet Capture. Aborting Interop test.")
+        self.pcap_log_path = os.path.join(self.log_path, 'PacketCapture')
+        wutils.start_pcap(self.pcap, self.band.lower(), self.pcap_log_path)
 
         wutils.wifi_toggle_state(self.dut, True)
 
@@ -121,11 +124,7 @@ class WifiChaosTest(WifiBaseTest):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
-    def on_pass(self, test_name, begin_time):
-        wutils.stop_pcap(self.pcap, self.pcap_pid, True)
-
     def on_fail(self, test_name, begin_time):
-        wutils.stop_pcap(self.pcap, self.pcap_pid, False)
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
 
@@ -133,6 +132,9 @@ class WifiChaosTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
+
+    def teardown_class(self):
+        wutils.stop_pcap(self.pcap, self.pcap_log_path, self.results)
 
 
     """Helper Functions"""
@@ -279,8 +281,6 @@ class WifiChaosTest(WifiBaseTest):
 
         self.get_band_and_chan(ssid)
         self.pcap.configure_monitor_mode(self.band, self.chan)
-        self.pcap_pid = wutils.start_pcap(
-                self.pcap, self.band.lower(), self.log_path, self.test_name)
         self.run_connect_disconnect(network, hostname, rpm_port, rpm_ip,
                                     release_ap)
 
