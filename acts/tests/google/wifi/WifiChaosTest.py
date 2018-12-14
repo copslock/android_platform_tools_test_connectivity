@@ -193,8 +193,7 @@ class WifiChaosTest(WifiBaseTest):
            Raises: TestFailure if the network connection fails.
 
         """
-        for attempt in range(1):
-            # TODO:(bmahadev) Change it to 5 or more attempts later.
+        for attempt in range(5):
             try:
                 begin_time = time.time()
                 ssid = network[WifiEnums.SSID_KEY]
