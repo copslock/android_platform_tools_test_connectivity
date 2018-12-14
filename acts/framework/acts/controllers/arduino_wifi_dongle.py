@@ -17,18 +17,17 @@
 import logging
 import os
 import re
-import serial
 import subprocess
 import threading
 import time
+from datetime import datetime
+
+from serial import Serial
 
 from acts import logger
 from acts import signals
-from acts import tracelogger
 from acts import utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
-
-from datetime import datetime
 
 ACTS_CONTROLLER_CONFIG_NAME = 'ArduinoWifiDongle'
 ACTS_CONTROLLER_REFERENCE_NAME = 'arduino_wifi_dongles'
@@ -65,19 +64,16 @@ def create(configs):
     Returns:
         A list of Wifi dongle objects.
     """
-    wcs = []
     if not configs:
         raise ArduinoWifiDongleError(WIFI_DONGLE_EMPTY_CONFIG_MSG)
     elif not isinstance(configs, list):
         raise ArduinoWifiDongleError(WIFI_DONGLE_NOT_LIST_CONFIG_MSG)
     elif isinstance(configs[0], str):
         # Configs is a list of serials.
-        wcs = get_instances(configs)
+        return get_instances(configs)
     else:
         # Configs is a list of dicts.
-        wcs = get_instances_with_configs(configs)
-
-    return wcs
+        return get_instances_with_configs(configs)
 
 
 def destroy(wcs):
@@ -123,8 +119,15 @@ class ArduinoWifiDongle(object):
         ping: Ping status in bool - ping to www.google.com
     """
 
-    def __init__(self, serial=''):
-        """Initializes the ArduinoWifiDongle object."""
+    def __init__(self, serial):
+        """Initializes the ArduinoWifiDongle object.
+
+        Args:
+            serial: The serial number for the wifi dongle.
+        """
+        if not serial:
+            raise ArduinoWifiDongleError(
+                'The ArduinoWifiDongle serial number must not be empty.')
         self.serial = serial
         self.port = self._get_serial_port()
         self.log = logger.create_tagged_trace_logger(
@@ -145,15 +148,10 @@ class ArduinoWifiDongle(object):
         self.scanning = False
         self.ping = False
 
-        try:
-            os.stat(TMP_DIR)
-        except:
-            os.mkdir(TMP_DIR)
+        os.makedirs(TMP_DIR, exist_ok=True)
 
     def clean_up(self):
-        """Cleans up the ArduinoifiDongle object and releases any resources it
-        claimed.
-        """
+        """Cleans up the controller and releases any resources it claimed."""
         self.stop_controller_log()
         self.log_file_fd.close()
 
@@ -163,9 +161,6 @@ class ArduinoWifiDongle(object):
         Returns:
             Serial port in string if the dongle is attached.
         """
-        if not self.serial:
-            raise ArduinoWifiDongleError(
-                "Wifi dongle's serial should not be empty")
         cmd = 'ls %s' % DEV
         serial_ports = utils.exe_cmd(cmd).decode('utf-8', 'ignore').split('\n')
         for port in serial_ports:
@@ -203,7 +198,7 @@ class ArduinoWifiDongle(object):
         proc = subprocess.Popen(cmd,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 shell=True)
-        out, err = proc.communicate()
+        _, _ = proc.communicate()
         return_code = proc.returncode
         if return_code != 0:
             self.log.error('Failed to write file %s' % return_code)
@@ -220,14 +215,14 @@ class ArduinoWifiDongle(object):
             network: wifi network to update the ino file with
 
         Returns:
-            cmd: arduino command to run to flash the ino file
+            cmd: arduino command to run to flash the .ino file
         """
         tmp_file = '%s%s' % (TMP_DIR, file_path.split('/')[-1])
         utils.exe_cmd('cp %s %s' % (file_path, tmp_file))
         ssid = network[SSID_KEY]
         pwd = network[PWD_KEY]
         sed_cmd = 'sed -i \'s/"wifi_tethering_test"/"%s"/\' %s' % (
-        ssid, tmp_file)
+            ssid, tmp_file)
         utils.exe_cmd(sed_cmd)
         sed_cmd = 'sed -i  \'s/"password"/"%s"/\' %s' % (pwd, tmp_file)
         utils.exe_cmd(sed_cmd)
@@ -266,12 +261,12 @@ class ArduinoWifiDongle(object):
     def _start_log(self):
         """Target method called by start_controller_log().
 
-        This method is called as a daemon thread, which continously reads the
+        This method is called as a daemon thread, which continuously reads the
         serial port. Stops when set_logging is set to False or when the test
         ends.
         """
         self.set_logging = True
-        ser = serial.Serial(self.port, BAUD_RATE)
+        ser = Serial(self.port, BAUD_RATE)
         while True:
             curr_time = str(datetime.now())
             data = ser.readline().decode('utf-8', 'ignore')
@@ -314,7 +309,7 @@ class ArduinoWifiDongle(object):
         elif STATUS in data:
             self.status = int(val)
         elif PING in data:
-            self.ping = False if int(val) == 0 else True
+            self.ping = int(val) != 0
 
     def ip_address(self, exp_result=True, timeout=READ_TIMEOUT):
         """Get the ip address of the wifi dongle.
@@ -330,8 +325,8 @@ class ArduinoWifiDongle(object):
         """
         curr_time = time.time()
         while time.time() < curr_time + timeout:
-            if (exp_result and self.ip_addr) or \
-                    (not exp_result and not self.ip_addr):
+            if (exp_result and self.ip_addr) or (
+                    not exp_result and not self.ip_addr):
                 break
             time.sleep(1)
         return self.ip_addr
@@ -345,8 +340,8 @@ class ArduinoWifiDongle(object):
         """
         curr_time = time.time()
         while time.time() < curr_time + timeout:
-            if (exp_result and self.status == 3) or \
-                    (not exp_result and not self.status):
+            if (exp_result and self.status == 3) or (
+                    not exp_result and not self.status):
                 break
             time.sleep(1)
         return self.status == 3
@@ -367,13 +362,13 @@ class ArduinoWifiDongle(object):
         d = {}
         curr_time = time.time()
         while time.time() < curr_time + timeout:
-            if (exp_result and self.scan_results) or \
-                    (not exp_result and not self.scan_results):
+            if (exp_result and self.scan_results) or (
+                    not exp_result and not self.scan_results):
                 break
             time.sleep(1)
         for i in range(len(self.scan_results)):
             if SSID in self.scan_results[i]:
-                d = {}
+                d.clear()
                 d[SSID] = self.scan_results[i].split(':')[-1].rstrip()
             elif RSSI in self.scan_results[i]:
                 d[RSSI] = self.scan_results[i].split(':')[-1].rstrip()
@@ -390,8 +385,7 @@ class ArduinoWifiDongle(object):
         """
         curr_time = time.time()
         while time.time() < curr_time + timeout:
-            if (exp_result and self.ping) or \
-                    (not exp_result and not self.ping):
+            if (exp_result and self.ping) or (not exp_result and not self.ping):
                 break
             time.sleep(1)
         return self.ping
