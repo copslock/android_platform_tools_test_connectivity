@@ -54,8 +54,6 @@ PWD_KEY = wutils.WifiEnums.PWD_KEY
 class ArduinoWifiDongleError(signals.ControllerError):
     pass
 
-class DoesNotExistError(ArduinoWifiDongleError):
-    """Raised when something that does not exist is referenced."""
 
 def create(configs):
     """Creates ArduinoWifiDongle objects.
