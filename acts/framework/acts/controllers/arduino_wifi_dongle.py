@@ -79,15 +79,18 @@ def create(configs):
 
     return wcs
 
+
 def destroy(wcs):
     for wc in wcs:
         wc.clean_up()
+
 
 def get_instances(configs):
     wcs = []
     for s in configs:
         wcs.append(ArduinoWifiDongle(s))
     return wcs
+
 
 def get_instances_with_configs(configs):
     wcs = []
@@ -99,6 +102,7 @@ def get_instances_with_configs(configs):
                 "'serial' is missing for ArduinoWifiDongle config %s." % c)
         wcs.append(ArduinoWifiDongle(s))
     return wcs
+
 
 class ArduinoWifiDongle(object):
     """Class representing an arduino wifi dongle.
@@ -118,6 +122,7 @@ class ArduinoWifiDongle(object):
         scan_results: Most recent scan results.
         ping: Ping status in bool - ping to www.google.com
     """
+
     def __init__(self, serial=''):
         """Initializes the ArduinoWifiDongle object."""
         self.serial = serial
@@ -175,7 +180,7 @@ class ArduinoWifiDongle(object):
                              (self.serial, tty_port))
                 return tty_port
         raise ArduinoWifiDongleError("Wifi dongle %s is specified in config"
-                                    " but is not attached." % self.serial)
+                                     " but is not attached." % self.serial)
 
     def write(self, arduino, file_path, network=None):
         """Write an ino file to the arduino wifi dongle.
@@ -196,7 +201,8 @@ class ArduinoWifiDongle(object):
             cmd = self._update_ino_wifi_network(arduino, file_path, network)
         self.log.info("Command is %s" % cmd)
         proc = subprocess.Popen(cmd,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                shell=True)
         out, err = proc.communicate()
         return_code = proc.returncode
         if return_code != 0:
@@ -220,11 +226,12 @@ class ArduinoWifiDongle(object):
         utils.exe_cmd("cp %s %s" % (file_path, tmp_file))
         ssid = network[SSID_KEY]
         pwd = network[PWD_KEY]
-        sed_cmd = "sed -i 's/\"wifi_tethering_test\"/\"%s\"/' %s" % (ssid, tmp_file)
+        sed_cmd = "sed -i 's/\"wifi_tethering_test\"/\"%s\"/' %s" % (
+        ssid, tmp_file)
         utils.exe_cmd(sed_cmd)
         sed_cmd = "sed -i  's/\"password\"/\"%s\"/' %s" % (pwd, tmp_file)
         utils.exe_cmd(sed_cmd)
-        cmd = "%s %s --upload --port %s" %(arduino, tmp_file, self.port)
+        cmd = "%s %s --upload --port %s" % (arduino, tmp_file, self.port)
         return cmd
 
     def start_controller_log(self, msg=None):
@@ -324,8 +331,8 @@ class ArduinoWifiDongle(object):
         curr_time = time.time()
         while time.time() < curr_time + timeout:
             if (exp_result and self.ip_addr) or \
-                (not exp_result and not self.ip_addr):
-                  break
+                    (not exp_result and not self.ip_addr):
+                break
             time.sleep(1)
         return self.ip_addr
 
@@ -339,8 +346,8 @@ class ArduinoWifiDongle(object):
         curr_time = time.time()
         while time.time() < curr_time + timeout:
             if (exp_result and self.status == 3) or \
-                (not exp_result and not self.status):
-                  break
+                    (not exp_result and not self.status):
+                break
             time.sleep(1)
         return self.status == 3
 
@@ -361,8 +368,8 @@ class ArduinoWifiDongle(object):
         curr_time = time.time()
         while time.time() < curr_time + timeout:
             if (exp_result and self.scan_results) or \
-                (not exp_result and not self.scan_results):
-                  break
+                    (not exp_result and not self.scan_results):
+                break
             time.sleep(1)
         for i in range(len(self.scan_results)):
             if SSID in self.scan_results[i]:
@@ -384,7 +391,7 @@ class ArduinoWifiDongle(object):
         curr_time = time.time()
         while time.time() < curr_time + timeout:
             if (exp_result and self.ping) or \
-                (not exp_result and not self.ping):
-                  break
+                    (not exp_result and not self.ping):
+                break
             time.sleep(1)
         return self.ping
