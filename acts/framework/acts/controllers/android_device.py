@@ -72,10 +72,6 @@ class AndroidDeviceError(error.ActsError):
     """Raised when there is an error in AndroidDevice."""
 
 
-class DoesNotExistError(AndroidDeviceError):
-    """Raised when something that does not exist is referenced."""
-
-
 def create(configs):
     """Creates AndroidDevice controller objects.
 
@@ -103,9 +99,9 @@ def create(configs):
 
     for ad in ads:
         if not ad.is_connected():
-            raise DoesNotExistError(("Android device %s is specified in config"
-                                     " but is not attached.") % ad.serial,
-                                    serial=ad.serial)
+            raise AndroidDeviceError(("Android device %s is specified in config"
+                                      " but is not attached.") % ad.serial,
+                                      serial=ad.serial)
     _start_services_on_ads(ads)
     return ads
 
