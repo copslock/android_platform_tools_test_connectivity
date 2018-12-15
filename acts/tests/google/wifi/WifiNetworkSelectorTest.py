@@ -74,7 +74,7 @@ class WifiNetworkSelectorTest(WifiBaseTest):
         self.dut.ed.clear_all_events()
 
         if hasattr(self, 'packet_capture'):
-            self.pcap_pids = wutils.start_pcap(
+            self.pcap_procs = wutils.start_pcap(
                 self.packet_capture, 'dual', self.log_path, self.test_name)
 
     def teardown_test(self):
@@ -84,11 +84,11 @@ class WifiNetworkSelectorTest(WifiBaseTest):
 
     def on_pass(self, test_name, begin_time):
         if hasattr(self, 'packet_capture'):
-            wutils.stop_pcap(self.packet_capture, self.pcap_pids, True)
+            wutils.stop_pcap(self.packet_capture, self.pcap_procs, True)
 
     def on_fail(self, test_name, begin_time):
         if hasattr(self, 'packet_capture'):
-            wutils.stop_pcap(self.packet_capture, self.pcap_pids, False)
+            wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
 
