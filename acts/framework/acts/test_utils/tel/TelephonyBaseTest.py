@@ -451,8 +451,8 @@ class TelephonyBaseTest(BaseTestClass):
     def _take_bug_report(self, test_name, begin_time):
         test_log_path = os.path.join(self.log_path, test_name)
         utils.create_dir(test_log_path)
-        # Extract test_run_info.txt, test_run_detail.txt
-        for file_name in ("test_run_info.txt", "test_run_details.txt"):
+        # Extract test_run_info.txt, test_run_debug.txt
+        for file_name in ("test_run_info.txt", "test_run_debug.txt"):
             extract_test_log(self.log, os.path.join(self.log_path, file_name),
                              os.path.join(test_log_path,
                                           "%s_%s" % (test_name, file_name)),
