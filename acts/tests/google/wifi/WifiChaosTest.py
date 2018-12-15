@@ -122,10 +122,10 @@ class WifiChaosTest(WifiBaseTest):
         self.dut.droid.wakeUpNow()
 
     def on_pass(self, test_name, begin_time):
-        wutils.stop_pcap(self.pcap, self.pcap_pid, True)
+        wutils.stop_pcap(self.pcap, self.pcap_procs, True)
 
     def on_fail(self, test_name, begin_time):
-        wutils.stop_pcap(self.pcap, self.pcap_pid, False)
+        wutils.stop_pcap(self.pcap, self.pcap_procs, False)
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
 
@@ -278,7 +278,7 @@ class WifiChaosTest(WifiBaseTest):
 
         self.get_band_and_chan(ssid)
         self.pcap.configure_monitor_mode(self.band, self.chan)
-        self.pcap_pid = wutils.start_pcap(
+        self.pcap_procs = wutils.start_pcap(
                 self.pcap, self.band.lower(), self.log_path, self.test_name)
         self.run_connect_disconnect(network, hostname, rpm_port, rpm_ip,
                                     release_ap)

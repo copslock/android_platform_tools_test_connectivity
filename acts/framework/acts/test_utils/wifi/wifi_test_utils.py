@@ -16,7 +16,7 @@
 
 import logging
 import os
-import pprint
+import shutil
 import time
 
 from enum import IntEnum
@@ -1936,8 +1936,8 @@ def start_pcap(pcap, wifi_band, log_path, test_name):
         test_name: test name to be used for pcap file name
 
     Returns:
-        Dictionary with pid of the tcpdump process as key and log path
-        of the file name as the value
+        Dictionary with wifi band as key and the tuple
+        (pcap Process object, log directory) as the value
     """
     log_dir = os.path.join(log_path, test_name)
     utils.create_dir(log_dir)
@@ -1945,13 +1945,13 @@ def start_pcap(pcap, wifi_band, log_path, test_name):
         bands = [BAND_2G, BAND_5G]
     else:
         bands = [wifi_band]
-    pids = {}
+    procs = {}
     for band in bands:
-        pid = pcap.start_packet_capture(band, log_dir, test_name)
-        pids[pid] = os.path.join(log_dir, test_name)
-    return pids
+        proc = pcap.start_packet_capture(band, log_dir, test_name)
+        procs[band] = (proc, os.path.join(log_dir, test_name))
+    return procs
 
-def stop_pcap(pcap, pids, test_status=None):
+def stop_pcap(pcap, procs, test_status=None):
     """Stop packet capture in monitor mode.
 
     Since, the pcap logs in monitor mode can be very large, we will
@@ -1960,14 +1960,14 @@ def stop_pcap(pcap, pids, test_status=None):
 
     Args:
         pcap: packet capture object
-        pids: dictionary returned by start_pcap
+        procs: dictionary returned by start_pcap
         test_status: status of the test case
     """
-    for pid, fname in pids.items():
-        pcap.stop_packet_capture(pid)
+    for proc, fname in procs.values():
+        pcap.stop_packet_capture(proc)
 
     if test_status:
-        os.system('rm -rf %s' % os.path.dirname(fname))
+        shutil.rmtree(os.path.dirname(fname))
 
 def start_cnss_diags(ads):
     for ad in ads:
