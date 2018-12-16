@@ -4405,7 +4405,8 @@ def mms_send_receive_verify_for_subscription(
                 ad_tx.log.warning("No %s or %s event.", EventMmsSentSuccess,
                                   EventMmsSentFailure)
 
-            if not wait_for_matching_mms(log, ad_rx, phonenumber_tx, message):
+            if not wait_for_matching_mms(log, ad_rx, phonenumber_tx,
+                                         message, max_wait_time):
                 return False
         except Exception as e:
             log.error("Exception error %s", e)

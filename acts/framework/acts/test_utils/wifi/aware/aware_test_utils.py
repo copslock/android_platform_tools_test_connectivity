@@ -801,24 +801,34 @@ def create_ib_ndp(p_dut, s_dut, p_config, s_config, device_startup_offset):
                                                     None))
 
     # Publisher & Subscriber: wait for network formation
-    p_net_event = wait_for_event_with_keys(
-        p_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_TIMEOUT,
+    p_net_event_nc = wait_for_event_with_keys(
+        p_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+    s_net_event_nc = wait_for_event_with_keys(
+        s_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+
+    # note that Pub <-> Sub since IPv6 are of peer's!
+    p_ipv6 = s_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+    s_ipv6 = p_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+
+    p_net_event_lp = wait_for_event_with_keys(
+        p_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, p_req_key))
-    s_net_event = wait_for_event_with_keys(
-        s_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_TIMEOUT,
+    s_net_event_lp = wait_for_event_with_keys(
+        s_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
-    p_aware_if = p_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-    s_aware_if = s_net_event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-
-    p_ipv6 = p_dut.droid.connectivityGetLinkLocalIpv6Address(p_aware_if).split(
-        "%")[0]
-    s_ipv6 = s_dut.droid.connectivityGetLinkLocalIpv6Address(s_aware_if).split(
-        "%")[0]
+    p_aware_if = p_net_event_lp["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+    s_aware_if = s_net_event_lp["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
 
     return p_req_key, s_req_key, p_aware_if, s_aware_if, p_ipv6, s_ipv6
 
@@ -855,26 +865,36 @@ def create_oob_ndp_on_sessions(init_dut, resp_dut, init_id, init_mac, resp_id,
             init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, None))
 
     # Initiator & Responder: wait for network formation
-    init_net_event = wait_for_event_with_keys(
-        init_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_TIMEOUT,
+    init_net_event_nc = wait_for_event_with_keys(
+        init_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+    resp_net_event_nc = wait_for_event_with_keys(
+        resp_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_NDP_TIMEOUT,
+        (cconsts.NETWORK_CB_KEY_EVENT,
+         cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+        (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+    # note that Init <-> Resp since IPv6 are of peer's!
+    resp_ipv6 = init_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+    init_ipv6 = resp_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+
+    init_net_event_lp = wait_for_event_with_keys(
+        init_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-    resp_net_event = wait_for_event_with_keys(
-        resp_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_TIMEOUT,
+    resp_net_event_lp = wait_for_event_with_keys(
+        resp_dut, cconsts.EVENT_NETWORK_CALLBACK, EVENT_NDP_TIMEOUT,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
-    init_aware_if = init_net_event['data'][
+    init_aware_if = init_net_event_lp['data'][
         cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-    resp_aware_if = resp_net_event['data'][
+    resp_aware_if = resp_net_event_lp['data'][
         cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-
-    init_ipv6 = init_dut.droid.connectivityGetLinkLocalIpv6Address(
-        init_aware_if).split('%')[0]
-    resp_ipv6 = resp_dut.droid.connectivityGetLinkLocalIpv6Address(
-        resp_aware_if).split('%')[0]
 
     return (init_req_key, resp_req_key, init_aware_if, resp_aware_if,
             init_ipv6, resp_ipv6)

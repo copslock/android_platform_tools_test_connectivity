@@ -218,30 +218,43 @@ class DataPathTest(AwareBaseTest):
                 (cconsts.NETWORK_CB_KEY_ID, s_req_key))
         else:
             # Publisher & Subscriber: wait for network formation
-            p_net_event = autils.wait_for_event_with_keys(
+            p_net_event_nc = autils.wait_for_event_with_keys(
+                p_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+            s_net_event_nc = autils.wait_for_event_with_keys(
+                s_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+
+            # note that Pub <-> Sub since IPv6 are of peer's!
+            s_ipv6 = p_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+            p_ipv6 = s_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+
+            p_net_event_lp = autils.wait_for_event_with_keys(
                 p_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, p_req_key))
-            s_net_event = autils.wait_for_event_with_keys(
+            s_net_event_lp = autils.wait_for_event_with_keys(
                 s_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
-            p_aware_if = p_net_event["data"][
+            p_aware_if = p_net_event_lp["data"][
                 cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-            s_aware_if = s_net_event["data"][
+            s_aware_if = s_net_event_lp["data"][
                 cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+
             self.log.info("Interface names: p=%s, s=%s", p_aware_if,
                           s_aware_if)
-
-            p_ipv6 = \
-            p_dut.droid.connectivityGetLinkLocalIpv6Address(p_aware_if).split("%")[0]
-            s_ipv6 = \
-            s_dut.droid.connectivityGetLinkLocalIpv6Address(s_aware_if).split("%")[0]
             self.log.info("Interface addresses (IPv6): p=%s, s=%s", p_ipv6,
                           s_ipv6)
 
@@ -354,30 +367,43 @@ class DataPathTest(AwareBaseTest):
                 (cconsts.NETWORK_CB_KEY_ID, init_req_key))
         else:
             # Initiator & Responder: wait for network formation
-            init_net_event = autils.wait_for_event_with_keys(
+            init_net_event_nc = autils.wait_for_event_with_keys(
+                init_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+            resp_net_event_nc = autils.wait_for_event_with_keys(
+                resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+            # note that Init <-> Resp since IPv6 are of peer's!
+            init_ipv6 = resp_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+            resp_ipv6 = init_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+
+            init_net_event_lp = autils.wait_for_event_with_keys(
                 init_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, init_req_key))
-            resp_net_event = autils.wait_for_event_with_keys(
+            resp_net_event_lp = autils.wait_for_event_with_keys(
                 resp_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
-            init_aware_if = init_net_event["data"][
+            init_aware_if = init_net_event_lp["data"][
                 cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-            resp_aware_if = resp_net_event["data"][
+            resp_aware_if = resp_net_event_lp["data"][
                 cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+
             self.log.info("Interface names: I=%s, R=%s", init_aware_if,
                           resp_aware_if)
-
-            init_ipv6 = init_dut.droid.connectivityGetLinkLocalIpv6Address(
-                init_aware_if).split("%")[0]
-            resp_ipv6 = resp_dut.droid.connectivityGetLinkLocalIpv6Address(
-                resp_aware_if).split("%")[0]
             self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
                           resp_ipv6)
 
@@ -980,16 +1006,17 @@ class DataPathTest(AwareBaseTest):
 
     ##########################################################################
 
-    def wait_for_request_responses(self, dut, req_keys, aware_ifs):
+    def wait_for_request_responses(self, dut, req_keys, aware_ifs, aware_ipv6):
         """Wait for network request confirmation for all request keys.
 
     Args:
       dut: Device under test
       req_keys: (in) A list of the network requests
       aware_ifs: (out) A list into which to append the network interface
+      aware_ipv6: (out) A list into which to append the network ipv6 address
     """
-        num_events = 0
-        while num_events != len(req_keys):
+        num_events = 0  # looking for 2 events per NDP: link-prop + net-cap
+        while num_events != 2 * len(req_keys):
             event = autils.wait_for_event(
                 dut,
                 cconsts.EVENT_NETWORK_CALLBACK,
@@ -1000,6 +1027,15 @@ class DataPathTest(AwareBaseTest):
                     num_events = num_events + 1
                     aware_ifs.append(
                         event["data"][cconsts.NETWORK_CB_KEY_INTERFACE_NAME])
+                else:
+                    self.log.info(
+                        "Received an unexpected connectivity, the revoked "
+                        "network request probably went through -- %s", event)
+            elif (event["data"][cconsts.NETWORK_CB_KEY_EVENT] ==
+                  cconsts.NETWORK_CB_CAPABILITIES_CHANGED):
+                if event["data"][cconsts.NETWORK_CB_KEY_ID] in req_keys:
+                    num_events = num_events + 1
+                    aware_ipv6.append(event["data"][aconsts.NET_CAP_IPV6])
                 else:
                     self.log.info(
                         "Received an unexpected connectivity, the revoked "
@@ -1040,6 +1076,8 @@ class DataPathTest(AwareBaseTest):
         init_req_keys = []
         resp_aware_ifs = []
         init_aware_ifs = []
+        resp_aware_ipv6 = []
+        init_aware_ipv6 = []
 
         # issue N quick requests for identical NDPs - without waiting for result
         # tests whether pre-setup multiple NDP procedure
@@ -1068,10 +1106,12 @@ class DataPathTest(AwareBaseTest):
         init_req_keys.remove(init_req_keys[0])
 
         # wait for network formation for all initial requests
+        # note: for IPv6 Init <--> Resp since each reports the other's IPv6 address
+        #       in it's transport-specific network info
         self.wait_for_request_responses(resp_dut, resp_req_keys,
-                                        resp_aware_ifs)
+                                        resp_aware_ifs, init_aware_ipv6)
         self.wait_for_request_responses(init_dut, init_req_keys,
-                                        init_aware_ifs)
+                                        init_aware_ifs, resp_aware_ipv6)
 
         # issue M more requests for the same NDPs - tests post-setup multiple NDP
         for i in range(M):
@@ -1093,19 +1133,21 @@ class DataPathTest(AwareBaseTest):
 
         # wait for network formation for all subsequent requests
         self.wait_for_request_responses(resp_dut, resp_req_keys[N - 1:],
-                                        resp_aware_ifs)
+                                        resp_aware_ifs, init_aware_ipv6)
         self.wait_for_request_responses(init_dut, init_req_keys[N - 1:],
-                                        init_aware_ifs)
+                                        init_aware_ifs, resp_aware_ipv6)
 
-        # determine whether all interfaces are identical (single NDP) - can't really
-        # test the IPv6 address since it is not part of the callback event - it is
-        # simply obtained from the system (so we'll always get the same for the same
-        # interface)
+        # determine whether all interfaces and ipv6 addresses are identical
+        # (single NDP)
         init_aware_ifs = list(set(init_aware_ifs))
         resp_aware_ifs = list(set(resp_aware_ifs))
+        init_aware_ipv6 = list(set(init_aware_ipv6))
+        resp_aware_ipv6 = list(set(resp_aware_ipv6))
 
         self.log.info("Interface names: I=%s, R=%s", init_aware_ifs,
                       resp_aware_ifs)
+        self.log.info("Interface IPv6: I=%s, R=%s", init_aware_ipv6,
+                      resp_aware_ipv6)
         self.log.info("Initiator requests: %s", init_req_keys)
         self.log.info("Responder requests: %s", resp_req_keys)
 
@@ -1113,13 +1155,16 @@ class DataPathTest(AwareBaseTest):
             len(init_aware_ifs), 1, "Multiple initiator interfaces")
         asserts.assert_equal(
             len(resp_aware_ifs), 1, "Multiple responder interfaces")
-
-        self.log.info("Interface IPv6 (using ifconfig): I=%s, R=%s",
-                      autils.get_ipv6_addr(init_dut, init_aware_ifs[0]),
-                      autils.get_ipv6_addr(resp_dut, resp_aware_ifs[0]))
+        asserts.assert_equal(
+            len(init_aware_ipv6), 1, "Multiple initiator IPv6 addresses")
+        asserts.assert_equal(
+            len(resp_aware_ipv6), 1, "Multiple responder IPv6 addresses")
 
         for i in range(
                 init_dut.aware_capabilities[aconsts.CAP_MAX_NDI_INTERFACES]):
+            # note: using get_ipv6_addr (ifconfig method) since want to verify
+            # that interfaces which do not have any NDPs on them do not have
+            # an IPv6 link-local address.
             if_name = "%s%d" % (aconsts.AWARE_NDI_PREFIX, i)
             init_ipv6 = autils.get_ipv6_addr(init_dut, if_name)
             resp_ipv6 = autils.get_ipv6_addr(resp_dut, if_name)
@@ -1165,28 +1210,39 @@ class DataPathTest(AwareBaseTest):
             dut1.droid.wifiAwareCreateNetworkSpecifierOob(
                 id1, aconsts.DATA_PATH_INITIATOR, mac2))
 
-        req_a_resp_event = autils.wait_for_event_with_keys(
+        req_a_resp_event_nc = autils.wait_for_event_with_keys(
+            dut2, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, req_a_resp))
+        req_a_init_event_nc = autils.wait_for_event_with_keys(
+            dut1, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, req_a_init))
+
+        # note that Init <-> Resp since IPv6 are of peer's!
+        req_a_ipv6_init = req_a_resp_event_nc["data"][aconsts.NET_CAP_IPV6]
+        req_a_ipv6_resp = req_a_init_event_nc["data"][aconsts.NET_CAP_IPV6]
+
+        req_a_resp_event_lp = autils.wait_for_event_with_keys(
             dut2, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
             (cconsts.NETWORK_CB_KEY_ID, req_a_resp))
-        req_a_init_event = autils.wait_for_event_with_keys(
+        req_a_init_event_lp = autils.wait_for_event_with_keys(
             dut1, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
             (cconsts.NETWORK_CB_KEY_ID, req_a_init))
 
-        req_a_if_resp = req_a_resp_event["data"][
+        req_a_if_resp = req_a_resp_event_lp["data"][
             cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-        req_a_if_init = req_a_init_event["data"][
+        req_a_if_init = req_a_init_event_lp["data"][
             cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+
         self.log.info("Interface names for A: I=%s, R=%s", req_a_if_init,
                       req_a_if_resp)
-
-        req_a_ipv6_resp = \
-        dut2.droid.connectivityGetLinkLocalIpv6Address(req_a_if_resp).split("%")[0]
-        req_a_ipv6_init = \
-        dut1.droid.connectivityGetLinkLocalIpv6Address(req_a_if_init).split("%")[0]
         self.log.info("Interface addresses (IPv6) for A: I=%s, R=%s",
                       req_a_ipv6_init, req_a_ipv6_resp)
 
@@ -1201,28 +1257,39 @@ class DataPathTest(AwareBaseTest):
             dut2.droid.wifiAwareCreateNetworkSpecifierOob(
                 id2, aconsts.DATA_PATH_INITIATOR, mac1))
 
-        req_b_resp_event = autils.wait_for_event_with_keys(
+        req_b_resp_event_nc = autils.wait_for_event_with_keys(
+            dut1, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, req_b_resp))
+        req_b_init_event_nc = autils.wait_for_event_with_keys(
+            dut2, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, req_b_init))
+
+        # note that Init <-> Resp since IPv6 are of peer's!
+        req_b_ipv6_init = req_b_resp_event_nc["data"][aconsts.NET_CAP_IPV6]
+        req_b_ipv6_resp = req_b_init_event_nc["data"][aconsts.NET_CAP_IPV6]
+
+        req_b_resp_event_lp = autils.wait_for_event_with_keys(
             dut1, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
             (cconsts.NETWORK_CB_KEY_ID, req_b_resp))
-        req_b_init_event = autils.wait_for_event_with_keys(
+        req_b_init_event_lp = autils.wait_for_event_with_keys(
             dut2, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
             (cconsts.NETWORK_CB_KEY_ID, req_b_init))
 
-        req_b_if_resp = req_b_resp_event["data"][
+        req_b_if_resp = req_b_resp_event_lp["data"][
             cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-        req_b_if_init = req_b_init_event["data"][
+        req_b_if_init = req_b_init_event_lp["data"][
             cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+
         self.log.info("Interface names for B: I=%s, R=%s", req_b_if_init,
                       req_b_if_resp)
-
-        req_b_ipv6_resp = \
-          dut1.droid.connectivityGetLinkLocalIpv6Address(req_b_if_resp).split("%")[0]
-        req_b_ipv6_init = \
-          dut2.droid.connectivityGetLinkLocalIpv6Address(req_b_if_init).split("%")[0]
         self.log.info("Interface addresses (IPv6) for B: I=%s, R=%s",
                       req_b_ipv6_init, req_b_ipv6_resp)
 
@@ -1279,8 +1346,8 @@ class DataPathTest(AwareBaseTest):
         dut1_req_keys = []
         dut2_aware_ifs = []
         dut1_aware_ifs = []
-        dut2_aware_ipv6 = []
-        dut1_aware_ipv6 = []
+        dut2_aware_ipv6s = []
+        dut1_aware_ipv6s = []
 
         dut2_type = aconsts.DATA_PATH_RESPONDER
         dut1_type = aconsts.DATA_PATH_INITIATOR
@@ -1316,25 +1383,41 @@ class DataPathTest(AwareBaseTest):
                 dut2_req_keys.append(dut2_req_key)
 
             # Wait for network
-            dut1_net_event = autils.wait_for_event_with_keys(
+            dut1_net_event_nc = autils.wait_for_event_with_keys(
+                dut1, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, dut1_req_key))
+            dut2_net_event_nc = autils.wait_for_event_with_keys(
+                dut2, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, dut2_req_key))
+
+            # Note: dut1 <--> dut2 IPv6's addresses since it is peer's info
+            dut2_aware_ipv6 = dut1_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+            dut1_aware_ipv6 = dut2_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+
+            dut1_net_event_lp = autils.wait_for_event_with_keys(
                 dut1, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, dut1_req_key))
-            dut2_net_event = autils.wait_for_event_with_keys(
+            dut2_net_event_lp = autils.wait_for_event_with_keys(
                 dut2, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, dut2_req_key))
 
-            dut2_aware_if = dut2_net_event["data"][
+            dut2_aware_if = dut2_net_event_lp["data"][
                 cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-            dut1_aware_if = dut1_net_event["data"][
+            dut1_aware_if = dut1_net_event_lp["data"][
                 cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
+
             dut2_aware_ifs.append(dut2_aware_if)
             dut1_aware_ifs.append(dut1_aware_if)
-            dut2_aware_ipv6.append(autils.get_ipv6_addr(dut2, dut2_aware_if))
-            dut1_aware_ipv6.append(autils.get_ipv6_addr(dut1, dut1_aware_if))
+            dut2_aware_ipv6s.append(dut2_aware_ipv6)
+            dut1_aware_ipv6s.append(dut1_aware_ipv6)
 
             if flip_init_resp:
                 if dut2_is_responder:
@@ -1348,13 +1431,13 @@ class DataPathTest(AwareBaseTest):
         # check that we are using 2 NDIs & that they have unique IPv6 addresses
         dut1_aware_ifs = list(set(dut1_aware_ifs))
         dut2_aware_ifs = list(set(dut2_aware_ifs))
-        dut1_aware_ipv6 = list(set(dut1_aware_ipv6))
-        dut2_aware_ipv6 = list(set(dut2_aware_ipv6))
+        dut1_aware_ipv6s = list(set(dut1_aware_ipv6s))
+        dut2_aware_ipv6s = list(set(dut2_aware_ipv6s))
 
         self.log.info("Interface names: DUT1=%s, DUT2=%s", dut1_aware_ifs,
                       dut2_aware_ifs)
-        self.log.info("IPv6 addresses: DUT1=%s, DUT2=%s", dut1_aware_ipv6,
-                      dut2_aware_ipv6)
+        self.log.info("IPv6 addresses: DUT1=%s, DUT2=%s", dut1_aware_ipv6s,
+                      dut2_aware_ipv6s)
         self.log.info("DUT1 requests: %s", dut1_req_keys)
         self.log.info("DUT2 requests: %s", dut2_req_keys)
 
@@ -1363,13 +1446,15 @@ class DataPathTest(AwareBaseTest):
         asserts.assert_equal(
             len(dut2_aware_ifs), len(sec_configs), "Multiple DUT2 interfaces")
         asserts.assert_equal(
-            len(dut1_aware_ipv6), len(sec_configs),
+            len(dut1_aware_ipv6s), len(sec_configs),
             "Multiple DUT1 IPv6 addresses")
         asserts.assert_equal(
-            len(dut2_aware_ipv6), len(sec_configs),
+            len(dut2_aware_ipv6s), len(sec_configs),
             "Multiple DUT2 IPv6 addresses")
 
         for i in range(len(sec_configs)):
+            # note: using get_ipv6_addr (ifconfig method) since want to verify
+            # that the system information is the same as the reported information
             if_name = "%s%d" % (aconsts.AWARE_NDI_PREFIX, i)
             dut1_ipv6 = autils.get_ipv6_addr(dut1, if_name)
             dut2_ipv6 = autils.get_ipv6_addr(dut2, if_name)
@@ -1679,13 +1764,25 @@ class DataPathTest(AwareBaseTest):
                     s_disc_id, peer_id_on_sub))
 
             # Publisher & Subscriber: wait for network formation
-            p_net_event = autils.wait_for_event_with_keys(
+            p_net_event_nc = autils.wait_for_event_with_keys(
+                p_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+            s_net_event_nc = autils.wait_for_event_with_keys(
+                s_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+            p_net_event_lp = autils.wait_for_event_with_keys(
                 p_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, p_req_key))
-            s_net_event = autils.wait_for_event_with_keys(
+            s_net_event_lp = autils.wait_for_event_with_keys(
                 s_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
@@ -1702,12 +1799,22 @@ class DataPathTest(AwareBaseTest):
             init_dut.droid.wifiAwareCreateNetworkSpecifierOob(
                 init_id, aconsts.DATA_PATH_INITIATOR, resp_mac, passphrase))
 
-        resp_net_event = autils.wait_for_event_with_keys(
+        resp_net_event_nc = autils.wait_for_event_with_keys(
+            resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+        init_net_event_nc = autils.wait_for_event_with_keys(
+            init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
+            (cconsts.NETWORK_CB_KEY_EVENT,
+             cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+            (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+        resp_net_event_lp = autils.wait_for_event_with_keys(
             resp_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
             (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
-        init_net_event = autils.wait_for_event_with_keys(
+        init_net_event_lp = autils.wait_for_event_with_keys(
             init_dut, cconsts.EVENT_NETWORK_CALLBACK, autils.EVENT_NDP_TIMEOUT,
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
@@ -1724,44 +1831,50 @@ class DataPathTest(AwareBaseTest):
                     s_disc_id, peer_id_on_sub))
 
             # Publisher & Subscriber: wait for network formation
-            p_net_event = autils.wait_for_event_with_keys(
+            p_net_event_nc = autils.wait_for_event_with_keys(
+                p_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, p_req_key))
+            s_net_event_nc = autils.wait_for_event_with_keys(
+                s_dut, cconsts.EVENT_NETWORK_CALLBACK,
+                autils.EVENT_NDP_TIMEOUT,
+                (cconsts.NETWORK_CB_KEY_EVENT,
+                 cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
+                (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+            p_net_event_lp = autils.wait_for_event_with_keys(
                 p_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, p_req_key))
-            s_net_event = autils.wait_for_event_with_keys(
+            s_net_event_lp = autils.wait_for_event_with_keys(
                 s_dut, cconsts.EVENT_NETWORK_CALLBACK,
                 autils.EVENT_NDP_TIMEOUT,
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
+        # note that Init <-> Resp & Pub <--> Sub since IPv6 are of peer's!
+        init_ipv6 = resp_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+        resp_ipv6 = init_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+        pub_ipv6 = s_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+        sub_ipv6 = p_net_event_nc["data"][aconsts.NET_CAP_IPV6]
+
         # extract net info
-        pub_interface = p_net_event["data"][
+        pub_interface = p_net_event_lp["data"][
             cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-        sub_interface = s_net_event["data"][
+        sub_interface = s_net_event_lp["data"][
             cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-        resp_interface = resp_net_event["data"][
+        resp_interface = resp_net_event_lp["data"][
             cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
-        init_interface = init_net_event["data"][
+        init_interface = init_net_event_lp["data"][
             cconsts.NETWORK_CB_KEY_INTERFACE_NAME]
 
         self.log.info("Interface names: Pub=%s, Sub=%s, Resp=%s, Init=%s",
                       pub_interface, sub_interface, resp_interface,
                       init_interface)
-
-        pub_ipv6 = \
-        p_dut.droid.connectivityGetLinkLocalIpv6Address(pub_interface).split("%")[0]
-        sub_ipv6 = \
-        s_dut.droid.connectivityGetLinkLocalIpv6Address(sub_interface).split("%")[0]
-        resp_ipv6 = \
-        resp_dut.droid.connectivityGetLinkLocalIpv6Address(resp_interface).split(
-          "%")[0]
-        init_ipv6 = \
-        init_dut.droid.connectivityGetLinkLocalIpv6Address(init_interface).split(
-          "%")[0]
-
         self.log.info(
             "Interface addresses (IPv6): Pub=%s, Sub=%s, Resp=%s, Init=%s",
             pub_ipv6, sub_ipv6, resp_ipv6, init_ipv6)

@@ -58,6 +58,19 @@ def get_info(pcaps):
     return [pcap.ssh_settings.hostname for pcap in pcaps]
 
 
+class PcapProperties(object):
+    """Class to maintain packet capture properties after starting tcpdump.
+
+    Attributes:
+        proc: Process object of tcpdump
+        pcap_file: pcap file name
+    """
+    def __init__(self, proc, pcap_file):
+        """Initialize object."""
+        self.proc = proc
+        self.pcap_file = pcap_file
+
+
 class PacketCaptureError(Exception):
     """Error related to Packet capture."""
 
@@ -70,8 +83,8 @@ class PacketCapture(object):
     wifi networks; 'wlan2' which is a dual band interface.
 
     Attributes:
-        pcap: dict that specifies packet capture processes for a band.
-        tmp_dirs: list of tmp directories created for pcap files.
+        pcap_properties: dict that specifies packet capture properties for a
+            band.
     """
     def __init__(self, configs):
         """Initialize objects.
@@ -88,8 +101,8 @@ class PacketCapture(object):
         self._create_interface(MON_5G, 'monitor')
         self._create_interface(SCAN_IFACE, 'managed')
 
-        self.pcap_processes = dict()
-        self.tmp_dirs = []
+        self.pcap_properties = dict()
+        self._pcap_stop_lock = threading.Lock()
 
     def _create_interface(self, iface, mode):
         """Create interface of monitor/managed mode.
@@ -201,7 +214,7 @@ class PacketCapture(object):
             return False
         return True
 
-    def start_packet_capture(self, band, log_path):
+    def start_packet_capture(self, band, log_path, pcap_file):
         """Start packet capture for band.
 
         band = 2G starts tcpdump on 'mon0' interface.
@@ -209,17 +222,24 @@ class PacketCapture(object):
 
         Args:
             band: '2g' or '2G' and '5g' or '5G'.
-            log_path: base logging directory
+            log_path: test log path to save the pcap file.
+            pcap_file: name of the pcap file.
+
+        Returns:
+            pcap_proc: Process object of the tcpdump.
         """
         band = band.upper()
-        if band not in BAND_IFACE.keys() or band in self.pcap_processes:
+        if band not in BAND_IFACE.keys() or band in self.pcap_properties:
             self.log.error("Invalid band or packet capture already running")
-            return
+            return None
+
+        pcap_name = "%s_pcap" % band
+        pcap_file = os.path.join(log_path, pcap_name)
 
         pcap_logger = log_stream.create_logger(
-            band, base_path=log_path,
+            pcap_name, base_path=log_path,
             log_styles=(log_stream.LogStyles.LOG_DEBUG +
-                        log_stream.LogStyles.TESTCASE_LOG))
+                        log_stream.LogStyles.MONOLITH_LOG))
         pcap_logger.setLevel(logging.DEBUG)
         cmd = formatter.SshFormatter().format_command(
             'tcpdump -i %s -l' %
@@ -228,13 +248,25 @@ class PacketCapture(object):
         pcap_proc.set_on_output_callback(lambda msg: pcap_logger.debug(msg))
         pcap_proc.start()
 
-        self.pcap_processes[band] = pcap_proc
+        self.pcap_properties[band] = PcapProperties(pcap_proc, pcap_file)
+        return pcap_proc
 
-    def stop_packet_capture(self):
-        """Stop the packet capture."""
-        for band in list(self.pcap_processes.keys()):
-            self.pcap_processes[band].stop()
-            del self.pcap_processes[band]
+    def stop_packet_capture(self, proc):
+        """Stop the packet capture.
+
+        Args:
+            proc: Process object of tcpdump to kill.
+        """
+        for key, val in self.pcap_properties.items():
+            if val.proc is proc:
+                break
+        else:
+            self.log.error("Failed to stop tcpdump. Invalid process.")
+            return
+
+        proc.stop()
+        with self._pcap_stop_lock:
+            del self.pcap_properties[key]
 
     def close(self):
         """Cleanup.
