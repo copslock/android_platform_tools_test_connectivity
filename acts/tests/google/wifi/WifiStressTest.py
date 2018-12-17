@@ -159,70 +159,34 @@ class WifiStressTest(WifiBaseTest):
         configured_networks = ad.droid.wifiGetConfiguredNetworks()
         self.log.debug("Configured networks: %s", configured_networks)
 
-    def connect_and_verify_connected_bssid(self, expected_bssid):
+    def connect_and_verify_connected_ssid(self, expected_con, is_pno=False):
         """Start a scan to get the DUT connected to an AP and verify the DUT
-        is connected to the correct BSSID.
+        is connected to the correct SSID.
 
         Args:
-            expected_bssid: Network bssid to which connection.
-
-        Returns:
-            True if connection to given network happen, else return False.
-        """
-        #force start a single scan so we don't have to wait for the
-        #WCM scheduled scan.
-        wutils.start_wifi_connection_scan(self.dut)
-        #wait for connection
-        time.sleep(20)
-        #verify connection
-        actual_network = self.dut.droid.wifiGetConnectionInfo()
-        self.log.info("Actual network: %s", actual_network)
-        try:
-            asserts.assert_equal(expected_bssid,
-                                 actual_network[WifiEnums.BSSID_KEY])
-        except:
-           msg = "Device did not connect to any network."
-           raise signals.TestFailure(msg)
-
-    def set_attns(self, attn_val_name):
-        """Sets attenuation values on attenuators used in this test.
-
-        Args:
-            attn_val_name: Name of the attenuation value pair to use.
-        """
-        self.log.info("Set attenuation values to %s", self.attn_vals[attn_val_name])
-        try:
-            self.attenuators[0].set_atten(self.attn_vals[attn_val_name][0])
-            self.attenuators[1].set_atten(self.attn_vals[attn_val_name][1])
-            self.attenuators[2].set_atten(95)
-            self.attenuators[3].set_atten(95)
-        except:
-            self.log.error("Failed to set attenuation values %s.", attn_val_name)
-            raise
-
-    def trigger_pno_and_assert_connect(self, attn_val_name, expected_con):
-        """Sets attenuators to disconnect current connection to trigger PNO.
-        Validate that the DUT connected to the new SSID as expected after PNO.
-
-        Args:
-            attn_val_name: Name of the attenuation value pair to use.
             expected_con: The expected info of the network to we expect the DUT
                 to roam to.
         """
         connection_info = self.dut.droid.wifiGetConnectionInfo()
-        self.log.info("Triggering PNO connect from %s to %s",
+        self.log.info("Triggering network selection from %s to %s",
                       connection_info[WifiEnums.SSID_KEY],
                       expected_con[WifiEnums.SSID_KEY])
-        self.set_attns(attn_val_name)
-        self.log.info("Wait %ss for PNO to trigger.", self.pno_interval)
-        time.sleep(self.pno_interval)
+        self.attenuators[0].set_atten(0)
+        if is_pno:
+            self.log.info("Wait %ss for PNO to trigger.", self.pno_interval)
+            time.sleep(self.pno_interval)
+        else:
+            # force start a single scan so we don't have to wait for the scheduled scan.
+            wutils.start_wifi_connection_scan(self.dut)
+            self.log.info("Wait 20s for network selection.")
+            time.sleep(20)
         try:
-            self.log.info("Connected to %s network after PNO interval"
+            self.log.info("Connected to %s network after network selection"
                           % self.dut.droid.wifiGetConnectionInfo())
             expected_ssid = expected_con[WifiEnums.SSID_KEY]
             verify_con = {WifiEnums.SSID_KEY: expected_ssid}
             wutils.verify_wifi_connection_info(self.dut, verify_con)
-            self.log.info("Connected to %s successfully after PNO",
+            self.log.info("Connected to %s successfully after network selection",
                           expected_ssid)
         finally:
             pass
@@ -481,18 +445,15 @@ class WifiStressTest(WifiBaseTest):
         """
         for attenuator in self.attenuators:
             attenuator.set_atten(95)
-
         # add a saved network to DUT
         networks = [self.reference_networks[0]['2g']]
         self.add_networks(self.dut, networks)
-
         for count in range(self.stress_count):
-            # move the DUT in range
-            self.attenuators[0].set_atten(0)
-            # verify
-            self.connect_and_verify_connected_bssid(self.reference_networks[0]['2g']['bssid'])
+            self.connect_and_verify_connected_ssid(self.reference_networks[0]['2g'])
             # move the DUT out of range
             self.attenuators[0].set_atten(95)
+            time.sleep(10)
+        wutils.set_attns(self.attenuators, "default")
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
@@ -502,15 +463,22 @@ class WifiStressTest(WifiBaseTest):
 
         Steps:
         1. Save 2Ghz valid network configuration in the device.
-        2. Attenuate 5Ghz network and wait for a few seconds to trigger PNO.
-        3. Check the device connected to 2Ghz network automatically.
-        4. Repeat step 2-3
+        2. Screen off DUT
+        3. Attenuate 5Ghz network and wait for a few seconds to trigger PNO.
+        4. Check the device connected to 2Ghz network automatically.
+        5. Repeat step 3-4
         """
+        for attenuator in self.attenuators:
+            attenuator.set_atten(95)
+        # add a saved network to DUT
         networks = [self.reference_networks[0]['2g']]
         self.add_networks(self.dut, networks)
+        self.dut.droid.wakeLockRelease()
+        self.dut.droid.goToSleepNow()
         for count in range(self.stress_count):
-            self.trigger_pno_and_assert_connect("a_on_b_off", self.reference_networks[0]['2g'])
-            self.set_attns("b_on_a_off")
+            self.connect_and_verify_connected_ssid(self.reference_networks[0]['2g'], is_pno=True)
+            # move the DUT out of range
+            self.attenuators[0].set_atten(95)
             time.sleep(10)
         wutils.set_attns(self.attenuators, "default")
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
