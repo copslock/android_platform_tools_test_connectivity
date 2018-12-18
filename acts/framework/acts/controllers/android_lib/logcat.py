@@ -92,7 +92,7 @@ def create_logcat_keepalive_process(serial, base_path, extra_params=''):
     """
     logger = log_stream.create_logger(
         'adblog_%s' % serial, base_path=base_path,
-        log_styles=(LogStyles.LOG_DEBUG | LogStyles.MONOLITH_LOG))
+        log_styles=(LogStyles.LOG_DEBUG | LogStyles.TESTCASE_LOG))
     process = Process(('adb -s %s logcat -T 1 -v year %s' %
                        (serial, extra_params)).split(' '))
     timestamp_tracker = TimestampTracker()
