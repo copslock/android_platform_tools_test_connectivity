@@ -381,8 +381,7 @@ def airplane_mode_test(log, ad, retries=3):
             return False
 
         if not ad.droid.connectivityNetworkIsConnected():
-            ad.log.error("Network is NOT connected!")
-            return False
+            ad.log.warning("Network is NOT connected!")
 
         if not wait_for_cell_data_connection(log, ad, True):
             ad.log.error("Failed to enable cell data connection")
