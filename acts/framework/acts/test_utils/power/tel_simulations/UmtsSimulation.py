@@ -107,22 +107,18 @@ class UmtsSimulation(BaseSimulation):
 
         Args:
             parameters: list of parameters
-        Returns:
-            False if there was an error while parsing the config
         """
 
-        if not super().parse_parameters(parameters):
-            return False
+        super().parse_parameters(parameters)
 
         # Setup band
 
         values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
 
         if not values:
-            self.log.error(
+            raise ValueError(
                 "The test name needs to include parameter '{}' followed by "
                 "the required band number.".format(self.PARAM_BAND))
-            return False
 
         self.set_band(self.bts1, values[1])
 
@@ -135,10 +131,9 @@ class UmtsSimulation(BaseSimulation):
                 self.PARAM_RELEASE_VERSION_7, self.PARAM_RELEASE_VERSION_8,
                 self.PARAM_RELEASE_VERSION_99
         ]:
-            self.log.error(
+            raise ValueError(
                 "The test name needs to include the parameter {} followed by a "
                 "valid release version.".format(self.PARAM_RELEASE_VERSION))
-            return False
 
         self.set_release_version(self.bts1, values[1])
 
@@ -146,13 +141,12 @@ class UmtsSimulation(BaseSimulation):
 
         values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
         if not values or values[1] not in self.uplink_signal_level_dictionary:
-            self.log.error(
+            raise ValueError(
                 "The test name needs to include parameter {} followed by "
                 "one the following values: {}.".format(self.PARAM_UL_PW, [
                     "\n" + val
                     for val in self.uplink_signal_level_dictionary.keys()
                 ]))
-            return False
 
         # Power is not set on the callbox until after the simulation is
         # started. Will save this value in a variable and use it later
@@ -163,21 +157,15 @@ class UmtsSimulation(BaseSimulation):
         values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
 
         if not values or values[1] not in self.downlink_rscp_dictionary:
-            self.log.error(
+            raise ValueError(
                 "The test name needs to include parameter {} followed by "
                 "one of the following values: {}.".format(
-                    self.PARAM_DL_PW, [
-                        "\n" + val
-                        for val in self.downlink_rscp_dictionary.keys()
-                    ]))
-            return False
+                    self.PARAM_DL_PW,
+                    [val for val in self.downlink_rscp_dictionary.keys()]))
 
         # Power is not set on the callbox until after the simulation is
         # started. Will save this value in a variable and use it later
         self.sim_dl_power = self.downlink_rscp_dictionary[values[1]]
-
-        # No errors were found
-        return True
 
     def set_release_version(self, bts, release_version):
         """ Sets the release version.

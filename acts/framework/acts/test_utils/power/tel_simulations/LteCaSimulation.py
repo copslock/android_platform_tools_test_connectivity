@@ -68,23 +68,19 @@ class LteCaSimulation(LteSimulation):
 
         Args:
             parameters: list of parameters
-        Returns:
-            False if there was an error while parsing the config
         """
 
-        if not super(LteSimulation, self).parse_parameters(parameters):
-            return False
+        super(LteSimulation, self).parse_parameters(parameters)
 
         # Get the CA band configuration
 
         values = self.consume_parameter(parameters, self.PARAM_CA, 1)
 
         if not values:
-            self.log.error(
+            raise ValueError(
                 "The test name needs to include parameter '{}' followed by "
                 "the CA configuration. For example: ca_3c7c28a".format(
                     self.PARAM_CA))
-            return False
 
         # Carrier aggregation configurations are indicated with the band numbers
         # followed by the CA classes in a single string. For example, for 5 CA
@@ -92,10 +88,9 @@ class LteCaSimulation(LteSimulation):
         ca_configs = re.findall(r'(\d+[abcABC])', values[1])
 
         if not ca_configs:
-            self.log.error(
+            raise ValueError(
                 "The CA configuration has to be indicated with one string as "
                 "in the following example: ca_3c7c28a".format(self.PARAM_CA))
-            return False
 
         carriers = []
         bts_index = 0
@@ -109,20 +104,19 @@ class LteCaSimulation(LteSimulation):
             ca_class = ca[-1]
 
             if ca_class.upper() == 'B':
-                self.log.error("Class B carrier aggregation is not supported.")
-                return False
+                raise ValueError(
+                    "Class B carrier aggregation is not supported.")
 
             if band in carriers:
-                self.log.error("Intra-band non contiguous carrier aggregation "
-                               "is not supported.")
-                return False
+                raise ValueError(
+                    "Intra-band non contiguous carrier aggregation "
+                    "is not supported.")
 
             if ca_class.upper() == 'A':
 
                 if bts_index >= len(self.bts):
-                    self.log.error("This callbox model doesn't allow the "
-                                   "requested CA configuration")
-                    return False
+                    raise ValueError("This callbox model doesn't allow the "
+                                     "requested CA configuration")
 
                 self.set_band_with_defaults(
                     self.bts[bts_index],
@@ -134,9 +128,8 @@ class LteCaSimulation(LteSimulation):
             elif ca_class.upper() == 'C':
 
                 if bts_index + 1 >= len(self.bts):
-                    self.log.error("This callbox model doesn't allow the "
-                                   "requested CA configuration")
-                    return False
+                    raise ValueError("This callbox model doesn't allow the "
+                                     "requested CA configuration")
 
                 self.set_band_with_defaults(
                     self.bts[bts_index],
@@ -150,18 +143,16 @@ class LteCaSimulation(LteSimulation):
                 bts_index += 2
 
             else:
-                self.log.error("Invalid carrier aggregation configuration: "
-                               "{}{}.".format(band, ca_class))
-                return False
+                raise ValueError("Invalid carrier aggregation configuration: "
+                                 "{}{}.".format(band, ca_class))
 
             carriers.append(band)
 
         # Ensure there are at least two carriers being used
         self.num_carriers = bts_index
         if self.num_carriers < 2:
-            self.log.error("At least two carriers need to be indicated for the"
-                           " carrier aggregation sim.")
-            return False
+            raise ValueError("At least two carriers need to be indicated for "
+                             "the carrier aggregation sim.")
 
         # Get the bw for each carrier
         # This is an optional parameter, by default the maximum bandwidth for
@@ -214,17 +205,16 @@ class LteCaSimulation(LteSimulation):
                                              self.num_carriers)
 
         if not mimo_values:
-            self.log.error("The test parameter '{}' has to be included in the "
-                           "test name followed by the MIMO mode for each "
-                           "carrier separated by underscores.".format(
-                               self.PARAM_MIMO))
-            return False
+            raise ValueError(
+                "The test parameter '{}' has to be included in the "
+                "test name followed by the MIMO mode for each "
+                "carrier separated by underscores.".format(self.PARAM_MIMO))
 
         if len(mimo_values) != self.num_carriers + 1:
-            self.log.error("The test parameter '{}' has to be followed by "
-                           "a number of MIMO mode values equal to the number "
-                           "of carriers being used.".format(self.PARAM_MIMO))
-            return False
+            raise ValueError(
+                "The test parameter '{}' has to be followed by "
+                "a number of MIMO mode values equal to the number "
+                "of carriers being used.".format(self.PARAM_MIMO))
 
         for bts_index in range(self.num_carriers):
 
@@ -235,16 +225,15 @@ class LteCaSimulation(LteSimulation):
                     requested_mimo = mimo_mode
                     break
             else:
-                self.log.error("The mimo mode must be one of %s." %
-                               {elem.value
-                                for elem in LteSimulation.MimoMode})
-                return False
+                raise ValueError(
+                    "The mimo mode must be one of %s." %
+                    {elem.value
+                     for elem in LteSimulation.MimoMode})
 
             if (requested_mimo == LteSimulation.MimoMode.MIMO_4x4
                     and self.anritsu._md8475_version == 'A'):
-                self.log.error("The test requires 4x4 MIMO, but that is not "
-                               "supported by the MD8475A callbox.")
-                return False
+                raise ValueError("The test requires 4x4 MIMO, but that is not "
+                                 "supported by the MD8475A callbox.")
 
             self.set_mimo_mode(self.bts[bts_index], requested_mimo)
 
@@ -256,11 +245,10 @@ class LteCaSimulation(LteSimulation):
                         requested_tm = tm
                         break
                 else:
-                    self.log.error(
+                    raise ValueError(
                         "The TM must be one of %s." %
                         {elem.value
                          for elem in LteSimulation.MimoMode})
-                    return False
             else:
                 # Provide default values if the TM parameter is not set
                 if requested_mimo == LteSimulation.MimoMode.MIMO_1x1:
@@ -277,9 +265,6 @@ class LteCaSimulation(LteSimulation):
 
         ul_power = self.get_uplink_power_from_parameters(parameters)
 
-        if not ul_power:
-            return False
-
         # Power is not set on the callbox until after the simulation is
         # started. Saving this value in a variable for later
         self.sim_ul_power = ul_power
@@ -287,9 +272,6 @@ class LteCaSimulation(LteSimulation):
         # Get downlink power
 
         dl_power = self.get_downlink_power_from_parameters(parameters)
-
-        if not dl_power:
-            return False
 
         # Power is not set on the callbox until after the simulation is
         # started. Saving this value in a variable for later
@@ -311,13 +293,12 @@ class LteCaSimulation(LteSimulation):
                     scheduling = scheduling_mode
                     break
             else:
-                self.log.error(
+                raise ValueError(
                     "The test name parameter '{}' has to be followed by one of "
                     "{}.".format(
                         self.PARAM_SCHEDULING,
                         {elem.value
                          for elem in LteSimulation.SchedulingMode}))
-                return False
 
         if scheduling == LteSimulation.SchedulingMode.STATIC:
 
@@ -338,11 +319,10 @@ class LteCaSimulation(LteSimulation):
 
             if (dl_pattern, ul_pattern) not in [(0, 100), (100, 0), (100,
                                                                      100)]:
-                self.log.error(
+                raise ValueError(
                     "Only full RB allocation for DL or UL is supported in CA "
                     "sims. The allowed combinations are 100/0, 0/100 and "
                     "100/100.")
-                return False
 
             if self.dl_256_qam and bw == 1.4:
                 mcs_dl = 26
@@ -376,9 +356,6 @@ class LteCaSimulation(LteSimulation):
 
                 self.set_scheduling_mode(self.bts[bts_index],
                                          LteSimulation.SchedulingMode.DYNAMIC)
-
-        # No errors were found
-        return True
 
     def set_band_with_defaults(self, bts, band, calibrate_if_necessary=True):
         """ Switches to the given band restoring default values
@@ -442,11 +419,11 @@ class LteCaSimulation(LteSimulation):
         while self.anritsu.get_testcase_status() == "0":
             retry_counter += 1
             if retry_counter == 3:
-                self.log.error("The test case failed to start.")
-                return False
+                raise RuntimeError("The test case failed to start after {} "
+                                   "retries. The connection between the phone "
+                                   "and the basestation might be unstable."
+                                   .format(retry_counter))
             time.sleep(10)
-
-        return True
 
     def maximum_downlink_throughput(self):
         """ Calculates maximum downlink throughput as the sum of all the active
