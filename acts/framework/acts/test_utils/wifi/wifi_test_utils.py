@@ -49,12 +49,12 @@ roaming_attn = {
         "AP1_on_AP2_off": [
             0,
             0,
-            95,
-            95
+            60,
+            60
         ],
         "AP1_off_AP2_on": [
-            95,
-            95,
+            60,
+            60,
             0,
             0
         ],
@@ -1664,6 +1664,36 @@ def set_attns(attenuator, attn_val_name):
                        attn_val_name)
         raise
 
+def set_attns_steps(attenuator, attn_val_name, steps=10, wait_time=12):
+    """Sets attenuation values on attenuators used in this test.
+
+    Args:
+        attenuator: The attenuator object.
+        attn_val_name: Name of the attenuation value pair to use.
+        steps: Number of attenuator changes to reach the target value.
+        wait_time: Sleep time for each change of attenuator.
+    """
+    logging.info("Set attenuation values to %s in %d step(s)", roaming_attn[attn_val_name], steps)
+    current_atten = [
+            attenuator[0].get_atten(), attenuator[1].get_atten(),
+            attenuator[2].get_atten(), attenuator[3].get_atten()]
+    target_atten = [
+            roaming_attn[attn_val_name][0], roaming_attn[attn_val_name][1],
+            roaming_attn[attn_val_name][2], roaming_attn[attn_val_name][3]]
+    while steps > 0:
+        next_atten = list(map(
+                lambda x, y: round((y + (steps - 1) * x) / steps) , current_atten, target_atten))
+        try:
+            attenuator[0].set_atten(next_atten[0])
+            attenuator[1].set_atten(next_atten[1])
+            attenuator[2].set_atten(next_atten[2])
+            attenuator[3].set_atten(next_atten[3])
+            time.sleep(wait_time)
+        except:
+            logging.exception("Failed to set attenuation values %s.", attn_val_name)
+            raise
+        current_atten = next_atten
+        steps = steps - 1
 
 def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
     """Sets attenuators to trigger roaming and validate the DUT connected
@@ -1678,9 +1708,7 @@ def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
         WifiEnums.SSID_KEY: expected_con[WifiEnums.SSID_KEY],
         WifiEnums.BSSID_KEY: expected_con["bssid"],
     }
-    set_attns(attenuator, attn_val_name)
-    logging.info("Wait %ss for roaming to finish.", ROAMING_TIMEOUT)
-    time.sleep(ROAMING_TIMEOUT)
+    set_attns_steps(attenuator, attn_val_name)
 
     verify_wifi_connection_info(dut, expected_con)
     expected_bssid = expected_con[WifiEnums.BSSID_KEY]
