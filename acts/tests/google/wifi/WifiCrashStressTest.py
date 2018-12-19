@@ -85,7 +85,7 @@ class WifiCrashStressTest(WifiBaseTest):
             del self.user_params["reference_networks"]
 
     """Helper Functions"""
-    def trigger_wifi_firmware_crash(self, ad, timeout=30):
+    def trigger_wifi_firmware_crash(self, ad, timeout=15):
         pre_timestamp = ad.adb.getprop("vendor.debug.ssrdump.timestamp")
         ad.adb.shell(
             "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
@@ -153,14 +153,13 @@ class WifiCrashStressTest(WifiBaseTest):
         asserts.assert_true(
             utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_addr, timeout=20),
             "%s ping %s failed" % (self.dut_client.serial, dut_addr))
-        wutils.reset_wifi(self.dut_client)
         for count in range(self.stress_count):
             self.log.info("%s: %d/%d" %
                 (self.current_test_name, count + 1, self.stress_count))
+            wutils.reset_wifi(self.dut_client)
             # Trigger firmware crash
             self.trigger_wifi_firmware_crash(self.dut)
             # Connect DUT to Network
-            wutils.wifi_toggle_state(self.dut_client, True)
             wutils.connect_to_wifi_network(self.dut_client, config, check_connectivity=False)
             # Ping the DUT
             server_addr = self.dut.droid.connectivityGetIPv4Addresses("wlan0")[0]
@@ -199,11 +198,11 @@ class WifiCrashStressTest(WifiBaseTest):
         # Client connects to Softap
         wutils.wifi_toggle_state(self.dut_client, True)
         wutils.connect_to_wifi_network(self.dut_client, config)
-        wutils.reset_wifi(self.dut_client)
-        wutils.reset_wifi(self.dut)
         for count in range(self.stress_count):
             self.log.info("%s: %d/%d" %
                 (self.current_test_name, count + 1, self.stress_count))
+            wutils.reset_wifi(self.dut_client)
+            wutils.reset_wifi(self.dut)
             # Trigger firmware crash
             self.trigger_wifi_firmware_crash(self.dut)
             wutils.connect_to_wifi_network(self.dut, self.network)
