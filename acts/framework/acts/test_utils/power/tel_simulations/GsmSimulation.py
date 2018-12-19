@@ -87,22 +87,18 @@ class GsmSimulation(BaseSimulation):
 
         Args:
             parameters: list of parameters
-        Returns:
-            False if there was an error while parsing the config
         """
 
-        if not super().parse_parameters(parameters):
-            return False
+        super().parse_parameters(parameters)
 
         # Setup band
 
         values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
 
         if not values:
-            self.log.error(
+            raise ValueError(
                 "The test name needs to include parameter '{}' followed by "
                 "the required band number.".format(self.PARAM_BAND))
-            return False
 
         self.set_band(self.bts1, values[1])
 
@@ -115,24 +111,19 @@ class GsmSimulation(BaseSimulation):
         elif self.consume_parameter(parameters, self.PARAM_NO_GPRS):
             self.bts1.gsm_gprs_mode = BtsGprsMode.NO_GPRS
         else:
-            self.log.error(
+            raise ValueError(
                 "GPRS mode needs to be indicated in the test name with either "
                 "{}, {} or {}.".format(self.PARAM_GPRS, self.PARAM_EGPRS,
                                        self.PARAM_NO_GPRS))
-            return False
 
         # Setup slot allocation
 
         values = self.consume_parameter(parameters, self.PARAM_SLOTS, 2)
 
         if not values:
-            self.log.error(
+            raise ValueError(
                 "The test name needs to include parameter {} followed by two "
                 "int values indicating DL and UL slots.".format(
                     self.PARAM_SLOTS))
-            return False
 
         self.bts1.gsm_slots = (int(values[1]), int(values[2]))
-
-        # No errors were found
-        return True
