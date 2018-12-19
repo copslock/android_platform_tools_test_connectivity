@@ -146,6 +146,11 @@ class PowerTelTraffic_LTE_Test(PowerTelTrafficTest):
     def test_lte_traffic_band_12_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_49(self):
         self.power_tel_traffic_test()
 
+class PowerTelTraffic_LTECA_Test(PowerTelTrafficTest):
+
+    def test_lteca_ca_3c7c28a_pul_max_mimo_2x2_2x2_2x2_2x2_2x2_scheduling_static_direction_dlul(self):
+        self.power_tel_traffic_test()
+
 class PowerTelTraffic_UMTS_Test(PowerTelTrafficTest):
     def test_umts_traffic_r_8_band_1_pul_edge_direction_ul_pattern_0_100_1(self):
         self.power_tel_traffic_test()
