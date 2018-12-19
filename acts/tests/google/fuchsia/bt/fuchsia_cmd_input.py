@@ -43,6 +43,8 @@ This is all to say this documentation pattern is expected.
 
 """
 
+import acts.test_utils.bt.gatt_test_database as gatt_test_database
+
 import cmd
 import pprint
 import time
@@ -82,8 +84,8 @@ class CmdInput(cmd.Cmd):
         self.pri_dut.gattc_lib.bleStartBleScan(scan_filter)
         for i in range(100):
             time.sleep(.5)
-            scan_res = self.pri_dut.gattc_lib.bleGetDiscoveredDevices(
-            )['result']
+            scan_res = self.pri_dut.gattc_lib.bleGetDiscoveredDevices()[
+                'result']
             for device in scan_res:
                 name, did, connectable = device["name"], device["id"], device[
                     "connectable"]
@@ -930,3 +932,36 @@ class CmdInput(cmd.Cmd):
             self.log.error(FAILURE.format(cmd, err))
 
     """End LE scan wrappers"""
+    """Begin GATT Server wrappers"""
+
+    def complete_gatts_setup_database(self, text, line, begidx, endidx):
+        if not text:
+            completions = list(
+                gatt_test_database.GATT_SERVER_DB_MAPPING.keys())
+        else:
+            completions = [
+                s for s in gatt_test_database.GATT_SERVER_DB_MAPPING.keys()
+                if s.startswith(text)
+            ]
+        return completions
+
+    def do_gatts_setup_database(self, line):
+        """
+        Description: Setup a Gatt server database based on pre-defined inputs.
+            Supports Tab Autocomplete.
+        Input(s):
+            descriptor_db_name: The descriptor db name that matches one in
+                acts.test_utils.bt.gatt_test_database
+        Usage:
+          Examples:
+            gatts_setup_database LARGE_DB_1
+        """
+        cmd = "Setup GATT Server Database Based of pre-defined dictionaries"
+        try:
+            scan_results = self.pri_dut.gatts_lib.publishServer(
+                gatt_test_database.GATT_SERVER_DB_MAPPING.get(line))
+            print(scan_results)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End GATT Server wrappers"""
