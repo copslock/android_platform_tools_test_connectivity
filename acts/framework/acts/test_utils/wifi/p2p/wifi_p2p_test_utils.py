@@ -16,14 +16,11 @@
 
 import logging
 import os
-import pprint
 import time
 
-from enum import IntEnum
 from queue import Empty
 
 from acts import asserts
-from acts import signals
 from acts import utils
 from acts.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
 import acts.utils
@@ -186,6 +183,248 @@ def find_p2p_device(ad1, ad2):
     asserts.assert_true(p2p_find_result,
             "DUT didn't discovered peer:%s device"% (ad2.name))
 
+def createP2pLocalService(ad, serviceCategory):
+    """Based on serviceCategory to create p2p local service
+            on an Android device ad
+
+    Args:
+        ad: The android device
+        serviceCategory: p2p local service type, UPNP / IPP / AFP,
+    """
+    testData = genTestData(serviceCategory)
+    if serviceCategory == p2pconsts.P2P_LOCAL_SERVICE_UPNP:
+        ad.droid.wifiP2pCreateUpnpServiceInfo(testData[0], testData[1],
+                testData[2])
+    elif (serviceCategory == p2pconsts.P2P_LOCAL_SERVICE_IPP or
+            serviceCategory == p2pconsts.P2P_LOCAL_SERVICE_AFP):
+        ad.droid.wifiP2pCreateBonjourServiceInfo(testData[0], testData[1],
+                testData[2])
+    ad.droid.wifiP2pAddLocalService()
+
+def requestServiceAndCheckResult(ad_serviceProvider, ad_serviceReceiver,
+        serviceType, queryString1, queryString2):
+    """Based on serviceType and query info, check service request result
+            same as expect or not on an Android device ad_serviceReceiver.
+            And remove p2p service request after result check.
+
+    Args:
+        ad_serviceProvider: The android device which provide p2p local service
+        ad_serviceReceiver: The android device which query p2p local service
+        serviceType: P2p local service type, Upnp or Bonjour
+        queryString1: Query String, NonNull
+        queryString2: Query String, used for Bonjour, Nullable
+    """
+    expectData = genExpectTestData(serviceType, queryString1, queryString2)
+    find_p2p_device(ad_serviceReceiver, ad_serviceProvider)
+    ad_serviceReceiver.droid.wifiP2pDiscoverServices()
+    serviceData = {}
+    service_id = 0
+    if (serviceType ==
+            WifiP2PEnums.WifiP2pServiceInfo.WIFI_P2P_SERVICE_TYPE_BONJOUR):
+        ad_serviceReceiver.log.info("Request bonjour service in \
+                %s with Query String %s and %s " %
+                (ad_serviceReceiver.name, queryString1, queryString2))
+        ad_serviceReceiver.log.info("expectData %s" % expectData)
+        if queryString1 != None:
+            service_id = ad_serviceReceiver.droid.wifiP2pAddDnssdServiceRequest(
+                    queryString1,queryString2)
+        else:
+            service_id = ad_serviceReceiver.droid.wifiP2pAddServiceRequest(
+                    serviceType)
+            ad_serviceReceiver.log.info("request bonjour service id %s" %
+                    service_id)
+        ad_serviceReceiver.droid.wifiP2pSetDnsSdResponseListeners()
+        ad_serviceReceiver.droid.wifiP2pDiscoverServices()
+        ad_serviceReceiver.log.info("Check Service Listener")
+        time.sleep(p2pconsts.DEFAULT_SERVICE_WAITING_TIME)
+        try:
+            dnssd_events = ad_serviceReceiver.ed.pop_all(p2pconsts.DNSSD_EVENT)
+            dnssd_txrecord_events = ad_serviceReceiver.ed.pop_all(
+                    p2pconsts.DNSSD_TXRECORD_EVENT)
+            dns_service = WifiP2PEnums.WifiP2pDnsSdServiceResponse()
+            for dnssd_event in dnssd_events:
+                if dnssd_event['data']['SourceDeviceAddress'
+                        ] == ad_serviceProvider.deviceAddress:
+                    dns_service.InstanceName = dnssd_event['data'][
+                             p2pconsts.DNSSD_EVENT_INSTANCENAME_KEY]
+                    dns_service.RegistrationType = dnssd_event['data'][
+                            p2pconsts.DNSSD_EVENT_REGISTRATIONTYPE_KEY]
+                    dns_service.FullDomainName = ""
+                    dns_service.TxtRecordMap = ""
+                    serviceData[dns_service.toString()] = 1
+            for dnssd_txrecord_event in dnssd_txrecord_events:
+                if dnssd_txrecord_event['data']['SourceDeviceAddress'
+                        ] == ad_serviceProvider.deviceAddress:
+                    dns_service.InstanceName = ""
+                    dns_service.RegistrationType = ""
+                    dns_service.FullDomainName = dnssd_txrecord_event['data'][
+                            p2pconsts.DNSSD_TXRECORD_EVENT_FULLDOMAINNAME_KEY]
+                    dns_service.TxtRecordMap = dnssd_txrecord_event['data'][
+                            p2pconsts.DNSSD_TXRECORD_EVENT_TXRECORDMAP_KEY]
+                    serviceData[dns_service.toString()] = 1
+            ad_serviceReceiver.log.info("serviceData %s" % serviceData)
+        except queue.Empty as error:
+            ad_serviceReceiver.log.info("dnssd event is empty",)
+    elif (serviceType ==
+            WifiP2PEnums.WifiP2pServiceInfo.WIFI_P2P_SERVICE_TYPE_UPNP):
+        ad_serviceReceiver.log.info("Request upnp service in %s with Query String %s "%
+                (ad_serviceReceiver.name, queryString1))
+        ad_serviceReceiver.log.info("expectData %s" % expectData)
+        if queryString1 != None:
+            service_id = ad_serviceReceiver.droid.wifiP2pAddUpnpServiceRequest(
+                    queryString1)
+        else:
+            service_id = ad_serviceReceiver.droid.wifiP2pAddServiceRequest(
+                    WifiP2PEnums.WifiP2pServiceInfo.WIFI_P2P_SERVICE_TYPE_UPNP)
+        ad_serviceReceiver.droid.wifiP2pSetUpnpResponseListeners()
+        ad_serviceReceiver.droid.wifiP2pDiscoverServices()
+        ad_serviceReceiver.log.info("Check Service Listener")
+        time.sleep(p2pconsts.DEFAULT_SERVICE_WAITING_TIME)
+        try:
+            upnp_events = ad_serviceReceiver.ed.pop_all(p2pconsts.UPNP_EVENT)
+            for upnp_event in upnp_events:
+                if upnp_event['data']['Device']['Address'
+                        ] == ad_serviceProvider.deviceAddress:
+                    for service in upnp_event['data'][
+                            p2pconsts.UPNP_EVENT_SERVICELIST_KEY]:
+                        serviceData[service] = 1
+            ad_serviceReceiver.log.info("serviceData %s" % serviceData)
+        except queue.Empty as error:
+            ad_serviceReceiver.log.info("p2p upnp event is empty",)
+
+    ad_serviceReceiver.log.info("Check ServiceList")
+    asserts.assert_true(checkServiceQueryResult(serviceData,expectData),
+                  "ServiceList not same as Expect");
+    # After service checked, remove the service_id
+    ad_serviceReceiver.droid.wifiP2pRemoveServiceRequest(service_id)
+
+def checkServiceQueryResult(serviceList, expectServiceList):
+    """Check serviceList same as expectServiceList or not
+
+    Args:
+        serviceList: ServiceList which get from query result
+        expectServiceList: ServiceList which hardcode in genExpectTestData
+    Return:
+        True: serviceList  same as expectServiceList
+        False:Exist discrepancy between serviceList and expectServiceList
+    """
+    tempServiceList = serviceList.copy()
+    tempExpectServiceList = expectServiceList.copy()
+    for service in serviceList.keys():
+        if service in expectServiceList:
+            del tempServiceList[service]
+            del tempExpectServiceList[service]
+    return len(tempExpectServiceList) == 0 and len(tempServiceList) == 0
+
+def genTestData(serviceCategory):
+    """Based on serviceCategory to generator Test Data
+
+    Args:
+        serviceCategory: P2p local service type, Upnp or Bonjour
+    Return:
+        TestData
+    """
+    testData = []
+    if serviceCategory == p2pconsts.P2P_LOCAL_SERVICE_UPNP:
+        testData.append(p2pconsts.UpnpTestData.uuid)
+        testData.append(p2pconsts.UpnpTestData.serviceType)
+        testData.append([p2pconsts.UpnpTestData.AVTransport,
+                p2pconsts.UpnpTestData.ConnectionManager])
+    elif serviceCategory == p2pconsts.P2P_LOCAL_SERVICE_IPP:
+        testData.append(p2pconsts.IppTestData.ippInstanceName)
+        testData.append(p2pconsts.IppTestData.ippRegistrationType)
+        testData.append(p2pconsts.IppTestData.ipp_txtRecord)
+    elif serviceCategory == p2pconsts.P2P_LOCAL_SERVICE_AFP:
+        testData.append(p2pconsts.AfpTestData.afpInstanceName)
+        testData.append(p2pconsts.AfpTestData.afpRegistrationType)
+        testData.append(p2pconsts.AfpTestData.afp_txtRecord)
+
+    return testData
+
+def genExpectTestData(serviceType, queryString1, queryString2):
+    """Based on serviceCategory to generator expect serviceList
+
+    Args:
+        serviceType: P2p local service type, Upnp or Bonjour
+        queryString1: Query String, NonNull
+        queryString2: Query String, used for Bonjour, Nullable
+    Return:
+        expectServiceList
+    """
+    expectServiceList = {}
+    if (serviceType ==
+            WifiP2PEnums.WifiP2pServiceInfo.WIFI_P2P_SERVICE_TYPE_BONJOUR):
+        ipp_service = WifiP2PEnums.WifiP2pDnsSdServiceResponse()
+        afp_service = WifiP2PEnums.WifiP2pDnsSdServiceResponse()
+        if queryString1 == p2pconsts.IppTestData.ippRegistrationType:
+            if queryString2 == p2pconsts.IppTestData.ippInstanceName:
+                ipp_service.InstanceName = ""
+                ipp_service.RegistrationType = ""
+                ipp_service.FullDomainName = p2pconsts.IppTestData.ippDomainName
+                ipp_service.TxtRecordMap = p2pconsts.IppTestData.ipp_txtRecord
+                expectServiceList[ipp_service.toString()] = 1
+                return expectServiceList
+            ipp_service.InstanceName = p2pconsts.IppTestData.ippInstanceName
+            ipp_service.RegistrationType = (
+                    p2pconsts.IppTestData.ippRegistrationType + ".local.")
+            ipp_service.FullDomainName = ""
+            ipp_service.TxtRecordMap = ""
+            expectServiceList[ipp_service.toString()] = 1
+            return expectServiceList
+        elif queryString1 == p2pconsts.AfpTestData.afpRegistrationType:
+            if queryString2 == p2pconsts.AfpTestData.afpInstanceName:
+                afp_service.InstanceName = ""
+                afp_service.RegistrationType = ""
+                afp_service.FullDomainName = p2pconsts.AfpTestData.afpDomainName
+                afp_service.TxtRecordMap = p2pconsts.AfpTestData.afp_txtRecord
+                expectServiceList[afp_service.toString()] = 1
+                return expectServiceList
+        ipp_service.InstanceName = p2pconsts.IppTestData.ippInstanceName
+        ipp_service.RegistrationType = (
+                p2pconsts.IppTestData.ippRegistrationType + ".local.")
+        ipp_service.FullDomainName = ""
+        ipp_service.TxtRecordMap = ""
+        expectServiceList[ipp_service.toString()] = 1
+
+        ipp_service.InstanceName = ""
+        ipp_service.RegistrationType = ""
+        ipp_service.FullDomainName = p2pconsts.IppTestData.ippDomainName
+        ipp_service.TxtRecordMap = p2pconsts.IppTestData.ipp_txtRecord
+        expectServiceList[ipp_service.toString()] = 1
+
+        afp_service.InstanceName = p2pconsts.AfpTestData.afpInstanceName
+        afp_service.RegistrationType = (
+                p2pconsts.AfpTestData.afpRegistrationType + ".local.")
+        afp_service.FullDomainName = ""
+        afp_service.TxtRecordMap = ""
+        expectServiceList[afp_service.toString()] = 1
+
+        afp_service.InstanceName = ""
+        afp_service.RegistrationType = ""
+        afp_service.FullDomainName = p2pconsts.AfpTestData.afpDomainName
+        afp_service.TxtRecordMap = p2pconsts.AfpTestData.afp_txtRecord
+        expectServiceList[afp_service.toString()] = 1
+
+        return expectServiceList
+    elif serviceType == WifiP2PEnums.WifiP2pServiceInfo.WIFI_P2P_SERVICE_TYPE_UPNP:
+        upnp_service = "uuid:" + p2pconsts.UpnpTestData.uuid + "::" + (
+                p2pconsts.UpnpTestData.rootdevice)
+        expectServiceList[upnp_service] = 1
+        if queryString1 != "upnp:rootdevice":
+            upnp_service = "uuid:" + p2pconsts.UpnpTestData.uuid + (
+                    "::" + p2pconsts.UpnpTestData.AVTransport)
+            expectServiceList[upnp_service] = 1
+            upnp_service = "uuid:" + p2pconsts.UpnpTestData.uuid + (
+                    "::" + p2pconsts.UpnpTestData.ConnectionManager)
+            expectServiceList[upnp_service] = 1
+            upnp_service = "uuid:" + p2pconsts.UpnpTestData.uuid + (
+                    "::" + p2pconsts.UpnpTestData.serviceType)
+            expectServiceList[upnp_service] = 1
+            upnp_service = "uuid:"+p2pconsts.UpnpTestData.uuid
+            expectServiceList[upnp_service] = 1
+
+    return expectServiceList
+
 class WifiP2PEnums():
 
     class WifiP2pConfig():
@@ -212,3 +451,16 @@ class WifiP2PEnums():
         WIFI_P2P_SERVICE_TYPE_BONJOUR = 1
         WIFI_P2P_SERVICE_TYPE_UPNP = 2
         WIFI_P2P_SERVICE_TYPE_VENDOR_SPECIFIC = 255
+
+    class WifiP2pDnsSdServiceResponse():
+        def __init__(self):
+            pass
+        InstanceName = ""
+        RegistrationType = ""
+        FullDomainName = ""
+        TxtRecordMap = {}
+        def toString(self):
+            return self.InstanceName + self.RegistrationType + (
+                    self.FullDomainName + str(self.TxtRecordMap))
+
+
