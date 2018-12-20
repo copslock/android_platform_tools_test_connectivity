@@ -104,7 +104,7 @@ class ApolloTestActions(BaseTestAction):
             apollo_status = self.dut.get_bt_status()
             if (time.time() - ini_time) > timeout:
                 self.logger.warning('Timeout waiting for the disconnection.')
-                result = False
+                return False
             time.sleep(1)
         return result
 
