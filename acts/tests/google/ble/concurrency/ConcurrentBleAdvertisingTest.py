@@ -482,6 +482,8 @@ class ConcurrentBleAdvertisingTest(BluetoothBaseTest):
             self.log.error(
                 "Test failed, filtering callback onSuccess never occurred: {}".
                 format(error))
+        self.scn_ad.droid.bleSetScanSettingsScanMode(
+            ble_scan_settings_modes['low_latency'])
         self.scn_ad.droid.bleSetScanFilterDeviceName(
             self.adv_ad.droid.bluetoothGetLocalName())
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
