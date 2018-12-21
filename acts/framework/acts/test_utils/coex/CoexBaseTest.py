@@ -36,7 +36,6 @@ from acts.test_utils.coex.coex_test_utils import configure_and_start_ap
 from acts.test_utils.coex.coex_test_utils import iperf_result
 from acts.test_utils.coex.coex_test_utils import get_phone_ip
 from acts.test_utils.coex.coex_test_utils import parse_fping_results
-from acts.test_utils.coex.coex_test_utils import push_music_to_android_device
 from acts.test_utils.coex.coex_test_utils import wifi_connection_check
 from acts.test_utils.coex.coex_test_utils import xlsheet
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -86,12 +85,13 @@ class CoexBaseTest(BaseTestClass):
         req_params = ["network", "iperf"]
         opt_params = [
             "AccessPoint", "RetailAccessPoints", "RelayDevice", "IPerfClient",
-            "required_devices", "audio_params"
+            "required_devices"
         ]
         self.unpack_userparams(req_params, opt_params)
         if hasattr(self, "RelayDevice"):
             self.audio_receiver = self.relay_devices[0]
             self.audio_receiver.power_on()
+            self.headset_mac_address = self.audio_receiver.mac_address
         else:
             self.log.warning("Missing Relay config file.")
         if hasattr(self, "AccessPoint"):
@@ -111,16 +111,6 @@ class CoexBaseTest(BaseTestClass):
             self.iperf_client = self.iperf_clients[0]
         else:
             self.log.warning("Iperfclient is not given in config file")
-        if hasattr(self, "audio_params"):
-            if self.audio_params["music_file"]:
-                self.music_file_to_play = push_music_to_android_device(
-                    self.pri_ad, self.audio_params)
-                if not self.music_file_to_play:
-                    self.log.error("Music file push failed.")
-                    return False
-        else:
-            self.log.warning("No Music files pushed to play.")
-
         wifi_test_device_init(self.pri_ad)
         wifi_connect(self.pri_ad, self.network)
 
@@ -321,10 +311,10 @@ class CoexBaseTest(BaseTestClass):
         if bidirectional:
             self.iperf_variables.bidirectional_client_path = (
                 self.iperf_client.start(self.bidirectional_args, self.pri_ad,
-                                        ip, self.current_test_name))
+                                        ip, self.current_test_name, self.tag))
         else:
             self.iperf_variables.iperf_client_path = self.iperf_client.start(
-                iperf_args, self.pri_ad, ip, self.current_test_name)
+                iperf_args, self.pri_ad, ip, self.current_test_name, self.tag)
         return True
 
     def result_parser(self, iperf_args, bidirectional=False):

@@ -24,6 +24,7 @@ One A2DP Headset connected to Relay.
 
 import time
 
+from acts import asserts
 from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.coex.audio_test_utils import SshAudioCapture
@@ -36,6 +37,7 @@ from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import music_play_and_check
 from acts.test_utils.coex.coex_test_utils import pair_and_connect_headset
 from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
+from acts.test_utils.coex.coex_test_utils import push_music_to_android_device
 from acts.test_utils.coex.coex_test_utils import start_fping
 from acts.test_utils.coex.coex_test_utils import toggle_screen_state
 
@@ -50,28 +52,45 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
     def setup_class(self):
         super().setup_class()
-        req_params = ["iterations", "fping_params"]
+        req_params = ["iterations", "fping_params", "headset_mac_address",
+                      "audio_params"]
         self.unpack_userparams(req_params)
+        if hasattr(self, "audio_params"):
+            if self.audio_params["music_file"]:
+                self.music_file_to_play = push_music_to_android_device(
+                    self.pri_ad, self.audio_params)
+                if not self.music_file_to_play:
+                    self.log.error("Music file push failed.")
+                    return False
+        else:
+            self.log.warning("No Music files pushed to play.")
 
     def setup_test(self):
+        if hasattr(self, "RelayDevice"):
+            self.audio_receiver.enter_pairing_mode()
+            time.sleep(5)  # Wait until device goes into pairing mode.
+        elif (not hasattr(self, "RelayDevice") and
+                          "avrcp" in self.current_test_name):
+            asserts.skip("Relay device not connected,"
+                         "Hence avrcp tests can't be run")
         super().setup_test()
         if "a2dp_streaming" in self.current_test_name:
             self.audio = SshAudioCapture(self.audio_params, self.log_path)
-        self.audio_receiver.enter_pairing_mode()
-        time.sleep(5)  #Wait until device goes into pairing mode.
         if not pair_and_connect_headset(
-                self.pri_ad, self.audio_receiver.mac_address,
+                self.pri_ad, self.headset_mac_address,
                 set([BtEnum.BluetoothProfile.A2DP.value])):
             self.log.error("Failed to pair and connect to headset")
             return False
 
     def teardown_test(self):
         clear_bonded_devices(self.pri_ad)
-        self.audio_receiver.clean_up()
+        if hasattr(self, "RelayDevice"):
+            self.audio_receiver.clean_up()
         if "a2dp_streaming" in self.current_test_name:
             analysis_path = self.audio.audio_quality_analysis(self.log_path)
-            with open(analysis_path) as f:
-                self.result["audio_artifacts"] = f.readline()
+            if analysis_path:
+                with open(analysis_path) as f:
+                    self.result["audio_artifacts"] = f.readline()
             self.audio.terminate_and_store_audio_results()
         super().teardown_test()
 
@@ -90,13 +109,13 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         for i in range(0, self.iterations):
             self.log.info("A2DP connect/disconnect Iteration {}".format(i))
             if not connect_dev_to_headset(
-                    self.pri_ad, self.audio_receiver.mac_address,
+                    self.pri_ad, self.headset_mac_address,
                     set([BtEnum.BluetoothProfile.A2DP.value])):
                 self.log.error("Failed to connect headset.")
                 return False
 
             if not disconnect_headset_from_dev(
-                    self.pri_ad, self.audio_receiver.mac_address,
+                    self.pri_ad, self.headset_mac_address,
                 [BtEnum.BluetoothProfile.A2DP.value]):
                 self.log.error("Failed to disconnect headset.")
                 return False
@@ -110,13 +129,13 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """
         for i in range(0, self.iterations):
             self.pri_ad.droid.bluetoothConnectBonded(
-                self.audio_receiver.mac_address)
+                self.headset_mac_address)
             time.sleep(BLUETOOTH_WAIT_TIME)
             if not self.pri_ad.droid.bluetoothIsDeviceConnected(
-                    self.audio_receiver.mac_address):
+                    self.headset_mac_address):
                 return False
             self.pri_ad.droid.bluetoothDisconnectConnected(
-                self.audio_receiver.mac_address)
+                self.headset_mac_address)
         return True
 
     def perform_classic_discovery_with_iperf(self):
@@ -142,7 +161,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """
         tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
-                  (self.pri_ad, self.audio_receiver.mac_address,
+                  (self.pri_ad, self.headset_mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
                  (self.run_iperf_and_get_result, ()),
@@ -157,7 +176,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """Wrapper function to start iperf traffic and music streaming."""
         tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
-                  (self.pri_ad, self.audio_receiver.mac_address,
+                  (self.pri_ad, self.headset_mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
                  (self.run_iperf_and_get_result, ())]
@@ -171,7 +190,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """
         tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
-                  (self.pri_ad, self.audio_receiver.mac_address,
+                  (self.pri_ad, self.headset_mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
                  (avrcp_actions, (self.pri_ad, self.audio_receiver)),
@@ -186,7 +205,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """
         tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
-                  (self.pri_ad, self.audio_receiver.mac_address,
+                  (self.pri_ad, self.headset_mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
                  (self.run_iperf_and_get_result, ()),
@@ -204,7 +223,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
         """
         tasks = [(self.audio.capture_audio, ()),
                  (music_play_and_check,
-                  (self.pri_ad, self.audio_receiver.mac_address,
+                  (self.pri_ad, self.headset_mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
                  (connect_ble, (self.pri_ad, self.inquiry_devices[0])),
@@ -764,7 +783,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
                  (start_fping, (self.pri_ad, self.iperf["duration"],
                                 self.fping_params)),
                  (music_play_and_check,
-                  (self.pri_ad, self.audio_receiver.mac_address,
+                  (self.pri_ad, self.headset_mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"]))]
         if not multithread_func(self.log, tasks):
@@ -818,7 +837,7 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
                  (start_fping, (self.pri_ad, self.iperf["duration"],
                                 self.fping_params)),
                  (music_play_and_check,
-                  (self.pri_ad, self.audio_receiver.mac_address,
+                  (self.pri_ad, self.headset_mac_address,
                    self.music_file_to_play,
                    self.audio_params["music_play_time"])),
                  (toggle_screen_state, (self.pri_ad, self.iperf["duration"]))]
