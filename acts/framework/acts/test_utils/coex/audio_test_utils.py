@@ -64,7 +64,8 @@ class SshAudioCapture(AudioCapture):
     def terminate_and_store_audio_results(self):
         """Terminates audio and stores audio files."""
         if self.audio_params["ssh_config"]:
-            self.ssh_session.run("rm *.wav")
+            if hasattr(self, "ssh_session"):
+                self.ssh_session.run("rm *.wav")
         else:
             self.terminate_audio()
 
