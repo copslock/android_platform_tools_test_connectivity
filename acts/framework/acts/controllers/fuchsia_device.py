@@ -38,6 +38,7 @@ from acts import utils
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
 from acts.controllers.fuchsia_lib.bt.bta_lib import FuchsiaBtaLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
+from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -141,6 +142,10 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaGattcLib
         self.gattc_lib = FuchsiaGattcLib(self.address, self.test_counter,
                                          self.client_id)
+
+        # Grab commands from FuchsiaWlanLib
+        self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
+                                       self.client_id)
 
         #Init server
         self.init_server_connection()
