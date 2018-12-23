@@ -150,8 +150,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         self.simulation.detach()
 
         # Parse simulation parameters.
-        # This may return false if incorrect values are passed.
-        if not self.simulation.parse_parameters(self.parameters):
+        # This may throw a ValueError exception if incorrect values are passed
+        # or if required arguments are omitted.
+        try:
+            self.simulation.parse_parameters(self.parameters)
+        except ValueError as error:
+            self.log.error(str(error))
             return False
 
         # Wait for new params to settle
@@ -161,8 +165,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         if not self.simulation.attach():
             return False
 
-        if not self.simulation.start_test_case():
-            return False
+        self.simulation.start_test_case()
 
         # Make the device go to sleep
         self.dut.droid.goToSleepNow()

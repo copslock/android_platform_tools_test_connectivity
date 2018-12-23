@@ -22,7 +22,6 @@ from acts import asserts
 from acts import utils
 
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.test_utils.wifi.p2p.WifiP2pBaseTest import WifiP2pBaseTest
 from acts.test_utils.wifi.p2p import wifi_p2p_test_utils as wp2putils
 from acts.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts

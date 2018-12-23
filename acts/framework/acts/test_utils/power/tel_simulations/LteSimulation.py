@@ -301,22 +301,18 @@ class LteSimulation(BaseSimulation):
 
         Args:
             parameters: list of parameters
-        Returns:
-            False if there was an error while parsing the config
         """
 
-        if not super().parse_parameters(parameters):
-            return False
+        super().parse_parameters(parameters)
 
         # Setup band
 
         values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
 
         if not values:
-            self.log.error(
+            raise ValueError(
                 "The test name needs to include parameter '{}' followed by "
                 "the required band number.".format(self.PARAM_BAND))
-            return False
 
         band = values[1]
 
@@ -324,16 +320,16 @@ class LteSimulation(BaseSimulation):
 
         # Set DL/UL frame configuration
         if self.get_duplex_mode(band) == self.DuplexMode.TDD:
-            try:
-                values = self.consume_parameter(parameters,
-                                                self.PARAM_FRAME_CONFIG, 1)
-                frame_config = int(values[1])
-            except:
-                self.log.error("When a TDD band is selected the frame "
-                               "structure has to be indicated with the '{}' "
-                               "parameter followed by a number from 0 to 6."
-                               .format(self.PARAM_FRAME_CONFIG))
-                return False
+
+            values = self.consume_parameter(parameters,
+                                            self.PARAM_FRAME_CONFIG, 1)
+            if not values:
+                raise ValueError("When a TDD band is selected the frame "
+                                 "structure has to be indicated with the '{}' "
+                                 "parameter followed by a number from 0 to 6."
+                                 .format(self.PARAM_FRAME_CONFIG))
+
+            frame_config = int(values[1])
 
             self.set_dlul_configuration(self.bts1, frame_config)
 
@@ -342,10 +338,10 @@ class LteSimulation(BaseSimulation):
         values = self.consume_parameter(parameters, self.PARAM_BW, 1)
 
         if not values:
-            self.log.error(
-                "The test name needs to include parameter {} followed by an int"
-                " value (to indicate 1.4 MHz use 14).".format(self.PARAM_BW))
-            return False
+            raise ValueError(
+                "The test name needs to include parameter {} followed by an "
+                "int value (to indicate 1.4 MHz use 14).".format(
+                    self.PARAM_BW))
 
         bw = float(values[1])
 
@@ -359,25 +355,22 @@ class LteSimulation(BaseSimulation):
         values = self.consume_parameter(parameters, self.PARAM_MIMO, 1)
 
         if not values:
-            self.log.error(
-                "The test name needs to include parameter '{}' followed by the"
-                " mimo mode.".format(self.PARAM_MIMO))
-            return False
+            raise ValueError(
+                "The test name needs to include parameter '{}' followed by the "
+                "mimo mode.".format(self.PARAM_MIMO))
 
         for mimo_mode in LteSimulation.MimoMode:
             if values[1] == mimo_mode.value:
                 self.set_mimo_mode(self.bts1, mimo_mode)
                 break
         else:
-            self.log.error("The {} parameter needs to be followed by either "
-                           "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
-            return False
+            raise ValueError("The {} parameter needs to be followed by either "
+                             "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
 
         if (mimo_mode == LteSimulation.MimoMode.MIMO_4x4
                 and self.anritsu._md8475_version == 'A'):
-            self.log.error("The test requires 4x4 MIMO, but that is not "
-                           "supported by the MD8475A callbox.")
-            return False
+            raise ValueError("The test requires 4x4 MIMO, but that is not "
+                             "supported by the MD8475A callbox.")
 
         self.set_mimo_mode(self.bts1, mimo_mode)
 
@@ -386,21 +379,19 @@ class LteSimulation(BaseSimulation):
         values = self.consume_parameter(parameters, self.PARAM_TM, 1)
 
         if not values:
-            self.log.error(
-                "The test name needs to include parameter {} followed by an int"
-                " value from 1 to 4 indicating transmission mode.".format(
+            raise ValueError(
+                "The test name needs to include parameter {} followed by an "
+                "int value from 1 to 4 indicating transmission mode.".format(
                     self.PARAM_TM))
-            return False
 
         for tm in LteSimulation.TransmissionMode:
             if values[1] == tm.value[2:]:
                 self.set_transmission_mode(self.bts1, tm)
                 break
         else:
-            self.log.error("The {} parameter needs to be followed by either "
-                           "TM1, TM2, TM3, TM4, TM7, TM8 or TM9.".format(
-                               self.PARAM_MIMO))
-            return False
+            raise ValueError("The {} parameter needs to be followed by either "
+                             "TM1, TM2, TM3, TM4, TM7, TM8 or TM9.".format(
+                                 self.PARAM_MIMO))
 
         # Setup scheduling mode
 
@@ -416,10 +407,9 @@ class LteSimulation(BaseSimulation):
         elif values[1] == self.PARAM_SCHEDULING_STATIC:
             scheduling = LteSimulation.SchedulingMode.STATIC
         else:
-            self.log.error(
+            raise ValueError(
                 "The test name parameter '{}' has to be followed by either "
                 "'dynamic' or 'static'.".format(self.PARAM_SCHEDULING))
-            return False
 
         if scheduling == LteSimulation.SchedulingMode.STATIC:
 
@@ -439,10 +429,9 @@ class LteSimulation(BaseSimulation):
                 ul_pattern = int(values[2])
 
             if not (0 <= dl_pattern <= 100 and 0 <= ul_pattern <= 100):
-                self.log.error(
+                raise ValueError(
                     "The scheduling pattern parameters need to be two "
                     "positive numbers between 0 and 100.")
-                return False
 
             dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
                 self.bts1, dl_pattern, ul_pattern)
@@ -477,9 +466,6 @@ class LteSimulation(BaseSimulation):
 
         ul_power = self.get_uplink_power_from_parameters(parameters)
 
-        if not ul_power:
-            return False
-
         # Power is not set on the callbox until after the simulation is
         # started. Saving this value in a variable for later
         self.sim_ul_power = ul_power
@@ -488,15 +474,9 @@ class LteSimulation(BaseSimulation):
 
         dl_power = self.get_downlink_power_from_parameters(parameters)
 
-        if not dl_power:
-            return False
-
         # Power is not set on the callbox until after the simulation is
         # started. Saving this value in a variable for later
         self.sim_dl_power = dl_power
-
-        # No errors were found
-        return True
 
     def get_uplink_power_from_parameters(self, parameters):
         """ Reads uplink power from a list of parameters. """
@@ -504,13 +484,11 @@ class LteSimulation(BaseSimulation):
         values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
 
         if not values or values[1] not in self.uplink_signal_level_dictionary:
-            self.log.error(
+            raise ValueError(
                 "The test name needs to include parameter {} followed by one "
                 "the following values: {}.".format(self.PARAM_UL_PW, [
-                    "\n" + val
-                    for val in self.uplink_signal_level_dictionary.keys()
+                    val for val in self.uplink_signal_level_dictionary.keys()
                 ]))
-            return None
 
         return self.uplink_signal_level_dictionary[values[1]]
 
@@ -521,17 +499,16 @@ class LteSimulation(BaseSimulation):
 
         if values:
             if values[1] not in self.downlink_rsrp_dictionary:
-                self.log.error("Invalid signal level value {}.".format(
+                raise ValueError("Invalid signal level value {}.".format(
                     values[1]))
-                return None
             else:
                 return self.downlink_rsrp_dictionary[values[1]]
         else:
             # Use default value
             power = self.downlink_rsrp_dictionary['excellent']
-            self.log.error(
-                "No DL signal level value was indicated in the test parameters."
-                " Using default value of {} RSRP.".format(power))
+            self.log.info(
+                "No DL signal level value was indicated in the test "
+                "parameters. Using default value of {} RSRP.".format(power))
             return power
 
     def set_downlink_rx_power(self, bts, rsrp):
