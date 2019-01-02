@@ -682,22 +682,29 @@ class BaseTestClass(object):
         tests = self._get_test_funcs(matches)
         # A TestResultRecord used for when setup_class fails.
         # Setup for the class.
+        setup_fail = False
         try:
             if self._setup_class() is False:
                 self.log.error("Failed to setup %s.", self.TAG)
                 self._block_all_test_cases(tests)
-                return self.results
+                setup_fail = True
         except signals.TestAbortClass:
             try:
                 self._exec_func(self.teardown_class)
             except Exception as e:
                 self.log.warning(e)
-            return self.results
+            setup_fail = True
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
             self._exec_func(self.teardown_class)
             self._block_all_test_cases(tests)
+            setup_fail = True
+        if setup_fail:
+            event_bus.post(TestClassEndEvent(self, self.results))
+            self.log.info("Summary for test class %s: %s", self.TAG,
+                          self.results.summary_str())
             return self.results
+
         # Run tests in order.
         try:
             for test_name, test_func in tests:
