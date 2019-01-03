@@ -68,15 +68,13 @@ class WifiSoftApTest(WifiBaseTest):
         self.dut_client.droid.wifiEnableVerboseLogging(1)
         asserts.assert_equal(self.dut_client.droid.wifiGetVerboseLoggingLevel(), 1,
             "Failed to enable WiFi verbose logging on the client dut.")
+        wutils.wifi_toggle_state(self.dut_client, True)
         if len(self.android_devices) > 2:
             utils.sync_device_time(self.android_devices[2])
             self.android_devices[2].droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
             self.android_devices[2].droid.wifiEnableVerboseLogging(1)
             asserts.assert_equal(self.android_devices[2].droid.wifiGetVerboseLoggingLevel(), 1,
                 "Failed to enable WiFi verbose logging on the client dut.")
-        # Disable wifi for dbs supported models
-        if self.dut.model in self.dbs_supported_models:
-            wutils.wifi_toggle_state(self.dut, False)
 
     def teardown_class(self):
         wutils.stop_wifi_tethering(self.dut)
