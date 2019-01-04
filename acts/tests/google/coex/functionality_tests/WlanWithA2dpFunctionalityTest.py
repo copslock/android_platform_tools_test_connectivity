@@ -232,8 +232,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
             return False
         return self.teardown_result()
 
-    def test_inquiry_after_headset_connection_with_tcp_ul(self):
-        """Starts TCP-uplink traffic, start inquiry after bluetooth connection.
+    def test_discovery_after_headset_connection_with_tcp_ul(self):
+        """Starts TCP-uplink traffic, start discovery after bluetooth connection.
 
         This test is to start TCP-uplink traffic between host machine and
         android device and test functional behaviour of bluetooth discovery
@@ -252,8 +252,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
             return False
         return True
 
-    def test_inquiry_after_headset_connection_with_tcp_dl(self):
-        """Starts TCP-downlink traffic, start inquiry after bluetooth connection.
+    def test_discovery_after_headset_connection_with_tcp_dl(self):
+        """Starts TCP-downlink traffic, start disocvery after bluetooth connection.
 
         This test is to start TCP-downlink traffic between host machine and
         android device and test functional behaviour of bluetooth discovery
@@ -272,8 +272,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
             return False
         return True
 
-    def test_inquiry_after_headset_connection_with_udp_ul(self):
-        """Starts UDP-uplink traffic, start inquiry after bluetooth connection.
+    def test_discovery_after_headset_connection_with_udp_ul(self):
+        """Starts UDP-uplink traffic, start discovery after bluetooth connection.
 
         This test is to start UDP-uplink traffic between host machine and
         android device and test functional behaviour of bluetooth discovery
@@ -292,8 +292,8 @@ class WlanWithA2dpFunctionalityTest(CoexBaseTest):
             return False
         return True
 
-    def test_inquiry_after_headset_connection_with_udp_dl(self):
-        """Starts UDP-downlink traffic, start inquiry after bluetooth connection.
+    def test_discovery_after_headset_connection_with_udp_dl(self):
+        """Starts UDP-downlink traffic, start discovery after bluetooth connection.
 
         This test is to start UDP-downlink traffic between host machine and
         android device and test functional behaviour of bluetooth discovery
