@@ -54,12 +54,13 @@ class Process(object):
         self._listening_thread = None
         self._redirection_thread = None
         self._on_output_callback = lambda *args, **kw: None
+        self._binary_output = False
         self._on_terminate_callback = lambda *args, **kw: ''
 
         self._started = False
         self._stopped = False
 
-    def set_on_output_callback(self, on_output_callback):
+    def set_on_output_callback(self, on_output_callback, binary=False):
         """Sets the on_output_callback function.
 
         Args:
@@ -68,10 +69,13 @@ class Process(object):
 
                 >>> def on_output_callback(output_line):
                 >>>     return None
+
+            binary: If True, read the process output as raw binary.
         Returns:
             self
         """
         self._on_output_callback = on_output_callback
+        self._binary_output = binary
         return self
 
     def set_on_terminate_callback(self, on_terminate_callback):
@@ -172,15 +176,24 @@ class Process(object):
 
     def _redirect_output(self):
         """Redirects the output from the command into the on_output_callback."""
-        while True:
-            line = self._process.stdout.readline().decode('utf-8',
-                                                          errors='replace')
+        if self._binary_output:
+            while True:
+                data = self._process.stdout.read(1024)
 
-            if line == '':
-                return
-            else:
-                # Output the line without trailing \n and whitespace.
-                self._on_output_callback(line.rstrip())
+                if not data:
+                    return
+                else:
+                    self._on_output_callback(data)
+        else:
+            while True:
+                line = self._process.stdout.readline().decode('utf-8',
+                                                              errors='replace')
+
+                if not line:
+                    return
+                else:
+                    # Output the line without trailing \n and whitespace.
+                    self._on_output_callback(line.rstrip())
 
     @staticmethod
     def __start_process(command, **kwargs):
