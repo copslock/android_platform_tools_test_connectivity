@@ -28,8 +28,8 @@ Change out pip/pip3 and python2.7/3.4 based on python version
 2. pip install libusb1
 3. sudo apt-get install libftdi-dev
 4. Make this file /etc/udev/rules.d/99-libftdi.rules with root and add the lines below:
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", GROUP="dialout", MODE="0660"
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6014", GROUP="dialout", MODE="0660"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", GROUP="plugdev", MODE="0660"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6014", GROUP="plugdev", MODE="0660"
 5. Connect USB relay to computer and power board with necessary connectors
 6. Verify device is found by: python -m pylibftdi.examples.list_devices
 6a. Example output: FTDI:FT245R USB FIFO:A9079L5D
