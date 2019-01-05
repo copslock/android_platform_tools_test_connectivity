@@ -63,7 +63,7 @@ class PcapProperties(object):
 
     Attributes:
         proc: Process object of tcpdump
-        pcap_file: pcap file name
+        pcap_file: File object for the tcpdump output file
     """
     def __init__(self, proc, pcap_file):
         """Initialize object."""
@@ -214,7 +214,7 @@ class PacketCapture(object):
             return False
         return True
 
-    def start_packet_capture(self, band, log_path, pcap_file):
+    def start_packet_capture(self, band, log_path, pcap_fname):
         """Start packet capture for band.
 
         band = 2G starts tcpdump on 'mon0' interface.
@@ -223,7 +223,7 @@ class PacketCapture(object):
         Args:
             band: '2g' or '2G' and '5g' or '5G'.
             log_path: test log path to save the pcap file.
-            pcap_file: name of the pcap file.
+            pcap_fname: name of the pcap file.
 
         Returns:
             pcap_proc: Process object of the tcpdump.
@@ -233,19 +233,16 @@ class PacketCapture(object):
             self.log.error("Invalid band or packet capture already running")
             return None
 
-        pcap_name = "%s_pcap" % band
-        pcap_file = os.path.join(log_path, pcap_name)
+        pcap_name = '%s_%s.pcap' % (pcap_fname, band)
+        pcap_fname = os.path.join(log_path, pcap_name)
+        pcap_file = open(pcap_fname, 'w+b')
 
-        pcap_logger = log_stream.create_logger(
-            pcap_name, base_path=log_path,
-            log_styles=(log_stream.LogStyles.LOG_DEBUG +
-                        log_stream.LogStyles.MONOLITH_LOG))
-        pcap_logger.setLevel(logging.DEBUG)
+        tcpdump_cmd = 'tcpdump -i %s -w - -U 2>/dev/null' % (BAND_IFACE[band])
         cmd = formatter.SshFormatter().format_command(
-            'tcpdump -i %s -l' %
-            (BAND_IFACE[band]), None, self.ssh_settings)
+            tcpdump_cmd, None, self.ssh_settings, extra_flags={'-q': None})
         pcap_proc = Process(cmd)
-        pcap_proc.set_on_output_callback(lambda msg: pcap_logger.debug(msg))
+        pcap_proc.set_on_output_callback(
+            lambda msg: pcap_file.write(msg), binary=True)
         pcap_proc.start()
 
         self.pcap_properties[band] = PcapProperties(pcap_proc, pcap_file)
@@ -266,6 +263,7 @@ class PacketCapture(object):
 
         proc.stop()
         with self._pcap_stop_lock:
+            self.pcap_properties[key].pcap_file.close()
             del self.pcap_properties[key]
 
     def close(self):
