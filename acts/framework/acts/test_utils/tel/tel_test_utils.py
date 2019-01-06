@@ -183,6 +183,7 @@ from acts.logger import normalize_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.utils import exe_cmd
 
+
 WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
 WIFI_PWD_KEY = wifi_test_utils.WifiEnums.PWD_KEY
 WIFI_CONFIG_APBAND_2G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_2G
@@ -6154,8 +6155,9 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
         ad.log.error("Failed to start adb logcat!")
     if skip_setup_wizard:
         ad.exit_setup_wizard()
-    set_qxdm_logger_command(ad, mask=getattr(ad, "qxdm_log_mask", None))
-    start_qxdm_logger(ad)
+    if getattr(ad, "qxdm_log", True):
+        set_qxdm_logger_command(ad, mask=getattr(ad, "qxdm_log_mask", None))
+        start_qxdm_logger(ad)
     # Setup VoWiFi MDN for Verizon. b/33187374
     if "Verizon" in ad.adb.getprop(
             "gsm.sim.operator.alpha") and ad.is_apk_installed(
@@ -6171,13 +6173,58 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     set_phone_silent_mode(ad.log, ad)
     return status
 
+def install_carriersettings_apk(ad, carriersettingsapk, skip_setup_wizard=True):
+    """ Carrier Setting Installation Steps
+
+    Pull sl4a apk from device. Terminate all sl4a sessions,
+    Reboot the device to bootloader, wipe the device by fastboot.
+    Reboot the device. wait for device to complete booting
+    """
+    status = True
+    if carriersettingsapk is None:
+        ad.log.warning("CarrierSettingsApk is not provided, aborting")
+        return False
+    ad.log.info("Push carriersettings apk to the Android device.")
+    android_apk_path = "/product/priv-app/CarrierSettings/CarrierSettings.apk"
+    ad.adb.push("%s %s" % (carriersettingsapk, android_apk_path))
+    ad.stop_services()
+
+    attempts = 3
+    for i in range(1, attempts + 1):
+        try:
+            if ad.serial in list_adb_devices():
+                ad.log.info("Reboot to bootloader")
+                ad.adb.reboot("bootloader", ignore_status=True)
+                time.sleep(30)
+            if ad.serial in list_fastboot_devices():
+                ad.log.info("Reboot in fastboot")
+                ad.fastboot.reboot()
+            ad.wait_for_boot_completion()
+            ad.root_adb()
+            if ad.is_sl4a_installed():
+                break
+            time.sleep(10)
+            break
+        except Exception as e:
+            ad.log.warning(e)
+            if i == attempts:
+                abort_all_tests(log, str(e))
+            time.sleep(5)
+    try:
+        ad.start_adb_logcat()
+    except:
+        ad.log.error("Failed to start adb logcat!")
+    if skip_setup_wizard:
+        ad.exit_setup_wizard()
+    return status
+
 
 def bring_up_sl4a(ad, attemps=3):
     for i in range(attemps):
         try:
             droid, ed = ad.get_droid()
             ed.start()
-            ad.log.info("Broght up new sl4a session")
+            ad.log.info("Brought up new sl4a session")
             break
         except Exception as e:
             if i < attemps - 1:
@@ -6761,6 +6808,16 @@ def get_screen_shot_log(ad, test_name="", begin_time=None):
 def get_screen_shot_logs(ads, test_name="", begin_time=None):
     for ad in ads:
         get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)
+
+
+def get_carrier_config_version(ad):
+    out = ad.adb.shell("dumpsys carrier_config | grep version_string")
+    if out and "-" in out:
+        version = out.split('-')[1]
+    else:
+        version = "0"
+    ad.log.debug("Carrier Config Version is %s", version)
+    return version
 
 
 def bring_up_connectivity_monitor(ad):
