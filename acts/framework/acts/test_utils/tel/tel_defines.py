@@ -62,6 +62,9 @@ MAX_WAIT_TIME_CALL_INITIATION = 90
 # Time to wait after change Mode Pref for Stress Test
 WAIT_TIME_AFTER_MODE_CHANGE = 60
 
+# Max time to wait for Carrier Config Version to Update in mins
+WAIT_TIME_FOR_CARRIERCONFIG_CHANGE = 45
+
 # Max time to wait after toggle airplane mode and before
 # get expected event
 MAX_WAIT_TIME_AIRPLANEMODE_EVENT = 90
