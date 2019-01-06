@@ -70,7 +70,7 @@ class WifiEnums():
 
     SSID_KEY = "SSID"
     SSID_PATTERN_KEY = "ssidPattern"
-    NETID_KEY = "network_id"
+    NETID_KEY = "networkId"
     BSSID_KEY = "BSSID"
     BSSID_PATTERN_KEY = "bssidPattern"
     PWD_KEY = "password"
@@ -81,6 +81,7 @@ class WifiEnums():
     IS_USER_INTERACTION_REQUIRED = "isUserInteractionRequired"
     IS_METERED = "isMetered"
     PRIORITY = "priority"
+    SECURITY = "security"
 
     WIFI_CONFIG_APBAND_2G = 0
     WIFI_CONFIG_APBAND_5G = 1
