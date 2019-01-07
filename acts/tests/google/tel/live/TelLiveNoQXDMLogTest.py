@@ -32,6 +32,7 @@ from acts.controllers.android_device import list_fastboot_devices
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_BOOT_COMPLETE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_CARRIERCONFIG_CHANGE
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import lock_lte_band_by_mds
@@ -41,10 +42,14 @@ from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
 from acts.test_utils.tel.tel_test_utils import bring_up_sl4a
+from acts.test_utils.tel.tel_test_utils import fastboot_wipe
+from acts.test_utils.tel.tel_test_utils import get_carrier_config_version
+from acts.test_utils.tel.tel_test_utils import adb_disable_verity
+from acts.test_utils.tel.tel_test_utils import install_carriersettings_apk
+from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
-
 from acts.utils import get_current_epoch_time
-
+from acts.keys import Config
 
 class TelLiveNoQXDMLogTest(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -402,5 +407,73 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             ad.exit_setup_wizard()
             bring_up_sl4a(ad)
 
+    @test_tracker_info(uuid="e681e6e2-a33c-4cbd-9ec4-8faa003cde6b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_carrier_config_version_after_fdr(self):
+        """Carrier Config Version Test after FDR
+
+        1. Disable Verity, remount, push carriersettings apk
+        2. WiFi is connected
+        3. Perform FDR, and re-connect WiFi
+        4. Wait for 45 mins and keep checking for version match
+
+        """
+        try:
+            cc_version_mapping = {
+                'vzw': "29999999999",
+                'att': "28888888888",
+            }
+            result_flag = False
+            time_var = 1
+            ad = self.android_devices[0]
+            skip_setup_wizard=True
+
+            # CarrierSettingsApk
+            carriersettingsapk = self.user_params.get("carriersettingsapk")
+            if not os.path.isfile(carriersettingsapk):
+                ad.log.warning("Could not find file at %s", carriersettingsapk)
+                carriersettingsapk = os.path.join(
+                   self.user_params[Config.key_config_path], carriersettingsapk)
+            if not os.path.isfile(carriersettingsapk):
+                ad.log.error("Unable to find apk %s ", carriersettingsapk)
+                return False
+            ad.log.info("Using file path %s", carriersettingsapk)
+
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                ad.log.error("connect WiFi failed")
+                return False
+
+            # Setup Steps
+            adb_disable_verity(ad)
+            install_carriersettings_apk(ad, carriersettingsapk)
+
+            # FDR
+            ad.log.info("Performing FDR")
+            fastboot_wipe(ad)
+            ad.log.info("FDR Complete")
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                ad.log.error("Connect WiFi failed")
+
+            # Wait for 45 mins for CC version upgrade
+            while(time_var < WAIT_TIME_FOR_CARRIERCONFIG_CHANGE):
+                current_version = get_carrier_config_version(ad)
+                if current_version == cc_version_mapping[self.dut_operator]:
+                    ad.log.info("Carrier Config Version Match %s in %s mins",
+                                current_version, time_var)
+                    result_flag = True
+                    break
+                else:
+                    ad.log.debug("Carrier Config Version Not Match")
+                time.sleep(60)
+                time_var += 1
+            if not result_flag:
+                ad.log.info("Carrier Config Failed to Update in %s mins",
+                             WAIT_TIME_FOR_CARRIERCONFIG_CHANGE)
+            return result_flag
+        except Exception as e:
+            ad.log.error(e)
+            return False
 
 """ Tests End """
