@@ -102,12 +102,11 @@ class _EventBus(object):
 
         return registration_id
 
-    def post(self, event, ignore_errors=False):
+    def post(self, event):
         """Posts an event to its subscribers.
 
         Args:
             event: The event object to send to the subscribers.
-            ignore_errors: Deliver to all subscribers, ignoring any errors.
         """
         listening_subscriptions = []
         for current_type in inspect.getmro(type(event)):
@@ -120,14 +119,7 @@ class _EventBus(object):
         # Running timsort here is the optimal way to sort this list.
         listening_subscriptions.sort(key=lambda x: x.order)
         for subscription in listening_subscriptions:
-            try:
-                subscription.deliver(event)
-            except Exception:
-                if ignore_errors:
-                    logging.exception('An exception occurred while handling '
-                                      'an event.')
-                    continue
-                raise
+            subscription.deliver(event)
 
     def unregister(self, registration_id):
         """Unregisters an EventSubscription.
@@ -229,14 +221,13 @@ def register_subscription(subscription):
     return _event_bus.register_subscription(subscription)
 
 
-def post(event, ignore_errors=False):
+def post(event):
     """Posts an event to its subscribers.
 
     Args:
         event: The event object to send to the subscribers.
-        ignore_errors: Deliver to all subscribers, ignoring any errors.
     """
-    _event_bus.post(event, ignore_errors)
+    _event_bus.post(event)
 
 
 def unregister(registration_id):
