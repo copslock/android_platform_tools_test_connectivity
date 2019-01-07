@@ -15,7 +15,8 @@
 #   limitations under the License.
 
 
-from acts.controllers import android_device
+from acts.controllers.android_lib import errors
+from acts.controllers.android_lib import events as android_events
 from acts.event import event_bus
 
 
@@ -47,9 +48,9 @@ class AndroidService(object):
             return self.serial == event.ad.serial
 
         self._registration_ids = [
-            event_bus.register(android_device.AndroidStartServicesEvent,
+            event_bus.register(android_events.AndroidStartServicesEvent,
                                self._start, filter_fn=check_serial),
-            event_bus.register(android_device.AndroidStopServicesEvent,
+            event_bus.register(android_events.AndroidStopServicesEvent,
                                self._stop, filter_fn=check_serial)]
 
     def unregister(self):
@@ -93,12 +94,12 @@ class Sl4aService(AndroidService):
 
         if not self.ad.is_sl4a_installed():
             self.ad.log.error('sl4a.apk is not installed')
-            raise android_device.AndroidDeviceError(
+            raise errors.AndroidDeviceError(
                 'The required sl4a.apk is not installed',
                 serial=self.serial)
         if not self.ad.ensure_screen_on():
             self.ad.log.error("User window cannot come up")
-            raise android_device.AndroidDeviceError(
+            raise errors.AndroidDeviceError(
                 "User window cannot come up", serial=self.serial)
 
         droid, ed = self.ad.get_droid()

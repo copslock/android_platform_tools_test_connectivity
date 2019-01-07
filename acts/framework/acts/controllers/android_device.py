@@ -14,10 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from builtins import str
-from builtins import open
-from datetime import datetime
-
 import collections
 import logging
 import math
@@ -25,20 +21,23 @@ import os
 import re
 import socket
 import time
+from builtins import open
+from builtins import str
+from datetime import datetime
 
-from acts import error
 from acts import logger as acts_logger
 from acts import tracelogger
 from acts import utils
 from acts.controllers import adb
 from acts.controllers import fastboot
+from acts.controllers.android_lib import errors
+from acts.controllers.android_lib import events as android_events
 from acts.controllers.android_lib import logcat
 from acts.controllers.android_lib import services
 from acts.controllers.sl4a_lib import sl4a_manager
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.event import event_bus
-from acts.event.event import Event
 from acts.libs.proc import job
 
 ACTS_CONTROLLER_CONFIG_NAME = "AndroidDevice"
@@ -66,14 +65,6 @@ DEFAULT_DEVICE_PASSWORD = "1111"
 RELEASE_ID_REGEXES = [re.compile(r'\w+\.\d+\.\d+'), re.compile(r'N\w+')]
 
 
-class AndroidDeviceConfigError(Exception):
-    """Raised when AndroidDevice configs are malformatted."""
-
-
-class AndroidDeviceError(error.ActsError):
-    """Raised when there is an error in AndroidDevice."""
-
-
 def create(configs):
     """Creates AndroidDevice controller objects.
 
@@ -85,11 +76,11 @@ def create(configs):
         A list of AndroidDevice objects.
     """
     if not configs:
-        raise AndroidDeviceConfigError(ANDROID_DEVICE_EMPTY_CONFIG_MSG)
+        raise errors.AndroidDeviceConfigError(ANDROID_DEVICE_EMPTY_CONFIG_MSG)
     elif configs == ANDROID_DEVICE_PICK_ALL_TOKEN:
         ads = get_all_instances()
     elif not isinstance(configs, list):
-        raise AndroidDeviceConfigError(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
+        raise errors.AndroidDeviceConfigError(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
     elif isinstance(configs[0], str):
         # Configs is a list of serials.
         ads = get_instances(configs)
@@ -101,9 +92,9 @@ def create(configs):
 
     for ad in ads:
         if not ad.is_connected():
-            raise AndroidDeviceError(("Android device %s is specified in config"
-                                      " but is not attached.") % ad.serial,
-                                     serial=ad.serial)
+            raise errors.AndroidDeviceError(
+                ("Android device %s is specified in config"
+                 " but is not attached.") % ad.serial, serial=ad.serial)
     _start_services_on_ads(ads)
     return ads
 
@@ -238,7 +229,7 @@ def get_instances_with_configs(configs):
         try:
             serial = c.pop('serial')
         except KeyError:
-            raise AndroidDeviceConfigError(
+            raise errors.AndroidDeviceConfigError(
                 "Required value 'serial' is missing in AndroidDevice config %s."
                 % c)
         ssh_config = c.pop('ssh_config', None)
@@ -348,45 +339,6 @@ def take_bug_reports(ads, test_name, begin_time):
     utils.concurrent_exec(take_br, args)
 
 
-class AndroidEvent(Event):
-    """The base class for AndroidDevice-related events."""
-
-    def __init__(self, android_device):
-        self.android_device = android_device
-
-    @property
-    def ad(self):
-        return self.android_device
-
-
-class AndroidStartServicesEvent(AndroidEvent):
-    """The event posted when an AndroidDevice begins its services."""
-
-
-class AndroidStopServicesEvent(AndroidEvent):
-    """The event posted when an AndroidDevice ends its services."""
-
-
-class AndroidRebootEvent(AndroidEvent):
-    """The event posted when an AndroidDevice has rebooted."""
-
-
-class AndroidDisconnectEvent(AndroidEvent):
-    """The event posted when an AndroidDevice has disconnected."""
-
-
-class AndroidReconnectEvent(AndroidEvent):
-    """The event posted when an AndroidDevice has disconnected."""
-
-
-class AndroidBugReportEvent(AndroidEvent):
-    """The event posted when an AndroidDevice captures a bugreport."""
-
-    def __init__(self, android_device, bugreport_dir):
-        super().__init__(android_device)
-        self.bugreport_dir = bugreport_dir
-
-
 class AndroidDevice:
     """Class representing an android device.
 
@@ -469,14 +421,14 @@ class AndroidDevice:
         if skip_setup_wizard:
             self.exit_setup_wizard()
 
-        event_bus.post(AndroidStartServicesEvent(self))
+        event_bus.post(android_events.AndroidStartServicesEvent(self))
 
     def stop_services(self):
         """Stops long running services on the android device.
 
         Stop adb logcat and terminate sl4a sessions if exist.
         """
-        event_bus.post(AndroidStopServicesEvent(self),
+        event_bus.post(android_events.AndroidStopServicesEvent(self),
                        ignore_errors=True)
 
     def is_connected(self):
@@ -637,7 +589,7 @@ class AndroidDevice:
         for k, v in config.items():
             # skip_sl4a value can be reset from config file
             if hasattr(self, k) and k != "skip_sl4a":
-                raise AndroidDeviceError(
+                raise errors.AndroidDeviceError(
                     "Attempting to set existing attribute %s on %s" %
                     (k, self.serial), serial=self.serial)
             setattr(self, k, v)
@@ -945,7 +897,7 @@ class AndroidDevice:
         if new_br:
             out = self.adb.shell("bugreportz", timeout=BUG_REPORT_TIMEOUT)
             if not out.startswith("OK"):
-                raise AndroidDeviceError(
+                raise errors.AndroidDeviceError(
                     'Failed to take bugreport on %s: %s' % (self.serial, out),
                     serial=self.serial)
             br_out_path = out.split(':')[1].strip().split()[0]
@@ -1155,7 +1107,7 @@ class AndroidDevice:
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise AndroidDeviceError(
+        raise errors.AndroidDeviceError(
             'Device %s booting process timed out.' % self.serial,
             serial=self.serial)
 

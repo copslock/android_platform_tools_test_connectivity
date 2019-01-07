@@ -17,9 +17,9 @@
 import unittest
 from unittest import mock
 
-from acts.controllers.android_device import AndroidStartServicesEvent
-from acts.controllers.android_device import AndroidStopServicesEvent
 from acts.controllers.android_lib import services
+from acts.controllers.android_lib.events import AndroidStartServicesEvent
+from acts.controllers.android_lib.events import AndroidStopServicesEvent
 from acts.event import event_bus
 
 
