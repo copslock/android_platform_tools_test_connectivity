@@ -33,11 +33,9 @@ from acts import utils
 from acts.controllers import adb
 from acts.controllers import fastboot
 from acts.controllers.android_lib import logcat
-from acts.controllers.android_lib import services
 from acts.controllers.sl4a_lib import sl4a_manager
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
-from acts.event import event_bus
 from acts.event.event import Event
 from acts.libs.proc import job
 
@@ -103,7 +101,7 @@ def create(configs):
         if not ad.is_connected():
             raise AndroidDeviceError(("Android device %s is specified in config"
                                       " but is not attached.") % ad.serial,
-                                     serial=ad.serial)
+                                      serial=ad.serial)
     _start_services_on_ads(ads)
     return ads
 
@@ -162,8 +160,18 @@ def _start_services_on_ads(ads):
     running_ads = []
     for ad in ads:
         running_ads.append(ad)
+        if not ad.ensure_screen_on():
+            ad.log.error('User window cannot come up')
+            destroy(running_ads)
+            raise AndroidDeviceError('User window cannot come up',
+                                     serial=ad.serial)
+        if not ad.skip_sl4a and not ad.is_sl4a_installed():
+            ad.log.error('sl4a.apk is not installed')
+            destroy(running_ads)
+            raise AndroidDeviceError('The required sl4a.apk is not installed',
+                                     serial=ad.serial)
         try:
-            ad.start_services()
+            ad.start_services(skip_sl4a=ad.skip_sl4a)
         except:
             ad.log.exception('Failed to start some services, abort!')
             destroy(running_ads)
@@ -359,12 +367,8 @@ class AndroidEvent(Event):
         return self.android_device
 
 
-class AndroidStartServicesEvent(AndroidEvent):
+class AndroidBeginServicesEvent(AndroidEvent):
     """The event posted when an AndroidDevice begins its services."""
-
-
-class AndroidStopServicesEvent(AndroidEvent):
-    """The event posted when an AndroidDevice ends its services."""
 
 
 class AndroidRebootEvent(AndroidEvent):
@@ -418,9 +422,6 @@ class AndroidDevice:
             AndroidDeviceLoggerAdapter(logging.getLogger(),
                                        {'serial': serial}))
         self._event_dispatchers = {}
-        self._services = []
-        self.register_service(services.AdbLogcatService(self))
-        self.register_service(services.Sl4aService(self))
         self.adb_logcat_process = None
         self.adb = adb.AdbProxy(serial, ssh_connection=ssh_connection)
         self.fastboot = fastboot.FastbootProxy(
@@ -444,40 +445,48 @@ class AndroidDevice:
         claimed.
         """
         self.stop_services()
-        for service in self._services:
-            service.unregister()
-        self._services.clear()
         if self._ssh_connection:
             self._ssh_connection.close()
 
-    def register_service(self, service):
-        """Registers the service on the device. """
-        service.register()
-        self._services.append(service)
-
     # TODO(angli): This function shall be refactored to accommodate all services
     # and not have hard coded switch for SL4A when b/29157104 is done.
-    def start_services(self, skip_setup_wizard=True):
+    def start_services(self, skip_sl4a=False, skip_setup_wizard=True):
         """Starts long running services on the android device.
 
         1. Start adb logcat capture.
         2. Start SL4A if not skipped.
 
         Args:
+            skip_sl4a: Does not attempt to start SL4A if True.
             skip_setup_wizard: Whether or not to skip the setup wizard.
         """
         if skip_setup_wizard:
             self.exit_setup_wizard()
-
-        event_bus.post(AndroidStartServicesEvent(self))
+        try:
+            self.start_adb_logcat()
+        except:
+            self.log.exception("Failed to start adb logcat!")
+            raise
+        if not skip_sl4a:
+            try:
+                droid, ed = self.get_droid()
+                ed.start()
+            except:
+                self.log.exception("Failed to start sl4a!")
+                raise
 
     def stop_services(self):
         """Stops long running services on the android device.
 
         Stop adb logcat and terminate sl4a sessions if exist.
         """
-        event_bus.post(AndroidStopServicesEvent(self),
-                       ignore_errors=True)
+        try:
+            if self.is_adb_logcat_on:
+                self.stop_adb_logcat()
+        finally:
+            self.terminate_all_sessions()
+            self._sl4a_manager.stop_service()
+            self.stop_sl4a()
 
     def is_connected(self):
         out = self.adb.devices()
@@ -1169,6 +1178,9 @@ class AndroidDevice:
             stop_at_lock_screen: whether to unlock after reboot. Set to False
                 if want to bring the device to reboot up to password locking
                 phase. Sl4a checking need the device unlocked after rebooting.
+
+        Returns:
+            None, sl4a session and event_dispatcher.
         """
         if self.is_bootloader:
             self.fastboot.reboot()
@@ -1194,10 +1206,17 @@ class AndroidDevice:
                 break
         self.wait_for_boot_completion()
         self.root_adb()
-        skip_sl4a = self.skip_sl4a
-        self.skip_sl4a = self.skip_sl4a or stop_at_lock_screen
-        self.start_services()
-        self.skip_sl4a = skip_sl4a
+        if stop_at_lock_screen:
+            try:
+                self.start_adb_logcat()
+            except:
+                self.log.error("Failed to start adb logcat!")
+            return
+        if not self.ensure_screen_on():
+            self.log.error("User window cannot come up")
+            raise AndroidDeviceError("User window cannot come up",
+                                     serial=self.serial)
+        self.start_services(self.skip_sl4a)
 
     def restart_runtime(self):
         """Restarts android runtime.
@@ -1214,8 +1233,11 @@ class AndroidDevice:
         self.adb.shell("start")
         self.wait_for_boot_completion()
         self.root_adb()
-
-        self.start_services()
+        if not self.ensure_screen_on():
+            self.log.error("User window cannot come up")
+            raise AndroidDeviceError('User window cannot come up',
+                                     serial=self.serial)
+        self.start_services(self.skip_sl4a)
 
     def search_logcat(self, matching_string, begin_time=None):
         """Search logcat message with given string.

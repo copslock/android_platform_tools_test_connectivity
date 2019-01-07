@@ -122,25 +122,6 @@ class EventBusTest(TestCase):
         for subscription in mock_subscriptions:
             subscription.deliver.assert_called_once_with(mock_event)
 
-    def test_post_with_ignore_errors_calls_all_registered_funcs(self):
-        """Tests posting with ignore_errors=True calls all registered funcs,
-        even if they raise errors.
-        """
-        def _raise(_):
-            raise Exception
-        mock_event = Mock()
-        mock_subscriptions = [Mock(), Mock(), Mock()]
-        mock_subscriptions[0].deliver.side_effect = _raise
-        bus = event_bus._event_bus
-        for i, subscription in enumerate(mock_subscriptions):
-            subscription.order = i
-        bus._subscriptions[type(mock_event)] = mock_subscriptions
-
-        event_bus.post(mock_event, ignore_errors=True)
-
-        for subscription in mock_subscriptions:
-            subscription.deliver.assert_called_once_with(mock_event)
-
     @patch('acts.event.event_bus._event_bus.unregister')
     def test_unregister_all_from_list(self, unregister):
         """Tests unregistering from a list unregisters the specified list."""
