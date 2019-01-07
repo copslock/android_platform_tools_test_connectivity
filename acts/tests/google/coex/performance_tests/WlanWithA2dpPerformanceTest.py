@@ -198,7 +198,7 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
             return False
         return True
 
-    def test_performance_inquiry_after_headset_connection_with_tcp_ul(self):
+    def test_performance_discovery_after_headset_connection_with_tcp_ul(self):
         """Performance test to check throughput when bluetooth discovery.
 
         This test is to start TCP-uplink traffic between host machine and
@@ -218,7 +218,7 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
             return False
         return True
 
-    def test_performance_inquiry_after_headset_connection_with_tcp_dl(self):
+    def test_performance_discovery_after_headset_connection_with_tcp_dl(self):
         """Performance test to check throughput when bluetooth discovery.
 
         This test is to start TCP-downlink traffic between host machine and
@@ -238,7 +238,7 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
             return False
         return True
 
-    def test_performance_inquiry_after_headset_connection_with_udp_ul(self):
+    def test_performance_discovery_after_headset_connection_with_udp_ul(self):
         """Performance test to check throughput when bluetooth discovery.
 
         This test is to start UDP-uplink traffic between host machine and
@@ -258,7 +258,7 @@ class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
             return False
         return True
 
-    def test_performance_inquiry_after_headset_connection_with_udp_dl(self):
+    def test_performance_discovery_after_headset_connection_with_udp_dl(self):
         """Performance test to check throughput when bluetooth discovery.
 
         This test is to start UDP-downlink traffic between host machine and
