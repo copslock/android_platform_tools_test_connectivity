@@ -91,7 +91,7 @@ class TelephonyBaseTest(BaseTestClass):
         self.log_path = getattr(logging, "log_path", None)
         self.qxdm_log = self.user_params.get("qxdm_log", True)
         self.enable_radio_log_on = self.user_params.get(
-            "enable_radio_log_on", True)
+            "enable_radio_log_on", False)
         tasks = [(self._init_device, [ad]) for ad in self.android_devices]
         multithread_func(self.log, tasks)
         self.skip_reset_between_cases = self.user_params.get(
