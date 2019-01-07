@@ -6541,7 +6541,7 @@ def flash_radio(ad, file_path, skip_setup_wizard=True):
         abort_all_tests(ad.log, msg)
     if not ad.ensure_screen_on():
         ad.log.error("User window cannot come up")
-    ad.start_services(skip_setup_wizard=skip_setup_wizard)
+    ad.start_services(ad.skip_sl4a, skip_setup_wizard=skip_setup_wizard)
     unlock_sim(ad)
 
 

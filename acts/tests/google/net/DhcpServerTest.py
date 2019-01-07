@@ -111,7 +111,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self.log.info("Stopping USB Tethering")
         dut.adb.shell(pmc_stop_usb_tethering_cmd)
         self._wait_for_device(self.dut)
-        dut.start_services()
+        dut.start_services(skip_sl4a=getattr(dut, "skip_sl4a", False))
         self.USB_TETHERED = False
 
     def _wait_for_device(self, dut):
