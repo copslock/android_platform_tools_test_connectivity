@@ -606,7 +606,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if process in ("netd", "system_server"):
                 self.dut.ensure_screen_on()
                 try:
-                    self.dut.start_services()
+                    self.dut.start_services(self.dut.skip_sl4a)
                 except Exception as e:
                     self.dut.log.warning(e)
             process_pid_new = self.dut.adb.shell("pidof %s" % process)
@@ -620,7 +620,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
                 process)
         except Exception:
             self.dut.ensure_screen_on()
-            self.dut.start_services()
+            self.dut.start_services(self.dut.skip_sl4a)
             if is_sim_locked(self.dut):
                 unlock_sim(self.dut)
 
