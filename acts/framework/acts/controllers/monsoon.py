@@ -911,7 +911,8 @@ class Monsoon(object):
                 self._wait_for_device(self.dut)
                 # Wait for device to come back online.
                 time.sleep(10)
-                self.dut.start_services()
+                self.dut.start_services(
+                    skip_sl4a=getattr(self.dut, "skip_sl4a", False))
                 # Release wake lock to put device into sleep.
                 self.dut.droid.goToSleepNow()
         return results
@@ -967,7 +968,8 @@ class Monsoon(object):
                 self._wait_for_device(self.dut)
             # Wait for device to come back online.
             time.sleep(2)
-            self.dut.start_services()
+            self.dut.start_services(
+                skip_sl4a=getattr(self.dut, "skip_sl4a", False))
             # Release wake lock to put device into sleep.
             self.dut.droid.goToSleepNow()
             self.log.info("Dut reconnected.")
