@@ -51,7 +51,7 @@ class CoexBasicFunctionalityTest(CoexBaseTest):
         """
         self.run_iperf_and_get_result()
         for i in range(self.iterations):
-            self.log.info("Bluetooth inquiry iteration : {}".format(i))
+            self.log.info("Bluetooth discovery iteration : {}".format(i))
             if not perform_classic_discovery(
                     self.pri_ad, self.iperf["duration"], self.json_file,
                     self.dev_list):

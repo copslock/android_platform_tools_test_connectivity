@@ -16,9 +16,9 @@
 
 import json
 import os
+import queue
 import threading
 import time
-import queue
 
 from acts.base_test import BaseTestClass
 from acts.controllers import android_device
@@ -47,7 +47,6 @@ from acts.utils import create_dir
 
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
-IPERF_SERVER_WAIT_TIME = 5
 AVRCP_WAIT_TIME = 3
 
 
@@ -134,7 +133,6 @@ class CoexBaseTest(BaseTestClass):
             return False
         if hasattr(self, "required_devices"):
             if ("discovery" in self.current_test_name or
-                    "inquiry" in self.current_test_name or
                     "ble" in self.current_test_name):
                 self.create_android_relay_object()
         else:
@@ -179,7 +177,6 @@ class CoexBaseTest(BaseTestClass):
         devices has android device and relay device."""
         if hasattr(self, "required_devices"):
             if ("discovery" in self.current_test_name or
-                    "inquiry" in self.current_test_name or
                     "ble" in self.current_test_name):
                 if hasattr(self, "inquiry_devices"):
                     for device in range(len(self.inquiry_devices)):
