@@ -823,11 +823,11 @@ def perform_classic_discovery(pri_ad, duration, file_name, dev_list=None):
     start_time = time.time()
     while time.time() < start_time + duration:
         if not pri_ad.droid.bluetoothStartDiscovery():
-            pri_ad.log.error("Failed to start inquiry")
+            pri_ad.log.error("Failed to start discovery")
             return False
         time.sleep(DISCOVERY_TIME)
         if not pri_ad.droid.bluetoothCancelDiscovery():
-            pri_ad.log.error("Failed to cancel inquiry")
+            pri_ad.log.error("Failed to cancel discovery")
             return False
         pri_ad.log.info("Discovered device list {}".format(
             pri_ad.droid.bluetoothGetDiscoveredDevices()))
