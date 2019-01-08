@@ -131,7 +131,7 @@ def show_device(name):
     request = DATASTORE_HOST + '/' + SHOW_DEVICE + name
     logging.debug("Request = %s" % request)
     response = requests.get(request)
-    if 'null' in response.text:
+    if 'error' in response.text:
         return None
     return response.json()
 
