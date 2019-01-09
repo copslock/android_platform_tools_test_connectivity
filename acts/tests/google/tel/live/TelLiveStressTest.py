@@ -231,6 +231,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             1: mms_send_receive_verify
         }
         rat = self.dut.adb.getprop("gsm.network.type")
+        if "," in rat:
+            rat = rat.split(',')[0]
         self.dut.log.info("Network in RAT %s", rat)
         if self.dut_incall and not is_rat_svd_capable(rat.upper()):
             self.dut.log.info("In call data not supported, test SMS only")
