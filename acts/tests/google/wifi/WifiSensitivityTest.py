@@ -18,16 +18,17 @@ import collections
 import json
 import logging
 import os
-import WifiRvrTest
 from acts import asserts
 from acts import base_test
 from acts import utils
-from acts.test_decorators import test_tracker_info
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
+from WifiRvrTest import WifiRvrTest
+from WifiPingTest import WifiPingTest
 
 
-class WifiSensitivityTest(WifiRvrTest.WifiRvrTest):
+class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
     """Class to test WiFi sensitivity tests.
 
     This class implements measures WiFi sensitivity per rate. It heavily
@@ -65,6 +66,11 @@ class WifiSensitivityTest(WifiRvrTest.WifiRvrTest):
                 [3, 2], [2, 2], [1, 2], [0, 2]]
     }
 
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.failure_count_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='sensitivity')
+
     def setup_class(self):
         """Initializes common test hardware and parameters.
 
@@ -98,11 +104,11 @@ class WifiSensitivityTest(WifiRvrTest.WifiRvrTest):
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, True)
 
-    def pass_fail_check(self, rvr_result):
+    def pass_fail_check(self, result):
         """Checks sensitivity against golden results and decides on pass/fail.
 
         Args:
-            rvr_result: dict containing attenuation, throughput and other meta
+            result: dict containing attenuation, throughput and other meta
             data
         """
         try:
@@ -111,18 +117,18 @@ class WifiSensitivityTest(WifiRvrTest.WifiRvrTest):
                                if "sensitivity_targets" in file_name)
             with open(golden_path, 'r') as golden_file:
                 golden_results = json.load(golden_file)
+            golden_sensitivity = golden_results[self.current_test_name][
+                "sensitivity"]
         except:
-            asserts.fail("Test failed: Golden file not found")
+            golden_sensitivity = float("nan")
 
-        golden_sensitivity = golden_results[self.current_test_name][
-            "sensitivity"]
         result_string = "Througput = {}, Sensitivity = {}. Target Sensitivity = {}".format(
-            rvr_result["peak_throughput"], rvr_result["sensitivity"],
+            result["peak_throughput"], result["sensitivity"],
             golden_sensitivity)
-        if rvr_result["sensitivity"] - golden_sensitivity > self.testclass_params["sensitivity_tolerance"]:
-            asserts.fail("Test Failed. {}".format(result_string))
-        else:
+        if result["sensitivity"] - golden_sensitivity < self.testclass_params["sensitivity_tolerance"]:
             asserts.explicit_pass("Test Passed. {}".format(result_string))
+        else:
+            asserts.fail("Test Failed. {}".format(result_string))
 
     def process_testclass_results(self):
         """Saves and plots test results from all executed test cases."""
@@ -136,9 +142,10 @@ class WifiSensitivityTest(WifiRvrTest.WifiRvrTest):
         results_file_path = os.path.join(self.log_path, 'results.json')
         with open(results_file_path, 'w') as results_file:
             json.dump(testclass_results_dict, results_file, indent=4)
-        super().process_testclass_results()
+        if not self.testclass_params["traffic_type"].lower() == "ping":
+            WifiRvrTest.process_testclass_results(self)
 
-    def process_test_results(self, rvr_result):
+    def process_rvr_test_results(self, testcase_params, rvr_result):
         """Post processes RvR results to compute sensitivity.
 
         Takes in the results of the RvR tests and computes the sensitivity of
@@ -164,9 +171,29 @@ class WifiSensitivityTest(WifiRvrTest.WifiRvrTest):
             consistency_check[0] - 1]
         rvr_result["range"] = rvr_result["fixed_attenuation"] + (
             rvr_result["atten_at_range"])
-        rvr_result["sensitivity"] = self.testclass_params["ap_tx_power"] - (
-            rvr_result["range"])
-        super().process_test_results(rvr_result)
+        rvr_result["sensitivity"] = self.testclass_params["ap_tx_power"] + (
+            self.testbed_params["ap_tx_power_offset"][str(
+                testcase_params["channel"])] - rvr_result["range"])
+        WifiRvrTest.process_test_results(self, rvr_result)
+
+    def process_ping_test_results(self, testcase_params, ping_result):
+        """Post processes RvR results to compute sensitivity.
+
+        Takes in the results of the RvR tests and computes the sensitivity of
+        the current rate by looking at the point at which throughput drops
+        below the percentage specified in the config file. The function then
+        calls on its parent class process_test_results to plot the result.
+
+        Args:
+            rvr_result: dict containing attenuation, throughput and other meta
+            data
+        """
+        testcase_params[
+            "range_ping_loss_threshold"] = 100 - testcase_params["throughput_pct_at_sensitivity"]
+        WifiPingTest.process_ping_results(self, testcase_params, ping_result)
+        ping_result["sensitivity"] = self.testclass_params["ap_tx_power"] + (
+            self.testbed_params["ap_tx_power_offset"][str(
+                testcase_params["channel"])] - ping_result["range"])
 
     def setup_ap(self, testcase_params):
         """Sets up the access point in the configuration required by the test.
@@ -244,6 +271,7 @@ class WifiSensitivityTest(WifiRvrTest.WifiRvrTest):
         testcase_params = collections.OrderedDict()
         testcase_params["channel"] = int(test_name_params[2][2:])
         testcase_params["mode"] = test_name_params[3]
+
         if "legacy" in testcase_params["mode"].lower():
             testcase_params["rate"] = float(
                 str(test_name_params[4]).replace("p", "."))
@@ -251,14 +279,17 @@ class WifiSensitivityTest(WifiRvrTest.WifiRvrTest):
             testcase_params["rate"] = int(test_name_params[4][3:])
         testcase_params["num_streams"] = int(test_name_params[5][3:])
         testcase_params["short_gi"] = 0
+
         if self.testclass_params["traffic_type"] == "UDP":
             testcase_params["iperf_args"] = '-i 1 -t {} -J -u -b {} -R'.format(
                 self.testclass_params["iperf_duration"],
                 self.testclass_params["UDP_rates"][testcase_params["mode"]])
-        else:
+            testcase_params["use_client_output"] = True
+        elif self.testclass_params["traffic_type"] == "TCP":
             testcase_params["iperf_args"] = '-i 1 -t {} -J -R'.format(
                 self.testclass_params["iperf_duration"])
-        testcase_params["use_client_output"] = True
+            testcase_params["use_client_output"] = True
+
         return testcase_params
 
     def _test_sensitivity(self):
@@ -271,16 +302,26 @@ class WifiSensitivityTest(WifiRvrTest.WifiRvrTest):
         testcase_params = self.parse_test_params(self.current_test_name)
         testcase_params.update(self.testclass_params)
         testcase_params["atten_start"] = self.get_start_atten()
+        num_atten_steps = int(
+            (testcase_params["atten_stop"] - testcase_params["atten_start"]) /
+            testcase_params["atten_step"])
+        testcase_params["atten_range"] = [
+            testcase_params["atten_start"] + x * testcase_params["atten_step"]
+            for x in range(0, num_atten_steps)
+        ]
 
         # Prepare devices and run test
-        self.setup_rvr_test(testcase_params)
-        rvr_result = self.run_rvr_test(testcase_params)
-
+        if testcase_params["traffic_type"].lower() == "ping":
+            self.setup_ping_test(testcase_params)
+            result = self.run_ping_test(testcase_params)
+            self.process_ping_test_results(testcase_params, result)
+        else:
+            self.setup_rvr_test(testcase_params)
+            result = self.run_rvr_test(testcase_params)
+            self.process_rvr_test_results(result)
         # Post-process results
-        self.process_test_results(rvr_result)
-        self.testclass_results.append(rvr_result)
-        self.pass_fail_check(rvr_result)
-        # Add results to testclass_results
+        self.testclass_results.append(result)
+        self.pass_fail_check(result)
 
     def generate_test_cases(self, channels):
         """Function that auto-generates test cases for a test class."""
@@ -320,6 +361,12 @@ class WifiSensitivity_2GHz_Test(WifiSensitivityTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.generate_test_cases([1, 2, 6, 10, 11])
+
+
+class WifiSensitivity_5GHz_Test(WifiSensitivityTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.generate_test_cases([36, 40, 44, 48, 149, 153, 157, 161])
 
 
 class WifiSensitivity_UNII1_Test(WifiSensitivityTest):
