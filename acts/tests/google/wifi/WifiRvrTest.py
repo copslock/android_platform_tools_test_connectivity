@@ -290,7 +290,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.log.info("Start running RvR")
         zero_counter = 0
         throughput = []
-        for atten in self.atten_range:
+        for atten in testcase_params["atten_range"]:
             # Set Attenuation
             self.log.info("Setting attenuation to {} dB".format(atten))
             for attenuator in self.attenuators:
@@ -337,8 +337,9 @@ class WifiRvrTest(base_test.BaseTestClass):
             if zero_counter == self.MAX_CONSECUTIVE_ZEROS:
                 self.log.info(
                     "Throughput stable at 0 Mbps. Stopping test now.")
-                throughput.extend([0] *
-                                  (len(self.atten_range) - len(throughput)))
+                throughput.extend(
+                    [0] *
+                    (len(testcase_params["atten_range"]) - len(throughput)))
                 break
         for attenuator in self.attenuators:
             attenuator.set_atten(0)
@@ -348,7 +349,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result["ap_settings"] = self.access_point.ap_settings.copy()
         rvr_result["fixed_attenuation"] = self.testbed_params[
             "fixed_attenuation"][str(testcase_params["channel"])]
-        rvr_result["attenuation"] = list(self.atten_range)
+        rvr_result["attenuation"] = list(testcase_params["atten_range"])
         rvr_result["throughput_receive"] = throughput
         return rvr_result
 
@@ -389,6 +390,8 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.main_network[band]["channel"] = testcase_params["channel"]
         wutils.wifi_connect(
             self.client_dut, self.main_network[band], num_of_tries=5)
+        self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
+            'wlan0')[0]
         time.sleep(self.MED_SLEEP)
 
     def setup_rvr_test(self, testcase_params):
@@ -397,20 +400,12 @@ class WifiRvrTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing test-specific parameters
         """
-        #Initialize RvR test parameters
-        num_atten_steps = int(
-            (testcase_params["atten_stop"] - testcase_params["atten_start"]) /
-            testcase_params["atten_step"])
-        self.atten_range = [
-            testcase_params["atten_start"] + x * testcase_params["atten_step"]
-            for x in range(0, num_atten_steps)
-        ]
         # Configure AP
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
             attenuator.set_atten(0)
-        # Resest, configure, and connect DUT
+        # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
 
     def parse_test_params(self, test_name):
@@ -419,6 +414,14 @@ class WifiRvrTest(base_test.BaseTestClass):
         testcase_params = collections.OrderedDict()
         testcase_params["channel"] = int(test_name_params[4][2:])
         testcase_params["mode"] = test_name_params[5]
+        num_atten_steps = int((self.testclass_params["atten_stop"] -
+                               self.testclass_params["atten_start"]) /
+                              self.testclass_params["atten_step"])
+        testcase_params["atten_range"] = [
+            self.testclass_params["atten_start"] +
+            x * self.testclass_params["atten_step"]
+            for x in range(0, num_atten_steps)
+        ]
         testcase_params["iperf_args"] = '-i 1 -t {} -J '.format(
             self.testclass_params["iperf_duration"])
         if test_name_params[2] == "UDP":
