@@ -23,6 +23,7 @@ import unittest
 
 from acts import logger
 from acts.controllers import android_device
+from acts.controllers.android_lib import errors
 
 # Mock log path for a test run.
 MOCK_LOG_PATH = "/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/"
@@ -182,13 +183,13 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     def test_create_with_empty_config(self):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
-        with self.assertRaisesRegex(android_device.AndroidDeviceConfigError,
+        with self.assertRaisesRegex(errors.AndroidDeviceConfigError,
                                     expected_msg):
             android_device.create([])
 
     def test_create_with_not_list_config(self):
         expected_msg = android_device.ANDROID_DEVICE_NOT_LIST_CONFIG_MSG
-        with self.assertRaisesRegex(android_device.AndroidDeviceConfigError,
+        with self.assertRaisesRegex(errors.AndroidDeviceConfigError,
                                     expected_msg):
             android_device.create("HAHA")
 
@@ -233,9 +234,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ads[1].start_services = mock.MagicMock()
         ads[1].clean_up = mock.MagicMock()
         ads[2].start_services = mock.MagicMock(
-            side_effect=android_device.AndroidDeviceError(msg))
+            side_effect=errors.AndroidDeviceError(msg))
         ads[2].clean_up = mock.MagicMock()
-        with self.assertRaisesRegex(android_device.AndroidDeviceError, msg):
+        with self.assertRaisesRegex(errors.AndroidDeviceError, msg):
             android_device._start_services_on_ads(ads)
         ads[0].clean_up.assert_called_once_with()
         ads[1].clean_up.assert_called_once_with()
@@ -342,7 +343,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         expected_msg = "Failed to take bugreport on 1: OMG I died!"
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+        with self.assertRaisesRegex(errors.AndroidDeviceError,
                                     expected_msg):
             ad.take_bug_report("test_something", 4346343.23)
 

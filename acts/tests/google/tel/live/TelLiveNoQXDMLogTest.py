@@ -429,14 +429,9 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             skip_setup_wizard=True
 
             # CarrierSettingsApk
-            carriersettingsapk = self.user_params.get("carriersettingsapk")
-            if not os.path.isfile(carriersettingsapk):
-                ad.log.warning("Could not find file at %s", carriersettingsapk)
-                carriersettingsapk = os.path.join(
-                   self.user_params[Config.key_config_path], carriersettingsapk)
-            if not os.path.isfile(carriersettingsapk):
-                ad.log.error("Unable to find apk %s ", carriersettingsapk)
-                return False
+            carriersettingsapk = self.user_params["carriersettingsapk"]
+            if isinstance(carriersettingsapk, list):
+                carriersettingsapk = carriersettingsapk[0]
             ad.log.info("Using file path %s", carriersettingsapk)
 
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
