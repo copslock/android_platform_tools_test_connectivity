@@ -25,6 +25,7 @@ import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 
 from acts import asserts
+from acts.controllers.android_device import SL4A_APK_NAME
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.test_utils.wifi import wifi_constants
@@ -92,6 +93,19 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             del self.user_params["open_network"]
 
     """Helper Functions"""
+    def set_approved(self, approved):
+        self.dut.log.debug("Setting suggestions from sl4a app "
+                           + "approved" if approved else "not approved")
+        self.dut.adb.shell("cmd wifi network-suggestions-set-user-approved"
+                           + " " + SL4A_APK_NAME
+                           + " " + ("yes" if approved else "no"))
+
+    def is_approved(self):
+        is_approved_str = self.dut.adb.shell(
+            "cmd wifi network-suggestions-has-user-approved"
+            + " " + SL4A_APK_NAME)
+        return True if (is_approved_str == "yes") else False
+
     def add_suggestions_and_ensure_connection(self, network_suggestions,
                                               expected_ssid,
                                               expect_post_connection_broadcast):
@@ -99,6 +113,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions(network_suggestions),
             "Failed to add suggestions")
+        # Enable suggestions by the app.
+        self.dut.log.debug("Enabling suggestions from test");
+        self.set_approved(True)
         wutils.wait_for_connect(self.dut, expected_ssid)
 
         if expect_post_connection_broadcast is None:
@@ -195,3 +212,54 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.dut.droid.wifiRemoveNetworkSuggestions([self.wpa_psk_5g]),
             "Failed to remove suggestions")
         wutils.wait_for_disconnect(self.dut)
+
+    @test_tracker_info(uuid="554b5861-22d0-4922-a5f4-712b4cf564eb")
+    def test_fail_to_connect_to_wpa_psk_5g_when_not_approved(self):
+        """
+        Adds a network suggestion and ensure that the device does not
+        connect to it until we approve the app.
+
+        Steps:
+        1. Send a network suggestion to the device with the app not approved.
+        2. Ensure the network is present in scan results, but we don't connect
+           to it.
+        3. Now approve the app.
+        4. Wait for the device to connect to it.
+        """
+        self.dut.log.info("Adding network suggestions");
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([self.wpa_psk_5g]),
+            "Failed to add suggestions")
+
+        # Disable suggestions by the app.
+        self.set_approved(False)
+
+        # Ensure the app is not approved.
+        asserts.assert_false(
+            self.is_approved(),
+            "Suggestions should be disabled")
+
+        # Start a new scan to trigger auto-join.
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
+
+        # Ensure we don't connect to the network.
+        asserts.assert_false(
+            wutils.wait_for_connect(
+                self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY], assert_on_fail=False),
+            "Should not connect to network suggestions from unapproved app")
+
+        self.dut.log.info("Enabling suggestions from test");
+        # Now Enable suggestions by the app & ensure we connect to the network.
+        self.set_approved(True)
+
+        # Ensure the app is approved.
+        asserts.assert_true(
+            self.is_approved(),
+            "Suggestions should be enabled")
+
+        # Start a new scan to trigger auto-join.
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
+
+        wutils.wait_for_connect(self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
