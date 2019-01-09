@@ -441,6 +441,7 @@ class ApolloTestActions(BaseTestAction):
         """
         # Need to check these two profiles
         pass_profiles = ['A2DP Pri', 'HFP Pri']
+        # TODO(b/122730302): Change to just raise an error
         ret = False
         try:
             ret = self._wait_for_bluetooth_profile_connection(
