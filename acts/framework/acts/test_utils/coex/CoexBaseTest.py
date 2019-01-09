@@ -45,8 +45,6 @@ from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
 from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 from acts.utils import create_dir
 
-TEST_CASE_TOKEN = "[Test Case]"
-RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
 AVRCP_WAIT_TIME = 3
 
 
@@ -352,7 +350,7 @@ class CoexBaseTest(BaseTestClass):
             self.flag_list.append(True)
         self.result["throughput"] = self.iperf_variables.received
 
-    def on_fail(self, record, test_name, begin_time):
+    def on_fail(self, test_name, begin_time):
         """A function that is executed upon a test case failure.
 
         Args:
@@ -364,34 +362,6 @@ class CoexBaseTest(BaseTestClass):
                       format(test_name))
         take_btsnoop_logs(self.android_devices, self, test_name)
         self._take_bug_report(test_name, begin_time)
-        record.extras = self.iperf_variables.received
-
-    def _on_fail(self, record):
-        """Proxy function to guarantee the base implementation of on_fail is
-        called.
-
-        Args:
-            record: The records.TestResultRecord object for the failed test
-            case.
-        """
-        if record.details:
-            self.log.error(record.details)
-        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        self.on_fail(record, record.test_name, record.begin_time)
-
-    def _on_pass(self, record):
-        """Proxy function to guarantee the base implementation of on_pass is
-        called.
-
-        Args:
-            record: The records.TestResultRecord object for the passed test
-            case.
-        """
-        msg = record.details
-        if msg:
-            self.log.info(msg)
-        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        record.extras = self.iperf_variables.received
 
     def run_thread(self, kwargs):
         """Convenience function to start thread.
