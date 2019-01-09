@@ -27,13 +27,16 @@ from acts.test_utils.wifi.aware import aware_test_utils as autils
 
 class WifiDppTest(base_test.BaseTestClass):
   """This class tests the DPP API surface.
-     Attributes: The tests in this class require one DUT and one helper phone device.
+
+     Attributes: The tests in this class require one DUT and one helper phone
+     device.
      The tests in this class do not require a SIM.
   """
 
-  DPP_TEST_TIMEOUT = 30
+  DPP_TEST_TIMEOUT = 60
   DPP_TEST_SSID_PREFIX = "dpp_test_ssid_"
   DPP_TEST_SECURITY_SAE = "SAE"
+  DPP_TEST_SECURITY_PSK_PASSPHRASE = "PSK_PASSPHRASE"
   DPP_TEST_SECURITY_PSK = "PSK"
 
   DPP_TEST_EVENT_DPP_CALLBACK = "onDppCallback"
@@ -118,12 +121,21 @@ class WifiDppTest(base_test.BaseTestClass):
     if not networks:
       return False
 
+    # Normalize PSK and PSK Passphrase to PSK
+    if security == self.DPP_TEST_SECURITY_PSK_PASSPHRASE:
+      security = self.DPP_TEST_SECURITY_PSK
+
+    # If the device doesn't support SAE, then the test fallbacks to PSK
+    if not self.dut.droid.wifiIsWpa3SaeSupported() and \
+              security == self.DPP_TEST_SECURITY_SAE:
+      security = self.DPP_TEST_SECURITY_PSK
+
     for network in networks:
       if network_id == network[wutils.WifiEnums.NETID_KEY] and \
               security == network[wutils.WifiEnums.SECURITY] and \
               expected_ssid == network[wutils.WifiEnums.SSID_KEY]:
-          self.log.info("Found SSID %s" % network[wutils.WifiEnums.SSID_KEY])
-          return True
+        self.log.info("Found SSID %s" % network[wutils.WifiEnums.SSID_KEY])
+        return True
     return False
 
   def forget_network(self, network_id):
@@ -212,7 +224,7 @@ class WifiDppTest(base_test.BaseTestClass):
                                    freq=2412,
                                    net_role=DPP_TEST_NETWORK_ROLE_STA,
                                    security=DPP_TEST_SECURITY_SAE,
-                                   use_psk=None):
+                                   invalid_config=False):
     """Start a responder on helper device
 
            Args:
@@ -220,8 +232,7 @@ class WifiDppTest(base_test.BaseTestClass):
                freq: Frequency to listen on
                net_role: Network role to configure
                security: Security type: SAE or PSK
-               use_psk: Use a pre-shared key of 32 hex digits instead of
-                        password
+               invalid_config: Send invalid configuration (negative test)
 
             Returns:
                 ssid: SSID name of the network to be configured
@@ -235,10 +246,20 @@ class WifiDppTest(base_test.BaseTestClass):
 
     conf = "conf=%s-" % net_role
 
+    use_psk = False
+
+    if security == self.DPP_TEST_SECURITY_SAE:
+      if not self.dut.droid.wifiIsWpa3SaeSupported():
+        self.log.warning("SAE not supported on device! reverting to PSK")
+        security = self.DPP_TEST_SECURITY_PSK_PASSPHRASE
+
     if security == self.DPP_TEST_SECURITY_SAE:
       conf += self.WPA_SUPPLICANT_SECURITY_SAE
+    elif security == self.DPP_TEST_SECURITY_PSK_PASSPHRASE:
+      conf += self.WPA_SUPPLICANT_SECURITY_PSK
     else:
       conf += self.WPA_SUPPLICANT_SECURITY_PSK
+      use_psk = True
 
     ssid = self.DPP_TEST_SSID_PREFIX + utils.rand_ascii_str(8)
     self.log.debug("SSID = %s" % ssid)
@@ -246,19 +267,27 @@ class WifiDppTest(base_test.BaseTestClass):
     ssid_encoded = binascii.hexlify(ssid.encode()).decode()
 
     if use_psk:
-      psk = utils.rand_ascii_str(32)
-      psk_encoded = binascii.b2a_hex(psk.encode()).decode()
+      psk = utils.rand_ascii_str(16)
+      if not invalid_config:
+        psk_encoded = binascii.b2a_hex(psk.encode()).decode()
+      else:
+        # Use the psk as is without hex encoding, will make it invalid
+        psk_encoded = psk
       self.log.debug("PSK = %s" % psk)
     else:
       password = utils.rand_ascii_str(8)
-      password_encoded = binascii.b2a_hex(password.encode()).decode()
+      if not invalid_config:
+        password_encoded = binascii.b2a_hex(password.encode()).decode()
+      else:
+        # Use the password as is without hex encoding, will make it invalid
+        password_encoded = password
       self.log.debug("Password = %s" % password)
 
     conf += " ssid=%s" % ssid_encoded
 
-    if password:
+    if password:  # SAE password or PSK passphrase
       conf += " pass=%s" % password_encoded
-    elif psk:
+    else:  # PSK
       conf += " psk=%s" % psk_encoded
 
     cmd = "wpa_cli set dpp_configurator_params guard=1 %s" % conf
@@ -268,7 +297,8 @@ class WifiDppTest(base_test.BaseTestClass):
       asserts.fail(
           "start_responder_configurator: Failure. Command used: %s" % cmd)
 
-    cmd = "wpa_cli DPP_LISTEN %d role=configurator netrole=%s" % (freq, net_role)
+    cmd = "wpa_cli DPP_LISTEN %d role=configurator netrole=%s" % (freq,
+                                                                  net_role)
     device.log.debug("Command used: %s" % cmd)
     result = self.helper_dev.adb.shell(cmd)
     if "FAIL" in result:
@@ -312,7 +342,6 @@ class WifiDppTest(base_test.BaseTestClass):
 
        Args:
            device: Device object
-
     """
     result = device.adb.shell("wpa_cli DPP_STOP_LISTEN")
     if "FAIL" in result:
@@ -321,8 +350,13 @@ class WifiDppTest(base_test.BaseTestClass):
 
     device.log.info("Stopped responder")
 
-  def start_dpp_as_initiator_configurator(self, security, use_mac,
-                                          net_role=DPP_TEST_NETWORK_ROLE_STA):
+  def start_dpp_as_initiator_configurator(self,
+                                          security,
+                                          use_mac,
+                                          net_role=DPP_TEST_NETWORK_ROLE_STA,
+                                          cause_timeout=False,
+                                          fail_authentication=False,
+                                          invalid_uri=False):
     """ Test DPP as initiator configurator.
 
                 1. Enable wifi, if needed
@@ -336,10 +370,14 @@ class WifiDppTest(base_test.BaseTestClass):
 
         Args:
             security: Security type, a string "SAE" or "PSK"
-            use_mac: A boolean indicating whether to use the device's MAC address (if True) or use
-                    a Broadcast (if False).
+            use_mac: A boolean indicating whether to use the device's MAC
+              address (if True) or use a Broadcast (if False).
             net_role: Network role, a string "sta" or "ap"
-
+            cause_timeout: Intentionally don't start the responder to cause a
+              timeout
+            fail_authentication: Fail authentication by corrupting the
+              responder's key
+            invalid_uri: Use garbage string instead of a URI
     """
     wutils.wifi_toggle_state(self.dut, True)
     test_network_id = self.create_and_save_wifi_network_config(security)
@@ -349,19 +387,32 @@ class WifiDppTest(base_test.BaseTestClass):
     else:
       mac = None
 
-    # Generate a URI with default info and channel
-    uri_id = self.gen_uri(self.helper_dev, mac)
+    if invalid_uri:
+      enrollee_uri = "dskjgnkdjfgnkdsjfgnsDFGDIFGKDSJFGFDbgjdsnbkjdfnkbgsdfgFDSGSDfgesouhgureho" \
+                     "iu3ht98368903434089ut4958763094u0934ujg094j5oifegjfds"
+    else:
+      # Generate a URI with default info and channel
+      uri_id = self.gen_uri(self.helper_dev, mac=mac)
 
-    # Get the URI. This is equal to scanning a QR code
-    enrollee_uri = self.get_uri(self.helper_dev, uri_id)
+      # Get the URI. This is equal to scanning a QR code
+      enrollee_uri = self.get_uri(self.helper_dev, uri_id)
 
-    # Start DPP as an enrolle-responder for STA on helper device
-    self.start_responder_enrollee(self.helper_dev, net_role=net_role)
+      # Corrupt the responder key if required
+      if fail_authentication:
+        enrollee_uri = enrollee_uri[:80] + "DeAdBeeF" + enrollee_uri[88:]
+        self.log.info("Corrupted enrollee URI: %s" % enrollee_uri)
+
+    if not cause_timeout:
+      # Start DPP as an enrolle-responder for STA on helper device
+      self.start_responder_enrollee(self.helper_dev, net_role=net_role)
+    else:
+      self.log.info("Not starting DPP responder on purpose")
 
     self.log.info("Starting DPP in Configurator-Initiator mode")
 
     # Start DPP as configurator-initiator on dut
-    self.dut.droid.startDppAsConfiguratorInitiator(enrollee_uri, test_network_id, net_role)
+    self.dut.droid.startDppAsConfiguratorInitiator(enrollee_uri,
+                                                   test_network_id, net_role)
 
     start_time = time.time()
     while time.time() < start_time + self.DPP_TEST_TIMEOUT:
@@ -372,10 +423,17 @@ class WifiDppTest(base_test.BaseTestClass):
         asserts.fail("DPP failure, unexpected result!")
         break
       if dut_event[self.DPP_TEST_EVENT_DATA][
-          self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_CONFIGURATOR_SUCCESS:
-        val = dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS]
-        if val == 0:
-          self.dut.log.info("DPP Configuration sent success")
+          self
+          .DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_CONFIGURATOR_SUCCESS:
+        if cause_timeout or fail_authentication or invalid_uri:
+          asserts.fail(
+              "Unexpected DPP success, status code: %s" %
+              dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
+        else:
+          val = dut_event[self.DPP_TEST_EVENT_DATA][
+              self.DPP_TEST_MESSAGE_STATUS]
+          if val == 0:
+            self.dut.log.info("DPP Configuration sent success")
         break
       if dut_event[self.DPP_TEST_EVENT_DATA][
           self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_PROGRESS:
@@ -388,9 +446,14 @@ class WifiDppTest(base_test.BaseTestClass):
         continue
       if dut_event[self.DPP_TEST_EVENT_DATA][
           self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_FAILURE:
-        asserts.fail(
-            "DPP failure, status code: %s" %
-            dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
+        if cause_timeout or fail_authentication or invalid_uri:
+          self.dut.log.info(
+              "Error %s occurred, as expected" %
+              dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
+        else:
+          asserts.fail(
+              "DPP failure, status code: %s" %
+              dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
         break
 
     # Clear all pending events.
@@ -399,14 +462,19 @@ class WifiDppTest(base_test.BaseTestClass):
     # Stop responder
     self.stop_responder(self.helper_dev)
 
-    # Delete URI
-    self.del_uri(self.helper_dev, uri_id)
+    if not invalid_uri:
+      # Delete URI
+      self.del_uri(self.helper_dev, uri_id)
 
     asserts.assert_true(
         self.forget_network(test_network_id),
         "Test network not deleted from configured networks.")
 
-  def start_dpp_as_initiator_enrollee(self, security, use_mac):
+  def start_dpp_as_initiator_enrollee(self,
+                                      security,
+                                      use_mac,
+                                      cause_timeout=False,
+                                      invalid_config=False):
     """ Test DPP as initiator enrollee.
 
                 1. Enable wifi, if needed
@@ -418,8 +486,12 @@ class WifiDppTest(base_test.BaseTestClass):
 
         Args:
             security: Security type, a string "SAE" or "PSK"
-            use_mac: A boolean indicating whether to use the device's MAC address (if True) or use
-                    a Broadcast (if False).
+            use_mac: A boolean indicating whether to use the device's MAC
+              address (if True) or use a Broadcast (if False).
+            cause_timeout: Intentionally don't start the responder to cause a
+              timeout
+            invalid_config: Responder to intentionally send malformed
+              configuration
     """
     wutils.wifi_toggle_state(self.dut, True)
 
@@ -429,33 +501,46 @@ class WifiDppTest(base_test.BaseTestClass):
       mac = None
 
     # Generate a URI with default info and channel
-    uri_id = self.gen_uri(self.helper_dev, mac)
+    uri_id = self.gen_uri(self.helper_dev, mac=mac)
 
     # Get the URI. This is equal to scanning a QR code
     configurator_uri = self.get_uri(self.helper_dev, uri_id)
 
-    # Start DPP as an configurator-responder for STA on helper device
-    ssid = self.start_responder_configurator(self.helper_dev, security=security)
+    if not cause_timeout:
+      # Start DPP as an configurator-responder for STA on helper device
+      ssid = self.start_responder_configurator(
+          self.helper_dev, security=security, invalid_config=invalid_config)
+    else:
+      self.log.info(
+          "Not starting a responder configurator on helper device, on purpose")
+      ssid = self.DPP_TEST_SSID_PREFIX + utils.rand_ascii_str(8)
 
     self.log.info("Starting DPP in Enrollee-Initiator mode")
 
     # Start DPP as enrollee-initiator on dut
     self.dut.droid.startDppAsEnrolleeInitiator(configurator_uri)
 
+    network_id = 0
+
     start_time = time.time()
     while time.time() < start_time + self.DPP_TEST_TIMEOUT:
       dut_event = self.dut.ed.pop_event(self.DPP_TEST_EVENT_DPP_CALLBACK,
                                         self.DPP_TEST_TIMEOUT)
       if dut_event[self.DPP_TEST_EVENT_DATA][
-          self.
-          DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_ENROLLEE_SUCCESS:
-        self.dut.log.info("DPP Configuration received success")
-        network_id = dut_event[self.DPP_TEST_EVENT_DATA][
-            self.DPP_TEST_MESSAGE_NETWORK_ID]
-        self.dut.log.info("NetworkID: %d" % network_id)
+          self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_ENROLLEE_SUCCESS:
+        if cause_timeout or invalid_config:
+          asserts.fail(
+              "Unexpected DPP success, status code: %s" %
+              dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
+        else:
+          self.dut.log.info("DPP Configuration received success")
+          network_id = dut_event[self.DPP_TEST_EVENT_DATA][
+              self.DPP_TEST_MESSAGE_NETWORK_ID]
+          self.dut.log.info("NetworkID: %d" % network_id)
         break
       if dut_event[self.DPP_TEST_EVENT_DATA][
-          self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_CONFIGURATOR_SUCCESS:
+          self
+          .DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_CONFIGURATOR_SUCCESS:
         asserts.fail(
             "DPP failure, unexpected result: %s" %
             dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
@@ -471,10 +556,16 @@ class WifiDppTest(base_test.BaseTestClass):
         continue
       if dut_event[self.DPP_TEST_EVENT_DATA][
           self.DPP_TEST_MESSAGE_TYPE] == self.DPP_TEST_EVENT_FAILURE:
-        asserts.fail(
-            "DPP failure, status code: %s" %
-            dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
-      break
+        if cause_timeout or invalid_config:
+          self.dut.log.info(
+              "Error %s occurred, as expected" %
+              dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
+        else:
+          asserts.fail(
+              "DPP failure, status code: %s" %
+              dut_event[self.DPP_TEST_EVENT_DATA][self.DPP_TEST_MESSAGE_STATUS])
+        break
+      asserts.fail("Unknown message received")
 
     # Clear all pending events.
     self.dut.ed.clear_all_events()
@@ -485,55 +576,100 @@ class WifiDppTest(base_test.BaseTestClass):
     # Delete URI
     self.del_uri(self.helper_dev, uri_id)
 
-    # Check that the saved network is what we expect
-    asserts.assert_true(
-        self.check_network_config_saved(ssid, security, network_id),
-        "Could not find the expected network: %s" % ssid)
+    if not (invalid_config or cause_timeout):
+      # Check that the saved network is what we expect
+      asserts.assert_true(
+          self.check_network_config_saved(ssid, security, network_id),
+          "Could not find the expected network: %s" % ssid)
 
-    asserts.assert_true(
-        self.forget_network(network_id),
-        "Test network not deleted from configured networks.")
+      asserts.assert_true(
+          self.forget_network(network_id),
+          "Test network not deleted from configured networks.")
 
   """ Tests Begin """
-
-  def test_dpp_as_initiator_configurator_with_sae(self):
-    self.start_dpp_as_initiator_configurator(
-        security=self.DPP_TEST_SECURITY_SAE, use_mac=True)
 
   def test_dpp_as_initiator_configurator_with_psk(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_PSK, use_mac=True)
 
+  def test_dpp_as_initiator_configurator_with_sae(self):
+    self.start_dpp_as_initiator_configurator(
+        security=self.DPP_TEST_SECURITY_SAE, use_mac=True)
+
+  def test_dpp_as_initiator_configurator_with_psk_passphrase(self):
+    self.start_dpp_as_initiator_configurator(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE, use_mac=True)
+
   def test_dpp_as_initiator_configurator_with_sae_broadcast(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_SAE, use_mac=False)
 
-  def test_dpp_as_initiator_configurator_with_psk_broadcast(self):
+  def test_dpp_as_initiator_configurator_with_psk_passphrase_broadcast(self):
     self.start_dpp_as_initiator_configurator(
-        security=self.DPP_TEST_SECURITY_PSK, use_mac=False)
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE, use_mac=False)
 
   def test_dpp_as_initiator_configurator_with_sae_for_ap(self):
-      self.start_dpp_as_initiator_configurator(
-          security=self.DPP_TEST_SECURITY_SAE, use_mac=True, net_role=self.DPP_TEST_NETWORK_ROLE_AP)
+    self.start_dpp_as_initiator_configurator(
+        security=self.DPP_TEST_SECURITY_SAE,
+        use_mac=True,
+        net_role=self.DPP_TEST_NETWORK_ROLE_AP)
 
-  def test_dpp_as_initiator_configurator_with_psk_for_ap(self):
-      self.start_dpp_as_initiator_configurator(
-          security=self.DPP_TEST_SECURITY_PSK, use_mac=True, net_role=self.DPP_TEST_NETWORK_ROLE_AP)
+  def test_dpp_as_initiator_configurator_with_psk_passphrase_for_ap(self):
+    self.start_dpp_as_initiator_configurator(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        use_mac=True,
+        net_role=self.DPP_TEST_NETWORK_ROLE_AP)
 
   def test_dpp_as_initiator_enrollee_with_sae(self):
     self.start_dpp_as_initiator_enrollee(
         security=self.DPP_TEST_SECURITY_SAE, use_mac=True)
 
-  def test_dpp_as_initiator_enrollee_with_psk(self):
+  def test_dpp_as_initiator_enrollee_with_psk_passphrase(self):
     self.start_dpp_as_initiator_enrollee(
-        security=self.DPP_TEST_SECURITY_PSK, use_mac=True)
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE, use_mac=True)
 
   def test_dpp_as_initiator_enrollee_with_sae_broadcast(self):
     self.start_dpp_as_initiator_enrollee(
         security=self.DPP_TEST_SECURITY_SAE, use_mac=False)
 
-  def test_dpp_as_initiator_enrollee_with_psk_broadcast(self):
+  def test_dpp_as_initiator_enrollee_with_psk_passphrase_broadcast(self):
     self.start_dpp_as_initiator_enrollee(
-        security=self.DPP_TEST_SECURITY_PSK, use_mac=False)
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE, use_mac=False)
+
+  def test_start_dpp_as_initiator_enrollee_receive_invalid_config(self):
+    self.start_dpp_as_initiator_enrollee(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        use_mac=True,
+        invalid_config=True)
+
+  def test_dpp_as_initiator_configurator_fail_authentication(self):
+    self.start_dpp_as_initiator_configurator(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        use_mac=True,
+        fail_authentication=True)
+
+  def test_dpp_as_initiator_configurator_fail_unicast_timeout(self):
+    self.start_dpp_as_initiator_configurator(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        use_mac=True,
+        cause_timeout=True)
+
+  def test_dpp_as_initiator_configurator_fail_broadcast_timeout(self):
+    self.start_dpp_as_initiator_configurator(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        use_mac=False,
+        cause_timeout=True)
+
+  def test_dpp_as_initiator_configurator_invalid_uri(self):
+    self.start_dpp_as_initiator_configurator(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        use_mac=True,
+        invalid_uri=True)
+
+  def test_start_dpp_as_initiator_enrollee_fail_timeout(self):
+    self.start_dpp_as_initiator_enrollee(
+        security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
+        use_mac=True,
+        cause_timeout=True)
 
   """ Tests End """
