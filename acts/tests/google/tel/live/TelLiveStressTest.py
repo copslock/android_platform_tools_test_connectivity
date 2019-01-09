@@ -137,8 +137,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.crash_check_interval = int(
             self.user_params.get("crash_check_interval", 300))
         self.dut_incall = False
-        self.dut_capabilities = self.dut.telephony.get("capabilities", [])
-        self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
+        telephony_info = getattr(self.dut, "telephony", {})
+        self.dut_capabilities = telephony_info.get("capabilities", [])
+        self.dut_wfc_modes = telephony_info.get("wfc_modes", [])
         self.gps_log_file = self.user_params.get("gps_log_file", None)
         return True
 
