@@ -39,6 +39,7 @@ class BlackboxMetricLoggerTest(TestCase):
         self.event = Mock()
         self.context = Mock()
         self.publisher = Mock()
+        self._get_blackbox_identifier = lambda: str(id(self.context))
 
     @patch(COMPILE_IMPORT_PROTO)
     def test_default_init_attributes(self, compile_import_proto):
@@ -88,11 +89,12 @@ class BlackboxMetricLoggerTest(TestCase):
         logger = BlackboxMetricLogger(self.TEST_METRIC_NAME)
         logger.context = self.context
         logger.publisher = self.publisher
+        logger.context.identifier = 'Class.test'
 
         logger.end(self.event)
 
-        self.assertEqual(result.test_identifier, self.context.identifier)
-        self.assertEqual(result.metric_key, '%s.%s' % (self.context.identifier,
+        self.assertEqual(result.test_identifier, 'Class#test')
+        self.assertEqual(result.metric_key, '%s.%s' % ('Class#test',
                                                        self.TEST_METRIC_NAME))
         self.assertEqual(result.metric_value, self.context.test_class.result)
 
@@ -107,6 +109,7 @@ class BlackboxMetricLoggerTest(TestCase):
                                       result_attr=result_attr)
         logger.context = self.context
         logger.publisher = self.publisher
+        logger._get_blackbox_identifier = self._get_blackbox_identifier
 
         logger.end(self.event)
 
@@ -126,6 +129,7 @@ class BlackboxMetricLoggerTest(TestCase):
                                       result_attr=result_attr)
         logger.context = self.context
         logger.publisher = self.publisher
+        logger._get_blackbox_identifier = self._get_blackbox_identifier
         logger.metric_value = expected_result
         logger.end(self.event)
 
@@ -143,6 +147,7 @@ class BlackboxMetricLoggerTest(TestCase):
         logger = BlackboxMetricLogger(self.TEST_METRIC_NAME,
                                       result_attr=result_attr)
         logger.context = self.context
+        logger.context.identifier = 'Class.test'
         logger.publisher = self.publisher
         logger.metric_value = expected_result
         logger.end(self.event)
@@ -160,6 +165,7 @@ class BlackboxMetricLoggerTest(TestCase):
                                       metric_key=metric_key)
         logger.context = self.context
         logger.publisher = self.publisher
+        logger._get_blackbox_identifier = self._get_blackbox_identifier
 
         logger.end(self.event)
 
@@ -178,6 +184,7 @@ class BlackboxMetricLoggerTest(TestCase):
                                       metric_key=metric_key)
         logger.context = self.context
         logger.publisher = self.publisher
+        logger._get_blackbox_identifier = self._get_blackbox_identifier
 
         logger.end(self.event)
 
@@ -231,8 +238,8 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         self.assertEqual(len(args_list), 1)
         metric = self.__get_only_arg(args_list[0])
         self.assertEqual(metric.name, 'blackbox_my_metric')
-        self.assertEqual(metric.data.test_identifier, 'MyTest.test_case')
-        self.assertEqual(metric.data.metric_key, 'MyTest.test_case.my_metric')
+        self.assertEqual(metric.data.test_identifier, 'MyTest#test_case')
+        self.assertEqual(metric.data.metric_key, 'MyTest#test_case.my_metric')
         self.assertEqual(metric.data.metric_value, result)
 
     @patch('acts.metrics.logger.ProtoMetricPublisher')
@@ -259,10 +266,10 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
             {'blackbox_my_metric_1', 'blackbox_my_metric_2'})
         self.assertEqual(
             {metric.data.test_identifier for metric in metrics},
-            {'MyTest.test_case'})
+            {'MyTest#test_case'})
         self.assertEqual(
             {metric.data.metric_key for metric in metrics},
-            {'MyTest.test_case.my_metric_1', 'MyTest.test_case.my_metric_2'})
+            {'MyTest#test_case.my_metric_1', 'MyTest#test_case.my_metric_2'})
         self.assertEqual(
             {metric.data.metric_value for metric in metrics},
             {result})
