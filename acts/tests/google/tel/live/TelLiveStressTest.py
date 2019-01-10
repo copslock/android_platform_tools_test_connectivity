@@ -284,6 +284,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.result_info["%s Failure" % message_type] += 1
             else:
                 rat = self.dut.adb.getprop("gsm.network.type")
+                if "," in rat:
+                    rat = rat.split(',')[0]
                 self.dut.log.info("Network in RAT %s", rat)
                 if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                     self.dut.log.info(
@@ -655,6 +657,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.result_info["Internet Connection Check Total"] += 1
         if not self.internet_connection_check_method(self.log, self.dut):
             rat = self.dut.adb.getprop("gsm.network.type")
+            if "," in rat:
+                rat = rat.split(',')[0]
             self.dut.log.info("Network in RAT %s", rat)
             if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                 self.result_info[
