@@ -196,7 +196,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 testcase_params["channel"])] - ping_result["range"])
 
     def setup_ap(self, testcase_params):
-        """Sets up the access point in the configuration required by the test.
+        """Sets up the AP and attenuator to compensate for AP chain imbalance.
 
         Args:
             testcase_params: dict containing AP and other test params
@@ -219,6 +219,13 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         self.access_point.set_rate(
             band, testcase_params["mode"], testcase_params["num_streams"],
             testcase_params["rate"], testcase_params["short_gi"])
+        for atten in self.attenuators:
+            if atten.path == "Chain-0":
+                atten.offset = self.testbed_params["chain_offset"][str(
+                    testcase_params["channel"])][0]
+            elif atten.path == "Chain-1":
+                atten.offset = self.testbed_params["chain_offset"][str(
+                    testcase_params["channel"])][1]
         self.log.info("Access Point Configuration: {}".format(
             self.access_point.ap_settings))
 
@@ -318,7 +325,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         else:
             self.setup_rvr_test(testcase_params)
             result = self.run_rvr_test(testcase_params)
-            self.process_rvr_test_results(result)
+            self.process_rvr_test_results(testcase_params, result)
         # Post-process results
         self.testclass_results.append(result)
         self.pass_fail_check(result)
