@@ -70,7 +70,7 @@ class WifiEnums():
 
     SSID_KEY = "SSID"
     SSID_PATTERN_KEY = "ssidPattern"
-    NETID_KEY = "networkId"
+    NETID_KEY = "network_id"
     BSSID_KEY = "BSSID"
     BSSID_PATTERN_KEY = "bssidPattern"
     PWD_KEY = "password"
