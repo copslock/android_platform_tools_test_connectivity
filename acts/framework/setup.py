@@ -13,9 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from distutils import cmd
 from distutils import log
+import subprocess
 import os
 import shutil
 import setuptools
@@ -39,7 +39,7 @@ install_requires = [
     'xlsxwriter',
 ]
 
-if sys.version_info < (3, ):
+if sys.version_info < (3,):
     install_requires.append('enum34')
     install_requires.append('statistics')
     # "futures" is needed for py2 compatibility and it only works in 2.7
@@ -82,13 +82,14 @@ class ActsInstallDependencies(cmd.Command):
         pass
 
     def run(self):
-        import pip
-        pip.main(['install', '--upgrade', 'pip'])
+        install_args = [sys.executable, '-m', 'pip', 'install']
+        subprocess.check_call([*install_args, '--upgrade', 'pip'])
         required_packages = self.distribution.install_requires
 
         for package in required_packages:
             self.announce('Installing %s...' % package, log.INFO)
-            pip.main(['install', '-v', '--no-cache-dir', package])
+            subprocess.check_call(
+                [*install_args, '-v', '--no-cache-dir', package])
 
         self.announce('Dependencies installed.')
 
@@ -153,6 +154,10 @@ class ActsUninstall(cmd.Command):
 
 
 def main():
+    framework_dir = os.path.dirname(os.path.realpath(__file__))
+    scripts = [os.path.join(framework_dir, 'acts', 'bin', 'act.py'),
+               os.path.join(framework_dir, 'acts', 'bin', 'monsoon.py')]
+
     setuptools.setup(
         name='acts',
         version='0.9',
@@ -162,7 +167,7 @@ def main():
         include_package_data=False,
         tests_require=['pytest'],
         install_requires=install_requires,
-        scripts=['acts/bin/act.py', 'acts/bin/monsoon.py'],
+        scripts=scripts,
         cmdclass={
             'test': PyTest,
             'install_deps': ActsInstallDependencies,
