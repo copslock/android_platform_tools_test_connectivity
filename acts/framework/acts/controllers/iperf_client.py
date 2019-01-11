@@ -68,9 +68,8 @@ class IPerfClient():
         else:
             self.client_type = config["type"]
         self.iperf_process = None
-        self.log_files = []
 
-    def start(self, iperf_args, ad, ip, test_name):
+    def start(self, iperf_args, ad, ip, test_name, tag):
         """Starts iperf client on specified port.
 
         Args:
@@ -78,6 +77,7 @@ class IPerfClient():
             client. Eg: iperf_args = "-t 10 -p 5001 -w 512k/-u -b 200M -J".
             ad: Android device object.
             ip: Iperf server ip address.
+            tag: Number to denote iteration.
 
         Returns:
             full_out_path: Iperf result path.
@@ -86,8 +86,7 @@ class IPerfClient():
         port = iperf_cmd.split(' ')[6]
         log_path = os.path.join(ad.log_path, test_name, "iPerf{}".format(port))
         utils.create_dir(log_path)
-        out_file_name = "IPerfClient,{},{}.log".format(port, len(
-            self.log_files))
+        out_file_name = "IPerfClient,{},{}.log".format(port, tag)
         full_out_path = os.path.join(log_path, out_file_name)
         if self.client_type == "remote":
             try:
@@ -101,5 +100,4 @@ class IPerfClient():
             cmd = iperf_cmd.split()
             with open(full_out_path, "w") as f:
                 subprocess.call(cmd, stdout=f)
-        self.log_files.append(full_out_path)
         return full_out_path
