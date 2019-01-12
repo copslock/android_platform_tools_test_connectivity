@@ -84,11 +84,12 @@ def remove_device(name):
         return True
     return False
 
-def lock_device(name):
+def lock_device(name, admin):
     """Lock a device(AP or Packet Capturer) in datastore.
 
        Args:
            name: string, hostname of the device in datastore.
+           admin: string, unique admin name for locking.
       Returns:
           True if operation was successful; 0 otherwise.
     """
@@ -96,7 +97,7 @@ def lock_device(name):
     logging.debug("Request = %s" % request)
     response = requests.put(request,
                             headers=HTTP_HEADER,
-                            data=json.dumps({"hostname":name, "locked_by":"admin"}))
+                            data=json.dumps({"hostname":name, "locked_by":admin}))
     if response.json()['result']:
         logging.info("Locked device %s in datastore" % name)
         return True
