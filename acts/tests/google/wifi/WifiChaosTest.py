@@ -110,6 +110,7 @@ class WifiChaosTest(WifiBaseTest):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
+        self.admin = 'admin' + str(random.randint(1000001, 12345678))
         wutils.wifi_test_device_init(self.dut)
         # Set country code explicitly to "US".
         self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
@@ -132,7 +133,7 @@ class WifiChaosTest(WifiBaseTest):
             device_name = device['hostname']
             device_type = device['ap_label']
             if device_type == 'PCAP' and not device['lock_status']:
-                if dutils.lock_device(device_name):
+                if dutils.lock_device(device_name, self.admin):
                     self.pcap_host = device_name
                     host = device['ip_address']
                     self.log.info("Locked Packet Capture device: %s" % device_name)
@@ -293,10 +294,11 @@ class WifiChaosTest(WifiBaseTest):
 
         ap_info = dutils.show_device(hostname)
 
-        if ap_info['lock_status']:
+        # If AP is locked by a different test admin, then we skip.
+        if ap_info['lock_status'] and ap_info['locked_by'] != self.admin:
             raise signals.TestSkip("AP %s is locked, skipping test" % hostname)
 
-        if not dutils.lock_device(hostname):
+        if not dutils.lock_device(hostname, self.admin):
             self.log.warning("Failed to lock %s AP. Unlock AP in datastore"
                              " and try again.")
             raise signals.TestFailure("Failed to lock AP")

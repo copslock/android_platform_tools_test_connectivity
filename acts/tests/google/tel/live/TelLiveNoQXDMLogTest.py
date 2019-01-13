@@ -33,6 +33,8 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_BOOT_COMPLETE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_CARRIERCONFIG_CHANGE
+from acts.test_utils.tel.tel_defines import VZW_CARRIER_CONFIG_VERSION
+from acts.test_utils.tel.tel_defines import ATT_CARRIER_CONFIG_VERSION
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import lock_lte_band_by_mds
@@ -420,8 +422,9 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         """
         try:
             cc_version_mapping = {
-                'vzw': "29999999999",
-                'att': "28888888888",
+                'vzw': VZW_CARRIER_CONFIG_VERSION,
+                'Verizon': VZW_CARRIER_CONFIG_VERSION,
+                'att': ATT_CARRIER_CONFIG_VERSION,
             }
             result_flag = False
             time_var = 1

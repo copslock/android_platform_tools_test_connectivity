@@ -131,7 +131,7 @@ class WifiDppTest(base_test.BaseTestClass):
       security = self.DPP_TEST_SECURITY_PSK
 
     for network in networks:
-      if network_id == network[wutils.WifiEnums.NETID_KEY] and \
+      if network_id == network['networkId'] and \
               security == network[wutils.WifiEnums.SECURITY] and \
               expected_ssid == network[wutils.WifiEnums.SSID_KEY]:
         self.log.info("Found SSID %s" % network[wutils.WifiEnums.SSID_KEY])
