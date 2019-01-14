@@ -272,6 +272,20 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         self.get_configured_passpoint_and_delete()
         wutils.wait_for_disconnect(self.dut)
 
+    def test_install_att_passpoint_profile(self):
+        """Add an AT&T Passpoint profile.
+
+        It is used for only installing the profile for other tests.
+        """
+        isFound = False
+        for passpoint_config in self.passpoint_networks:
+            if 'att' in passpoint_config['fqdn']:
+                isFound = True
+                self.install_passpoint_profile(passpoint_config)
+                break
+        if not isFound:
+            raise signals.TestFailure("cannot find ATT profile.")
+
     @test_tracker_info(uuid="e3e826d2-7c39-4c37-ab3f-81992d5aa0e8")
     def test_att_passpoint_network(self):
         """Add a AT&T Passpoint network and verify device connects to it.
