@@ -357,7 +357,7 @@ class WifiDppTest(base_test.BaseTestClass):
                                           cause_timeout=False,
                                           fail_authentication=False,
                                           invalid_uri=False):
-    """ Test DPP as initiator configurator.
+    """ Test Easy Connect (DPP) as initiator configurator.
 
                 1. Enable wifi, if needed
                 2. Create and save a random config.
@@ -411,7 +411,7 @@ class WifiDppTest(base_test.BaseTestClass):
     self.log.info("Starting DPP in Configurator-Initiator mode")
 
     # Start DPP as configurator-initiator on dut
-    self.dut.droid.startDppAsConfiguratorInitiator(enrollee_uri,
+    self.dut.droid.startEasyConnectAsConfiguratorInitiator(enrollee_uri,
                                                    test_network_id, net_role)
 
     start_time = time.time()
@@ -475,7 +475,7 @@ class WifiDppTest(base_test.BaseTestClass):
                                       use_mac,
                                       cause_timeout=False,
                                       invalid_config=False):
-    """ Test DPP as initiator enrollee.
+    """ Test Easy Connect (DPP) as initiator enrollee.
 
                 1. Enable wifi, if needed
                 2. Start DPP as responder-configurator on helper device
@@ -518,7 +518,7 @@ class WifiDppTest(base_test.BaseTestClass):
     self.log.info("Starting DPP in Enrollee-Initiator mode")
 
     # Start DPP as enrollee-initiator on dut
-    self.dut.droid.startDppAsEnrolleeInitiator(configurator_uri)
+    self.dut.droid.startEasyConnectAsEnrolleeInitiator(configurator_uri)
 
     network_id = 0
 
