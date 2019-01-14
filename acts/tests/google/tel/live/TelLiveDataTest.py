@@ -1153,7 +1153,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not toggle_airplane_mode_by_adb(self.log, a, True):
                 self.log.error("Failed to toggle airplane mode on")
                 return False
-            if not toggle_airplane_mode_by_adb(log, a, False):
+            if not toggle_airplane_mode_by_adb(self.log, a, False):
                 self.log.error("Failed to toggle airplane mode off")
                 return False
 
