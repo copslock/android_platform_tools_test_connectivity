@@ -608,6 +608,8 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def call_test(self, call_verification_func=None):
         while time.time() < self.finishing_time:
+            time.sleep(
+                random.randrange(self.min_sleep_time, self.max_sleep_time))
             try:
                 self._make_phone_call(call_verification_func)
             except Exception as e:
@@ -617,8 +619,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Too many exception errors, quit test")
                 return False
             self.log.info("%s", dict(self.result_info))
-            time.sleep(
-                random.randrange(self.min_sleep_time, self.max_sleep_time))
         if any([
                 self.result_info["Call Setup Failure"],
                 self.result_info["Call Maintenance Failure"],
