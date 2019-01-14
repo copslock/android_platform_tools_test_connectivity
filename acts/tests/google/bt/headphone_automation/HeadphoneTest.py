@@ -87,7 +87,7 @@ class HeadphoneTest(BluetoothBaseTest):
 
         # Turn of the Power Supply for the headphones.
         if hasattr(self, 'relay_devices'):
-            power_supply = self.relay_devices[-1]
+            power_supply = self.relay_devices[0]
             power_supply.power_off()
 
         super(HeadphoneTest, self).setup_class()
@@ -99,7 +99,7 @@ class HeadphoneTest(BluetoothBaseTest):
                 headphone.power_off()
                 headphone.clean_up()
 
-        power_supply = self.relay_devices[-1]
+        power_supply = self.relay_devices[0]
         power_supply.power_off()
 
         return clear_bonded_devices(self.ad)
@@ -110,7 +110,7 @@ class HeadphoneTest(BluetoothBaseTest):
 
     @property
     def headphone_list(self):
-        return self.relay_devices[:-1]
+        return self.relay_devices[1:]
 
     @BluetoothBaseTest.bt_test_wrap
     @test_tracker_info(uuid='157c1fa1-3d6f-4cfc-8f86-ad267746af71')
