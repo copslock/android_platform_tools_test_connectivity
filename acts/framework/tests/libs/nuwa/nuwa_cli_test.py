@@ -24,6 +24,7 @@ _MOCK_WALK = {'/dir1': [('/dir1', (), ('file1', 'file2'))],
                         ('/dir2/dir3', (), ())],
               '/dir3': [('/dir3', (), ('file1',))]}
 
+
 def _mock_walk(path, **_):
     return _MOCK_WALK.get(path, [])
 
@@ -35,10 +36,12 @@ class NuwaCliTest(unittest.TestCase):
 
     @mock.patch('os.walk', _mock_walk)
     @mock.patch('os.makedirs')
+    @mock.patch('tempfile.mkdtemp')
+    @mock.patch('shutil.rmtree')
     @mock.patch.object(NuwaCli, '_setup_cli')
     def test_set_workflows_sets_correct_file_path(self, *_):
         """Tests that the workflow name is mapped correctly to its path."""
-        nc = NuwaCli('', '', '/dir1')
+        nc = NuwaCli('', '/dir1')
         self.assertIn('file1', nc._workflows,
                       'Workflow file not added to dictionary.')
         self.assertEqual(nc._workflows['file1'], '/dir1/file1',
@@ -46,12 +49,14 @@ class NuwaCliTest(unittest.TestCase):
 
     @mock.patch('os.walk', _mock_walk)
     @mock.patch('os.makedirs')
+    @mock.patch('tempfile.mkdtemp')
+    @mock.patch('shutil.rmtree')
     @mock.patch.object(NuwaCli, '_setup_cli')
     def test_set_workflows_adds_workflows_from_directories(self, *_):
         """Tests that providing a directory name adds all files from that
         directory. Also tests that no directories are added to the dictionary.
         """
-        nc = NuwaCli('', '', ['/dir1', '/dir2'])
+        nc = NuwaCli('', ['/dir1', '/dir2'])
         for file_name in ['file1', 'file2', 'file3']:
             self.assertIn(file_name, nc._workflows,
                           'Workflow file not added to dictionary.')
@@ -61,6 +66,8 @@ class NuwaCliTest(unittest.TestCase):
 
     @mock.patch('os.walk', _mock_walk)
     @mock.patch('os.makedirs')
+    @mock.patch('tempfile.mkdtemp')
+    @mock.patch('shutil.rmtree')
     @mock.patch.object(NuwaCli, '_setup_cli')
     def test_set_workflows_rejects_duplicate_workflow_names(self, *_):
         """Tests that _set_workflows raises an exception if two or more
@@ -68,16 +75,18 @@ class NuwaCliTest(unittest.TestCase):
         """
         expected_msg = 'Nuwa workflows may not share the same name.'
         with self.assertRaisesRegex(NuwaError, expected_msg):
-            nc = NuwaCli('', '', ['/dir1', '/dir3'])
+            nc = NuwaCli('', ['/dir1', '/dir3'])
 
     # run
 
     @mock.patch('os.makedirs')
+    @mock.patch('tempfile.mkdtemp', return_value='/base')
+    @mock.patch('shutil.rmtree')
     @mock.patch.object(NuwaCli, '_setup_cli')
     @mock.patch.object(NuwaCli, '_set_workflows')
     def test_run_generates_correct_nuwa_cmds(self, *_):
         """Tests that the correct cmds are generated upon calling run()."""
-        nc = NuwaCli('', '/base', [])
+        nc = NuwaCli('', [])
         nc._workflows = {'test': '/workflows/test'}
         # No log path set
         with mock.patch('acts.libs.proc.job.run') as job_run:
