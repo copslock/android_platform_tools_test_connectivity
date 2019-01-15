@@ -85,6 +85,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_network_rat
@@ -1152,7 +1153,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if not toggle_airplane_mode_by_adb(self.log, a, True):
                 self.log.error("Failed to toggle airplane mode on")
                 return False
-            if not toggle_airplane_mode_by_adb(log, a, False):
+            if not toggle_airplane_mode_by_adb(self.log, a, False):
                 self.log.error("Failed to toggle airplane mode off")
                 return False
 
@@ -2551,7 +2552,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 self.log.error("Failed wifi connection, aborting!")
                 return False
 
-            if not verify_internet_connection(
+            if not verify_http_connection(
                     self.log, ad, 'http://www.google.com', 100, .1):
                 self.log.error("Failed to get user-plane traffic, aborting!")
                 return False
