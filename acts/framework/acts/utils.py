@@ -59,16 +59,6 @@ class DozeModeStatus:
     IDLE = "IDLE"
 
 
-class CapablityPerDevice:
-    energy_info_models = [
-        "shamu", "volantis", "volantisg", "angler", "bullhead", "ryu",
-        "marlin", "sailfish"
-    ]
-    tdls_models = [
-        "shamu", "hammerhead", "angler", "bullhead", "marlin", "sailfish"
-    ]
-
-
 ascii_letters_and_digits = string.ascii_letters + string.digits
 valid_filename_chars = "-_." + ascii_letters_and_digits
 
@@ -509,6 +499,8 @@ def sync_device_time(ad):
     Args:
         ad: The android device to sync time on.
     """
+    ad.adb.shell("settings global put auto_time 0", ignore_status=True)
+    ad.adb.shell("settings global put auto_time_zone 0", ignore_status=True)
     droid = ad.droid
     droid.setTimeZone(get_timezone_olson_id())
     droid.setTime(get_current_epoch_time())

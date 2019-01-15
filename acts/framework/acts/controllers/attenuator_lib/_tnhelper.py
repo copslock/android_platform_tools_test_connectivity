@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
 """A helper module to communicate over telnet with AttenuatorInstruments.
 
 User code shouldn't need to directly access this class.
@@ -21,7 +20,9 @@ User code shouldn't need to directly access this class.
 
 import logging
 import telnetlib
+import re
 from acts.controllers import attenuator
+from acts.libs.proc import job
 
 
 def _ascii_string(uc_string):
@@ -35,17 +36,22 @@ class _TNHelper(object):
     any user code directly.
     """
 
-    def __init__(self, tx_cmd_separator='\n', rx_cmd_separator='\n', prompt=''):
+    def __init__(self, tx_cmd_separator='\n', rx_cmd_separator='\n',
+                 prompt=''):
         self._tn = None
+        self._ip_address = None
+        self._port = None
 
         self.tx_cmd_separator = tx_cmd_separator
         self.rx_cmd_separator = rx_cmd_separator
         self.prompt = prompt
 
     def open(self, host, port=23):
+        self._ip_address = host
+        self._port = port
         if self._tn:
             self._tn.close()
-        logging.debug("Attenuator IP = %s" % host)
+        logging.debug("Telnet Server IP = %s" % host)
         self._tn = telnetlib.Telnet()
         self._tn.open(host, port, 10)
 
@@ -56,6 +62,42 @@ class _TNHelper(object):
         if self._tn:
             self._tn.close()
             self._tn = None
+
+    def diagnose_telnet(self):
+        """Function that diagnoses telnet connections.
+
+        This function diagnoses telnet connections and can be used in case of
+        command failures. The function checks if the devices is still reachable
+        via ping, and whether or not it can close and reopen the telnet
+        connection.
+
+        Returns:
+            False when telnet server is unreachable or unresponsive
+            True when telnet server is reachable and telnet connection has been
+            successfully reopened
+        """
+        logging.debug('Diagnosing telnet connection')
+        try:
+            job_result = job.run('ping {} -c 5'.format(self._ip_address))
+        except:
+            logging.error("Unable to ping telnet server.")
+            return False
+        ping_output = job_result.stdout
+        if not re.search(r' 0% packet loss', ping_output):
+            logging.error('Ping Packets Lost. Result: {}'.format(ping_output))
+            return False
+        try:
+            self.close()
+        except:
+            logging.error('Cannot close telnet connection.')
+            return False
+        try:
+            self.open(self._ip_address, self._port)
+        except:
+            logging.error('Cannot reopen telnet connection.')
+            return False
+        logging.debug('Telnet connection likely recovered')
+        return True
 
     def cmd(self, cmd_str, wait_ret=True):
         if not isinstance(cmd_str, str):
@@ -76,6 +118,10 @@ class _TNHelper(object):
             [_ascii_string('\S+' + self.rx_cmd_separator)], 1)
 
         if match_idx == -1:
+            logging.debug('Telnet Command: {}'.format(cmd_str))
+            logging.debug('Telnet Reply: ({},{},{})'.format(
+                match_idx, match_val, ret_text))
+            self.diagnose_telnet()
             raise attenuator.InvalidDataError(
                 'Telnet command failed to return valid data')
 

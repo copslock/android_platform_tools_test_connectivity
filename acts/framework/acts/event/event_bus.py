@@ -19,6 +19,7 @@ import inspect
 from threading import RLock
 
 from acts.event.event_subscription import EventSubscription
+from acts.event.subscription_handle import SubscriptionHandle
 
 
 class _EventBus(object):
@@ -101,11 +102,12 @@ class _EventBus(object):
 
         return registration_id
 
-    def post(self, event):
+    def post(self, event, ignore_errors=False):
         """Posts an event to its subscribers.
 
         Args:
             event: The event object to send to the subscribers.
+            ignore_errors: Deliver to all subscribers, ignoring any errors.
         """
         listening_subscriptions = []
         for current_type in inspect.getmro(type(event)):
@@ -118,7 +120,14 @@ class _EventBus(object):
         # Running timsort here is the optimal way to sort this list.
         listening_subscriptions.sort(key=lambda x: x.order)
         for subscription in listening_subscriptions:
-            subscription.deliver(event)
+            try:
+                subscription.deliver(event)
+            except Exception:
+                if ignore_errors:
+                    logging.exception('An exception occurred while handling '
+                                      'an event.')
+                    continue
+                raise
 
     def unregister(self, registration_id):
         """Unregisters an EventSubscription.
@@ -126,7 +135,10 @@ class _EventBus(object):
         Args:
             registration_id: the Subscription or registration_id to unsubscribe.
         """
-        if type(registration_id) is EventSubscription:
+        if type(registration_id) is SubscriptionHandle:
+            subscription = registration_id.subscription
+            registration_id = id(registration_id.subscription)
+        elif type(registration_id) is EventSubscription:
             subscription = registration_id
             registration_id = id(registration_id)
         elif registration_id in self._registration_id_map.keys():
@@ -217,13 +229,14 @@ def register_subscription(subscription):
     return _event_bus.register_subscription(subscription)
 
 
-def post(event):
+def post(event, ignore_errors=False):
     """Posts an event to its subscribers.
 
     Args:
         event: The event object to send to the subscribers.
+        ignore_errors: Deliver to all subscribers, ignoring any errors.
     """
-    _event_bus.post(event)
+    _event_bus.post(event, ignore_errors)
 
 
 def unregister(registration_id):

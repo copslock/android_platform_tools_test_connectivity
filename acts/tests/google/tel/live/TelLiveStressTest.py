@@ -137,8 +137,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.crash_check_interval = int(
             self.user_params.get("crash_check_interval", 300))
         self.dut_incall = False
-        self.dut_capabilities = self.dut.telephony.get("capabilities", [])
-        self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
+        telephony_info = getattr(self.dut, "telephony", {})
+        self.dut_capabilities = telephony_info.get("capabilities", [])
+        self.dut_wfc_modes = telephony_info.get("wfc_modes", [])
         self.gps_log_file = self.user_params.get("gps_log_file", None)
         return True
 
@@ -230,6 +231,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             1: mms_send_receive_verify
         }
         rat = self.dut.adb.getprop("gsm.network.type")
+        if "," in rat:
+            rat = rat.split(',')[0]
         self.dut.log.info("Network in RAT %s", rat)
         if self.dut_incall and not is_rat_svd_capable(rat.upper()):
             self.dut.log.info("In call data not supported, test SMS only")
@@ -281,6 +284,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.result_info["%s Failure" % message_type] += 1
             else:
                 rat = self.dut.adb.getprop("gsm.network.type")
+                if "," in rat:
+                    rat = rat.split(',')[0]
                 self.dut.log.info("Network in RAT %s", rat)
                 if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                     self.dut.log.info(
@@ -603,6 +608,8 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def call_test(self, call_verification_func=None):
         while time.time() < self.finishing_time:
+            time.sleep(
+                random.randrange(self.min_sleep_time, self.max_sleep_time))
             try:
                 self._make_phone_call(call_verification_func)
             except Exception as e:
@@ -612,8 +619,6 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("Too many exception errors, quit test")
                 return False
             self.log.info("%s", dict(self.result_info))
-            time.sleep(
-                random.randrange(self.min_sleep_time, self.max_sleep_time))
         if any([
                 self.result_info["Call Setup Failure"],
                 self.result_info["Call Maintenance Failure"],
@@ -652,6 +657,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.result_info["Internet Connection Check Total"] += 1
         if not self.internet_connection_check_method(self.log, self.dut):
             rat = self.dut.adb.getprop("gsm.network.type")
+            if "," in rat:
+                rat = rat.split(',')[0]
             self.dut.log.info("Network in RAT %s", rat)
             if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                 self.result_info[

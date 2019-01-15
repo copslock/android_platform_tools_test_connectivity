@@ -62,6 +62,9 @@ MAX_WAIT_TIME_CALL_INITIATION = 90
 # Time to wait after change Mode Pref for Stress Test
 WAIT_TIME_AFTER_MODE_CHANGE = 60
 
+# Max time to wait for Carrier Config Version to Update in mins
+WAIT_TIME_FOR_CARRIERCONFIG_CHANGE = 45
+
 # Max time to wait after toggle airplane mode and before
 # get expected event
 MAX_WAIT_TIME_AIRPLANEMODE_EVENT = 90
@@ -261,6 +264,7 @@ CARRIER_TEL = 'tel'
 CARRIER_TSA = 'tsa'
 CARRIER_USCC = 'uscc'
 CARRIER_ROGERS = 'ROGERS'
+CARRIER_FRE = 'fre'
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'
@@ -283,6 +287,10 @@ CAPABILITY_WFC_MODE_CHANGE = 'wfc_mode_change'
 CAPABILITY_CONFERENCE = 'conference'
 CAPABILITY_VOLTE_PROVISIONING = 'volte_provisioning'
 CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING = 'volte_override_wfc_provisioning'
+
+# Carrier Config Versions
+VZW_CARRIER_CONFIG_VERSION = "29999999999.1"
+ATT_CARRIER_CONFIG_VERSION = "28888888888.1"
 
 # Constant for operation direction
 DIRECTION_MOBILE_ORIGINATED = "MO"
@@ -454,6 +462,9 @@ SIM_STATE_NOT_READY = "NOT_READY"
 SIM_STATE_PERM_DISABLED = "PERM_DISABLED"
 SIM_STATE_CARD_IO_ERROR = "CARD_IO_ERROR"
 SIM_STATE_LOADED = "LOADED"
+
+SINGLE_SIM_CONFIG = "ssss"
+MULTI_SIM_CONFIG = "dsds"
 
 # Constant for Data Connection State
 DATA_STATE_CONNECTED = "CONNECTED"

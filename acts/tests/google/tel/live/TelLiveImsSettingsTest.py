@@ -279,7 +279,8 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
             else:
                 self.dut.log.info("WFC mode is %s as expected",
                                   default_wfc_mode)
-        if self.default_wfc_enabled:
+        if self.default_wfc_enabled and \
+            default_wfc_mode == WFC_MODE_WIFI_PREFERRED:
             if not self.check_call_in_wfc():
                 result = False
         elif not airplane_mode:

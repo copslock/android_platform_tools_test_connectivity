@@ -192,6 +192,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
             self.log, ads[0], ads[1], [("Test Message", "Basic Message Body",
                                         None)]
         ]
+        if get_operator_name(self.log, ads[0]) in ["spt", "Sprint"]:
+            args.append(30)
         if not mms_send_receive_verify(*args):
             self.log.info("MMS send in call is suspended.")
             if not mms_receive_verify_after_call_hangup(*args):
@@ -2867,7 +2869,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         expected_result = False
-        if get_operator_name(self.log, ads[0]) == "vzw":
+        if get_operator_name(self.log, ads[0]) in ["vzw", "Verizon"]:
             expected_result = True
         ads[0].log.info("Expected Result is %s", expected_result)
 
@@ -2907,7 +2909,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         expected_result = False
-        if get_operator_name(self.log, ads[0]) == "vzw":
+        if get_operator_name(self.log, ads[0]) in ["vzw", "Verizon"]:
             expected_result = True
         try:
             tasks = [(phone_setup_voice_general, (self.log, ads[0])),

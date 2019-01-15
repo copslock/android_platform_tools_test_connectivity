@@ -50,7 +50,7 @@ class CoexBasicStressTest(CoexBaseTest):
         """
         self.run_iperf_and_get_result()
         for i in range(self.iterations):
-            self.log.info("Inquiry iteration {}".format(i))
+            self.log.info("Discovery iteration {}".format(i))
             if not self.pri_ad.droid.bluetoothStartDiscovery():
                 self.log.error("Bluetooth discovery failed.")
                 return False

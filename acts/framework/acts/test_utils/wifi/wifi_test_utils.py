@@ -15,8 +15,9 @@
 #   limitations under the License.
 
 import logging
+import os
+import shutil
 import time
-import pprint
 
 from enum import IntEnum
 from queue import Empty
@@ -25,6 +26,8 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.controllers import attenuator
+from acts.controllers.ap_lib.hostapd_constants import BAND_2G
+from acts.controllers.ap_lib.hostapd_constants import BAND_5G
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.tel import tel_defines
 
@@ -46,12 +49,12 @@ roaming_attn = {
         "AP1_on_AP2_off": [
             0,
             0,
-            95,
-            95
+            60,
+            60
         ],
         "AP1_off_AP2_on": [
-            95,
-            95,
+            60,
+            60,
             0,
             0
         ],
@@ -1661,6 +1664,36 @@ def set_attns(attenuator, attn_val_name):
                        attn_val_name)
         raise
 
+def set_attns_steps(attenuator, attn_val_name, steps=10, wait_time=12):
+    """Sets attenuation values on attenuators used in this test.
+
+    Args:
+        attenuator: The attenuator object.
+        attn_val_name: Name of the attenuation value pair to use.
+        steps: Number of attenuator changes to reach the target value.
+        wait_time: Sleep time for each change of attenuator.
+    """
+    logging.info("Set attenuation values to %s in %d step(s)", roaming_attn[attn_val_name], steps)
+    current_atten = [
+            attenuator[0].get_atten(), attenuator[1].get_atten(),
+            attenuator[2].get_atten(), attenuator[3].get_atten()]
+    target_atten = [
+            roaming_attn[attn_val_name][0], roaming_attn[attn_val_name][1],
+            roaming_attn[attn_val_name][2], roaming_attn[attn_val_name][3]]
+    while steps > 0:
+        next_atten = list(map(
+                lambda x, y: round((y + (steps - 1) * x) / steps) , current_atten, target_atten))
+        try:
+            attenuator[0].set_atten(next_atten[0])
+            attenuator[1].set_atten(next_atten[1])
+            attenuator[2].set_atten(next_atten[2])
+            attenuator[3].set_atten(next_atten[3])
+            time.sleep(wait_time)
+        except:
+            logging.exception("Failed to set attenuation values %s.", attn_val_name)
+            raise
+        current_atten = next_atten
+        steps = steps - 1
 
 def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
     """Sets attenuators to trigger roaming and validate the DUT connected
@@ -1675,24 +1708,14 @@ def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
         WifiEnums.SSID_KEY: expected_con[WifiEnums.SSID_KEY],
         WifiEnums.BSSID_KEY: expected_con["bssid"],
     }
-    set_attns(attenuator, attn_val_name)
-    logging.info("Wait %ss for roaming to finish.", ROAMING_TIMEOUT)
-    time.sleep(ROAMING_TIMEOUT)
-    try:
-        # Wakeup device and verify connection.
-        dut.droid.wakeLockAcquireBright()
-        dut.droid.wakeUpNow()
-        cur_con = dut.droid.wifiGetConnectionInfo()
-        verify_wifi_connection_info(dut, expected_con)
-        expected_bssid = expected_con[WifiEnums.BSSID_KEY]
-        logging.info("Roamed to %s successfully", expected_bssid)
-        if not validate_connection(dut):
-            raise signals.TestFailure("Fail to connect to internet on %s" %
-                                      expected_ssid)
-    finally:
-        dut.droid.wifiLockRelease()
-        dut.droid.goToSleepNow()
+    set_attns_steps(attenuator, attn_val_name)
 
+    verify_wifi_connection_info(dut, expected_con)
+    expected_bssid = expected_con[WifiEnums.BSSID_KEY]
+    logging.info("Roamed to %s successfully", expected_bssid)
+    if not validate_connection(dut):
+        raise signals.TestFailure("Fail to connect to internet on %s" %
+                                      expected_bssid)
 
 def create_softap_config():
     """Create a softap config with random ssid and password."""
@@ -1704,3 +1727,94 @@ def create_softap_config():
         WifiEnums.PWD_KEY: ap_password,
     }
     return config
+
+def start_pcap(pcap, wifi_band, log_path, test_name):
+    """Start packet capture in monitor mode.
+
+    Args:
+        pcap: packet capture object
+        wifi_band: '2g' or '5g' or 'dual'
+        log_path: current test log path
+        test_name: test name to be used for pcap file name
+
+    Returns:
+        Dictionary with wifi band as key and the tuple
+        (pcap Process object, log directory) as the value
+    """
+    log_dir = os.path.join(log_path, test_name)
+    utils.create_dir(log_dir)
+    if wifi_band == 'dual':
+        bands = [BAND_2G, BAND_5G]
+    else:
+        bands = [wifi_band]
+    procs = {}
+    for band in bands:
+        proc = pcap.start_packet_capture(band, log_dir, test_name)
+        procs[band] = (proc, os.path.join(log_dir, test_name))
+    return procs
+
+def stop_pcap(pcap, procs, test_status=None):
+    """Stop packet capture in monitor mode.
+
+    Since, the pcap logs in monitor mode can be very large, we will
+    delete them if they are not required. 'test_status' if True, will delete
+    the pcap files. If False, we will keep them.
+
+    Args:
+        pcap: packet capture object
+        procs: dictionary returned by start_pcap
+        test_status: status of the test case
+    """
+    for proc, fname in procs.values():
+        pcap.stop_packet_capture(proc)
+
+    if test_status:
+        shutil.rmtree(os.path.dirname(fname))
+
+def start_cnss_diags(ads):
+    for ad in ads:
+        start_cnss_diag(ad)
+
+def start_cnss_diag(ad):
+    """Start cnss_diag to record extra wifi logs
+
+    Args:
+        ad: android device object.
+    """
+    if ad.model in wifi_constants.DEVICES_USING_LEGACY_PROP:
+        prop = wifi_constants.LEGACY_CNSS_DIAG_PROP
+    else:
+        prop = wifi_constants.CNSS_DIAG_PROP
+    if ad.adb.getprop(prop) != 'true':
+        ad.adb.shell("find /data/vendor/wifi/cnss_diag/wlan_logs/ -type f -delete")
+        ad.adb.shell("setprop %s true" % prop, ignore_status=True)
+
+def stop_cnss_diags(ads):
+    for ad in ads:
+        stop_cnss_diag(ad)
+
+def stop_cnss_diag(ad):
+    """Stops cnss_diag
+
+    Args:
+        ad: android device object.
+    """
+    if ad.model in wifi_constants.DEVICES_USING_LEGACY_PROP:
+        prop = wifi_constants.LEGACY_CNSS_DIAG_PROP
+    else:
+        prop = wifi_constants.CNSS_DIAG_PROP
+    ad.adb.shell("setprop %s false" % prop, ignore_status=True)
+
+def get_cnss_diag_log(ad, test_name=""):
+    """Pulls the cnss_diag logs in the wlan_logs dir
+    Args:
+        ad: android device object.
+        test_name: test case name
+    """
+    logs = ad.get_file_names("/data/vendor/wifi/cnss_diag/wlan_logs/")
+    if logs:
+        ad.log.info("Pulling cnss_diag logs %s", logs)
+        log_path = os.path.join(ad.log_path, test_name,
+                                "CNSS_DIAG_%s" % ad.serial)
+        utils.create_dir(log_path)
+        ad.pull_files(logs, log_path)

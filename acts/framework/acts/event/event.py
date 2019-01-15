@@ -23,35 +23,43 @@ class Event(object):
 class TestEvent(Event):
     """The base class for test-related events."""
 
-    def __init__(self, testbed):
-        self.testbed = testbed
+    def __init__(self):
+        pass
 
 
 class TestCaseEvent(TestEvent):
     """The base class for test-case-related events."""
 
-    def __init__(self, testbed, test_class, test_case):
-        super().__init__(testbed)
+    def __init__(self, test_class, test_case):
+        super().__init__()
         self.test_class = test_class
         self.test_case = test_case
 
     @property
     def test_case_name(self):
-        return self.test_case.__name__
+        return self.test_class.test_name
 
     @property
     def test_class_name(self):
-        return self.test_class.__name__
+        return self.test_class.__class__.__name__
 
 
 class TestCaseSignalEvent(TestEvent):
     """The base class for test-case-signal-related events."""
 
-    def __init__(self, testbed, test_class, test_case, test_signal):
-        super().__init__(testbed)
+    def __init__(self, test_class, test_case, test_signal):
+        super().__init__()
         self.test_class = test_class
         self.test_case = test_case
         self.test_signal = test_signal
+
+    @property
+    def test_case_name(self):
+        return self.test_class.test_name
+
+    @property
+    def test_class_name(self):
+        return self.test_class.__class__.__name__
 
 
 class TestCaseBeginEvent(TestCaseEvent):
@@ -77,8 +85,8 @@ class TestCasePassedEvent(TestCaseSignalEvent):
 class TestClassEvent(TestEvent):
     """The base class for test-class-related events"""
 
-    def __init__(self, testbed, test_class):
-        super().__init__(testbed)
+    def __init__(self, test_class):
+        super().__init__()
         self.test_class = test_class
 
 
@@ -89,6 +97,6 @@ class TestClassBeginEvent(TestClassEvent):
 class TestClassEndEvent(TestClassEvent):
     """The event posted when a test class has finished testing."""
 
-    def __init__(self, testbed, test_class, summary):
-        super().__init__(testbed, test_class)
-        self.summary = summary
+    def __init__(self, test_class, result):
+        super().__init__(test_class)
+        self.result = result

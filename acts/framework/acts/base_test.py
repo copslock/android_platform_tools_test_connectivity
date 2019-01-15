@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import fnmatch
 import logging
 import os
 import traceback
@@ -30,6 +31,8 @@ from acts.event import event_bus
 from acts.event import subscription_bundle
 from acts.event.event import TestCaseBeginEvent
 from acts.event.event import TestCaseEndEvent
+from acts.event.event import TestClassBeginEvent
+from acts.event.event import TestClassEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
 
 
@@ -142,21 +145,6 @@ class BaseTestClass(object):
             else:
                 self.log.warning(("Missing optional user param '%s' in "
                                   "configuration, continue."), name)
-
-        capablity_of_devices = utils.CapablityPerDevice
-        if "additional_energy_info_models" in self.user_params:
-            self.energy_info_models = (capablity_of_devices.energy_info_models
-                                       + self.additional_energy_info_models)
-        else:
-            self.energy_info_models = capablity_of_devices.energy_info_models
-        self.user_params["energy_info_models"] = self.energy_info_models
-
-        if "additional_tdls_models" in self.user_params:
-            self.tdls_models = (capablity_of_devices.energy_info_models +
-                                self.additional_tdls_models)
-        else:
-            self.tdls_models = capablity_of_devices.energy_info_models
-        self.user_params["tdls_models"] = self.tdls_models
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
@@ -402,9 +390,7 @@ class BaseTestClass(object):
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
         try:
-            event_bus.post(TestCaseBeginEvent(self.testbed_name,
-                                              self.__class__.__name__,
-                                              test_name))
+            event_bus.post(TestCaseBeginEvent(self, test_func))
             try:
                 if hasattr(self, 'android_devices'):
                     for ad in self.android_devices:
@@ -457,7 +443,8 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_blocked, tr_record)
         except error.ActsError as e:
             self.results.errors.append(e)
-            self.log.error("BaseTest execute_one_test_case error: %s" % e.message)
+            self.log.error(
+                'BaseTest execute_one_test_case error: %s' % e.message)
         except Exception as e:
             self.log.error(traceback.format_exc())
             # Exception happened during test.
@@ -473,9 +460,13 @@ class BaseTestClass(object):
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
-            event_bus.post(TestCaseEndEvent(self.testbed_name,
-                                            self.__class__.__name__,
-                                            test_name, signals.TestPass))
+            # TODO(markdr): pass the signal that was raised.
+            # Currently, this passes the TestSignal class, rather than the
+            # signal that was raised by the test case (or signal.TestPass if
+            # no signal was raised). This should be updated such that the signal
+            # is passed along to the event.
+            event_bus.post(TestCaseEndEvent(
+                self, test_func, signals.TestSignal))
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
 
@@ -655,50 +646,65 @@ class BaseTestClass(object):
 
         One of these test cases lists will be executed, shown here in priority
         order:
-        1. The test_names list, which is passed from cmd line. Invalid names
-           are guarded by cmd line arg parsing.
+        1. The test_names list, which is passed from cmd line.
         2. The self.tests list defined in test class. Invalid names are
            ignored.
         3. All function that matches test case naming convention in the test
            class.
 
         Args:
-            test_names: A list of string that are test case names requested in
-                cmd line.
+            test_names: A list of string that are test case names/patterns
+             requested in cmd line.
 
         Returns:
             The test results object of this class.
         """
         self.register_test_class_event_subscriptions()
         self.log.info("==========> %s <==========", self.TAG)
+        event_bus.post(TestClassBeginEvent(self))
         # Devise the actual test cases to run in the test class.
-        if not test_names:
-            if self.tests:
-                # Specified by run list in class.
-                test_names = list(self.tests)
-            else:
-                # No test case specified by user, execute all in the test class
-                test_names = self._get_all_test_names()
-        self.results.requested = test_names
-        tests = self._get_test_funcs(test_names)
+        if self.tests:
+            # Specified by run list in class.
+            valid_tests = list(self.tests)
+        else:
+            # No test case specified by user, execute all in the test class
+            valid_tests = self._get_all_test_names()
+        if test_names:
+            # Match test cases with any of the user-specified patterns
+            matches = []
+            for valid_test in valid_tests:
+                if any(fnmatch.fnmatch(valid_test, test_name)
+                       for test_name in test_names):
+                    matches.append(valid_test)
+        else:
+            matches = valid_tests
+        self.results.requested = matches
+        tests = self._get_test_funcs(matches)
         # A TestResultRecord used for when setup_class fails.
         # Setup for the class.
+        setup_fail = False
         try:
             if self._setup_class() is False:
                 self.log.error("Failed to setup %s.", self.TAG)
                 self._block_all_test_cases(tests)
-                return self.results
+                setup_fail = True
         except signals.TestAbortClass:
             try:
                 self._exec_func(self.teardown_class)
             except Exception as e:
                 self.log.warning(e)
-            return self.results
+            setup_fail = True
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
             self._exec_func(self.teardown_class)
             self._block_all_test_cases(tests)
+            setup_fail = True
+        if setup_fail:
+            event_bus.post(TestClassEndEvent(self, self.results))
+            self.log.info("Summary for test class %s: %s", self.TAG,
+                          self.results.summary_str())
             return self.results
+
         # Run tests in order.
         try:
             for test_name, test_func in tests:
@@ -714,6 +720,7 @@ class BaseTestClass(object):
             raise e
         finally:
             self._exec_func(self.teardown_class)
+            event_bus.post(TestClassEndEvent(self, self.results))
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
 

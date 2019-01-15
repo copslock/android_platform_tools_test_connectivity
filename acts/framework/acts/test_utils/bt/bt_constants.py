@@ -76,6 +76,7 @@ bluetooth_profile_connection_state_changed = \
     "BluetoothProfileConnectionStateChanged"
 bluetooth_le_on = "BleStateChangedOn"
 bluetooth_le_off = "BleStateChangedOff"
+bluetooth_a2dp_codec_config_changed = "BluetoothA2dpCodecConfigChanged"
 # End Callback Strings
 
 batch_scan_not_supported_list = [
@@ -180,6 +181,47 @@ bt_priority_levels = {
     "on": 100,
     "off": 0,
     "undefined": -1
+}
+
+# A2DP codec configuration constants as defined in
+# frameworks/base/core/java/android/bluetooth/BluetoothCodecConfig.java
+codec_types = {
+    'SBC': 0,
+    'AAC': 1,
+    'APTX': 2,
+    'APTX-HD': 3,
+    'LDAC': 4,
+    'MAX': 5,
+    'INVALID': 1000000
+}
+
+codec_priorities = {
+    'DISABLED': -1,
+    'DEFAULT': 0,
+    'HIGHEST': 1000000
+}
+
+sample_rates = {
+    'NONE': 0,
+    '44100': 0x1 << 0,
+    '48000': 0x1 << 1,
+    '88200': 0x1 << 2,
+    '96000': 0x1 << 3,
+    '176400': 0x1 << 4,
+    '192000': 0x1 << 5
+}
+
+bits_per_samples = {
+    'NONE': 0,
+    '16': 0x1 << 0,
+    '24': 0x1 << 1,
+    '32': 0x1 << 2
+}
+
+channel_modes = {
+    'NONE': 0,
+    'MONO': 0x1 << 0,
+    'STEREO': 0x1 << 1
 }
 
 # Bluetooth HID constants.

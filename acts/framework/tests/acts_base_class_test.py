@@ -100,45 +100,40 @@ class ActsBaseClassTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         expected_msg = ("Test case name not_a_test_something does not follow "
                         "naming convention test_\*, abort.")
-        with self.assertRaisesRegexp(base_test.Error, expected_msg):
+        with self.assertRaisesRegex(base_test.Error, expected_msg):
             bt_cls.run()
 
-    def test_cli_test_selection_override_self_tests_list(self):
+    def test_cli_test_selection_match_self_tests_list(self):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):
                 super(MockBaseTest, self).__init__(controllers)
-                self.tests = ("test_never", )
+                self.tests = ("test_star1", "test_star2", "test_question_mark",
+                              "test_char_seq", "test_no_match")
 
-            def test_something(self):
+            def test_star1(self):
                 pass
 
-            def test_never(self):
-                # This should not execute it's not selected by cmd line input.
+            def test_star2(self):
+                pass
+
+            def test_question_mark(self):
+                pass
+
+            def test_char_seq(self):
+                pass
+
+            def test_no_match(self):
+                # This should not execute because it does not match any regex
+                # in the cmd line input.
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run(test_names=["test_something"])
-        actual_record = bt_cls.results.passed[0]
-        self.assertEqual(actual_record.test_name, "test_something")
-
-    def test_cli_test_selection_fail_by_convention(self):
-        class MockBaseTest(base_test.BaseTestClass):
-            def __init__(self, controllers):
-                super(MockBaseTest, self).__init__(controllers)
-                self.tests = ("not_a_test_something", )
-
-            def not_a_test_something(self):
-                pass
-
-            def test_never(self):
-                # This should not execute it's not selected by cmd line input.
-                never_call()
-
-        bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        expected_msg = ("Test case name not_a_test_something does not follow "
-                        "naming convention test_*, abort.")
-        with self.assertRaises(base_test.Error, msg=expected_msg):
-            bt_cls.run(test_names=["not_a_test_something"])
+        test_names = ["test_st*r1", "test_*2", "test_?uestion_mark", "test_c[fghi]ar_seq"]
+        bt_cls.run(test_names=test_names)
+        passed_names = [p.test_name for p in bt_cls.results.passed]
+        self.assertEqual(len(passed_names), len(test_names))
+        for test in ["test_star1", "test_star2", "test_question_mark", "test_char_seq"]:
+            self.assertIn(test, passed_names)
 
     def test_default_execution_of_all_tests(self):
         class MockBaseTest(base_test.BaseTestClass):
@@ -151,16 +146,18 @@ class ActsBaseClassTest(unittest.TestCase):
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run(test_names=["test_something"])
+        bt_cls.run()
         actual_record = bt_cls.results.passed[0]
         self.assertEqual(actual_record.test_name, "test_something")
 
     def test_missing_requested_test_func(self):
         class MockBaseTest(base_test.BaseTestClass):
-            pass
+            def __init__(self, controllers):
+                super(MockBaseTest, self).__init__(controllers)
+                self.tests = ("test_something", )
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run(test_names=["test_something"])
+        bt_cls.run()
         self.assertFalse(bt_cls.results.executed)
         self.assertTrue(bt_cls.results.skipped)
 

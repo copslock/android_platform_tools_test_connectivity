@@ -109,6 +109,7 @@ class BtsNumber(Enum):
     BTS2 = "BTS2"
     BTS3 = "BTS3"
     BTS4 = "BTS4"
+    BTS5 = "BTS5"
 
 
 class BtsTechnology(Enum):
@@ -131,10 +132,18 @@ class BtsBandwidth(Enum):
     LTE_BANDWIDTH_20MHz = "20MHz"
 
 
+class BtsGprsMode(Enum):
+    ''' Values for Gprs Modes '''
+    NO_GPRS = "NO_GPRS"
+    GPRS = "GPRS"
+    EGPRS = "EGPRS"
+
+
 class BtsPacketRate(Enum):
     ''' Values for Cell Packet rate '''
     LTE_MANUAL = "MANUAL"
     LTE_BESTEFFORT = "BESTEFFORT"
+    WCDMA_DL384K_UL64K = "DL384K_UL64K"
     WCDMA_DLHSAUTO_REL7_UL384K = "DLHSAUTO_REL7_UL384K"
     WCDMA_DL18_0M_UL384K = "DL18_0M_UL384K"
     WCDMA_DL21_6M_UL384K = "DL21_6M_UL384K"
@@ -162,7 +171,7 @@ class BtsPacketRate(Enum):
     WCDMA_DL36_0M_UL5_76M = "DL36_0M_UL5_76M"
     WCDMA_DL43_2M_UL1_46M = "DL43_2M_UL1_46M"
     WCDMA_DL43_2M_UL2_0M = "DL43_2M_UL2_0M"
-    WCDMA_DL43_2M_UL5_76M = "L43_2M_UL5_76M"
+    WCDMA_DL43_2M_UL5_76M = "DL43_2M_UL5_76M"
 
 
 class BtsPacketWindowSize(Enum):
@@ -396,6 +405,7 @@ class MD8475A(object):
         self.log = log_handle
         self._wlan = wlan
         port_number = 28002
+        self._md8475_version = md8475_version
         if md8475_version == "B":
             global TERMINATOR
             TERMINATOR = "\n"
@@ -510,7 +520,7 @@ class MD8475A(object):
         cmd = "IMSCSCFCALL {},{}".format(virtual_network_id, action)
         self.send_command(cmd)
 
-    def send_query(self, query, sock_timeout=10):
+    def send_query(self, query, sock_timeout=120):
         """ Sends a Query message to Anritsu and return response
 
         Args:
@@ -534,7 +544,7 @@ class MD8475A(object):
         except socket.error:
             raise AnritsuError("Socket Error")
 
-    def send_command(self, command, sock_timeout=20):
+    def send_command(self, command, sock_timeout=120):
         """ Sends a Command message to Anritsu
 
         Args:
@@ -836,17 +846,20 @@ class MD8475A(object):
             else:
                 break
 
-    def wait_for_registration_state(self, bts=1):
+    def wait_for_registration_state(self,
+                                    bts=1,
+                                    time_to_wait=REGISTRATION_STATE_WAIT_TIME):
         """ Waits for UE registration state on Anritsu
 
         Args:
           bts: index of MD8475A BTS, eg 1, 2
+          time_to_wait: time to wait for the phone to get to registration state
 
         Returns:
             None
         """
         self.log.info("wait for IDLE/COMMUNICATION state on anritsu.")
-        time_to_wait = REGISTRATION_STATE_WAIT_TIME
+
         sleep_interval = 1
         sim_model = (self.get_simulation_model()).split(",")
         #wait 1 more round for GSM because of PS attach
@@ -865,17 +878,17 @@ class MD8475A(object):
                     "UE failed to register in {} seconds".format(time_to_wait))
             time.sleep(sleep_interval)
 
-    def wait_for_communication_state(self):
+    def wait_for_communication_state(
+            self, time_to_wait=COMMUNICATION_STATE_WAIT_TIME):
         """ Waits for UE communication state on Anritsu
 
         Args:
-          None
+          time_to_wait: time to wait for the phone to get to communication state
 
         Returns:
             None
         """
         self.log.info("wait for COMMUNICATION state on anritsu")
-        time_to_wait = COMMUNICATION_STATE_WAIT_TIME
         sleep_interval = 1
         waiting_time = 0
 
@@ -1664,6 +1677,58 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def duplex_mode(self):
+        """ Gets the Duplex Mode of the cell
+
+        Args:
+            None
+
+        Returns:
+            Duplex mode
+        """
+        cmd = "DUPLEXMODE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @duplex_mode.setter
+    def duplex_mode(self, mode):
+        """ Sets the duplex mode for the cell
+
+        Args:
+            mode: string indicating FDD or TDD
+
+        Returns:
+            None
+        """
+        cmd = "DUPLEXMODE {},{}".format(mode, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def uldl_configuration(self):
+        """ Gets the UL/DL pattern configuration for TDD bands
+
+        Args:
+            None
+
+        Returns:
+            Configuration number
+        """
+        cmd = "ULDLCONFIGURATION? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @uldl_configuration.setter
+    def uldl_configuration(self, configuration):
+        """ Sets the UL/DL pattern configuration for TDD bands
+
+        Args:
+            configuration: configuration number, from 0 to 6
+
+        Returns:
+            None
+        """
+        cmd = "ULDLCONFIGURATION {},{}".format(configuration, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def dl_antenna(self):
         """ Gets the DL ANTENNA count of the cell
 
@@ -2258,6 +2323,33 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def dl_cc_enabled(self):
+        """ Checks if component carrier is enabled or disabled
+
+        Args:
+            None
+
+        Returns:
+            True if enabled, False if disabled
+        """
+        return (self._anritsu.send_query("TESTDLCC?" + self._bts_number) ==
+                "ENABLE")
+
+    @dl_cc_enabled.setter
+    def dl_cc_enabled(self, enabled):
+        """ Enables or disables the component carrier
+
+        Args:
+            enabled: True if it should be enabled, False if disabled
+
+        Returns:
+            None
+        """
+        cmd = "TESTDLCC {},{}".format("ENABLE" if enabled else "DISABLE",
+                                      self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def sector1_mcc(self):
         """ Gets the sector 1 MCC of the CDMA cell
 
@@ -2576,6 +2668,32 @@ class _BaseTransceiverStation(object):
             time.sleep(1)
 
     @property
+    def tbs_pattern(self):
+        """ Gets the TBS Pattern setting for the LTE cell
+
+        Args:
+            None
+
+        Returns:
+            TBS Pattern setting
+        """
+        cmd = "TBSPATTERN? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @tbs_pattern.setter
+    def tbs_pattern(self, pattern):
+        """ Sets the TBS Pattern setting for the LTE cell
+
+        Args:
+            mode: "FULLALLOCATION" or "OFF"
+
+        Returns:
+            None
+        """
+        cmd = "TBSPATTERN {}, {}".format(pattern, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def lte_mcs_dl(self):
         """ Gets the Modulation and Coding scheme (DL) of the LTE cell
 
@@ -2625,6 +2743,58 @@ class _BaseTransceiverStation(object):
             None
         """
         cmd = "ULIMCS {},{}".format(mcs_ul, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def lte_dl_modulation_order(self):
+        """ Gets the DL modulation order of the LTE cell
+
+        Args:
+            None
+
+        Returns:
+            The DL modulation order
+        """
+        cmd = "DLRMC_MOD? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @lte_dl_modulation_order.setter
+    def lte_dl_modulation_order(self, order):
+        """ Sets the DL modulation order of the LTE cell
+
+        Args:
+            order: the DL modulation order of the LTE cell
+
+        Returns:
+            None
+        """
+        cmd = "DLRMC_MOD {},{}".format(order, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def lte_ul_modulation_order(self):
+        """ Gets the UL modulation order of the LTE cell
+
+        Args:
+            None
+
+        Returns:
+            The UL modulation order
+        """
+        cmd = "ULRMC_MOD? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @lte_ul_modulation_order.setter
+    def lte_ul_modulation_order(self, order):
+        """ Sets the UL modulation order of the LTE cell
+
+        Args:
+            order: the UL modulation order of the LTE cell
+
+        Returns:
+            None
+        """
+        cmd = "ULRMC_MOD {},{}".format(order, self._bts_number)
         self._anritsu.send_command(cmd)
 
     @property
@@ -2993,6 +3163,86 @@ class _BaseTransceiverStation(object):
             None
         """
         cmd = "CBCHPARAMSETUP {},{}".format(enable.value, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def gsm_gprs_mode(self):
+        """ Gets the GSM connection mode
+
+        Args:
+            None
+
+        Returns:
+            A string indicating if connection is EGPRS, GPRS or non-GPRS
+        """
+        cmd = "GPRS? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @gsm_gprs_mode.setter
+    def gsm_gprs_mode(self, mode):
+        """ Sets the GPRS connection mode
+
+        Args:
+            mode: GPRS connection mode
+
+        Returns:
+            None
+        """
+
+        if not isinstance(mode, BtsGprsMode):
+            raise ValueError(' The parameter should be of type "BtsGprsMode"')
+        cmd = "GPRS {},{}".format(mode.value, self._bts_number)
+
+        self._anritsu.send_command(cmd)
+
+    @property
+    def gsm_slots(self):
+        """ Gets the GSM slot assignment
+
+        Args:
+            None
+
+        Returns:
+            A tuple indicating DL and UL slots.
+        """
+
+        cmd = "MLTSLTCFG? " + self._bts_number
+
+        response = self._anritsu.send_query(cmd)
+        split_response = response.split(',')
+
+        if not len(split_response) == 2:
+            raise ValueError(response)
+
+        return response[0], response[1]
+
+    @gsm_slots.setter
+    def gsm_slots(self, slots):
+        """ Sets the number of downlink / uplink slots for GSM
+
+        Args:
+            slots: a tuple containing two ints indicating (DL,UL)
+
+        Returns:
+            None
+        """
+
+        try:
+            dl, ul = slots
+            dl = int(dl)
+            ul = int(ul)
+        except:
+            raise ValueError(
+                'The parameter slot has to be a tuple containing two ints '
+                'indicating (dl,ul) slots.')
+
+        # Validate
+        if dl < 1 or ul < 1 or dl + ul > 5:
+            raise ValueError(
+                'DL and UL slots have to be >= 1 and the sum <= 5.')
+
+        cmd = "MLTSLTCFG {},{},{}".format(dl, ul, self._bts_number)
+
         self._anritsu.send_command(cmd)
 
 

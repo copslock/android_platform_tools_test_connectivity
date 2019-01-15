@@ -13,17 +13,17 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import sys
 import unittest
 from unittest import TestCase
 
-from mock import Mock, patch
-
+import sys
 from acts.event import subscription_bundle
+from acts.event.decorators import subscribe
+from acts.event.decorators import subscribe_static
 from acts.event.event import Event
 from acts.event.subscription_bundle import SubscriptionBundle
-from acts.event.subscription_handle import InstanceSubscriptionHandle
-from acts.event.subscription_handle import StaticSubscriptionHandle
+from mock import Mock
+from mock import patch
 
 
 class SubscriptionBundleTest(TestCase):
@@ -134,24 +134,33 @@ class SubscriptionBundleTest(TestCase):
 class SubscriptionBundleStaticFunctions(TestCase):
     """Tests the static functions found in subscription_bundle.py"""
 
-    static_listener_1 = StaticSubscriptionHandle(Event, lambda _: None)
+    @staticmethod
+    @subscribe_static(Event)
+    def static_listener_1():
+        pass
 
-    static_listener_2 = StaticSubscriptionHandle(Event, lambda _: None)
+    @staticmethod
+    @subscribe_static(Event)
+    def static_listener_2():
+        pass
 
-    def setUp(self):
-        self.instance_listener_1 = InstanceSubscriptionHandle(Event,
-                                                              lambda _: None)
-        self.instance_listener_2 = InstanceSubscriptionHandle(Event,
-                                                              lambda _: None)
+    @subscribe(Event)
+    def instance_listener_1(self):
+        pass
+
+    @subscribe(Event)
+    def instance_listener_2(self):
+        pass
 
     def test_create_from_static(self):
         """Tests create_from_static gets all StaticSubscriptionHandles."""
-        bundle = subscription_bundle.create_from_static(self.__class__)
+        cls = self.__class__
+        bundle = subscription_bundle.create_from_static(cls)
 
         self.assertEqual(len(bundle.subscriptions), 2)
         keys = bundle.subscriptions.keys()
-        self.assertTrue(self.static_listener_1.subscription in keys)
-        self.assertTrue(self.static_listener_2.subscription in keys)
+        self.assertIn(cls.static_listener_1.subscription, keys)
+        self.assertIn(cls.static_listener_2.subscription, keys)
 
     def test_create_from_instance(self):
         """Tests create_from_instance gets all InstanceSubscriptionHandles."""
@@ -159,19 +168,24 @@ class SubscriptionBundleStaticFunctions(TestCase):
 
         self.assertEqual(len(bundle.subscriptions), 2)
         keys = bundle.subscriptions.keys()
-        self.assertTrue(self.instance_listener_1.subscription in keys)
-        self.assertTrue(self.instance_listener_2.subscription in keys)
+        self.assertIn(self.instance_listener_1.subscription, keys)
+        self.assertIn(self.instance_listener_2.subscription, keys)
 
-    def test_create_from_object(self):
-        """Tests create_from_object gets all SubscriptionHandles."""
-        bundle = subscription_bundle.create_from_object(self)
 
-        self.assertEqual(len(bundle.subscriptions), 4)
+@subscribe_static(Event)
+def static_listener_1():
+    pass
+
+
+class SubscribeStaticModuleLevelTest(TestCase):
+    def test_create_from_static(self):
+        """Tests create_from_static gets all StaticSubscriptionHandles."""
+        bundle = subscription_bundle.create_from_static(
+            sys.modules[self.__module__])
+
+        self.assertEqual(len(bundle.subscriptions), 1)
         keys = bundle.subscriptions.keys()
-        self.assertTrue(self.static_listener_1.subscription in keys)
-        self.assertTrue(self.static_listener_2.subscription in keys)
-        self.assertTrue(self.instance_listener_1.subscription in keys)
-        self.assertTrue(self.instance_listener_2.subscription in keys)
+        self.assertIn(static_listener_1.subscription, keys)
 
 
 if __name__ == '__main__':

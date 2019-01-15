@@ -23,6 +23,7 @@ import unittest
 
 from acts import logger
 from acts.controllers import android_device
+from acts.controllers.android_lib import errors
 
 # Mock log path for a test run.
 MOCK_LOG_PATH = "/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/"
@@ -182,13 +183,13 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     def test_create_with_empty_config(self):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
-        with self.assertRaisesRegex(android_device.AndroidDeviceConfigError,
+        with self.assertRaisesRegex(errors.AndroidDeviceConfigError,
                                     expected_msg):
             android_device.create([])
 
     def test_create_with_not_list_config(self):
         expected_msg = android_device.ANDROID_DEVICE_NOT_LIST_CONFIG_MSG
-        with self.assertRaisesRegex(android_device.AndroidDeviceConfigError,
+        with self.assertRaisesRegex(errors.AndroidDeviceConfigError,
                                     expected_msg):
             android_device.create("HAHA")
 
@@ -233,9 +234,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ads[1].start_services = mock.MagicMock()
         ads[1].clean_up = mock.MagicMock()
         ads[2].start_services = mock.MagicMock(
-            side_effect=android_device.AndroidDeviceError(msg))
+            side_effect=errors.AndroidDeviceError(msg))
         ads[2].clean_up = mock.MagicMock()
-        with self.assertRaisesRegex(android_device.AndroidDeviceError, msg):
+        with self.assertRaisesRegex(errors.AndroidDeviceError, msg):
             android_device._start_services_on_ads(ads)
         ads[0].clean_up.assert_called_once_with()
         ads[1].clean_up.assert_called_once_with()
@@ -342,7 +343,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         expected_msg = "Failed to take bugreport on 1: OMG I died!"
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
+        with self.assertRaisesRegex(errors.AndroidDeviceError,
                                     expected_msg):
             ad.take_bug_report("test_something", 4346343.23)
 
@@ -371,46 +372,32 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.fastboot.FastbootProxy',
         return_value=MockFastbootProxy(MOCK_SERIAL))
-    @mock.patch('acts.utils.create_dir')
-    @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
-    @mock.patch('acts.utils.stop_standing_subprocess')
-    @mock.patch('acts.utils._assert_subprocess_running')
-    def test_AndroidDevice_take_logcat(self, check_proc_mock, stop_proc_mock,
-                                       start_proc_mock, creat_dir_mock,
-                                       FastbootProxy, MockAdbProxy):
-        """Verifies the steps of collecting adb logcat on an AndroidDevice
-        object, including various function calls and the expected behaviors of
-        the calls.
+    @mock.patch('acts.libs.proc.process.Process')
+    def test_AndroidDevice_start_adb_logcat(self, proc_mock, FastbootProxy,
+                                            MockAdbProxy):
+        """Verifies the AndroidDevice method start_adb_logcat. Checks that the
+        underlying logcat process is started properly and correct warning msgs
+        are generated.
         """
-        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        expected_msg = ("Android device .* does not have an ongoing adb logcat"
-                        " collection.")
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
-            ad.stop_adb_logcat()
-        ad.start_adb_logcat()
-        # Verify start did the correct operations.
-        self.assertTrue(ad.adb_logcat_process)
-        expected_log_path = os.path.join(logging.log_path,
-                                         "AndroidDevice%s" % ad.serial,
-                                         "adblog,fakemodel,%s.txt" % ad.serial)
-        creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = 'adb -s %s logcat -T 1 -v year -b all >> %s'
-        start_proc_mock.assert_called_with(
-            adb_cmd % (ad.serial, expected_log_path))
-        self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
-        expected_msg = ('Android device .* already has a running adb logcat '
-                        'thread. Cannot start another one.')
-        # Expect error if start is called back to back.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
+        with mock.patch(
+                ('acts.controllers.android_lib.logcat.'
+                 'create_logcat_keepalive_process'),
+                return_value=proc_mock) as create_proc_mock:
+            ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
             ad.start_adb_logcat()
-        # Verify stop did the correct operations.
-        ad.stop_adb_logcat()
-        stop_proc_mock.assert_called_with("process")
-        self.assertIsNone(ad.adb_logcat_process)
-        self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
+            # Verify start did the correct operations.
+            self.assertTrue(ad.adb_logcat_process)
+            log_dir = os.path.join(logging.log_path,
+                                   "AndroidDevice%s" % ad.serial)
+            create_proc_mock.assert_called_with(
+                ad.serial, log_dir, '-b all')
+            proc_mock.start.assert_called_with()
+            # Expect warning msg if start is called back to back.
+            expected_msg = "Android device .* already has a running adb logcat"
+            proc_mock.is_running.return_value = True
+            with self.assertLogs(level='WARNING') as log:
+                ad.start_adb_logcat()
+                self.assertRegex(log.output[0], expected_msg)
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
@@ -418,36 +405,50 @@ class ActsAndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.fastboot.FastbootProxy',
         return_value=MockFastbootProxy(MOCK_SERIAL))
-    @mock.patch('acts.utils.create_dir')
-    @mock.patch('acts.utils.start_standing_subprocess', return_value="process")
-    @mock.patch('acts.utils.stop_standing_subprocess')
-    @mock.patch('acts.utils._assert_subprocess_running')
-    def test_AndroidDevice_take_logcat_with_user_param(
-            self, check_proc_mock, stop_proc_mock, start_proc_mock,
-            creat_dir_mock, FastbootProxy, MockAdbProxy):
-        """Verifies the steps of collecting adb logcat on an AndroidDevice
-        object, including various function calls and the expected behaviors of
-        the calls.
+    @mock.patch('acts.controllers.android_lib.logcat.'
+                'create_logcat_keepalive_process')
+    def test_AndroidDevice_start_adb_logcat_with_user_param(
+            self, create_proc_mock, FastbootProxy, MockAdbProxy):
+        """Verifies that start_adb_logcat generates the correct adb logcat
+        command if adb_logcat_param is specified.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.adb_logcat_param = "-b radio"
-        expected_msg = ("Android device .* does not have an ongoing adb logcat"
-                        " collection.")
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(android_device.AndroidDeviceError,
-                                    expected_msg):
-            ad.stop_adb_logcat()
         ad.start_adb_logcat()
-        # Verify start did the correct operations.
-        self.assertTrue(ad.adb_logcat_process)
-        expected_log_path = os.path.join(logging.log_path,
-                                         "AndroidDevice%s" % ad.serial,
-                                         "adblog,fakemodel,%s.txt" % ad.serial)
-        creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = 'adb -s %s logcat -T 1 -v year -b radio >> %s'
-        start_proc_mock.assert_called_with(
-            adb_cmd % (ad.serial, expected_log_path))
-        self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
+        # Verify that create_logcat_keepalive_process is called with the
+        # correct command.
+        log_dir = os.path.join(logging.log_path,
+                               "AndroidDevice%s" % ad.serial)
+        create_proc_mock.assert_called_with(
+            ad.serial, log_dir, '-b radio')
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    @mock.patch(
+        'acts.controllers.fastboot.FastbootProxy',
+        return_value=MockFastbootProxy(MOCK_SERIAL))
+    @mock.patch('acts.libs.proc.process.Process')
+    def test_AndroidDevice_stop_adb_logcat(self, proc_mock, FastbootProxy,
+                                       MockAdbProxy):
+        """Verifies the AndroidDevice method stop_adb_logcat. Checks that the
+        underlying logcat process is stopped properly and correct warning msgs
+        are generated.
+        """
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.adb_logcat_process = proc_mock
+        # Expect warning msg if stop is called before start.
+        expected_msg = (
+            "Android device .* does not have an ongoing adb logcat")
+        proc_mock.is_running.return_value = False
+        with self.assertLogs(level='WARNING') as log:
+            ad.stop_adb_logcat()
+            self.assertRegex(log.output[0], expected_msg)
+
+        # Verify the underlying process is stopped.
+        proc_mock.is_running.return_value = True
+        ad.stop_adb_logcat()
+        proc_mock.stop.assert_called_with()
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',

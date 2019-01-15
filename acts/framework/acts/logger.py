@@ -20,18 +20,20 @@ import datetime
 import logging
 import os
 import re
-import sys
 
 from acts import tracelogger
+from acts.libs.logging import log_stream
+from acts.libs.logging.log_stream import LogStyles
 from acts.utils import create_dir
+
 
 log_line_format = "%(asctime)s.%(msecs).03d %(levelname)s %(message)s"
 # The micro seconds are added by the format string above,
 # so the time format does not include ms.
 log_line_time_format = "%Y-%m-%d %H:%M:%S"
-log_line_timestamp_len = 18
+log_line_timestamp_len = 23
 
-logline_timestamp_re = re.compile("\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d")
+logline_timestamp_re = re.compile("\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d")
 
 
 def _parse_logline_timestamp(t):
@@ -128,10 +130,10 @@ def get_log_file_timestamp(delta=None):
     Returns:
         A timestamp in log file name format with an offset.
     """
-    return _get_timestamp("%Y-%m-%d-%Y_%H-%M-%S-%f", delta)
+    return _get_timestamp("%Y-%m-%d_%H-%M-%S-%f", delta)
 
 
-def _setup_test_logger(log_path, prefix=None, filename=None):
+def _setup_test_logger(log_path, prefix=None):
     """Customizes the root logger for a test run.
 
     The logger object has a stream handler and a file handler. The stream
@@ -141,43 +143,19 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     Args:
         log_path: Location of the log file.
         prefix: A prefix for each log line in terminal.
-        filename: Name of the log file. The default is the time the logger
-                  is requested.
     """
-    log = logging.getLogger()
-    kill_test_logger(log)
-    log.propagate = False
-    log.setLevel(logging.DEBUG)
-    # Log info to stream
+    logging.log_path = log_path
+    log_styles = [LogStyles.LOG_INFO + LogStyles.TO_STDOUT,
+                  LogStyles.DEFAULT_LEVELS + LogStyles.MONOLITH_LOG]
     terminal_format = log_line_format
     if prefix:
         terminal_format = "[{}] {}".format(prefix, log_line_format)
-    c_formatter = logging.Formatter(terminal_format, log_line_time_format)
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setFormatter(c_formatter)
-    ch.setLevel(logging.INFO)
-    # Log everything to file
-    f_formatter = logging.Formatter(log_line_format, log_line_time_format)
-    # All the logs of this test class go into one directory
-    if filename is None:
-        filename = get_log_file_timestamp()
-        create_dir(log_path)
-    fh = logging.FileHandler(os.path.join(log_path, 'test_run_details.txt'))
-    fh.setFormatter(f_formatter)
-    fh.setLevel(logging.DEBUG)
-    fh_info = logging.FileHandler(os.path.join(log_path, 'test_run_info.txt'))
-    fh_info.setFormatter(f_formatter)
-    fh_info.setLevel(logging.INFO)
-    fh_error = logging.FileHandler(
-        os.path.join(log_path, 'test_run_error.txt'))
-    fh_error.setFormatter(f_formatter)
-    fh_error.setLevel(logging.WARNING)
-    log.addHandler(ch)
-    log.addHandler(fh)
-    log.addHandler(fh_info)
-    log.addHandler(fh_error)
-    log.log_path = log_path
-    logging.log_path = log_path
+    stream_formatter = logging.Formatter(terminal_format, log_line_time_format)
+    file_formatter = logging.Formatter(log_line_format, log_line_time_format)
+    log = log_stream.create_logger('test_run', '', log_styles=log_styles,
+                                   stream_format=stream_formatter,
+                                   file_format=file_formatter)
+    log.setLevel(logging.DEBUG)
 
 
 def kill_test_logger(logger):
@@ -204,7 +182,7 @@ def create_latest_log_alias(actual_path):
     os.symlink(actual_path, link_path)
 
 
-def setup_test_logger(log_path, prefix=None, filename=None):
+def setup_test_logger(log_path, prefix=None):
     """Customizes the root logger for a test run.
 
     Args:
@@ -213,10 +191,8 @@ def setup_test_logger(log_path, prefix=None, filename=None):
         filename: Name of the files. The default is the time the objects
             are requested.
     """
-    if filename is None:
-        filename = get_log_file_timestamp()
     create_dir(log_path)
-    logger = _setup_test_logger(log_path, prefix, filename)
+    _setup_test_logger(log_path, prefix)
     create_latest_log_alias(log_path)
 
 

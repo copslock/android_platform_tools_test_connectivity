@@ -111,7 +111,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         self.log.info("Stopping USB Tethering")
         dut.adb.shell(pmc_stop_usb_tethering_cmd)
         self._wait_for_device(self.dut)
-        dut.start_services(skip_sl4a=getattr(dut, "skip_sl4a", False))
+        dut.start_services()
         self.USB_TETHERED = False
 
     def _wait_for_device(self, dut):
@@ -187,7 +187,7 @@ class DhcpServerTest(base_test.BaseTestClass):
         resp = self._get_response(
             self._make_discover(self.hwaddr, giaddr=giaddr, bcastbit=True))
         self._assert_offer(resp)
-        self._assert_unicast(resp, giaddr)
+        self._assert_relayed(resp, giaddr)
         self._assert_broadcastbit(resp)
 
     def _run_discover_paramrequestlist(self, params, unwanted_params):
@@ -495,7 +495,7 @@ class DhcpServerTest(base_test.BaseTestClass):
     def test_request_rebinding_relayed(self):
         giaddr = NETADDR_PREFIX + '123'
         resp, _ = self._run_rebinding(bcastbit=False, giaddr=giaddr)
-        self._assert_unicast(resp, giaddr)
+        self._assert_relayed(resp, giaddr)
         self._assert_broadcastbit(resp, isset=False)
 
     @test_tracker_info(uuid="cee2668b-bd79-47d7-b358-8f9387d715b1")
@@ -534,7 +534,7 @@ class DhcpServerTest(base_test.BaseTestClass):
 
         resp = self._get_response(req)
         self._assert_nak(resp)
-        self._assert_unicast(resp, relayaddr)
+        self._assert_relayed(resp, relayaddr)
         self._assert_broadcastbit(resp)
 
     @test_tracker_info(uuid="6ff1fab4-009a-4758-9153-0d9db63423da")
@@ -791,7 +791,9 @@ class DhcpServerTest(base_test.BaseTestClass):
             ], opts_padding=bytes(26))
         resp = self._get_response(req)
         self._assert_offer(resp)
-        self._assert_standard_offer_or_ack(resp)
+        # Don't test for hostname option: previous implementation would not
+        # set it in offer, which was not consistent with ack
+        self._assert_standard_offer_or_ack(resp, ignore_hostname=True)
         asserts.assert_equal(req_ip, get_yiaddr(resp))
 
     @test_tracker_info(uuid="d70bc043-84cb-4735-9123-c46c6d1ce5ac")
@@ -831,15 +833,19 @@ class DhcpServerTest(base_test.BaseTestClass):
         self._run_debian_renewing(bcast=True)
 
     def _assert_standard_offer_or_ack(self, resp, renewing=False, bcast=False,
-            with_hostname=False):
+            ignore_hostname=False, with_hostname=False):
         # Responses to renew/rebind are always unicast to ciaddr even with
         # broadcast flag set (RFC does not define this behavior, but this is
         # more efficient and matches previous behavior)
         if bcast and not renewing:
             self._assert_broadcast(resp)
+            self._assert_broadcastbit(resp, isset=True)
         else:
+            # Previous implementation would set the broadcast flag but send a
+            # unicast reply if (bcast and renewing). This was not consistent and
+            # new implementation consistently clears the flag. Not testing for
+            # broadcast flag value to maintain compatibility.
             self._assert_unicast(resp)
-        self._assert_broadcastbit(resp, isset=bcast)
 
         bootp_resp = resp.getlayer(BOOTP)
         asserts.assert_equal(0, bootp_resp.hops)
@@ -863,7 +869,9 @@ class DhcpServerTest(base_test.BaseTestClass):
             'message-type', 'server_id', 'lease_time', 'renewal_time',
             'rebinding_time', 'subnet_mask', 'broadcast_address', 'router',
             'name_server']
-        if with_hostname:
+        if ignore_hostname:
+            opt_labels = [opt for opt in opt_labels if opt != 'hostname']
+        elif with_hostname:
             expected_opts.append('hostname')
         expected_opts.extend(['vendor_specific', 'end'])
         asserts.assert_equal(expected_opts, opt_labels)
@@ -921,6 +929,11 @@ class DhcpServerTest(base_test.BaseTestClass):
             "Layer 2 packet destination address was broadcast")
         if ipAddr:
             asserts.assert_equal(packet.getlayer(IP).dst, ipAddr)
+
+    def _assert_relayed(self, packet, giaddr):
+        self._assert_unicast(packet, giaddr)
+        asserts.assert_equal(giaddr, packet.getlayer(BOOTP).giaddr,
+            'Relayed response has invalid giaddr field')
 
     def _next_hwaddr(self):
         addr = make_hwaddr(self.next_hwaddr_index)
