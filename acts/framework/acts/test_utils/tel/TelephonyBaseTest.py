@@ -479,10 +479,10 @@ class TelephonyBaseTest(BaseTestClass):
         shutil.make_archive(file_name, "zip", src_dir)
         shutil.rmtree(src_dir)
 
-    def _block_all_test_cases(self, tests):
-        """Over-write _block_all_test_case in BaseTestClass."""
+    def _block_all_test_cases(self, tests, reason='Failed class setup'):
+        """Over-write _block_all_test_cases in BaseTestClass."""
         for (i, (test_name, test_func)) in enumerate(tests):
-            signal = signals.TestBlocked("Failed class setup")
+            signal = signals.TestBlocked(reason)
             record = records.TestResultRecord(test_name, self.TAG)
             record.test_begin()
             # mark all test cases as FAIL
