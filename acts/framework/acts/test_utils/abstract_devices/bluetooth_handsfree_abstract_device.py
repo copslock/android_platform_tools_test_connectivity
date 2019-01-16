@@ -144,12 +144,60 @@ class EarstudioReceiverBluetoothHandsfreeAbstractDevice(
         return self.earstudio_controller.press_volume_up()
 
 
+class JaybirdX3EarbudsBluetoothHandsfreeAbstractDevice(
+        BluetoothHandsfreeAbstractDevice):
+
+    def __init__(self, jaybird_controller):
+        self.jaybird_controller = jaybird_controller
+
+    @property
+    def mac_address(self):
+        return self.jaybird_controller.mac_address
+
+    def accept_call(self):
+        return self.jaybird_controller.press_accept_call()
+
+    def end_call(self):
+        return self.jaybird_controller.press_reject_call()
+
+    def enter_pairing_mode(self):
+        return self.jaybird_controller.enter_pairing_mode()
+
+    def next_track(self):
+        return self.jaybird_controller.press_next()
+
+    def pause(self):
+        return self.jaybird_controller.press_play_pause()
+
+    def play(self):
+        return self.jaybird_controller.press_play_pause()
+
+    def power_off(self):
+        return self.jaybird_controller.power_off()
+
+    def power_on(self):
+        return self.jaybird_controller.power_on()
+
+    def previous_track(self):
+        return self.jaybird_controller.press_previous()
+
+    def reject_call(self):
+        return self.jaybird_controller.press_reject_call()
+
+    def volume_down(self):
+        return self.jaybird_controller.press_volume_down()
+
+    def volume_up(self):
+        return self.jaybird_controller.press_volume_up()
+
+
 class BluetoothHandsfreeAbstractDeviceFactory:
     """Generates a BluetoothHandsfreeAbstractDevice for any device controller.
     """
 
     _controller_abstract_devices = {
-        'EarstudioReceiver': EarstudioReceiverBluetoothHandsfreeAbstractDevice
+        'EarstudioReceiver': EarstudioReceiverBluetoothHandsfreeAbstractDevice,
+        'JaybirdX3Earbuds': JaybirdX3EarbudsBluetoothHandsfreeAbstractDevice
     }
 
     def generate(self, controller):
