@@ -4270,7 +4270,8 @@ def mms_send_receive_verify(log,
                             ad_rx,
                             array_message,
                             max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE,
-                            expected_result=True):
+                            expected_result=True,
+                            slot_id_rx=None):
     """Send MMS, receive MMS, and verify content and sender's number.
 
         Send (several) MMS from droid_tx to droid_rx.
@@ -4283,9 +4284,14 @@ def mms_send_receive_verify(log,
         ad_rx: Receiver's Android Device Object
         array_message: the array of message to send/receive
     """
+    subid_tx = get_outgoing_message_sub_id(ad_tx)
+    if slot_id_rx is None:
+        subid_rx = get_incoming_message_sub_id(ad_rx)
+    else:
+        subid_rx = get_subid_from_slot_index(log, ad_rx, slot_id_rx)
+
     result = mms_send_receive_verify_for_subscription(
-        log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
-        get_incoming_message_sub_id(ad_rx), array_message, max_wait_time)
+        log, ad_tx, ad_rx, subid_tx, subid_rx, array_message, max_wait_time)
     if result != expected_result:
         log_messaging_screen_shot(ad_tx, test_name="mms_tx")
         log_messaging_screen_shot(ad_rx, test_name="mms_rx")
