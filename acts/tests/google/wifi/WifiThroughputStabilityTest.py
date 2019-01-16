@@ -145,10 +145,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_result_dict = {}
         test_result_dict["ap_settings"] = test_result["ap_settings"].copy()
         test_result_dict["attenuation"] = self.atten_level
-        instantaneous_rates_Mbps = [
-            rate * 8 * (1.024**2) for rate in test_result["iperf_result"]
-            .instantaneous_rates[self.test_params["iperf_ignored_interval"]:-1]
-        ]
+        if test_result["iperf_result"].instantaneous_rates:
+            instantaneous_rates_Mbps = [
+                rate * 8 * (1.024**2)
+                for rate in test_result["iperf_result"].instantaneous_rates[
+                    self.test_params["iperf_ignored_interval"]:-1]
+            ]
+        else:
+            instantaneous_rates_Mbps = float("nan")
         test_result_dict["iperf_results"] = {
             "instantaneous_rates":
             instantaneous_rates_Mbps,
