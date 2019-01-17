@@ -40,6 +40,10 @@ _MINIMUM_SIGNAL_NORM = 0.001
 # amplitude is 1.
 PATTERN_MATCHING_THRESHOLD = 0.85
 
+# The default number of samples within the analysis step size that the
+# difference between two anomaly time values can be to be grouped together.
+ANOMALY_GROUPING_TOLERANCE = 1.0
+
 # Window size for peak detection.
 PEAK_WINDOW_SIZE_HZ = 20
 
@@ -294,7 +298,8 @@ def anomaly_detection(signal,
         threshold: The threshold of correlation index to be judge as matched.
 
     Returns:
-        A list containing detected anomaly time in seconds.
+        A list containing time markers in seconds that have an anomaly within
+            block_size samples.
 
     """
     if len(signal) == 0:
@@ -314,6 +319,52 @@ def anomaly_detection(signal,
     results = [float(x) / rate for x in results]
 
     return results
+
+
+def get_anomaly_durations(signal,
+                          rate,
+                          freq,
+                          block_size=ANOMALY_DETECTION_BLOCK_SIZE,
+                          threshold=PATTERN_MATCHING_THRESHOLD,
+                          tolerance=ANOMALY_GROUPING_TOLERANCE):
+    """Detect anomalies in a sine wav and return their start and end times.
+
+    Run anomaly_detection function and parse resulting array of time values into
+    discrete anomalies defined by a start and end time tuple. Time values are
+    judged to be part of the same anomaly if they lie within a given tolerance
+    of half the block_size number of samples of each other.
+
+    Args:
+        signal: A 1-D array-like object for 1-channel PCM data.
+        rate (int): Sampling rate in samples per second.
+            Example inputs: 44100, 48000
+        freq (int): The expected frequency of signal.
+        block_size (int): The block size in samples to detect anomaly.
+        threshold (float): The threshold of correlation index to be judge as
+            matched.
+        tolerance (float): The number of samples greater than block_size / 2
+            that the sample distance between two anomaly time values can be and
+            still be grouped as the same anomaly.
+    Returns:
+        bounds (list): a list of (start, end) tuples where start and end are the
+            boundaries in seconds of the detected anomaly.
+    """
+    bounds = []
+    anoms = anomaly_detection(signal, rate, freq, block_size, threshold)
+    if len(anoms) == 0:
+        return bounds
+    end = anoms[0]
+    start = anoms[0]
+    for i in range(len(anoms)-1):
+        end = anoms[i]
+        sample_diff = abs(anoms[i] - anoms[i+1]) * rate
+        # We require a tolerance because sample_diff may be slightly off due to
+        # float rounding errors in Python.
+        if sample_diff > block_size / 2 + tolerance:
+            bounds.append((start, end))
+            start = anoms[i+1]
+    bounds.append((start, end))
+    return bounds
 
 
 def _generate_golden_pattern(rate, freq, block_size):
