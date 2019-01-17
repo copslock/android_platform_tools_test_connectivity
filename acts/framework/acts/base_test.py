@@ -764,8 +764,19 @@ class BaseTestClass(object):
         return result
 
     def _skip_bug_report(self):
-        """A function to check whether we should skip creating a bug report."""
+        """A function to check whether we should skip creating a bug report.
+
+        Returns: True if bug report is to be skipped.
+        """
         if "no_bug_report_on_fail" in self.user_params:
+            return True
+
+        # If the current test case is found in the set of problematic test
+        # cases, we skip bugreport and other failure artifact creation.
+        full_test_name = '%s.%s' % (self.__class__.__name__, self.test_name)
+        if full_test_name in self.user_params.get('quiet_test_cases', []):
+            self.log.info(
+                "Skipping bug report, as directed for this test case.")
             return True
 
         # Once we hit a certain log path size, it's not going to get smaller.

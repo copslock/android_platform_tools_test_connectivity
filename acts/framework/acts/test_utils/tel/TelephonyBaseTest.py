@@ -450,6 +450,8 @@ class TelephonyBaseTest(BaseTestClass):
         return result
 
     def _take_bug_report(self, test_name, begin_time):
+        if self._skip_bug_report():
+            return
         test_log_path = os.path.join(self.log_path, test_name)
         utils.create_dir(test_log_path)
         # Extract test_run_info.txt, test_run_debug.txt
@@ -458,8 +460,6 @@ class TelephonyBaseTest(BaseTestClass):
                              os.path.join(test_log_path,
                                           "%s_%s" % (test_name, file_name)),
                              "\[Test Case\] %s " % test_name)
-        if self._skip_bug_report():
-            return
         dev_num = getattr(self, "number_of_devices", None) or len(
             self.android_devices)
         tasks = [(self._ad_take_bugreport, (ad, test_name, begin_time))
