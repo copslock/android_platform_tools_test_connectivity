@@ -352,7 +352,13 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
     if cbrs_esim:
         ad.log.info("CBRS testing detected, removing it form SubInfoList")
         if len(sub_info_list) > 1:
-            del sub_info_list[-1]
+            # Check for Display Name
+            index_to_delete = -1
+            for i, oper in enumerate(d['displayName'] for d in sub_info_list):
+                ad.log.info("Index %d Display %s", i, oper)
+                if "Google" in oper:
+                    index_to_delete = i
+            del sub_info_list[index_to_delete]
         ad.log.info("Updated SubInfoList is %s", sub_info_list)
     active_sub_id = get_outgoing_voice_sub_id(ad)
     for sub_info in sub_info_list:

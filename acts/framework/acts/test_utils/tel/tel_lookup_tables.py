@@ -234,6 +234,9 @@ class _TelTables():
         '23432': tel_defines.CARRIER_EEUK,  #Virgin Mobile (MVNO)
         '23415': tel_defines.CARRIER_VFUK,
 
+        # Google Fi
+        '312580': tel_defines.CARRIER_FI,
+
         #USCC
         '311580': tel_defines.CARRIER_USCC,
 
