@@ -21,12 +21,14 @@ from soundfile import SoundFile
 
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
-from acts.test_utils.audio_analysis_lib.audio_analysis import max_THDN
-from acts.test_utils.audio_analysis_lib.audio_analysis import THDN
+from acts.test_utils.audio_analysis_lib import audio_analysis
 from acts.test_utils.audio_analysis_lib.check_quality import quality_analysis
 from acts.test_utils.coex.audio_capture import AudioCapture
 from acts.test_utils.coex.audio_capture import RECORD_FILE_TEMPLATE
 
+ANOMALY_DETECTION_BLOCK_SIZE = audio_analysis.ANOMALY_DETECTION_BLOCK_SIZE
+ANOMALY_GROUPING_TOLERANCE = audio_analysis.ANOMALY_GROUPING_TOLERANCE
+PATTERN_MATCHING_THRESHOLD = audio_analysis.PATTERN_MATCHING_THRESHOLD
 ANALYSIS_FILE_TEMPLATE = "audio_analysis_%s.txt"
 bits_per_sample = 32
 
@@ -64,8 +66,7 @@ class SshAudioCapture(AudioCapture):
     def terminate_and_store_audio_results(self):
         """Terminates audio and stores audio files."""
         if self.audio_params["ssh_config"]:
-            if hasattr(self, "ssh_session"):
-                self.ssh_session.run("rm *.wav")
+            self.ssh_session.run("rm *.wav")
         else:
             self.terminate_audio()
 
@@ -86,11 +87,11 @@ class SshAudioCapture(AudioCapture):
                 latest recorded file.
         """
         if not (win_size and step_size):
-            fn = THDN
+            fn = audio_analysis.THDN
         else:
-            fn = functools.partial(max_THDN, win_size=win_size,
+            fn = functools.partial(audio_analysis.max_THDN, win_size=win_size,
                                    step_size=step_size)
-        latest_file_path = self.record_file_template % (self.last_fileno())
+        latest_file_path = self.record_file_template % self.last_fileno()
         wave_file = SoundFile(latest_file_path)
         signal = wave_file.read()
         channels = wave_file.channels
@@ -104,6 +105,52 @@ class SshAudioCapture(AudioCapture):
                 channel_results[ch_no] = fn(signal=channel,
                                             sample_rate=sample_rate,
                                             q=q, fund_freq=fund_freq)
+        return channel_results
+
+    def detect_anomalies(self, block_size=ANOMALY_DETECTION_BLOCK_SIZE,
+                         threshold=PATTERN_MATCHING_THRESHOLD,
+                         tolerance=ANOMALY_GROUPING_TOLERANCE):
+        """Detect anomalies in most recently recorded file.
+
+        An anomaly is defined as a sample in a recorded sine wave that differs
+        by at least the value defined by the threshold parameter from a golden
+        generated sine wave of the same amplitude, sample rate, and frequency.
+
+        Args:
+            block_size (int): the number of samples to analyze at a time in the
+                anomaly detection algorithm.
+            threshold (float): the threshold of the correlation index to
+                determine if two sample values match.
+            tolerance (float): the sample tolerance for anomaly time values
+                to be grouped as the same anomaly
+        Returns:
+            channel_results (dict): dictionary mapping each channel index to a
+                list of anomaly (start_time, end_time) tuples.
+        """
+        latest_file_path = self.record_file_template % self.last_fileno()
+        wave_file = SoundFile(latest_file_path)
+        signal = wave_file.read()
+        channels = wave_file.channels
+        sample_rate = wave_file.samplerate
+        fundamental_freq = audio_analysis.fundamental_freq(signal, sample_rate)
+        channel_results = {}
+        if channels == 1:
+            channel_results[0] = audio_analysis.get_anomaly_durations(
+                signal=signal,
+                rate=sample_rate,
+                freq=fundamental_freq,
+                block_size=block_size,
+                threshold=threshold,
+                tolerance=tolerance)
+        else:
+            for ch_no, channel in enumerate(signal.transpose()):
+                channel_results[ch_no] = audio_analysis.get_anomaly_durations(
+                    signal=channel,
+                    rate=sample_rate,
+                    freq=fundamental_freq,
+                    block_size=block_size,
+                    threshold=threshold,
+                    tolerance=tolerance)
         return channel_results
 
     def audio_quality_analysis(self, path):
