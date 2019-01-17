@@ -26,6 +26,7 @@ from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
 from acts.test_utils.bt.bt_test_utils import write_read_verify_data
+from acts.utils import set_location_service
 
 class BluetoothLatencyTest(BaseTestClass):
     """Connects two Android phones and tests the RFCOMM latency.
@@ -66,6 +67,8 @@ class BluetoothLatencyTest(BaseTestClass):
         address of the server device.
         """
 
+        set_location_service(self.client_device, True)
+        set_location_service(self.server_device, True)
         server_address = self.server_device.droid.bluetoothGetLocalAddress()
         self.log.info("Pairing and connecting devices")
         asserts.assert_true(self.client_device.droid
