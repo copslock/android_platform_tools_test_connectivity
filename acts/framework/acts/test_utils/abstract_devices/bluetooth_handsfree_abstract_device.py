@@ -15,6 +15,8 @@
 # the License.
 import inspect
 
+from acts.controllers.buds_lib.dev_utils import apollo_sink_events
+
 
 def validate_controller(controller, abstract_device_class):
     """Ensure controller has all methods in abstract_device_class.
@@ -95,6 +97,63 @@ class BluetoothHandsfreeAbstractDevice:
 
     def volume_up(self):
         raise NotImplementedError()
+
+
+class PixelBudsBluetoothHandsfreeAbstractDevice(
+    BluetoothHandsfreeAbstractDevice):
+
+    CMD_EVENT = 'EvtHex'
+
+    def __init__(self, pixel_buds_controller):
+        self.pixel_buds_controller = pixel_buds_controller
+
+    def format_cmd(self, cmd_name):
+        return self.CMD_EVENT + ' ' + apollo_sink_events.SINK_EVENTS[cmd_name]
+
+    @property
+    def mac_address(self):
+        return self.pixel_buds_controller.bluetooth_address
+
+    def accept_call(self):
+        return self.pixel_buds_controller.cmd(self.format_cmd('EventUsrAnswer'))
+
+    def end_call(self):
+        return self.pixel_buds_controller.cmd(
+            self.format_cmd('EventUsrCancelEnd'))
+
+    def enter_pairing_mode(self):
+        return self.pixel_buds_controller.set_pairing_mode()
+
+    def next_track(self):
+        return self.pixel_buds_controller.cmd(
+            self.format_cmd('EventUsrAvrcpSkipForward'))
+
+    def pause(self):
+        return self.pixel_buds_controller.cmd(
+            self.format_cmd('EventUsrAvrcpPause'))
+
+    def play(self):
+        return self.pixel_buds_controller.cmd(
+            self.format_cmd('EventUsrAvrcpPlay'))
+
+    def power_off(self):
+        return self.pixel_buds_controller.power('Off')
+
+    def power_on(self):
+        return self.pixel_buds_controller.power('On')
+
+    def previous_track(self):
+        return self.pixel_buds_controller.cmd(
+            self.format_cmd('EventUsrAvrcpSkipBackward'))
+
+    def reject_call(self):
+        return self.pixel_buds_controller.cmd(self.format_cmd('EventUsrReject'))
+
+    def volume_down(self):
+        return self.pixel_buds_controller.volume('Down')
+
+    def volume_up(self):
+        return self.pixel_buds_controller.volume('Up')
 
 
 class EarstudioReceiverBluetoothHandsfreeAbstractDevice(
@@ -197,7 +256,8 @@ class BluetoothHandsfreeAbstractDeviceFactory:
 
     _controller_abstract_devices = {
         'EarstudioReceiver': EarstudioReceiverBluetoothHandsfreeAbstractDevice,
-        'JaybirdX3Earbuds': JaybirdX3EarbudsBluetoothHandsfreeAbstractDevice
+        'JaybirdX3Earbuds': JaybirdX3EarbudsBluetoothHandsfreeAbstractDevice,
+        'ParentDevice': PixelBudsBluetoothHandsfreeAbstractDevice
     }
 
     def generate(self, controller):

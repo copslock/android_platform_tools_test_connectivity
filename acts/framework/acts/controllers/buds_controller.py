@@ -64,11 +64,7 @@ def create(configs):
             if not serial:
                 raise ConfigError('Buds Device %s is missing entry "serial".' %
                                   config)
-            commander_port = config.get('commander_port', None)
-            log_port = config.get('log_port', None)
-            created_controllers.append(
-                ParentDevice(serial, commander_port=commander_port,
-                           log_port=log_port))
+            created_controllers.append(ParentDevice(serial))
         else:
             raise ConfigError('Malformatted config: "%s". Must be a string or '
                               'dict' % config)
