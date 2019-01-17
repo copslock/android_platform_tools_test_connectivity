@@ -29,7 +29,9 @@ import subprocess
 import time
 import traceback
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 
+from acts import signals
 from acts.controllers import adb
 from acts.libs.proc import job
 
@@ -770,16 +772,14 @@ def set_mobile_data_always_on(ad, new_state):
         1 if new_state else 0))
 
 
-def bypass_setup_wizard(ad, bypass_wait_time=3):
+def bypass_setup_wizard(ad):
     """Bypass the setup wizard on an input Android device
 
     Args:
         ad: android device object.
-        bypass_wait_time: Do not set this variable. Only modified for framework
-        tests.
 
     Returns:
-        True if Andorid device successfully bypassed the setup wizard.
+        True if Android device successfully bypassed the setup wizard.
         False if failed.
     """
     try:
@@ -815,7 +815,7 @@ def bypass_setup_wizard(ad, bypass_wait_time=3):
                         "error 3: No setup to bypass.")
 
     # magical sleep to wait for the gservices override broadcast to complete
-    time.sleep(bypass_wait_time)
+    time.sleep(3)
 
     provisioned_state = int(
         ad.adb.shell("settings get global device_provisioned"))
