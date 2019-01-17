@@ -35,7 +35,6 @@ from acts import signals
 from acts.controllers import adb
 from acts.libs.proc import job
 
-
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
@@ -945,3 +944,158 @@ def get_device_process_uptime(adb, process):
     if pid:
         runtime = adb.shell('ps -o etime= -p "%s"' % pid)
     return runtime
+
+
+def run_concurrent_actions_no_raise(*calls):
+    """Concurrently runs all callables passed in using multithreading.
+
+    Example:
+
+    >>> def test_function_1(arg1, arg2):
+    >>>     return arg1, arg2
+    >>>
+    >>> def test_function_2(arg1, kwarg='kwarg'):
+    >>>     raise arg1(kwarg)
+    >>>
+    >>> run_concurrent_actions_no_raise(
+    >>>     lambda: test_function_1('arg1', 'arg2'),
+    >>>     lambda: test_function_2(IndexError, kwarg='kwarg'),
+    >>> )
+    >>> # Output:
+    >>> [('arg1', 'arg2'), IndexError('kwarg')]
+
+    Args:
+        *calls: A *args list of argumentless callable objects to be called. Note
+            that if a function has arguments it can be turned into an
+            argumentless function via the lambda keyword or functools.partial.
+
+    Returns:
+        An array of the returned values or exceptions received from calls,
+        respective of the order given.
+    """
+    with ThreadPoolExecutor(max_workers=len(calls)) as executor:
+        futures = [executor.submit(call) for call in calls]
+
+    results = []
+    for future in futures:
+        try:
+            results.append(future.result())
+        except Exception as e:
+            results.append(e)
+    return results
+
+
+def run_concurrent_actions(*calls):
+    """Runs all callables passed in concurrently using multithreading.
+
+    Examples:
+
+    >>> def test_function_1(arg1, arg2):
+    >>>     print(arg1, arg2)
+    >>>
+    >>> def test_function_2(arg1, kwarg='kwarg'):
+    >>>     raise arg1(kwarg)
+    >>>
+    >>> run_concurrent_actions(
+    >>>     lambda: test_function_1('arg1', 'arg2'),
+    >>>     lambda: test_function_2(IndexError, kwarg='kwarg'),
+    >>> )
+    >>> 'The above line raises IndexError("kwarg")'
+
+    Args:
+        *calls: A *args list of argumentless callable objects to be called. Note
+            that if a function has arguments it can be turned into an
+            argumentless function via the lambda keyword or functools.partial.
+
+    Returns:
+        An array of the returned values respective of the order of the calls
+        argument.
+
+    Raises:
+        If an exception is raised in any of the calls, the first exception
+        caught will be raised.
+    """
+    first_exception = None
+
+    class WrappedException(Exception):
+        """Raised when a passed-in callable raises an exception."""
+
+    def call_wrapper(call):
+        nonlocal first_exception
+
+        try:
+            return call()
+        except Exception as e:
+            logging.exception(e)
+            # Note that there is a potential race condition between two
+            # exceptions setting first_exception. Even if a locking mechanism
+            # was added to prevent this from happening, it is still possible
+            # that we capture the second exception as the first exception, as
+            # the active thread can swap to the thread that raises the second
+            # exception. There is no way to solve this with the tools we have
+            # here, so we do not bother. The effects this issue has on the
+            # system as a whole are negligible.
+            if first_exception is None:
+                first_exception = e
+            raise WrappedException(e)
+
+    with ThreadPoolExecutor(max_workers=len(calls)) as executor:
+        futures = [executor.submit(call_wrapper, call) for call in calls]
+
+    results = []
+    for future in futures:
+        try:
+            results.append(future.result())
+        except WrappedException:
+            # We do not need to raise here, since first_exception will already
+            # be set to the first exception raised by these callables.
+            break
+
+    if first_exception:
+        raise first_exception
+
+    return results
+
+
+def test_concurrent_actions(*calls, failure_exceptions=(Exception,)):
+    """Concurrently runs all passed in calls using multithreading.
+
+    If any callable raises an Exception found within failure_exceptions, the
+    test case is marked as a failure.
+
+    Example:
+    >>> def test_function_1(arg1, arg2):
+    >>>     print(arg1, arg2)
+    >>>
+    >>> def test_function_2(kwarg='kwarg'):
+    >>>     raise IndexError(kwarg)
+    >>>
+    >>> test_concurrent_actions(
+    >>>     lambda: test_function_1('arg1', 'arg2'),
+    >>>     lambda: test_function_2(kwarg='kwarg'),
+    >>>     failure_exceptions=IndexError
+    >>> )
+    >>> 'raises signals.TestFailure due to IndexError being raised.'
+
+    Args:
+        *calls: A *args list of argumentless callable objects to be called. Note
+            that if a function has arguments it can be turned into an
+            argumentless function via the lambda keyword or functools.partial.
+        failure_exceptions: A tuple of all possible Exceptions that will mark
+            the test as a FAILURE. Any exception that is not in this list will
+            mark the tests as UNKNOWN.
+
+    Returns:
+        An array of the returned values respective of the order of the calls
+        argument.
+
+    Raises:
+        signals.TestFailure if any call raises an Exception.
+    """
+    try:
+        return run_concurrent_actions(*calls)
+    except signals.TestFailure:
+        # Do not modify incoming test failures
+        raise
+    except failure_exceptions as e:
+        raise signals.TestFailure(e)
