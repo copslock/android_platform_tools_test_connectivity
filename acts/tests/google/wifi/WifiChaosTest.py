@@ -14,7 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import re
 import sys
+import random
 import time
 
 import acts.controllers.packet_capture as packet_capture
@@ -35,7 +37,8 @@ WAIT_BEFORE_CONNECTION = 1
 SINGLE_BAND = 1
 DUAL_BAND = 2
 
-TIMEOUT = 1
+TIMEOUT = 60
+TEST = 'test_'
 PING_ADDR = 'www.google.com'
 
 
@@ -50,6 +53,35 @@ class WifiChaosTest(WifiBaseTest):
     def __init__(self, configs):
         BaseTestClass.__init__(self, configs)
         self.generate_interop_tests()
+
+    def randomize_testcases(self):
+        """Randomize the list of hosts and build a random order of tests,
+           based on SSIDs, keeping all the relevant bands of an AP together.
+
+        """
+        temp_tests = list()
+        hosts = self.user_params['interop_host']
+
+        random.shuffle(hosts)
+
+        for host in hosts:
+            ssid_2g = None
+            ssid_5g = None
+            info = dutils.show_device(host)
+
+            # Based on the information in datastore, add to test list if
+            # AP has 2G band.
+            if 'ssid_2g' in info:
+                ssid_2g = info['ssid_2g']
+                temp_tests.append(TEST + ssid_2g)
+
+            # Based on the information in datastore, add to test list if
+            # AP has 5G band.
+            if 'ssid_5g' in info:
+                ssid_5g = info['ssid_5g']
+                temp_tests.append(TEST + ssid_5g)
+
+        self.tests = temp_tests
 
     def generate_interop_testcase(self, base_test, testcase_name, ssid_dict):
         """Generates a single test case from the given data.
@@ -74,9 +106,11 @@ class WifiChaosTest(WifiBaseTest):
             testcase_name = list(ssid_dict)[0]
             self.generate_interop_testcase(self.interop_base_test,
                                            testcase_name, ssid_dict)
+        self.randomize_testcases()
 
     def setup_class(self):
         self.dut = self.android_devices[0]
+        self.admin = 'admin' + str(random.randint(1000001, 12345678))
         wutils.wifi_test_device_init(self.dut)
         # Set country code explicitly to "US".
         self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
@@ -98,14 +132,15 @@ class WifiChaosTest(WifiBaseTest):
 
             device_name = device['hostname']
             device_type = device['ap_label']
-            if device_type == 'PCAP'and dutils.lock_device(device_name):
-                host = device['ip_address']
-                self.log.info("Locked Packet Capture device: %s" % device_name)
-                locked_pcap = True
-                break
-
-            elif device_type == 'PCAP':
-                self.log.warning("Failed to lock %s PCAP.")
+            if device_type == 'PCAP' and not device['lock_status']:
+                if dutils.lock_device(device_name, self.admin):
+                    self.pcap_host = device_name
+                    host = device['ip_address']
+                    self.log.info("Locked Packet Capture device: %s" % device_name)
+                    locked_pcap = True
+                    break
+                else:
+                    self.log.warning("Failed to lock %s PCAP." % device_name)
 
         if not locked_pcap:
             return False
@@ -120,10 +155,22 @@ class WifiChaosTest(WifiBaseTest):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
+    def on_pass(self, test_name, begin_time):
+        wutils.stop_pcap(self.pcap, self.pcap_pid, True)
+
+    def on_fail(self, test_name, begin_time):
+        wutils.stop_pcap(self.pcap, self.pcap_pid, False)
+        self.dut.take_bug_report(test_name, begin_time)
+        self.dut.cat_adb_log(test_name, begin_time)
+
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
-        wutils.reset_wifi(self.dut)
+
+    def teardown_class(self):
+        # Unlock the PCAP.
+        if not dutils.unlock_device(self.pcap_host):
+            self.log.warning("Failed to unlock %s PCAP. Check in datastore.")
 
 
     """Helper Functions"""
@@ -154,17 +201,37 @@ class WifiChaosTest(WifiBaseTest):
         if "100% packet loss" in result:
             raise signals.TestFailure("100% packet loss during ping")
 
-    def run_connect_disconnect(self, network):
+    def unlock_and_turn_off_ap(self, hostname, rpm_port, rpm_ip):
+        """UNlock the AP in datastore and turn off the AP.
+
+        Args:
+            hostname: Hostname of the AP.
+            rpm_port: Port number on the RPM for the AP.
+            rpm_ip: RPM's IP address.
+
+        """
+        # Un-Lock AP in datastore.
+        self.log.debug("Un-lock AP in datastore")
+        if not dutils.unlock_device(hostname):
+            self.log.warning("Failed to unlock %s AP. Check AP in datastore.")
+        # Turn OFF AP from the RPM port.
+        rutils.turn_off_ap(rpm_port, rpm_ip)
+
+    def run_connect_disconnect(self, network, hostname, rpm_port, rpm_ip,
+                               release_ap):
         """Run connect/disconnect to a given network in loop.
 
            Args:
-               network: dict, network information.
+               network: Dict, network information.
+               hostname: Hostanme of the AP to connect to.
+               rpm_port: Port number on the RPM for the AP.
+               rpm_ip: Port number on the RPM for the AP.
+               release_ap: Flag to determine if we should turn off the AP yet.
 
            Raises: TestFailure if the network connection fails.
 
         """
-        for attempt in range(1):
-            # TODO:(bmahadev) Change it to 5 or more attempts later.
+        for attempt in range(5):
             try:
                 begin_time = time.time()
                 ssid = network[WifiEnums.SSID_KEY]
@@ -172,7 +239,7 @@ class WifiChaosTest(WifiBaseTest):
                 asserts.assert_true(net_id != -1, "Add network %s failed" % network)
                 self.log.info("Connecting to %s" % ssid)
                 self.scan_and_connect_by_id(network, net_id)
-                self.run_ping(1)
+                self.run_ping(10)
                 wutils.wifi_forget_network(self.dut, ssid)
                 time.sleep(WAIT_BEFORE_CONNECTION)
             except:
@@ -181,7 +248,25 @@ class WifiChaosTest(WifiBaseTest):
                 # TODO:(bmahadev) Uncomment after scan issue is fixed.
                 # self.dut.take_bug_report(ssid, begin_time)
                 # self.dut.cat_adb_log(ssid, begin_time)
+                if release_ap:
+                    self.unlock_and_turn_off_ap(hostname, rpm_port, rpm_ip)
                 raise signals.TestFailure("Failed to connect to %s" % ssid)
+
+    def get_band_and_chan(self, ssid):
+        """Get the band and channel information from SSID.
+
+        Args:
+            ssid: SSID of the network.
+
+        """
+        ssid_info = ssid.split('_')
+        self.band = ssid_info[-1]
+        for item in ssid_info:
+            # Skip over the router model part.
+            if 'ch' in item and item != ssid_info[0]:
+                self.chan = re.search(r'(\d+)',item).group(0)
+                return
+        raise signals.TestFailure("Channel information not found in SSID.")
 
     def interop_base_test(self, ssid, hostname):
         """Base test for all the connect-disconnect interop tests.
@@ -201,20 +286,29 @@ class WifiChaosTest(WifiBaseTest):
         network = {}
         network['password'] = 'password'
         network['SSID'] = ssid
+        release_ap = False
         wutils.reset_wifi(self.dut)
 
         # Lock AP in datastore.
         self.log.info("Lock AP in datastore")
-        if not dutils.lock_device(hostname):
+
+        ap_info = dutils.show_device(hostname)
+
+        # If AP is locked by a different test admin, then we skip.
+        if ap_info['lock_status'] and ap_info['locked_by'] != self.admin:
+            raise signals.TestSkip("AP %s is locked, skipping test" % hostname)
+
+        if not dutils.lock_device(hostname, self.admin):
             self.log.warning("Failed to lock %s AP. Unlock AP in datastore"
                              " and try again.")
             raise signals.TestFailure("Failed to lock AP")
 
-        ap_info = dutils.show_device(hostname)
-
         band = SINGLE_BAND
         if ('ssid_2g' in ap_info) and ('ssid_5g' in ap_info):
             band = DUAL_BAND
+        if (band == SINGLE_BAND) or (
+                band == DUAL_BAND and '5G' in ssid):
+            release_ap = True
 
         # Get AP RPM attributes and Turn ON AP.
         rpm_ip = ap_info['rpm_ip']
@@ -222,20 +316,16 @@ class WifiChaosTest(WifiBaseTest):
 
         rutils.turn_on_ap(self.pcap, ssid, rpm_port, rpm_ip=rpm_ip)
         self.log.info("Finished turning ON AP.")
-        # Experimental to check if 2G connects better.
-        time.sleep(30)
+        # Experimental. Some APs take upto a min to come online.
+        time.sleep(60)
 
-        self.run_connect_disconnect(network)
+        self.get_band_and_chan(ssid)
+        self.pcap.configure_monitor_mode(self.band, self.chan)
+        self.pcap_pid = wutils.start_pcap(
+                self.pcap, self.band.lower(), self.log_path, self.test_name)
+        self.run_connect_disconnect(network, hostname, rpm_port, rpm_ip,
+                                    release_ap)
 
         # Un-lock only if it's a single band AP or we are running the last band.
-        if (band == SINGLE_BAND) or (
-                band == DUAL_BAND and hostapd_constants.BAND_5G in \
-                sys._getframe().f_code.co_name):
-
-            # Un-Lock AP in datastore.
-            self.log.debug("Un-lock AP in datastore")
-            if not dutils.unlock_device(hostname):
-                self.log.warning("Failed to unlock %s AP. Check AP in datastore.")
-
-            # Turn OFF AP from the RPM port.
-            rutils.turn_off_ap(rpm_port, rpm_ip)
+        if release_ap:
+            self.unlock_and_turn_off_ap(hostname, rpm_port, rpm_ip)
