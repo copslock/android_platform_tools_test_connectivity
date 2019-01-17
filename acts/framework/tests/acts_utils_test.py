@@ -16,7 +16,6 @@
 
 import time
 import unittest
-import enum
 
 from acts import utils
 from acts.controllers.adb import AdbError
@@ -29,14 +28,14 @@ class ActsUtilsTest(unittest.TestCase):
 
     def test_start_standing_subproc(self):
         with self.assertRaisesRegexp(utils.ActsUtilsError,
-                                     "Process .* has terminated"):
-            utils.start_standing_subprocess("sleep 0", check_health_delay=0.1)
+                                     'Process .* has terminated'):
+            utils.start_standing_subprocess('sleep 0', check_health_delay=0.1)
 
     def test_stop_standing_subproc(self):
-        p = utils.start_standing_subprocess("sleep 0")
+        p = utils.start_standing_subprocess('sleep 0')
         time.sleep(0.1)
         with self.assertRaisesRegexp(utils.ActsUtilsError,
-                                     "Process .* has terminated"):
+                                     'Process .* has terminated'):
             utils.stop_standing_subprocess(p)
 
     def test_bypass_setup_wizard_no_complications(self):
@@ -74,36 +73,36 @@ class ActsUtilsTest(unittest.TestCase):
 
 class BypassSetupWizardReturn:
     # No complications. Bypass works the first time without issues.
-    NO_COMPLICATIONS = AdbError("", "", "", 1)
+    NO_COMPLICATIONS = AdbError('', '', '', 1)
     # Fail with doesn't need to be skipped/was skipped already.
-    ALREADY_BYPASSED = AdbError("", "ADB_CMD_OUTPUT:0", "Error type 3\n"
-                                "Error: Activity class", 1)
+    ALREADY_BYPASSED = AdbError('', 'ADB_CMD_OUTPUT:0', 'Error type 3\n'
+                                'Error: Activity class', 1)
     # Fail with different error.
-    UNRECOGNIZED_ERR = AdbError("", "ADB_CMD_OUTPUT:0", "Error type 4\n"
-                                "Error: Activity class", 0)
+    UNRECOGNIZED_ERR = AdbError('', 'ADB_CMD_OUTPUT:0', 'Error type 4\n'
+                                'Error: Activity class', 0)
     # Fail, get root access, then no complications arise.
-    ROOT_ADB_NO_COMP = AdbError("", "ADB_CMD_OUTPUT:255",
-                                "Security exception: Permission Denial: "
-                                "starting Intent { flg=0x10000000 "
-                                "cmp=com.google.android.setupwizard/"
-                                ".SetupWizardExitActivity } from null "
-                                "(pid=5045, uid=2000) not exported from uid "
-                                "10000", 0)
+    ROOT_ADB_NO_COMP = AdbError('', 'ADB_CMD_OUTPUT:255',
+                                'Security exception: Permission Denial: '
+                                'starting Intent { flg=0x10000000 '
+                                'cmp=com.google.android.setupwizard/'
+                                '.SetupWizardExitActivity } from null '
+                                '(pid=5045, uid=2000) not exported from uid '
+                                '10000', 0)
     # Even with root access, the bypass setup wizard doesn't need to be skipped.
-    ROOT_ADB_SKIPPED = AdbError("", "ADB_CMD_OUTPUT:255",
-                                "Security exception: Permission Denial: "
-                                "starting Intent { flg=0x10000000 "
-                                "cmp=com.google.android.setupwizard/"
-                                ".SetupWizardExitActivity } from null "
-                                "(pid=5045, uid=2000) not exported from "
-                                "uid 10000", 0)
+    ROOT_ADB_SKIPPED = AdbError('', 'ADB_CMD_OUTPUT:255',
+                                'Security exception: Permission Denial: '
+                                'starting Intent { flg=0x10000000 '
+                                'cmp=com.google.android.setupwizard/'
+                                '.SetupWizardExitActivity } from null '
+                                '(pid=5045, uid=2000) not exported from '
+                                'uid 10000', 0)
     # Even with root access, the bypass setup wizard fails
     ROOT_ADB_FAILS = AdbError(
-        "", "ADB_CMD_OUTPUT:255", "Security exception: Permission Denial: "
-        "starting Intent { flg=0x10000000 "
-        "cmp=com.google.android.setupwizard/"
-        ".SetupWizardExitActivity } from null (pid=5045, "
-        "uid=2000) not exported from uid 10000", 0)
+        '', 'ADB_CMD_OUTPUT:255', 'Security exception: Permission Denial: '
+        'starting Intent { flg=0x10000000 '
+        'cmp=com.google.android.setupwizard/'
+        '.SetupWizardExitActivity } from null (pid=5045, '
+        'uid=2000) not exported from uid 10000', 0)
 
 
 class MockAd:
@@ -117,7 +116,7 @@ class MockAdb:
         self.root_adb_called = False
 
     def shell(self, string):
-        if string == "settings get global device_provisioned":
+        if string == 'settings get global device_provisioned':
             return self.return_state.ret_code
         raise self.return_state
 
@@ -131,5 +130,5 @@ class MockAdb:
             self.return_state = BypassSetupWizardReturn.NO_COMPLICATIONS
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
