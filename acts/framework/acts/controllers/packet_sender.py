@@ -24,7 +24,7 @@ import time
 import acts.signals
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 # http://www.secdev.org/projects/scapy/
-# On ubuntu, sudo pip3 install scapy-python3
+# On ubuntu, sudo pip3 install scapy
 import scapy.all as scapy
 
 ACTS_CONTROLLER_CONFIG_NAME = 'PacketSender'
@@ -290,7 +290,7 @@ class ArpGenerator(object):
             self.src_ipv4 = config_params['src_ipv4']
 
     def generate(self,
-                 op=scapy.ARP.who_has,
+                 op='who-has',
                  ip_dst=None,
                  ip_src=None,
                  hwsrc=None,
