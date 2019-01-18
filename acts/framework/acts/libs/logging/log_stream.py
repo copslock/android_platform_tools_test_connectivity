@@ -24,10 +24,6 @@ from logging.handlers import RotatingFileHandler
 from acts import context
 from acts.event import event_bus
 from acts.event.decorators import subscribe_static
-from acts.event.event import TestCaseBeginEvent
-from acts.event.event import TestCaseEndEvent
-from acts.event.event import TestClassBeginEvent
-from acts.event.event import TestClassEndEvent
 
 
 # yapf: disable
@@ -88,28 +84,11 @@ class LogStyles:
 _log_streams = dict()
 _null_handler = logging.NullHandler()
 
-@subscribe_static(TestClassBeginEvent)
-def _on_test_class_begin(event):
+
+@subscribe_static(context.NewContextEvent)
+def _update_handlers(event):
     for log_stream in _log_streams.values():
-        log_stream.on_test_class_begin(event)
-
-
-@subscribe_static(TestClassEndEvent)
-def _on_test_class_end(event):
-    for log_stream in _log_streams.values():
-        log_stream.on_test_class_end(event)
-
-
-@subscribe_static(TestCaseBeginEvent)
-def _on_test_case_begin(event):
-    for log_stream in _log_streams.values():
-        log_stream.on_test_case_begin(event)
-
-
-@subscribe_static(TestCaseEndEvent)
-def _on_test_case_end(event):
-    for log_stream in _log_streams.values():
-        log_stream.on_test_case_end(event)
+        log_stream.update_handlers(event)
 
 
 def create_logger(name, log_name=None, base_path=None,
@@ -151,10 +130,7 @@ def _set_logger(log_stream):
     return log_stream
 
 
-event_bus.register_subscription(_on_test_case_begin.subscription)
-event_bus.register_subscription(_on_test_case_end.subscription)
-event_bus.register_subscription(_on_test_class_begin.subscription)
-event_bus.register_subscription(_on_test_class_end.subscription)
+event_bus.register_subscription(_update_handlers.subscription)
 
 
 class AlsoToLogHandler(Handler):
@@ -257,18 +233,23 @@ class _LogStream(object):
         os.makedirs(self.base_path, exist_ok=True)
         self.stream_format = stream_format
         self.file_format = file_format
-        self._test_run_only_log_handlers = []
-        self._test_case_handler_descriptors = []
-        self._test_case_log_handlers = []
-        self._test_class_handler_descriptors = []
-        self._test_class_log_handlers = []
-        self._test_class_only_handler_descriptors = []
-        self._test_class_only_log_handlers = []
+        self._monolith_descriptors = []
+        self._monolith_handlers = []
+        self._testclass_descriptors = []
+        self._testclass_handlers = []
+        self._testcase_descriptors = []
+        self._testcase_handlers = []
         if not isinstance(log_styles, list):
             log_styles = [log_styles]
         self.__validate_styles(log_styles)
         for log_style in log_styles:
             self.__handle_style(log_style)
+        self.__create_handlers_from_descriptors(
+            self._monolith_descriptors, self._monolith_handlers)
+        self.__create_handlers_from_descriptors(
+            self._testclass_descriptors, self._testclass_handlers)
+        self.__create_handlers_from_descriptors(
+            self._testcase_descriptors, self._testcase_handlers)
 
     @staticmethod
     def __validate_styles(_log_styles_list):
@@ -383,15 +364,12 @@ class _LogStream(object):
             descriptor = self.HandlerDescriptor(handler_creator, log_level,
                                                 self.name, self.file_format)
 
-            handler = descriptor.create(self.base_path)
-            self.logger.addHandler(handler)
-            if not log_style & LogStyles.MONOLITH_LOG:
-                self._test_run_only_log_handlers.append(handler)
-            if log_style & LogStyles.TESTCASE_LOG:
-                self._test_case_handler_descriptors.append(descriptor)
-                self._test_class_only_handler_descriptors.append(descriptor)
+            if log_style & LogStyles.MONOLITH_LOG:
+                self._monolith_descriptors.append(descriptor)
             if log_style & LogStyles.TESTCLASS_LOG:
-                self._test_class_handler_descriptors.append(descriptor)
+                self._testclass_descriptors.append(descriptor)
+            if log_style & LogStyles.TESTCASE_LOG:
+                self._testcase_descriptors.append(descriptor)
 
     def __remove_handler(self, handler):
         """Removes a handler from the logger, unless it's a NullHandler."""
@@ -399,12 +377,15 @@ class _LogStream(object):
             handler.close()
             self.logger.removeHandler(handler)
 
-    def __create_handlers_from_descriptors(self, descriptors, handlers, event):
+    def __create_handlers_from_descriptors(self, descriptors, handlers):
         """Create new handlers as described in the descriptors list"""
         if descriptors:
-            event_context = context.get_context_for_event(event)
-            event_context.set_base_output_path(self.base_path)
-            output_path = event_context.get_full_output_path()
+            curr_context = context.get_current_context()
+            if curr_context is None:
+                output_path = os.path.join(self.base_path)
+            else:
+                curr_context.set_base_output_path(self.base_path)
+                output_path = curr_context.get_full_output_path()
             for descriptor in descriptors:
                 handler = descriptor.create(output_path)
                 self.logger.addHandler(handler)
@@ -416,54 +397,24 @@ class _LogStream(object):
             self.__remove_handler(log_handler)
         handlers.clear()
 
-    def on_test_case_end(self, _):
-        """Internal use only. To be called when a test case has ended."""
-        self.__clear_handlers(self._test_case_log_handlers)
+    def update_handlers(self, event):
+        """Update the output file paths for log handlers upon a change in
+        the test context.
 
-        # Enable handlers residing only in test class level contexts
-        for handler in self._test_class_only_log_handlers:
-            self.logger.addHandler(handler)
-
-    def on_test_case_begin(self, test_case_event):
-        """Internal use only. To be called when a test case has begun."""
-        # Close test case handlers from previous tests.
-        self.__clear_handlers(self._test_case_log_handlers)
-
-        # Disable handlers residing only in test class level contexts
-        for handler in self._test_class_only_log_handlers:
-            self.logger.removeHandler(handler)
-
-        # Create new handlers for this test case.
-        self.__create_handlers_from_descriptors(
-            self._test_case_handler_descriptors,
-            self._test_case_log_handlers, test_case_event)
-
-    def on_test_class_end(self, _):
-        """Internal use only. To be called when a test class has ended."""
-        self.__clear_handlers(self._test_class_log_handlers)
-        self.__clear_handlers(self._test_class_only_log_handlers)
-
-        # Enable handlers residing only in test run level contexts
-        for handler in self._test_run_only_log_handlers:
-            self.logger.addHandler(handler)
-
-    def on_test_class_begin(self, test_class_event):
-        """Internal use only. To be called when a test class has begun."""
-        # Close test class handlers from previous tests.
-        self.__clear_handlers(self._test_class_log_handlers)
-        self.__clear_handlers(self._test_class_only_log_handlers)
-
-        # Disable handlers residing only in test run level contexts
-        for handler in self._test_run_only_log_handlers:
-            self.logger.removeHandler(handler)
-
-        # Create new handlers for this test class.
-        self.__create_handlers_from_descriptors(
-            self._test_class_handler_descriptors,
-            self._test_class_log_handlers, test_class_event)
-        self.__create_handlers_from_descriptors(
-            self._test_class_only_handler_descriptors,
-            self._test_class_only_log_handlers, test_class_event)
+        Args:
+            event: An instance of NewContextEvent.
+        """
+        if isinstance(event, context.NewTestClassContextEvent):
+            self.__clear_handlers(self._testclass_handlers)
+            self.__create_handlers_from_descriptors(
+                self._testclass_descriptors, self._testclass_handlers)
+            self.__clear_handlers(self._testcase_handlers)
+            self.__create_handlers_from_descriptors(
+                self._testcase_descriptors, self._testcase_handlers)
+        if isinstance(event, context.NewTestCaseContextEvent):
+            self.__clear_handlers(self._testcase_handlers)
+            self.__create_handlers_from_descriptors(
+                self._testcase_descriptors, self._testcase_handlers)
 
     def cleanup(self):
         """Removes all LogHandlers from the logger."""

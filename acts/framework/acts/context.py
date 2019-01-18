@@ -14,11 +14,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import os
 import logging
+import os
 
+from acts.event import event_bus
+from acts.event.event import Event
+from acts.event.event import TestCaseBeginEvent
+from acts.event.event import TestCaseEndEvent
 from acts.event.event import TestCaseEvent
+from acts.event.event import TestClassBeginEvent
+from acts.event.event import TestClassEndEvent
 from acts.event.event import TestClassEvent
+
+_contexts = []
+
+
+def get_current_context():
+    if _contexts:
+        return _contexts[-1]
+    return None
 
 
 def get_context_for_event(event):
@@ -28,12 +42,47 @@ def get_context_for_event(event):
         return _get_context_for_test_class_event(event)
     raise TypeError('Unrecognized event type: %s %s', event, event.__class__)
 
+
 def _get_context_for_test_case_event(event):
     return TestCaseContext(event.test_class, event.test_case)
 
 
 def _get_context_for_test_class_event(event):
     return TestClassContext(event.test_class)
+
+
+class NewContextEvent(Event):
+    """The event posted when a test context has changed."""
+
+
+class NewTestClassContextEvent(NewContextEvent):
+    """The event posted when the test class context has changed."""
+
+
+class NewTestCaseContextEvent(NewContextEvent):
+    """The event posted when the test case context has changed."""
+
+
+def _update_test_class_context(event):
+    if isinstance(event, TestClassBeginEvent):
+        _contexts.append(_get_context_for_test_class_event(event))
+    if isinstance(event, TestClassEndEvent):
+        if _contexts:
+            _contexts.pop()
+    event_bus.post(NewTestClassContextEvent())
+
+
+def _update_test_case_context(event):
+    if isinstance(event, TestCaseBeginEvent):
+        _contexts.append(_get_context_for_test_case_event(event))
+    if isinstance(event, TestCaseEndEvent):
+        if _contexts:
+            _contexts.pop()
+    event_bus.post(NewTestCaseContextEvent())
+
+
+event_bus.register(TestClassEvent, _update_test_class_context)
+event_bus.register(TestCaseEvent, _update_test_case_context)
 
 
 class TestContext(object):
