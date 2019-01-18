@@ -28,7 +28,6 @@ from serial.tools import list_ports
 
 from acts import tracelogger
 from logging import Logger
-import logging as py_logging
 
 logging = tracelogger.TakoTraceLogger(Logger(__file__))
 
@@ -219,11 +218,7 @@ class LogSerial(object):
     def set_logger(self, serial_logger):
         global logging
         logging = serial_logger
-        logger_path = py_logging.log_path
-        if self.output_path != logger_path:
-            logging.info(
-                'Logserial output path changed to: {}'.format(logger_path))
-        self.output_path = logger_path
+        self.set_output_path(getattr(logging, 'output_path', '/tmp'))
         self.set_log = True
 
     def set_output_path(self, output_path):
