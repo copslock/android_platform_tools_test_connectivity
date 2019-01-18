@@ -20,8 +20,15 @@ from mock import patch
 import unittest
 from unittest import TestCase
 from acts.event.event import TestCaseEvent
+from acts.event.event import TestCaseBeginEvent
+from acts.event.event import TestCaseEndEvent
 from acts.event.event import TestClassEvent
+from acts.event.event import TestClassBeginEvent
+from acts.event.event import TestClassEndEvent
 from acts.context import get_context_for_event
+from acts.context import get_current_context
+from acts.context import _update_test_class_context
+from acts.context import _update_test_case_context
 from acts.context import TestContext
 from acts.context import TestCaseContext
 from acts.context import TestClassContext
@@ -62,6 +69,52 @@ class ModuleTest(TestCase):
         event = Mock()
 
         self.assertRaises(TypeError, partial(get_context_for_event, event))
+
+    def test_update_test_class_context_for_test_class_begin(self):
+        event = Mock(spec=TestClassBeginEvent)
+        event.test_class = Mock()
+
+        _update_test_class_context(event)
+        self.assertIsInstance(get_current_context(), TestClassContext)
+
+    def test_update_test_class_context_for_test_class_end(self):
+        event = Mock(spec=TestClassBeginEvent)
+        event.test_class = Mock()
+        event2 = Mock(spec=TestClassEndEvent)
+        event2.test_class = Mock()
+
+        _update_test_class_context(event)
+        _update_test_class_context(event2)
+
+        self.assertIsNone(get_current_context())
+
+    def test_update_test_case_context_for_test_case_begin(self):
+        event = Mock(spec=TestClassBeginEvent)
+        event.test_class = Mock()
+        event2 = Mock(spec=TestCaseBeginEvent)
+        event2.test_class = Mock()
+        event2.test_case = Mock()
+
+        _update_test_class_context(event)
+        _update_test_case_context(event2)
+
+        self.assertIsInstance(get_current_context(), TestCaseContext)
+
+    def test_update_test_case_context_for_test_case_end(self):
+        event = Mock(spec=TestClassBeginEvent)
+        event.test_class = Mock()
+        event2 = Mock(spec=TestCaseBeginEvent)
+        event2.test_class = Mock()
+        event2.test_case = Mock()
+        event3 = Mock(spec=TestCaseEndEvent)
+        event3.test_class = Mock()
+        event3.test_case = Mock()
+
+        _update_test_class_context(event)
+        _update_test_case_context(event2)
+        _update_test_case_context(event3)
+
+        self.assertIsInstance(get_current_context(), TestClassContext)
 
 
 class TestContextTest(TestCase):

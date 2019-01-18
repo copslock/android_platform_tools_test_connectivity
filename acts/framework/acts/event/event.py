@@ -44,22 +44,12 @@ class TestCaseEvent(TestEvent):
         return self.test_class.__class__.__name__
 
 
-class TestCaseSignalEvent(TestEvent):
+class TestCaseSignalEvent(TestCaseEvent):
     """The base class for test-case-signal-related events."""
 
     def __init__(self, test_class, test_case, test_signal):
-        super().__init__()
-        self.test_class = test_class
-        self.test_case = test_case
+        super().__init__(test_class, test_case)
         self.test_signal = test_signal
-
-    @property
-    def test_case_name(self):
-        return self.test_class.test_name
-
-    @property
-    def test_class_name(self):
-        return self.test_class.__class__.__name__
 
 
 class TestCaseBeginEvent(TestCaseEvent):
