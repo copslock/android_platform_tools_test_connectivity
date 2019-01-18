@@ -89,7 +89,8 @@ class SshAudioCapture(AudioCapture):
         if not (win_size and step_size):
             fn = audio_analysis.THDN
         else:
-            fn = functools.partial(audio_analysis.max_THDN, win_size=win_size,
+            fn = functools.partial(audio_analysis.max_THDN,
+                                   window_size=win_size,
                                    step_size=step_size)
         latest_file_path = self.record_file_template % self.last_fileno()
         wave_file = SoundFile(latest_file_path)
