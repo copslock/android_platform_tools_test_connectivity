@@ -80,6 +80,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         self.dut.droid.wifiRemoveNetworkSuggestions([])
+        self.dut.droid.wifiDisconnect()
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
 
@@ -146,7 +147,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         2. Wait for the device to connect to it.
         3. Ensure that we did not receive the post connection broadcast
            (isAppInteractionRequired = False).
-        4. Remove the suggestions and ensure the device disconnected.
+        4. Remove the suggestions and ensure the device does not connect back.
         """
         self.add_suggestions_and_ensure_connection(
             [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY],
@@ -155,7 +156,20 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         asserts.assert_true(
             self.dut.droid.wifiRemoveNetworkSuggestions([self.wpa_psk_2g]),
             "Failed to remove suggestions")
+        # Ensure we did not disconnect
+        wutils.ensure_no_disconnect(self.dut)
+
+        # Trigger a disconnect and wait for the disconnect.
+        self.dut.droid.wifiDisconnect()
         wutils.wait_for_disconnect(self.dut)
+        self.dut.ed.clear_all_events()
+
+        # Now ensure that we didn't connect back.
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut,
+                                    self.wpa_psk_2g[WifiEnums.SSID_KEY],
+                                    assert_on_fail=False),
+            "Device should not connect back")
 
 
     @test_tracker_info(uuid="b1d27eea-23c8-4c4f-b944-ef118e4cc35f")
@@ -168,7 +182,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         2. Wait for the device to connect to it.
         3. Ensure that we did receive the post connection broadcast
            (isAppInteractionRequired = True).
-        4. Remove the suggestions and ensure the device disconnected.
+        4. Remove the suggestions and ensure the device does not connect back.
         """
         network_suggestion = self.wpa_psk_2g
         network_suggestion[WifiEnums.IS_APP_INTERACTION_REQUIRED] = True
@@ -179,7 +193,20 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         asserts.assert_true(
             self.dut.droid.wifiRemoveNetworkSuggestions([network_suggestion]),
             "Failed to remove suggestions")
+        # Ensure we did not disconnect
+        wutils.ensure_no_disconnect(self.dut)
+
+        # Trigger a disconnect and wait for the disconnect.
+        self.dut.droid.wifiDisconnect()
         wutils.wait_for_disconnect(self.dut)
+        self.dut.ed.clear_all_events()
+
+        # Now ensure that we didn't connect back.
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut,
+                                    self.wpa_psk_2g[WifiEnums.SSID_KEY],
+                                    assert_on_fail=False),
+            "Device should not connect back")
 
 
     @test_tracker_info(uuid="a036a24d-29c0-456d-ae6a-afdde34da710")
@@ -195,7 +222,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
            (isAppInteractionRequired = False).
         4. Reboot the device.
         5. Wait for the device to connect to back to it.
-        6. Remove the suggestions and ensure the device disconnected.
+        6. Remove the suggestions and ensure the device does not connect back.
         """
         self.add_suggestions_and_ensure_connection(
             [self.wpa_psk_5g], self.wpa_psk_5g[WifiEnums.SSID_KEY],
@@ -211,7 +238,21 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         asserts.assert_true(
             self.dut.droid.wifiRemoveNetworkSuggestions([self.wpa_psk_5g]),
             "Failed to remove suggestions")
+        # Ensure we did not disconnect
+        wutils.ensure_no_disconnect(self.dut)
+
+        # Trigger a disconnect and wait for the disconnect.
+        self.dut.droid.wifiDisconnect()
         wutils.wait_for_disconnect(self.dut)
+        self.dut.ed.clear_all_events()
+
+        # Now ensure that we didn't connect back.
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut,
+                                    self.wpa_psk_5g[WifiEnums.SSID_KEY],
+                                    assert_on_fail=False),
+            "Device should not connect back")
+
 
     @test_tracker_info(uuid="554b5861-22d0-4922-a5f4-712b4cf564eb")
     def test_fail_to_connect_to_wpa_psk_5g_when_not_approved(self):

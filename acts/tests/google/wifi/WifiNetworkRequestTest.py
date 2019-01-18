@@ -242,14 +242,8 @@ class WifiNetworkRequestTest(WifiBaseTest):
         self.dut.log.info("Sent network request with %s", self.open_5g)
         # Ensure we do not disconnect from the previous network until the user
         # approves the new request.
-        try:
-            self.dut.ed.clear_all_events()
-            self.dut.droid.wifiStartTrackingStateChange()
-            event = self.dut.ed.pop_event("WifiNetworkDisconnected", 10)
-            self.dut.droid.wifiStopTrackingStateChange()
-            raise signals.TestFailure("Disconnected from the network")
-        except queue.Empty:
-            pass
+        self.dut.ed.clear_all_events()
+        wutils.ensure_no_disconnect(self.dut)
 
         # Now complete the flow and ensure we connected to second request.
         wutils.wait_for_wifi_connect_after_network_request(self.dut,
