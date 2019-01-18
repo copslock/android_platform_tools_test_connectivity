@@ -14,43 +14,49 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """Stream music through connected device from phone test implementation."""
-import functools
 import os
-import time
 
 from acts import asserts
+from acts.signals import TestPass
+from acts.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as Factory
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import connect_phone_to_headset
 from acts.test_utils.bt.bt_test_utils import set_bluetooth_codec
 from acts.test_utils.coex.audio_test_utils import SshAudioCapture
 
-ADB_FILE_EXISTS_CMD = 'test -e %s && echo True'
+ADB_FILE_EXISTS = 'test -e %s && echo True'
 
 
 class A2dpCodecBaseTest(BluetoothBaseTest):
-    """Stream music file over desired Bluetooth codec configurations.
-    Device under test is Android phone, connected to headset controlled by a
-    RelayDevice.
+    """Stream audio file over desired Bluetooth codec configurations.
 
-    Config file should have a key "codecs" mapping to an array with >=1 codec
-    configs.
-        Example codec config: {"codec_type": "SBC",
-                               "sample_rate": 44100,
-                               "bits_per_sample": 16,
-                               "channel_mode": "STEREO"}
-    A test method will be generated for each codec config in "codecs".
+    Audio file should be a sine wave. Other audio files will not work for the
+    test analysis metrics.
+
+    Device under test is Android phone, connected to headset with a controller
+    that can generate a BluetoothHandsfreeAbstractDevice from test_utils.
+    abstract_devices.bluetooth_handsfree_abstract_device.
+    BuetoothHandsfreeAbstractDeviceFactory.
     """
 
     def __init__(self, configs):
         super(A2dpCodecBaseTest, self).__init__(configs)
-        self.dut = self.android_devices[0]
-        self.headset = self.relay_devices[0]
-        self.mic = None
-        self.audio_params = self.user_params['audio_params']
+        required_params = ["audio_params", "dut", "codecs"]
+        self.unpack_userparams(required_params)
+
+        # Instantiate test devices
+        self.android = self.android_devices[0]
+        attr, idx = self.dut.split(":")
+        dut_controller = getattr(self, attr)[int(idx)]
+        self.bt_device = Factory().generate(dut_controller)
         if 'input_device' in self.audio_params:
             self.audio_output_path = ''
             self.mic = SshAudioCapture(self.audio_params,
                                        self.audio_output_path)
+            self.log.info('Recording device %s initialized.' %
+                          self.mic.input_device['name'])
+        else:
+            raise KeyError('Config audio_params specify input_device.')
         self.phone_music_file = os.path.join(
             self.user_params['phone_music_file_dir'],
             self.user_params['music_file_name'])
@@ -58,29 +64,31 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
             self.user_params['host_music_file_dir'],
             self.user_params['music_file_name'])
 
+        # Key test metrics to determine quality of recorded audio file.
+        self.metrics = {"anomalies": [],
+                        "dut_type": dut_controller.__class__.__name__,
+                        "thdn": None}
+
     def setup_class(self):
         super().setup_class()
-        self.headset.power_on()
+        self.bt_device.power_on()
 
     def teardown_class(self):
         super().teardown_class()
-        media_tag = self.phone_music_file.split('.')[0]
-        self.dut.droid.mediaPlayStop(media_tag)
+        self.android.droid.mediaPlayStop()
 
     def ensure_phone_has_music_file(self):
-        """Make sure music file (based on config values) is on the phone.
-
-        Returns:
-            bool: True if file is on phone, False if file could not be pushed.
-        """
-        if not bool(self.dut.adb.shell(ADB_FILE_EXISTS_CMD %
-                                       self.phone_music_file)):
-            self.dut.adb.push(self.host_music_file, self.phone_music_file)
+        """Make sure music file (based on config values) is on the phone."""
+        if not self.android.adb.shell(ADB_FILE_EXISTS % self.phone_music_file):
+            self.android.adb.push(self.host_music_file, self.phone_music_file)
+            has_file = self.android.adb.shell(
+                    ADB_FILE_EXISTS % self.phone_music_file)
+            asserts.assert_true(has_file, 'Audio file not pushed to phone.',
+                                extras=self.metrics)
             self.log.info('Music file successfully pushed to phone.')
         else:
             self.log.info(
                 'Music file already on phone. Skipping file transfer.')
-        return True
 
     @BluetoothBaseTest.bt_test_wrap
     def stream_music_on_codec(self,
@@ -106,54 +114,74 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
 
         self.log.info('Pairing and connecting to headset...')
         asserts.assert_true(
-            connect_phone_to_headset(self.dut, self.headset, 600),
+            connect_phone_to_headset(self.android, self.bt_device, 600),
             'Could not connect to device at address %s'
-            % self.headset.mac_address)
+            % self.bt_device.mac_address,
+            extras=self.metrics)
 
         # Ensure audio file exists on phone.
         self.ensure_phone_has_music_file()
 
         self.log.info('Setting Bluetooth codec to %s...' % codec_type)
-        codec_set = set_bluetooth_codec(android_device=self.dut,
+        codec_set = set_bluetooth_codec(android_device=self.android,
                                         codec_type=codec_type,
                                         sample_rate=sample_rate,
                                         bits_per_sample=bits_per_sample,
                                         channel_mode=channel_mode,
                                         codec_specific_1=codec_specific_1)
-        asserts.assert_true(codec_set, 'Codec configuration failed.')
+        asserts.assert_true(codec_set, 'Codec configuration failed.',
+                            extras=self.metrics)
 
-        media_tag = self.phone_music_file.split('.')[0]
-        playing = self.dut.droid.mediaPlayOpen(
+        playing = self.android.droid.mediaPlayOpen(
             'file://%s' % self.phone_music_file,
-            media_tag,
+            'default',
             True)
         asserts.assert_true(playing,
-                            'Failed to play file %s' % self.phone_music_file)
+                            'Failed to play file %s' % self.phone_music_file,
+                            extras=self.metrics)
 
-        looping = self.dut.droid.mediaPlaySetLooping(True,
-                                                     media_tag)
+        looping = self.android.droid.mediaPlaySetLooping(True)
         if not looping:
             self.log.warning('Could not loop %s' % self.phone_music_file)
 
-        if self.mic is not None:
+        try:
             self.log.info('Capturing audio through %s' %
                           self.mic.input_device['name'])
-            audio_captured = self.mic.capture_audio(self.audio_params['trim'])
-            stopped = self.dut.droid.mediaPlayStop(media_tag)
-            asserts.assert_true(audio_captured, 'Audio not recorded')
-            thdn = self.mic.THDN(**self.audio_params['thdn_params'])
-            for ch_no, t in thdn.items():
-                asserts.assert_true(
-                    (t <= self.audio_params['threshold']),
-                    'Total Harmonic Distortion + Noise too high: %.4f%%' %
-                    t * 100)
-                self.log.info('THD+N percent for channel %s: %.4f%%' %
-                              (ch_no, t * 100))
+        except AttributeError as e:
+            self.log.error('Mic not initialized correctly. Check your '
+                           '"input_device" parameter in config.')
+            raise e
+        audio_captured = self.mic.capture_audio(self.audio_params['trim'])
+        self.android.droid.mediaPlayStop()
+        stopped = not self.android.droid.mediaIsPlaying()
+        asserts.assert_true(audio_captured, 'Audio not recorded',
+                            extras=self.metrics)
+
+        # Calculate Total Harmonic Distortion + Noise
+        thdn = self.mic.THDN(**self.audio_params['thdn_params'])
+        for ch_no, t in thdn.items():
+            self.log.info('THD+N percent for channel %s: %.4f%%' %
+                          (ch_no, t * 100))
+        self.metrics["thdn"] = thdn
+
+        # Detect Anomalies
+        anom = self.mic.detect_anomalies(**self.audio_params["anomaly_params"])
+        for ch_no, anomalies in anom.items():
+            for anomaly in anomalies:
+                start, end = anomaly
+                self.log.warning('Anomaly on channel {} at {}:{}. Duration '
+                                 '{} sec'.format(ch_no,
+                                                 start // 60,
+                                                 start % 60,
+                                                 end -start))
         else:
-            time.sleep(self.audio_params['record_duration'])
-            stopped = self.dut.droid.mediaPlayStop(media_tag)
+            self.log.info('No anomalies detected.')
+        self.metrics["anomalies"] = anom
 
         if stopped:
             self.log.info('Finished playing audio.')
         else:
             self.log.warning('Failed to stop audio.')
+
+        raise TestPass('Successfully recorded and analyzed audio.',
+                       extras=self.metrics)
