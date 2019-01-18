@@ -30,7 +30,7 @@ from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.ap_lib import hostapd_ap_preset
 
 # http://www.secdev.org/projects/scapy/
-# On ubuntu, sudo pip3 install scapy-python3
+# On ubuntu, sudo pip3 install scapy
 import scapy.all as scapy
 
 GET_FROM_PHONE = 'get_from_dut'
