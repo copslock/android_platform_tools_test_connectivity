@@ -31,7 +31,7 @@ from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
 from acts.test_utils.bt.bt_test_utils import generate_ble_advertise_objects
 from acts.test_utils.bt.bt_test_utils import generate_ble_scan_objects
 from acts.test_utils.bt.bt_constants import adv_succ
-from acts.test_utils.bt.bt_test_utils import batch_scan_result
+from acts.test_utils.bt.bt_constants import batch_scan_result
 from acts.test_utils.bt.bt_constants import scan_result
 
 
@@ -334,14 +334,12 @@ class UniqueFilteringTest(BluetoothBaseTest):
         test_result = True
         service_uuid = "00000000-0000-1000-8000-00805F9B34FB"
         service_mask = "00000000-0000-1000-8000-00805F9B34FA"
-        self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
         self.scn_ad.droid.bleSetScanFilterServiceUuid(service_uuid,
                                                       service_mask)
         self.adv_ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
             ble_advertise_settings_modes['low_latency'])
         filter_list, scan_settings, scan_callback = generate_ble_scan_objects(
             self.scn_ad.droid)
-        self.scn_ad.droid.bleBuildScanFilter(filter_list)
         expected_event_name = scan_result.format(scan_callback)
         self.adv_ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
         self.adv_ad.droid.bleSetAdvertiseDataIncludeTxPowerLevel(True)
@@ -361,7 +359,7 @@ class UniqueFilteringTest(BluetoothBaseTest):
             event_info = self.scn_ad.ed.pop_event(expected_event_name,
                                                   self.default_timeout)
             self.log.error(
-                "Unexpectedly found an advertiser:".format(event_info))
+                "Unexpectedly found an advertiser: {}".format(event_info))
             test_result = False
         except Empty as error:
             self.log.debug("No events were found as expected.")
