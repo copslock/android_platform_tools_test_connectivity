@@ -321,6 +321,14 @@ class ThroughputTest(AwareBaseTest):
                  cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
 
+            # validate no leak of information
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in init_net_event_nc[
+                    "data"], "Network specifier leak!")
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in resp_net_event_nc[
+                    "data"], "Network specifier leak!")
+
             # note that Init <-> Resp since IPv6 are of peer's!
             resp_ipv6 = init_net_event_nc["data"][aconsts.NET_CAP_IPV6]
             init_ipv6 = resp_net_event_nc["data"][aconsts.NET_CAP_IPV6]
