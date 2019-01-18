@@ -16,6 +16,7 @@
 """This module is where all the record definitions and record containers live.
 """
 
+import collections
 import json
 import logging
 
@@ -179,7 +180,7 @@ class TestResultRecord(object):
         Returns:
             A dictionary representing the content of this class.
         """
-        d = {}
+        d = collections.OrderedDict()
         d[TestResultEnums.RECORD_NAME] = self.test_name
         d[TestResultEnums.RECORD_CLASS] = self.test_class
         d[TestResultEnums.RECORD_BEGIN_TIME] = self.begin_time
@@ -332,19 +333,19 @@ class TestResult(object):
         Returns:
             A json-format string representing the test results.
         """
-        d = {}
+        d = collections.OrderedDict()
         d["ControllerInfo"] = self.controller_info
         d["Results"] = [record.to_dict() for record in self.executed]
         d["Summary"] = self.summary_dict()
         d["Extras"] = self.extras
         d["Errors"] = self.errors_list()
-        json_str = json.dumps(d, indent=4, sort_keys=True)
+        json_str = json.dumps(d, indent=4)
         return json_str
 
     def summary_str(self):
         """Gets a string that summarizes the stats of this test result.
 
-        The summary rovides the counts of how many test cases fall into each
+        The summary provides the counts of how many test cases fall into each
         category, like "Passed", "Failed" etc.
 
         Format of the string is:
@@ -354,20 +355,19 @@ class TestResult(object):
             A summary string of this test result.
         """
         l = ["%s %s" % (k, v) for k, v in self.summary_dict().items()]
-        # Sort the list so the order is the same every time.
-        msg = ", ".join(sorted(l))
+        msg = ", ".join(l)
         return msg
 
     def summary_dict(self):
         """Gets a dictionary that summarizes the stats of this test result.
 
-        The summary rovides the counts of how many test cases fall into each
+        The summary provides the counts of how many test cases fall into each
         category, like "Passed", "Failed" etc.
 
         Returns:
             A dictionary with the stats of this test result.
         """
-        d = {}
+        d = collections.OrderedDict()
         d["ControllerInfo"] = self.controller_info
         d["Requested"] = len(self.requested)
         d["Executed"] = len(self.executed)
