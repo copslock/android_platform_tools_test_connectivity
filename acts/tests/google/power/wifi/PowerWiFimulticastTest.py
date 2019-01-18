@@ -106,7 +106,7 @@ class PowerWiFimulticastTest(PWBT.PowerWiFiBaseTest):
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.ArpGenerator(**self.pkt_gen_config)
         packet = pkt_gen.generate(
-            op=scapy.ARP.is_at,
+            op='is-at',
             ip_src='0.0.0.0',
             ip_dst=self.ipv4_dst_fake,
             hwdst=self.mac_dst_fake,
@@ -119,7 +119,7 @@ class PowerWiFimulticastTest(PWBT.PowerWiFiBaseTest):
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.ArpGenerator(**self.pkt_gen_config)
         packet = pkt_gen.generate(
-            op=scapy.ARP.is_at,
+            op='is-at',
             ip_dst=self.ipv4_dst_fake,
             hwdst=self.mac_dst_fake,
             eth_dst=self.pkt_gen_config['dst_mac'])
