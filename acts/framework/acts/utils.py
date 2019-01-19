@@ -751,11 +751,9 @@ def set_location_service(ad, new_state):
                  " content://com.google.settings/partner --bind "
                  "name:s:use_location_for_services --bind value:s:1")
     if new_state:
-        ad.adb.shell("settings put secure location_providers_allowed +gps")
-        ad.adb.shell("settings put secure location_providers_allowed +network")
+        ad.adb.shell("settings put secure location_mode 3")
     else:
-        ad.adb.shell("settings put secure location_providers_allowed -gps")
-        ad.adb.shell("settings put secure location_providers_allowed -network")
+        ad.adb.shell("settings put secure location_mode 0")
 
 
 def set_mobile_data_always_on(ad, new_state):
