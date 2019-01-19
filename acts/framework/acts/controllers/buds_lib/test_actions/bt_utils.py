@@ -35,6 +35,7 @@ import time
 from acts import tracelogger
 from acts.utils import wait_until
 from acts.utils import TimeoutError
+from logging import Logger
 
 # Add connection profile for future devices in this dictionary
 WEARABLE_BT_PROTOCOLS = {
@@ -68,7 +69,7 @@ class BTUtils(object):
 
     def __init__(self):
         self.default_timeout = 60
-        self.logger = tracelogger.TakoTraceLogger(file_name=__file__)
+        self.logger = tracelogger.TakoTraceLogger(Logger(__file__))
 
     def bt_pair_and_connect(self, pri_device, sec_device):
         """Pair and connect a pri_device to a sec_device.
