@@ -166,10 +166,13 @@ class WifiDppTest(base_test.BaseTestClass):
              URI ID to be used later
     """
     self.log.info("Generating a URI for the Responder")
-    cmd = "wpa_cli DPP_BOOTSTRAP_GEN type=qrcode chan=%s info=%s" % (chan, info)
+    cmd = "wpa_cli DPP_BOOTSTRAP_GEN type=qrcode info=%s" % info
 
     if mac:
       cmd += " mac=%s" % mac
+
+    if chan:
+      cmd += " chan=%s" % chan
 
     result = device.adb.shell(cmd)
 
@@ -353,6 +356,8 @@ class WifiDppTest(base_test.BaseTestClass):
   def start_dpp_as_initiator_configurator(self,
                                           security,
                                           use_mac,
+                                          responder_chan="81/1",
+                                          responder_freq=2412,
                                           net_role=DPP_TEST_NETWORK_ROLE_STA,
                                           cause_timeout=False,
                                           fail_authentication=False,
@@ -372,6 +377,11 @@ class WifiDppTest(base_test.BaseTestClass):
             security: Security type, a string "SAE" or "PSK"
             use_mac: A boolean indicating whether to use the device's MAC
               address (if True) or use a Broadcast (if False).
+            responder_chan: Responder channel to specify in the URI
+            responder_freq: Frequency that the Responder would actually listen on.
+              Note: To succeed, there must be a correlation between responder_chan, which is what
+              the URI advertises, and responder_freq which is the actual frequency. See:
+              https://en.wikipedia.org/wiki/List_of_WLAN_channels
             net_role: Network role, a string "sta" or "ap"
             cause_timeout: Intentionally don't start the responder to cause a
               timeout
@@ -396,7 +406,7 @@ class WifiDppTest(base_test.BaseTestClass):
                      "iu3ht98368903434089ut4958763094u0934ujg094j5oifegjfds"
     else:
       # Generate a URI with default info and channel
-      uri_id = self.gen_uri(self.helper_dev, mac=mac)
+      uri_id = self.gen_uri(self.helper_dev, chan=responder_chan, mac=mac)
 
       # Get the URI. This is equal to scanning a QR code
       enrollee_uri = self.get_uri(self.helper_dev, uri_id)
@@ -408,7 +418,7 @@ class WifiDppTest(base_test.BaseTestClass):
 
     if not cause_timeout:
       # Start DPP as an enrolle-responder for STA on helper device
-      self.start_responder_enrollee(self.helper_dev, net_role=net_role)
+      self.start_responder_enrollee(self.helper_dev, freq=responder_freq, net_role=net_role)
     else:
       self.log.info("Not starting DPP responder on purpose")
 
@@ -595,6 +605,44 @@ class WifiDppTest(base_test.BaseTestClass):
           "Test network not deleted from configured networks.")
 
   """ Tests Begin """
+
+  def test_dpp_as_initiator_configurator_with_psk_5G(self):
+    asserts.skip_if(not self.dut.droid.wifiIs5GHzBandSupported() or
+            not self.helper_dev.droid.wifiIs5GHzBandSupported(),
+            "5G not supported on at least on test device")
+    self.start_dpp_as_initiator_configurator(
+      security=self.DPP_TEST_SECURITY_PSK, responder_chan="126/149", responder_freq=5745,
+      use_mac=True)
+
+  def test_dpp_as_initiator_configurator_with_psk_5G_broadcast(self):
+    asserts.skip_if(not self.dut.droid.wifiIs5GHzBandSupported() or
+                    not self.helper_dev.droid.wifiIs5GHzBandSupported(),
+                    "5G not supported on at least on test device")
+    self.start_dpp_as_initiator_configurator(
+      security=self.DPP_TEST_SECURITY_PSK, responder_chan="126/149", responder_freq=5745,
+      use_mac=False)
+
+  def test_dpp_as_initiator_configurator_with_psk_no_chan_in_uri_listen_on_5745_broadcast(self):
+    asserts.skip_if(not self.dut.droid.wifiIs5GHzBandSupported() or
+                    not self.helper_dev.droid.wifiIs5GHzBandSupported(),
+                    "5G not supported on at least on test device")
+    self.start_dpp_as_initiator_configurator(
+      security=self.DPP_TEST_SECURITY_PSK, responder_chan=None, responder_freq=5745, use_mac=False)
+
+  def test_dpp_as_initiator_configurator_with_psk_no_chan_in_uri_listen_on_5745(self):
+    asserts.skip_if(not self.dut.droid.wifiIs5GHzBandSupported() or
+                    not self.helper_dev.droid.wifiIs5GHzBandSupported(),
+                    "5G not supported on at least on test device")
+    self.start_dpp_as_initiator_configurator(
+      security=self.DPP_TEST_SECURITY_PSK, responder_chan=None, responder_freq=5745, use_mac=True)
+
+  def test_dpp_as_initiator_configurator_with_psk_no_chan_in_uri_listen_on_2462_broadcast(self):
+    self.start_dpp_as_initiator_configurator(
+      security=self.DPP_TEST_SECURITY_PSK, responder_chan=None, responder_freq=2462, use_mac=False)
+
+  def test_dpp_as_initiator_configurator_with_psk_no_chan_in_uri_listen_on_2462(self):
+    self.start_dpp_as_initiator_configurator(
+      security=self.DPP_TEST_SECURITY_PSK, responder_chan=None, responder_freq=2462, use_mac=True)
 
   def test_dpp_as_initiator_configurator_with_psk(self):
     self.start_dpp_as_initiator_configurator(
