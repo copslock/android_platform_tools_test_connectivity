@@ -85,7 +85,7 @@ class AdbProxy(object):
         """
         self.serial = serial
         self._server_local_port = None
-        adb_path = self._exec_cmd("which adb")
+        adb_path = job.run("which adb").stdout
         adb_cmd = [adb_path]
         if serial:
             adb_cmd.append("-s %s" % serial)
