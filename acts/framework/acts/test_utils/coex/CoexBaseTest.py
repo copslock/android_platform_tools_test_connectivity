@@ -37,7 +37,6 @@ from acts.test_utils.coex.coex_test_utils import iperf_result
 from acts.test_utils.coex.coex_test_utils import get_phone_ip
 from acts.test_utils.coex.coex_test_utils import parse_fping_results
 from acts.test_utils.coex.coex_test_utils import wifi_connection_check
-from acts.test_utils.coex.coex_test_utils import xlsheet
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
@@ -155,8 +154,6 @@ class CoexBaseTest(BaseTestClass):
         """Resets wifi and store test results."""
         reset_wifi(self.pri_ad)
         wifi_toggle_state(self.pri_ad, False)
-        json_result = self.results.json_str()
-        xlsheet(self.pri_ad, json_result)
 
     def create_android_relay_object(self):
         """Creates android device object and relay device object if required

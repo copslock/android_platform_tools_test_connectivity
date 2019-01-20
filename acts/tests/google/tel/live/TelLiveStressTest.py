@@ -225,6 +225,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         return True
 
     def _send_message(self, max_wait_time=2 * MAX_WAIT_TIME_SMS_RECEIVE):
+        slot_id_rx = None
         if self.single_phone_test:
             ads = [self.dut, self.dut]
         else:
@@ -332,6 +333,7 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def _make_phone_call(self, call_verification_func=None):
         ads = self.android_devices[:]
+        slot_id_callee = None
         if not self.single_phone_test:
             random.shuffle(ads)
         if self.dsds_esim:

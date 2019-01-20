@@ -231,6 +231,14 @@ class DataPathTest(AwareBaseTest):
                  cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
+            # validate no leak of information
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in p_net_event_nc[
+                    "data"], "Network specifier leak!")
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in s_net_event_nc[
+                    "data"], "Network specifier leak!")
+
             # note that Pub <-> Sub since IPv6 are of peer's!
             s_ipv6 = p_net_event_nc["data"][aconsts.NET_CAP_IPV6]
             p_ipv6 = s_net_event_nc["data"][aconsts.NET_CAP_IPV6]
@@ -379,6 +387,14 @@ class DataPathTest(AwareBaseTest):
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+            # validate no leak of information
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in init_net_event_nc[
+                    "data"], "Network specifier leak!")
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in resp_net_event_nc[
+                    "data"], "Network specifier leak!")
 
             # note that Init <-> Resp since IPv6 are of peer's!
             init_ipv6 = resp_net_event_nc["data"][aconsts.NET_CAP_IPV6]
@@ -1040,6 +1056,10 @@ class DataPathTest(AwareBaseTest):
                     self.log.info(
                         "Received an unexpected connectivity, the revoked "
                         "network request probably went through -- %s", event)
+                # validate no leak of information
+                asserts.assert_false(
+                    cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in event["data"],
+                    "Network specifier leak!")
 
     @test_tracker_info(uuid="2e325e2b-d552-4890-b470-20b40284395d")
     def test_multiple_identical_networks(self):
@@ -1221,6 +1241,14 @@ class DataPathTest(AwareBaseTest):
              cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
             (cconsts.NETWORK_CB_KEY_ID, req_a_init))
 
+        # validate no leak of information
+        asserts.assert_false(
+            cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in req_a_resp_event_nc[
+                "data"], "Network specifier leak!")
+        asserts.assert_false(
+            cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in req_a_init_event_nc[
+                "data"], "Network specifier leak!")
+
         # note that Init <-> Resp since IPv6 are of peer's!
         req_a_ipv6_init = req_a_resp_event_nc["data"][aconsts.NET_CAP_IPV6]
         req_a_ipv6_resp = req_a_init_event_nc["data"][aconsts.NET_CAP_IPV6]
@@ -1267,6 +1295,14 @@ class DataPathTest(AwareBaseTest):
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
             (cconsts.NETWORK_CB_KEY_ID, req_b_init))
+
+        # validate no leak of information
+        asserts.assert_false(
+            cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in req_b_resp_event_nc[
+                "data"], "Network specifier leak!")
+        asserts.assert_false(
+            cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in req_b_init_event_nc[
+                "data"], "Network specifier leak!")
 
         # note that Init <-> Resp since IPv6 are of peer's!
         req_b_ipv6_init = req_b_resp_event_nc["data"][aconsts.NET_CAP_IPV6]
@@ -1393,6 +1429,14 @@ class DataPathTest(AwareBaseTest):
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, dut2_req_key))
+
+            # validate no leak of information
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in dut1_net_event_nc[
+                    "data"], "Network specifier leak!")
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in dut2_net_event_nc[
+                    "data"], "Network specifier leak!")
 
             # Note: dut1 <--> dut2 IPv6's addresses since it is peer's info
             dut2_aware_ipv6 = dut1_net_event_nc["data"][aconsts.NET_CAP_IPV6]
@@ -1789,6 +1833,14 @@ class DataPathTest(AwareBaseTest):
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
+            # validate no leak of information
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in p_net_event_nc[
+                    "data"], "Network specifier leak!")
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in s_net_event_nc[
+                    "data"], "Network specifier leak!")
+
         # request out-of-band network
         resp_req_key = autils.request_network(
             resp_dut,
@@ -1819,6 +1871,14 @@ class DataPathTest(AwareBaseTest):
             (cconsts.NETWORK_CB_KEY_EVENT,
              cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
             (cconsts.NETWORK_CB_KEY_ID, init_req_key))
+
+        # validate no leak of information
+        asserts.assert_false(
+            cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in resp_net_event_nc[
+                "data"], "Network specifier leak!")
+        asserts.assert_false(
+            cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in init_net_event_nc[
+                "data"], "Network specifier leak!")
 
         if not ib_first:
             # request in-band network (to completion)
@@ -1855,6 +1915,14 @@ class DataPathTest(AwareBaseTest):
                 (cconsts.NETWORK_CB_KEY_EVENT,
                  cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED),
                 (cconsts.NETWORK_CB_KEY_ID, s_req_key))
+
+            # validate no leak of information
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in p_net_event_nc[
+                    "data"], "Network specifier leak!")
+            asserts.assert_false(
+                cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in s_net_event_nc[
+                    "data"], "Network specifier leak!")
 
         # note that Init <-> Resp & Pub <--> Sub since IPv6 are of peer's!
         init_ipv6 = resp_net_event_nc["data"][aconsts.NET_CAP_IPV6]

@@ -35,7 +35,7 @@ install_requires = [
     'retry',
     'requests',
     'roman',
-    'scapy-python3',
+    'scapy',
     'pylibftdi',
     'xlsxwriter',
     # TODO(markdr): b/113719194: Remove this module

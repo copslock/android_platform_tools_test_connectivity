@@ -379,6 +379,10 @@ class WifiDppTest(base_test.BaseTestClass):
               responder's key
             invalid_uri: Use garbage string instead of a URI
     """
+    if not self.dut.droid.wifiIsEasyConnectSupported():
+      self.log.warning("Easy Connect is not supported on device!")
+      return
+
     wutils.wifi_toggle_state(self.dut, True)
     test_network_id = self.create_and_save_wifi_network_config(security)
 
@@ -493,6 +497,10 @@ class WifiDppTest(base_test.BaseTestClass):
             invalid_config: Responder to intentionally send malformed
               configuration
     """
+    if not self.dut.droid.wifiIsEasyConnectSupported():
+      self.log.warning("Easy Connect is not supported on device!")
+      return
+
     wutils.wifi_toggle_state(self.dut, True)
 
     if use_mac:

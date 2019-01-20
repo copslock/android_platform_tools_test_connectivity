@@ -812,6 +812,14 @@ def create_ib_ndp(p_dut, s_dut, p_config, s_config, device_startup_offset):
          cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, s_req_key))
 
+    # validate no leak of information
+    asserts.assert_false(
+        cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in p_net_event_nc["data"],
+        "Network specifier leak!")
+    asserts.assert_false(
+        cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in s_net_event_nc["data"],
+        "Network specifier leak!")
+
     # note that Pub <-> Sub since IPv6 are of peer's!
     p_ipv6 = s_net_event_nc["data"][aconsts.NET_CAP_IPV6]
     s_ipv6 = p_net_event_nc["data"][aconsts.NET_CAP_IPV6]
@@ -875,6 +883,14 @@ def create_oob_ndp_on_sessions(init_dut, resp_dut, init_id, init_mac, resp_id,
         (cconsts.NETWORK_CB_KEY_EVENT,
          cconsts.NETWORK_CB_CAPABILITIES_CHANGED),
         (cconsts.NETWORK_CB_KEY_ID, resp_req_key))
+
+    # validate no leak of information
+    asserts.assert_false(
+        cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in init_net_event_nc["data"],
+        "Network specifier leak!")
+    asserts.assert_false(
+        cconsts.NETWORK_CB_KEY_NETWORK_SPECIFIER in resp_net_event_nc["data"],
+        "Network specifier leak!")
 
     # note that Init <-> Resp since IPv6 are of peer's!
     resp_ipv6 = init_net_event_nc["data"][aconsts.NET_CAP_IPV6]
