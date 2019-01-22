@@ -1172,20 +1172,39 @@ def _wait_for_connect_event(ad, ssid=None, id=None, tries=1):
 
     return conn_result
 
-
-def wait_for_disconnect(ad):
-    """Wait for a Disconnect event from the supplicant.
+def wait_for_disconnect(ad, timeout=10):
+    """Wait for a disconnect event within the specified timeout.
 
     Args:
         ad: Android device object.
+        timeout: Timeout in seconds.
 
     """
     try:
         ad.droid.wifiStartTrackingStateChange()
-        event = ad.ed.pop_event("WifiNetworkDisconnected", 10)
-        ad.droid.wifiStopTrackingStateChange()
+        event = ad.ed.pop_event("WifiNetworkDisconnected", timeout)
     except Empty:
         raise signals.TestFailure("Device did not disconnect from the network")
+    finally:
+        ad.droid.wifiStopTrackingStateChange()
+
+
+def ensure_no_disconnect(ad, duration=10):
+    """Ensure that there is no disconnect for the specified duration.
+
+    Args:
+        ad: Android device object.
+        duration: Duration in seconds.
+
+    """
+    try:
+        ad.droid.wifiStartTrackingStateChange()
+        event = ad.ed.pop_event("WifiNetworkDisconnected", duration)
+        raise signals.TestFailure("Device disconnected from the network")
+    except Empty:
+        pass
+    finally:
+        ad.droid.wifiStopTrackingStateChange()
 
 
 def connect_to_wifi_network(ad, network, assert_on_fail=True,
