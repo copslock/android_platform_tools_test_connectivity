@@ -927,12 +927,46 @@ class WifiRssiTest(base_test.BaseTestClass):
     def test_rssi_vs_atten_ch161_VHT20_ActiveTraffic(self):
         self._test_rssi_vs_atten()
 
-    @test_tracker_info(uuid='')
-    def test_rssi_tracking_ch161_VHT20_ActiveTraffic(self):
+    def test_rssi_tracking_ch6_VHT20_ActiveTraffic(self):
         self._test_rssi_tracking()
 
-    @test_tracker_info(uuid='')
-    def test_rssi_tracking_ch161_VHT20_NoTraffic(self):
+    def test_rssi_tracking_ch6_VHT20_NoTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch36_VHT20_ActiveTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch36_VHT20_NoTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch36_VHT40_ActiveTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch36_VHT40_NoTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch36_VHT80_ActiveTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch36_VHT80_NoTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch149_VHT20_ActiveTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch149_VHT20_NoTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch149_VHT40_ActiveTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch149_VHT40_NoTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch149_VHT80_ActiveTraffic(self):
+        self._test_rssi_tracking()
+
+    def test_rssi_tracking_ch149_VHT80_NoTraffic(self):
         self._test_rssi_tracking()
 
 
@@ -982,3 +1016,26 @@ class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
                       "test_rssi_vs_atten_ch157_VHT40_ActiveTraffic",
                       "test_rssi_stability_ch161_VHT20_ActiveTraffic",
                       "test_rssi_vs_atten_ch161_VHT20_ActiveTraffic")
+
+
+class WifiRssiTrackingTest(WifiRssiTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.signal_poll_rssi_shift_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='signal_poll_rssi_shift')
+        self.signal_poll_rssi_error_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='signal_poll_rssi_error')
+        self.tests = ("test_rssi_tracking_ch6_VHT20_ActiveTraffic",
+                      "test_rssi_tracking_ch6_VHT20_NoTraffic",
+                      "test_rssi_tracking_ch36_VHT20_ActiveTraffic",
+                      "test_rssi_tracking_ch36_VHT20_NoTraffic",
+                      "test_rssi_tracking_ch36_VHT40_ActiveTraffic",
+                      "test_rssi_tracking_ch36_VHT40_NoTraffic",
+                      "test_rssi_tracking_ch36_VHT80_ActiveTraffic",
+                      "test_rssi_tracking_ch36_VHT80_NoTraffic",
+                      "test_rssi_tracking_ch149_VHT20_ActiveTraffic",
+                      "test_rssi_tracking_ch149_VHT20_NoTraffic",
+                      "test_rssi_tracking_ch149_VHT40_ActiveTraffic",
+                      "test_rssi_tracking_ch149_VHT40_NoTraffic",
+                      "test_rssi_tracking_ch149_VHT80_ActiveTraffic",
+                      "test_rssi_tracking_ch149_VHT80_NoTraffic")
