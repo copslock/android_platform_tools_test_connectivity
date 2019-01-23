@@ -25,6 +25,7 @@ import acts.test_utils.wifi.wifi_test_utils as wutils
 import acts.utils
 
 from acts import asserts
+from acts.controllers.android_device import SL4A_APK_NAME
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.test_utils.wifi import wifi_constants
@@ -71,6 +72,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
+        self.remove_approvals()
         wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
@@ -105,6 +107,12 @@ class WifiNetworkRequestTest(WifiBaseTest):
         except queue.Empty:
             raise signals.TestFailure(
                 "Device did not disconnect from the network")
+
+    def remove_approvals(self):
+        self.dut.log.debug("Removing all approvals from sl4a app")
+        self.dut.adb.shell(
+            "cmd wifi network-requests-remove-user-approved-access-points"
+            + " " + SL4A_APK_NAME)
 
 
     @test_tracker_info(uuid="d70c8380-61ba-48a3-b76c-a0b55ce4eabf")
@@ -232,16 +240,60 @@ class WifiNetworkRequestTest(WifiBaseTest):
         # Send the second request.
         self.dut.droid.wifiRequestNetworkWithSpecifier(self.open_5g)
         self.dut.log.info("Sent network request with %s", self.open_5g)
-        # Ensure we disconnected from the previous network.
-        wutils.wait_for_disconnect(self.dut)
-        self.dut.log.info("Disconnected from network %s", self.wpa_psk_2g)
-        # Ensure we received the network lost callback because the previous
-        # request is still active.
-        self.wait_for_network_lost()
+        # Ensure we do not disconnect from the previous network until the user
+        # approves the new request.
+        self.dut.ed.clear_all_events()
+        wutils.ensure_no_disconnect(self.dut)
 
-        # Ensure we connected to second request.
+        # Now complete the flow and ensure we connected to second request.
         wutils.wait_for_wifi_connect_after_network_request(self.dut,
                                                            self.open_5g)
+
+    @test_tracker_info(uuid="")
+    def test_connect_to_wpa_psk_2g_which_is_already_approved(self):
+        """
+        Initiates a connection to network via network request with specific SSID
+
+        Steps:
+        1. Send a network specifier with the specific SSID/credentials of
+           WPA-PSK 2G network.
+        2. Wait for platform to scan and find matching networks.
+        3. Simulate user selecting the network.
+        4. Ensure that the device connects to the network.
+        5. Send another network specifier with the specific
+           SSID/BSSID/credentials of WPA-PSK 2G network.
+        6. Ensure we disconnect from the previous network.
+        7. Ensure that the device bypasses user approval & connects to the
+           new network.
+        """
+        # Complete flow for the first request.
+        wutils.wifi_connect_using_network_request(self.dut, self.wpa_psk_2g,
+                                                  self.wpa_psk_2g)
+        # Release the request.
+        self.dut.droid.wifiReleaseNetwork(self.wpa_psk_2g)
+        # Ensure we disconnected from the network.
+        wutils.wait_for_disconnect(self.dut)
+        self.dut.log.info("Disconnected from network %s", self.wpa_psk_2g)
+        self.dut.ed.clear_all_events()
+
+        # Find bssid for the WPA-PSK 2G network.
+        scan_results = self.dut.droid.wifiGetScanResults()
+        match_results = wutils.match_networks(
+            {WifiEnums.SSID_KEY: self.wpa_psk_2g[WifiEnums.SSID_KEY]},
+            scan_results)
+        asserts.assert_equal(len(match_results), 1,
+                             "Cannot find bssid for WPA-PSK 2G network")
+        bssid = match_results[0][WifiEnums.BSSID_KEY]
+        # Send the second request with bssid.
+        network_specifier_with_bssid = self.wpa_psk_2g.copy();
+        network_specifier_with_bssid[WifiEnums.BSSID_KEY] = bssid
+        self.dut.droid.wifiRequestNetworkWithSpecifier(
+            network_specifier_with_bssid)
+        self.dut.log.info("Sent network request with %r",
+                          network_specifier_with_bssid)
+
+        # Ensure we connected to second request without user approval.
+        wutils.wait_for_connect(self.dut, self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
     @test_tracker_info(uuid="2f90a266-f04d-4932-bb5b-d075bedfd56d")
     def test_match_failure_with_invalid_ssid_pattern(self):
