@@ -96,34 +96,37 @@ class WifiRvrTest(base_test.BaseTestClass):
     def process_testclass_results(self):
         """Saves plot with all test results to enable comparison."""
         # Plot and save all results
-        x_data = []
-        y_data = []
-        legends = []
+        plot_data = collections.OrderedDict()
+        plots = []
         for result in self.testclass_results:
+            testcase_params = self.parse_test_params(result["test_name"])
+            plot_id = (testcase_params["channel"], testcase_params["mode"])
+            if plot_id not in plot_data:
+                plot_data[plot_id] = {"x_data": [], "y_data": [], "legend": []}
             total_attenuation = [
                 att + result["fixed_attenuation"]
                 for att in result["attenuation"]
             ]
-            x_data.append(total_attenuation)
-            y_data.append(result["throughput_receive"])
-            legends.append(result["test_name"])
-        x_label = 'Attenuation (dB)'
-        y_label = 'Throughput (Mbps)'
-        data_sets = [x_data, y_data]
-        fig_property = {
-            "title": "RvR Results",
-            "x_label": x_label,
-            "y_label": y_label,
-            "linewidth": 3,
-            "markersize": 10
-        }
+            plot_data[plot_id]["x_data"].append(total_attenuation)
+            plot_data[plot_id]["y_data"].append(result["throughput_receive"])
+            plot_data[plot_id]["legend"].append(result["test_name"])
+        for plot_id, plot_data in plot_data.items():
+            data_set = [plot_data["x_data"], plot_data["y_data"]]
+            fig_property = {
+                "title": "Channel {} - {}".format(plot_id[0], plot_id[1]),
+                "x_label": 'Attenuation (dB)',
+                "y_label": 'Throughput (Mbps)',
+                "linewidth": 3,
+                "markersize": 10
+            }
+            plots.append(
+                wputils.bokeh_plot(
+                    data_set,
+                    plot_data["legend"],
+                    fig_property,
+                    shaded_region=None))
         output_file_path = os.path.join(self.log_path, 'results.html')
-        wputils.bokeh_plot(
-            data_sets,
-            legends,
-            fig_property,
-            shaded_region=None,
-            output_file_path=output_file_path)
+        wputils.save_bokeh_plots(plots, output_file_path)
 
     def pass_fail_check(self, rvr_result):
         """Check the test result and decide if it passed or failed.
