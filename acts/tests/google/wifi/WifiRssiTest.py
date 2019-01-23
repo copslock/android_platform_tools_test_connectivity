@@ -1020,11 +1020,7 @@ class WifiRssi_5GHz_ActiveTraffic_Test(WifiRssiTest):
 
 class WifiRssiTrackingTest(WifiRssiTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.signal_poll_rssi_shift_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='signal_poll_rssi_shift')
-        self.signal_poll_rssi_error_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='signal_poll_rssi_error')
+        super().__init__(controllers)
         self.tests = ("test_rssi_tracking_ch6_VHT20_ActiveTraffic",
                       "test_rssi_tracking_ch6_VHT20_NoTraffic",
                       "test_rssi_tracking_ch36_VHT20_ActiveTraffic",
