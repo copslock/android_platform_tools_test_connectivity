@@ -13,9 +13,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import logging
 
 from acts import asserts
 from acts import utils
+from acts.controllers.adb import AdbError
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.logger import normalize_log_line_timestamp
@@ -67,8 +69,8 @@ def set_chrome_browser_permissions(ad):
     for cmd in commands:
         try:
             ad.adb.shell(cmd)
-        except adb.AdbError:
-            self.log.warn("adb command %s failed on %s" % (cmd, ad.serial))
+        except AdbError:
+            logging.warning("adb command %s failed on %s" % (cmd, ad.serial))
 
 
 def verify_ping_to_vpn_ip(ad):
@@ -83,7 +85,7 @@ def verify_ping_to_vpn_ip(ad):
     pkt_loss = "100% packet loss"
     try:
         ping_result = ad.adb.shell("ping -c 3 -W 2 %s" % VPN_PING_ADDR)
-    except adb.AdbError:
+    except AdbError:
         pass
     return ping_result and pkt_loss not in ping_result
 
@@ -164,10 +166,9 @@ def download_load_certs(ad, vpn_params, vpn_type, vpn_server_addr,
         ret = urllib.request.urlopen(url)
         with open(local_file_path, "wb") as f:
             f.write(ret.read())
-    except:
+    except Exception:
         asserts.fail("Unable to download certificate from the server")
 
-    f.close()
     ad.adb.push("%s sdcard/" % local_file_path)
     return local_cert_name
 
@@ -245,12 +246,12 @@ def start_tcpdump(ad, test_name):
 
     file_name = "%s/tcpdump_%s_%s.pcap" % (TCPDUMP_PATH, ad.serial, test_name)
     ad.log.info("tcpdump file is %s", file_name)
+    cmd = "adb -s {} shell tcpdump -i any -s0 -w {}".format(ad.serial,
+                                                            file_name)
     try:
-        cmd = "adb -s {} shell tcpdump -i any -s0 -w {}".format(ad.serial,
-                                                                file_name)
         return start_standing_subprocess(cmd, 5)
-    except e:
-        ad.log.error(e)
+    except Exception:
+        ad.log.exception('Could not start standing process %s' % repr(cmd))
 
     return None
 
@@ -268,7 +269,7 @@ def stop_tcpdump(ad, proc, test_name):
       log_path of the tcpdump file
     """
     ad.log.info("Stopping and pulling tcpdump if any")
-    if proc == None:
+    if proc is None:
         return None
     try:
         stop_standing_subprocess(proc)
