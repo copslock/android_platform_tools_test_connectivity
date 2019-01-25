@@ -83,13 +83,13 @@ class ActsInstallDependencies(cmd.Command):
 
     def run(self):
         install_args = [sys.executable, '-m', 'pip', 'install']
-        subprocess.check_call([*install_args, '--upgrade', 'pip'])
+        subprocess.check_call(install_args + ['--upgrade', 'pip'])
         required_packages = self.distribution.install_requires
 
         for package in required_packages:
             self.announce('Installing %s...' % package, log.INFO)
             subprocess.check_call(
-                [*install_args, '-v', '--no-cache-dir', package])
+                install_args + ['-v', '--no-cache-dir', package])
 
         self.announce('Dependencies installed.')
 
