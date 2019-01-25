@@ -23,6 +23,7 @@ import time
 from acts import logger
 from acts.base_test import BaseTestClass
 from acts.controllers.buds_lib.test_actions.bt_utils import BTUtils
+from acts.controllers.buds_lib.test_actions.bt_utils import BTUtilsError
 from acts.controllers.buds_lib.test_actions.apollo_acts import ApolloTestActions
 from acts.signals import TestFailure
 from acts.signals import TestPass
@@ -34,7 +35,7 @@ from acts.utils import set_location_service
 PAIR_CONNECT_ATTEMPTS = 200
 
 
-class BluetoothPairConnectError(Exception):
+class BluetoothPairConnectError(TestFailure):
     pass
 
 
@@ -95,15 +96,19 @@ class BluetoothPairAndConnectTest(BaseTestClass):
         Raises:
             BluetoothPairConnectError
         """
-        paired, pair_time = self.bt_utils.bt_pair(self.phone, self.apollo)
-        pair_time *= 1000
-        if not paired:
+
+        try:
+            pair_time = self.bt_utils.bt_pair(self.phone, self.apollo)
+        except BTUtilsError:
             raise BluetoothPairConnectError('Failed to pair devices')
+
+        pair_time *= 1000
         connection_start_time = time.perf_counter()
         if not self.apollo_act.wait_for_bluetooth_a2dp_hfp():
             raise BluetoothPairConnectError('Failed to connect devices')
         connection_end_time = time.perf_counter()
-        connection_time = (connection_end_time - connection_start_time) * 1000
+        connection_time = (connection_end_time -
+                           connection_start_time) * 1000
 
         self.bt_utils.bt_unpair(self.phone, self.apollo)
 

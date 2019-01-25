@@ -83,9 +83,7 @@ class BTUtils(object):
         Time in ms to execute the flow.
         """
 
-        pair_result, pair_time = self.bt_pair(pri_device, sec_device)
-        if not pair_result:
-            return pair_result, 0
+        pair_time = self.bt_pair(pri_device, sec_device)
         connect_result, connect_time = self.bt_connect(pri_device, sec_device)
         return connect_result, pair_time + connect_time
 
@@ -100,7 +98,7 @@ class BTUtils(object):
             (Tuple)True if pair successful. False Otherwise.
             Time in ms to execute the flow.
          """
-        start_time = end_time = time.time()
+        start_time = time.time()
         # Enable BT on the primary device if it's not currently ON.
         if not pri_device.droid.bluetoothCheckState():
             pri_device.droid.bluetoothToggleState(True)
@@ -112,20 +110,22 @@ class BTUtils(object):
                     'Failed to toggle Bluetooth on the primary device.')
         sec_device.turn_on_bluetooth()
         if not sec_device.is_bt_enabled():
-            self.logger.error(
-                'Could not turn on Bluetooth on secondary devices.')
-            return False, 0
+            raise BTUtilsError('Could not turn on Bluetooth on secondary '
+                               'devices')
         target_addr = sec_device.bluetooth_address
         sec_device.set_pairing_mode()
 
         pri_device.droid.bluetoothDiscoverAndBond(target_addr)
         # Loop until we have bonded successfully or timeout.
         self.logger.info('Verifying devices are bonded')
-        wait_until(lambda: self.android_device_in_paired_state(pri_device,
-                                                               target_addr),
-                   self.default_timeout)
+        try:
+            wait_until(lambda: self.android_device_in_paired_state(pri_device,
+                                                                   target_addr),
+                       self.default_timeout)
+        except TimeoutError as err:
+            raise BTUtilsError('bt_pair failed: {}'.format(err))
         end_time = time.time()
-        return True, end_time - start_time
+        return end_time - start_time
 
     def bt_connect(self, pri_device, sec_device):
         """Connect a previously paired sec_device to a pri_device.
