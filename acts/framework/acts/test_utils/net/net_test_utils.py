@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2018 Google, Inc.
 #
@@ -13,9 +13,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import logging
 
 from acts import asserts
 from acts import utils
+from acts.controllers.adb import AdbError
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.logger import normalize_log_line_timestamp
@@ -37,6 +39,7 @@ VPN_PARAMS = cconst.VpnReqParams
 VPN_PING_ADDR = "10.10.10.1"
 TCPDUMP_PATH = "/data/local/tmp/tcpdump"
 
+
 def verify_lte_data_and_tethering_supported(ad):
     """Verify if LTE data is enabled and tethering supported"""
     wutils.wifi_toggle_state(ad, False)
@@ -49,6 +52,7 @@ def verify_lte_data_and_tethering_supported(ad):
         ad.droid.connectivityIsTetheringSupported(),
         "Tethering is not supported for the provider")
     wutils.wifi_toggle_state(ad, True)
+
 
 def set_chrome_browser_permissions(ad):
     """Set chrome browser start with no-first-run verification.
@@ -65,8 +69,9 @@ def set_chrome_browser_permissions(ad):
     for cmd in commands:
         try:
             ad.adb.shell(cmd)
-        except adb.AdbError:
-            self.log.warn("adb command %s failed on %s" % (cmd, ad.serial))
+        except AdbError:
+            logging.warning("adb command %s failed on %s" % (cmd, ad.serial))
+
 
 def verify_ping_to_vpn_ip(ad):
     """ Verify if IP behind VPN server is pingable.
@@ -80,9 +85,10 @@ def verify_ping_to_vpn_ip(ad):
     pkt_loss = "100% packet loss"
     try:
         ping_result = ad.adb.shell("ping -c 3 -W 2 %s" % VPN_PING_ADDR)
-    except adb.AdbError:
+    except AdbError:
         pass
     return ping_result and pkt_loss not in ping_result
+
 
 def legacy_vpn_connection_test_logic(ad, vpn_profile):
     """ Test logic for each legacy VPN connection
@@ -132,6 +138,7 @@ def legacy_vpn_connection_test_logic(ad, vpn_profile):
                         "Unable to terminate VPN connection for %s"
                         % vpn_profile)
 
+
 def download_load_certs(ad, vpn_params, vpn_type, vpn_server_addr,
                         ipsec_server_type, log_path):
     """ Download the certificates from VPN server and push to sdcard of DUT
@@ -159,12 +166,12 @@ def download_load_certs(ad, vpn_params, vpn_type, vpn_server_addr,
         ret = urllib.request.urlopen(url)
         with open(local_file_path, "wb") as f:
             f.write(ret.read())
-    except:
+    except Exception:
         asserts.fail("Unable to download certificate from the server")
 
-    f.close()
     ad.adb.push("%s sdcard/" % local_file_path)
     return local_cert_name
+
 
 def generate_legacy_vpn_profile(ad,
                                 vpn_params,
@@ -188,7 +195,7 @@ def generate_legacy_vpn_profile(ad,
     vpn_profile = {VPN_CONST.USER: vpn_params['vpn_username'],
                    VPN_CONST.PWD: vpn_params['vpn_password'],
                    VPN_CONST.TYPE: vpn_type.value,
-                   VPN_CONST.SERVER: vpn_server_addr,}
+                   VPN_CONST.SERVER: vpn_server_addr, }
     vpn_profile[VPN_CONST.NAME] = "test_%s_%s" % (vpn_type.name,
                                                   ipsec_server_type)
     if vpn_type.name == "PPTP":
@@ -215,6 +222,7 @@ def generate_legacy_vpn_profile(ad,
 
     return vpn_profile
 
+
 def start_tcpdump(ad, test_name):
     """Start tcpdump on all interfaces
 
@@ -238,14 +246,15 @@ def start_tcpdump(ad, test_name):
 
     file_name = "%s/tcpdump_%s_%s.pcap" % (TCPDUMP_PATH, ad.serial, test_name)
     ad.log.info("tcpdump file is %s", file_name)
+    cmd = "adb -s {} shell tcpdump -i any -s0 -w {}".format(ad.serial,
+                                                            file_name)
     try:
-        cmd = "adb -s {} shell tcpdump -i any -s0 -w {}" . \
-            format(ad.serial, file_name)
         return start_standing_subprocess(cmd, 5)
-    except e:
-        ad.log.error(e)
+    except Exception:
+        ad.log.exception('Could not start standing process %s' % repr(cmd))
 
     return None
+
 
 def stop_tcpdump(ad, proc, test_name):
     """Stops tcpdump on any iface
@@ -260,7 +269,7 @@ def stop_tcpdump(ad, proc, test_name):
       log_path of the tcpdump file
     """
     ad.log.info("Stopping and pulling tcpdump if any")
-    if proc == None:
+    if proc is None:
         return None
     try:
         stop_standing_subprocess(proc)

@@ -130,9 +130,7 @@ class ApolloTestActions(BaseTestAction):
                     'Device is paired but not connected, unpair first.')
                 if not bt_util.bt_unpair(phone, self.dut):
                     raise TestActsError('Unable to unpair the device')
-            result, _ = bt_util.bt_pair_and_connect(phone, self.dut)
-            if not result:
-                raise TestActsError('Bluetooth pairing failed.')
+            bt_util.bt_pair_and_connect(phone, self.dut)
             self.logger.info('DEVICE PAIRED')
             if companion_app:
                 profiles = PROFILES_CONNECTED.copy()
