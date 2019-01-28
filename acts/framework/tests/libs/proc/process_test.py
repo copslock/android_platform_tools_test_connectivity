@@ -309,16 +309,16 @@ class ProcessTest(unittest.TestCase):
     def test_exec_loop_loops_if_not_stopped(self):
         process = Process('1st')
         Process._Process__start_process = mock.Mock()
-        process._on_terminate_callback = mock.Mock(side_effect=['2nd', None])
+        process._on_terminate_callback = mock.Mock(side_effect=[['2nd'], None])
 
         with self.patch('Thread', FakeThread):
             process._exec_loop()
 
         self.assertEqual(Process._Process__start_process.call_count, 2)
         self.assertEqual(Process._Process__start_process.call_args_list[0][0],
-                         ('1st', ))
+                         (['1st'], ))
         self.assertEqual(Process._Process__start_process.call_args_list[1][0],
-                         ('2nd', ))
+                         (['2nd'], ))
 
     def test_exec_loop_does_not_loop_if_stopped(self):
         process = Process('1st')
@@ -333,7 +333,7 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual(Process._Process__start_process.call_count, 1)
         self.assertEqual(
             Process._Process__start_process.call_args_list[0][0],
-            ('1st',))
+            (['1st'],))
 
 
 if __name__ == '__main__':
