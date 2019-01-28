@@ -311,7 +311,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
 
         wutils.wait_for_connect(self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="98400dea-776e-4a0a-9024-18845b27331c")
     def test_fail_to_connect_to_wpa_psk_2g_after_user_forgot_network(self):
         """
         Adds a network suggestion and ensures that the device does not
