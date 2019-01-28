@@ -20,15 +20,14 @@ import unittest
 import mock
 
 from acts import utils
+from acts import signals
 from acts.controllers.adb import AdbError
 
 PROVISIONED_STATE_GOOD = 1
 
 
-class ActsUtilsTest(unittest.TestCase):
-    """This test class has unit tests for the implementation of everything
-    under acts.utils.
-    """
+class ByPassSetupWizardTests(unittest.TestCase):
+    """This test class for unit testing acts.utils.bypass_setup_wizard."""
 
     def test_start_standing_subproc(self):
         with self.assertRaisesRegex(utils.ActsUtilsError,
@@ -111,8 +110,11 @@ class ActsUtilsTest(unittest.TestCase):
     def test_bypass_setup_wizard_root_access_still_fails(self, _):
         ad = mock.Mock()
         ad.adb.shell.side_effect = [
+            # Return value for SetupWizardExitActivity
             BypassSetupWizardReturn.ROOT_ADB_FAILS,
+            # Return value for SetupWizardExitActivity after root
             BypassSetupWizardReturn.UNRECOGNIZED_ERR,
+            # Return value for device_provisioned
             PROVISIONED_STATE_GOOD
         ]
 
@@ -157,6 +159,93 @@ class BypassSetupWizardReturn:
         'flg=0x10000000 cmp=com.google.android.setupwizard/'
         '.SetupWizardExitActivity } from null (pid=5045, uid=2000) not '
         'exported from uid 10000', 0)
+
+
+class ConcurrentActionsTest(unittest.TestCase):
+    """Tests acts.utils.run_concurrent_actions and related functions."""
+
+    @staticmethod
+    def function_returns_passed_in_arg(arg):
+        return arg
+
+    @staticmethod
+    def function_raises_passed_in_exception_type(exception_type):
+        raise exception_type
+
+    def test_run_concurrent_actions_no_raise_returns_proper_return_values(self):
+        """Tests run_concurrent_actions_no_raise returns in the correct order.
+
+        Each function passed into run_concurrent_actions_no_raise returns the
+        values returned from each individual callable in the order passed in.
+        """
+        ret_values = utils.run_concurrent_actions_no_raise(
+            lambda: self.function_returns_passed_in_arg('ARG1'),
+            lambda: self.function_returns_passed_in_arg('ARG2'),
+            lambda: self.function_returns_passed_in_arg('ARG3')
+        )
+
+        self.assertEqual(len(ret_values), 3)
+        self.assertEqual(ret_values[0], 'ARG1')
+        self.assertEqual(ret_values[1], 'ARG2')
+        self.assertEqual(ret_values[2], 'ARG3')
+
+    def test_run_concurrent_actions_no_raise_returns_raised_exceptions(self):
+        """Tests run_concurrent_actions_no_raise returns raised exceptions.
+
+        Instead of allowing raised exceptions to be raised in the main thread,
+        this function should capture the exception and return them in the slot
+        the return value should have been returned in.
+        """
+        ret_values = utils.run_concurrent_actions_no_raise(
+            lambda: self.function_raises_passed_in_exception_type(IndexError),
+            lambda: self.function_raises_passed_in_exception_type(KeyError)
+        )
+
+        self.assertEqual(len(ret_values), 2)
+        self.assertEqual(ret_values[0].__class__, IndexError)
+        self.assertEqual(ret_values[1].__class__, KeyError)
+
+    def test_run_concurrent_actions_returns_proper_return_values(self):
+        """Tests run_concurrent_actions returns in the correct order.
+
+        Each function passed into run_concurrent_actions returns the values
+        returned from each individual callable in the order passed in.
+        """
+
+        ret_values = utils.run_concurrent_actions(
+            lambda: self.function_returns_passed_in_arg('ARG1'),
+            lambda: self.function_returns_passed_in_arg('ARG2'),
+            lambda: self.function_returns_passed_in_arg('ARG3')
+        )
+
+        self.assertEqual(len(ret_values), 3)
+        self.assertEqual(ret_values[0], 'ARG1')
+        self.assertEqual(ret_values[1], 'ARG2')
+        self.assertEqual(ret_values[2], 'ARG3')
+
+    def test_run_concurrent_actions_raises_exceptions(self):
+        """Tests run_concurrent_actions raises exceptions from given actions."""
+        with self.assertRaises(KeyError):
+            utils.run_concurrent_actions(
+                lambda: self.function_returns_passed_in_arg('ARG1'),
+                lambda: self.function_raises_passed_in_exception_type(KeyError)
+            )
+
+    def test_test_concurrent_actions_raises_non_test_failure(self):
+        """Tests test_concurrent_actions raises the given exception."""
+        with self.assertRaises(KeyError):
+            utils.test_concurrent_actions(
+                lambda: self.function_raises_passed_in_exception_type(KeyError),
+                failure_exceptions=signals.TestFailure
+            )
+
+    def test_test_concurrent_actions_raises_test_failure(self):
+        """Tests test_concurrent_actions raises the given exception."""
+        with self.assertRaises(signals.TestFailure):
+            utils.test_concurrent_actions(
+                lambda: self.function_raises_passed_in_exception_type(KeyError),
+                failure_exceptions=KeyError
+            )
 
 
 if __name__ == '__main__':
