@@ -254,7 +254,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         wutils.wait_for_wifi_connect_after_network_request(self.dut,
                                                            self.open_5g)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="f0bb2213-b3d1-4fb8-bbdc-ad55c4fb05ed")
     def test_connect_to_wpa_psk_2g_which_is_already_approved(self):
         """
         Initiates a connection to network via network request with specific SSID
@@ -301,7 +301,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         # Ensure we connected to second request without user approval.
         wutils.wait_for_connect(self.dut, self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="fcf84d94-5f6e-4bd6-9f76-40a0228d4ebe")
     def test_connect_to_wpa_psk_2g_which_is_already_approved_but_then_forgot(self):
         """
         Initiates a connection to network via network request with specific SSID
