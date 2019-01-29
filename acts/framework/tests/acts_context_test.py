@@ -19,6 +19,7 @@ from functools import partial
 from unittest import TestCase
 
 from acts import context
+from acts.context import RootContext
 from acts.context import TestCaseContext
 from acts.context import TestClassContext
 from acts.context import TestContext
@@ -90,7 +91,7 @@ class ModuleTest(TestCase):
         _update_test_class_context(event)
         _update_test_class_context(event2)
 
-        self.assertIsNone(get_current_context())
+        self.assertIsInstance(get_current_context(), RootContext)
         context._contexts.clear()
 
     def test_update_test_case_context_for_test_case_begin(self):
