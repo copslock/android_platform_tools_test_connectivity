@@ -51,13 +51,14 @@ def create(configs):
                     ping_output = job.run(
                         'ping %s -c 1 -w 1' % ip_address, ignore_status=True)
                     if ping_output.exit_status == 1:
-                        logging.error('Unable to ping attenuator at %s' %
-                                      ip_address)
+                        logging.error(
+                            'Unable to ping attenuator at %s' % ip_address)
                     else:
-                        logging.error('Able to ping attenuator at %s' %
-                                      ip_address)
-                        job.run('echo "q" | telnet %s %s' % (ip_address, port),
-                                ignore_status=True)
+                        logging.error(
+                            'Able to ping attenuator at %s' % ip_address)
+                        job.run(
+                            'echo "q" | telnet %s %s' % (ip_address, port),
+                            ignore_status=True)
                     raise
         for i in range(inst_cnt):
             attn = Attenuator(attn_inst, idx=i)
@@ -142,13 +143,16 @@ class AttenuatorInstrument(object):
         self.max_atten = AttenuatorInstrument.INVALID_MAX_ATTEN
         self.properties = None
 
-    def set_atten(self, idx, value):
+    def set_atten(self, idx, value, strict=True):
         """Sets the attenuation given its index in the instrument.
 
         Args:
             idx: A zero based index used to identify a particular attenuator in
                 an instrument.
             value: a floating point value for nominal attenuation to be set.
+            strict: if True, function raises an error when given out of
+                bounds attenuation values, if false, the function sets out of
+                bounds values to 0 or max_atten.
         """
         raise NotImplementedError('Base class should not be called directly!')
 
@@ -202,20 +206,23 @@ class Attenuator(object):
             raise IndexError(
                 'Attenuator index out of range for attenuator instrument')
 
-    def set_atten(self, value):
+    def set_atten(self, value, strict=True):
         """Sets the attenuation.
 
         Args:
             value: A floating point value for nominal attenuation to be set.
+            strict: if True, function raises an error when given out of
+                bounds attenuation values, if false, the function sets out of
+                bounds values to 0 or max_atten.
 
         Raises:
             ValueError if value + offset is greater than the maximum value.
         """
-        if value + self.offset > self.instrument.max_atten:
+        if value + self.offset > self.instrument.max_atten and strict:
             raise ValueError(
                 'Attenuator Value+Offset greater than Max Attenuation!')
 
-        self.instrument.set_atten(self.idx, value + self.offset)
+        self.instrument.set_atten(self.idx, value + self.offset, strict)
 
     def get_atten(self):
         """Returns the attenuation as a float, normalized by the offset."""
@@ -223,8 +230,7 @@ class Attenuator(object):
 
     def get_max_atten(self):
         """Returns the max attenuation as a float, normalized by the offset."""
-        if (self.instrument.max_atten ==
-                AttenuatorInstrument.INVALID_MAX_ATTEN):
+        if self.instrument.max_atten == AttenuatorInstrument.INVALID_MAX_ATTEN:
             raise ValueError('Invalid Max Attenuator Value')
 
         return self.instrument.max_atten - self.offset

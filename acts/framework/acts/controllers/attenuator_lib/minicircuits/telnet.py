@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
 """
 Class for Telnet control of Mini-Circuits RCDAT series attenuators
 
@@ -41,9 +40,8 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
 
     def __init__(self, num_atten=0):
         super(AttenuatorInstrument, self).__init__(num_atten)
-        self._tnhelper = _tnhelper._TNHelper(tx_cmd_separator='\r\n',
-                                             rx_cmd_separator='\r\n',
-                                             prompt='')
+        self._tnhelper = _tnhelper._TNHelper(
+            tx_cmd_separator='\r\n', rx_cmd_separator='\r\n', prompt='')
 
     def __del__(self):
         if self.is_open():
@@ -68,8 +66,8 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
         if config_str.startswith('MN='):
             config_str = config_str[len('MN='):]
 
-        self.properties = dict(zip(['model', 'max_freq', 'max_atten'],
-                                   config_str.split('-', 2)))
+        self.properties = dict(
+            zip(['model', 'max_freq', 'max_atten'], config_str.split('-', 2)))
         self.max_atten = float(self.properties['max_atten'])
 
     def is_open(self):
@@ -84,7 +82,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
         """
         self._tnhelper.close()
 
-    def set_atten(self, idx, value):
+    def set_atten(self, idx, value, strict_flag=True):
         """This function sets the attenuation of an attenuator given its index
         in the instrument.
 
@@ -93,6 +91,9 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
                 an instrument. For instruments that only have one channel, this
                 is ignored by the device.
             value: A floating point value for nominal attenuation to be set.
+            strict_flag: if True, function raises an error when given out of
+                bounds attenuation values, if false, the function sets out of
+                bounds values to 0 or max_atten.
 
         Raises:
             InvalidOperationError if the telnet connection is not open.
@@ -108,7 +109,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             raise IndexError('Attenuator index out of range!', self.num_atten,
                              idx)
 
-        if value > self.max_atten:
+        if value > self.max_atten and strict_flag:
             raise ValueError('Attenuator value out of range!', self.max_atten,
                              value)
         # The actual device uses one-based index for channel numbers.
