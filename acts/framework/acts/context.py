@@ -26,16 +26,32 @@ from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.event.event import TestClassEvent
 
-_contexts = []
+_contexts = []  # stack for keeping track of the current test context
 
 
 def get_current_context():
+    """Get the current test context. Pulls the most recently created context
+    from the top of the _contexts stack.
+
+    Returns: An instance of TestContext, or None if no context exists.
+    """
     if _contexts:
         return _contexts[-1]
     return None
 
 
 def get_context_for_event(event):
+    """Creates and returns a TestContext from the given event.
+    A TestClassContext is created for a TestClassEvent, and a TestCaseContext
+    is created for a TestCaseEvent.
+
+    Args:
+        event: An instance of TestCaseEvent or TestClassEvent.
+
+    Returns: An instance of TestContext corresponding to the event.
+
+    Raises: TypeError if event is neither a TestCaseEvent nor TestClassEvent
+    """
     if isinstance(event, TestCaseEvent):
         return _get_context_for_test_case_event(event)
     if isinstance(event, TestClassEvent):
@@ -44,10 +60,12 @@ def get_context_for_event(event):
 
 
 def _get_context_for_test_case_event(event):
+    """Generate a TestCaseContext from the given TestCaseEvent."""
     return TestCaseContext(event.test_class, event.test_case)
 
 
 def _get_context_for_test_class_event(event):
+    """Generate a TestClassContext from the given TestClassEvent."""
     return TestClassContext(event.test_class)
 
 
@@ -64,6 +82,13 @@ class NewTestCaseContextEvent(NewContextEvent):
 
 
 def _update_test_class_context(event):
+    """Pushes a new TestClassContext to the _contexts stack upon a
+    TestClassBeginEvent. Pops the most recent context off the stack upon a
+    TestClassEndEvent. Posts the context change to the event bus.
+
+    Args:
+        event: An instance of TestClassBeginEvent or TestClassEndEvent.
+    """
     if isinstance(event, TestClassBeginEvent):
         _contexts.append(_get_context_for_test_class_event(event))
     if isinstance(event, TestClassEndEvent):
@@ -73,6 +98,13 @@ def _update_test_class_context(event):
 
 
 def _update_test_case_context(event):
+    """Pushes a new TestCaseContext to the _contexts stack upon a
+    TestCaseBeginEvent. Pops the most recent context off the stack upon a
+    TestCaseEndEvent. Posts the context change to the event bus.
+
+    Args:
+        event: An instance of TestCaseBeginEvent or TestCaseEndEvent.
+    """
     if isinstance(event, TestCaseBeginEvent):
         _contexts.append(_get_context_for_test_case_event(event))
     if isinstance(event, TestCaseEndEvent):
