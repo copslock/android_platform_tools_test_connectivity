@@ -91,7 +91,7 @@ def _update_handlers(event):
         log_stream.update_handlers(event)
 
 
-def create_logger(name, log_name=None, base_path=None,
+def create_logger(name, log_name=None, base_path='', subcontext='',
                   log_styles=LogStyles.NONE, stream_format=None,
                   file_format=None):
     """Creates a Python Logger object with the given attributes.
@@ -105,6 +105,7 @@ def create_logger(name, log_name=None, base_path=None,
         log_name: The name of the underlying logger. Use LogStream name as
             default.
         base_path: The base path used by the logger.
+        subcontext: Location of logs relative to the test context path.
         log_styles: An integer or array of integers that are the sum of
             corresponding flag values in LogStyles. Examples include:
 
@@ -119,7 +120,7 @@ def create_logger(name, log_name=None, base_path=None,
     """
     if name in _log_streams:
         _log_streams[name].cleanup()
-    log_stream = _LogStream(name, log_name, base_path, log_styles,
+    log_stream = _LogStream(name, log_name, base_path, subcontext, log_styles,
                             stream_format, file_format)
     _set_logger(log_stream)
     return log_stream.logger
@@ -162,6 +163,11 @@ class _LogStream(object):
     Attributes:
         name: The name of the LogStream.
         logger: The logger created by this LogStream.
+        base_path: The base path used by the logger. Use logging.log_path
+            as default.
+        subcontext: Location of logs relative to the test context path.
+        stream_format: Format used for log output to stream
+        file_format: Format used for log output to files
 
         _test_case_handler_descriptors: The list of HandlerDescriptors that are
             used to create LogHandlers for each new test case.
@@ -190,15 +196,15 @@ class _LogStream(object):
 
             Args:
                 directory: The directory name for the file to be created under.
-                    This name is relative to logging.log_path.
             """
+            os.makedirs(directory, exist_ok=True)
             handler = self._creator(os.path.join(directory, self._base_name))
             handler.setLevel(self._level)
             if self._file_format:
                 handler.setFormatter(self._file_format)
             return handler
 
-    def __init__(self, name, log_name=None, base_path=None,
+    def __init__(self, name, log_name=None, base_path='', subcontext='',
                  log_styles=LogStyles.NONE, stream_format=None,
                  file_format=None):
         """Creates a LogStream.
@@ -209,6 +215,7 @@ class _LogStream(object):
                 as default.
             base_path: The base path used by the logger. Use logging.log_path
                 as default.
+            subcontext: Location of logs relative to the test context path.
             log_styles: An integer or array of integers that are the sum of
                 corresponding flag values in LogStyles. Examples include:
 
@@ -230,7 +237,9 @@ class _LogStream(object):
         self.logger.addHandler(_null_handler)
         self.logger.propagate = False
         self.base_path = base_path or logging.log_path
-        os.makedirs(self.base_path, exist_ok=True)
+        self.subcontext = subcontext
+        context.TestContext.add_base_output_path(self.logger.name, self.base_path)
+        context.TestContext.add_subcontext(self.logger.name, self.subcontext)
         self.stream_format = stream_format
         self.file_format = file_format
         self._monolith_descriptors = []
@@ -382,10 +391,9 @@ class _LogStream(object):
         if descriptors:
             curr_context = context.get_current_context()
             if curr_context is None:
-                output_path = os.path.join(self.base_path)
+                output_path = os.path.join(self.base_path, self.subcontext)
             else:
-                curr_context.set_base_output_path(self.base_path)
-                output_path = curr_context.get_full_output_path()
+                output_path = curr_context.get_full_output_path(self.logger.name)
             for descriptor in descriptors:
                 handler = descriptor.create(output_path)
                 self.logger.addHandler(handler)

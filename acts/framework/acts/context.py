@@ -94,83 +94,95 @@ class TestContext(object):
     encode information about that test case such as its name or enclosing
     class.
 
+    The subcontext specifies a relative path in which certain outputs,
+    e.g. logcat, should be kept for the given context.
+
+    The full output path is given by
+    <base_output_path>/<context_dir>/<subcontext>.
+
     Attributes:
-        _base_output_path_override: an override of the base output path to use.
-        _output_dir_override: an override of the output directory specific to
-                              the represented context.
+        _base_output_paths: a dictionary mapping a logger's name to its base
+                            output path
+        _subcontexts: a dictionary mapping a logger's name to its
+                      subcontext-level output directory
     """
 
-    def __init__(self):
-        self._base_output_path_override = None
-        self._output_dir_override = None
+    _base_output_paths = {}
+    _subcontexts = {}
 
-    def get_base_output_path(self):
-        """Gets the base output path for this context.
+    def get_base_output_path(self, log_name=None):
+        """Gets the base output path for this logger.
 
         The base output path is interpreted as the reporting root for the
         entire test runner.
 
-        If a path has been set by set_base_output_path, it is returned.
+        If a path has been added with add_base_output_path, it is returned.
         Otherwise, a default is determined by _get_default_base_output_path().
 
-        Returns:
-              The output path.
-        """
-        if self._base_output_path_override:
-            return self._base_output_path_override
-        return self._get_default_base_output_path()
-
-    def set_base_output_path(self, base_output_path):
-        """Sets the base output path for this context.
-
-        The base output path is interpreted as the reporting root for the
-        entire test runner. However, setting this value here will not affect
-        the test runner itself in any way, only the interpretation of this
-        context object.
-
         Args:
-            base_output_path: The path to set.
-        """
-        self._base_output_path_override = base_output_path
-
-    def get_output_dir(self):
-        """Gets the output directory for this context.
-
-        This represents the directory for all outputs specific to this context.
-        This directory will be interpreted as being relative to the base output
-        path as determined by get_base_output_path.
-
-        Returns:
-            The output directory.
-        """
-        if self._output_dir_override:
-            return self._output_dir_override
-        return self._get_default_output_dir()
-
-    def set_output_dir(self, output_dir):
-        """Sets the output directory for this context.
-
-        This represents the directory for all outputs specific to this context.
-        This directory will be interpreted as being relative to the base output
-        path as determined by get_base_output_path.
-
-        Args:
-            output_dir: The directory to set.
-        """
-        self._output_dir_override = output_dir
-
-    def get_full_output_path(self):
-        """Gets the full output path for this context.
-
-        This is the absolute path to the context specific output directory
-        provided by get_output_dir().
+            log_name: The name of the logger.
 
         Returns:
             The output path.
         """
-        path = os.path.join(self.get_base_output_path(), self.get_output_dir())
-        if not os.path.exists(path):
-            os.makedirs(path, exist_ok=True)
+        return self._base_output_paths.get(
+            log_name, self._get_default_base_output_path())
+    
+    @classmethod
+    def add_base_output_path(cls, log_name, base_output_path):
+        """Store the base path for this logger.
+
+        Args:
+            log_name: The name of the logger.
+            base_output_path: The base path of output files for this logger.
+            """
+        cls._base_output_paths[log_name] = base_output_path
+
+    def get_subcontext(self, log_name=None):
+        """Gets the subcontext for this logger.
+
+        The subcontext is interpreted as the directory, relative to the
+        context-level path, where all outputs of the given logger are stored.
+
+        If a path has been added with add_subcontext, it is returned.
+        Otherwise, the empty string is returned.
+
+        Args:
+            log_name: The name of the logger.
+
+        Returns:
+            The output path.
+        """
+        return self._subcontexts.get(log_name, '')
+
+    @classmethod
+    def add_subcontext(cls, log_name, subcontext):
+        """Store the subcontext path for this logger.
+
+        Args:
+            log_name: The name of the logger.
+            subcontext: The relative subcontext path of output files for this
+                        logger.
+        """
+        cls._subcontexts[log_name] = subcontext
+
+    def get_full_output_path(self, log_name=None):
+        """Gets the full output path for this context.
+
+        The full path represents the absolute path to the output directory,
+        as given by <base_output_path>/<context_dir>/<subcontext>
+
+        Args:
+            log_name: The name of the logger. Used to specify the base output
+                      path and the subcontext.
+
+        Returns:
+            The output path.
+        """
+
+        path = os.path.join(self.get_base_output_path(log_name),
+                            self._get_default_context_dir(),
+                            self.get_subcontext(log_name))
         return path
 
     @property
@@ -196,7 +208,7 @@ class TestContext(object):
                 'The ACTS logger has not been set up and'
                 ' "base_output_path" has not been set.') from e
 
-    def _get_default_output_dir(self):
+    def _get_default_context_dir(self):
         """Gets the default output directory for this context."""
         raise NotImplementedError()
 
@@ -215,7 +227,6 @@ class TestClassContext(TestContext):
             test_class: A test class object. Must be an instance of the test
                         class, not the class object itself.
         """
-        super().__init__()
         self.test_class = test_class
 
     @property
@@ -226,7 +237,7 @@ class TestClassContext(TestContext):
     def identifier(self):
         return self.test_class_name
 
-    def _get_default_output_dir(self):
+    def _get_default_context_dir(self):
         """Gets the default output directory for this context.
 
         For TestClassContexts, this will be the name of the test class. This is
@@ -251,7 +262,6 @@ class TestCaseContext(TestContext):
                         class, not the class object itself.
             test_case: The string name of the test case.
         """
-        super().__init__()
         self.test_class = test_class
         self.test_case = test_case
 
@@ -267,7 +277,7 @@ class TestCaseContext(TestContext):
     def identifier(self):
         return '%s.%s' % (self.test_class_name, self.test_case_name)
 
-    def _get_default_output_dir(self):
+    def _get_default_context_dir(self):
         """Gets the default output directory for this context.
 
         For TestCaseContexts, this will be the name of the test class followed
