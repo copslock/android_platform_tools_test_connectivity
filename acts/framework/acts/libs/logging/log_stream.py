@@ -390,10 +390,7 @@ class _LogStream(object):
         """Create new handlers as described in the descriptors list"""
         if descriptors:
             curr_context = context.get_current_context()
-            if curr_context is None:
-                output_path = os.path.join(self.base_path, self.subcontext)
-            else:
-                output_path = curr_context.get_full_output_path(self.logger.name)
+            output_path = curr_context.get_full_output_path(self.logger.name)
             for descriptor in descriptors:
                 handler = descriptor.create(output_path)
                 self.logger.addHandler(handler)
