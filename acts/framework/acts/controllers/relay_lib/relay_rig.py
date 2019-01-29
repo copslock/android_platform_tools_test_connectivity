@@ -13,6 +13,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import collections
+
 from acts.controllers.relay_lib.ak_xb10_speaker import AkXB10Speaker
 from acts.controllers.relay_lib.dongles import SingleButtonDongle
 from acts.controllers.relay_lib.dongles import ThreeButtonDongle
@@ -86,7 +88,7 @@ class RelayRig:
     def __init__(self, config):
         self.relays = dict()
         self.boards = dict()
-        self.devices = dict()
+        self.devices = collections.OrderedDict()
 
         validate_key('boards', config, list, 'relay config file')
 
