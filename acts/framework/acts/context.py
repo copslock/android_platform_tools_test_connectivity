@@ -33,11 +33,11 @@ def get_current_context():
     """Get the current test context. Pulls the most recently created context
     from the top of the _contexts stack.
 
-    Returns: An instance of TestContext, or None if no context exists.
+    Returns: An instance of TestContext, or a RootContext if _contexts is empty.
     """
     if _contexts:
         return _contexts[-1]
-    return None
+    return RootContext()
 
 
 def get_context_for_event(event):
@@ -243,6 +243,21 @@ class TestContext(object):
     def _get_default_context_dir(self):
         """Gets the default output directory for this context."""
         raise NotImplementedError()
+
+
+class RootContext(TestContext):
+    """A TestContext that represents a test run."""
+
+    @property
+    def identifier(self):
+        return 'root'
+
+    def _get_default_context_dir(self):
+        """Gets the default output directory for this context.
+
+        Logs at the root level context are placed directly in the base level
+        directory, so no context-level path exists."""
+        return ''
 
 
 class TestClassContext(TestContext):
