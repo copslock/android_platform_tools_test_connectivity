@@ -41,7 +41,7 @@ class WifiOtaRvrTest(WifiRvrTest):
         WifiRvrTest.setup_class(self)
         req_params = ['OTAChamber']
         self.unpack_userparams(req_params)
-        self.ota_chambers = ota_chamber.create(self.OTAChambers)
+        self.ota_chambers = ota_chamber.create(self.OTAChamber)
         self.ota_chamber = self.ota_chambers[0]
 
     def setup_rvr_test(self, testcase_params):
@@ -63,7 +63,7 @@ class WifiOtaRvrTest(WifiRvrTest):
     def parse_test_params(self, test_name):
         """Function that generates test params based on the test name."""
         # Call parent parsing function
-        testcase_params = WifiRvrTest.parse_test_params(self)
+        testcase_params = WifiRvrTest.parse_test_params(self, test_name)
         # Add orientation information
         test_name_params = test_name.split('_')
         testcase_params['orientation'] = int(test_name_params[6][0:-3])
