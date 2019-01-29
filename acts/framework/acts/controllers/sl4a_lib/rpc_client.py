@@ -50,6 +50,7 @@ class Sl4aApiError(Sl4aException):
     """
 
     def __init__(self, message, code=-1, data=None, rpc_name=''):
+        super().__init__()
         self.message = message
         self.code = code
         if data is None:
