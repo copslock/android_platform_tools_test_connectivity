@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import logging
+import shlex
 import subprocess
 from threading import Thread
 
@@ -47,6 +48,9 @@ class Process(object):
         Note that this constructor does not begin the process. To start the
         process, use Process.start().
         """
+        # Split command string into list if shell=True is not specified
+        if not kwargs.get('shell', False) and isinstance(command, str):
+            command = shlex.split(command)
         self._command = command
         self._subprocess_kwargs = kwargs
         self._process = None
