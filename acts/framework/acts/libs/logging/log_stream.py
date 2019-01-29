@@ -146,7 +146,7 @@ class AlsoToLogHandler(Handler):
         self._log = logging.getLogger(to_logger)
 
     def emit(self, record):
-        self._log.log(record.levelno, record.message)
+        self._log.log(record.levelno, record.getMessage())
 
 
 class InvalidStyleSetError(Exception):
