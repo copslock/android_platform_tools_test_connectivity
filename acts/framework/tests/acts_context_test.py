@@ -14,24 +14,27 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from functools import partial
-from mock import Mock
-from mock import patch
 import unittest
+from functools import partial
 from unittest import TestCase
-from acts.event.event import TestCaseEvent
-from acts.event.event import TestCaseBeginEvent
-from acts.event.event import TestCaseEndEvent
-from acts.event.event import TestClassEvent
-from acts.event.event import TestClassBeginEvent
-from acts.event.event import TestClassEndEvent
-from acts.context import get_context_for_event
-from acts.context import get_current_context
-from acts.context import _update_test_class_context
-from acts.context import _update_test_case_context
-from acts.context import TestContext
+
+from acts import context
 from acts.context import TestCaseContext
 from acts.context import TestClassContext
+from acts.context import TestContext
+from acts.context import _update_test_case_context
+from acts.context import _update_test_class_context
+from acts.context import get_context_for_event
+from acts.context import get_current_context
+from acts.event.event import TestCaseBeginEvent
+from acts.event.event import TestCaseEndEvent
+from acts.event.event import TestCaseEvent
+from acts.event.event import TestClassBeginEvent
+from acts.event.event import TestClassEndEvent
+from acts.event.event import TestClassEvent
+from mock import Mock
+from mock import patch
+
 
 LOGGING = 'acts.context.logging'
 
@@ -76,6 +79,7 @@ class ModuleTest(TestCase):
 
         _update_test_class_context(event)
         self.assertIsInstance(get_current_context(), TestClassContext)
+        context._contexts.clear()
 
     def test_update_test_class_context_for_test_class_end(self):
         event = Mock(spec=TestClassBeginEvent)
@@ -87,6 +91,7 @@ class ModuleTest(TestCase):
         _update_test_class_context(event2)
 
         self.assertIsNone(get_current_context())
+        context._contexts.clear()
 
     def test_update_test_case_context_for_test_case_begin(self):
         event = Mock(spec=TestClassBeginEvent)
@@ -99,6 +104,7 @@ class ModuleTest(TestCase):
         _update_test_case_context(event2)
 
         self.assertIsInstance(get_current_context(), TestCaseContext)
+        context._contexts.clear()
 
     def test_update_test_case_context_for_test_case_end(self):
         event = Mock(spec=TestClassBeginEvent)
@@ -115,6 +121,7 @@ class ModuleTest(TestCase):
         _update_test_case_context(event3)
 
         self.assertIsInstance(get_current_context(), TestClassContext)
+        context._contexts.clear()
 
 
 class TestContextTest(TestCase):
@@ -126,53 +133,36 @@ class TestContextTest(TestCase):
 
         self.assertEqual(context.get_base_output_path(), logging.log_path)
 
-    def test_set_base_output_path_overrides_default(self):
+    @patch(LOGGING)
+    def test_add_base_path_overrides_default(self, _):
         context = TestContext()
         mock_path = Mock()
 
-        context.set_base_output_path(mock_path)
+        context.add_base_output_path('basepath', mock_path)
 
-        self.assertEqual(context.get_base_output_path(), mock_path)
+        self.assertEqual(context.get_base_output_path('basepath'), mock_path)
 
-    def test_get_output_dir_attempts_to_use_default(self):
+    def test_get_subcontext_returns_empty_string_by_default(self):
         context = TestContext()
 
-        self.assertRaises(NotImplementedError, context.get_output_dir)
+        self.assertEqual(context.get_subcontext(), '')
 
-    def test_set_output_dir_overrides_default(self):
+    def test_add_subcontext_sets_correct_path(self):
         context = TestContext()
-        mock_dir = Mock()
+        mock_path = Mock()
 
-        context.set_output_dir(mock_dir)
+        context.add_subcontext('subcontext', mock_path)
 
-        self.assertEqual(context.get_output_dir(), mock_dir)
+        self.assertEqual(context.get_subcontext('subcontext'), mock_path)
 
-    def test_get_full_output_path_returns_correct_path(self):
-        context = TestContext()
-        path = 'base/path'
-        dir = 'output/dir'
-        context.set_base_output_path(path)
-        context.set_output_dir(dir)
+    @patch(LOGGING)
+    def test_get_full_output_path_returns_correct_path(self, _):
+        context = TestClassContext(TestClass())
+        context.add_base_output_path('foo', 'base/path')
+        context.add_subcontext('foo', 'subcontext')
 
-        full_path = 'base/path/output/dir'
-        self.assertEqual(context.get_full_output_path(), full_path)
-
-    @patch('os.path.exists')
-    @patch('os.makedirs')
-    def test_get_full_output_path_makes_directory(self, makedirs, exists):
-        exists.return_value = False
-
-        context = TestContext()
-        path = 'base/path'
-        dir = 'output/dir'
-        context.set_base_output_path(path)
-        context.set_output_dir(dir)
-
-        full_path = 'base/path/output/dir'
-        context.get_full_output_path()
-
-        self.assertTrue(makedirs.called)
-        self.assertEqual(makedirs.call_args[0][0], full_path)
+        full_path = 'base/path/TestClass/subcontext'
+        self.assertEqual(context.get_full_output_path('foo'), full_path)
 
     def test_identifier_not_implemented(self):
         context = TestContext()
@@ -197,13 +187,13 @@ class TestClassContextTest(TestCase):
 
         self.assertEqual(context.test_class_name, TestClass.__name__)
 
-    def test_get_output_dir_is_class_name(self):
+    def test_context_dir_is_class_name(self):
         class TestClass:
             pass
         test_class = TestClass()
         context = TestClassContext(test_class)
 
-        self.assertEqual(context.get_output_dir(), TestClass.__name__)
+        self.assertEqual(context._get_default_context_dir(), TestClass.__name__)
 
     def test_identifier_is_class_name(self):
         class TestClass:
@@ -237,13 +227,13 @@ class TestCaseContextTest(TestCase):
 
         self.assertEqual(context.test_class_name, TestClass.__name__)
 
-    def test_get_output_dir_is_class_and_test_case_name(self):
+    def test_context_dir_is_class_and_test_case_name(self):
         test_class = TestClass()
         test_case = TestClass.test_case
         context = TestCaseContext(test_class, test_case)
 
-        output_dir = TestClass.__name__ + '/' + test_case.__name__
-        self.assertEqual(context.get_output_dir(), output_dir)
+        context_dir = TestClass.__name__ + '/' + test_case.__name__
+        self.assertEqual(context._get_default_context_dir(), context_dir)
 
     def test_identifier_is_class_and_test_case_name(self):
         test_class = TestClass()
