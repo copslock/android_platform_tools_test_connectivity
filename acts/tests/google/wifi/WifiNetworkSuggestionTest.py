@@ -74,6 +74,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
+        self.clear_deleted_ephemeral_networks()
         wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
@@ -106,6 +107,11 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             "cmd wifi network-suggestions-has-user-approved"
             + " " + SL4A_APK_NAME)
         return True if (is_approved_str == "yes") else False
+
+    def clear_deleted_ephemeral_networks(self):
+        self.dut.log.debug("Clearing deleted ephemeral networks")
+        self.dut.adb.shell(
+            "cmd wifi clear-deleted-ephemeral-networks")
 
     def add_suggestions_and_ensure_connection(self, network_suggestions,
                                               expected_ssid,
@@ -304,3 +310,39 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
 
         wutils.wait_for_connect(self.dut, self.wpa_psk_5g[WifiEnums.SSID_KEY])
+
+    @test_tracker_info(uuid="98400dea-776e-4a0a-9024-18845b27331c")
+    def test_fail_to_connect_to_wpa_psk_2g_after_user_forgot_network(self):
+        """
+        Adds a network suggestion and ensures that the device does not
+        connect to it after the user forgot the network previously.
+
+        Steps:
+        1. Send a network suggestion to the device with
+           isAppInteractionRequired set.
+        2. Wait for the device to connect to it.
+        3. Ensure that we did receive the post connection broadcast
+           (isAppInteractionRequired = True).
+        4. Simulate user forgetting the network and the device does not
+           connecting back even though the suggestion is active from the app.
+        """
+        network_suggestion = self.wpa_psk_2g
+        network_suggestion[WifiEnums.IS_APP_INTERACTION_REQUIRED] = True
+        self.add_suggestions_and_ensure_connection(
+            [network_suggestion], self.wpa_psk_2g[WifiEnums.SSID_KEY],
+            True)
+
+        # Simulate user forgeting the ephemeral network.
+        self.dut.droid.wifiDisableEphemeralNetwork(
+            self.wpa_psk_2g[WifiEnums.SSID_KEY])
+        wutils.wait_for_disconnect(self.dut)
+        self.dut.log.info("Disconnected from network %s", self.wpa_psk_2g)
+        self.dut.ed.clear_all_events()
+
+        # Now ensure that we don't connect back even though the suggestion
+        # is still active.
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut,
+                                    self.wpa_psk_2g[WifiEnums.SSID_KEY],
+                                    assert_on_fail=False),
+            "Device should not connect back")
