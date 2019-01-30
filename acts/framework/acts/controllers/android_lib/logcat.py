@@ -93,8 +93,8 @@ def create_logcat_keepalive_process(serial, base_path, extra_params=''):
     logger = log_stream.create_logger(
         'adblog_%s' % serial, base_path=base_path,
         log_styles=(LogStyles.LOG_DEBUG | LogStyles.MONOLITH_LOG))
-    process = Process(('adb -s %s logcat -T 1 -v year %s' %
-                       (serial, extra_params)).split(' '))
+    process = Process('adb -s %s logcat -T 1 -v year %s' %
+                      (serial, extra_params))
     timestamp_tracker = TimestampTracker()
     process.set_on_output_callback(_log_line_func(logger, timestamp_tracker))
     process.set_on_terminate_callback(

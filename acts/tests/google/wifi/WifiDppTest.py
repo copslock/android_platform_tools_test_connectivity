@@ -21,6 +21,7 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_test_utils as autils
@@ -165,6 +166,10 @@ class WifiDppTest(base_test.BaseTestClass):
             Returns:
              URI ID to be used later
     """
+
+    # Clean up any previous URIs
+    self.del_uri(device, "'*'")
+
     self.log.info("Generating a URI for the Responder")
     cmd = "wpa_cli DPP_BOOTSTRAP_GEN type=qrcode info=%s" % info
 
@@ -178,6 +183,10 @@ class WifiDppTest(base_test.BaseTestClass):
 
     if "FAIL" in result:
       asserts.fail("gen_uri: Failed to generate a URI. Command used: %s" % cmd)
+
+    if not result.index("\n"):
+      asserts.fail("gen_uri: Helper device not responding correctly, may need to restart it."
+                   " Command used: %s" % cmd)
 
     result = result[result.index("\n") + 1:]
     device.log.info("Generated URI, id = %s" % result)
@@ -245,7 +254,7 @@ class WifiDppTest(base_test.BaseTestClass):
                         net_role != self.DPP_TEST_NETWORK_ROLE_AP):
       asserts.fail("start_responder: Must specify net_role sta or ap")
 
-    self.log.info("Starting Responder in Configurator mode")
+    self.log.info("Starting Responder in Configurator mode, frequency %sMHz" % freq)
 
     conf = "conf=%s-" % net_role
 
@@ -293,6 +302,9 @@ class WifiDppTest(base_test.BaseTestClass):
     else:  # PSK
       conf += " psk=%s" % psk_encoded
 
+    # Stop responder first
+    self.stop_responder(device)
+
     cmd = "wpa_cli set dpp_configurator_params guard=1 %s" % conf
     device.log.debug("Command used: %s" % cmd)
     result = self.helper_dev.adb.shell(cmd)
@@ -330,7 +342,9 @@ class WifiDppTest(base_test.BaseTestClass):
                         net_role != self.DPP_TEST_NETWORK_ROLE_AP):
       asserts.fail("start_responder: Must specify net_role sta or ap")
 
-    self.log.info("Starting Responder in Enrollee mode")
+    # Stop responder first
+    self.stop_responder(device)
+    self.log.info("Starting Responder in Enrollee mode, frequency %sMHz" % freq)
 
     cmd = "wpa_cli DPP_LISTEN %d role=enrollee netrole=%s" % (freq, net_role)
     result = device.adb.shell(cmd)
@@ -606,6 +620,7 @@ class WifiDppTest(base_test.BaseTestClass):
 
   """ Tests Begin """
 
+  @test_tracker_info(uuid="30893d51-2069-4e1c-8917-c8a840f91b59")
   def test_dpp_as_initiator_configurator_with_psk_5G(self):
     asserts.skip_if(not self.dut.droid.wifiIs5GHzBandSupported() or
             not self.helper_dev.droid.wifiIs5GHzBandSupported(),
@@ -614,6 +629,7 @@ class WifiDppTest(base_test.BaseTestClass):
       security=self.DPP_TEST_SECURITY_PSK, responder_chan="126/149", responder_freq=5745,
       use_mac=True)
 
+  @test_tracker_info(uuid="54d1d19a-aece-459c-b819-9d4b1ae63f77")
   def test_dpp_as_initiator_configurator_with_psk_5G_broadcast(self):
     asserts.skip_if(not self.dut.droid.wifiIs5GHzBandSupported() or
                     not self.helper_dev.droid.wifiIs5GHzBandSupported(),
@@ -622,6 +638,7 @@ class WifiDppTest(base_test.BaseTestClass):
       security=self.DPP_TEST_SECURITY_PSK, responder_chan="126/149", responder_freq=5745,
       use_mac=False)
 
+  @test_tracker_info(uuid="18270a69-300c-4f54-87fd-c19073a2854e ")
   def test_dpp_as_initiator_configurator_with_psk_no_chan_in_uri_listen_on_5745_broadcast(self):
     asserts.skip_if(not self.dut.droid.wifiIs5GHzBandSupported() or
                     not self.helper_dev.droid.wifiIs5GHzBandSupported(),
@@ -629,6 +646,7 @@ class WifiDppTest(base_test.BaseTestClass):
     self.start_dpp_as_initiator_configurator(
       security=self.DPP_TEST_SECURITY_PSK, responder_chan=None, responder_freq=5745, use_mac=False)
 
+  @test_tracker_info(uuid="fbdd687c-954a-400b-9da3-2d17e28b0798")
   def test_dpp_as_initiator_configurator_with_psk_no_chan_in_uri_listen_on_5745(self):
     asserts.skip_if(not self.dut.droid.wifiIs5GHzBandSupported() or
                     not self.helper_dev.droid.wifiIs5GHzBandSupported(),
@@ -636,92 +654,111 @@ class WifiDppTest(base_test.BaseTestClass):
     self.start_dpp_as_initiator_configurator(
       security=self.DPP_TEST_SECURITY_PSK, responder_chan=None, responder_freq=5745, use_mac=True)
 
+  @test_tracker_info(uuid="570f499f-ab12-4405-af14-c9ed36da2e01 ")
   def test_dpp_as_initiator_configurator_with_psk_no_chan_in_uri_listen_on_2462_broadcast(self):
     self.start_dpp_as_initiator_configurator(
       security=self.DPP_TEST_SECURITY_PSK, responder_chan=None, responder_freq=2462, use_mac=False)
 
+  @test_tracker_info(uuid="e1f083e0-0878-4c49-8ac5-d7c6bba24625")
   def test_dpp_as_initiator_configurator_with_psk_no_chan_in_uri_listen_on_2462(self):
     self.start_dpp_as_initiator_configurator(
       security=self.DPP_TEST_SECURITY_PSK, responder_chan=None, responder_freq=2462, use_mac=True)
 
+  @test_tracker_info(uuid="d2a526f5-4269-493d-bd79-4e6d1b7b00f0")
   def test_dpp_as_initiator_configurator_with_psk(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_PSK, use_mac=True)
 
+  @test_tracker_info(uuid="6ead218c-222b-45b8-8aad-fe7d883ed631")
   def test_dpp_as_initiator_configurator_with_sae(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_SAE, use_mac=True)
 
+  @test_tracker_info(uuid="1686adb5-1b3c-4e6d-a969-6b007bdd990d")
   def test_dpp_as_initiator_configurator_with_psk_passphrase(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE, use_mac=True)
 
+  @test_tracker_info(uuid="3958feb5-1a0c-4487-9741-ac06f04c55a2")
   def test_dpp_as_initiator_configurator_with_sae_broadcast(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_SAE, use_mac=False)
 
+  @test_tracker_info(uuid="fe6d66f5-73a1-46e9-8f49-73b8f332cc8c")
   def test_dpp_as_initiator_configurator_with_psk_passphrase_broadcast(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE, use_mac=False)
 
+  @test_tracker_info(uuid="9edd372d-e2f1-4545-8d04-6a1636fcbc4b")
   def test_dpp_as_initiator_configurator_with_sae_for_ap(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_SAE,
         use_mac=True,
         net_role=self.DPP_TEST_NETWORK_ROLE_AP)
 
+  @test_tracker_info(uuid="e9eec912-d665-4926-beac-859cb13dc17b")
   def test_dpp_as_initiator_configurator_with_psk_passphrase_for_ap(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
         use_mac=True,
         net_role=self.DPP_TEST_NETWORK_ROLE_AP)
 
+  @test_tracker_info(uuid="8055694f-606f-41dd-9826-3ea1e9b007f8")
   def test_dpp_as_initiator_enrollee_with_sae(self):
     self.start_dpp_as_initiator_enrollee(
         security=self.DPP_TEST_SECURITY_SAE, use_mac=True)
 
+  @test_tracker_info(uuid="c1e9f605-b5c0-4e53-8a08-1b0087a667fa")
   def test_dpp_as_initiator_enrollee_with_psk_passphrase(self):
     self.start_dpp_as_initiator_enrollee(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE, use_mac=True)
 
+  @test_tracker_info(uuid="1d7f30ad-2f9a-427a-8059-651dc8827ae2")
   def test_dpp_as_initiator_enrollee_with_sae_broadcast(self):
     self.start_dpp_as_initiator_enrollee(
         security=self.DPP_TEST_SECURITY_SAE, use_mac=False)
 
+  @test_tracker_info(uuid="0cfc2645-600e-4f2b-ab5c-fcee6d363a9a")
   def test_dpp_as_initiator_enrollee_with_psk_passphrase_broadcast(self):
     self.start_dpp_as_initiator_enrollee(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE, use_mac=False)
 
+  @test_tracker_info(uuid="2e26b248-65dd-41f6-977b-e223d72b2de9")
   def test_start_dpp_as_initiator_enrollee_receive_invalid_config(self):
     self.start_dpp_as_initiator_enrollee(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
         use_mac=True,
         invalid_config=True)
 
+  @test_tracker_info(uuid="ed189661-d1c1-4626-9f01-3b7bb8a417fe")
   def test_dpp_as_initiator_configurator_fail_authentication(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
         use_mac=True,
         fail_authentication=True)
 
+  @test_tracker_info(uuid="5a8c6587-fbb4-4a27-9cba-af6f8935833a")
   def test_dpp_as_initiator_configurator_fail_unicast_timeout(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
         use_mac=True,
         cause_timeout=True)
 
+  @test_tracker_info(uuid="b12353ac-1a04-4036-81a4-2d2d0c653dbb")
   def test_dpp_as_initiator_configurator_fail_broadcast_timeout(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
         use_mac=False,
         cause_timeout=True)
 
+  @test_tracker_info(uuid="eeff91be-09ce-4a33-8b4f-ece40eb51c76")
   def test_dpp_as_initiator_configurator_invalid_uri(self):
     self.start_dpp_as_initiator_configurator(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,
         use_mac=True,
         invalid_uri=True)
 
+  @test_tracker_info(uuid="1fa25f58-0d0e-40bd-8714-ab78957514d9")
   def test_start_dpp_as_initiator_enrollee_fail_timeout(self):
     self.start_dpp_as_initiator_enrollee(
         security=self.DPP_TEST_SECURITY_PSK_PASSPHRASE,

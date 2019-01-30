@@ -15,6 +15,7 @@
 #   limitations under the License.
 import logging
 
+from acts.controllers import adb
 from acts import asserts
 from acts import utils
 from acts.controllers.adb import AdbError
@@ -255,8 +256,10 @@ def start_tcpdump(ad, test_name):
 
     return None
 
-
-def stop_tcpdump(ad, proc, test_name):
+def stop_tcpdump(ad,
+                 proc,
+                 test_name,
+                 adb_pull_timeout=adb.DEFAULT_ADB_PULL_TIMEOUT):
     """Stops tcpdump on any iface
        Pulls the tcpdump file in the tcpdump dir
 
@@ -264,6 +267,7 @@ def stop_tcpdump(ad, proc, test_name):
         ad: android device object.
         proc: need to know which pid to stop
         test_name: test name to save the tcpdump file
+        adb_pull_timeout: timeout for adb_pull
 
     Returns:
       log_path of the tcpdump file
@@ -277,7 +281,7 @@ def stop_tcpdump(ad, proc, test_name):
         ad.log.warning(e)
     log_path = os.path.join(ad.log_path, test_name)
     utils.create_dir(log_path)
-    ad.adb.pull("%s/. %s" % (TCPDUMP_PATH, log_path))
+    ad.adb.pull("%s/. %s" % (TCPDUMP_PATH, log_path), timeout=adb_pull_timeout)
     ad.adb.shell("rm -rf %s/*" % TCPDUMP_PATH, ignore_status=True)
     file_name = "tcpdump_%s_%s.pcap" % (ad.serial, test_name)
     return "%s/%s" % (log_path, file_name)
