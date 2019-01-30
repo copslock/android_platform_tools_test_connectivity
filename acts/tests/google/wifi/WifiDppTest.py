@@ -165,6 +165,10 @@ class WifiDppTest(base_test.BaseTestClass):
             Returns:
              URI ID to be used later
     """
+
+    # Clean up any previous URIs
+    self.del_uri(device, "'*'")
+
     self.log.info("Generating a URI for the Responder")
     cmd = "wpa_cli DPP_BOOTSTRAP_GEN type=qrcode info=%s" % info
 
@@ -178,6 +182,10 @@ class WifiDppTest(base_test.BaseTestClass):
 
     if "FAIL" in result:
       asserts.fail("gen_uri: Failed to generate a URI. Command used: %s" % cmd)
+
+    if not result.index("\n"):
+      asserts.fail("gen_uri: Helper device not responding correctly, may need to restart it."
+                   " Command used: %s" % cmd)
 
     result = result[result.index("\n") + 1:]
     device.log.info("Generated URI, id = %s" % result)
@@ -245,7 +253,7 @@ class WifiDppTest(base_test.BaseTestClass):
                         net_role != self.DPP_TEST_NETWORK_ROLE_AP):
       asserts.fail("start_responder: Must specify net_role sta or ap")
 
-    self.log.info("Starting Responder in Configurator mode")
+    self.log.info("Starting Responder in Configurator mode, frequency %sMHz" % freq)
 
     conf = "conf=%s-" % net_role
 
@@ -293,6 +301,9 @@ class WifiDppTest(base_test.BaseTestClass):
     else:  # PSK
       conf += " psk=%s" % psk_encoded
 
+    # Stop responder first
+    self.stop_responder(device)
+
     cmd = "wpa_cli set dpp_configurator_params guard=1 %s" % conf
     device.log.debug("Command used: %s" % cmd)
     result = self.helper_dev.adb.shell(cmd)
@@ -330,7 +341,9 @@ class WifiDppTest(base_test.BaseTestClass):
                         net_role != self.DPP_TEST_NETWORK_ROLE_AP):
       asserts.fail("start_responder: Must specify net_role sta or ap")
 
-    self.log.info("Starting Responder in Enrollee mode")
+    # Stop responder first
+    self.stop_responder(device)
+    self.log.info("Starting Responder in Enrollee mode, frequency %sMHz" % freq)
 
     cmd = "wpa_cli DPP_LISTEN %d role=enrollee netrole=%s" % (freq, net_role)
     result = device.adb.shell(cmd)
