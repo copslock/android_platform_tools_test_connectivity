@@ -338,7 +338,7 @@ class WifiPingTest(base_test.BaseTestClass):
         zero_counter = 0
         for atten in testcase_params["atten_range"]:
             for attenuator in self.attenuators:
-                attenuator.set_atten(atten)
+                attenuator.set_atten(atten, strict=False)
             time.sleep(self.SHORT_SLEEP)
             current_ping_stats = self.get_ping_stats(
                 0, testcase_params["ping_duration"],
@@ -403,7 +403,10 @@ class WifiPingTest(base_test.BaseTestClass):
             self.testclass_params["country_code"])
         self.main_network[band]["channel"] = testcase_params["channel"]
         wutils.wifi_connect(
-            self.client_dut, self.main_network[band], num_of_tries=5)
+            self.client_dut,
+            self.main_network[band],
+            num_of_tries=5,
+            check_connectivity=False)
         self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
             'wlan0')[0]
         time.sleep(self.MED_SLEEP)
@@ -418,7 +421,7 @@ class WifiPingTest(base_test.BaseTestClass):
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
-            attenuator.set_atten(0)
+            attenuator.set_atten(0, strict=False)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
 
