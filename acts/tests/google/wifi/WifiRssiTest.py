@@ -25,11 +25,13 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.controllers import iperf_server as ipf
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from concurrent.futures import ThreadPoolExecutor
 
 SHORT_SLEEP = 1
 MED_SLEEP = 6
@@ -71,15 +73,16 @@ class WifiRssiTest(base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         req_params = [
-            "RetailAccessPoints", "rssi_test_params", "testbed_params",
-            "main_network"
+            "RemoteServer", "RetailAccessPoints", "rssi_test_params",
+            "main_network", "testbed_params"
         ]
         self.unpack_userparams(req_params)
         self.test_params = self.rssi_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
-        self.access_points = retail_ap.create(self.RetailAccessPoints)
-        self.access_point = self.access_points[0]
+        self.iperf_client = self.iperf_clients[0]
+        self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
+        #self.access_point = self.access_points[0]
         self.log_path = os.path.join(logging.log_path, "results")
         utils.create_dir(self.log_path)
         self.log.info("Access Point Configuration: {}".format(
@@ -542,10 +545,15 @@ class WifiRssiTest(base_test.BaseTestClass):
         # Start iperf traffic if required by test
         if self.iperf_traffic:
             self.iperf_server.start(tag=0)
-            self.dut.run_iperf_client_nb(
-                self.testbed_params["iperf_server_address"],
-                self.iperf_args,
-                timeout=3600)
+            if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
+                iperf_server_address = self.dut_ip
+            else:
+                iperf_server_address = self.testbed_params[
+                    "iperf_server_address"]
+            executor = ThreadPoolExecutor(max_workers=1)
+            thread_future = executor.submit(self.iperf_client.start,
+                                            iperf_server_address,
+                                            self.iperf_args, 0, 3600)
         for atten in self.rssi_atten_range:
             # Set Attenuation
             self.log.info("Setting attenuation to {} dB".format(atten))
@@ -563,7 +571,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         # Stop iperf traffic if needed
         if self.iperf_traffic:
             self.iperf_server.stop()
-            self.dut.adb.shell("pkill iperf3")
+            thread_future.result()
         for attenuator in self.attenuators:
             attenuator.set_atten(0)
         return rssi_result
@@ -605,6 +613,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         self.main_network[band]["channel"] = self.channel
         self.dut.droid.wifiSetCountryCode(self.test_params["country_code"])
         wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
+        self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         time.sleep(MED_SLEEP)
         # Run RvR and log result
         rssi_result["test_name"] = self.current_test_name
@@ -638,7 +647,10 @@ class WifiRssiTest(base_test.BaseTestClass):
         self.channel = int(test_params[4][2:])
         self.mode = test_params[5]
         self.iperf_traffic = "ActiveTraffic" in test_params[6]
-        self.iperf_args = '-i 1 -t 3600 -J -R'
+        if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
+            self.iperf_args = '-i 1 -t 3600 -J'
+        else:
+            self.iperf_args = '-i 1 -t 3600 -J -R'
         band = self.access_point.band_lookup_by_channel(self.channel)
         num_atten_steps = int((self.test_params["rssi_vs_atten_stop"] -
                                self.test_params["rssi_vs_atten_start"]) /
@@ -670,7 +682,10 @@ class WifiRssiTest(base_test.BaseTestClass):
         self.channel = int(test_params[3][2:])
         self.mode = test_params[4]
         self.iperf_traffic = "ActiveTraffic" in test_params[5]
-        self.iperf_args = '-i 1 -t 3600 -J -R'
+        if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
+            self.iperf_args = '-i 1 -t 3600 -J'
+        else:
+            self.iperf_args = '-i 1 -t 3600 -J -R'
         band = self.access_point.band_lookup_by_channel(self.channel)
         self.rssi_atten_range = self.test_params["rssi_stability_atten"]
         connected_measurements = int(
@@ -694,7 +709,10 @@ class WifiRssiTest(base_test.BaseTestClass):
         self.channel = int(test_params[3][2:])
         self.mode = test_params[4]
         self.iperf_traffic = "ActiveTraffic" in test_params[5]
-        self.iperf_args = '-i 1 -t 3600 -J -R'
+        if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
+            self.iperf_args = '-i 1 -t 3600 -J'
+        else:
+            self.iperf_args = '-i 1 -t 3600 -J -R'
         band = self.access_point.band_lookup_by_channel(self.channel)
         self.rssi_atten_range = []
         for waveform in self.test_params["rssi_tracking_waveforms"]:

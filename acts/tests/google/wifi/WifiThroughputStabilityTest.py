@@ -72,6 +72,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.test_params = self.throughput_stability_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
+        self.iperf_client = self.iperf_clients[0]
         self.access_points = retail_ap.create(self.RetailAccessPoints)
         self.access_point = self.access_points[0]
         self.log_path = os.path.join(logging.log_path, "test_results")
@@ -226,26 +227,26 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         wutils.reset_wifi(self.dut)
         self.main_network[band]["channel"] = channel
         self.dut.droid.wifiSetCountryCode(self.test_params["country_code"])
-        wutils.wifi_connect(self.dut, self.main_network[band], num_of_tries=5)
+        wutils.wifi_connect(
+            self.dut,
+            self.main_network[band],
+            num_of_tries=5,
+            check_connectivity=False)
         time.sleep(MED_SLEEP)
+        # Get iperf_server address
+        if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
+            iperf_server_address = self.dut.droid.connectivityGetIPv4Addresses(
+                'wlan0')[0]
+        else:
+            iperf_server_address = self.testbed_params["iperf_server_address"]
         # Run test and log result
         # Start iperf session
         self.log.info("Starting iperf test.")
         self.iperf_server.start(tag=str(self.atten_level))
-        try:
-            client_output = ""
-            client_status, client_output = self.dut.run_iperf_client(
-                self.testbed_params["iperf_server_address"],
-                self.iperf_args,
-                timeout=self.test_params["iperf_duration"] + TEST_TIMEOUT)
-        except:
-            self.log.error("TimeoutError: Iperf measurement timed out.")
-        client_output_path = os.path.join(self.iperf_server.log_path,
-                                          "iperf_client_output_{}".format(
-                                              self.current_test_name))
-        with open(client_output_path, 'w') as out_file:
-            out_file.write("\n".join(client_output))
-        self.iperf_server.stop()
+        client_output_path = self.iperf_client.start(
+            iperf_server_address, self.iperf_args, str(self.atten_level),
+            self.test_params["iperf_duration"] + TEST_TIMEOUT)
+        server_output_path = self.iperf_server.stop()
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
             attenuator.set_atten(0)
@@ -253,7 +254,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         if self.use_client_output:
             iperf_file = client_output_path
         else:
-            iperf_file = self.iperf_server.log_files[-1]
+            iperf_file = server_output_path
         try:
             iperf_result = ipf.IPerfResult(iperf_file)
         except:
@@ -318,9 +319,12 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.iperf_args = '-i 1 -t {} -J'.format(
             self.test_params["iperf_duration"])
         if test_params[4] == "UDP":
-            self.iperf_args = self.iperf_args + "-u -b {}".format(
+            self.iperf_args = self.iperf_args + " -u -b {}".format(
                 self.test_params["UDP_rates"][mode])
-        if test_params[5] == "DL":
+        if (test_params[5] == "DL"
+                and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
+            ) or (test_params[5] == "UL"
+                  and isinstance(self.iperf_server, ipf.IPerfServerOverAdb)):
             self.iperf_args = self.iperf_args + ' -R'
             self.use_client_output = True
         else:
