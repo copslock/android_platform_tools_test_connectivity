@@ -3974,7 +3974,7 @@ def get_operator_name(log, ad, subId=None):
         try:
             if subId is not None:
                 result = ad.droid.telephonyGetNetworkOperatorNameForSubscription(
-                    sub_id)
+                    subId)
             else:
                 result = ad.droid.telephonyGetNetworkOperatorName()
             result = operator_name_from_network_name(result)
