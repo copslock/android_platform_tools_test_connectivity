@@ -70,8 +70,9 @@ class SshAudioCapture(AudioCapture):
         else:
             self.terminate_audio()
 
-    def THDN(self, win_size=None, step_size=None, q=1, fund_freq=None):
+    def THDN(self, win_size=None, step_size=None, q=1, freq=None):
         """Calculate THD+N value for most recently recorded file.
+
         Args:
             win_size: analysis window size (must be less than length of
                 signal). Used with step size to analyze signal piece by
@@ -80,35 +81,26 @@ class SshAudioCapture(AudioCapture):
                 specified, entire signal will be analyzed.
             q: quality factor for the notch filter used to remove fundamental
                 frequency from signal to isolate noise.
-            fund_freq: the fundamental frequency to remove from the signal.
-                If not specified, will be detected using FFT.
+            freq: the fundamental frequency to remove from the signal. If none,
+                the fundamental frequency will be determined using FFT.
         Returns:
-            channel_results: dict containing THD+N values for each channel in
-                latest recorded file.
+            channel_results (list): THD+N value for each channel's signal.
+                List index corresponds to channel index.
         """
-        if not (win_size and step_size):
-            fn = audio_analysis.THDN
-        else:
-            fn = functools.partial(audio_analysis.max_THDN,
-                                   window_size=win_size,
-                                   step_size=step_size)
         latest_file_path = self.record_file_template % self.last_fileno()
-        wave_file = SoundFile(latest_file_path)
-        signal = wave_file.read()
-        channels = wave_file.channels
-        sample_rate = wave_file.samplerate
-        channel_results = {}
-        if channels == 1:
-            channel_results[0] = fn(signal=signal, sample_rate=sample_rate,
-                                    q=q, fund_freq=fund_freq)
+        if not (win_size and step_size):
+            return audio_analysis.get_file_THDN(filename=latest_file_path,
+                                                q=q,
+                                                freq=freq)
         else:
-            for ch_no, channel in enumerate(signal.transpose()):
-                channel_results[ch_no] = fn(signal=channel,
-                                            sample_rate=sample_rate,
-                                            q=q, fund_freq=fund_freq)
-        return channel_results
+            return audio_analysis.get_file_max_THDN(filename=latest_file_path,
+                                                    step_size=step_size,
+                                                    window_size=win_size,
+                                                    q=q,
+                                                    freq=freq)
 
-    def detect_anomalies(self, block_size=ANOMALY_DETECTION_BLOCK_SIZE,
+    def detect_anomalies(self, freq=None,
+                         block_size=ANOMALY_DETECTION_BLOCK_SIZE,
                          threshold=PATTERN_MATCHING_THRESHOLD,
                          tolerance=ANOMALY_GROUPING_TOLERANCE):
         """Detect anomalies in most recently recorded file.
@@ -118,6 +110,8 @@ class SshAudioCapture(AudioCapture):
         generated sine wave of the same amplitude, sample rate, and frequency.
 
         Args:
+            freq (int|float): fundamental frequency of the signal. All other
+                frequencies are noise. If None, will be calculated with FFT.
             block_size (int): the number of samples to analyze at a time in the
                 anomaly detection algorithm.
             threshold (float): the threshold of the correlation index to
@@ -125,34 +119,16 @@ class SshAudioCapture(AudioCapture):
             tolerance (float): the sample tolerance for anomaly time values
                 to be grouped as the same anomaly
         Returns:
-            channel_results (dict): dictionary mapping each channel index to a
-                list of anomaly (start_time, end_time) tuples.
+            channel_results (list): anomaly durations for each channel's signal.
+                List index corresponds to channel index.
         """
         latest_file_path = self.record_file_template % self.last_fileno()
-        wave_file = SoundFile(latest_file_path)
-        signal = wave_file.read()
-        channels = wave_file.channels
-        sample_rate = wave_file.samplerate
-        fundamental_freq = audio_analysis.fundamental_freq(signal, sample_rate)
-        channel_results = {}
-        if channels == 1:
-            channel_results[0] = audio_analysis.get_anomaly_durations(
-                signal=signal,
-                rate=sample_rate,
-                freq=fundamental_freq,
-                block_size=block_size,
-                threshold=threshold,
-                tolerance=tolerance)
-        else:
-            for ch_no, channel in enumerate(signal.transpose()):
-                channel_results[ch_no] = audio_analysis.get_anomaly_durations(
-                    signal=channel,
-                    rate=sample_rate,
-                    freq=fundamental_freq,
-                    block_size=block_size,
-                    threshold=threshold,
-                    tolerance=tolerance)
-        return channel_results
+        return audio_analysis.get_file_anomaly_durations(
+            filename=latest_file_path,
+            freq=freq,
+            block_size=block_size,
+            threshold=threshold,
+            tolerance=tolerance)
 
     def audio_quality_analysis(self, path):
         """Measures audio quality based on the audio file given as input."""
