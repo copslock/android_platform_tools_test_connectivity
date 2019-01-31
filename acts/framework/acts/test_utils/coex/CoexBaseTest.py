@@ -213,7 +213,7 @@ class CoexBaseTest(BaseTestClass):
             server_port,
             self.tag,
         )
-        self.tag = self.tag + 1
+
         cmd = "adb -s {} shell {}".format(self.pri_ad.serial, self.iperf_server)
 
         def appender_iperf_logs(line):
@@ -301,12 +301,16 @@ class CoexBaseTest(BaseTestClass):
         """
         ip = get_phone_ip(self.pri_ad)
         if bidirectional:
+            self.tag = self.tag + 1
             self.iperf_variables.bidirectional_client_path = (
-                self.iperf_client.start(self.bidirectional_args, self.pri_ad,
-                                        ip, self.current_test_name, self.tag))
+                    self.iperf_client.start(ip, self.bidirectional_args,
+                                            self.tag))
         else:
-            self.iperf_variables.iperf_client_path = self.iperf_client.start(
-                iperf_args, self.pri_ad, ip, self.current_test_name, self.tag)
+            self.tag = self.tag + 1
+            self.iperf_variables.iperf_client_path = (
+                    self.iperf_client.start(ip, iperf_args,
+                                            self.tag))
+
         return True
 
     def result_parser(self, iperf_args, bidirectional=False):
@@ -339,7 +343,7 @@ class CoexBaseTest(BaseTestClass):
         if not received:
             self.log.error("Iperf failed/stopped")
             self.flag_list.append(False)
-            self.iperf_variables.received.append("Iperf Failed")
+            self.iperf_variables.received.append(0)
         else:
             self.iperf_variables.received.append(
                 str(round(received, 2)) + "Mb/s")
@@ -378,12 +382,12 @@ class CoexBaseTest(BaseTestClass):
             if not self.iperf_variables.received:
                 self.teardown_thread()
                 if not self.wifi_status_queue.empty():
-                    if not self.wifi_status_queue.get():
-                        return False
                     if self.iperf_variables.is_bidirectional:
                         self.result_parser(
                             self.bidirectional_args, bidirectional=True)
                     self.result_parser(self.iperf_args)
+                    if not self.wifi_status_queue.get():
+                        return False
                     if False in self.flag_list:
                         return False
         return True
