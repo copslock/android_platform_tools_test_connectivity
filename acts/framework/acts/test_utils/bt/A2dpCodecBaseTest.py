@@ -17,7 +17,6 @@
 import os
 
 from acts import asserts
-from acts.signals import TestPass
 from acts.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as Factory
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import connect_phone_to_headset
@@ -98,7 +97,7 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
                               channel_mode,
                               codec_specific_1=0):
         """Pair phone and headset, set codec, and stream music file.
-        Ensure music actually plays and run audio analysis if desired.
+        Ensure devices are connected and that music actually plays.
 
         Args:
             codec_type (str): the desired codec type. For reference, see
@@ -157,31 +156,41 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
         asserts.assert_true(audio_captured, 'Audio not recorded',
                             extras=self.metrics)
 
-        # Calculate Total Harmonic Distortion + Noise
-        thdn = self.mic.THDN(**self.audio_params['thdn_params'])
-        for ch_no, t in thdn.items():
-            self.log.info('THD+N percent for channel %s: %.4f%%' %
-                          (ch_no, t * 100))
-        self.metrics["thdn"] = thdn
-
-        # Detect Anomalies
-        anom = self.mic.detect_anomalies(**self.audio_params["anomaly_params"])
-        for ch_no, anomalies in anom.items():
-            for anomaly in anomalies:
-                start, end = anomaly
-                self.log.warning('Anomaly on channel {} at {}:{}. Duration '
-                                 '{} sec'.format(ch_no,
-                                                 start // 60,
-                                                 start % 60,
-                                                 end -start))
-        else:
-            self.log.info('No anomalies detected.')
-        self.metrics["anomalies"] = anom
-
         if stopped:
             self.log.info('Finished playing audio.')
         else:
             self.log.warning('Failed to stop audio.')
 
-        raise TestPass('Successfully recorded and analyzed audio.',
-                       extras=self.metrics)
+    def run_thdn_analysis(self):
+        """Calculate Total Harmonic Distortion plus Noise for latest recording.
+
+        Store result in self.metrics.
+        """
+        # Calculate Total Harmonic Distortion + Noise
+        thdn = self.mic.THDN(**self.audio_params['thdn_params'])
+        for ch_no, t in enumerate(thdn):
+            self.log.info('THD+N percent for channel %s: %.4f%%' %
+                          (ch_no, t * 100))
+        self.metrics["thdn"] = thdn
+
+    def run_anomaly_detection(self):
+        """Detect anomalies in latest recording.
+
+        Store result in self.metrics.
+        """
+        # Detect Anomalies
+        anom = self.mic.detect_anomalies(**self.audio_params["anomaly_params"])
+        num_anom = 0
+        for ch_no, anomalies in enumerate(anom):
+            if anomalies:
+                for anomaly in anomalies:
+                    num_anom += 1
+                    start, end = anomaly
+                    self.log.warning('Anomaly on channel {} at {}:{}. Duration '
+                                     '{} sec'.format(ch_no,
+                                                     start // 60,
+                                                     start % 60,
+                                                     end -start))
+        else:
+            self.log.info('%i anomalies detected.' % num_anom)
+        self.metrics["anomalies"] = anom

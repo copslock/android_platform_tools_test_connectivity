@@ -17,7 +17,7 @@
 
 import logging
 import numpy
-import sys
+import soundfile
 from scipy.signal import blackmanharris
 from scipy.signal import iirnotch
 from scipy.signal import lfilter
@@ -490,11 +490,11 @@ def _get_correlation_index(golden_signal, test_signal):
     return correlation / (norm_golden * norm_test)
 
 
-def fundamental_freq(signal, sample_rate):
+def fundamental_freq(signal, rate):
     """Return fundamental frequency of signal by finding max in freq domain.
     """
     dft = numpy.fft.rfft(signal)
-    fund_freq = sample_rate * (numpy.argmax(numpy.abs(dft)) / len(signal))
+    fund_freq = rate * (numpy.argmax(numpy.abs(dft)) / len(signal))
     return fund_freq
 
 
@@ -504,7 +504,7 @@ def rms(array):
     return numpy.sqrt(numpy.mean(numpy.absolute(array)**2))
 
 
-def THDN(signal, sample_rate, q, fund_freq):
+def THDN(signal, rate, q, freq):
     """Measure the THD+N for a signal and return the results.
     Subtract mean to center signal around 0, remove fundamental frequency from
     dft using notch filter and transform back into signal to get noise. Compute
@@ -512,9 +512,9 @@ def THDN(signal, sample_rate, q, fund_freq):
 
     Args:
         signal: array of values representing an audio signal.
-        sample_rate: sample rate in Hz of the signal.
+        rate: sample rate in Hz of the signal.
         q: quality factor for the notch filter.
-        fund_freq: fundamental frequency of the signal. All other frequencies
+        freq: fundamental frequency of the signal. All other frequencies
             are noise. If not specified, will be calculated using FFT.
     Returns:
         THDN: THD+N ratio calculated from the ratio of RMS of pure harmonics
@@ -524,9 +524,9 @@ def THDN(signal, sample_rate, q, fund_freq):
     signal -= numpy.mean(signal)
     windowed = signal * blackmanharris(len(signal))
     # Find fundamental frequency to remove if not specified.
-    fund_freq = fund_freq or fundamental_freq(windowed, sample_rate)
+    freq = freq or fundamental_freq(windowed, rate)
     # Create notch filter to isolate noise.
-    w0 = fund_freq / (sample_rate / 2.0)
+    w0 = freq / (rate / 2.0)
     b, a = iirnotch(w0, q)
     noise = lfilter(b, a, windowed)
     # Calculate THD+N.
@@ -534,15 +534,15 @@ def THDN(signal, sample_rate, q, fund_freq):
     return THDN
 
 
-def max_THDN(signal, sample_rate, step_size, window_size, q, fund_freq):
+def max_THDN(signal, rate, step_size, window_size, q, freq):
     """Analyze signal with moving window and find maximum THD+N value.
     Args:
         signal: array representing the signal
-        sample_rate: sample rate of the signal.
+        rate: sample rate of the signal.
         step_size: how many samples to move the window by for each analysis.
         window_size: how many samples to analyze each time.
         q: quality factor for the notch filter.
-        fund_freq: fundamental frequency of the signal. All other frequencies
+        freq: fundamental frequency of the signal. All other frequencies
             are noise. If not specified, will be calculated using FFT.
     Returns:
         greatest_THDN: the greatest THD+N value found across all windows
@@ -551,8 +551,117 @@ def max_THDN(signal, sample_rate, step_size, window_size, q, fund_freq):
     cur = 0
     while cur + window_size < len(signal):
         window = signal[cur:cur + window_size]
-        res = THDN(window, sample_rate, q, fund_freq)
+        res = THDN(window, rate, q, freq)
         cur += step_size
         if res > greatest_THDN:
             greatest_THDN = res
     return greatest_THDN
+
+
+def get_file_THDN(filename, q, freq=None):
+    """Get THD+N values for each channel of an audio file.
+
+    Args:
+        filename (str): path to the audio file.
+          (supported file types: http://www.mega-nerd.com/libsndfile/#Features)
+        q (float): quality factor for the notch filter.
+        freq (int|float): fundamental frequency of the signal. All other
+            frequencies are noise. If None, will be calculated with FFT.
+    Returns:
+        channel_results (list): THD+N value for each channel's signal.
+            List index corresponds to channel index.
+    """
+    audio_file = soundfile.SoundFile(filename)
+    channel_results = []
+    if audio_file.channels == 1:
+        channel_results.append(THDN(signal=audio_file.read(),
+                                    rate=audio_file.samplerate,
+                                    q=q,
+                                    freq=freq))
+    else:
+        for ch_no, channel in enumerate(audio_file.read().transpose()):
+            channel_results.append(THDN(signal=channel,
+                                        rate=audio_file.samplerate,
+                                        q=q,
+                                        freq=freq))
+    return channel_results
+
+
+def get_file_max_THDN(filename, step_size, window_size, q, freq=None):
+    """Get max THD+N value across analysis windows for each channel of file.
+
+    Args:
+        filename (str): path to the audio file.
+          (supported file types: http://www.mega-nerd.com/libsndfile/#Features)
+        step_size: how many samples to move the window by for each analysis.
+        window_size: how many samples to analyze each time.
+        q (float): quality factor for the notch filter.
+        freq (int|float): fundamental frequency of the signal. All other
+            frequencies are noise. If None, will be calculated with FFT.
+    Returns:
+        channel_results (list): max THD+N value for each channel's signal.
+            List index corresponds to channel index.
+    """
+    audio_file = soundfile.SoundFile(filename)
+    channel_results = []
+    if audio_file.channels == 1:
+        channel_results.append(max_THDN(signal=audio_file.read(),
+                                        rate=audio_file.samplerate,
+                                        step_size=step_size,
+                                        window_size=window_size,
+                                        q=q,
+                                        freq=freq))
+    else:
+        for ch_no, channel in enumerate(audio_file.read().transpose()):
+            channel_results.append(max_THDN(signal=channel,
+                                            rate=audio_file.samplerate,
+                                            step_size=step_size,
+                                            window_size=window_size,
+                                            q=q,
+                                            freq=freq))
+    return channel_results
+
+
+def get_file_anomaly_durations(filename, freq=None,
+                               block_size=ANOMALY_DETECTION_BLOCK_SIZE,
+                               threshold=PATTERN_MATCHING_THRESHOLD,
+                               tolerance=ANOMALY_GROUPING_TOLERANCE):
+    """Get durations of anomalies for each channel of audio file.
+
+    Args:
+        filename (str): path to the audio file.
+          (supported file types: http://www.mega-nerd.com/libsndfile/#Features)
+        freq (int|float): fundamental frequency of the signal. All other
+            frequencies are noise. If None, will be calculated with FFT.
+        block_size (int): The block size in samples to detect anomaly.
+        threshold (float): The threshold of correlation index to be judge as
+            matched.
+        tolerance (float): The number of samples greater than block_size / 2
+            that the sample distance between two anomaly time values can be and
+            still be grouped as the same anomaly.
+    Returns:
+        channel_results (list): anomaly durations for each channel's signal.
+            List index corresponds to channel index.
+    """
+    audio_file = soundfile.SoundFile(filename)
+    signal = audio_file.read()
+    freq = freq or fundamental_freq(signal, audio_file.samplerate)
+    channel_results = []
+    if audio_file.channels == 1:
+        channel_results.append(get_anomaly_durations(
+            signal=signal,
+            rate=audio_file.samplerate,
+            freq=freq,
+            block_size=block_size,
+            threshold=threshold,
+            tolerance=tolerance))
+    else:
+        for ch_no, channel in enumerate(signal.transpose()):
+            channel_results.append(get_anomaly_durations(
+                signal=channel,
+                rate=audio_file.samplerate,
+                freq=freq,
+                block_size=block_size,
+                threshold=threshold,
+                tolerance=tolerance))
+    return channel_results
