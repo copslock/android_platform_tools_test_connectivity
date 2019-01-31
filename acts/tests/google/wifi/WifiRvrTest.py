@@ -297,7 +297,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             # Set Attenuation
             self.log.info("Setting attenuation to {} dB".format(atten))
             for attenuator in self.attenuators:
-                attenuator.set_atten(atten)
+                attenuator.set_atten(atten, strict=False)
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
             try:
@@ -345,7 +345,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                     (len(testcase_params["atten_range"]) - len(throughput)))
                 break
         for attenuator in self.attenuators:
-            attenuator.set_atten(0)
+            attenuator.set_atten(0, strict=False)
         # Compile test result and meta data
         rvr_result = collections.OrderedDict()
         rvr_result["test_name"] = self.current_test_name
@@ -392,7 +392,10 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.testclass_params["country_code"])
         self.main_network[band]["channel"] = testcase_params["channel"]
         wutils.wifi_connect(
-            self.client_dut, self.main_network[band], num_of_tries=5)
+            self.client_dut,
+            self.main_network[band],
+            num_of_tries=5,
+            check_connectivity=False)
         self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
             'wlan0')[0]
         time.sleep(self.MED_SLEEP)
@@ -407,7 +410,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.setup_ap(testcase_params)
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
-            attenuator.set_atten(0)
+            attenuator.set_atten(0, strict=False)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
 

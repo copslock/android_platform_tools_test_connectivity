@@ -84,7 +84,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
         """
         pass
 
-    def set_atten(self, idx, value):
+    def set_atten(self, idx, value, strict_flag=True):
         """This function sets the attenuation of an attenuator given its index
         in the instrument.
 
@@ -93,6 +93,9 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
                 an instrument. For instruments that only have one channel, this
                 is ignored by the device.
             value: A floating point value for nominal attenuation to be set.
+            strict_flag: if True, function raises an error when given out of
+                bounds attenuation values, if false, the function sets out of
+                bounds values to 0 or max_atten.
 
         Raises:
             InvalidDataError if the attenuator does not respond with the
@@ -102,7 +105,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             raise IndexError('Attenuator index out of range!', self.num_atten,
                              idx)
 
-        if value > self.max_atten:
+        if value > self.max_atten and strict_flag:
             raise ValueError('Attenuator value out of range!', self.max_atten,
                              value)
         # The actual device uses one-based index for channel numbers.
