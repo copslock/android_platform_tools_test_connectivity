@@ -65,6 +65,7 @@ from acts.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import wait_for_sims_ready_by_adb
+from acts.test_utils.tel.tel_test_utils import activate_wfc_on_device
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import SINGLE_SIM_CONFIG, MULTI_SIM_CONFIG
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -248,14 +249,10 @@ class TelephonyBaseTest(BaseTestClass):
             ensure_phone_default_state(self.log, ad)
             setup_droid_properties(self.log, ad, sim_conf_file, self.cbrs_esim)
 
-        # Setup VoWiFi MDN for Verizon. b/33187374
-        if get_operator_name(self.log, ad, "1") == "vzw" and ad.is_apk_installed(
-                "com.google.android.wfcactivation"):
-            ad.log.info("setup VoWiFi MDN per b/33187374")
-        ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
-        ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
-                     "\"com.google.android.wfcactivation/"
-                     ".VzwEmergencyAddressActivity\"")
+        # Activate WFC on Verizon, AT&T and Canada operators as per # b/33187374 &
+        # b/122327716
+        activate_wfc_on_device(self.log, ad)
+
         # Sub ID setup
         initial_set_up_for_subid_infomation(self.log, ad)
 
