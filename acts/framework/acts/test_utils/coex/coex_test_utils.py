@@ -1025,35 +1025,6 @@ def start_media_play(pri_ad, music_file_to_play):
     return True
 
 
-def throughput_pass_fail_check(throughput):
-    """Method to check if the throughput is above the defined
-    threshold.
-
-    Args:
-        throughput: Throughput value of test run.
-
-    Returns:
-        Pass if throughput is above threshold.
-        Fail if throughput is below threshold and Iperf Failed.
-        Empty if Iperf value is not present.
-    """
-    iperf_result_list = []
-    if len(throughput) != 0:
-        for i in range(len(throughput)):
-            if throughput[i] != 'Iperf Failed':
-                if float(throughput[i].split('Mb/s')[0]) > \
-                        THROUGHPUT_THRESHOLD:
-                    iperf_result_list.append("PASS")
-                else:
-                    iperf_result_list.append("FAIL")
-            elif throughput[i] == 'Iperf Failed':
-                iperf_result_list.append("FAIL")
-        return "FAIL" if "FAIL" or "Iperf Failed" in iperf_result_list \
-            else "PASS"
-    else:
-        return " "
-
-
 def wifi_connection_check(pri_ad, ssid):
     """Function to check existence of wifi connection.
 
@@ -1094,59 +1065,6 @@ def push_music_to_android_device(ad, audio_params):
     else:
         ad.log.error("Music file should be of type list")
         return False
-
-
-def xlsheet(pri_ad, test_result, attenuation_range=range(0, 1, 1)):
-    """Parses the output and writes in spreadsheet.
-
-    Args:
-        pri_ad: An android device.
-        test_result: final output of testrun.
-        attenuation_range: list of attenuation values.
-    """
-    r = 0
-    c = 0
-    test_result = json.loads(test_result)
-    file_name = '/'.join((pri_ad.log_path,
-                          test_result["Results"][0]["Test Class"] + ".xlsx"))
-    workbook = xlsxwriter.Workbook(file_name)
-    worksheet = workbook.add_worksheet()
-    wb_format = workbook.add_format()
-    wb_format.set_text_wrap()
-    worksheet.set_column('A:A', 50)
-    worksheet.set_column('B:B', 10)
-    wb_format = workbook.add_format({'bold': True})
-    worksheet.write(r, c, "Test_case_name", wb_format)
-    worksheet.write(r, c + 1, "Result", wb_format)
-    if len(attenuation_range) > 1:
-        for idx in attenuation_range:
-            c += 1
-            worksheet.write(r, c + 1, str(idx) + "db", wb_format)
-    else:
-        worksheet.write(r, c + 2, "Iperf_throughput", wb_format)
-        c += 1
-
-    worksheet.write(r, (c + 2), "Throughput_Result", wb_format)
-    result = [(i["Test Name"], i["Result"], (i["Extras"]),
-               throughput_pass_fail_check(i["Extras"]))
-              for i in test_result["Results"]]
-
-    for row, line in enumerate(result):
-        i = 0
-        test_params = line[0].split("_")
-        test_name = test_params[-1]
-        for col, cell in enumerate(line):
-            if test_name != "bidirectional":
-                if isinstance(cell, list):
-                    for i in range(len(cell)):
-                        worksheet.write(row + 1, col, cell[i])
-                        col += 1
-                else:
-                    worksheet.write(row + 1, col + i, cell)
-            else:
-                if isinstance(cell, list):
-                    cell = ', '.join(cell)
-                worksheet.write(row + 1, col + i, cell)
 
 
 def bokeh_chart_plot(bt_attenuation_range,

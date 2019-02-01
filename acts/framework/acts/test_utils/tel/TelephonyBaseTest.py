@@ -65,6 +65,7 @@ from acts.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import wait_for_sims_ready_by_adb
+from acts.test_utils.tel.tel_test_utils import activate_wfc_on_device
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import SINGLE_SIM_CONFIG, MULTI_SIM_CONFIG
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -248,14 +249,10 @@ class TelephonyBaseTest(BaseTestClass):
             ensure_phone_default_state(self.log, ad)
             setup_droid_properties(self.log, ad, sim_conf_file, self.cbrs_esim)
 
-        # Setup VoWiFi MDN for Verizon. b/33187374
-        if get_operator_name(self.log, ad, "1") == "vzw" and ad.is_apk_installed(
-                "com.google.android.wfcactivation"):
-            ad.log.info("setup VoWiFi MDN per b/33187374")
-        ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
-        ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
-                     "\"com.google.android.wfcactivation/"
-                     ".VzwEmergencyAddressActivity\"")
+        # Activate WFC on Verizon, AT&T and Canada operators as per # b/33187374 &
+        # b/122327716
+        activate_wfc_on_device(self.log, ad)
+
         # Sub ID setup
         initial_set_up_for_subid_infomation(self.log, ad)
 
@@ -450,6 +447,8 @@ class TelephonyBaseTest(BaseTestClass):
         return result
 
     def _take_bug_report(self, test_name, begin_time):
+        if self._skip_bug_report():
+            return
         test_log_path = os.path.join(self.log_path, test_name)
         utils.create_dir(test_log_path)
         # Extract test_run_info.txt, test_run_debug.txt
@@ -458,8 +457,6 @@ class TelephonyBaseTest(BaseTestClass):
                              os.path.join(test_log_path,
                                           "%s_%s" % (test_name, file_name)),
                              "\[Test Case\] %s " % test_name)
-        if self._skip_bug_report():
-            return
         dev_num = getattr(self, "number_of_devices", None) or len(
             self.android_devices)
         tasks = [(self._ad_take_bugreport, (ad, test_name, begin_time))
@@ -479,10 +476,10 @@ class TelephonyBaseTest(BaseTestClass):
         shutil.make_archive(file_name, "zip", src_dir)
         shutil.rmtree(src_dir)
 
-    def _block_all_test_cases(self, tests):
-        """Over-write _block_all_test_case in BaseTestClass."""
+    def _block_all_test_cases(self, tests, reason='Failed class setup'):
+        """Over-write _block_all_test_cases in BaseTestClass."""
         for (i, (test_name, test_func)) in enumerate(tests):
-            signal = signals.TestBlocked("Failed class setup")
+            signal = signals.TestBlocked(reason)
             record = records.TestResultRecord(test_name, self.TAG)
             record.test_begin()
             # mark all test cases as FAIL

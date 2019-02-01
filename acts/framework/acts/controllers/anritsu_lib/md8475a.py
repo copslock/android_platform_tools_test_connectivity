@@ -529,7 +529,7 @@ class MD8475A(object):
         Returns:
             query response
         """
-        self.log.debug("--> {}".format(query))
+        self.log.info("--> {}".format(query))
         querytoSend = (query + TERMINATOR).encode('utf-8')
         self._sock.settimeout(sock_timeout)
         try:
@@ -537,7 +537,7 @@ class MD8475A(object):
             result = self._sock.recv(ANRITSU_SOCKET_BUFFER_SIZE).rstrip(
                 TERMINATOR.encode('utf-8'))
             response = result.decode('utf-8')
-            self.log.debug('<-- {}'.format(response))
+            self.log.info('<-- {}'.format(response))
             return response
         except socket.timeout:
             raise AnritsuError("Timeout: Response from Anritsu")
@@ -553,7 +553,7 @@ class MD8475A(object):
         Returns:
             None
         """
-        self.log.debug("--> {}".format(command))
+        self.log.info("--> {}".format(command))
         if self._error_reporting:
             cmdToSend = (command + ";ERROR?" + TERMINATOR).encode('utf-8')
             self._sock.settimeout(sock_timeout)
@@ -4066,6 +4066,32 @@ class _IMS_Services(object):
             None
         """
         cmd = "IMSCSCFAUTH {},{}".format(self._vnid, on_off)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def cscf_precondition(self):
+        """ Get CSCF IMS Precondition
+
+        Args:
+            None
+
+        Returns:
+            CSCF IMS Precondition
+        """
+        cmd = "IMSCSCFPRECONDITION? " + self._vnid
+        return self._anritsu.send_query(cmd)
+
+    @cscf_precondition.setter
+    def cscf_precondition(self, on_off):
+        """ Set CSCF IMS Precondition
+
+        Args:
+            on_off: CSCF IMS Precondition ENABLE/DISABLE
+
+        Returns:
+            None
+        """
+        cmd = "IMSCSCFPRECONDITION {},{}".format(self._vnid, on_off)
         self._anritsu.send_command(cmd)
 
     @property

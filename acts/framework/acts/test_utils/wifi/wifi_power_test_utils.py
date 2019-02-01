@@ -21,7 +21,7 @@ from acts.controllers import monsoon
 from acts.libs.proc import job
 from acts.controllers.ap_lib import bridge_interface as bi
 from acts.test_utils.wifi import wifi_test_utils as wutils
-from bokeh.layouts import layout
+from bokeh.layouts import column, layout
 from bokeh.models import CustomJS, ColumnDataSource
 from bokeh.models import tools as bokeh_tools
 from bokeh.models.widgets import DataTable, TableColumn
@@ -30,7 +30,7 @@ from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.ap_lib import hostapd_ap_preset
 
 # http://www.secdev.org/projects/scapy/
-# On ubuntu, sudo pip3 install scapy-python3
+# On ubuntu, sudo pip3 install scapy
 import scapy.all as scapy
 
 GET_FROM_PHONE = 'get_from_dut'
@@ -314,9 +314,17 @@ def bokeh_plot(data_sets,
         index_now = legends.index(legend)
         color = colors[index_now % len(colors)]
         plot.line(
-            x_data, y_data, legend=str(legend), line_width=fig_property['linewidth'], color=color)
+            x_data,
+            y_data,
+            legend=str(legend),
+            line_width=fig_property['linewidth'],
+            color=color)
         plot.circle(
-            x_data, y_data, size=fig_property['markersize'], legend=str(legend), fill_color=color)
+            x_data,
+            y_data,
+            size=fig_property['markersize'],
+            legend=str(legend),
+            fill_color=color)
 
     #Plot properties
     plot.xaxis.axis_label = fig_property['x_label']
@@ -328,6 +336,12 @@ def bokeh_plot(data_sets,
         output_file(output_file_path)
         save(plot)
     return plot
+
+
+def save_bokeh_plots(plot_array, output_file_path):
+    all_plots = column(children=plot_array)
+    output_file(output_file_path)
+    save(all_plots)
 
 
 def run_iperf_client_nonblocking(ad, server_host, extra_args=""):

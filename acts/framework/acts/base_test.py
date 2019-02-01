@@ -61,6 +61,10 @@ class BaseTestClass(object):
         log: A logger object used for logging.
         results: A records.TestResult object for aggregating test results from
                  the execution of test cases.
+        consecutive_failures: Tracks the number of consecutive test case
+                              failures within this class.
+        size_limit_reached: True if the size of the log directory has reached
+                            its limit.
         current_test_name: A string that's the name of the test case currently
                            being executed. If no test is executing, this should
                            be None.
@@ -77,13 +81,15 @@ class BaseTestClass(object):
         if not self.TAG:
             self.TAG = self.__class__.__name__
         # Set all the controller objects and params.
+        self.user_params = {}
         for name, value in configs.items():
             setattr(self, name, value)
         self.results = records.TestResult()
         self.current_test_name = None
         self.log = tracelogger.TraceLogger(self.log)
+        self.consecutive_failures = 0
         self.size_limit_reached = False
-        if 'android_devices' in self.__dict__:
+        if hasattr(self, 'android_devices'):
             for ad in self.android_devices:
                 if ad.droid:
                     utils.set_location_service(ad, False)
@@ -175,6 +181,12 @@ class BaseTestClass(object):
         called.
         """
         self.current_test_name = test_name
+
+        # Block the test if the consecutive test case failure limit is reached.
+        fail_limit = self.user_params.get('consecutive_failure_limit', -1)
+        if self.consecutive_failures == fail_limit:
+            raise signals.TestBlocked('Consecutive test failure')
+
         try:
             # Write test start token to adb log if android device is attached.
             if hasattr(self, 'android_devices'):
@@ -242,6 +254,7 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the failed test
                     case.
         """
+        self.consecutive_failures += 1
         if record.details:
             self.log.error(record.details)
         self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
@@ -265,6 +278,7 @@ class BaseTestClass(object):
             record: The records.TestResultRecord object for the passed test
                     case.
         """
+        self.consecutive_failures = 0
         msg = record.details
         if msg:
             self.log.info(msg)
@@ -624,14 +638,16 @@ class BaseTestClass(object):
             self.log.info("Test case %s not found in %s.", test_name, self.TAG)
             return test_name, test_skip_func
 
-    def _block_all_test_cases(self, tests):
+    def _block_all_test_cases(self, tests, reason='Failed class setup'):
         """
         Block all passed in test cases.
         Args:
             tests: The tests to block.
+            reason: Message describing the reason that the tests are blocked.
+                Default is 'Failed class setup'
         """
         for test_name, test_func in tests:
-            signal = signals.TestBlocked("Failed class setup")
+            signal = signals.TestBlocked(reason)
             record = records.TestResultRecord(test_name, self.TAG)
             record.test_begin()
             if hasattr(test_func, 'gather'):
@@ -764,8 +780,19 @@ class BaseTestClass(object):
         return result
 
     def _skip_bug_report(self):
-        """A function to check whether we should skip creating a bug report."""
+        """A function to check whether we should skip creating a bug report.
+
+        Returns: True if bug report is to be skipped.
+        """
         if "no_bug_report_on_fail" in self.user_params:
+            return True
+
+        # If the current test case is found in the set of problematic test
+        # cases, we skip bugreport and other failure artifact creation.
+        full_test_name = '%s.%s' % (self.__class__.__name__, self.test_name)
+        if full_test_name in self.user_params.get('quiet_test_cases', []):
+            self.log.info(
+                "Skipping bug report, as directed for this test case.")
             return True
 
         # Once we hit a certain log path size, it's not going to get smaller.

@@ -466,6 +466,7 @@ def _init_IMS(anritsu_handle,
         vnid.cscf_monitoring_ua = TMO_CSCF_Monitoring_UA_URI
         vnid.cscf_virtual_ua = TMO_CSCF_Virtual_UA_URI
         vnid.cscf_host_name = CSCF_HOSTNAME
+        vnid.cscf_precondition = "ENABLE"
         vnid.cscf_ims_authentication = "DISABLE"
         if auth:
             vnid.cscf_ims_authentication = "ENABLE"

@@ -41,20 +41,11 @@ def create(configs):
     results = []
     for c in configs:
         if type(c) is dict and "AndroidDevice" in c:
-            try:
-                results.append(IPerfServerOverAdb(c, logging.log_path))
-            except:
-                pass
+            results.append(IPerfServerOverAdb(c))
         elif type(c) is dict and "ssh_config" in c:
-            try:
-                results.append(IPerfServerOverSsh(c, logging.log_path))
-            except:
-                pass
+            results.append(IPerfServerOverSsh(c))
         else:
-            try:
-                results.append(IPerfServer(c, logging.log_path))
-            except:
-                pass
+            results.append(IPerfServer(c))
     return results
 
 
@@ -205,10 +196,11 @@ class IPerfServer():
 
     """
 
-    def __init__(self, config, log_path):
+    def __init__(self, config):
         self.server_type = "local"
         self.port = config
-        self.log_path = os.path.join(log_path, "iPerf{}".format(self.port))
+        self.log_path = os.path.join(logging.log_path, "iPerf{}".format(
+            self.port))
         utils.create_dir(self.log_path)
         self.iperf_str = "iperf3 -s -J -p {}".format(self.port)
         self.log_files = []
@@ -251,12 +243,13 @@ class IPerfServerOverSsh():
 
     """
 
-    def __init__(self, config, log_path):
+    def __init__(self, config):
         self.server_type = "remote"
         self.ssh_settings = settings.from_config(config["ssh_config"])
         self.ssh_session = connection.SshConnection(self.ssh_settings)
         self.port = config["port"]
-        self.log_path = os.path.join(log_path, "iPerf{}".format(self.port))
+        self.log_path = os.path.join(logging.log_path, "iPerf{}".format(
+            self.port))
         utils.create_dir(self.log_path)
         self.iperf_str = "iperf3 -s -J -p {}".format(self.port)
         self.log_files = []
@@ -307,7 +300,7 @@ class IPerfServerOverAdb():
 
     """
 
-    def __init__(self, config, log_path):
+    def __init__(self, config):
 
         # Note: skip_sl4a must be set to True in iperf server config since
         # ACTS may have already initialized and started services on device
@@ -316,7 +309,8 @@ class IPerfServerOverAdb():
         self.adb_device = self.adb_device[0]
         self.adb_log_path = "~/data"
         self.port = config["port"]
-        self.log_path = os.path.join(log_path, "iPerf{}".format(self.port))
+        self.log_path = os.path.join(logging.log_path, "iPerf{}".format(
+            self.port))
         utils.create_dir(self.log_path)
         self.iperf_str = "iperf3 -s -J -p {}".format(self.port)
         self.log_files = []

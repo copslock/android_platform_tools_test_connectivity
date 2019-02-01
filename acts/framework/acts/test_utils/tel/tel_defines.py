@@ -63,7 +63,7 @@ MAX_WAIT_TIME_CALL_INITIATION = 90
 WAIT_TIME_AFTER_MODE_CHANGE = 60
 
 # Max time to wait for Carrier Config Version to Update in mins
-WAIT_TIME_FOR_CARRIERCONFIG_CHANGE = 45
+WAIT_TIME_FOR_CARRIERCONFIG_CHANGE = 20
 
 # Max time to wait after toggle airplane mode and before
 # get expected event
@@ -264,7 +264,12 @@ CARRIER_TEL = 'tel'
 CARRIER_TSA = 'tsa'
 CARRIER_USCC = 'uscc'
 CARRIER_ROGERS = 'ROGERS'
+CARRIER_TELUS = 'tls'
+CARRIER_KOODO = 'kdo'
+CARRIER_VIDEOTRON = 'vtrn'
+CARRIER_BELL = 'bell'
 CARRIER_FRE = 'fre'
+CARRIER_FI = 'fi'
 
 RAT_FAMILY_CDMA = 'cdma'
 RAT_FAMILY_CDMA2000 = 'cdma2000'

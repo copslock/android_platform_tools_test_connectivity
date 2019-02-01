@@ -143,6 +143,8 @@ from acts.test_utils.tel.tel_defines import DataConnectionStateContainer
 from acts.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
 from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts.test_utils.tel.tel_defines import ServiceStateContainer
+from acts.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
+    CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
 from acts.test_utils.tel.tel_lookup_tables import \
     connection_type_from_type_string
 from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
@@ -352,7 +354,13 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
     if cbrs_esim:
         ad.log.info("CBRS testing detected, removing it form SubInfoList")
         if len(sub_info_list) > 1:
-            del sub_info_list[-1]
+            # Check for Display Name
+            index_to_delete = -1
+            for i, oper in enumerate(d['displayName'] for d in sub_info_list):
+                ad.log.info("Index %d Display %s", i, oper)
+                if "Google" in oper:
+                    index_to_delete = i
+            del sub_info_list[index_to_delete]
         ad.log.info("Updated SubInfoList is %s", sub_info_list)
     active_sub_id = get_outgoing_voice_sub_id(ad)
     for sub_info in sub_info_list:
@@ -3443,6 +3451,58 @@ def set_wfc_mode(log, ad, wfc_mode):
     return True
 
 
+def activate_wfc_on_device(log, ad):
+    """ Activates WiFi calling on device.
+
+        Required for certain network operators.
+
+    Args:
+        log: Log object
+        ad: Android device object
+
+    """
+    activate_wfc_on_device_for_subscription(log, ad,
+                                            ad.droid.subscriptionGetDefaultSubId())
+
+
+def activate_wfc_on_device_for_subscription(log, ad, sub_id):
+    """ Activates WiFi calling on device for a subscription.
+
+    Args:
+        log: Log object
+        ad: Android device object
+        sub_id: Subscription id (integer)
+
+    """
+    if not sub_id or INVALID_SUB_ID == sub_id:
+        ad.log.error("Subscription id invalid")
+        return
+    operator_name = get_operator_name(log, ad, sub_id)
+    if operator_name in (CARRIER_VZW, CARRIER_ATT, CARRIER_BELL, CARRIER_ROGERS,
+                         CARRIER_TELUS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_FRE):
+        ad.log.info("Activating WFC on operator : %s", operator_name)
+        if not ad.is_apk_installed("com.google.android.wfcactivation"):
+            ad.log.error("WFC Activation Failed, wfc activation apk not installed")
+            return
+        wfc_activate_cmd ="am start --ei EXTRA_LAUNCH_CARRIER_APP 0 --ei " \
+                    "android.telephony.extra.SUBSCRIPTION_INDEX {} -n ".format(sub_id)
+        if CARRIER_ATT == operator_name:
+            ad.adb.shell("setprop dbg.att.force_wfc_nv_enabled true")
+            wfc_activate_cmd = wfc_activate_cmd+\
+                               "\"com.google.android.wfcactivation/" \
+                               ".WfcActivationActivity\""
+        elif CARRIER_VZW == operator_name:
+            ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
+            wfc_activate_cmd = wfc_activate_cmd + \
+                               "\"com.google.android.wfcactivation/" \
+                               ".VzwEmergencyAddressActivity\""
+        else:
+            wfc_activate_cmd = wfc_activate_cmd+ \
+                               "\"com.google.android.wfcactivation/" \
+                               ".can.WfcActivationCanadaActivity\""
+        ad.adb.shell(wfc_activate_cmd)
+
+
 def toggle_video_calling(log, ad, new_state=None):
     """Toggle enable/disable Video calling for default voice subscription.
 
@@ -3967,7 +4027,7 @@ def get_operator_name(log, ad, subId=None):
         try:
             if subId is not None:
                 result = ad.droid.telephonyGetNetworkOperatorNameForSubscription(
-                    sub_id)
+                    subId)
             else:
                 result = ad.droid.telephonyGetNetworkOperatorName()
             result = operator_name_from_network_name(result)
@@ -4269,7 +4329,8 @@ def mms_send_receive_verify(log,
                             ad_rx,
                             array_message,
                             max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE,
-                            expected_result=True):
+                            expected_result=True,
+                            slot_id_rx=None):
     """Send MMS, receive MMS, and verify content and sender's number.
 
         Send (several) MMS from droid_tx to droid_rx.
@@ -4282,9 +4343,14 @@ def mms_send_receive_verify(log,
         ad_rx: Receiver's Android Device Object
         array_message: the array of message to send/receive
     """
+    subid_tx = get_outgoing_message_sub_id(ad_tx)
+    if slot_id_rx is None:
+        subid_rx = get_incoming_message_sub_id(ad_rx)
+    else:
+        subid_rx = get_subid_from_slot_index(log, ad_rx, slot_id_rx)
+
     result = mms_send_receive_verify_for_subscription(
-        log, ad_tx, ad_rx, get_outgoing_message_sub_id(ad_tx),
-        get_incoming_message_sub_id(ad_rx), array_message, max_wait_time)
+        log, ad_tx, ad_rx, subid_tx, subid_rx, array_message, max_wait_time)
     if result != expected_result:
         log_messaging_screen_shot(ad_tx, test_name="mms_tx")
         log_messaging_screen_shot(ad_rx, test_name="mms_rx")
@@ -6173,19 +6239,13 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     if getattr(ad, "qxdm_log", True):
         set_qxdm_logger_command(ad, mask=getattr(ad, "qxdm_log_mask", None))
         start_qxdm_logger(ad)
-    # Setup VoWiFi MDN for Verizon. b/33187374
-    if "Verizon" in ad.adb.getprop(
-            "gsm.sim.operator.alpha") and ad.is_apk_installed(
-                "com.google.android.wfcactivation"):
-        ad.log.info("setup VoWiFi MDN per b/33187374")
-    ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
-    ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
-                 "\"com.google.android.wfcactivation/"
-                 ".VzwEmergencyAddressActivity\"")
     if ad.skip_sl4a: return status
     bring_up_sl4a(ad)
     synchronize_device_time(ad)
     set_phone_silent_mode(ad.log, ad)
+    # Activate WFC on Verizon, AT&T and Canada operators as per # b/33187374 &
+    # b/122327716
+    activate_wfc_on_device(ad.log, ad)
     return status
 
 def install_carriersettings_apk(ad, carriersettingsapk, skip_setup_wizard=True):
