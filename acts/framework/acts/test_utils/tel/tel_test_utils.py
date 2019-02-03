@@ -143,6 +143,8 @@ from acts.test_utils.tel.tel_defines import DataConnectionStateContainer
 from acts.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
 from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts.test_utils.tel.tel_defines import ServiceStateContainer
+from acts.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
+    CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
 from acts.test_utils.tel.tel_lookup_tables import \
     connection_type_from_type_string
 from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
@@ -3450,6 +3452,58 @@ def set_wfc_mode(log, ad, wfc_mode):
     return True
 
 
+def activate_wfc_on_device(log, ad):
+    """ Activates WiFi calling on device.
+
+        Required for certain network operators.
+
+    Args:
+        log: Log object
+        ad: Android device object
+
+    """
+    activate_wfc_on_device_for_subscription(log, ad,
+                                            ad.droid.subscriptionGetDefaultSubId())
+
+
+def activate_wfc_on_device_for_subscription(log, ad, sub_id):
+    """ Activates WiFi calling on device for a subscription.
+
+    Args:
+        log: Log object
+        ad: Android device object
+        sub_id: Subscription id (integer)
+
+    """
+    if not sub_id or INVALID_SUB_ID == sub_id:
+        ad.log.error("Subscription id invalid")
+        return
+    operator_name = get_operator_name(log, ad, sub_id)
+    if operator_name in (CARRIER_VZW, CARRIER_ATT, CARRIER_BELL, CARRIER_ROGERS,
+                         CARRIER_TELUS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_FRE):
+        ad.log.info("Activating WFC on operator : %s", operator_name)
+        if not ad.is_apk_installed("com.google.android.wfcactivation"):
+            ad.log.error("WFC Activation Failed, wfc activation apk not installed")
+            return
+        wfc_activate_cmd ="am start --ei EXTRA_LAUNCH_CARRIER_APP 0 --ei " \
+                    "android.telephony.extra.SUBSCRIPTION_INDEX {} -n ".format(sub_id)
+        if CARRIER_ATT == operator_name:
+            ad.adb.shell("setprop dbg.att.force_wfc_nv_enabled true")
+            wfc_activate_cmd = wfc_activate_cmd+\
+                               "\"com.google.android.wfcactivation/" \
+                               ".WfcActivationActivity\""
+        elif CARRIER_VZW == operator_name:
+            ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
+            wfc_activate_cmd = wfc_activate_cmd + \
+                               "\"com.google.android.wfcactivation/" \
+                               ".VzwEmergencyAddressActivity\""
+        else:
+            wfc_activate_cmd = wfc_activate_cmd+ \
+                               "\"com.google.android.wfcactivation/" \
+                               ".can.WfcActivationCanadaActivity\""
+        ad.adb.shell(wfc_activate_cmd)
+
+
 def toggle_video_calling(log, ad, new_state=None):
     """Toggle enable/disable Video calling for default voice subscription.
 
@@ -6186,19 +6240,13 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
     if getattr(ad, "qxdm_log", True):
         set_qxdm_logger_command(ad, mask=getattr(ad, "qxdm_log_mask", None))
         start_qxdm_logger(ad)
-    # Setup VoWiFi MDN for Verizon. b/33187374
-    if "Verizon" in ad.adb.getprop(
-            "gsm.sim.operator.alpha") and ad.is_apk_installed(
-                "com.google.android.wfcactivation"):
-        ad.log.info("setup VoWiFi MDN per b/33187374")
-    ad.adb.shell("setprop dbg.vzw.force_wfc_nv_enabled true")
-    ad.adb.shell("am start --ei EXTRA_LAUNCH_CARRIER_APP 0 -n "
-                 "\"com.google.android.wfcactivation/"
-                 ".VzwEmergencyAddressActivity\"")
     if ad.skip_sl4a: return status
     bring_up_sl4a(ad)
     synchronize_device_time(ad)
     set_phone_silent_mode(ad.log, ad)
+    # Activate WFC on Verizon, AT&T and Canada operators as per # b/33187374 &
+    # b/122327716
+    activate_wfc_on_device(ad.log, ad)
     return status
 
 def install_carriersettings_apk(ad, carriersettingsapk, skip_setup_wizard=True):
