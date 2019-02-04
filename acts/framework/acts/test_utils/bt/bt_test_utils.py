@@ -1196,16 +1196,18 @@ def set_bluetooth_codec(
         channel_modes[channel_mode],
         codec_specific_1
     ):
-        android_device.log.error("SL4A command failed. Codec config was not "
-                                 "changed.")
-        return False
-    try:
-        ed.pop_event(bluetooth_a2dp_codec_config_changed, bt_default_timeout)
-    except Exception:
-        android_device.log.warning("SL4A event not registered. Codec config "
-                                   "may not have been changed.")
+        android_device.log.warning("SL4A command returned False. Codec was not "
+                                   "changed.")
+    else:
+        try:
+            ed.pop_event(bluetooth_a2dp_codec_config_changed,
+                         bt_default_timeout)
+        except Exception:
+            android_device.log.warning("SL4A event not registered. Codec "
+                                       "may not have been changed.")
 
     # Validate codec value through ADB
+    # TODO (aidanhb): validate codec more robustly using SL4A
     command = "dumpsys bluetooth_manager | grep -i 'current codec'"
     out = android_device.adb.shell(command)
     split_out = out.split(": ")
