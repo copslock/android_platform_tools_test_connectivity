@@ -50,6 +50,7 @@ PY_FILE_REGEX = re.compile('.+\.py$')
 BLACKLIST = [
     'acts/controllers/native.py',
     'acts/controllers/native_android_device.py',
+    'acts/test_utils/wifi/wifi_performance_test_utils.py',
     'acts/test_utils/wifi/wifi_power_test_utils.py',
     'acts/controllers/packet_sender.py',
     'acts/test_utils/wifi/wifi_retail_ap.py',
@@ -71,9 +72,7 @@ BLACKLIST = [
     'acts/framework/acts/controllers/buds_lib/data_storage/_sponge/sponge_client_lite.py',
 ]
 
-BLACKLIST_DIRECTORIES = [
-    'acts/framework/acts/test_utils/'
-]
+BLACKLIST_DIRECTORIES = ['acts/framework/acts/test_utils/']
 
 
 class ActsImportTestUtilsTest(unittest.TestCase):
@@ -95,8 +94,8 @@ class ActsImportTestUtilsTest(unittest.TestCase):
         for root, _, files in os.walk(acts_path):
             for f in files:
                 full_path = os.path.join(root, f)
-                if (any(full_path.endswith(e) for e in BLACKLIST) or
-                        any(e in full_path for e in BLACKLIST_DIRECTORIES)):
+                if (any(full_path.endswith(e) for e in BLACKLIST)
+                        or any(e in full_path for e in BLACKLIST_DIRECTORIES)):
                     continue
 
                 path = os.path.relpath(os.path.join(root, f), os.getcwd())
