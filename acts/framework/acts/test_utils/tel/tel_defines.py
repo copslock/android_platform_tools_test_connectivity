@@ -175,6 +175,21 @@ WAIT_TIME_TETHERING_AFTER_REBOOT = 10
 # Time to wait after changing data sub id
 WAIT_TIME_CHANGE_DATA_SUB_ID = 30
 
+# Wait time for Data Stall to detect
+WAIT_TIME_FOR_DATA_STALL = 300
+
+# Wait time for Network Validation Failed detection
+WAIT_TIME_FOR_NW_VALID_FAIL = 300
+
+# Wait time for Data Stall to recover
+WAIT_TIME_FOR_DATA_STALL_RECOVERY = 360
+
+# Callbox Power level which will cause no service on device
+POWER_LEVEL_OUT_OF_SERVICE = -100
+
+# Callbox Power level which will ensure full service on device
+POWER_LEVEL_FULL_SERVICE = -20
+
 # These are used in phone_number_formatter
 PHONE_NUMBER_STRING_FORMAT_7_DIGIT = 7
 PHONE_NUMBER_STRING_FORMAT_10_DIGIT = 10
