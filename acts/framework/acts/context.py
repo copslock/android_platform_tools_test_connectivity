@@ -297,7 +297,7 @@ class TestCaseContext(TestContext):
     """A TestContext that represents a test case.
 
     Attributes:
-        test_case: The method object of the test case.
+        test_case: The string name of the test case.
         test_class: The test class instance enclosing the test case.
     """
 
