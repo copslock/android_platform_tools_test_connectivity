@@ -26,6 +26,8 @@ from acts import asserts
 from acts import signals
 from acts import utils
 from acts.controllers import attenuator
+from acts.controllers.ap_lib import hostapd_security
+from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib.hostapd_constants import BAND_2G
 from acts.controllers.ap_lib.hostapd_constants import BAND_5G
 from acts.test_utils.wifi import wifi_constants
@@ -2036,3 +2038,41 @@ def get_cnss_diag_log(ad, test_name=""):
                                 "CNSS_DIAG_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
+
+def ap_setup(test, index, ap, network, bandwidth=80, channel=6):
+        """Set up the AP with provided network info.
+
+        Args:
+            test: the calling test class object.
+            index: int, index of the AP.
+            ap: access_point object of the AP.
+            network: dict with information of the network, including ssid,
+                     password and bssid.
+            bandwidth: the operation bandwidth for the AP, default 80MHz.
+            channel: the channel number for the AP.
+        Returns:
+            brconfigs: the bridge interface configs
+        """
+        bss_settings = []
+        ssid = network[WifiEnums.SSID_KEY]
+        test.access_points[index].close()
+        time.sleep(5)
+
+        # Configure AP as required.
+        if "password" in network.keys():
+            password = network["password"]
+            security = hostapd_security.Security(
+                security_mode="wpa", password=password)
+        else:
+            security = hostapd_security.Security(security_mode=None, password=None)
+        config = hostapd_ap_preset.create_ap_preset(
+                                                    channel=channel,
+                                                    ssid=ssid,
+                                                    security=security,
+                                                    bss_settings=bss_settings,
+                                                    vht_bandwidth=bandwidth,
+                                                    profile_name='whirlwind',
+                                                    iface_wlan_2g=ap.wlan_2g,
+                                                    iface_wlan_5g=ap.wlan_5g)
+        ap.start_ap(config)
+        logging.info("AP started on channel {} with SSID {}".format(channel, ssid))
