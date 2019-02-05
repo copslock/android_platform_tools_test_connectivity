@@ -63,6 +63,9 @@ class BaseTestClass(object):
                  the execution of test cases.
         consecutive_failures: Tracks the number of consecutive test case
                               failures within this class.
+        consecutive_failure_limit: Number of consecutive test failures to allow
+                                   before blocking remaining tests in the same
+                                   test class.
         size_limit_reached: True if the size of the log directory has reached
                             its limit.
         current_test_name: A string that's the name of the test case currently
@@ -88,6 +91,8 @@ class BaseTestClass(object):
         self.current_test_name = None
         self.log = tracelogger.TraceLogger(self.log)
         self.consecutive_failures = 0
+        self.consecutive_failure_limit = self.user_params.get(
+            'consecutive_failure_limit', -1)
         self.size_limit_reached = False
         if hasattr(self, 'android_devices'):
             for ad in self.android_devices:
@@ -193,8 +198,7 @@ class BaseTestClass(object):
         event_bus.post(TestCaseBeginEvent(self, test_name))
 
         # Block the test if the consecutive test case failure limit is reached.
-        fail_limit = self.user_params.get('consecutive_failure_limit', -1)
-        if self.consecutive_failures == fail_limit:
+        if self.consecutive_failures == self.consecutive_failure_limit:
             raise signals.TestBlocked('Consecutive test failure')
 
         try:
