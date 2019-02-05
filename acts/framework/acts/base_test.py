@@ -797,10 +797,17 @@ class BaseTestClass(object):
         if "no_bug_report_on_fail" in self.user_params:
             return True
 
-        # If the current test case is found in the set of problematic test
-        # cases, we skip bugreport and other failure artifact creation.
-        full_test_name = '%s.%s' % (self.__class__.__name__, self.test_name)
-        if full_test_name in self.user_params.get('quiet_test_cases', []):
+        # If the current test class or test case is found in the set of
+        # problematic tests, we skip bugreport and other failure artifact
+        # creation.
+        class_name = self.__class__.__name__
+        quiet_tests = self.user_params.get('quiet_tests', [])
+        if class_name in quiet_tests:
+            self.log.info(
+                "Skipping bug report, as directed for this test class.")
+            return True
+        full_test_name = '%s.%s' % (class_name, self.test_name)
+        if full_test_name in quiet_tests:
             self.log.info(
                 "Skipping bug report, as directed for this test case.")
             return True
