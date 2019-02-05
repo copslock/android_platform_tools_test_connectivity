@@ -79,6 +79,9 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOICE_MAIL_COUNT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_DISABLED
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_NW_VALID_FAIL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_DATA_STALL_RECOVERY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_CELL
 from acts.test_utils.tel.tel_defines import NETWORK_CONNECTION_TYPE_WIFI
@@ -592,6 +595,114 @@ def get_wifi_signal_strength(ad):
     signal_strength = ad.droid.wifiGetConnectionInfo()['rssi']
     ad.log.info("WiFi Signal Strength is %s" % signal_strength)
     return signal_strength
+
+
+def check_data_stall_detection(ad, wait_time=WAIT_TIME_FOR_DATA_STALL):
+    data_stall_detected = False
+    time_var = 1
+    try:
+        while (time_var < wait_time):
+            out = ad.adb.shell("dumpsys network_stack " \
+                              "| grep \"Suspecting data stall\"",
+                            ignore_status=True)
+            ad.log.debug("Output is %s", out)
+            if out:
+                ad.log.info("NetworkMonitor detected - %s", out)
+                ad.log.info("Time taken for Data Stall Detection %d secs", time_var)
+                data_stall_detected = True
+                break
+            time.sleep(30)
+            time_var += 30
+    except Exception as e:
+        ad.log.error(e)
+    return data_stall_detected
+
+
+def check_network_validation_fail(ad, begin_time=None,
+                                  wait_time=WAIT_TIME_FOR_NW_VALID_FAIL):
+    network_validation_fail = False
+    time_var = 1
+    try:
+        while (time_var < wait_time):
+            time_var += 30
+            nw_valid = ad.search_logcat("validation failed",
+                                         begin_time)
+            if nw_valid:
+                ad.log.info("Validation Failed received here - %s",
+                            nw_valid[0]["log_message"])
+                network_validation_fail = True
+                break
+            time.sleep(30)
+    except Exception as e:
+        ad.log.error(e)
+    return network_validation_fail
+
+
+def check_data_stall_recovery(ad, begin_time=None,
+                              wait_time=WAIT_TIME_FOR_DATA_STALL_RECOVERY):
+    data_stall_recovery = False
+    time_var = 1
+    try:
+        while (time_var < wait_time):
+            time_var += 30
+            recovery = ad.search_logcat("doRecovery() cleanup all connections",
+                                         begin_time)
+            if recovery:
+                ad.log.info("Recovery Performed here - %s",
+                            recovery[-1]["log_message"])
+                data_stall_recovery = True
+                break
+            time.sleep(30)
+    except Exception as e:
+        ad.log.error(e)
+    return data_stall_recovery
+
+
+def break_internet_except_sl4a_port(ad, sl4a_port):
+    ad.log.info("Breaking internet using iptables rules")
+    ad.adb.shell("iptables -I INPUT 1 -p tcp --dport %s -j ACCEPT" % sl4a_port,
+                 ignore_status=True)
+    ad.adb.shell("iptables -I INPUT 2 -p tcp --sport %s -j ACCEPT" % sl4a_port,
+                 ignore_status=True)
+    ad.adb.shell("iptables -I INPUT 3 -j DROP", ignore_status=True)
+    ad.adb.shell("ip6tables -I INPUT -j DROP", ignore_status=True)
+    return True
+
+
+def resume_internet_with_sl4a_port(ad, sl4a_port):
+    ad.log.info("Bring internet back using iptables rules")
+    ad.adb.shell("iptables -D INPUT -p tcp --dport %s -j ACCEPT" % sl4a_port,
+                 ignore_status=True)
+    ad.adb.shell("iptables -D INPUT -p tcp --sport %s -j ACCEPT" % sl4a_port,
+                 ignore_status=True)
+    ad.adb.shell("iptables -D INPUT -j DROP", ignore_status=True)
+    ad.adb.shell("ip6tables -D INPUT -j DROP", ignore_status=True)
+    return True
+
+
+def test_data_browsing_success_using_sl4a(log, ad):
+    result = True
+    web_page_list = ['https://www.google.com', 'https://www.yahoo.com',
+                     'https://www.amazon.com', 'https://www.nike.com',
+                     'https://www.facebook.com']
+    for website in web_page_list:
+        if not verify_http_connection(log, ad, website, retry=0):
+            ad.log.error("Failed to browse %s successfully!", website)
+            result = False
+    return result
+
+
+def test_data_browsing_failure_using_sl4a(log, ad):
+    result = True
+    web_page_list = ['https://www.youtube.com', 'https://www.cnn.com',
+                     'https://www.att.com', 'https://www.nbc.com',
+                     'https://www.verizonwireless.com']
+    for website in web_page_list:
+        if not verify_http_connection(log, ad, website, retry=0,
+                                      expected_state=False):
+            ad.log.error("Browsing to %s worked!", website)
+            result = False
+    return result
 
 
 def is_expected_event(event_to_check, events_list):

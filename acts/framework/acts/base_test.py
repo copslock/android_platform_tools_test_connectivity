@@ -156,6 +156,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
         """
+        event_bus.post(TestClassBeginEvent(self))
         return self.setup_class()
 
     def setup_class(self):
@@ -169,6 +170,13 @@ class BaseTestClass(object):
         Implementation is optional.
         """
 
+    def _teardown_class(self):
+        """Proxy function to guarantee the base implementation of teardown_class
+        is called.
+        """
+        self.teardown_class()
+        event_bus.post(TestClassEndEvent(self, self.results))
+
     def teardown_class(self):
         """Teardown function that will be called after all the selected test
         cases in the test class have been executed.
@@ -181,6 +189,8 @@ class BaseTestClass(object):
         called.
         """
         self.current_test_name = test_name
+
+        event_bus.post(TestCaseBeginEvent(self, test_name))
 
         # Block the test if the consecutive test case failure limit is reached.
         fail_limit = self.user_params.get('consecutive_failure_limit', -1)
@@ -237,6 +247,13 @@ class BaseTestClass(object):
         try:
             self.teardown_test()
         finally:
+            # TODO(markdr): pass the signal that was raised.
+            # Currently, this passes the TestSignal class, rather than the
+            # signal that was raised by the test case (or signal.TestPass if
+            # no signal was raised). This should be updated such that the signal
+            # is passed along to the event.
+            event_bus.post(TestCaseEndEvent(
+                self, test_name, signals.TestSignal))
             self.current_test_name = None
 
     def teardown_test(self):
@@ -404,7 +421,6 @@ class BaseTestClass(object):
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
         try:
-            event_bus.post(TestCaseBeginEvent(self, test_func))
             try:
                 if hasattr(self, 'android_devices'):
                     for ad in self.android_devices:
@@ -474,13 +490,6 @@ class BaseTestClass(object):
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
-            # TODO(markdr): pass the signal that was raised.
-            # Currently, this passes the TestSignal class, rather than the
-            # signal that was raised by the test case (or signal.TestPass if
-            # no signal was raised). This should be updated such that the signal
-            # is passed along to the event.
-            event_bus.post(TestCaseEndEvent(
-                self, test_func, signals.TestSignal))
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
 
@@ -677,7 +686,6 @@ class BaseTestClass(object):
         """
         self.register_test_class_event_subscriptions()
         self.log.info("==========> %s <==========", self.TAG)
-        event_bus.post(TestClassBeginEvent(self))
         # Devise the actual test cases to run in the test class.
         if self.tests:
             # Specified by run list in class.
@@ -706,17 +714,16 @@ class BaseTestClass(object):
                 setup_fail = True
         except signals.TestAbortClass:
             try:
-                self._exec_func(self.teardown_class)
+                self._exec_func(self._teardown_class)
             except Exception as e:
                 self.log.warning(e)
             setup_fail = True
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
-            self._exec_func(self.teardown_class)
             self._block_all_test_cases(tests)
+            self._exec_func(self._teardown_class)
             setup_fail = True
         if setup_fail:
-            event_bus.post(TestClassEndEvent(self, self.results))
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
             return self.results
@@ -735,8 +742,7 @@ class BaseTestClass(object):
             setattr(e, "results", self.results)
             raise e
         finally:
-            self._exec_func(self.teardown_class)
-            event_bus.post(TestClassEndEvent(self, self.results))
+            self._exec_func(self._teardown_class)
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
 

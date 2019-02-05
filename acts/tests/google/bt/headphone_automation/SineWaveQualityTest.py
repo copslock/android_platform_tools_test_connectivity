@@ -12,13 +12,13 @@ class SineWaveQualityTest(A2dpCodecBaseTest):
             filename=self.host_music_file,
             **self.audio_params.get('anomaly_params', {}))
         # If file specified in test config is not a sine wave tone, this fails.
-        for channel, anomalies in channel_results.items():
+        for channel, anomalies in enumerate(channel_results):
             asserts.assert_equal(anomalies, [], 'Test file not pure',
                 extras=self.metrics)
         self.log.info('Test file inspected.')
 
     def test_streaming(self):
-        self.stream_music_on_codec(**self.codecs[0])
+        self.play_and_record_audio()
         self.run_thdn_analysis()
         self.run_anomaly_detection()
         raise TestPass('Completed music streaming.', extras=self.metrics)
