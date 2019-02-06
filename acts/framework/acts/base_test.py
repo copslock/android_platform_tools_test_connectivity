@@ -63,6 +63,9 @@ class BaseTestClass(object):
                  the execution of test cases.
         consecutive_failures: Tracks the number of consecutive test case
                               failures within this class.
+        consecutive_failure_limit: Number of consecutive test failures to allow
+                                   before blocking remaining tests in the same
+                                   test class.
         size_limit_reached: True if the size of the log directory has reached
                             its limit.
         current_test_name: A string that's the name of the test case currently
@@ -88,6 +91,8 @@ class BaseTestClass(object):
         self.current_test_name = None
         self.log = tracelogger.TraceLogger(self.log)
         self.consecutive_failures = 0
+        self.consecutive_failure_limit = self.user_params.get(
+            'consecutive_failure_limit', -1)
         self.size_limit_reached = False
         if hasattr(self, 'android_devices'):
             for ad in self.android_devices:
@@ -193,8 +198,7 @@ class BaseTestClass(object):
         event_bus.post(TestCaseBeginEvent(self, test_name))
 
         # Block the test if the consecutive test case failure limit is reached.
-        fail_limit = self.user_params.get('consecutive_failure_limit', -1)
-        if self.consecutive_failures == fail_limit:
+        if self.consecutive_failures == self.consecutive_failure_limit:
             raise signals.TestBlocked('Consecutive test failure')
 
         try:
@@ -793,10 +797,17 @@ class BaseTestClass(object):
         if "no_bug_report_on_fail" in self.user_params:
             return True
 
-        # If the current test case is found in the set of problematic test
-        # cases, we skip bugreport and other failure artifact creation.
-        full_test_name = '%s.%s' % (self.__class__.__name__, self.test_name)
-        if full_test_name in self.user_params.get('quiet_test_cases', []):
+        # If the current test class or test case is found in the set of
+        # problematic tests, we skip bugreport and other failure artifact
+        # creation.
+        class_name = self.__class__.__name__
+        quiet_tests = self.user_params.get('quiet_tests', [])
+        if class_name in quiet_tests:
+            self.log.info(
+                "Skipping bug report, as directed for this test class.")
+            return True
+        full_test_name = '%s.%s' % (class_name, self.test_name)
+        if full_test_name in quiet_tests:
             self.log.info(
                 "Skipping bug report, as directed for this test case.")
             return True

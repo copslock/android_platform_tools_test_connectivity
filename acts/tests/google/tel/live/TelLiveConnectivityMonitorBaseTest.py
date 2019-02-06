@@ -119,6 +119,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
         TelephonyBaseTest.__init__(self, controllers)
         self.user_params["enable_connectivity_metrics"] = False
         self.user_params["telephony_auto_rerun"] = 0
+        self.consecutive_failure_limit = 5
 
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)

@@ -28,6 +28,7 @@ from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_constants import (
     bluetooth_profile_connection_state_changed)
 from acts.test_utils.bt.bt_constants import bt_default_timeout
@@ -69,6 +70,9 @@ AP_START_TIME = 10
 DISCOVERY_TIME = 10
 BLUETOOTH_WAIT_TIME = 2
 AVRCP_WAIT_TIME = 3
+
+class ConnectionFailure(Exception):
+    """Error in connection."""
 
 
 def avrcp_actions(pri_ad, audio_receiver):
@@ -263,6 +267,59 @@ def connect_dev_to_headset(pri_droid, dev_to_connect, profiles_set):
             profile_connected.add(profile)
         pri_droid.log.info(
             "Profiles connected until now {}".format(profile_connected))
+    return True
+
+
+def connect_disconnect_a2dp_headset(pri_ad, headset_mac_address, iterations=1):
+    """Connects and disconnect a2dp profile on headset for multiple
+    iterations.
+
+    Steps:
+    1.Connect a2dp profile on headset.
+    2.Disconnect a2dp profile on headset.
+    3.Repeat step 1 and 2 for N iterations.
+
+    Args:
+        pri_ad: An android device object.
+        headset_mac_address: mac_address of the headset.
+        iterations: No of times to repeat loop.
+
+    Returns:
+        Raise as ConnectionFailure Exception upon failure to connect/disconnect
+        the device, else Returns True.
+    """
+    for i in range(iterations):
+        pri_ad.log.info("A2DP connect/disconnect Iteration {}".format(i))
+        if not connect_dev_to_headset(
+                pri_ad, headset_mac_address,
+                set([BtEnum.BluetoothProfile.A2DP.value])):
+            pri_ad.log.error("Failed to connect headset.")
+            raise ConnectionFailure('Connection Failed')
+        if not disconnect_headset_from_dev(
+                pri_ad, headset_mac_address,
+                [BtEnum.BluetoothProfile.A2DP.value]):
+            pri_ad.log.error("Failed to disconnect headset.")
+            raise ConnectionFailure('Disconnection Failed')
+    return True
+
+
+def connect_disconnect_headset(pri_ad, headset_mac_address, iterations=1):
+    """Initiates connection to paired headset and disconnects headset.
+
+    Args:
+        pri_ad: An android device object.
+        headset_mac_address: mac_address of the headset.
+        iterations: No of times to repeat loop.
+
+    Returns:
+        True if successful False otherwise.
+    """
+    for _ in range(iterations):
+        pri_ad.droid.bluetoothConnectBonded(headset_mac_address)
+        time.sleep(BLUETOOTH_WAIT_TIME)
+        if not pri_ad.droid.bluetoothIsDeviceConnected(headset_mac_address):
+            return False
+        pri_ad.droid.bluetoothDisconnectConnected(headset_mac_address)
     return True
 
 
@@ -823,11 +880,11 @@ def perform_classic_discovery(pri_ad, duration, file_name, dev_list=None):
     start_time = time.time()
     while time.time() < start_time + duration:
         if not pri_ad.droid.bluetoothStartDiscovery():
-            pri_ad.log.error("Failed to start discovery")
+            pri_ad.log.error("Failed to start inquiry")
             return False
         time.sleep(DISCOVERY_TIME)
         if not pri_ad.droid.bluetoothCancelDiscovery():
-            pri_ad.log.error("Failed to cancel discovery")
+            pri_ad.log.error("Failed to cancel inquiry")
             return False
         pri_ad.log.info("Discovered device list {}".format(
             pri_ad.droid.bluetoothGetDiscoveredDevices()))
@@ -1055,15 +1112,18 @@ def push_music_to_android_device(ad, audio_params):
     """
     ad.log.info("Pushing music to the Android device")
     android_music_path = "/sdcard/Music/"
-    music_path = audio_params["music_file"]
-    if type(music_path) is list:
-        ad.log.info("Media ready to push as is.")
-        for item in music_path:
-            music_file_to_play = item
-            ad.adb.push(item, android_music_path)
-        return music_file_to_play
+    if audio_params["music_file"]:
+        if isinstance(audio_params["music_file"], list):
+            ad.log.info("Media ready to push music file.")
+            for item in audio_params["music_file"]:
+                music_file_to_play = item
+                ad.adb.push(item, android_music_path)
+            return music_file_to_play
+        else:
+            ad.log.error("Music file should be of type list.")
+            return False
     else:
-        ad.log.error("Music file should be of type list")
+        ad.log.error("Music file attribute not present in config.")
         return False
 
 
