@@ -154,6 +154,8 @@ class CoexBaseTest(BaseTestClass):
         """Resets wifi and store test results."""
         reset_wifi(self.pri_ad)
         wifi_toggle_state(self.pri_ad, False)
+        json_result = self.results.json_str()
+        xlsheet(self.pri_ad, json_result)
 
     def create_android_relay_object(self):
         """Creates android device object and relay device object if required
