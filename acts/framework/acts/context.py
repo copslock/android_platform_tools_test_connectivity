@@ -157,8 +157,9 @@ class TestContext(object):
         Returns:
             The output path.
         """
-        return self._base_output_paths.get(
-            log_name, self._get_default_base_output_path())
+        if log_name in self._base_output_paths:
+            return self._base_output_paths[log_name]
+        return self._get_default_base_output_path()
     
     @classmethod
     def add_base_output_path(cls, log_name, base_output_path):
