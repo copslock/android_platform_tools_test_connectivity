@@ -141,7 +141,7 @@ class FuchsiaGattcLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def enableNotifyCharactertistic(self, id):
+    def enableNotifyCharacteristic(self, id):
         """Enable notifications on a Characteristic.
 
         Args:
@@ -150,7 +150,7 @@ class FuchsiaGattcLib(BaseLib):
         Returns:
             None if success, error string if error.
         """
-        test_cmd = "gatt_client_facade.GattcEnableNotifyCharactertistic"
+        test_cmd = "gatt_client_facade.GattcEnableNotifyCharacteristic"
         test_args = {
             "identifier": id,
         }
@@ -159,7 +159,7 @@ class FuchsiaGattcLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def disableNotifyCharactertistic(self, id):
+    def disableNotifyCharacteristic(self, id):
         """Disable notifications on a Characteristic.
 
         Args:
@@ -168,7 +168,7 @@ class FuchsiaGattcLib(BaseLib):
         Returns:
             None if success, error string if error.
         """
-        test_cmd = "gatt_client_facade.GattcDisableNotifyCharactertistic"
+        test_cmd = "gatt_client_facade.GattcDisableNotifyCharacteristic"
         test_args = {
             "identifier": id,
             "value": False,
