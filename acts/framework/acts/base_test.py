@@ -29,6 +29,7 @@ from acts import tracelogger
 from acts import utils
 from acts.event import event_bus
 from acts.event import subscription_bundle
+from acts.event.decorators import subscribe_static
 from acts.event.event import TestCaseBeginEvent
 from acts.event.event import TestCaseEndEvent
 from acts.event.event import TestClassBeginEvent
@@ -39,6 +40,55 @@ from acts.event.subscription_bundle import SubscriptionBundle
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
+
+
+@subscribe_static(TestCaseBeginEvent)
+def _logcat_log_test_begin(event):
+    """Ensures that logcat is running. Write a logcat line indicating test case
+     begin."""
+    test_instance = event.test_class
+    try:
+        for ad in getattr(test_instance, 'android_devices', []):
+            if not ad.is_adb_logcat_on:
+                ad.start_adb_logcat()
+            # Write test start token to adb log if android device is attached.
+            if not ad.skip_sl4a:
+                ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN,
+                                               event.test_case_name))
+
+    except error.ActsError as e:
+        test_instance.results.errors.append(e)
+        test_instance.log.error('BaseTest setup_test error: %s' % e.message)
+
+    except Exception as e:
+        test_instance.log.warning(
+            'Unable to send BEGIN log command to all devices.')
+        test_instance.log.warning('Error: %s' % e)
+
+
+@subscribe_static(TestCaseEndEvent)
+def _logcat_log_test_end(event):
+    """Write a logcat line indicating test case end."""
+    test_instance = event.test_class
+    try:
+        # Write test end token to adb log if android device is attached.
+        for ad in getattr(test_instance, 'android_devices', []):
+            if not ad.skip_sl4a:
+                ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN,
+                                             event.test_case_name))
+
+    except error.ActsError as e:
+        test_instance.results.errors.append(e)
+        test_instance.log.error('BaseTest teardown_test error: %s' % e.message)
+
+    except Exception as e:
+        test_instance.log.warning(
+            'Unable to send END log command to all devices.')
+        test_instance.log.warning('Error: %s' % e)
+
+
+event_bus.register_subscription(_logcat_log_test_begin.subscription)
+event_bus.register_subscription(_logcat_log_test_end.subscription)
 
 
 class Error(Exception):
@@ -201,22 +251,6 @@ class BaseTestClass(object):
         if self.consecutive_failures == self.consecutive_failure_limit:
             raise signals.TestBlocked('Consecutive test failure')
 
-        try:
-            # Write test start token to adb log if android device is attached.
-            if hasattr(self, 'android_devices'):
-                for ad in self.android_devices:
-                    if not ad.skip_sl4a:
-                        ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN,
-                                                       test_name))
-
-        except error.ActsError as e:
-            self.results.errors.append(e)
-            self.log.error('BaseTest setup_test error: %s' % e.message)
-
-        except Exception as e:
-            self.log.warning(
-                'Unable to send BEGIN log command to all devices.')
-            self.log.warning('Error: %s' % e)
         return self.setup_test()
 
     def setup_test(self):
@@ -236,18 +270,7 @@ class BaseTestClass(object):
         is called.
         """
         self.log.debug('Tearing down test %s' % test_name)
-        try:
-            # Write test end token to adb log if android device is attached.
-            for ad in getattr(self, 'android_devices', []):
-                ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
 
-        except error.ActsError as e:
-            self.results.errors.append(e)
-            self.log.error('BaseTest teardown_test error: %s' % e.message)
-
-        except Exception as e:
-            self.log.warning('Unable to send END log command to all devices.')
-            self.log.warning('Error: %s' % e)
         try:
             self.teardown_test()
         finally:
@@ -426,10 +449,6 @@ class BaseTestClass(object):
         verdict = None
         try:
             try:
-                if hasattr(self, 'android_devices'):
-                    for ad in self.android_devices:
-                        if not ad.is_adb_logcat_on:
-                            ad.start_adb_logcat()
                 ret = self._setup_test(self.test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
