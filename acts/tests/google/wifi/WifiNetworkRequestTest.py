@@ -75,12 +75,14 @@ class WifiNetworkRequestTest(WifiBaseTest):
         self.remove_approvals()
         self.clear_deleted_ephemeral_networks()
         wutils.wifi_toggle_state(self.dut, True)
+        self.dut.ed.clear_all_events()
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         self.dut.droid.wifiReleaseNetworkAll()
         wutils.reset_wifi(self.dut)
+        self.dut.ed.clear_all_events()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
