@@ -91,6 +91,9 @@ def _update_handlers(event):
         log_stream.update_handlers(event)
 
 
+event_bus.register_subscription(_update_handlers.subscription)
+
+
 def create_logger(name, log_name=None, base_path='', subcontext='',
                   log_styles=LogStyles.NONE, stream_format=None,
                   file_format=None):
@@ -129,9 +132,6 @@ def create_logger(name, log_name=None, base_path='', subcontext='',
 def _set_logger(log_stream):
     _log_streams[log_stream.name] = log_stream
     return log_stream
-
-
-event_bus.register_subscription(_update_handlers.subscription)
 
 
 class AlsoToLogHandler(Handler):
