@@ -25,13 +25,16 @@ from acts.controllers.buds_lib.test_actions.apollo_acts import ApolloTestActions
 from acts.signals import TestPass, TestFailure
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.loggers.BluetoothMetricLogger import BluetoothMetricLogger
 from acts.utils import set_location_service
 
 # The number of reconnections to be attempted during the test
 RECONNECTION_ATTEMPTS = 200
 
-class BluetoothReconnectError(Exception):
+
+class BluetoothReconnectError(TestFailure):
     pass
+
 
 class BluetoothReconnectTest(BaseTestClass):
     """Connects a phone to Apollo earbuds to test Bluetooth reconnection.
@@ -61,6 +64,7 @@ class BluetoothReconnectTest(BaseTestClass):
         # Staging the test, create result object, etc.
         self.apollo_act = ApolloTestActions(self.apollo, self.log)
         self.dut_bt_addr = self.apollo.bluetooth_address
+        self.bt_logger = BluetoothMetricLogger.for_test_case()
 
     def setup_test(self):
         # Make sure Bluetooth is on
@@ -146,18 +150,20 @@ class BluetoothReconnectTest(BaseTestClass):
             # Buffer between reconnection attempts
             time.sleep(3)
 
-        metrics['conn_attempt_count'] = RECONNECTION_ATTEMPTS
-        metrics['conn_successful_count'] = connection_success
-        metrics['conn_failed_count'] = (RECONNECTION_ATTEMPTS
+        metrics['connection_attempt_count'] = RECONNECTION_ATTEMPTS
+        metrics['connection_successful_count'] = connection_success
+        metrics['connection_failed_count'] = (RECONNECTION_ATTEMPTS
                                         - connection_success)
         if len(connection_times) > 0:
-            metrics['conn_max_time_millis'] = max(connection_times)
-            metrics['conn_min_time_millis'] = min(connection_times)
-            metrics['conn_avg_time_millis'] = statistics.mean(connection_times)
+            metrics['connection_max_time_millis'] = max(connection_times)
+            metrics['connection_min_time_millis'] = min(connection_times)
+            metrics['connection_avg_time_millis'] = (statistics.mean(
+                connection_times))
 
         if reconnection_failures:
-            metrics['conn_failure_info'] = reconnection_failures
+            metrics['connection_failure_info'] = reconnection_failures
 
+        self.bt_logger.get_results(metrics, self.__class__.__name__, self.phone)
         self.log.info('Metrics: {}'.format(metrics))
 
         if RECONNECTION_ATTEMPTS != connection_success:

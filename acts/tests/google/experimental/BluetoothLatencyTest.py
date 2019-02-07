@@ -26,7 +26,9 @@ from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
 from acts.test_utils.bt.bt_test_utils import write_read_verify_data
+from acts.test_utils.bt.loggers.BluetoothMetricLogger import BluetoothMetricLogger
 from acts.utils import set_location_service
+
 
 class BluetoothLatencyTest(BaseTestClass):
     """Connects two Android phones and tests the RFCOMM latency.
@@ -48,6 +50,7 @@ class BluetoothLatencyTest(BaseTestClass):
         # Data will be sent from the client_device to the server_device
         self.client_device = self.android_devices[0]
         self.server_device = self.android_devices[1]
+        self.bt_logger = BluetoothMetricLogger.for_test_case()
         self.log.info('Successfully found required devices.')
 
     def setup_test(self):
@@ -118,6 +121,9 @@ class BluetoothLatencyTest(BaseTestClass):
         metrics["data_latency_max_millis"] = max(latency_list)
         metrics["data_latency_avg_millis"] = statistics.mean(latency_list)
         self.log.info("Latency: {}".format(metrics))
+
+        self.bt_logger.get_results(metrics, self.__class__.__name__,
+                                   self.server_device, self.client_device)
         asserts.assert_true(metrics["data_latency_min_millis"] > 0,
                             "Minimum latency must be greater than 0!",
                             extras=metrics)
