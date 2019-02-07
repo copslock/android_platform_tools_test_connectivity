@@ -348,7 +348,7 @@ class CmdInput(cmd.Cmd):
                     # quick char filter for apple-4 test... remove later
                     print("found uuid {}".format(char_uuid))
                     try:
-                        self.pri_dut.gattc_lib.enableNotifyCharactertistic(
+                        self.pri_dut.gattc_lib.enableNotifyCharacteristic(
                             char_id)
                     except Exception as err:
                         print("error enabling notification")
@@ -746,7 +746,7 @@ class CmdInput(cmd.Cmd):
         cmd = "Enable notifications by Characteristic id."
         try:
             id = int(line)
-            self.pri_dut.gattc_lib.enableNotifyCharactertistic(id)
+            self.pri_dut.gattc_lib.enableNotifyCharacteristic(id)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -764,7 +764,7 @@ class CmdInput(cmd.Cmd):
         cmd = "Disable notify Characteristic by id."
         try:
             id = int(line)
-            self.pri_dut.gattc_lib.disableNotifyCharactertistic(id)
+            self.pri_dut.gattc_lib.disableNotifyCharacteristic(id)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
