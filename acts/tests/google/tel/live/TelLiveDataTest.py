@@ -3212,6 +3212,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                     return False
 
             resume_internet_with_sl4a_port(dut, sl4a_port)
+            time.sleep(30)
 
             if not test_data_browsing_success_using_sl4a(self.log, dut):
                 dut.log.error("Browsing failed after resuming internet")
