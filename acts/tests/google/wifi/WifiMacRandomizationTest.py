@@ -1,0 +1,429 @@
+#!/usr/bin/env python3.4
+#
+#   Copyright 2019 - The Android Open Source Project
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+import itertools
+import pprint
+import queue
+import time
+
+import acts.base_test
+import acts.signals as signals
+import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts.utils
+
+from acts import asserts
+from acts.test_decorators import test_tracker_info
+from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
+from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
+from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+
+WifiEnums = wutils.WifiEnums
+
+# Default timeout used for reboot, toggle WiFi and Airplane mode,
+# for the system to settle down after the operation.
+DEFAULT_TIMEOUT = 10
+
+# Constants for WiFi state change operations.
+FORGET = 1
+TOGGLE = 2
+REBOOT_DUT = 3
+REBOOT_AP = 4
+
+# MAC Randomization setting constants.
+RANDOMIZATION_NONE = 0
+RANDOMIZATION_PERSISTENT = 1
+
+
+class WifiMacRandomizationTest(WifiBaseTest):
+    """Tests for APIs in Android's WifiManager class.
+
+    Test Bed Requirement:
+    * Atleast one Android device and atleast two Access Points.
+    * Several Wi-Fi networks visible to the device.
+    """
+
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
+
+    def setup_class(self):
+        self.dut = self.android_devices[0]
+        self.dut_client = self.android_devices[1]
+        wutils.wifi_test_device_init(self.dut)
+        wutils.wifi_test_device_init(self.dut_client)
+        req_params = []
+        opt_param = [
+            "open_network", "reference_networks", "wep_networks"
+        ]
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_param)
+
+        if "AccessPoint" in self.user_params:
+            if "AccessPoint" in self.user_params:
+                self.legacy_configure_ap_and_start(wep_network=True, ap_count=2)
+
+        asserts.assert_true(
+            len(self.reference_networks) > 0,
+            "Need at least one reference network with psk.")
+
+        wutils.wifi_toggle_state(self.dut, True)
+        wutils.wifi_toggle_state(self.dut_client, True)
+        self.wpapsk_2g = self.reference_networks[0]["2g"]
+        self.wpapsk_5g = self.reference_networks[0]["5g"]
+        self.wep_2g = self.wep_networks[0]["2g"]
+        self.wep_5g = self.wep_networks[0]["5g"]
+        self.open_2g = self.open_network[0]["2g"]
+        self.open_5g = self.open_network[0]["5g"]
+
+    def setup_test(self):
+        for ad in self.android_devices:
+            ad.droid.wakeLockAcquireBright()
+            ad.droid.wakeUpNow()
+            wutils.wifi_toggle_state(ad, True)
+
+    def teardown_test(self):
+        for ad in self.android_devices:
+            ad.droid.wakeLockRelease()
+            ad.droid.goToSleepNow()
+        wutils.reset_wifi(self.dut)
+        wutils.reset_wifi(self.dut_client)
+
+    def on_fail(self, test_name, begin_time):
+        pass
+        #self.dut.cat_adb_log(test_name, begin_time)
+        #self.dut.take_bug_report(test_name, begin_time)
+
+    def teardown_class(self):
+        if "AccessPoint" in self.user_params:
+            del self.user_params["reference_networks"]
+            del self.user_params["open_network"]
+            del self.user_params["wep_networks"]
+
+
+    """Helper Functions"""
+
+
+    def get_randomized_mac(self, network):
+        """Get the randomized MAC address.
+
+        Args:
+            network: dict, network information.
+
+        Returns:
+            The randomized MAC address string for the network.
+
+        """
+        return self.dut.droid.wifigetRandomizedMacAddress(network)
+
+    def connect_to_network_and_verify_mac_randomization(self, network,
+            status=RANDOMIZATION_PERSISTENT):
+        """Connect to the given network and verify MAC.
+
+          Args:
+              network: dict, the network information.
+              status: int, MAC randomization level.
+
+          Returns:
+              The randomized MAC addresss string.
+
+        """
+        wutils.connect_to_wifi_network(self.dut, network)
+        return self.verify_mac_randomization(network, status=status)
+
+    def verify_mac_randomization_and_add_to_list(self, network, mac_list):
+        """Connect to a network and populate it's MAC in a reference list,
+        that will be used to verify any repeated MAC addresses.
+
+        Args:
+            network: dict, the network information.
+            mac_list: list of MAC addresss strings.
+
+        """
+        rand_mac = self.connect_to_network_and_verify_mac_randomization(
+                network)
+        if rand_mac in mac_list:
+            raise signals.TestFailure('A new Randomized MAC was not generated '
+                                      ' for this network %s.' % network)
+        mac_list.append(rand_mac)
+
+    def verify_mac_randomization(self, network, status=RANDOMIZATION_PERSISTENT):
+        """Get the various types of MAC addresses for the device and verify.
+
+        Args:
+            network: dict, the network information.
+            status: int, MAC randomization level.
+
+        Returns:
+            The randomized MAC address string for the network.
+
+        """
+        network_info = self.dut.droid.wifiGetConnectionInfo()
+        factory_mac = self.dut.droid.wifigetFactorymacAddresses()[0]
+        randomized_mac = self.get_randomized_mac(network)
+        default_mac = network_info['mac_address']
+        self.log.info("Factory MAC = %s\nRandomized MAC = %s\nDefault MAC = %s" %
+              (factory_mac, randomized_mac, default_mac))
+
+        if status == RANDOMIZATION_NONE:
+            asserts.assert_true(default_mac == factory_mac, "Connection is not "
+                "using Factory MAC as the default MAC.")
+        message = ('Randomized MAC and Factory MAC are the same. '
+                   'Randomized MAC = %s, Factory MAC = %s' % (randomized_mac, factory_mac))
+        asserts.assert_true(randomized_mac != factory_mac, message)
+
+        message = ('Connection is not using randomized MAC as the default MAC. '
+                   'Randomized MAC = %s, Deafult MAC = %s' % (randomized_mac, default_mac))
+        # Uncomment after b/123355618 is resolved.
+        #asserts.assert_true(randomized_mac == default_mac, message)
+
+        return randomized_mac
+
+    def check_mac_persistence(self, network, condition):
+        """Check if the MAC is persistent after carrying out specific operations
+        like forget WiFi, toggle WiFi, reboot device and AP.
+
+        Args:
+            network: dict, The network information.
+            condition: int, value to trigger certain  operation on the device.
+
+        Raises:
+            TestFaikure is the MAC is not persistent.
+
+        """
+        rand_mac1 = self.connect_to_network_and_verify_mac_randomization(network)
+
+        if condition == FORGET:
+            wutils.wifi_forget_network(self.dut, network['SSID'])
+
+        elif condition == TOGGLE:
+            wutils.wifi_toggle_state(self.dut, False)
+            wutils.wifi_toggle_state(self.dut, True)
+
+        elif condition == REBOOT_DUT:
+            self.dut.reboot()
+            time.sleep(DEFAULT_TIMEOUT)
+
+        elif condition == REBOOT_AP:
+            wutils.turn_ap_off(self, 1)
+            time.sleep(DEFAULT_TIMEOUT)
+            wutils.turn_ap_on(self, 1)
+            time.sleep(DEFAULT_TIMEOUT)
+
+        rand_mac2 = self.connect_to_network_and_verify_mac_randomization(network)
+
+        if rand_mac1 != rand_mac2:
+            raise signals.TestFailure('Randomized MAC is not persistent after '
+                                      'forgetting networ. Old MAC = %s New MAC'
+                                      ' = %s' % (rand_mac1, rand_mac2))
+
+    """Tests"""
+
+
+    @test_tracker_info(uuid="2dd0a05e-a318-45a6-81cd-962e098fa242")
+    def test_set_mac_randomization_to_none(self):
+        network = self.wpapsk_2g
+        # Set macRandomizationSetting to RANDOMIZATION_NONE.
+        network["macRand"] = RANDOMIZATION_NONE
+        self.connect_to_network_and_verify_mac_randomization(network,
+            status=RANDOMIZATION_NONE)
+
+    @test_tracker_info(uuid="d9e64202-02d5-421a-967c-42e45f1f7f91")
+    def test_mac_randomization_wpapsk(self):
+        """Verify MAC randomization for a WPA network.
+
+        Steps:
+            1. Connect to WPA network.
+            2. Get the Factory, Randomized and Default MACs.
+            3. Verify randomized MAC is the default MAC for the device.
+
+        """
+        self.connect_to_network_and_verify_mac_randomization(self.wpapsk_2g)
+
+    @test_tracker_info(uuid="b5be7c53-2edf-449e-ba70-a1fb7acf735e")
+    def test_mac_randomization_wep(self):
+        """Verify MAC randomization for a WEP network.
+
+        Steps:
+            1. Connect to WEP network.
+            2. Get the Factory, Randomized and Default MACs.
+            3. Verify randomized MAC is the default MAC for the device.
+
+        """
+        self.connect_to_network_and_verify_mac_randomization(self.wep_2g)
+
+    @test_tracker_info(uuid="f5347ac0-68d5-4882-a58d-1bd0d575503c")
+    def test_mac_randomization_open(self):
+        """Verify MAC randomization for a open network.
+
+        Steps:
+            1. Connect to open network.
+            2. Get the Factory, Randomized and Default MACs.
+            3. Verify randomized MAC is the default MAC for the device.
+
+        """
+        self.connect_to_network_and_verify_mac_randomization(self.open_2g)
+
+    @test_tracker_info(uuid="5d260421-2adf-4ace-b281-3d15aec39b2a")
+    def test_persistent_mac_after_forget(self):
+        """Check if MAC is persistent after forgetting/adding a network.
+
+        Steps:
+            1. Connect to WPA network and get the randomized MAC.
+            2. Forget the network.
+            3. Connect to the same network again.
+            4. Verify randomized MAC has not changed.
+
+        """
+        self.check_mac_persistence(self.wpapsk_2g, FORGET)
+
+    @test_tracker_info(uuid="09d40a93-ead2-45ca-9905-14b05fd79f34")
+    def test_persistent_mac_after_toggle(self):
+        """Check if MAC is persistent after toggling WiFi network.
+
+        Steps:
+            1. Connect to WPA network and get the randomized MAC.
+            2. Turn WiFi ON/OFF.
+            3. Connect to the same network again.
+            4. Verify randomized MAC has not changed.
+
+        """
+        self.check_mac_persistence(self.wpapsk_2g, TOGGLE)
+
+    @test_tracker_info(uuid="a514f-8562-44e8-bfe0-4ecab9af165b")
+    def test_persistent_mac_after_device_reboot(self):
+        """Check if MAC is persistent after a device reboot.
+
+        Steps:
+            1. Connect to WPA network and get the randomized MAC.
+            2. Reboot DUT.
+            3. Connect to the same network again.
+            4. Verify randomized MAC has not changed.
+
+        """
+        self.check_mac_persistence(self.wpapsk_2g, REBOOT_DUT)
+
+    @test_tracker_info(uuid="82d691a0-22e4-4a3d-9596-e150531fcd34")
+    def test_persistent_mac_after_ap_reboot(self):
+        """Check if MAC is persistent after AP reboots itself.
+
+        Steps:
+            1. Connect to WPA network and get the randomized MAC.
+            2. Reboot AP(basically restart hostapd in our case).
+            3. Connect to the same network again.
+            4. Verify randomized MAC has not changed.
+
+        """
+        self.check_mac_persistence(self.wpapsk_2g, REBOOT_AP)
+
+    @test_tracker_info(uuid="e1f33dbc-808c-4e61-8a4a-3a72c1f63c7e")
+    def test_mac_randomization_multiple_networks(self):
+        """Connect to multiple networks and verify same MAC.
+
+        Steps:
+            1. Connect to network A, get randomizd MAC.
+            2. Conenct to network B, get randomized MAC.
+            3. Connect back to network A and verify same MAC.
+            4. Connect back to network B and verify same MAC.
+
+        """
+        mac_list = list()
+
+        # Connect to two different networks and get randomized MAC addresses.
+        self.verify_mac_randomization_and_add_to_list(self.wpapsk_2g, mac_list)
+        self.verify_mac_randomization_and_add_to_list(self.open_2g, mac_list)
+
+        # Connect to the previous network and check MAC is persistent.
+        mac_wpapsk = self.connect_to_network_and_verify_mac_randomization(
+                self.wpapsk_2g)
+        msg = ('Randomized MAC is not persistent for this network %s. Old MAC = '
+               '%s \nNew MAC = %s')
+        if mac_wpapsk != mac_list[0]:
+            raise signals.TestFailure(msg % (self.wpapsk_5g, mac_list[0], mac_wpapsk))
+        mac_open = self.connect_to_network_and_verify_mac_randomization(
+                self.open_2g)
+        if mac_open != mac_list[1]:
+            raise signals.TestFailure(msg %(self.open_5g, mac_list[1], mac_open))
+
+    @test_tracker_info(uuid="edb5a0e5-7f3b-4147-b1d3-48ad7ad9799e")
+    def test_mac_randomization_differnet_APs(self):
+        """Verify randomization using two different APs.
+
+        Steps:
+            1. Connect to network A on AP1, get the randomized MAC.
+            2. Connect to network B on AP2, get the randomized MAC.
+            3. Veirfy the two MACs are different.
+
+        """
+        ap1 = self.wpapsk_2g
+        ap2 = self.reference_networks[1]["5g"]
+        mac_ap1 = self.connect_to_network_and_verify_mac_randomization(ap1)
+        mac_ap2 = self.connect_to_network_and_verify_mac_randomization(ap2)
+        if ap1 == ap2:
+            raise signals.TestFailure("Same MAC address was generated for both "
+                                      "APs: %s" % mac_ap1)
+
+    @test_tracker_info(uuid="b815e9ce-bccd-4fc3-9774-1e1bc123a2a8")
+    def test_mac_randomization_ap_sta(self):
+        """Bring up STA and softAP and verify MAC randomization.
+
+        Steps:
+            1. Connect to a network and get randomized MAC.
+            2. Bring up softAP on the DUT.
+            3. Connect to softAP network on the client and get MAC.
+            4. Verify AP and STA use different randomized MACs.
+
+        """
+        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        mac_sta = self.connect_to_network_and_verify_mac_randomization(
+                self.wpapsk_2g)
+        softap = wutils.start_softap_and_verify(self, WIFI_CONFIG_APBAND_2G)
+        wutils.connect_to_wifi_network(self.dut_client, softap)
+        softap_info = self.dut_client.droid.wifiGetConnectionInfo()
+        mac_ap = softap_info['mac_address']
+        if mac_sta == mac_ap:
+            raise signals.TestFailure("Same MAC address was used for both "
+                                      "AP and STA: %s" % mac_sta)
+
+    @test_tracker_info(uuid="3ca3f911-29f1-41fb-b836-4d25eac1669f")
+    def test_roaming_mac_randomization(self):
+        """test MAC randomization in the roaming scenario.
+
+        Steps:
+            1. Connect to network A on AP1, get randomized MAC.
+            2. Set AP1 to MAX attenuation so that we roam to AP2.
+            3. Wait for device to roam to AP2 and get randomized MAC.
+            4. Veirfy that the device uses same AMC for both APs.
+
+        """
+        AP1_network = self.reference_networks[0]["5g"]
+        AP2_network = self.reference_networks[1]["5g"]
+        wutils.set_attns(self.attenuators, "AP1_on_AP2_off")
+        mac_before_roam = self.connect_to_network_and_verify_mac_randomization(
+                AP1_network)
+        wutils.trigger_roaming_and_validate(self.dut, self.attenuators,
+                "AP1_off_AP2_on", AP2_network)
+        mac_after_roam = self.get_randomized_mac(AP2_network)
+        if mac_after_roam != mac_before_roam:
+            raise signals.TestFailure("Randomized MAC address changed after "
+                   "roaming from AP1 to AP2.\nMAC before roam = %s\nMAC after "
+                   "roam = %s" %(mac_before_roam, mac_after_roam))
+        wutils.trigger_roaming_and_validate(self.dut, self.attenuators,
+                "AP1_on_AP2_off", AP1_network)
+        mac_after_roam = self.get_randomized_mac(AP1_network)
+        if mac_after_roam != mac_before_roam:
+            raise signals.TestFailure("Randomized MAC address changed after "
+                   "roaming from AP1 to AP2.\nMAC before roam = %s\nMAC after "
+                   "roam = %s" %(mac_before_roam, mac_after_roam))
