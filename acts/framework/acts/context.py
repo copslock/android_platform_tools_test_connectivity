@@ -216,6 +216,7 @@ class TestContext(object):
         path = os.path.join(self.get_base_output_path(log_name),
                             self._get_default_context_dir(),
                             self.get_subcontext(log_name))
+        os.makedirs(path, exist_ok=True)
         return path
 
     @property
