@@ -202,7 +202,8 @@ class SshConnection(object):
         dns_retry_count = 2
         while True:
             result = job.run(
-                terminal_command, ignore_status=True, timeout=timeout)
+                terminal_command, ignore_status=True, timeout=timeout,
+                io_encoding=io_encoding)
             output = result.stdout
 
             # Check for a connected message to prevent false negatives.
@@ -210,8 +211,10 @@ class SshConnection(object):
                 '^CONNECTED: %s' % identifier, output, flags=re.MULTILINE)
             if valid_connection:
                 # Remove the first line that contains the connect message.
-                line_index = output.find('\n')
-                real_output = output[line_index + 1:].encode(result._encoding)
+                line_index = output.find('\n') + 1
+                if line_index == 0:
+                    line_index = len(output)
+                real_output = output[line_index + 1:].encode(io_encoding)
 
                 result = job.Result(
                     command=result.command,
@@ -220,7 +223,7 @@ class SshConnection(object):
                     exit_status=result.exit_status,
                     duration=result.duration,
                     did_timeout=result.did_timeout,
-                    encoding=result._encoding)
+                    encoding=io_encoding)
                 if result.exit_status and not ignore_status:
                     raise job.Error(result)
                 return result
