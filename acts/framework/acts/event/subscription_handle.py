@@ -23,7 +23,7 @@ class SubscriptionHandle(object):
         self._event_type = event_type
         self._func = func
         self._event_filter = event_filter
-        self.order = order
+        self._order = order
         self._subscription = None
         self._owner = None
 
@@ -32,7 +32,8 @@ class SubscriptionHandle(object):
         if self._subscription:
             return self._subscription
         self._subscription = EventSubscription(self._event_type, self._func,
-                                               event_filter=self._event_filter)
+                                               event_filter=self._event_filter,
+                                               order=self._order)
         return self._subscription
 
     def __get__(self, instance, owner):
@@ -44,7 +45,7 @@ class SubscriptionHandle(object):
         # Otherwise, we create a new SubscriptionHandle that will only be used
         # for the instance that owns this SubscriptionHandle.
         ret = SubscriptionHandle(self._event_type, self._func,
-                                 self._event_filter, self.order)
+                                 self._event_filter, self._order)
         ret._owner = instance
         ret._func = ret._wrap_call(ret._func)
         for attr, value in owner.__dict__.items():
