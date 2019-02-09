@@ -129,7 +129,7 @@ class WifiRoamingTest(WifiBaseTest):
         AP2_network = self.reference_networks[1]["5g"]
         self.roaming_from_AP1_and_AP2(AP1_network, AP2_network)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="3114d625-5cdd-4205-bb46-5a9d057dc80d")
     def test_roaming_fail_psk_2g(self):
         network = {'SSID':'test_roaming_fail', 'password':'roam123456@'}
         # AP2 network with incorrect password.
