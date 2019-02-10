@@ -114,7 +114,8 @@ def _update_test_case_context(event):
 
 
 event_bus.register(TestClassEvent, _update_test_class_context)
-event_bus.register(TestCaseEvent, _update_test_case_context)
+event_bus.register(TestCaseBeginEvent, _update_test_case_context, order=-100)
+event_bus.register(TestCaseEndEvent, _update_test_case_context, order=100)
 
 
 class TestContext(object):
@@ -216,6 +217,7 @@ class TestContext(object):
         path = os.path.join(self.get_base_output_path(log_name),
                             self._get_default_context_dir(),
                             self.get_subcontext(log_name))
+        os.makedirs(path, exist_ok=True)
         return path
 
     @property

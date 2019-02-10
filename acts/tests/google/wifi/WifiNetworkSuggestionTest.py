@@ -76,6 +76,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.dut.droid.wakeUpNow()
         self.clear_deleted_ephemeral_networks()
         wutils.wifi_toggle_state(self.dut, True)
+        self.dut.ed.clear_all_events()
 
     def teardown_test(self):
         self.dut.droid.wakeLockRelease()
