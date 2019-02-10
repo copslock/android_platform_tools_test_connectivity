@@ -83,6 +83,10 @@ class WifiDppTest(base_test.BaseTestClass):
   def teardown_class(self):
     wutils.reset_wifi(self.dut)
 
+  def on_fail(self, test_name, begin_time):
+        self.dut.take_bug_report(test_name, begin_time)
+        self.dut.cat_adb_log(test_name, begin_time)
+
   def create_and_save_wifi_network_config(self, security):
     """ Create a config with random SSID and password.
 
