@@ -29,3 +29,8 @@ CONNECT_BY_NETID_SUCCESS = 'WifiManagerConnectByNetIdOnSuccess'
 AP_MAIN = "main_AP"
 AP_AUX = "aux_AP"
 SSID = "SSID"
+
+# cnss_diag property related constants
+DEVICES_USING_LEGACY_PROP = ["sailfish", "marlin", "walleye", "taimen", "muskie"]
+CNSS_DIAG_PROP = "persist.vendor.sys.cnss.diag_txt"
+LEGACY_CNSS_DIAG_PROP = "persist.sys.cnss.diag_txt"
