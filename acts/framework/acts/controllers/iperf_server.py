@@ -82,7 +82,7 @@ class IPerfResult(object):
                     iperf_output = iperf_output[0:
                                                 iperf_output.index("}\n") + 1]
                 iperf_string = ''.join(iperf_output)
-                iperf_string = iperf_string.replace("-nan", '0')
+                iperf_string = iperf_string.replace("nan", '0')
                 self.result = json.loads(iperf_string)
         except ValueError:
             with open(result_path, 'r') as f:

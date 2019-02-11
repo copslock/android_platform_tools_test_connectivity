@@ -296,6 +296,19 @@ def rand_ascii_str(length):
     return ''.join(letters)
 
 
+def rand_hex_str(length):
+    """Generates a random string of specified length, composed of hex digits
+
+    Args:
+        length: The number of characters in the string.
+
+    Returns:
+        The random string generated.
+    """
+    letters = [random.choice(string.hexdigits) for i in range(length)]
+    return ''.join(letters)
+
+
 # Thead/Process related functions.
 def concurrent_exec(func, param_list):
     """Executes a function with different parameters pseudo-concurrently.
@@ -466,6 +479,8 @@ def sync_device_time(ad):
     Args:
         ad: The android device to sync time on.
     """
+    ad.adb.shell("settings global put auto_time 0", ignore_status=True)
+    ad.adb.shell("settings global put auto_time_zone 0", ignore_status=True)
     droid = ad.droid
     droid.setTimeZone(get_timezone_olson_id())
     droid.setTime(get_current_epoch_time())
@@ -812,7 +827,7 @@ def parse_ping_ouput(ad, count, out, loss_tolerance=20):
     packet_rcvd = int(stats[1].split()[0])
     min_packet_xmit_rcvd = (100 - loss_tolerance) * 0.01
 
-    if (packet_loss >= loss_tolerance
+    if (packet_loss > loss_tolerance
             or packet_xmit < count * min_packet_xmit_rcvd
             or packet_rcvd < count * min_packet_xmit_rcvd):
         ad.log.error(

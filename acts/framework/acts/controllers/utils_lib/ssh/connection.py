@@ -396,6 +396,16 @@ class SshConnection(object):
         user_host = self._formatter.format_host_name(self._settings)
         job.run('scp %s %s:%s' % (local_path, user_host, remote_path))
 
+    def pull_file(self, local_path, remote_path):
+        """Send a file from remote host to local host
+
+        Args:
+            local_path: string path of file to recv on local host
+            remote_path: string path to copy file from on remote host.
+        """
+        user_host = self._formatter.format_host_name(self._settings)
+        job.run('scp %s:%s %s' % (user_host, remote_path, local_path))
+
     def find_free_port(self, interface_name='localhost'):
         """Find a unused port on the remote host.
 
