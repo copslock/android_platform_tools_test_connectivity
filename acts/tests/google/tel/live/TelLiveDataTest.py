@@ -3184,8 +3184,9 @@ class TelLiveDataTest(TelephonyBaseTest):
             sl4a_port = dut.adb.shell(cmd)
             ensure_phones_default_state(self.log, [dut])
             if nw_type == "wifi":
-                ensure_wifi_connected(self.log, dut, self.wifi_network_ssid,
-                                      self.wifi_network_pass)
+                if not ensure_wifi_connected(self.log, dut,
+                                self.wifi_network_ssid, self.wifi_network_pass):
+                    return False
 
             if not test_data_browsing_success_using_sl4a(self.log, dut):
                 dut.log.error("Browsing failed before the test, aborting!")
@@ -3212,7 +3213,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                     return False
 
             resume_internet_with_sl4a_port(dut, sl4a_port)
-            time.sleep(30)
+            time.sleep(10)
 
             if not test_data_browsing_success_using_sl4a(self.log, dut):
                 dut.log.error("Browsing failed after resuming internet")
