@@ -13,12 +13,13 @@
 # the License.
 import logging
 import os
+import shutil
 import subprocess
 import sys
-from distutils.spawn import find_executable
-from google.protobuf import text_format
-from google.protobuf import descriptor_pb2
 from importlib import import_module
+
+from google.protobuf import descriptor_pb2
+from google.protobuf import text_format
 
 
 def compile_proto(proto_path, output_dir):
@@ -28,7 +29,7 @@ def compile_proto(proto_path, output_dir):
     if 'PROTOC' in os.environ and os.path.exists(os.environ['PROTOC']):
         protoc = os.environ['PROTOC']
     if not protoc:
-        protoc = find_executable('protoc')
+        protoc = shutil.which('protoc')
     if not protoc:
         logging.error(
             "Cannot find protobuf compiler (>=3.0.0), please install"
@@ -58,6 +59,7 @@ def compile_proto(proto_path, output_dir):
         protoc, '-I=%s' % (input_dir), '--python_out=%s' % (output_dir),
         proto_path
     ]
+    logging.debug('Running command %s' % protoc_command)
     if subprocess.call(protoc_command, stderr=subprocess.STDOUT) != 0:
         logging.error("Fail to compile proto")
         return None
