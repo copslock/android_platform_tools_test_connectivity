@@ -16,6 +16,7 @@
 
 import bokeh
 import collections
+import logging
 import math
 import re
 import statistics
@@ -37,6 +38,8 @@ RSSI_ERROR_VAL = float('nan')
 
 # Threading decorator
 def nonblocking(f):
+    """Creates a decorator transforming function calls to non-blocking"""
+
     def wrap(*args, **kwargs):
         executor = ThreadPoolExecutor(max_workers=1)
         thread_future = executor.submit(f, *args, **kwargs)
@@ -135,7 +138,8 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     DUT.
 
     Args:
-        ping_from_dut: boolean set to true if pinging from the DUT
+        src_device: object representing device to ping from
+        dest_address: ip address to ping
         ping_duration: timeout to set on the the ping process (in seconds)
         ping_interval: time between pings (in seconds)
         ping_size: size of ping packet payload
@@ -186,7 +190,6 @@ def get_ping_stats_nb(src_device, dest_address, ping_duration, ping_interval,
 
 
 # Rssi Utilities
-@staticmethod
 def empty_rssi_result():
     return collections.OrderedDict([('data', []), ('mean', None), ('stdev',
                                                                    None)])
@@ -196,6 +199,7 @@ def get_connected_rssi(dut, num_measurements=1, polling_frequency=SHORT_SLEEP):
     """Gets all RSSI values reported for the connected access point/BSSID.
 
     Args:
+        dut: android device object from which to get RSSI
         num_measurements: number of scans done, and RSSIs collected
         polling_frequency: time to wait between RSSI measurements
     Returns:
@@ -205,7 +209,8 @@ def get_connected_rssi(dut, num_measurements=1, polling_frequency=SHORT_SLEEP):
     """
     # yapf: disable
     connected_rssi = collections.OrderedDict(
-        [('signal_poll_rssi', empty_rssi_result()),
+        [('frequency', []),
+         ('signal_poll_rssi', empty_rssi_result()),
          ('signal_poll_avg_rssi', empty_rssi_result()),
          ('chain_0_rssi', empty_rssi_result()),
          ('chain_1_rssi', empty_rssi_result())])
@@ -214,6 +219,12 @@ def get_connected_rssi(dut, num_measurements=1, polling_frequency=SHORT_SLEEP):
         measurement_start_time = time.time()
         # Get signal poll RSSI
         signal_poll_output = dut.adb.shell(SIGNAL_POLL)
+        match = re.search('FREQUENCY=.*', signal_poll_output)
+        if match:
+            frequency = int(match.group(0).split('=')[1])
+            connected_rssi['frequency'].append(frequency)
+        else:
+            connected_rssi['frequency'].append(RSSI_ERROR_VAL)
         match = re.search('RSSI=.*', signal_poll_output)
         if match:
             temp_rssi = int(match.group(0).split('=')[1])
@@ -251,6 +262,8 @@ def get_connected_rssi(dut, num_measurements=1, polling_frequency=SHORT_SLEEP):
     # Compute mean RSSIs. Only average valid readings.
     # Output RSSI_ERROR_VAL if no valid connected readings found.
     for key, val in connected_rssi.copy().items():
+        if key == "frequency":
+            continue
         filtered_rssi_values = [x for x in val['data'] if not math.isnan(x)]
         if filtered_rssi_values:
             connected_rssi[key]['mean'] = statistics.mean(filtered_rssi_values)
@@ -269,14 +282,14 @@ def get_connected_rssi(dut, num_measurements=1, polling_frequency=SHORT_SLEEP):
 def get_connected_rssi_nb(dut,
                           num_measurements=1,
                           polling_frequency=SHORT_SLEEP):
-    return get_connected_rssi(
-        dut, num_measurements=1, polling_frequency=SHORT_SLEEP)
+    return get_connected_rssi(dut, num_measurements, polling_frequency)
 
 
 def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
     """Gets scan RSSI for specified BSSIDs.
 
     Args:
+        dut: android device object from which to get RSSI
         tracked_bssids: array of BSSIDs to gather RSSI data for
         num_measurements: number of scans done, and RSSIs collected
     Returns:
@@ -317,4 +330,38 @@ def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
 
 @nonblocking
 def get_scan_rssi_nb(dut, tracked_bssids, num_measurements=1):
-    return get_scan_rssi(dut, tracked_bssids, num_measurements=1)
+    return get_scan_rssi(dut, tracked_bssids, num_measurements)
+
+
+## Attenuator Utilities
+def atten_by_label(atten_list, path_label, atten_level):
+    """Attenuate signals according to their path label.
+
+    Args:
+        atten_list: list of attenuators to iterate over
+        path_label: path label on which to set desired attenuation
+        atten_level: attenuation desired on path
+    """
+    for atten in atten_list:
+        if path_label in atten.path:
+            atten.set_atten(atten_level)
+
+
+def get_server_address(ssh_connection, subnet):
+    """Get server address on a specific subnet
+
+    Args:
+        ssh_connection: object representing server for which we want an ip
+        subnet: string in ip address format, i.e., xxx.xxx.xxx.xxx,
+        representing the subnet of interest.
+    """
+    subnet_str = subnet.split('.')[:-1]
+    subnet_str = ".".join(subnet_str)
+    cmd = "ifconfig | grep 'inet addr:{}'".format(subnet_str)
+    try:
+        if_output = ssh_connection.run(cmd).stdout
+        ip_line = if_output.split('inet addr:')[1]
+        ip_address = ip_line.split(" ")[0]
+    except:
+        logging.warning("Could not find ip in requested subnet.")
+    return ip_address
