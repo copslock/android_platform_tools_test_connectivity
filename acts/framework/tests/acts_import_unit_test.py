@@ -55,6 +55,8 @@ BLACKLIST = [
     'acts/test_utils/wifi/wifi_power_test_utils.py',
     'acts/test_utils/wifi/wifi_retail_ap.py',
     'acts/test_utils/bt/bt_power_test_utils.py',
+    'acts/test_utils/coex/coex_test_utils.py',
+    'acts/test_utils/tel/twilio_client.py',
     'acts/test_utils/bt/A2dpCodecBaseTest.py',
     'acts/test_utils/bt/BtRangeBaseTest.py',
     'tests/google/ble/beacon_tests/BeaconSwarmTest.py',
