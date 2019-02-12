@@ -23,6 +23,7 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -78,14 +79,14 @@ class WifiPingTest(base_test.BaseTestClass):
         self.client_dut = self.android_devices[-1]
         req_params = [
             "ping_test_params", "testbed_params", "main_network",
-            "RetailAccessPoints"
+            "RetailAccessPoints", "RemoteServer"
         ]
         opt_params = ["golden_files_list"]
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.ping_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
-        # iperf server doubles as ping server to reduce config parameters
-        self.iperf_server = self.iperf_servers[0]
+        self.ping_server = ssh.connection.SshConnection(
+            ssh.settings.from_config(self.RemoteServer[0]["ssh_config"]))
         self.access_points = retail_ap.create(self.RetailAccessPoints)
         self.access_point = self.access_points[0]
         self.log.info("Access Point Configuration: {}".format(
@@ -290,9 +291,8 @@ class WifiPingTest(base_test.BaseTestClass):
                 ignore_status=True)
         else:
             ping_cmd = "sudo {} {}".format(ping_cmd, self.dut_ip)
-            ping_output = self.iperf_server.ssh_session.run(
-                ping_cmd, ignore_status=True).stdout
-        ping_output = ping_output.splitlines()
+            ping_output = self.ping_server.run(ping_cmd, ignore_status=True)
+        ping_output = ping_output.stdout.splitlines()
 
         if len(ping_output) == 1:
             ping_result = self.DISCONNECTED_PING_RESULT

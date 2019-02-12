@@ -100,6 +100,17 @@ from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.tel.tel_test_utils import WIFI_SSID_KEY
+from acts.test_utils.tel.tel_test_utils import bring_up_sl4a
+from acts.test_utils.tel.tel_test_utils import check_data_stall_detection
+from acts.test_utils.tel.tel_test_utils import check_network_validation_fail
+from acts.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
+from acts.test_utils.tel.tel_test_utils import resume_internet_with_sl4a_port
+from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
+from acts.test_utils.tel.tel_test_utils import check_data_stall_recovery
+from acts.test_utils.tel.tel_test_utils import \
+    test_data_browsing_success_using_sl4a
+from acts.test_utils.tel.tel_test_utils import \
+    test_data_browsing_failure_using_sl4a
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
@@ -3120,10 +3131,12 @@ class TelLiveDataTest(TelephonyBaseTest):
     @test_tracker_info(uuid="c9970955-123b-467c-afbb-95ec8f99e9b7")
     def test_file_download_with_mobile_data_usage_limit_set(self):
         """ Steps:
+
         1. Set the data usage limit to current data usage + 9MB
         2. Download 5MB file from internet.
         3. The first file download should succeed
         4. The second file download should fail
+
         """
         dut = self.android_devices[0]
         ensure_phones_default_state(self.log, [dut])
@@ -3160,4 +3173,94 @@ class TelLiveDataTest(TelephonyBaseTest):
             return True
         finally:
             remove_mobile_data_usage_limit(dut, subscriber_id)
+
+
+    def _test_data_stall_detection_recovery(self, nw_type="cellular",
+                                            validation_type="detection"):
+        dut = self.android_devices[0]
+        try:
+            cmd = ('ss -l -p -n | grep "tcp.*droid_script" | tr -s " " '
+                   '| cut -d " " -f 5 | sed s/.*://g')
+            sl4a_port = dut.adb.shell(cmd)
+            ensure_phones_default_state(self.log, [dut])
+            if nw_type == "wifi":
+                if not ensure_wifi_connected(self.log, dut,
+                                self.wifi_network_ssid, self.wifi_network_pass):
+                    return False
+
+            if not test_data_browsing_success_using_sl4a(self.log, dut):
+                dut.log.error("Browsing failed before the test, aborting!")
+                return False
+
+            begin_time = get_device_epoch_time(dut)
+            break_internet_except_sl4a_port(dut, sl4a_port)
+
+            if not test_data_browsing_failure_using_sl4a(self.log, dut):
+                dut.log.error("Browsing success even after breaking internet, "\
+                              "aborting!")
+                return False
+
+            if not check_data_stall_detection(dut):
+                dut.log.error("NetworkMonitor unable to detect Data Stall")
+
+            if not check_network_validation_fail(dut, begin_time):
+                dut.log.error("Unable to detect NW validation fail")
+                return False
+
+            if validation_type == "recovery":
+                if not check_data_stall_recovery(dut, begin_time):
+                    dut.log.error("Recovery was not triggerred")
+                    return False
+
+            resume_internet_with_sl4a_port(dut, sl4a_port)
+            time.sleep(10)
+
+            if not test_data_browsing_success_using_sl4a(self.log, dut):
+                dut.log.error("Browsing failed after resuming internet")
+                return False
+            return True
+        finally:
+            resume_internet_with_sl4a_port(dut, sl4a_port)
+
+
+    @test_tracker_info(uuid="fda33416-698a-408f-8ddc-b5cde13b1f83")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_data_stall_detection_cellular(self):
+        """ Data Stall Detection Testing
+
+        1. Ensure device is camped, browsing working fine
+        2. Break Internet access, browsing should fail
+        3. Check for Data Stall Detection
+
+        """
+        return self._test_data_stall_detection_recovery(nw_type="cellular")
+
+
+    @test_tracker_info(uuid="a57891d6-7892-46c7-8bca-23cd2cca8552")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_data_stall_detection_wifi(self):
+        """ Data Stall Detection Testing
+
+        1. Ensure device is connected to WiFi, browsing working fine
+        2. Break Internet access, browsing should fail
+        3. Check for Data Stall Detection
+
+        """
+        return self._test_data_stall_detection_recovery(nw_type="wifi")
+
+
+    @test_tracker_info(uuid="16d3f123-cac3-45a9-a2e5-c01bab7044d4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_data_stall_recovery_cellular(self):
+        """ Data Stall Recovery Testing
+
+        1. Ensure device is camped, browsing working fine
+        2. Break Internet access, browsing should fail
+        3. Check for Data Stall Detection
+        4. Check for Data Stall Recovery
+
+        """
+        return self._test_data_stall_detection_recovery(nw_type="cellular",
+                                                validation_type="recovery")
+
         """ Tests End """

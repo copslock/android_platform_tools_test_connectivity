@@ -29,6 +29,7 @@ from acts import tracelogger
 from acts import utils
 from acts.event import event_bus
 from acts.event import subscription_bundle
+from acts.event.decorators import subscribe_static
 from acts.event.event import TestCaseBeginEvent
 from acts.event.event import TestCaseEndEvent
 from acts.event.event import TestClassBeginEvent
@@ -39,6 +40,55 @@ from acts.event.subscription_bundle import SubscriptionBundle
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + " %s %s"
+
+
+@subscribe_static(TestCaseBeginEvent)
+def _logcat_log_test_begin(event):
+    """Ensures that logcat is running. Write a logcat line indicating test case
+     begin."""
+    test_instance = event.test_class
+    try:
+        for ad in getattr(test_instance, 'android_devices', []):
+            if not ad.is_adb_logcat_on:
+                ad.start_adb_logcat()
+            # Write test start token to adb log if android device is attached.
+            if not ad.skip_sl4a:
+                ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN,
+                                               event.test_case_name))
+
+    except error.ActsError as e:
+        test_instance.results.errors.append(e)
+        test_instance.log.error('BaseTest setup_test error: %s' % e.message)
+
+    except Exception as e:
+        test_instance.log.warning(
+            'Unable to send BEGIN log command to all devices.')
+        test_instance.log.warning('Error: %s' % e)
+
+
+@subscribe_static(TestCaseEndEvent)
+def _logcat_log_test_end(event):
+    """Write a logcat line indicating test case end."""
+    test_instance = event.test_class
+    try:
+        # Write test end token to adb log if android device is attached.
+        for ad in getattr(test_instance, 'android_devices', []):
+            if not ad.skip_sl4a:
+                ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN,
+                                             event.test_case_name))
+
+    except error.ActsError as e:
+        test_instance.results.errors.append(e)
+        test_instance.log.error('BaseTest teardown_test error: %s' % e.message)
+
+    except Exception as e:
+        test_instance.log.warning(
+            'Unable to send END log command to all devices.')
+        test_instance.log.warning('Error: %s' % e)
+
+
+event_bus.register_subscription(_logcat_log_test_begin.subscription)
+event_bus.register_subscription(_logcat_log_test_end.subscription)
 
 
 class Error(Exception):
@@ -63,6 +113,9 @@ class BaseTestClass(object):
                  the execution of test cases.
         consecutive_failures: Tracks the number of consecutive test case
                               failures within this class.
+        consecutive_failure_limit: Number of consecutive test failures to allow
+                                   before blocking remaining tests in the same
+                                   test class.
         size_limit_reached: True if the size of the log directory has reached
                             its limit.
         current_test_name: A string that's the name of the test case currently
@@ -88,6 +141,8 @@ class BaseTestClass(object):
         self.current_test_name = None
         self.log = tracelogger.TraceLogger(self.log)
         self.consecutive_failures = 0
+        self.consecutive_failure_limit = self.user_params.get(
+            'consecutive_failure_limit', -1)
         self.size_limit_reached = False
         if hasattr(self, 'android_devices'):
             for ad in self.android_devices:
@@ -156,6 +211,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
         """
+        event_bus.post(TestClassBeginEvent(self))
         return self.setup_class()
 
     def setup_class(self):
@@ -168,6 +224,13 @@ class BaseTestClass(object):
 
         Implementation is optional.
         """
+
+    def _teardown_class(self):
+        """Proxy function to guarantee the base implementation of teardown_class
+        is called.
+        """
+        self.teardown_class()
+        event_bus.post(TestClassEndEvent(self, self.results))
 
     def teardown_class(self):
         """Teardown function that will be called after all the selected test
@@ -182,27 +245,12 @@ class BaseTestClass(object):
         """
         self.current_test_name = test_name
 
+        event_bus.post(TestCaseBeginEvent(self, test_name))
+
         # Block the test if the consecutive test case failure limit is reached.
-        fail_limit = self.user_params.get('consecutive_failure_limit', -1)
-        if self.consecutive_failures == fail_limit:
+        if self.consecutive_failures == self.consecutive_failure_limit:
             raise signals.TestBlocked('Consecutive test failure')
 
-        try:
-            # Write test start token to adb log if android device is attached.
-            if hasattr(self, 'android_devices'):
-                for ad in self.android_devices:
-                    if not ad.skip_sl4a:
-                        ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN,
-                                                       test_name))
-
-        except error.ActsError as e:
-            self.results.errors.append(e)
-            self.log.error('BaseTest setup_test error: %s' % e.message)
-
-        except Exception as e:
-            self.log.warning(
-                'Unable to send BEGIN log command to all devices.')
-            self.log.warning('Error: %s' % e)
         return self.setup_test()
 
     def setup_test(self):
@@ -222,21 +270,17 @@ class BaseTestClass(object):
         is called.
         """
         self.log.debug('Tearing down test %s' % test_name)
-        try:
-            # Write test end token to adb log if android device is attached.
-            for ad in getattr(self, 'android_devices', []):
-                ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
 
-        except error.ActsError as e:
-            self.results.errors.append(e)
-            self.log.error('BaseTest teardown_test error: %s' % e.message)
-
-        except Exception as e:
-            self.log.warning('Unable to send END log command to all devices.')
-            self.log.warning('Error: %s' % e)
         try:
             self.teardown_test()
         finally:
+            # TODO(markdr): pass the signal that was raised.
+            # Currently, this passes the TestSignal class, rather than the
+            # signal that was raised by the test case (or signal.TestPass if
+            # no signal was raised). This should be updated such that the signal
+            # is passed along to the event.
+            event_bus.post(TestCaseEndEvent(
+                self, test_name, signals.TestSignal))
             self.current_test_name = None
 
     def teardown_test(self):
@@ -404,12 +448,7 @@ class BaseTestClass(object):
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
         verdict = None
         try:
-            event_bus.post(TestCaseBeginEvent(self, test_func))
             try:
-                if hasattr(self, 'android_devices'):
-                    for ad in self.android_devices:
-                        if not ad.is_adb_logcat_on:
-                            ad.start_adb_logcat()
                 ret = self._setup_test(self.test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
@@ -474,13 +513,6 @@ class BaseTestClass(object):
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
-            # TODO(markdr): pass the signal that was raised.
-            # Currently, this passes the TestSignal class, rather than the
-            # signal that was raised by the test case (or signal.TestPass if
-            # no signal was raised). This should be updated such that the signal
-            # is passed along to the event.
-            event_bus.post(TestCaseEndEvent(
-                self, test_func, signals.TestSignal))
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
 
@@ -677,7 +709,6 @@ class BaseTestClass(object):
         """
         self.register_test_class_event_subscriptions()
         self.log.info("==========> %s <==========", self.TAG)
-        event_bus.post(TestClassBeginEvent(self))
         # Devise the actual test cases to run in the test class.
         if self.tests:
             # Specified by run list in class.
@@ -706,17 +737,16 @@ class BaseTestClass(object):
                 setup_fail = True
         except signals.TestAbortClass:
             try:
-                self._exec_func(self.teardown_class)
+                self._exec_func(self._teardown_class)
             except Exception as e:
                 self.log.warning(e)
             setup_fail = True
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
-            self._exec_func(self.teardown_class)
             self._block_all_test_cases(tests)
+            self._exec_func(self._teardown_class)
             setup_fail = True
         if setup_fail:
-            event_bus.post(TestClassEndEvent(self, self.results))
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
             return self.results
@@ -735,8 +765,7 @@ class BaseTestClass(object):
             setattr(e, "results", self.results)
             raise e
         finally:
-            self._exec_func(self.teardown_class)
-            event_bus.post(TestClassEndEvent(self, self.results))
+            self._exec_func(self._teardown_class)
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
 
@@ -787,10 +816,17 @@ class BaseTestClass(object):
         if "no_bug_report_on_fail" in self.user_params:
             return True
 
-        # If the current test case is found in the set of problematic test
-        # cases, we skip bugreport and other failure artifact creation.
-        full_test_name = '%s.%s' % (self.__class__.__name__, self.test_name)
-        if full_test_name in self.user_params.get('quiet_test_cases', []):
+        # If the current test class or test case is found in the set of
+        # problematic tests, we skip bugreport and other failure artifact
+        # creation.
+        class_name = self.__class__.__name__
+        quiet_tests = self.user_params.get('quiet_tests', [])
+        if class_name in quiet_tests:
+            self.log.info(
+                "Skipping bug report, as directed for this test class.")
+            return True
+        full_test_name = '%s.%s' % (class_name, self.test_name)
+        if full_test_name in quiet_tests:
             self.log.info(
                 "Skipping bug report, as directed for this test case.")
             return True

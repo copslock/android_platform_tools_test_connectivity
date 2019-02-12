@@ -114,7 +114,8 @@ def _update_test_case_context(event):
 
 
 event_bus.register(TestClassEvent, _update_test_class_context)
-event_bus.register(TestCaseEvent, _update_test_case_context)
+event_bus.register(TestCaseBeginEvent, _update_test_case_context, order=-100)
+event_bus.register(TestCaseEndEvent, _update_test_case_context, order=100)
 
 
 class TestContext(object):
@@ -157,8 +158,9 @@ class TestContext(object):
         Returns:
             The output path.
         """
-        return self._base_output_paths.get(
-            log_name, self._get_default_base_output_path())
+        if log_name in self._base_output_paths:
+            return self._base_output_paths[log_name]
+        return self._get_default_base_output_path()
     
     @classmethod
     def add_base_output_path(cls, log_name, base_output_path):
@@ -215,6 +217,7 @@ class TestContext(object):
         path = os.path.join(self.get_base_output_path(log_name),
                             self._get_default_context_dir(),
                             self.get_subcontext(log_name))
+        os.makedirs(path, exist_ok=True)
         return path
 
     @property
@@ -297,7 +300,7 @@ class TestCaseContext(TestContext):
     """A TestContext that represents a test case.
 
     Attributes:
-        test_case: The method object of the test case.
+        test_case: The string name of the test case.
         test_class: The test class instance enclosing the test case.
     """
 
