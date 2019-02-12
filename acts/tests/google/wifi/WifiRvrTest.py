@@ -26,7 +26,7 @@ from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -44,6 +44,7 @@ class WifiRvrTest(base_test.BaseTestClass):
     TEST_TIMEOUT = 10
     SHORT_SLEEP = 1
     MED_SLEEP = 5
+    RSSI_POLL_INTERVAL = 1
     MAX_CONSECUTIVE_ZEROS = 5
 
     def __init__(self, controllers):
@@ -294,18 +295,22 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.log.info("Start running RvR")
         zero_counter = 0
         throughput = []
+        rssi = []
         for atten in testcase_params["atten_range"]:
             # Set Attenuation
-            self.log.info("Setting attenuation to {} dB".format(atten))
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
+            rssi_future = wputils.get_connected_rssi_nb(
+                self.client_dut, testcase_params["iperf_duration"] - 1, 1, 1)
             client_output_path = self.iperf_client.start(
                 testcase_params["iperf_server_address"],
                 testcase_params["iperf_args"], str(atten),
                 testcase_params["iperf_duration"] + self.TEST_TIMEOUT)
             server_output_path = self.iperf_server.stop()
+            current_rssi = rssi_future.result()["signal_poll_rssi"]["mean"]
+            rssi.append(current_rssi)
             # Parse and log result
             if testcase_params["use_client_output"]:
                 iperf_file = client_output_path
@@ -322,8 +327,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                     "ValueError: Cannot get iperf result. Setting to 0")
                 curr_throughput = 0
             throughput.append(curr_throughput)
-            self.log.info("Throughput at {0:.2f} dB is {1:.2f} Mbps".format(
-                atten, curr_throughput))
+            self.log.info(
+                "Throughput at {0:.2f} dB is {1:.2f} Mbps. RSSI = {2:.2f}".
+                format(atten, curr_throughput, current_rssi))
             if curr_throughput == 0:
                 zero_counter = zero_counter + 1
             else:
@@ -344,6 +350,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result["fixed_attenuation"] = self.testbed_params[
             "fixed_attenuation"][str(testcase_params["channel"])]
         rvr_result["attenuation"] = list(testcase_params["atten_range"])
+        rvr_result["rssi"] = rssi
         rvr_result["throughput_receive"] = throughput
         return rvr_result
 
