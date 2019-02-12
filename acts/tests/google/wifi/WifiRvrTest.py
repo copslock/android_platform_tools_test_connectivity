@@ -66,6 +66,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.testclass_params = self.rvr_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
+        self.iperf_client = self.iperf_clients[0]
         self.access_points = retail_ap.create(self.RetailAccessPoints)
         self.access_point = self.access_points[0]
         self.log.info("Access Point Configuration: {}".format(
@@ -300,26 +301,16 @@ class WifiRvrTest(base_test.BaseTestClass):
                 attenuator.set_atten(atten, strict=False)
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
-            try:
-                client_output = ""
-                client_status, client_output = self.client_dut.run_iperf_client(
-                    self.testbed_params["iperf_server_address"],
-                    testcase_params["iperf_args"],
-                    timeout=self.testclass_params["iperf_duration"] +
-                    self.TEST_TIMEOUT)
-            except:
-                self.log.warning("TimeoutError: Iperf measurement timed out.")
-            client_output_path = os.path.join(
-                self.iperf_server.log_path, "iperf_client_output_{}_{}".format(
-                    self.current_test_name, str(atten)))
-            with open(client_output_path, 'w') as out_file:
-                out_file.write("\n".join(client_output))
-            self.iperf_server.stop()
+            client_output_path = self.iperf_client.start(
+                testcase_params["iperf_server_address"],
+                testcase_params["iperf_args"], str(atten),
+                testcase_params["iperf_duration"] + self.TEST_TIMEOUT)
+            server_output_path = self.iperf_server.stop()
             # Parse and log result
             if testcase_params["use_client_output"]:
                 iperf_file = client_output_path
             else:
-                iperf_file = self.iperf_server.log_files[-1]
+                iperf_file = server_output_path
             try:
                 iperf_result = ipf.IPerfResult(iperf_file)
                 curr_throughput = (math.fsum(iperf_result.instantaneous_rates[
@@ -413,6 +404,12 @@ class WifiRvrTest(base_test.BaseTestClass):
             attenuator.set_atten(0, strict=False)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
+        # Get iperf_server address
+        if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
+            testcase_params["iperf_server_address"] = self.dut_ip
+        else:
+            testcase_params["iperf_server_address"] = self.testbed_params[
+                "iperf_server_address"]
 
     def parse_test_params(self, test_name):
         """Function that generates test params based on the test name."""
@@ -434,7 +431,10 @@ class WifiRvrTest(base_test.BaseTestClass):
             testcase_params[
                 "iperf_args"] = testcase_params["iperf_args"] + "-u -b {}".format(
                     self.testclass_params["UDP_rates"][testcase_params["mode"]])
-        if test_name_params[3] == "DL":
+        if (test_name_params[3] == "DL"
+                and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
+            ) or (test_name_params[3] == "UL"
+                  and isinstance(self.iperf_server, ipf.IPerfServerOverAdb)):
             testcase_params[
                 "iperf_args"] = testcase_params["iperf_args"] + ' -R'
             testcase_params["use_client_output"] = True
