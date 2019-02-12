@@ -23,6 +23,8 @@ import os
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.controllers import iperf_server as ipf
+from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -81,13 +83,21 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         """
         self.client_dut = self.android_devices[-1]
         req_params = [
-            "RetailAccessPoints", "sensitivity_test_params", "testbed_params"
+            "RetailAccessPoints", "sensitivity_test_params", "testbed_params",
+            "RemoteServer"
         ]
         opt_params = ["main_network", "golden_files_list"]
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.sensitivity_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
+        self.ping_server = ssh.connection.SshConnection(
+            ssh.settings.from_config(self.RemoteServer[0]["ssh_config"]))
         self.iperf_server = self.iperf_servers[0]
+        self.iperf_client = self.iperf_clients[0]
+        if isinstance(self.iperf_server, ipf.IPerfServerOverSsh):
+            self.ping_server = self.iperf_server
+        else:
+            self.ping_server = self.iperf_client
         self.access_points = retail_ap.create(self.RetailAccessPoints)
         self.access_point = self.access_points[0]
         self.log.info("Access Point Configuration: {}".format(
@@ -328,14 +338,18 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             testcase_params["attenuated_chain"] = None
 
         if self.testclass_params["traffic_type"] == "UDP":
-            testcase_params["iperf_args"] = '-i 1 -t {} -J -u -b {} -R'.format(
+            testcase_params["iperf_args"] = '-i 1 -t {} -J -u -b {}'.format(
                 self.testclass_params["iperf_duration"],
                 self.testclass_params["UDP_rates"][testcase_params["mode"]])
-            testcase_params["use_client_output"] = True
         elif self.testclass_params["traffic_type"] == "TCP":
-            testcase_params["iperf_args"] = '-i 1 -t {} -J -R'.format(
+            testcase_params["iperf_args"] = '-i 1 -t {} -J'.format(
                 self.testclass_params["iperf_duration"])
+
+        if not isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
+            testcase_params["iperf_args"] += ' -R'
             testcase_params["use_client_output"] = True
+        else:
+            testcase_params["use_client_output"] = False
 
         return testcase_params
 
