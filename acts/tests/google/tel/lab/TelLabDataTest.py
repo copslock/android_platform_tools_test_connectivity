@@ -326,9 +326,6 @@ class TelLabDataTest(TelephonyBaseTest):
                 self.ad.log.error("Browsing success even in OOS, aborting!")
                 return False
 
-            if not check_data_stall_detection(self.ad):
-                self.ad.log.error("NetworkMonitor unable to detect Data Stall")
-
             if not check_network_validation_fail(self.ad, begin_time):
                 self.ad.log.error("Unable to detect NW validation fail")
                 return False
