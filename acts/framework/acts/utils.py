@@ -122,9 +122,7 @@ def create_dir(path):
     Args:
         path: The path of the directory to create.
     """
-    full_path = abs_path(path)
-    if not os.path.exists(full_path):
-        os.makedirs(full_path)
+    os.makedirs(path, exist_ok=True)
 
 
 def get_current_epoch_time():
