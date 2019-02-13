@@ -3040,6 +3040,67 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
         return False
 
 
+def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
+    result = False
+    for i in range(retries):
+        ad.adb.shell(
+        "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
+        ad.adb.shell(
+        "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
+        disable_qxdm_logger(ad)
+        cmd = ('am instrument -w -e request "WriteEFS" -e item '
+               '"/google/pixel_multisim_config" -e data  "02 00 00 00" '
+               '"com.google.mdstest/com.google.mdstest.instrument.'
+               'ModemConfigInstrumentation"')
+        ad.log.info("Switch to MSIM mode by using %s", cmd)
+        ad.adb.shell(cmd, ignore_status=True)
+        time.sleep(timeout)
+        ad.adb.shell("setprop persist.radio.multisim.config dsds")
+        reboot_device(ad)
+        # Verify if device is really in msim mode
+        rat = ad.adb.getprop("gsm.network.type")
+        if "," in rat:
+            ad.log.info("Device correctly switched to MSIM mode")
+            result = True
+            break
+        else:
+            ad.log.warning("Attempt %d - failed to switch to MSIM", (i + 1))
+    return result
+
+
+def phone_switch_to_ssim_mode(ad, retries=3, timeout=30):
+    result = False
+    for i in range(retries):
+        ad.adb.shell(
+        "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
+        ad.adb.shell(
+        "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
+        disable_qxdm_logger(ad)
+        cmds = ('am instrument -w -e request "WriteEFS" -e item '
+                '"/google/pixel_multisim_config" -e data  "01 00 00 00" '
+                '"com.google.mdstest/com.google.mdstest.instrument.'
+                'ModemConfigInstrumentation"',
+                'am instrument -w -e request "WriteEFS" -e item "/nv/item_files'
+                '/modem/uim/uimdrv/uim_extended_slot_mapping_config" -e data '
+                '"00 01 02 01" "com.google.mdstest/com.google.mdstest.'
+                'instrument.ModemConfigInstrumentation"')
+        for cmd in cmds:
+            ad.log.info("Switch to SSIM mode by using %s", cmd)
+            ad.adb.shell(cmd, ignore_status=True)
+            time.sleep(timeout)
+        ad.adb.shell("setprop persist.radio.multisim.config ssss")
+        reboot_device(ad)
+        # Verify if device is really in ssim mode
+        rat = ad.adb.getprop("gsm.network.type")
+        if "," not in rat:
+            ad.log.info("Device correctly switched to SSIM mode")
+            result = True
+            break
+        else:
+            ad.log.warning("Attempt %d - failed to switch to SSIM", (i + 1))
+    return result
+
+
 def lock_lte_band_by_mds(ad, band):
     disable_qxdm_logger(ad)
     ad.log.info("Write band %s locking to efs file", band)
