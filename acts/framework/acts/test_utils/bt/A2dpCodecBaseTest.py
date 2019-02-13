@@ -190,6 +190,8 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
         for ch_no, t in enumerate(thdn):
             self.log.info('THD+N percent for channel %s: %.4f%%' %
                           (ch_no, t * 100))
+            metrics_key = "channel_%s_thdn" % ch_no
+            self.metrics[metrics_key] = t
         self.metrics["thdn"] = thdn
 
     def run_anomaly_detection(self):
@@ -210,6 +212,8 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
                                                      start // 60,
                                                      start % 60,
                                                      end -start))
+            metrics_key = "channel_%s_num_anomalies" % ch_no
+            self.metrics[metrics_key] = len(anomalies)
         else:
             self.log.info('%i anomalies detected.' % num_anom)
         self.metrics["anomalies"] = anom
