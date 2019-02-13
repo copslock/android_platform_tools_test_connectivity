@@ -29,7 +29,7 @@ from acts.signals import TestFailure
 from acts.signals import TestPass
 from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import enable_bluetooth
-from acts.test_utils.bt.loggers.BluetoothMetricLogger import BluetoothMetricLogger
+from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
 from acts.utils import set_location_service
 
 

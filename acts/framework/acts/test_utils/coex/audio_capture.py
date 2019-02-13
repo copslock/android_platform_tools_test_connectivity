@@ -128,5 +128,6 @@ if __name__ == '__main__':
         " chunk and device index for recording.")
     args = parser.parse_args()
     audio = AudioCapture(args.test_params, args.path)
-    audio.capture_and_store_audio()
+    audio.capture_and_store_audio(args.test_params['trim_start'],
+                                  args.test_params['trim_end'])
     audio.terminate_audio()

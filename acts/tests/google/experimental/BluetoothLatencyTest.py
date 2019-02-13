@@ -26,7 +26,7 @@ from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
 from acts.test_utils.bt.bt_test_utils import write_read_verify_data
-from acts.test_utils.bt.loggers.BluetoothMetricLogger import BluetoothMetricLogger
+from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
 from acts.utils import set_location_service
 
 
