@@ -16,6 +16,7 @@
 
 import pprint
 import queue
+import re
 import threading
 import time
 
@@ -229,6 +230,117 @@ class WifiStressTest(WifiBaseTest):
         except:
             q.put(False)
 
+    def _test_stress_connect_long_traffic(self, network):
+        """Connect to a network and run iperf traffic for stress_hours.
+
+           Args:
+               network: wifi network to connect to.
+        """
+        self.scan_and_connect_by_ssid(self.dut, network)
+        self.scan_and_connect_by_ssid(self.dut_client, network)
+
+        q = queue.Queue()
+        sec = self.stress_hours * 60 * 60
+        start_time = time.time()
+
+        dl_args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
+        dl = threading.Thread(target=self.run_long_traffic, args=(sec, dl_args, q))
+        dl.start()
+        if(len(self.iperf_servers) > 1):
+            ul_args = "-p {} -t {}".format(self.iperf_servers[1].port, sec)
+            ul = threading.Thread(target=self.run_long_traffic, args=(sec, ul_args, q))
+            ul.start()
+
+        dl.join()
+        if(len(self.iperf_servers) > 1):
+            ul.join()
+
+        total_time = time.time() - start_time
+        self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
+        while(q.qsize() > 0):
+            if not q.get():
+                raise signals.TestFailure("Network long-connect failed.",
+                    extras={"Total Hours":"%d" %self.stress_hours,
+                    "Seconds Run":"%d" %total_time})
+        raise signals.TestPass(details="", extras={"Total Hours":"%d" %
+            self.stress_hours, "Seconds Run":"%d" %total_time})
+
+    def _test_stress_connect_AP_on_off(self, network):
+        """Verify that DUT connects back to the wifi network when the AP
+           is up again.
+
+           Args:
+               network: wifi network to connect to.
+        """
+        chan = 0 if network == self.wpa_2g else 1
+        self.attenuators[chan].set_atten(0)
+        self.scan_and_connect_by_ssid(self.dut, network)
+        for _ in range(50):
+            self.attenuators[chan].set_atten(95)
+            wutils.wait_for_disconnect(self.dut)
+            self.attenuators[chan].set_atten(0)
+            wutils.start_wifi_connection_scan_and_check_for_network(
+                self.dut, network[WifiEnums.SSID_KEY])
+            wutils.wait_for_connect(self.dut, network[WifiEnums.SSID_KEY])
+            internet = wutils.validate_connection(self.dut)
+            if not internet:
+                raise signals.TestFailure("Failed to connect to internet on %s"
+                                          % network)
+        wutils.wifi_forget_network(self.dut, WifiEnums.SSID_KEY)
+
+    def _test_stress_connect_long_traffic_weak_signal(self, network):
+        """Connect to a network with weak signal stength and run iperf traffic
+          for stress_hours.
+
+          Args:
+              network: wifi network to connect to
+        """
+        chan = 0 if network == self.wpa_2g else 1
+        self.scan_and_connect_by_ssid(self.dut, network)
+        self.attenuators[chan].set_atten(70)
+        conn_info = self.dut.droid.wifiGetConnectionInfo()
+        self.log.info("Wifi signal strength is %s" % conn_info['rssi'])
+        sec = self.stress_hours * 60 * 60
+        args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
+        self.log.info("Running iperf client {}".format(args))
+        result, data = self.dut.run_iperf_client(self.iperf_server_address,
+                                                 args, timeout=sec+1)
+        if not result:
+            self.log.debug("Error occurred in iPerf traffic.")
+            self.run_ping(sec)
+        else:
+            self.log.info("Throughput is %s" %
+                           re.search('MBytes(.*)Mbits', data[-3]).group(1))
+
+    def _test_stress_youtube(self, network):
+        """Connect to wifi network and run youtube videos. Verify no
+           WiFi disconnects/data interruption.
+
+           Args:
+               network: wifi network to connect to
+        """
+        # List of Youtube 4K videos.
+        videos = ["https://www.youtube.com/watch?v=TKmGU77INaM",
+                  "https://www.youtube.com/watch?v=WNCl-69POro",
+                  "https://www.youtube.com/watch?v=dVkK36KOcqs",
+                  "https://www.youtube.com/watch?v=0wCC3aLXdOw",
+                  "https://www.youtube.com/watch?v=rN6nlNC9WQA",
+                  "https://www.youtube.com/watch?v=U--7hxRNPvk"]
+        try:
+            self.scan_and_connect_by_ssid(self.dut, network)
+            start_time = time.time()
+            for video in videos:
+                self.start_youtube_video(url=video, secs=10*60)
+        except:
+            total_time = time.time() - start_time
+            raise signals.TestFailure("The youtube stress test has failed."
+                "WiFi State = %d" %self.dut.droid.wifiCheckState(),
+                extras={"Total Hours":"1", "Seconds Run":"%d" %total_time})
+        total_time = time.time() - start_time
+        self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
+        raise signals.TestPass(details="", extras={"Total Hours":"1",
+            "Seconds Run":"%d" %total_time})
+
     """Tests"""
 
     @test_tracker_info(uuid="cd0016c6-58cf-4361-b551-821c0b8d2554")
@@ -306,6 +418,20 @@ class WifiStressTest(WifiBaseTest):
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
+    @test_tracker_info(uuid="6b928a39-6530-4381-9665-24c893fb3517")
+    def test_stress_connect_long_traffic_2g(self):
+        """Test connect to network with 2G band and hold connection
+           for few hours.
+
+           Steps:
+               1. Scan and connect to a network.
+               2. Run IPerf to download data for few hours.
+               3. Run IPerf to upload data for few hours.
+               4. Verify no WiFi disconnects/data interruption.
+
+        """
+        self._test_stress_connect_long_traffic(self.wpa_2g)
+
     @test_tracker_info(uuid="e9827dff-0755-43ec-8b50-1f9756958460")
     def test_stress_connect_long_traffic_5g(self):
         """Test to connect to network and hold connection for few hours.
@@ -317,35 +443,20 @@ class WifiStressTest(WifiBaseTest):
                4. Verify no WiFi disconnects/data interruption.
 
         """
-        self.scan_and_connect_by_ssid(self.dut, self.wpa_5g)
-        self.scan_and_connect_by_ssid(self.dut_client, self.wpa_5g)
+        self._test_stress_connect_long_traffic(self.wpa_5g)
 
-        q = queue.Queue()
-        sec = self.stress_hours * 60 * 60
-        start_time = time.time()
+    @test_tracker_info(uuid="f4751895-0529-4f0f-8eec-c64bcb67c59e")
+    def test_stress_youtube_2g(self):
+        """Test to connect to 2G network and play various youtube videos.
 
-        dl_args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
-        dl = threading.Thread(target=self.run_long_traffic, args=(sec, dl_args, q))
-        dl.start()
-        if(len(self.iperf_servers) > 1):
-            ul_args = "-p {} -t {}".format(self.iperf_servers[1].port, sec)
-            ul = threading.Thread(target=self.run_long_traffic, args=(sec, ul_args, q))
-            ul.start()
+           Steps:
+               1. Scan and connect to a network.
+               2. Loop through and play a list of youtube videos.
+               3. Verify no WiFi disconnects/data interruption.
+        """
+        self._test_stress_youtube(self.wpa_2g)
 
-        dl.join()
-        if(len(self.iperf_servers) > 1):
-            ul.join()
-
-        total_time = time.time() - start_time
-        self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
-        while(q.qsize() > 0):
-            if not q.get():
-                raise signals.TestFailure("Network long-connect failed.",
-                    extras={"Total Hours":"%d" %self.stress_hours,
-                    "Seconds Run":"%d" %total_time})
-        raise signals.TestPass(details="", extras={"Total Hours":"%d" %
-            self.stress_hours, "Seconds Run":"%d" %total_time})
-
+    @test_tracker_info(uuid="591d257d-9477-4a89-a220-5715c93a76a7")
     def test_stress_youtube_5g(self):
         """Test to connect to network and play various youtube videos.
 
@@ -355,27 +466,59 @@ class WifiStressTest(WifiBaseTest):
                3. Verify no WiFi disconnects/data interruption.
 
         """
-        # List of Youtube 4K videos.
-        videos = ["https://www.youtube.com/watch?v=TKmGU77INaM",
-                  "https://www.youtube.com/watch?v=WNCl-69POro",
-                  "https://www.youtube.com/watch?v=dVkK36KOcqs",
-                  "https://www.youtube.com/watch?v=0wCC3aLXdOw",
-                  "https://www.youtube.com/watch?v=rN6nlNC9WQA",
-                  "https://www.youtube.com/watch?v=U--7hxRNPvk"]
-        try:
-            self.scan_and_connect_by_ssid(self.dut, self.wpa_5g)
-            start_time = time.time()
-            for video in videos:
-                self.start_youtube_video(url=video, secs=10*60)
-        except:
-            total_time = time.time() - start_time
-            raise signals.TestFailure("The youtube stress test has failed."
-                "WiFi State = %d" %self.dut.droid.wifiCheckState(),
-                extras={"Total Hours":"1", "Seconds Run":"%d" %total_time})
-        total_time = time.time() - start_time
-        self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
-        raise signals.TestPass(details="", extras={"Total Hours":"1",
-            "Seconds Run":"%d" %total_time})
+        self._test_stress_youtube(self.wpa_5g)
+
+    @test_tracker_info(uuid="7106efbe-f4cc-4b16-9a25-b6f2573e516b")
+    def test_stress_connect_AP_2g_on_off(self):
+        """Test to verify that verify that DUT connects back to the
+           to the wifi network with 2G band after AP is up.
+
+           Steps:
+               1. Scan and connect to a network.
+               2. Attenuate the signal to max.
+               3. Attenuate the signal to 0.
+               4. Verify that DUT connects back to the wifi network.
+        """
+        self._test_stress_connect_AP_on_off(self.wpa_2g)
+
+    @test_tracker_info(uuid="aef24543-edea-4c9a-a271-1e71582405d2")
+    def test_stress_connect_AP_5g_on_off(self):
+        """Test to verify that verify that DUT connects back to the
+           to the wifi network with 2G band after AP is up.
+
+           Steps:
+               1. Scan and connect to a network.
+               2. Attenuate the signal to max.
+               3. Attenuate the signal to 0.
+               4. Verify that DUT connects back to the wifi network.
+        """
+        self._test_stress_connect_AP_on_off(self.wpa_5g)
+
+    @test_tracker_info(uuid="0fffddcf-c8d6-477f-ba77-e4f5731bca1f")
+    def test_stress_connect_long_traffic_2g_weak_signal(self):
+        """Test connect to network with 2G band with weak signal strength
+           and hold connection for few hours
+
+           Steps:
+               1. Scan and connect to a network.
+               2. Attenuate the signal to 70dB.
+               3. Run IPerf to download data for few hours.
+               4. Verify no WiFi disconnects/data interruption.
+        """
+        self._test_stress_connect_long_traffic_weak_signal(self.wpa_2g)
+
+    @test_tracker_info(uuid="49eab802-5596-4674-8b7c-557629fe2734")
+    def test_stress_connect_long_traffic_5g_weak_signal(self):
+        """Test connect to network with 5G band with weak signal strength
+           and hold connection for few hours
+
+           Steps:
+               1. Scan and connect to a network.
+               2. Attenuate the signal to 70dB.
+               3. Run IPerf to download data for few hours.
+               4. Verify no WiFi disconnects/data interruption.
+        """
+        self._test_stress_connect_long_traffic_weak_signal(self.wpa_5g)
 
     @test_tracker_info(uuid="d367c83e-5b00-4028-9ed8-f7b875997d13")
     def test_stress_wifi_failover(self):
