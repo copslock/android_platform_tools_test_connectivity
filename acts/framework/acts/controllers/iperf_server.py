@@ -55,8 +55,9 @@ def create(configs):
         elif type(c) is dict and 'ssh_config' in c and 'port' in c:
             results.append(IPerfServerOverSsh(c['ssh_config'], c['port']))
         else:
-            raise ValueError('Config entry %s in %s is not a valid IPerfServer '
-                             'config.' % (repr(c), configs))
+            raise ValueError(
+                'Config entry %s in %s is not a valid IPerfServer '
+                'config.' % (repr(c), configs))
     return results
 
 
@@ -193,8 +194,7 @@ class IPerfResult(object):
         instantaneous_rates = self.instantaneous_rates[iperf_ignored_interval:
                                                        -1]
         avg_rate = math.fsum(instantaneous_rates) / len(instantaneous_rates)
-        sqd_deviations = [(rate - avg_rate) ** 2 for rate in
-                          instantaneous_rates]
+        sqd_deviations = [(rate - avg_rate)**2 for rate in instantaneous_rates]
         std_dev = math.sqrt(
             math.fsum(sqd_deviations) / (len(sqd_deviations) - 1))
         return std_dev
@@ -252,8 +252,8 @@ class IPerfServerBase(object):
 
         with IPerfServerBase.__log_file_lock:
             tags = [tag, IPerfServerBase.__log_file_counter]
-            out_file_name = 'IPerfServer,%s.log' % (','.join(
-                [str(x) for x in tags if x != '' and x is not None]))
+            out_file_name = 'IPerfServer,%s.log' % (
+                ','.join([str(x) for x in tags if x != '' and x is not None]))
             IPerfServerBase.__log_file_counter += 1
 
         file_path = os.path.join(out_dir, out_file_name)
@@ -379,14 +379,15 @@ class IPerfServerOverSsh(IPerfServerBase):
             return
 
         self._ssh_session.run_async('kill -9 {}'.format(str(self._iperf_pid)))
-        iperf_result = self._ssh_session.run(
-            'cat {}'.format(self._get_remote_log_path()))
+        iperf_result = self._ssh_session.run('cat {}'.format(
+            self._get_remote_log_path()))
 
         log_file = self._get_full_file_path(self._current_tag)
         with open(log_file, 'w') as f:
             f.write(iperf_result.stdout)
 
-        self._ssh_session.run_async('rm {}'.format(self._get_remote_log_path()))
+        self._ssh_session.run_async('rm {}'.format(
+            self._get_remote_log_path()))
         self._iperf_pid = None
         return log_file
 
@@ -412,7 +413,8 @@ class _AndroidDeviceBridge(object):
         _AndroidDeviceBridge.android_devices = {}
 
 
-event_bus.register_subscription(_AndroidDeviceBridge.on_test_begin.subscription)
+event_bus.register_subscription(
+    _AndroidDeviceBridge.on_test_begin.subscription)
 event_bus.register_subscription(_AndroidDeviceBridge.on_test_end.subscription)
 
 
@@ -472,6 +474,8 @@ class IPerfServerOverAdb(IPerfServerBase):
                 cmd=self._iperf_command,
                 extra_flags=extra_args,
                 log_file=self._get_device_log_path()))
+        self._iperf_process_adb_pid = self._android_device.adb.shell(
+            'pgrep iperf3 -n')
 
         self._current_tag = tag
 
@@ -486,15 +490,24 @@ class IPerfServerOverAdb(IPerfServerBase):
 
         job.run('kill -9 {}'.format(self._iperf_process.pid))
 
-        iperf_result = self._android_device.adb.shell(
-            'cat {}'.format(self._get_device_log_path()))
+        #TODO(markdr): update with definitive kill method
+        while True:
+            iperf_process_list = self._android_device.adb.shell('pgrep iperf3')
+            if iperf_process_list.find(self._iperf_process_adb_pid) == -1:
+                break
+            else:
+                self._android_device.adb.shell("kill -9 {}".format(
+                    self._iperf_process_adb_pid))
+
+        iperf_result = self._android_device.adb.shell('cat {}'.format(
+            self._get_device_log_path()))
 
         log_file = self._get_full_file_path(self._current_tag)
         with open(log_file, 'w') as f:
             f.write(iperf_result)
 
-        self._android_device.adb.shell(
-            'rm {}'.format(self._get_device_log_path()))
+        self._android_device.adb.shell('rm {}'.format(
+            self._get_device_log_path()))
 
         self._iperf_process = None
         return log_file
