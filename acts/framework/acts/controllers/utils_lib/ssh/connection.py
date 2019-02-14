@@ -214,7 +214,7 @@ class SshConnection(object):
                 line_index = output.find('\n') + 1
                 if line_index == 0:
                     line_index = len(output)
-                real_output = output[line_index + 1:].encode(io_encoding)
+                real_output = output[line_index:].encode(io_encoding)
 
                 result = job.Result(
                     command=result.command,
