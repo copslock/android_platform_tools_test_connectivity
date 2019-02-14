@@ -40,6 +40,7 @@ install_requires = [
     'xlsxwriter',
     # TODO(markdr): b/113719194: Remove this module
     'colorama'
+    'mobly'
 ]
 
 if sys.version_info < (3,):
