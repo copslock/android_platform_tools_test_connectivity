@@ -1054,8 +1054,9 @@ def push_music_to_android_device(ad, audio_params):
             ad.adb.push(item, android_music_path)
         return music_file_to_play
     else:
-        ad.log.error("Music file should be of type list")
-        return False
+        music_file_to_play = audio_params["music_file"]
+        ad.adb.push("{} {}".format(music_file_to_play, android_music_path))
+        return (os.path.basename(music_file_to_play))
 
 
 def bokeh_chart_plot(bt_attenuation_range,
