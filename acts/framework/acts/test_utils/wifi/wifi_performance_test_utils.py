@@ -195,7 +195,10 @@ def empty_rssi_result():
                                                                    None)])
 
 
-def get_connected_rssi(dut, num_measurements=1, polling_frequency=SHORT_SLEEP):
+def get_connected_rssi(dut,
+                       num_measurements=1,
+                       polling_frequency=SHORT_SLEEP,
+                       first_measurement_delay=0):
     """Gets all RSSI values reported for the connected access point/BSSID.
 
     Args:
@@ -215,6 +218,7 @@ def get_connected_rssi(dut, num_measurements=1, polling_frequency=SHORT_SLEEP):
          ('chain_0_rssi', empty_rssi_result()),
          ('chain_1_rssi', empty_rssi_result())])
     # yapf: enable
+    time.sleep(first_measurement_delay)
     for idx in range(num_measurements):
         measurement_start_time = time.time()
         # Get signal poll RSSI
@@ -281,8 +285,10 @@ def get_connected_rssi(dut, num_measurements=1, polling_frequency=SHORT_SLEEP):
 @nonblocking
 def get_connected_rssi_nb(dut,
                           num_measurements=1,
-                          polling_frequency=SHORT_SLEEP):
-    return get_connected_rssi(dut, num_measurements, polling_frequency)
+                          polling_frequency=SHORT_SLEEP,
+                          first_measurement_delay=0):
+    return get_connected_rssi(dut, num_measurements, polling_frequency,
+                              first_measurement_delay)
 
 
 def get_scan_rssi(dut, tracked_bssids, num_measurements=1):

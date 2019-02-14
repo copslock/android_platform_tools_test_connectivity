@@ -25,7 +25,7 @@ from acts import base_test
 from acts import utils
 from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
-from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -40,6 +40,7 @@ class WifiPingTest(base_test.BaseTestClass):
     """
 
     TEST_TIMEOUT = 10
+    RSSI_POLL_INTERVAL = 0.2
     SHORT_SLEEP = 1
     MED_SLEEP = 5
     MAX_CONSECUTIVE_ZEROS = 5
@@ -262,59 +263,6 @@ class WifiPingTest(base_test.BaseTestClass):
             rvr_range = float("nan")
         return rvr_range
 
-    def get_ping_stats(self, ping_from_dut, ping_duration, ping_interval,
-                       ping_size):
-        """Run ping to or from the DUT.
-
-        The function computes either pings the DUT or pings a remote ip from
-        DUT.
-
-        Args:
-            ping_from_dut: boolean set to true if pinging from the DUT
-            ping_duration: timeout to set on the the ping process (in seconds)
-            ping_interval: time between pings (in seconds)
-            ping_size: size of ping packet payload
-        Returns:
-            ping_result: dict containing ping results and other meta data
-        """
-        ping_cmd = "ping -w {} -i {} -s {}".format(
-            ping_duration,
-            ping_interval,
-            ping_size,
-        )
-        if ping_from_dut:
-            ping_cmd = "{} {}".format(
-                ping_cmd, self.testbed_params["outgoing_ping_address"])
-            ping_output = self.client_dut.adb.shell(
-                ping_cmd,
-                timeout=ping_duration + self.TEST_TIMEOUT,
-                ignore_status=True)
-        else:
-            ping_cmd = "sudo {} {}".format(ping_cmd, self.dut_ip)
-            ping_output = self.ping_server.run(ping_cmd, ignore_status=True)
-        ping_output = ping_output.stdout.splitlines()
-
-        if len(ping_output) == 1:
-            ping_result = self.DISCONNECTED_PING_RESULT
-        else:
-            packet_loss_line = [line for line in ping_output if "loss" in line]
-            packet_loss_percentage = int(
-                packet_loss_line[0].split("%")[0].split(" ")[-1])
-            if packet_loss_percentage == 100:
-                rtt = [float("nan")]
-            else:
-                rtt = [
-                    line.split("time=")[1] for line in ping_output
-                    if "time=" in line
-                ]
-                rtt = [float(line.split(" ")[0]) for line in rtt]
-            ping_result = {
-                "connected": 1,
-                "rtt": rtt,
-                "packet_loss_percentage": packet_loss_percentage
-            }
-        return ping_result
-
     def run_ping_test(self, testcase_params):
         """Main function to test ping.
 
@@ -333,6 +281,7 @@ class WifiPingTest(base_test.BaseTestClass):
         test_result["attenuation"] = testcase_params["atten_range"]
         test_result["fixed_attenuation"] = self.testbed_params[
             "fixed_attenuation"][str(testcase_params["channel"])]
+        test_result["rssi_results"] = []
         test_result["ping_results"] = []
         # Run ping and sweep attenuation as needed
         zero_counter = 0
@@ -340,14 +289,24 @@ class WifiPingTest(base_test.BaseTestClass):
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
             time.sleep(self.SHORT_SLEEP)
-            current_ping_stats = self.get_ping_stats(
-                0, testcase_params["ping_duration"],
+            rssi_future = wputils.get_connected_rssi_nb(
+                self.client_dut,
+                int(testcase_params["ping_duration"] / 2 /
+                    self.RSSI_POLL_INTERVAL), self.RSSI_POLL_INTERVAL,
+                testcase_params["ping_duration"] / 2)
+            current_ping_stats = wputils.get_ping_stats(
+                self.ping_server, self.dut_ip,
+                testcase_params["ping_duration"],
                 testcase_params["ping_interval"], testcase_params["ping_size"])
+            current_rssi = rssi_future.result()["signal_poll_rssi"]["mean"]
+            test_result["rssi_results"].append(current_rssi)
             if current_ping_stats["connected"]:
-                self.log.info(
-                    "Attenuation = {0}dB Packet Loss Rate = {1}%. Avg Ping RTT = {2:.2f}ms".
-                    format(atten, current_ping_stats["packet_loss_percentage"],
-                           statistics.mean(current_ping_stats["rtt"])))
+                self.log.info("Attenuation = {0}dB\tPacket Loss = {1}%\t"
+                              "Avg RTT = {2:.2f}ms\tRSSI = {3}\t".format(
+                                  atten,
+                                  current_ping_stats["packet_loss_percentage"],
+                                  statistics.mean(current_ping_stats["rtt"]),
+                                  current_rssi))
                 if current_ping_stats["packet_loss_percentage"] == 100:
                     zero_counter = zero_counter + 1
                 else:
