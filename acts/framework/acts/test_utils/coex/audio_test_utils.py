@@ -44,7 +44,9 @@ class SshAudioCapture(AudioCapture):
             ssh_settings = settings.from_config(
                 self.audio_params["ssh_config"])
             self.ssh_session = connection.SshConnection(ssh_settings)
-            self.ssh_session.send_file(self.audio_params["src_path"],
+            cur_path = os.path.dirname(os.path.realpath(__file__))
+            local_path = os.path.join(cur_path, "audio_capture.py")
+            self.ssh_session.send_file(local_path,
                                        self.audio_params["dest_path"])
             path = self.audio_params["dest_path"]
             test_params = str(self.audio_params).replace("\'", "\"")
