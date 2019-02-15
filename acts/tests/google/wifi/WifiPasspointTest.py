@@ -26,6 +26,8 @@ import acts.test_utils.wifi.wifi_test_utils as wutils
 import WifiManagerTest
 from acts import asserts
 from acts import signals
+from acts.libs.nuwa.nuwa_cli import NuwaCli
+from acts.libs.nuwa.nuwa_cli import NuwaError
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.utils import force_airplane_mode
@@ -34,11 +36,17 @@ WifiEnums = wutils.WifiEnums
 
 DEFAULT_TIMEOUT = 10
 OSU_TEST_TIMEOUT = 300
+
+# Constants for providers.
 GLOBAL_RE = 0
+OSU_BOINGO = 0
 BOINGO = 1
 ATT = 2
 
-OSU_BOINGO = 0
+# Constants used for various device operations.
+RESET = 1
+TOGGLE = 2
+
 UNKNOWN_FQDN = "@#@@!00fffffx"
 
 class WifiPasspointTest(acts.base_test.BaseTestClass):
@@ -53,13 +61,18 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("passpoint_networks",)
+        req_params = ["passpoint_networks", "nuwa_workflows"]
+        opt_param = []
+        self.unpack_userparams(
+            req_param_names=req_params, opt_param_names=opt_param)
         self.unpack_userparams(req_params)
         asserts.assert_true(
             len(self.passpoint_networks) > 0,
             "Need at least one Passpoint network.")
         wutils.wifi_toggle_state(self.dut, True)
         self.unknown_fqdn = UNKNOWN_FQDN
+        # Setup NUWA cli object for UI interation.
+        self.ui = NuwaCli(self.nuwa_zip, self.nuwa_workflows)
 
 
     def setup_test(self):
@@ -129,6 +142,60 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         if not wutils.delete_passpoint(self.dut, passpoint_config[0]):
             raise signals.TestFailure("Failed to delete Passpoint configuration"
                                       " with FQDN = %s" % passpoint_config[0])
+
+    def start_subscription_provisioning(self, state):
+        """Start subscription provisioning with a default provider."""
+
+        self.unpack_userparams(('osu_configs',))
+        asserts.assert_true(
+            len(self.osu_configs) > 0,
+            "Need at least one osu config.")
+        osu_config = self.osu_configs[OSU_BOINGO]
+        # Clear all previous events.
+        self.dut.ed.clear_all_events()
+        self.dut.droid.startSubscriptionProvisioning(osu_config)
+        start_time = time.time()
+        while time.time() < start_time + OSU_TEST_TIMEOUT:
+            dut_event = self.dut.ed.pop_event("onProvisioningCallback",
+                                              DEFAULT_TIMEOUT * 18)
+            if dut_event['data']['tag'] == 'success':
+                self.log.info("Passpoint Provisioning Success")
+                # Reset WiFi after provisioning success.
+                if state == RESET:
+                    wutils.reset_wifi(self.dut)
+                    time.sleep(DEFAULT_TIMEOUT)
+                # Toggle WiFi after provisioning success.
+                elif state == TOGGLE:
+                    wutils.toggle_wifi_off_and_on(self.dut)
+                    time.sleep(DEFAULT_TIMEOUT)
+                break
+            if dut_event['data']['tag'] == 'failure':
+                raise signals.TestFailure(
+                    "Passpoint Provisioning is failed with %s" %
+                    dut_event['data'][
+                        'reason'])
+                break
+            if dut_event['data']['tag'] == 'status':
+                self.log.info(
+                    "Passpoint Provisioning status %s" % dut_event['data'][
+                        'status'])
+                if int(dut_event['data']['status']) == 7:
+                    self.ui.run(self.dut.serial, "passpoint-login")
+        # Clear all previous events.
+        self.dut.ed.clear_all_events()
+
+        # Verify device connects to the Passpoint network.
+        time.sleep(DEFAULT_TIMEOUT)
+        current_passpoint = self.dut.droid.wifiGetConnectionInfo()
+        if current_passpoint[WifiEnums.SSID_KEY] not in osu_config[
+            "expected_ssids"]:
+            raise signals.TestFailure("Device did not connect to the %s"
+                                      " passpoint network" % osu_config[
+                                          "expected_ssids"])
+        # Delete the Passpoint profile.
+        self.get_configured_passpoint_and_delete()
+        wutils.wait_for_disconnect(self.dut)
+
 
     """Tests"""
 
@@ -272,6 +339,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         self.get_configured_passpoint_and_delete()
         wutils.wait_for_disconnect(self.dut)
 
+
     def test_install_att_passpoint_profile(self):
         """Add an AT&T Passpoint profile.
 
@@ -285,6 +353,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
                 break
         if not isFound:
             raise signals.TestFailure("cannot find ATT profile.")
+
 
     @test_tracker_info(uuid="e3e826d2-7c39-4c37-ab3f-81992d5aa0e8")
     def test_att_passpoint_network(self):
@@ -310,48 +379,17 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         self.get_configured_passpoint_and_delete()
         wutils.wait_for_disconnect(self.dut)
 
+
+    @test_tracker_info(uuid="c85c81b2-7133-4635-8328-9498169ae802")
     def test_start_subscription_provisioning(self):
-        """Start subscription provisioning with a default provider."""
+        self.start_subscription_provisioning(0)
 
-        self.unpack_userparams(('osu_configs',))
-        asserts.assert_true(
-            len(self.osu_configs) > 0,
-            "Need at least one osu config.")
-        osu_config = self.osu_configs[OSU_BOINGO]
-        # Clear all previous events.
-        self.dut.ed.clear_all_events()
-        self.dut.droid.startSubscriptionProvisioning(osu_config)
-        start_time = time.time()
-        while time.time() < start_time + OSU_TEST_TIMEOUT:
-            dut_event = self.dut.ed.pop_event("onProvisioningCallback",
-                                              DEFAULT_TIMEOUT * 18)
-            if dut_event['data']['tag'] == 'success':
-                self.log.info("Passpoint Provisioning Success")
-                break
-            if dut_event['data']['tag'] == 'failure':
-                raise signals.TestFailure(
-                    "Passpoint Provisioning is failed with %s" %
-                    dut_event['data'][
-                        'reason'])
-                break
-            if dut_event['data']['tag'] == 'status':
-                self.log.info(
-                    "Passpoint Provisioning status %s" % dut_event['data'][
-                        'status'])
 
-        # Clear all previous events.
-        self.dut.ed.clear_all_events()
+    @test_tracker_info(uuid="fd09a643-0d4b-45a9-881a-a771f9707ab1")
+    def test_start_subscription_provisioning_and_reset_wifi(self):
+        self.start_subscription_provisioning(RESET)
 
-        # Verify device connects to the Passpoint network.
-        time.sleep(DEFAULT_TIMEOUT)
 
-        current_passpoint = self.dut.droid.wifiGetConnectionInfo()
-        if current_passpoint[WifiEnums.SSID_KEY] not in osu_config[
-            "expected_ssids"]:
-            raise signals.TestFailure("Device did not connect to the %s"
-                                      " passpoint network" % osu_config[
-                                          "expected_ssids"])
-
-        # Delete the Passpoint profile.
-        self.get_configured_passpoint_and_delete()
-        wutils.wait_for_disconnect(self.dut)
+    @test_tracker_info(uuid="f43ea759-673f-4567-aa11-da3bc2cabf08")
+    def test_start_subscription_provisioning_and_toggle_wifi(self):
+        self.start_subscription_provisioning(TOGGLE)
