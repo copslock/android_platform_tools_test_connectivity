@@ -615,7 +615,6 @@ def check_data_stall_detection(ad, wait_time=WAIT_TIME_FOR_DATA_STALL):
             ad.log.debug("Output is %s", out)
             if out:
                 ad.log.info("NetworkMonitor detected - %s", out)
-                ad.log.info("Time taken for Data Stall Detection %d secs", time_var)
                 data_stall_detected = True
                 break
             time.sleep(30)
@@ -6492,7 +6491,8 @@ def bring_up_sl4a(ad, attemps=3):
 def reboot_device(ad, recover_sim_state=True):
     sim_state = is_sim_ready(ad.log, ad)
     ad.reboot()
-    start_qxdm_logger(ad)
+    if ad.qxdm_log:
+        start_qxdm_logger(ad)
     ad.unlock_screen()
     if recover_sim_state:
         if not unlock_sim(ad):
