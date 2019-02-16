@@ -63,11 +63,13 @@ class PcapProperties(object):
 
     Attributes:
         proc: Process object of tcpdump
+        pcap_fname: File name of the tcpdump output file
         pcap_file: File object for the tcpdump output file
     """
-    def __init__(self, proc, pcap_file):
+    def __init__(self, proc, pcap_fname, pcap_file):
         """Initialize object."""
         self.proc = proc
+        self.pcap_fname = pcap_fname
         self.pcap_file = pcap_file
 
 
@@ -245,7 +247,8 @@ class PacketCapture(object):
             lambda msg: pcap_file.write(msg), binary=True)
         pcap_proc.start()
 
-        self.pcap_properties[band] = PcapProperties(pcap_proc, pcap_file)
+        self.pcap_properties[band] = PcapProperties(pcap_proc, pcap_fname,
+                                                    pcap_file)
         return pcap_proc
 
     def stop_packet_capture(self, proc):
