@@ -7074,6 +7074,51 @@ def get_carrier_config_version(ad):
     return version
 
 
+def install_googleaccountutil_apk(ad, account_util):
+    ad.log.info("Install account_util %s", account_util)
+    ad.ensure_screen_on()
+    ad.adb.install("-r %s" % account_util, timeout=300, ignore_status=True)
+    time.sleep(3)
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.info("com.google.android.tradefed.account is not installed")
+        return False
+    return True
+
+
+def add_google_account(ad, retries=3):
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.error("GoogleAccountUtil is not installed")
+        return False
+    for _ in range(retries):
+        ad.ensure_screen_on()
+        output = ad.adb.shell(
+            'am instrument -w -e account "%s@gmail.com" -e password '
+            '"%s" -e sync true -e wait-for-checkin false '
+            'com.google.android.tradefed.account/.AddAccount' %
+            (ad.user_account, ad.user_password))
+        if "result=SUCCESS" in output:
+            ad.log.info("Google account is added successfully")
+            return True
+    ad.log.error("Failed to add google account - %s", output)
+    return False
+
+
+def remove_google_account(ad, retries=3):
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.error("GoogleAccountUtil is not installed")
+        return False
+    for _ in range(retries):
+        ad.ensure_screen_on()
+        output = ad.adb.shell(
+            'am instrument -w '
+            'com.google.android.tradefed.account/.RemoveAccounts')
+        if "result=SUCCESS" in output:
+            ad.log.info("google account is removed successfully")
+            return True
+    ad.log.error("Fail to remove google account due to %s", output)
+    return False
+
+
 def bring_up_connectivity_monitor(ad):
     monitor_apk = None
     for apk in ("com.google.telephonymonitor",
