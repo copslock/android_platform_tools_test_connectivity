@@ -199,6 +199,7 @@ class TelephonyBaseTest(BaseTestClass):
             raise signals.TestAbortClass("unable to load the SIM")
 
     def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
+        ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
         if self.user_params.get("enable_connectivity_metrics", True):
             enable_connectivity_metrics(ad)
         if self.user_params.get("build_id_override", False):
@@ -219,7 +220,6 @@ class TelephonyBaseTest(BaseTestClass):
                 reboot_device(ad)
 
         stop_qxdm_logger(ad)
-        ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
         if ad.qxdm_log:
             qxdm_log_mask = getattr(ad, "qxdm_log_mask", None)
             if qxdm_log_mask_cfg:

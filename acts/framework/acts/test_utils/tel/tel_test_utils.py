@@ -615,7 +615,6 @@ def check_data_stall_detection(ad, wait_time=WAIT_TIME_FOR_DATA_STALL):
             ad.log.debug("Output is %s", out)
             if out:
                 ad.log.info("NetworkMonitor detected - %s", out)
-                ad.log.info("Time taken for Data Stall Detection %d secs", time_var)
                 data_stall_detected = True
                 break
             time.sleep(30)
@@ -6493,7 +6492,8 @@ def bring_up_sl4a(ad, attemps=3):
 def reboot_device(ad, recover_sim_state=True):
     sim_state = is_sim_ready(ad.log, ad)
     ad.reboot()
-    start_qxdm_logger(ad)
+    if ad.qxdm_log:
+        start_qxdm_logger(ad)
     ad.unlock_screen()
     if recover_sim_state:
         if not unlock_sim(ad):
@@ -7073,6 +7073,51 @@ def get_carrier_config_version(ad):
         version = "0"
     ad.log.debug("Carrier Config Version is %s", version)
     return version
+
+
+def install_googleaccountutil_apk(ad, account_util):
+    ad.log.info("Install account_util %s", account_util)
+    ad.ensure_screen_on()
+    ad.adb.install("-r %s" % account_util, timeout=300, ignore_status=True)
+    time.sleep(3)
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.info("com.google.android.tradefed.account is not installed")
+        return False
+    return True
+
+
+def add_google_account(ad, retries=3):
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.error("GoogleAccountUtil is not installed")
+        return False
+    for _ in range(retries):
+        ad.ensure_screen_on()
+        output = ad.adb.shell(
+            'am instrument -w -e account "%s@gmail.com" -e password '
+            '"%s" -e sync true -e wait-for-checkin false '
+            'com.google.android.tradefed.account/.AddAccount' %
+            (ad.user_account, ad.user_password))
+        if "result=SUCCESS" in output:
+            ad.log.info("Google account is added successfully")
+            return True
+    ad.log.error("Failed to add google account - %s", output)
+    return False
+
+
+def remove_google_account(ad, retries=3):
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.error("GoogleAccountUtil is not installed")
+        return False
+    for _ in range(retries):
+        ad.ensure_screen_on()
+        output = ad.adb.shell(
+            'am instrument -w '
+            'com.google.android.tradefed.account/.RemoveAccounts')
+        if "result=SUCCESS" in output:
+            ad.log.info("google account is removed successfully")
+            return True
+    ad.log.error("Fail to remove google account due to %s", output)
+    return False
 
 
 def bring_up_connectivity_monitor(ad):

@@ -41,7 +41,7 @@ DEFAULT_TIMEOUT = 10
 # change.
 SHORT_TIMEOUT = 30
 ROAMING_TIMEOUT = 30
-
+WIFI_CONNECTION_TIMEOUT_DEFAULT = 30
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
 
@@ -1801,6 +1801,28 @@ def verify_wifi_connection_info(ad, expected_con):
                                                           actual_v)
         if actual_v != expected_v:
             raise signals.TestFailure(msg)
+
+
+def check_autoconnect_to_open_network(ad, conn_timeout=WIFI_CONNECTION_TIMEOUT_DEFAULT):
+    """Connects to any open WiFI AP
+     Args:
+         timeout value in sec to wait for UE to connect to a WiFi AP
+     Returns:
+         True if UE connects to WiFi AP (supplicant_state = completed)
+         False if UE fails to complete connection within WIFI_CONNECTION_TIMEOUT time.
+    """
+    if ad.droid.wifiCheckState():
+        return True
+    ad.droid.wifiToggleState()
+    wifi_connection_state = None
+    timeout = time.time() + conn_timeout
+    while wifi_connection_state != "completed":
+        wifi_connection_state = ad.droid.wifiGetConnectionInfo()[
+            'supplicant_state']
+        if time.time() > timeout:
+            ad.log.warning("Failed to connect to WiFi AP")
+            return False
+    return True
 
 
 def expand_enterprise_config_by_phase2(config):
