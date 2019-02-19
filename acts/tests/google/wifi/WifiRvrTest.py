@@ -41,11 +41,10 @@ class WifiRvrTest(base_test.BaseTestClass):
     example_connectivity_performance_ap_sta.json.
     """
 
-    TEST_TIMEOUT = 10
+    TEST_TIMEOUT = 5
     SHORT_SLEEP = 1
-    MED_SLEEP = 5
     RSSI_POLL_INTERVAL = 1
-    MAX_CONSECUTIVE_ZEROS = 5
+    MAX_CONSECUTIVE_ZEROS = 3
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
@@ -396,7 +395,6 @@ class WifiRvrTest(base_test.BaseTestClass):
             check_connectivity=False)
         self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
             'wlan0')[0]
-        time.sleep(self.MED_SLEEP)
 
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
