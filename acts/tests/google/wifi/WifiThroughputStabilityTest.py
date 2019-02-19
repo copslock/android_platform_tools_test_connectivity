@@ -258,8 +258,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         try:
             iperf_result = ipf.IPerfResult(iperf_file)
         except:
-            self.log.warning("ValueError: Cannot get iperf result.")
-            iperf_result = None
+            asserts.fail("Cannot get iperf result.")
         test_result["ap_settings"] = self.access_point.ap_settings.copy()
         test_result["attenuation"] = self.atten_level
         test_result["iperf_result"] = iperf_result
