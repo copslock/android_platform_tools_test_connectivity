@@ -6688,6 +6688,9 @@ def build_id_override(ad, new_build_id=None, postfix=None):
     else:
         build_id = None
     existing_build_id = ad.adb.getprop("ro.build.id")
+    if postfix in build_id:
+        ad.log.info("Build id already contains %s", postfix)
+        return
     if not new_build_id:
         if postfix and build_id:
             new_build_id = "%s.%s" % (build_id, postfix)
