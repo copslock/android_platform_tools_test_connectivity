@@ -100,10 +100,10 @@ class TestResultRecord(object):
             self.result = TestResultEnums.TEST_RESULT_UNKNOWN
         if hasattr(e, 'details'):
             self.details = e.details
-        if hasattr(e, 'extras'):
-            self.extras = e.extras
         elif e:
             self.details = str(e)
+        if hasattr(e, 'extras'):
+            self.extras = e.extras
 
     def test_pass(self, e=None):
         """To mark the test as passed in this record.
