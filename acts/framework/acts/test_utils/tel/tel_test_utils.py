@@ -7085,6 +7085,18 @@ def install_googleaccountutil_apk(ad, account_util):
     return True
 
 
+def install_googlefi_apk(ad, fi_util):
+    ad.log.info("Install fi_util %s", fi_util)
+    ad.ensure_screen_on()
+    ad.adb.install("-r -g --user 0 %s" % fi_util,
+                   timeout=300, ignore_status=True)
+    time.sleep(3)
+    if not ad.is_apk_installed("com.google.android.apps.tycho"):
+        ad.log.info("com.google.android.apps.tycho is not installed")
+        return False
+    return True
+
+
 def add_google_account(ad, retries=3):
     if not ad.is_apk_installed("com.google.android.tradefed.account"):
         ad.log.error("GoogleAccountUtil is not installed")
