@@ -620,26 +620,21 @@ class WifiRssiTest(base_test.BaseTestClass):
             waveform_vector = []
             for section in range(len(waveform["atten_levels"]) - 1):
                 section_limits = waveform["atten_levels"][section:section + 2]
-                if section_limits[0] < section_limits[1]:
-                    waveform_vector = waveform_vector + sorted(
-                        list(
-                            range(section_limits[0], section_limits[1],
-                                  waveform["step_size"])) *
-                        waveform["step_duration"])
-                else:
-                    waveform_vector = waveform_vector + list(
-                        reversed(
-                            sorted(
-                                list(
-                                    range(section_limits[1], section_limits[0],
-                                          waveform["step_size"])) *
-                                waveform["step_duration"])))
+                up_down = (1 - 2 * (section_limits[1] < section_limits[0]))
+                temp_section = list(
+                    range(section_limits[0], section_limits[1] + up_down,
+                          up_down * waveform["step_size"]))
+                temp_section = [
+                    temp_section[idx] for idx in range(len(temp_section))
+                    for n in range(waveform["step_duration"])
+                ]
+                waveform_vector += temp_section
             waveform_vector = waveform_vector * waveform["repetitions"]
             self.rssi_atten_range = self.rssi_atten_range + waveform_vector
         connected_measurements = int(1 / self.test_params["polling_frequency"])
         self.iperf_timeout = self.get_iperf_timeout(
             self.rssi_atten_range, connected_measurements,
-            self.test_params["polling_frequency"], MED_SLEEP, 0)
+            self.test_params["polling_frequency"], 0, 0)
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
             self.iperf_args = '-i 1 -t {} -J'.format(self.iperf_timeout)
         else:
