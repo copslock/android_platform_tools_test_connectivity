@@ -202,7 +202,7 @@ class WifiStressTest(WifiBaseTest):
             time.sleep(self.pno_interval)
         else:
             # force start a single scan so we don't have to wait for the scheduled scan.
-            wutils.start_wifi_connection_scan(self.dut)
+            wutils.start_wifi_connection_scan_and_return_status(self.dut)
             self.log.info("Wait 20s for network selection.")
             time.sleep(20)
         try:
