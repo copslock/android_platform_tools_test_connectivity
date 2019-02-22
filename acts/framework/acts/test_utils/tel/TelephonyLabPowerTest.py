@@ -37,7 +37,7 @@ from acts.utils import disable_doze
 from acts.utils import set_adaptive_brightness
 from acts.utils import set_ambient_display
 from acts.utils import set_auto_rotate
-from acts.utils import set_location_service
+from acts.test_utils.android_test_utils import set_location_service
 
 DEFAULT_CALL_NUMBER = "+11234567891"
 
