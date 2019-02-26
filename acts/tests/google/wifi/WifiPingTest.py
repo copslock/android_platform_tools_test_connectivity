@@ -106,6 +106,23 @@ class WifiPingTest(base_test.BaseTestClass):
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, True)
 
+    def teardown_class(self):
+        # Turn WiFi OFF
+        for dev in self.android_devices:
+            wutils.wifi_toggle_state(dev, False)
+        self.process_testclass_results()
+
+    def process_testclass_results(self):
+        """Saves all test results to enable comparison."""
+        testclass_summary = {}
+        for test in self.testclass_results:
+            if "range" in test["test_name"]:
+                testclass_summary[test["test_name"]] = test["range"]
+        # Save results
+        results_file_path = "{}/testclass_summary.json".format(self.log_path)
+        with open(results_file_path, 'w') as results_file:
+            json.dump(testclass_summary, results_file, indent=4)
+
     def pass_fail_check_ping_rtt(self, ping_range_result):
         """Check the test result and decide if it passed or failed.
 
@@ -444,6 +461,7 @@ class WifiPingTest(base_test.BaseTestClass):
         self.setup_ping_test(testcase_params)
         ping_result = self.run_ping_test(testcase_params)
         # Postprocess results
+        self.testclass_results.append(ping_result)
         self.process_ping_results(testcase_params, ping_result)
         self.pass_fail_check_ping_range(ping_result)
 
