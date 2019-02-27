@@ -1345,6 +1345,7 @@ def setup_multiple_devices_for_bt_test(android_devices):
                 a.log.error("Failed to set device name.")
                 return setup_result
             d.bluetoothDisableBLE()
+            utils.set_location_service(a, True)
             bonded_devices = d.bluetoothGetBondedDevices()
             for b in bonded_devices:
                 a.log.info("Removing bond for device {}".format(b['address']))
