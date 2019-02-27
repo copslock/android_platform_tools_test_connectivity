@@ -169,11 +169,14 @@ class BluetoothPairAndConnectTest(BaseTestClass):
         if pair_connect_failures:
             metrics['pair_conn_failure_info'] = pair_connect_failures
 
-        self.bt_logger.get_results(metrics, self.__class__.__name__, self.phone)
+        proto = self.bt_logger.get_results(metrics,
+                                           self.__class__.__name__,
+                                           self.phone)
+
         self.log.info('Metrics: {}'.format(metrics))
 
         if PAIR_CONNECT_ATTEMPTS != pair_connect_success:
-            raise TestFailure(str(first_connection_failure), extras=metrics)
+            raise TestFailure(str(first_connection_failure), extras=proto)
         else:
             raise TestPass('Bluetooth pair and connect test passed',
-                           extras=metrics)
+                           extras=proto)
