@@ -614,6 +614,57 @@ def force_airplane_mode(ad, new_state, timeout_value=60):
     return True
 
 
+def get_device_usb_charging_status(ad):
+    """ Returns the usb charging status of the device.
+
+    Args:
+        ad: android device object
+
+    Returns:
+        True if charging
+        False if not charging
+     """
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get charging")
+    ad.log.info("Device Charging State: {}".format(adb_shell_result))
+    return adb_shell_result == 'true'
+
+
+def disable_usb_charging(ad):
+    """ Unplug device from usb charging.
+
+    Args:
+        ad: android device object
+
+    Returns:
+        True if device is unplugged
+        False otherwise
+    """
+    ad.adb.shell("dumpsys battery unplug")
+    if not get_device_usb_charging_status(ad):
+        return True
+    else:
+        ad.log.info("Could not disable USB charging")
+        return False
+
+
+def enable_usb_charging(ad):
+    """ Plug device to usb charging.
+
+    Args:
+        ad: android device object
+
+    Returns:
+        True if device is Plugged
+        False otherwise
+    """
+    ad.adb.shell("dumpsys battery reset")
+    if get_device_usb_charging_status(ad):
+        return True
+    else:
+        ad.log.info("Could not enable USB charging")
+        return False
+
+
 def enable_doze(ad):
     """Force the device into doze mode.
 
