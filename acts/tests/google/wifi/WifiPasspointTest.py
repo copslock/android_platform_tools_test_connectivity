@@ -72,7 +72,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         wutils.wifi_toggle_state(self.dut, True)
         self.unknown_fqdn = UNKNOWN_FQDN
         # Setup NUWA cli object for UI interation.
-        self.ui = NuwaCli(self.nuwa_zip, self.nuwa_workflows)
+        self.ui = NuwaCli(self.nuwa_zip[0], self.nuwa_workflows)
 
 
     def setup_test(self):
