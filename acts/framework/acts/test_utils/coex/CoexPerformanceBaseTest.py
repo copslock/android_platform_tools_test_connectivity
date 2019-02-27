@@ -18,6 +18,7 @@ import json
 import os
 import time
 from collections import defaultdict
+from collections import OrderedDict
 from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
 from acts.test_utils.coex.coex_test_utils import bokeh_chart_plot
@@ -100,6 +101,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             self.log.debug(
                 "Setting attenuation to zero : Current atten {} : {}".format(
                     self.attenuators[i], current_atten))
+        self.a2dp_streaming = False
         if not disable_bluetooth(self.pri_ad.droid):
             self.log.info("Failed to disable bluetooth")
             return False
@@ -122,6 +124,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         self.attenuators[self.num_atten - 1].set_atten(0)
         self.rvr["bt_attenuation"] = []
         self.rvr["test_name"] = self.current_test_name
+        self.rvr["bt_gap_analysis"] = {}
+        self.rvr["bt_range"] = {}
         for bt_atten in self.bt_atten_range:
             self.rvr[bt_atten] = {}
             self.rvr[bt_atten]["fixed_attenuation"] = (
@@ -157,6 +161,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         self.rvr["bt_attenuation"].append(bt_atten)
         self.rvr[bt_atten]["audio_artifacts"] = {}
         self.rvr[bt_atten]["attenuation"] = []
+        self.rvr["bt_gap_analysis"][bt_atten] = {}
+        self.rvr["bt_range"][bt_atten] = []
         for atten in self.wifi_atten_range:
             self.rvr[bt_atten]["attenuation"].append(
                 atten + self.rvr[bt_atten]["fixed_attenuation"])
@@ -176,6 +182,15 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                 analysis_path = self.audio.audio_quality_analysis(self.log_path)
                 with open(analysis_path) as f:
                     self.rvr[bt_atten]["audio_artifacts"][atten] = f.readline()
+                content = json.loads(self.rvr[bt_atten]["audio_artifacts"][atten])
+                self.rvr["bt_gap_analysis"][bt_atten][atten] = {}
+                for idx, data in enumerate(content["quality_result"]):
+                    if data['artifacts']['delay_during_playback']:
+                        self.rvr["bt_gap_analysis"][bt_atten][atten][idx] = (
+                                data['artifacts']['delay_during_playback'])
+                        self.rvr["bt_range"][bt_atten].append(atten)
+                    else:
+                        self.rvr["bt_gap_analysis"][bt_atten][atten][idx] = 0
                 file_path = collect_bluetooth_manager_dumpsys_logs(
                     self.pri_ad, self.current_test_name)
                 self.a2dp_dropped_list.append(
@@ -196,7 +211,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         """
         if self.rvr:
             with open(self.json_file, 'a') as results_file:
-                json.dump(self.rvr, results_file, indent=4)
+                json.dump(OrderedDict(sorted(self.rvr.items(), key=str)),
+                          results_file, indent=4)
             self.plot_graph_for_attenuation()
             self.throughput_pass_fail_check()
         else:
