@@ -689,6 +689,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             sub_id = get_subid_from_slot_index(self.log, self.dut, slot_id)
             self.dut.log.info("Data - slot_Id %d", slot_id)
             set_subid_for_data(self.dut, sub_id)
+            self.dut.droid.telephonyToggleDataConnection(True)
         start_qxdm_loggers(self.log, self.android_devices)
         self.dut.log.info(dict(self.result_info))
         selection = random.randrange(0, len(file_names))

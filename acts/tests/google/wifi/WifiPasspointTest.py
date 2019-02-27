@@ -61,7 +61,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["passpoint_networks", "nuwa_workflows"]
+        req_params = ["passpoint_networks", "nuwa_workflows", "nuwa_zip"]
         opt_param = []
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
