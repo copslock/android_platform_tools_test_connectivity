@@ -119,10 +119,12 @@ class BluetoothThroughputTest(BaseTestClass):
             throughput_list.append(throughput)
 
         metrics["data_throughput_buffer_size_bytes"] = 300
-        metrics["data_throughput_min_bytes_per_second"] = min(throughput_list)
-        metrics["data_throughput_max_bytes_per_second"] = max(throughput_list)
-        metrics["data_throughput_avg_bytes_per_second"] = statistics.mean(
-            throughput_list)
+        metrics["data_throughput_min_bytes_per_second"] = int(
+            min(throughput_list))
+        metrics["data_throughput_max_bytes_per_second"] = int(
+            max(throughput_list))
+        metrics["data_throughput_avg_bytes_per_second"] = int(statistics.mean(
+            throughput_list))
 
         self.bt_logger.get_results(metrics, self.__class__.__name__,
                                    self.server_device, self.client_device)
@@ -148,10 +150,12 @@ class BluetoothThroughputTest(BaseTestClass):
             throughput_list.append(throughput)
 
         metrics["data_throughput_buffer_size_bytes"] = 100
-        metrics["data_throughput_min_bytes_per_second"] = min(throughput_list)
-        metrics["data_throughput_max_bytes_per_second"] = max(throughput_list)
-        metrics["data_throughput_avg_bytes_per_second"] = statistics.mean(
-            throughput_list)
+        metrics["data_throughput_min_bytes_per_second"] = int(
+            min(throughput_list))
+        metrics["data_throughput_max_bytes_per_second"] = int(
+            max(throughput_list))
+        metrics["data_throughput_avg_bytes_per_second"] = int(statistics.mean(
+            throughput_list))
 
         self.bt_logger.get_results(metrics, self.__class__.__name__,
                                    self.server_device, self.client_device)
@@ -177,10 +181,12 @@ class BluetoothThroughputTest(BaseTestClass):
             throughput_list.append(throughput)
 
         metrics["data_throughput_buffer_size_bytes"] = 10
-        metrics["data_throughput_min_bytes_per_second"] = min(throughput_list)
-        metrics["data_throughput_max_bytes_per_second"] = max(throughput_list)
-        metrics["data_throughput_avg_bytes_per_second"] = statistics.mean(
-            throughput_list)
+        metrics["data_throughput_min_bytes_per_second"] = int(
+            min(throughput_list))
+        metrics["data_throughput_max_bytes_per_second"] = int(
+            max(throughput_list))
+        metrics["data_throughput_avg_bytes_per_second"] = int(statistics.mean(
+            throughput_list))
 
         self.bt_logger.get_results(metrics, self.__class__.__name__,
                                    self.server_device, self.client_device)

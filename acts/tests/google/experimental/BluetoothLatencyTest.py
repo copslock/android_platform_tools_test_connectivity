@@ -117,9 +117,9 @@ class BluetoothLatencyTest(BaseTestClass):
         for _ in range(300):
             latency_list.append(self._measure_latency())
 
-        metrics["data_latency_min_millis"] = min(latency_list)
-        metrics["data_latency_max_millis"] = max(latency_list)
-        metrics["data_latency_avg_millis"] = statistics.mean(latency_list)
+        metrics["data_latency_min_millis"] = int(min(latency_list))
+        metrics["data_latency_max_millis"] = int(max(latency_list))
+        metrics["data_latency_avg_millis"] = int(statistics.mean(latency_list))
         self.log.info("Latency: {}".format(metrics))
 
         self.bt_logger.get_results(metrics, self.__class__.__name__,

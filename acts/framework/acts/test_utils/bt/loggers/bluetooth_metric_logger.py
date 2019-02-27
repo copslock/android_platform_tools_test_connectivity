@@ -15,6 +15,7 @@
 # the License.
 
 import os
+import time
 
 from acts.metrics.core import ProtoMetric
 from acts.metrics.logger import MetricLogger
@@ -37,6 +38,7 @@ class BluetoothMetricLogger(MetricLogger):
         super().__init__(event=event)
         self.proto_module = self._compile_proto(PROTO_PATH)
         self.results = []
+        self.start_time = int(time.time())
 
         self.proto_map = {'BluetoothPairAndConnectTest': self.proto_module
                               .BluetoothPairAndConnectTestResult(),
@@ -90,6 +92,8 @@ class BluetoothMetricLogger(MetricLogger):
         result = self.proto_map[test]
         pri_device_proto = result.configuration_data.primary_device
         conn_device_proto = result.configuration_data.connected_device
+
+        result.configuration_data.test_date_time = self.start_time
 
         for metric in dir(result):
             if metric in results:

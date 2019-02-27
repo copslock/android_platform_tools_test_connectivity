@@ -153,11 +153,11 @@ class BluetoothReconnectTest(BaseTestClass):
         metrics['connection_attempt_count'] = RECONNECTION_ATTEMPTS
         metrics['connection_successful_count'] = connection_success
         metrics['connection_failed_count'] = (RECONNECTION_ATTEMPTS
-                                        - connection_success)
+                                              - connection_success)
         if len(connection_times) > 0:
-            metrics['connection_max_time_millis'] = max(connection_times)
-            metrics['connection_min_time_millis'] = min(connection_times)
-            metrics['connection_avg_time_millis'] = (statistics.mean(
+            metrics['connection_max_time_millis'] = int(max(connection_times))
+            metrics['connection_min_time_millis'] = int(min(connection_times))
+            metrics['connection_avg_time_millis'] = int(statistics.mean(
                 connection_times))
 
         if reconnection_failures:

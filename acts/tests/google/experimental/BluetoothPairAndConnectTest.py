@@ -155,15 +155,16 @@ class BluetoothPairAndConnectTest(BaseTestClass):
                                         pair_connect_success)
 
         if len(pair_times) > 0:
-            metrics['pair_max_time_millis'] = max(pair_times)
-            metrics['pair_min_time_millis'] = min(pair_times)
-            metrics['pair_avg_time_millis'] = statistics.mean(pair_times)
+            metrics['pair_max_time_millis'] = int(max(pair_times))
+            metrics['pair_min_time_millis'] = int(min(pair_times))
+            metrics['pair_avg_time_millis'] = int(statistics.mean(pair_times))
 
         if len(connect_times) > 0:
-            metrics['first_connection_max_time_millis'] = max(connect_times)
-            metrics['first_connnection_min_time_millis'] = min(connect_times)
-            metrics['first_connection_avg_time_millis'] = (statistics
-                                                           .mean(connect_times))
+            metrics['first_connection_max_time_millis'] = int(max(connect_times))
+            metrics['first_connnection_min_time_millis'] = int(
+                min(connect_times))
+            metrics['first_connection_avg_time_millis'] = int(
+                (statistics.mean(connect_times)))
 
         if pair_connect_failures:
             metrics['pair_conn_failure_info'] = pair_connect_failures
