@@ -61,7 +61,7 @@ class SshAudioCapture(AudioCapture):
                         self.audio_params["user_name"],
                         self.audio_params["ip_address"],
                         self.remote_path))
-            return bool(job_result.stdout)
+            return bool(not job_result.exit_status)
         else:
             return self.capture_and_store_audio(trim_beginning, trim_end)
 
