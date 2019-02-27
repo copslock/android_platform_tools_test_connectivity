@@ -163,10 +163,13 @@ class BluetoothReconnectTest(BaseTestClass):
         if reconnection_failures:
             metrics['connection_failure_info'] = reconnection_failures
 
-        self.bt_logger.get_results(metrics, self.__class__.__name__, self.phone)
+        proto = self.bt_logger.get_results(metrics,
+                                           self.__class__.__name__,
+                                           self.phone)
+
         self.log.info('Metrics: {}'.format(metrics))
 
         if RECONNECTION_ATTEMPTS != connection_success:
-            raise TestFailure(str(first_connection_failure), extras=metrics)
+            raise TestFailure(str(first_connection_failure), extras=proto)
         else:
-            raise TestPass('Bluetooth reconnect test passed', extras=metrics)
+            raise TestPass('Bluetooth reconnect test passed', extras=proto)
