@@ -44,6 +44,28 @@ class WlanScanTest(WifiBaseTest):
     def setup_class(self):
       self.dut = self.fuchsia_devices[0]
 
+    def teardown_test(self):
+      self.dut.wlan_lib.wlanDisconnect()
+
+    """Helper Functions"""
+
+    def check_connect_response(self, connection_response):
+      if connection_response.get("error") is None:
+        # the command did not get an error response - go ahead and check the
+        # result
+        connection_result = connection_response.get("result")
+        if connection_result:
+          self.log.info("connection to network successful")
+        else:
+          # ideally, we would have the actual error...  but logging here to
+          # cover that error case
+          raise signals.TestFailure("Connect call failed, aborting test")
+      else:
+        # the response indicates an error - log and raise failure
+        raise signals.TestFailure("Aborting test - Connect call failed with error: %s"
+                                  %connection_response.get("error"))
+
+
     """Tests"""
     def test_basic_scan_request(self):
       """Verify a general scan trigger returns at least one result"""
@@ -63,4 +85,29 @@ class WlanScanTest(WifiBaseTest):
           raise signals.TestPass(details="", extras={"Scan time":"%d" %total_time_ms})
       else:
           raise signals.TestFailure("Scan failed or did not find any networks")
+
+    def test_scan_while_connected_open_network(self):
+      """Verify a general scan trigger returns at least one result when wifi is connected"""
+
+      "first check if we can read params"
+      target_ssid = self.user_params.get("wlan_open_network_ssid").get("SSID")
+      self.log.info("got the ssid! %s", target_ssid)
+
+      connection_response = self.dut.wlan_lib.wlanConnectToNetwork(target_ssid)
+      self.check_connect_response(connection_response)
+
+      self.test_basic_scan_request()
+
+    def test_scan_while_connected_wpa2_network(self):
+      """Verify a general scan trigger returns at least one result when wifi is connected"""
+
+      "first check if we can read params"
+      target_ssid = self.user_params.get("wlan_wpa2_network_ssid").get("SSID")
+      target_pwd = self.user_params.get("wlan_wpa2_network_pwd").get("password")
+      self.log.info("got the ssid! %s", target_ssid)
+
+      connection_response = self.dut.wlan_lib.wlanConnectToNetwork(target_ssid, target_pwd)
+      self.check_connect_response(connection_response)
+
+      self.test_basic_scan_request()
 
