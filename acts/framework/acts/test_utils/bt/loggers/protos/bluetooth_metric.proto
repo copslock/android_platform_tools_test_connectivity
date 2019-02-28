@@ -14,8 +14,9 @@ message BluetoothTestDevice {
 }
 
 message BluetoothContinuousTestResultHeader {
-  optional BluetoothTestDevice primary_device = 1;
-  optional BluetoothTestDevice connected_device = 2;
+  optional int64 test_date_time = 1;
+  optional BluetoothTestDevice primary_device = 2;
+  optional BluetoothTestDevice connected_device = 3;
 }
 
 message BluetoothReconnectTestResult {
@@ -23,12 +24,12 @@ message BluetoothReconnectTestResult {
   optional int32 connection_attempt_count = 2;
   optional int32 connection_successful_count = 3;
   optional int32 connection_failed_count = 4;
-  optional float connection_max_time_millis = 5;
-  optional float connection_min_time_millis = 6;
-  optional float connection_avg_time_millis = 7;
-  optional float acl_connection_max_time_millis = 8;
-  optional float acl_connection_min_time_millis = 9;
-  optional float acl_connection_avg_time_millis = 10;
+  optional int32 connection_max_time_millis = 5;
+  optional int32 connection_min_time_millis = 6;
+  optional int32 connection_avg_time_millis = 7;
+  optional int32 acl_connection_max_time_millis = 8;
+  optional int32 acl_connection_min_time_millis = 9;
+  optional int32 acl_connection_avg_time_millis = 10;
 }
 
 message BluetoothPairAndConnectTestResult {
@@ -36,12 +37,12 @@ message BluetoothPairAndConnectTestResult {
   optional int32 pair_attempt_count = 2;
   optional int32 pair_successful_count = 3;
   optional int32 pair_failed_count = 4;
-  optional float pair_max_time_millis = 5;
-  optional float pair_min_time_millis = 6;
-  optional float pair_avg_time_millis = 7;
-  optional float first_connection_max_time_millis = 8;
-  optional float first_connection_min_time_millis = 9;
-  optional float first_connection_avg_time_millis = 10;
+  optional int32 pair_max_time_millis = 5;
+  optional int32 pair_min_time_millis = 6;
+  optional int32 pair_avg_time_millis = 7;
+  optional int32 first_connection_max_time_millis = 8;
+  optional int32 first_connection_min_time_millis = 9;
+  optional int32 first_connection_avg_time_millis = 10;
 }
 
 message BluetoothAudioTestResult {
@@ -52,9 +53,9 @@ message BluetoothAudioTestResult {
     HAP = 2;
   }
   optional AudioProfile audio_profile = 2;
-  optional float audio_latency_min_millis = 3;
-  optional float audio_latency_max_millis = 4;
-  optional float audio_latency_avg_millis = 5;
+  optional int32 audio_latency_min_millis = 3;
+  optional int32 audio_latency_max_millis = 4;
+  optional int32 audio_latency_avg_millis = 5;
   optional int32 audio_glitches_count = 6;
   optional int32 audio_missed_packets_count = 7;
 }
@@ -67,11 +68,11 @@ message BluetoothDataTestResult {
     LE_COC = 2;
   }
   optional DataTransferProtocol data_transfer_protocol = 2;
-  optional float data_latency_min_millis = 3;
-  optional float data_latency_max_millis = 4;
-  optional float data_latency_avg_millis = 5;
-  optional float data_throughput_min_bytes_per_second = 6;
-  optional float data_throughput_max_bytes_per_second = 7;
-  optional float data_throughput_avg_bytes_per_second = 8;
+  optional int32 data_latency_min_millis = 3;
+  optional int32 data_latency_max_millis = 4;
+  optional int32 data_latency_avg_millis = 5;
+  optional int32 data_throughput_min_bytes_per_second = 6;
+  optional int32 data_throughput_max_bytes_per_second = 7;
+  optional int32 data_throughput_avg_bytes_per_second = 8;
   optional int32 data_packet_size = 9;
 }

@@ -69,15 +69,15 @@ class BluetoothThroughputTest(BaseTestClass):
         set_location_service(self.client_device, True)
         set_location_service(self.server_device, True)
         server_address = self.server_device.droid.bluetoothGetLocalAddress()
-        self.log.info("Pairing and connecting devices")
+        self.log.info('Pairing and connecting devices')
         asserts.assert_true(self.client_device.droid
                             .bluetoothDiscoverAndBond(server_address),
-                            "Failed to pair and connect devices")
+                            'Failed to pair and connect devices')
 
         # Create RFCOMM connection
         asserts.assert_true(orchestrate_rfcomm_connection
                             (self.client_device, self.server_device),
-                            "Failed to establish RFCOMM connection")
+                            'Failed to establish RFCOMM connection')
 
     def _measure_throughput(self, num_of_buffers, buffer_size):
         """Measures the throughput of a data transfer.
@@ -113,25 +113,32 @@ class BluetoothThroughputTest(BaseTestClass):
         metrics = {}
         throughput_list = []
 
-        for transfer in range(300):
+        for transfer in range(3):
             throughput = self._measure_throughput(1, 300)
-            self.log.info("Throughput: {} bytes-per-sec".format(throughput))
+            self.log.info('Throughput: {} bytes-per-sec'.format(throughput))
             throughput_list.append(throughput)
 
-        metrics["data_throughput_buffer_size_bytes"] = 300
-        metrics["data_throughput_min_bytes_per_second"] = min(throughput_list)
-        metrics["data_throughput_max_bytes_per_second"] = max(throughput_list)
-        metrics["data_throughput_avg_bytes_per_second"] = statistics.mean(
-            throughput_list)
+        metrics['data_throughput_buffer_size_bytes'] = 300
+        metrics['data_throughput_min_bytes_per_second'] = int(
+            min(throughput_list))
+        metrics['data_throughput_max_bytes_per_second'] = int(
+            max(throughput_list))
+        metrics['data_throughput_avg_bytes_per_second'] = int(statistics.mean(
+            throughput_list))
 
         self.bt_logger.get_results(metrics, self.__class__.__name__,
                                    self.server_device, self.client_device)
 
-        asserts.assert_true(metrics["data_throughput_min_bytes_per_second"] > 0,
-                            "Minimum throughput must be greater than 0!",
-                            extras=metrics)
-        raise TestPass("Throughput test (large buffer) completed successfully",
-                       extras=metrics)
+        proto = self.bt_logger.get_results(metrics,
+                                           self.__class__.__name__,
+                                           self.server_device,
+                                           self.client_device)
+
+        asserts.assert_true(metrics['data_throughput_min_bytes_per_second'] > 0,
+                            'Minimum throughput must be greater than 0!',
+                            extras=proto)
+        raise TestPass('Throughput test (large buffer) completed successfully',
+                       extras=proto)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_bluetooth_throughput_medium_buffer(self):
@@ -142,25 +149,29 @@ class BluetoothThroughputTest(BaseTestClass):
         metrics = {}
         throughput_list = []
 
-        for transfer in range(300):
+        for transfer in range(3):
             throughput = self._measure_throughput(1, 100)
-            self.log.info("Throughput: {} bytes-per-sec".format(throughput))
+            self.log.info('Throughput: {} bytes-per-sec'.format(throughput))
             throughput_list.append(throughput)
 
-        metrics["data_throughput_buffer_size_bytes"] = 100
-        metrics["data_throughput_min_bytes_per_second"] = min(throughput_list)
-        metrics["data_throughput_max_bytes_per_second"] = max(throughput_list)
-        metrics["data_throughput_avg_bytes_per_second"] = statistics.mean(
-            throughput_list)
+        metrics['data_throughput_buffer_size_bytes'] = 100
+        metrics['data_throughput_min_bytes_per_second'] = int(
+            min(throughput_list))
+        metrics['data_throughput_max_bytes_per_second'] = int(
+            max(throughput_list))
+        metrics['data_throughput_avg_bytes_per_second'] = int(statistics.mean(
+            throughput_list))
 
-        self.bt_logger.get_results(metrics, self.__class__.__name__,
-                                   self.server_device, self.client_device)
+        proto = self.bt_logger.get_results(metrics,
+                                           self.__class__.__name__,
+                                           self.server_device,
+                                           self.client_device)
 
-        asserts.assert_true(metrics["data_throughput_min_bytes_per_second"] > 0,
-                            "Minimum throughput must be greater than 0!",
-                            extras=metrics)
-        raise TestPass("Throughput test (medium buffer) completed successfully",
-                       extras=metrics)
+        asserts.assert_true(metrics['data_throughput_min_bytes_per_second'] > 0,
+                            'Minimum throughput must be greater than 0!',
+                            extras=proto)
+        raise TestPass('Throughput test (medium buffer) completed successfully',
+                       extras=proto)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_bluetooth_throughput_small_buffer(self):
@@ -171,25 +182,29 @@ class BluetoothThroughputTest(BaseTestClass):
         metrics = {}
         throughput_list = []
 
-        for transfer in range(300):
+        for transfer in range(3):
             throughput = self._measure_throughput(1, 10)
-            self.log.info("Throughput: {} bytes-per-sec".format(throughput))
+            self.log.info('Throughput: {} bytes-per-sec'.format(throughput))
             throughput_list.append(throughput)
 
-        metrics["data_throughput_buffer_size_bytes"] = 10
-        metrics["data_throughput_min_bytes_per_second"] = min(throughput_list)
-        metrics["data_throughput_max_bytes_per_second"] = max(throughput_list)
-        metrics["data_throughput_avg_bytes_per_second"] = statistics.mean(
-            throughput_list)
+        metrics['data_throughput_buffer_size_bytes'] = 10
+        metrics['data_throughput_min_bytes_per_second'] = int(
+            min(throughput_list))
+        metrics['data_throughput_max_bytes_per_second'] = int(
+            max(throughput_list))
+        metrics['data_throughput_avg_bytes_per_second'] = int(statistics.mean(
+            throughput_list))
 
-        self.bt_logger.get_results(metrics, self.__class__.__name__,
-                                   self.server_device, self.client_device)
+        proto = self.bt_logger.get_results(metrics,
+                                           self.__class__.__name__,
+                                           self.server_device,
+                                           self.client_device)
 
-        asserts.assert_true(metrics["data_throughput_min_bytes_per_second"] > 0,
-                            "Minimum throughput must be greater than 0!",
-                            extras=metrics)
-        raise TestPass("Throughput test (small buffer) completed successfully",
-                       extras=metrics)
+        asserts.assert_true(metrics['data_throughput_min_bytes_per_second'] > 0,
+                            'Minimum throughput must be greater than 0!',
+                            extras=proto)
+        raise TestPass('Throughput test (small buffer) completed successfully',
+                       extras=proto)
 
     @BluetoothBaseTest.bt_test_wrap
     def test_maximum_buffer_size(self):
@@ -197,13 +212,13 @@ class BluetoothThroughputTest(BaseTestClass):
 
         current_buffer_size = 1
         while True:
-            self.log.info("Trying buffer size {}".format(current_buffer_size))
+            self.log.info('Trying buffer size {}'.format(current_buffer_size))
             try:
                 throughput = self._measure_throughput(1, current_buffer_size)
             except Exception:
-                buffer_msg = ("Max buffer size: {} bytes".
+                buffer_msg = ('Max buffer size: {} bytes'.
                               format(current_buffer_size - 1))
-                throughput_msg = ("Max throughput: {} bytes-per-second".
+                throughput_msg = ('Max throughput: {} bytes-per-second'.
                                   format(throughput))
                 self.log.info(buffer_msg)
                 self.log.info(throughput_msg)

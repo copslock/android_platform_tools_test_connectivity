@@ -155,24 +155,28 @@ class BluetoothPairAndConnectTest(BaseTestClass):
                                         pair_connect_success)
 
         if len(pair_times) > 0:
-            metrics['pair_max_time_millis'] = max(pair_times)
-            metrics['pair_min_time_millis'] = min(pair_times)
-            metrics['pair_avg_time_millis'] = statistics.mean(pair_times)
+            metrics['pair_max_time_millis'] = int(max(pair_times))
+            metrics['pair_min_time_millis'] = int(min(pair_times))
+            metrics['pair_avg_time_millis'] = int(statistics.mean(pair_times))
 
         if len(connect_times) > 0:
-            metrics['first_connection_max_time_millis'] = max(connect_times)
-            metrics['first_connnection_min_time_millis'] = min(connect_times)
-            metrics['first_connection_avg_time_millis'] = (statistics
-                                                           .mean(connect_times))
+            metrics['first_connection_max_time_millis'] = int(max(connect_times))
+            metrics['first_connnection_min_time_millis'] = int(
+                min(connect_times))
+            metrics['first_connection_avg_time_millis'] = int(
+                (statistics.mean(connect_times)))
 
         if pair_connect_failures:
             metrics['pair_conn_failure_info'] = pair_connect_failures
 
-        self.bt_logger.get_results(metrics, self.__class__.__name__, self.phone)
+        proto = self.bt_logger.get_results(metrics,
+                                           self.__class__.__name__,
+                                           self.phone)
+
         self.log.info('Metrics: {}'.format(metrics))
 
         if PAIR_CONNECT_ATTEMPTS != pair_connect_success:
-            raise TestFailure(str(first_connection_failure), extras=metrics)
+            raise TestFailure(str(first_connection_failure), extras=proto)
         else:
             raise TestPass('Bluetooth pair and connect test passed',
-                           extras=metrics)
+                           extras=proto)

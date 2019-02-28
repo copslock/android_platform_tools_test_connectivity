@@ -73,15 +73,15 @@ class BluetoothLatencyTest(BaseTestClass):
         set_location_service(self.client_device, True)
         set_location_service(self.server_device, True)
         server_address = self.server_device.droid.bluetoothGetLocalAddress()
-        self.log.info("Pairing and connecting devices")
+        self.log.info('Pairing and connecting devices')
         asserts.assert_true(self.client_device.droid
                             .bluetoothDiscoverAndBond(server_address),
-                            "Failed to pair and connect devices")
+                            'Failed to pair and connect devices')
 
         # Create RFCOMM connection
         asserts.assert_true(orchestrate_rfcomm_connection
                             (self.client_device, self.server_device),
-                            "Failed to establish RFCOMM connection")
+                            'Failed to establish RFCOMM connection')
 
     def _measure_latency(self):
         """Measures the latency of data transfer over RFCOMM.
@@ -104,7 +104,7 @@ class BluetoothLatencyTest(BaseTestClass):
                                                        False)
         end_time = time.perf_counter()
         asserts.assert_true(write_read_successful,
-                            "Failed to send/receive message")
+                            'Failed to send/receive message')
         return (end_time - start_time) * 1000
 
     @BluetoothBaseTest.bt_test_wrap
@@ -117,15 +117,18 @@ class BluetoothLatencyTest(BaseTestClass):
         for _ in range(300):
             latency_list.append(self._measure_latency())
 
-        metrics["data_latency_min_millis"] = min(latency_list)
-        metrics["data_latency_max_millis"] = max(latency_list)
-        metrics["data_latency_avg_millis"] = statistics.mean(latency_list)
-        self.log.info("Latency: {}".format(metrics))
+        metrics['data_latency_min_millis'] = int(min(latency_list))
+        metrics['data_latency_max_millis'] = int(max(latency_list))
+        metrics['data_latency_avg_millis'] = int(statistics.mean(latency_list))
+        self.log.info('Latency: {}'.format(metrics))
 
-        self.bt_logger.get_results(metrics, self.__class__.__name__,
-                                   self.server_device, self.client_device)
-        asserts.assert_true(metrics["data_latency_min_millis"] > 0,
-                            "Minimum latency must be greater than 0!",
-                            extras=metrics)
+        proto = self.bt_logger.get_results(metrics,
+                                           self.__class__.__name__,
+                                           self.server_device,
+                                           self.client_device)
 
-        raise TestPass("Latency test completed successfully", extras=metrics)
+        asserts.assert_true(metrics['data_latency_min_millis'] > 0,
+                            'Minimum latency must be greater than 0!',
+                            extras=proto)
+
+        raise TestPass('Latency test completed successfully', extras=proto)
