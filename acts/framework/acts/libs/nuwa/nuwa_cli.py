@@ -73,9 +73,12 @@ class NuwaCli(object):
             raise e
         workflow_files = []
         for path in workflow_paths:
-            for (root, _, files) in os.walk(path, onerror=_raise):
-                for file in files:
-                    workflow_files.append(os.path.join(root, file))
+            if os.path.isfile(path):
+                workflow_files.append(path)
+            else:
+                for (root, _, files) in os.walk(path, onerror=_raise):
+                    for file in files:
+                        workflow_files.append(os.path.join(root, file))
 
         # populate the dictionary
         self._workflows = {}
