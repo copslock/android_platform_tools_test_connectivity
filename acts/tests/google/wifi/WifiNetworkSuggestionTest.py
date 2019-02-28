@@ -117,6 +117,9 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
     def add_suggestions_and_ensure_connection(self, network_suggestions,
                                               expected_ssid,
                                               expect_post_connection_broadcast):
+        if expect_post_connection_broadcast is not None:
+            self.dut.droid.wifiStartTrackingNetworkSuggestionStateChange()
+
         self.dut.log.info("Adding network suggestions");
         asserts.assert_true(
             self.dut.droid.wifiAddNetworkSuggestions(network_suggestions),
@@ -131,10 +134,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
 
         # Check if we expected to get the broadcast.
         try:
-            self.dut.droid.wifiStartTrackingStateChange()
             event = self.dut.ed.pop_event(
                 wifi_constants.WIFI_NETWORK_SUGGESTION_POST_CONNECTION, 60)
-            self.dut.droid.wifiStopTrackingStateChange()
         except queue.Empty:
             if expect_post_connection_broadcast:
                 raise signals.TestFailure(
@@ -143,6 +144,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             if not expect_post_connection_broadcast:
                 raise signals.TestFailure(
                     "Received post connection broadcast")
+        finally:
+            self.dut.droid.wifiStopTrackingNetworkSuggestionStateChange()
 
 
     @test_tracker_info(uuid="bda8ed20-4382-4380-831a-64cf77eca108")
