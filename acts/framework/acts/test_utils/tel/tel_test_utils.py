@@ -4246,7 +4246,7 @@ def is_sms_match(event, phonenumber_tx, text):
             and phone number match.
     """
     return (check_phone_number_match(event['data']['Sender'], phonenumber_tx)
-            and event['data']['Text'] == text)
+            and event['data']['Text'].strip() == text)
 
 
 def is_sms_partial_match(event, phonenumber_tx, text):
@@ -4262,7 +4262,7 @@ def is_sms_partial_match(event, phonenumber_tx, text):
         Return True if 'text' starts with event['data']['Text']
             and phone number match.
     """
-    event_text = event['data']['Text']
+    event_text = event['data']['Text'].strip()
     if event_text.startswith("("):
         event_text = event_text.split(")")[-1]
     return (check_phone_number_match(event['data']['Sender'], phonenumber_tx)
@@ -4340,7 +4340,7 @@ def wait_for_matching_sms(log,
                 event = ad_rx.messaging_ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match, max_wait_time,
                     phonenumber_tx, remaining_text)
-                event_text = event['data']['Text'].split(")")[-1]
+                event_text = event['data']['Text'].split(")")[-1].strip()
                 event_text_length = len(event_text)
                 ad_rx.log.info("Got event %s of text length %s from %s",
                                EventSmsReceived, event_text_length,
