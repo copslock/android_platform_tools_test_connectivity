@@ -160,8 +160,9 @@ class BluetoothPairAndConnectTest(BaseTestClass):
             metrics['pair_avg_time_millis'] = int(statistics.mean(pair_times))
 
         if len(connect_times) > 0:
-            metrics['first_connection_max_time_millis'] = int(max(connect_times))
-            metrics['first_connnection_min_time_millis'] = int(
+            metrics['first_connection_max_time_millis'] = int(
+                max(connect_times))
+            metrics['first_connection_min_time_millis'] = int(
                 min(connect_times))
             metrics['first_connection_avg_time_millis'] = int(
                 (statistics.mean(connect_times)))
@@ -171,7 +172,8 @@ class BluetoothPairAndConnectTest(BaseTestClass):
 
         proto = self.bt_logger.get_results(metrics,
                                            self.__class__.__name__,
-                                           self.phone)
+                                           self.phone,
+                                           self.apollo)
 
         self.log.info('Metrics: {}'.format(metrics))
 

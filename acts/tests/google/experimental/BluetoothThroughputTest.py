@@ -23,6 +23,7 @@ from acts.test_utils.bt.bt_test_utils import orchestrate_rfcomm_connection
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
 from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
+from acts.test_utils.bt.loggers.protos import bluetooth_metric_pb2 as proto_module
 from acts.utils import set_location_service
 
 
@@ -32,6 +33,8 @@ class BluetoothThroughputTest(BaseTestClass):
     Attributes:
          client_device: An Android device object that will be sending data
          server_device: An Android device object that will be receiving data
+         bt_logger: The proxy logger instance for each test case
+         data_transfer_type: Data transfer protocol used for the test
     """
 
     def __init__(self, configs):
@@ -47,6 +50,7 @@ class BluetoothThroughputTest(BaseTestClass):
         self.client_device = self.android_devices[0]
         self.server_device = self.android_devices[1]
         self.bt_logger = BluetoothMetricLogger.for_test_case()
+        self.data_transfer_type = proto_module.BluetoothDataTestResult.RFCOMM
         self.log.info('Successfully found required devices.')
 
     def setup_test(self):
@@ -113,12 +117,13 @@ class BluetoothThroughputTest(BaseTestClass):
         metrics = {}
         throughput_list = []
 
-        for transfer in range(3):
+        for transfer in range(300):
             throughput = self._measure_throughput(1, 300)
             self.log.info('Throughput: {} bytes-per-sec'.format(throughput))
             throughput_list.append(throughput)
 
-        metrics['data_throughput_buffer_size_bytes'] = 300
+        metrics['data_transfer_protocol'] = self.data_transfer_type
+        metrics['data_packet_size'] = 300
         metrics['data_throughput_min_bytes_per_second'] = int(
             min(throughput_list))
         metrics['data_throughput_max_bytes_per_second'] = int(
@@ -149,12 +154,13 @@ class BluetoothThroughputTest(BaseTestClass):
         metrics = {}
         throughput_list = []
 
-        for transfer in range(3):
+        for transfer in range(300):
             throughput = self._measure_throughput(1, 100)
             self.log.info('Throughput: {} bytes-per-sec'.format(throughput))
             throughput_list.append(throughput)
 
-        metrics['data_throughput_buffer_size_bytes'] = 100
+        metrics['data_transfer_protocol'] = self.data_transfer_type
+        metrics['data_packet_size'] = 100
         metrics['data_throughput_min_bytes_per_second'] = int(
             min(throughput_list))
         metrics['data_throughput_max_bytes_per_second'] = int(
@@ -182,12 +188,13 @@ class BluetoothThroughputTest(BaseTestClass):
         metrics = {}
         throughput_list = []
 
-        for transfer in range(3):
+        for transfer in range(300):
             throughput = self._measure_throughput(1, 10)
             self.log.info('Throughput: {} bytes-per-sec'.format(throughput))
             throughput_list.append(throughput)
 
-        metrics['data_throughput_buffer_size_bytes'] = 10
+        metrics['data_transfer_protocol'] = self.data_transfer_type
+        metrics['data_packet_size'] = 10
         metrics['data_throughput_min_bytes_per_second'] = int(
             min(throughput_list))
         metrics['data_throughput_max_bytes_per_second'] = int(
