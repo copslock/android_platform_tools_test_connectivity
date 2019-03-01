@@ -48,15 +48,10 @@ class WifiOtaRvrTest(WifiRvrTest):
         Args:
             testcase_params: dict containing test-specific parameters
         """
-        # Configure AP
-        self.setup_ap(testcase_params)
-        # Set attenuator to 0 dB
-        for attenuator in self.attenuators:
-            attenuator.set_atten(0)
         # Set turntable orientation
         self.ota_chamber.set_orientation(testcase_params['orientation'])
-        # Reset, configure, and connect DUT
-        self.setup_dut(testcase_params)
+        # Continue test setup
+        WifiRvrTest.setup_rvr_test(self, testcase_params)
 
     def parse_test_params(self, test_name):
         """Function that generates test params based on the test name."""
