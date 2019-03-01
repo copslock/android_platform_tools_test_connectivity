@@ -71,11 +71,18 @@ class WlanScanTest(WifiBaseTest):
       """Verify a general scan trigger returns at least one result"""
       start_time = datetime.now()
 
-      scan_result_response = self.dut.wlan_lib.wlanStartScan()
-      scan_results = scan_result_response["result"]
-      if scan_results is None:
-          self.log.info("scan command did not return results")
-          raise signals.TestFailure("Scan failed - no results returned")
+      scan_response = self.dut.wlan_lib.wlanStartScan()
+
+      # first check if we received an error
+      if scan_response.get("error") is None:
+        # the scan command did not get an error response - go ahead and check
+        # for scan results
+        scan_results = scan_response["result"]
+      else:
+        # the response indicates an error - log and raise failure
+        raise signals.TestFailure("Aborting test - scan failed with error: %s"
+                                  %scan_response.get("error"))
+
       self.log.info("scan contained %d results", len(scan_results))
 
       total_time_ms = (datetime.now() - start_time).total_seconds() * 1000
