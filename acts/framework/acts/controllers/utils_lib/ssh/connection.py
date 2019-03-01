@@ -388,26 +388,30 @@ class SshConnection(object):
             return tunnel.remote_port
         return None
 
-    def send_file(self, local_path, remote_path):
+    def send_file(self, local_path, remote_path, ignore_status=False):
         """Send a file from the local host to the remote host.
 
         Args:
             local_path: string path of file to send on local host.
             remote_path: string path to copy file to on remote host.
+            ignore_status: Whether or not to ignore the command's exit_status.
         """
         # TODO: This may belong somewhere else: b/32572515
         user_host = self._formatter.format_host_name(self._settings)
-        job.run('scp %s %s:%s' % (local_path, user_host, remote_path))
+        job.run('scp %s %s:%s' % (local_path, user_host, remote_path),
+                ignore_status=ignore_status)
 
-    def pull_file(self, local_path, remote_path):
+    def pull_file(self, local_path, remote_path, ignore_status=False):
         """Send a file from remote host to local host
 
         Args:
             local_path: string path of file to recv on local host
             remote_path: string path to copy file from on remote host.
+            ignore_status: Whether or not to ignore the command's exit_status.
         """
         user_host = self._formatter.format_host_name(self._settings)
-        job.run('scp %s:%s %s' % (user_host, remote_path, local_path))
+        job.run('scp %s:%s %s' % (user_host, remote_path, local_path),
+                ignore_status=ignore_status)
 
     def find_free_port(self, interface_name='localhost'):
         """Find a unused port on the remote host.
