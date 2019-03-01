@@ -305,7 +305,6 @@ class WifiPingTest(base_test.BaseTestClass):
         for atten in testcase_params["atten_range"]:
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
-            time.sleep(self.SHORT_SLEEP)
             rssi_future = wputils.get_connected_rssi_nb(
                 self.client_dut,
                 int(testcase_params["ping_duration"] / 2 /
