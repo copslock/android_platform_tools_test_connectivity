@@ -782,37 +782,25 @@ def pair_and_connect_headset(pri_ad, headset_mac_address, profile_to_connect, re
         True if pair and connect to headset successful, False otherwise.
     """
 
-    def pair_and_connect_headset(pri_ad, headset_mac_address, profile_to_connect, retry=5):
-        """Pair and connect android device with third party headset.
-
-        Args:
-            pri_ad: An android device.
-            headset_mac_address: Mac address of third party headset.
-            profile_to_connect: Profile to be connected with headset.
-            retry: Number of attempts to pair and connect.
-
-        Returns:
-            True if pair and connect to headset successful, False otherwise.
-        """
-        paired = False
-        for _ in range(retry):
-            if pair_dev_to_headset(pri_ad, headset_mac_address):
-                paired = True
-                break
-            else:
-                pri_ad.log.error("Could not pair to headset. Retrying.")
-
-        time.sleep(2)  # Wait until pairing gets over.
-
-        if paired:
-            for _ in range(retry):
-                if connect_dev_to_headset(pri_ad, headset_mac_address,
-                                          profile_to_connect):
-                    return True
-                else:
-                    pri_ad.log.error("Could not connect to headset. Retrying.")
+    paired = False
+    for _ in range(retry):
+        if pair_dev_to_headset(pri_ad, headset_mac_address):
+            paired = True
+            break
         else:
-            asserts.fail("Failed to pair and connect to headset")
+            pri_ad.log.error("Could not pair to headset. Retrying.")
+
+    time.sleep(2)  # Wait until pairing gets over.
+
+    if paired:
+        for _ in range(retry):
+            if connect_dev_to_headset(pri_ad, headset_mac_address,
+                                      profile_to_connect):
+                return True
+            else:
+                pri_ad.log.error("Could not connect to headset. Retrying.")
+    else:
+        asserts.fail("Failed to pair and connect to headset")
 
 
 def perform_classic_discovery(pri_ad, duration, file_name, dev_list=None):
