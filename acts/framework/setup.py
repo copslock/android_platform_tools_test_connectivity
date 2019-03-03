@@ -39,7 +39,8 @@ install_requires = [
     'pylibftdi',
     'xlsxwriter',
     # TODO(markdr): b/113719194: Remove this module
-    'colorama'
+    'colorama',
+    'mobly'
 ]
 
 if sys.version_info < (3,):

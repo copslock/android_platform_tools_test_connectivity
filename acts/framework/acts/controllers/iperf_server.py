@@ -474,8 +474,10 @@ class IPerfServerOverAdb(IPerfServerBase):
                 cmd=self._iperf_command,
                 extra_flags=extra_args,
                 log_file=self._get_device_log_path()))
-        self._iperf_process_adb_pid = self._android_device.adb.shell(
-            'pgrep iperf3 -n')
+        self._iperf_process_adb_pid = None
+        while self._iperf_process_adb_pid == None:
+            self._iperf_process_adb_pid = self._android_device.adb.shell(
+                'pgrep iperf3 -n')
 
         self._current_tag = tag
 

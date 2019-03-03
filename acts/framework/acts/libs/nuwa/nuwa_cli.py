@@ -73,9 +73,12 @@ class NuwaCli(object):
             raise e
         workflow_files = []
         for path in workflow_paths:
-            for (root, _, files) in os.walk(path, onerror=_raise):
-                for file in files:
-                    workflow_files.append(os.path.join(root, file))
+            if os.path.isfile(path):
+                workflow_files.append(path)
+            else:
+                for (root, _, files) in os.walk(path, onerror=_raise):
+                    for file in files:
+                        workflow_files.append(os.path.join(root, file))
 
         # populate the dictionary
         self._workflows = {}
@@ -99,12 +102,13 @@ class NuwaCli(object):
             self._log.exception('Failed to extract nuwa-cli binaries.')
             raise
 
-    def run(self, serial, workflows):
+    def run(self, serial, workflows, timeout=120):
         """Run specified workflows on the Nuwa CLI.
 
         Args:
             serial: Device serial
             workflows: List or str of workflows to run.
+            timeout: Number seconds to wait for command to finish.
         """
         base_cmd = _NUWA_JAR_CMD % self._nuwa_path
         if isinstance(workflows, str):
@@ -121,7 +125,7 @@ class NuwaCli(object):
                 args = '%s -o %s' % (args, self._log_path)
             cmd = '%s %s' % (base_cmd, args)
             try:
-                result = job.run(cmd.split())
+                result = job.run(cmd.split(), timeout=timeout)
             except job.Error:
                 self._log.exception(
                     'Failed to run workflow "%s"' % workflow_name)
