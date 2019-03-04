@@ -42,6 +42,10 @@ class WifiOtaRvrTest(WifiRvrTest):
         self.ota_chambers = ota_chamber.create(self.OTAChamber)
         self.ota_chamber = self.ota_chambers[0]
 
+    def teardown_class(self):
+        WifiRvrTest.teardown_class(self)
+        self.ota_chamber.set_orientation(0)
+
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
 
