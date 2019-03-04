@@ -719,10 +719,11 @@ class BaseTestClass(object):
         if test_names:
             # Match test cases with any of the user-specified patterns
             matches = []
-            for valid_test in valid_tests:
-                if any(fnmatch.fnmatch(valid_test, test_name)
-                       for test_name in test_names):
-                    matches.append(valid_test)
+            for test_name in test_names:
+                for valid_test in valid_tests:
+                    if (fnmatch.fnmatch(valid_test, test_name)
+                            and valid_test not in matches):
+                        matches.append(valid_test)
         else:
             matches = valid_tests
         self.results.requested = matches
