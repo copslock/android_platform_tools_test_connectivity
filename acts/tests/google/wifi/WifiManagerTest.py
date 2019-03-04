@@ -334,7 +334,7 @@ class WifiManagerTest(WifiBaseTest):
     def turn_location_on_and_scan_toggle_on(self):
         """ Turns on wifi location scans.
         """
-        acts.utils.set_location_service(self.dut, True)
+        acts.test_utils.android_test_utils.set_location_service(self.dut, True)
         self.dut.droid.wifiScannerToggleAlwaysAvailable(True)
         msg = "Failed to turn on location service's scan."
         asserts.assert_true(self.dut.droid.wifiScannerIsAlwaysAvailable(), msg)
@@ -342,7 +342,7 @@ class WifiManagerTest(WifiBaseTest):
     def turn_location_off_and_scan_toggle_off(self):
         """ Turns off wifi location scans.
         """
-        acts.utils.set_location_service(self.dut, False)
+        acts.test_utils.android_test_utils.set_location_service(self.dut, False)
         self.dut.droid.wifiScannerToggleAlwaysAvailable(False)
         msg = "Failed to turn off location service's scan."
         asserts.assert_true(not self.dut.droid.wifiScannerIsAlwaysAvailable(), msg)
@@ -350,7 +350,7 @@ class WifiManagerTest(WifiBaseTest):
     def turn_location_on_and_scan_toggle_off(self):
         """ Turns off wifi location scans, but keeps location on.
         """
-        acts.utils.set_location_service(self.dut, True)
+        acts.test_utils.android_test_utils.set_location_service(self.dut, True)
         self.dut.droid.wifiScannerToggleAlwaysAvailable(False)
         msg = "Failed to turn off location service's scan."
         asserts.assert_true(not self.dut.droid.wifiScannerIsAlwaysAvailable(), msg)

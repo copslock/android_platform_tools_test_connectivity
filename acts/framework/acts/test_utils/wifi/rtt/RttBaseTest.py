@@ -15,8 +15,8 @@
 #   limitations under the License.
 
 from acts import asserts
-from acts import utils
 from acts.base_test import BaseTestClass
+from acts.test_utils import android_test_utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
@@ -42,7 +42,7 @@ class RttBaseTest(BaseTestClass):
         self.rtt_min_expected_rssi_dbm = -100
 
         for ad in self.android_devices:
-            utils.set_location_service(ad, True)
+            android_test_utils.set_location_service(ad, True)
             asserts.skip_if(
                 not ad.droid.doesDeviceSupportWifiRttFeature(),
                 "Device under test does not support Wi-Fi RTT - skipping test")
@@ -54,6 +54,7 @@ class RttBaseTest(BaseTestClass):
             ad.ed.clear_all_events()
             rutils.config_privilege_override(ad, False)
             ad.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+
 
     def teardown_test(self):
         for ad in self.android_devices:

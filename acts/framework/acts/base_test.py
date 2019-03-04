@@ -35,6 +35,7 @@ from acts.event.event import TestCaseEndEvent
 from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
+from acts.test_utils import android_test_utils
 
 
 # Macro strings for test result reporting
@@ -147,7 +148,7 @@ class BaseTestClass(object):
         if hasattr(self, 'android_devices'):
             for ad in self.android_devices:
                 if ad.droid:
-                    utils.set_location_service(ad, False)
+                    android_test_utils.set_location_service(ad, False)
                     utils.sync_device_time(ad)
         self.testbed_name = ''
 

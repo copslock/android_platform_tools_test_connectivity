@@ -15,14 +15,15 @@
 #   limitations under the License.
 
 from acts import asserts
-from acts import utils
 from acts.base_test import BaseTestClass
+from acts.test_utils import android_test_utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
 
 
 class AwareBaseTest(BaseTestClass):
+
     def __init__(self, controllers):
         super(AwareBaseTest, self).__init__(controllers)
 
@@ -45,7 +46,7 @@ class AwareBaseTest(BaseTestClass):
             )
             wutils.wifi_toggle_state(ad, True)
             ad.droid.wifiP2pClose()
-            utils.set_location_service(ad, True)
+            android_test_utils.set_location_service(ad, True)
             aware_avail = ad.droid.wifiIsAwareAvailable()
             if not aware_avail:
                 self.log.info('Aware not available. Waiting ...')
