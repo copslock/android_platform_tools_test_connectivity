@@ -15,6 +15,7 @@
 #   limitations under the License.
 import bisect
 import inspect
+import numbers
 
 
 def _fully_qualified_name(func):
@@ -216,6 +217,17 @@ class _VersionSelector(object):
             level = self.get_version(self.instance, *args, **kwargs)
         else:
             level = self.get_version(*args, **kwargs)
+        if not isinstance(level, numbers.Number):
+            kwargs_out = []
+            for key, value in kwargs.items():
+                kwargs_out.append('%s=%s' % (key, str(value)))
+            args_out = str(list(args))[1:-1]
+            kwargs_out = ', '.join(kwargs_out)
+            raise ValueError(
+                'The API level the function %s returned %s for the arguments '
+                '(%s). This function must return a number.' %
+                (self.get_version.__qualname__, repr(level),
+                 ', '.join(i for i in [args_out, kwargs_out] if i)))
 
         index = bisect.bisect_left(_VersionSelector.ListWrap(self.entry_list),
                                    level)
@@ -232,6 +244,7 @@ class _VersionSelector(object):
             raise NotImplementedError('No function %s exists for API level %s'
                                       % (self.entry_list[0].func.__qualname__,
                                          level))
+
         func = self.entry_list[index].func
         if self.instance is None:
             # __get__ was not called, so the function is module-level.

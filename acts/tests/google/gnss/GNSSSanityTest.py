@@ -27,7 +27,6 @@ from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.test_decorators import test_tracker_info
-from acts.test_utils import android_test_utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.tel import tel_test_utils as tutils
 from acts.utils import get_current_epoch_time
@@ -158,7 +157,7 @@ class GNSSSanityTest(BaseTestClass):
         self.enable_gnss_verbose_logging()
         self.disable_xtra_throttle()
         self.enable_supl_mode()
-        android_test_utils.set_location_service(self.ad, True)
+        utils.set_location_service(self.ad, True)
         self.ad.adb.shell("svc power stayon true")
         wutils.wifi_toggle_state(self.ad, False)
         self.ad.log.info("Setting Bluetooth state to False")
@@ -195,7 +194,7 @@ class GNSSSanityTest(BaseTestClass):
             True : location service is on.
             False : location service is off.
         """
-        android_test_utils.set_location_service(self.ad, True)
+        utils.set_location_service(self.ad, True)
         out = self.ad.adb.shell("settings get secure "
                                 "location_providers_allowed")
         self.ad.log.info("Current Location Provider >> %s" % out)

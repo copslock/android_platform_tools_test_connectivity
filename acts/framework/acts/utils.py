@@ -31,9 +31,9 @@ import traceback
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
+from acts import signals
 from acts.controllers import adb
 from acts.libs.proc import job
-from acts import signals
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
@@ -380,12 +380,6 @@ def exe_cmd(*cmds):
     if not err:
         return out
     raise OSError(err)
-
-# Begin Android-specific refactored methods
-def set_location_service(*_args, **_kwargs):
-    raise NotImplementedError('set_location_service and other AndroidDevice-'
-                              'specific functions have been moved to acts.'
-                              'test_utils.android_test_utils.py')
 
 
 def require_sl4a(android_devices):
@@ -737,6 +731,27 @@ def set_auto_rotate(ad, new_state):
     """
     ad.adb.shell("settings put system accelerometer_rotation {}".format(
         1 if new_state else 0))
+
+
+def set_location_service(ad, new_state):
+    """Set Location service on/off in Settings->Location
+
+    Args:
+        ad: android device object.
+        new_state: new state for "Location service".
+            If new_state is False, turn off location service.
+            If new_state if True, set location service to "High accuracy".
+    """
+    ad.adb.shell("content insert --uri "
+                 " content://com.google.settings/partner --bind "
+                 "name:s:network_location_opt_in --bind value:s:1")
+    ad.adb.shell("content insert --uri "
+                 " content://com.google.settings/partner --bind "
+                 "name:s:use_location_for_services --bind value:s:1")
+    if new_state:
+        ad.adb.shell("settings put secure location_mode 3")
+    else:
+        ad.adb.shell("settings put secure location_mode 0")
 
 
 def set_mobile_data_always_on(ad, new_state):
