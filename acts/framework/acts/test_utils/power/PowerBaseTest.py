@@ -25,6 +25,7 @@ from acts import base_test
 from acts import utils
 from acts.controllers import monsoon
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
+from acts.test_utils import android_test_utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
@@ -237,7 +238,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         utils.set_auto_rotate(self.dut, False)
         utils.set_adaptive_brightness(self.dut, False)
         utils.sync_device_time(self.dut)
-        utils.set_location_service(self.dut, False)
+        android_test_utils.set_location_service(self.dut, False)
         utils.set_mobile_data_always_on(self.dut, False)
         utils.disable_doze_light(self.dut)
         utils.disable_doze(self.dut)

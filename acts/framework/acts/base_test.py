@@ -35,6 +35,7 @@ from acts.event.event import TestCaseEndEvent
 from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
+from acts.test_utils import android_test_utils
 
 
 # Macro strings for test result reporting
@@ -147,7 +148,7 @@ class BaseTestClass(object):
         if hasattr(self, 'android_devices'):
             for ad in self.android_devices:
                 if ad.droid:
-                    utils.set_location_service(ad, False)
+                    android_test_utils.set_location_service(ad, False)
                     utils.sync_device_time(ad)
         self.testbed_name = ''
 
@@ -719,10 +720,11 @@ class BaseTestClass(object):
         if test_names:
             # Match test cases with any of the user-specified patterns
             matches = []
-            for valid_test in valid_tests:
-                if any(fnmatch.fnmatch(valid_test, test_name)
-                       for test_name in test_names):
-                    matches.append(valid_test)
+            for test_name in test_names:
+                for valid_test in valid_tests:
+                    if (fnmatch.fnmatch(valid_test, test_name)
+                            and valid_test not in matches):
+                        matches.append(valid_test)
         else:
             matches = valid_tests
         self.results.requested = matches

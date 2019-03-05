@@ -17,6 +17,7 @@
 from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
+from acts.test_utils import android_test_utils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
@@ -65,7 +66,7 @@ class RttDisableTest(WifiBaseTest, RttBaseTest):
         elif disable_mode == self.MODE_ENABLE_DOZE:
             asserts.assert_true(utils.enable_doze(dut), "Can't enable doze")
         elif disable_mode == self.MODE_DISABLE_LOCATIONING:
-            utils.set_location_service(dut, False)
+            android_test_utils.set_location_service(dut, False)
 
         rutils.wait_for_event(dut, rconsts.BROADCAST_WIFI_RTT_NOT_AVAILABLE)
         asserts.assert_false(dut.droid.wifiIsRttAvailable(),
@@ -87,7 +88,7 @@ class RttDisableTest(WifiBaseTest, RttBaseTest):
         elif disable_mode == self.MODE_ENABLE_DOZE:
             asserts.assert_true(utils.disable_doze(dut), "Can't disable doze")
         elif disable_mode == self.MODE_DISABLE_LOCATIONING:
-            utils.set_location_service(dut, True)
+            android_test_utils.set_location_service(dut, True)
 
         rutils.wait_for_event(dut, rconsts.BROADCAST_WIFI_RTT_AVAILABLE)
         asserts.assert_true(dut.droid.wifiIsRttAvailable(),
