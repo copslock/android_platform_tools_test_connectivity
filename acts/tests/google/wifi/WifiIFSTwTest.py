@@ -25,7 +25,6 @@ from acts import asserts
 from acts.controllers import attenuator
 from acts.controllers.sl4a_lib import rpc_client
 from acts.test_decorators import test_tracker_info
-from acts.test_utils import android_test_utils
 from acts.test_utils.net.net_test_utils import start_tcpdump, stop_tcpdump
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.wifi_test_utils import WifiEnums
@@ -86,7 +85,7 @@ class WifiIFSTwTest(WifiBaseTest):
                 len(self.on_active_port) == 2, "Need setup 2 port.")
 
         self.tcpdump_pid = None
-        android_test_utils.set_location_service(self.dut, True)
+        utils.set_location_service(self.dut, True)
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()

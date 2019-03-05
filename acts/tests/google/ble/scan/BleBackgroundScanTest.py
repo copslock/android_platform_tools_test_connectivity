@@ -19,8 +19,8 @@ This test script exercises background scan test scenarios.
 
 from queue import Empty
 
+from acts import utils
 from acts.test_decorators import test_tracker_info
-from acts.test_utils import android_test_utils
 from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 from acts.test_utils.bt.bt_test_utils import bluetooth_off
 from acts.test_utils.bt.bt_test_utils import bluetooth_on
@@ -52,8 +52,8 @@ class BleBackgroundScanTest(BluetoothBaseTest):
 
     def setup_class(self):
         super(BluetoothBaseTest, self).setup_class()
-        android_test_utils.set_location_service(self.scn_ad, True)
-        android_test_utils.set_location_service(self.adv_ad, True)
+        utils.set_location_service(self.scn_ad, True)
+        utils.set_location_service(self.adv_ad, True)
         return True
 
     def setup_test(self):

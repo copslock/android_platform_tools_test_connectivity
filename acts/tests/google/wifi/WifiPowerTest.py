@@ -30,7 +30,7 @@ from acts.utils import force_airplane_mode
 from acts.utils import set_adaptive_brightness
 from acts.utils import set_ambient_display
 from acts.utils import set_auto_rotate
-from acts.test_utils.android_test_utils import set_location_service
+from acts.utils import set_location_service
 
 pmc_base_cmd = ("am broadcast -a com.android.pmc.action.AUTOPOWER --es"
                 " PowerAction ")
