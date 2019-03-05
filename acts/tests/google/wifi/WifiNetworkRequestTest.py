@@ -34,6 +34,8 @@ WifiEnums = wutils.WifiEnums
 
 # Network request timeout to use.
 NETWORK_REQUEST_TIMEOUT_MS = 60 * 1000
+# Timeout to wait for instant failure.
+NETWORK_REQUEST_INSTANT_FAILURE_TIMEOUT_SEC = 5
 
 class WifiNetworkRequestTest(WifiBaseTest):
     """Tests for NetworkRequest with WifiNetworkSpecifier API surface.
@@ -436,3 +438,65 @@ class WifiNetworkRequestTest(WifiBaseTest):
             self.dut.droid.wifiStopTrackingStateChange()
         asserts.assert_true(has_request_timedout,
                             "Network request did not timeout")
+
+    @test_tracker_info(uuid="760c3768-697d-442b-8d61-cfe02f10ceff")
+    def test_connect_failure_user_rejected(self):
+        """
+        Initiates a connection to network via network request with specific SSID
+        which the user rejected.
+
+        Steps:
+        1. Send a network specifier with the specific SSID/credentials of
+           WPA-PSK 5G network.
+        2. Wait for platform to scan and find matching networks.
+        3. Simulate user rejecting the network.
+        4. Ensure that we get an instant onUnavailable callback.
+        5. Simulate user fogetting the network from the UI.
+        """
+        network = self.wpa_psk_5g
+        expected_ssid = network[WifiEnums.SSID_KEY]
+
+        self.dut.droid.wifiStartTrackingStateChange()
+
+        self.dut.droid.wifiRequestNetworkWithSpecifierWithTimeout(
+              network, NETWORK_REQUEST_TIMEOUT_MS)
+        self.dut.log.info("Sent network request with specifier %s", network)
+        time.sleep(wifi_constants.NETWORK_REQUEST_CB_REGISTER_DELAY_SEC)
+        self.dut.droid.wifiRegisterNetworkRequestMatchCallback()
+
+        # Wait for the platform to scan and return a list of networks
+        # matching the request
+        try:
+            matched_network = None
+            for _ in [0,  3]:
+                on_match_event = self.dut.ed.pop_event(
+                    wifi_constants.WIFI_NETWORK_REQUEST_MATCH_CB_ON_MATCH, 30)
+                asserts.assert_true(on_match_event,
+                                    "Network request on match not received.")
+                matched_scan_results = on_match_event["data"]
+                self.dut.log.debug("Network request on match results %s",
+                                   matched_scan_results)
+                matched_network = wutils.match_networks(
+                    {WifiEnums.SSID_KEY: network[WifiEnums.SSID_KEY]},
+                     matched_scan_results)
+                if matched_network:
+                    break;
+            asserts.assert_true(
+                matched_network, "Target network %s not found" % network)
+
+            # Send user rejection.
+            self.dut.droid.wifiSendUserRejectionForNetworkRequestMatch()
+            self.dut.log.info("Sent user rejection for network request %s",
+                              expected_ssid)
+
+            # Wait for the platform to raise unavailable callback
+            # instantaneously.
+            on_unavailable_event = self.dut.ed.pop_event(
+                wifi_constants.WIFI_NETWORK_CB_ON_UNAVAILABLE,
+                NETWORK_REQUEST_INSTANT_FAILURE_TIMEOUT_SEC)
+            asserts.assert_true(on_unavailable_event,
+                                "Network request on available not received.")
+        except queue.Empty:
+            asserts.fail("Expected events not returned")
+        finally:
+            self.dut.droid.wifiStopTrackingStateChange()
