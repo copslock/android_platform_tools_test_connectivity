@@ -22,6 +22,7 @@ from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
 
 from acts import context
+from acts.context import ContextLevel
 from acts.event import event_bus
 from acts.event.decorators import subscribe_static
 
@@ -77,6 +78,12 @@ class LogStyles:
         LOG_WARNING: logging.WARNING,
         LOG_ERROR: logging.ERROR,
         LOG_CRITICAL: logging.CRITICAL,
+    }
+
+    LOCATION_TO_CONTEXT_LEVEL = {
+        MONOLITH_LOG: ContextLevel.ROOT,
+        TESTCLASS_LOG: ContextLevel.TESTCLASS,
+        TESTCASE_LOG: ContextLevel.TESTCASE
     }
 # yapf: enable
 
@@ -335,23 +342,32 @@ class _LogStream(object):
                 return log_level
         return LogStyles.NONE
 
-    def __get_current_output_dir(self):
+    def __get_current_output_dir(self, depth=ContextLevel.TESTCASE):
         """Gets the current output directory from the context system. Make the
         directory if it doesn't exist.
+
+        Args:
+            depth: The desired level of the output directory. For example,
+                the TESTCLASS level would yield the directory associated with
+                the current test class context, even if the test is currently
+                within a test case.
         """
-        curr_context = context.get_current_context()
+        curr_context = context.get_current_context(depth)
         return curr_context.get_full_output_path(self.logger.name)
 
-    def __create_handler(self, creator, level):
+    def __create_handler(self, creator, level, location):
         """Creates the FileHandler.
 
         Args:
             creator: The callable that creates the FileHandler
             level: The logging level (INFO, DEBUG, etc.) for this handler.
+            location: The log location (MONOLITH, TESTCLASS, TESTCASE) for this
+                handler.
 
         Returns: A FileHandler
         """
-        directory = self.__get_current_output_dir()
+        directory = self.__get_current_output_dir(
+            LogStyles.LOCATION_TO_CONTEXT_LEVEL[location])
         base_name = '%s_%s.txt' % (self.name, LogStyles.LEVEL_NAMES[level])
         handler = creator(os.path.join(directory, base_name))
         handler.setLevel(LogStyles.LEVEL_TO_NO[level])
@@ -379,11 +395,12 @@ class _LogStream(object):
 
         # Handle streaming logs to log-level files
         for log_level in LogStyles.LOG_LEVELS:
-            if not (log_style & log_level and
-                    log_style & LogStyles.ALL_FILE_LOGS):
+            log_location = log_style & LogStyles.ALL_FILE_LOGS
+            if not (log_style & log_level and log_location):
                 continue
 
-            handler = self.__create_handler(handler_creator, log_level)
+            handler = self.__create_handler(
+                handler_creator, log_level, log_location)
             self.logger.addHandler(handler)
 
             if log_style & LogStyles.TESTCLASS_LOG:
