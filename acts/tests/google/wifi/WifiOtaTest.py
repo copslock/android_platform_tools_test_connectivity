@@ -183,7 +183,7 @@ class WifiOtaPingTest(WifiPingTest):
         return test_cases
 
 
-class WifiOtaPing_TenDegree_Test(WifiPingTest):
+class WifiOtaPing_TenDegree_Test(WifiOtaPingTest):
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
@@ -191,7 +191,7 @@ class WifiOtaPing_TenDegree_Test(WifiPingTest):
             list(range(0, 360, 10)))
 
 
-class WifiOtaPing_45Degree_Test(WifiPingTest):
+class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
