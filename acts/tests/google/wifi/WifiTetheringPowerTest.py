@@ -32,7 +32,7 @@ from acts.utils import force_airplane_mode
 from acts.utils import set_adaptive_brightness
 from acts.utils import set_ambient_display
 from acts.utils import set_auto_rotate
-from acts.test_utils.android_test_utils import set_location_service
+from acts.utils import set_location_service
 
 
 class WifiTetheringPowerTest(base_test.BaseTestClass):

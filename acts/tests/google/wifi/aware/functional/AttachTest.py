@@ -19,7 +19,6 @@ import time
 from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
-from acts.test_utils import android_test_utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
 from acts.test_utils.wifi.aware import aware_test_utils as autils
@@ -133,11 +132,11 @@ class AttachTest(AwareBaseTest):
     the broadcast for Aware unavailable is received.
     """
         dut = self.android_devices[0]
-        android_test_utils.set_location_service(dut, False)
+        utils.set_location_service(dut, False)
         autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_NOT_AVAILABLE)
         dut.droid.wifiAwareAttach()
         autils.wait_for_event(dut, aconsts.EVENT_CB_ON_ATTACH_FAILED)
-        android_test_utils.set_location_service(dut, True)
+        utils.set_location_service(dut, True)
         autils.wait_for_event(dut, aconsts.BROADCAST_WIFI_AWARE_AVAILABLE)
 
     @test_tracker_info(uuid="7ffde8e7-a010-4b77-97f5-959f263b5249")
