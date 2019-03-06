@@ -13,12 +13,17 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 import logging
+import os
 import shlex
+import signal
 import subprocess
+import sys
+import time
 from threading import Thread
 
-import time
+_on_windows = sys.platform == 'win32'
 
 
 class ProcessError(Exception):
@@ -53,6 +58,11 @@ class Process(object):
             command = shlex.split(command)
         self._command = command
         self._subprocess_kwargs = kwargs
+        if _on_windows:
+            self._subprocess_kwargs['creationflags'] = (
+                subprocess.CREATE_NEW_PROCESS_GROUP)
+        else:
+            self._subprocess_kwargs['start_new_session'] = True
         self._process = None
 
         self._listening_thread = None
@@ -143,6 +153,15 @@ class Process(object):
             self._redirection_thread.join()
             self._redirection_thread = None
 
+    def _kill_process(self):
+        """Kills the underlying process/process group. Implementation is
+        platform-dependent."""
+        if _on_windows:
+            subprocess.check_call('taskkill /F /T /PID %s' % self._process.pid)
+        else:
+            pgid = os.getpgid(self._process.pid)
+            os.killpg(pgid, signal.SIGKILL)
+
     def wait(self, kill_timeout=60.0):
         """Waits for the process to finish execution.
 
@@ -162,7 +181,7 @@ class Process(object):
         try:
             self._process.wait(kill_timeout)
         except subprocess.TimeoutExpired:
-            self._process.kill()
+            self._kill_process()
         finally:
             self._join_threads()
             self._started = False
