@@ -18,6 +18,7 @@ import time
 import queue
 
 from acts import asserts
+from acts.controllers.android_device import SL4A_APK_NAME
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 import acts.test_utils.wifi.wifi_test_utils as wutils
@@ -176,6 +177,39 @@ class WifiWakeTest(WifiBaseTest):
         """Tests that Wifi Wake re-enables Wifi for a saved network."""
         wutils.wifi_connect(self.dut, self.ap_a, num_of_tries=5)
         wutils.wifi_connect(self.dut, self.ap_b, num_of_tries=5)
+        self.dut.ed.clear_all_events()
+        self.ap_a_off()
+        self.ap_b_off()
+        wutils.wait_for_disconnect(self.dut)
+        self.log.info("Wifi Disconnected")
+        time.sleep(LAST_DISCONNECT_TIMEOUT_SEC * 1.2)
+        wutils.wifi_toggle_state(self.dut, new_state=False)
+        time.sleep(PRESCAN_DELAY_SEC)
+        self.do_location_scan(CONSECUTIVE_MISSED_SCANS_REQUIRED_TO_EVICT + 2)
+
+        self.ap_a_on()
+        self.do_location_scan()
+        asserts.assert_true(
+            self.dut.droid.wifiCheckState(),
+            "Expect Wifi Wake to enable Wifi, but Wifi is disabled.")
+
+    @test_tracker_info(uuid="")
+    def test_reconnect_wifi_network_suggestion(self):
+        """Tests that Wifi Wake re-enables Wifi for app provided suggestion."""
+        self.dut.log.info("Adding network suggestions");
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([self.ap_a]),
+            "Failed to add suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiAddNetworkSuggestions([self.ap_b]),
+            "Failed to add suggestions")
+        # Enable suggestions by the app.
+        self.dut.log.debug("Enabling suggestions from test");
+        self.dut.adb.shell("cmd wifi network-suggestions-set-user-approved"
+                           + " " + SL4A_APK_NAME + " yes")
+        # Ensure network is seen in scan results & auto-connected to.
+        self.do_location_scan(2)
+        wutils.wait_for_connect(self.dut)
         self.dut.ed.clear_all_events()
         self.ap_a_off()
         self.ap_b_off()
