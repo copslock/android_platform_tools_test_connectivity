@@ -82,7 +82,7 @@ class MetricLoggerTest(TestCase):
         MetricLogger._compile_proto(proto_path, compiler_out=compiler_out)
 
         full_proto_path = '/path/to/class/dir/my_proto.proto'
-        compile_import_proto.assert_called_once_wtih(
+        compile_import_proto.assert_called_once_with(
             compiler_out, full_proto_path)
 
     @patch(COMPILE_IMPORT_PROTO)
@@ -92,7 +92,7 @@ class MetricLoggerTest(TestCase):
         compiler_out = Mock()
         MetricLogger._compile_proto(proto_path, compiler_out=compiler_out)
 
-        compile_import_proto.assert_called_once_wtih(compiler_out, proto_path)
+        compile_import_proto.assert_called_once_with(compiler_out, proto_path)
         getfile.assert_not_called()
 
     @patch(COMPILE_IMPORT_PROTO)
@@ -107,7 +107,7 @@ class MetricLoggerTest(TestCase):
         proto_path = '/abs/path/to/my_proto.proto'
         MetricLogger._compile_proto(proto_path)
 
-        compile_import_proto.assert_called_once_wtih(compiler_out, proto_path)
+        compile_import_proto.assert_called_once_with(compiler_out, proto_path)
 
 
     def test_init_empty(self):
