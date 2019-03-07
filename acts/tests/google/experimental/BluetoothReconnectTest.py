@@ -165,7 +165,8 @@ class BluetoothReconnectTest(BaseTestClass):
 
         proto = self.bt_logger.get_results(metrics,
                                            self.__class__.__name__,
-                                           self.phone)
+                                           self.phone,
+                                           self.apollo)
 
         self.log.info('Metrics: {}'.format(metrics))
 
