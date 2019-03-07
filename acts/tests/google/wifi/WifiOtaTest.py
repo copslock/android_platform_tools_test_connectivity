@@ -91,7 +91,7 @@ class WifiOtaRvrTest(WifiRvrTest):
 
 class WifiOtaRvr_StandardOrientation_Test(WifiOtaRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        WifiOtaRvrTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
             [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
             ["VHT20", "VHT40", "VHT80"], list(range(0, 360,
@@ -100,23 +100,15 @@ class WifiOtaRvr_StandardOrientation_Test(WifiOtaRvrTest):
 
 class WifiOtaRvr_SampleChannel_Test(WifiOtaRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        WifiOtaRvrTest.__init__(self, controllers)
         self.tests = self.generate_test_cases([6, 36, 149], ["VHT20", "VHT80"],
                                               list(range(0, 360, 45)), ["TCP"],
                                               ["DL"])
 
 
-class WifiOtaRvr_TenDegree_Test(WifiOtaRvrTest):
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = self.generate_test_cases([6, 36, 149], ["VHT20", "VHT80"],
-                                              list(range(0, 360, 10)), ["TCP"],
-                                              ["DL"])
-
-
 class WifiOtaRvr_SingleOrientation_Test(WifiOtaRvrTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        WifiOtaRvrTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
             [6, 36, 40, 44, 48, 149, 153, 157, 161],
             ["VHT20", "VHT40", "VHT80"], [0], ["TCP"], ["DL", "UL"])
@@ -133,9 +125,6 @@ class WifiOtaPingTest(WifiPingTest):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = self.generate_test_cases(
-            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], ["VHT20"],
-            list(range(0, 360, 10)))
         self.ping_range_metric = BlackboxMetricLogger.for_test_case(
             metric_name='ping_range')
         self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
@@ -192,3 +181,19 @@ class WifiOtaPingTest(WifiPingTest):
             setattr(self, testcase_name, testcase_wrapper)
             test_cases.append(testcase_name)
         return test_cases
+
+
+class WifiOtaPing_TenDegree_Test(WifiOtaPingTest):
+    def __init__(self, controllers):
+        WifiOtaPingTest.__init__(self, controllers)
+        self.tests = self.generate_test_cases(
+            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], ["VHT20"],
+            list(range(0, 360, 10)))
+
+
+class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
+    def __init__(self, controllers):
+        WifiOtaPingTest.__init__(self, controllers)
+        self.tests = self.generate_test_cases(
+            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], ["VHT20"],
+            list(range(0, 360, 45)))

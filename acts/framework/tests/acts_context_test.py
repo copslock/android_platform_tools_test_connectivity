@@ -157,7 +157,8 @@ class TestContextTest(TestCase):
         self.assertEqual(context.get_subcontext('subcontext'), mock_path)
 
     @patch(LOGGING)
-    def test_get_full_output_path_returns_correct_path(self, _):
+    @patch('os.makedirs')
+    def test_get_full_output_path_returns_correct_path(self, *_):
         context = TestClassContext(TestClass())
         context.add_base_output_path('foo', 'base/path')
         context.add_subcontext('foo', 'subcontext')

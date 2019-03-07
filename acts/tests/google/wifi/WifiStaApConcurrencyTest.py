@@ -368,6 +368,10 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.turn_location_on_and_scan_toggle_on()
         self.connect_to_wifi_network_and_start_softap(
             self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
+        # Now toggle wifi off & ensure we can still scan.
+        wutils.wifi_toggle_state(self.dut, False)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, self.wpapsk_5g[WifiEnums.SSID_KEY])
 
     @test_tracker_info(uuid="4aa56c11-e5bc-480b-bd61-4b4ee577a5da")
     def test_softap_2G_wifi_connection_2G(self):
@@ -426,3 +430,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.turn_location_on_and_scan_toggle_on()
         self.start_softap_and_connect_to_wifi_network(
             self.wpapsk_2g, WIFI_CONFIG_APBAND_5G, 'wlan0')
+        # Now toggle wifi off & ensure we can still scan.
+        wutils.wifi_toggle_state(self.dut, False)
+        wutils.start_wifi_connection_scan_and_ensure_network_found(
+            self.dut, self.wpapsk_2g[WifiEnums.SSID_KEY])
