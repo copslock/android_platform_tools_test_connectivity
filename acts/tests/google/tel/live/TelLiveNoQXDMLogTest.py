@@ -33,8 +33,12 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_BOOT_COMPLETE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_CARRIERCONFIG_CHANGE
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_CARRIERID_CHANGE
 from acts.test_utils.tel.tel_defines import VZW_CARRIER_CONFIG_VERSION
 from acts.test_utils.tel.tel_defines import ATT_CARRIER_CONFIG_VERSION
+from acts.test_utils.tel.tel_defines import CARRIER_ID_METADATA_URL
+from acts.test_utils.tel.tel_defines import CARRIER_ID_CONTENT_URL
+from acts.test_utils.tel.tel_defines import CARRIER_ID_VERSION
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import lock_lte_band_by_mds
@@ -46,9 +50,13 @@ from acts.test_utils.tel.tel_test_utils import trigger_modem_crash_by_modem
 from acts.test_utils.tel.tel_test_utils import bring_up_sl4a
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import get_carrier_config_version
+from acts.test_utils.tel.tel_test_utils import get_carrier_id_version
 from acts.test_utils.tel.tel_test_utils import adb_disable_verity
 from acts.test_utils.tel.tel_test_utils import install_carriersettings_apk
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import cleanup_configupdater
+from acts.test_utils.tel.tel_test_utils import pull_carrier_id_files
+from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.utils import get_current_epoch_time
 from acts.keys import Config
@@ -474,4 +482,148 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             ad.log.error(e)
             return False
 
+
+    @test_tracker_info(uuid="41e6f2d3-76c9-4d3d-97b3-7075ad98bd41")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_carrier_id_update_wifi_connected(self):
+        """Carrier Id Version Test after WiFi Connected
+
+        1. WiFi is connected
+        2. Perform setup steps to cleanup shared_prefs
+        3. Send P/H flag update to configUpdater
+        4. Wait for 5 mins and keep checking for version match
+
+        """
+        try:
+            result_flag = False
+            time_var = 1
+            ad = self.android_devices[0]
+            ad.log.info("Before - CarrierId is %s", get_carrier_id_version(ad))
+            # Setup Steps
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                ad.log.error("connect WiFi failed")
+                return False
+            cleanup_configupdater(ad)
+            time.sleep(5)
+
+            # Trigger Config Update
+            ad.log.info("Triggering Config Update")
+            ad.log.info("%s", CARRIER_ID_METADATA_URL)
+            exe_cmd("adb -s %s shell %s" % (ad.serial,CARRIER_ID_METADATA_URL))
+            ad.log.info("%s", CARRIER_ID_CONTENT_URL)
+            exe_cmd("adb -s %s shell %s" % (ad.serial,CARRIER_ID_CONTENT_URL))
+
+            # Wait for 5 mins for Carrier Id version upgrade
+            while(time_var < WAIT_TIME_FOR_CARRIERID_CHANGE):
+                current_version = get_carrier_id_version(ad)
+                if current_version == CARRIER_ID_VERSION:
+                    ad.log.info("After CarrierId is %s in %s mins",
+                                current_version, time_var)
+                    result_flag = True
+                    break
+                else:
+                    ad.log.debug("Carrier Id Version Not Match")
+                time.sleep(60)
+                time_var += 1
+
+            if not result_flag:
+                ad.log.info("Carrier Id Failed to Update in %s mins",
+                             WAIT_TIME_FOR_CARRIERID_CHANGE)
+
+            # pb file check
+            out = ad.adb.shell("ls -l data/misc/carrierid/carrier_list.pb")
+            if "No such" in out:
+                ad.log.error("carrier_list.pb file is missing")
+                result_flag = False
+            else:
+                ad.log.info("carrier_list.pb file is present")
+            return result_flag
+        except Exception as e:
+            ad.log.error(e)
+            return False
+        finally:
+            carrier_id_path = os.path.join(self.log_path, self.test_name,
+                                           "CarrierId_%s" % ad.serial)
+            pull_carrier_id_files(ad, carrier_id_path)
+
+
+    @test_tracker_info(uuid="836d3963-f56d-438e-a35c-0706ac385153")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_carrier_id_update_wifi_disconnected(self):
+        """Carrier Id Version Test with WiFi disconnected
+
+        1. WiFi is connected
+        2. Perform setup steps to cleanup shared_prefs
+        3. Send P/H flag update to configUpdater
+        4. Wait for 5 mins and keep checking for version match
+
+        """
+        try:
+            result_flag = False
+            time_var = 1
+            ad = self.android_devices[0]
+            ad.log.info("Before - CarrierId is %s", get_carrier_id_version(ad))
+
+            # Wifi Disconnect
+            cleanup_configupdater(ad)
+            wifi_toggle_state(ad.log, ad, False)
+
+            # Trigger Config Update
+            ad.log.info("Triggering Config Update")
+            ad.log.info("%s", CARRIER_ID_METADATA_URL)
+            exe_cmd("adb -s %s shell %s" % (ad.serial,CARRIER_ID_METADATA_URL))
+            ad.log.info("%s", CARRIER_ID_CONTENT_URL)
+            exe_cmd("adb -s %s shell %s" % (ad.serial,CARRIER_ID_CONTENT_URL))
+
+            # Wait for 5 mins for Carrier Id version upgrade
+            while(time_var < WAIT_TIME_FOR_CARRIERID_CHANGE):
+                current_version = get_carrier_id_version(ad)
+                if current_version == CARRIER_ID_VERSION:
+                    ad.log.info("After CarrierId is %s in %s mins",
+                                current_version, time_var)
+                    return False
+                else:
+                    ad.log.debug("Carrier Id Version Not Match")
+                time.sleep(60)
+                time_var += 1
+            ad.log.info("Success - CarrierId not upgraded during WiFi OFF")
+
+            # WiFi Connect
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                ad.log.error("connect WiFi failed")
+                return False
+
+            # Wait for 5 mins for Carrier Id version upgrade
+            while(time_var < WAIT_TIME_FOR_CARRIERID_CHANGE):
+                current_version = get_carrier_id_version(ad)
+                if current_version == CARRIER_ID_VERSION:
+                    ad.log.info("After CarrierId is %s in %s mins",
+                                current_version, time_var)
+                    result_flag = True
+                    break
+                else:
+                    ad.log.debug("Carrier Id Version Not Match")
+                time.sleep(60)
+                time_var += 1
+
+            if not result_flag:
+                ad.log.info("Carrier Id Failed to Update in %s mins",
+                             WAIT_TIME_FOR_CARRIERID_CHANGE)
+            # pb file check
+            out = ad.adb.shell("ls -l data/misc/carrierid/carrier_list.pb")
+            if "No such" in out:
+                ad.log.error("carrier_list.pb file is missing")
+                result_flag = False
+            else:
+                ad.log.info("carrier_list.pb file is present")
+            return result_flag
+        except Exception as e:
+            ad.log.error(e)
+            return False
+        finally:
+            carrier_id_path = os.path.join(self.log_path, self.test_name,
+                                           "CarrierId_%s" % ad.serial)
+            pull_carrier_id_files(ad, carrier_id_path)
 """ Tests End """
