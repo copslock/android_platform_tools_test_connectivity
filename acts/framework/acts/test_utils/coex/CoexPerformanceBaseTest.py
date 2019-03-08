@@ -41,9 +41,10 @@ def get_atten_range(start, stop, step):
     Returns:
         list of attenuation range.
     """
-    atten_step = int((stop - start)/ step)
+    atten_step = int(round((stop - start) / float(step)))
     atten_range = [start + x * step for x in range(0, atten_step)]
     return atten_range
+
 
 class CoexPerformanceBaseTest(CoexBaseTest):
     """Base test class for performance tests.
