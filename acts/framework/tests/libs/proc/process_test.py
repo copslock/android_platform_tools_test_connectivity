@@ -125,7 +125,8 @@ class ProcessTest(unittest.TestCase):
         with self.assertRaisesRegex(ProcessError, expected_msg):
             process.wait(0)
 
-    def test_wait_kills_after_timeout(self):
+    @mock.patch.object(Process, '_kill_process')
+    def test_wait_kills_after_timeout(self, *_):
         """Tests that if a TimeoutExpired error is thrown during wait, the
         process is killed."""
         process = Process('cmd')
@@ -134,9 +135,10 @@ class ProcessTest(unittest.TestCase):
 
         process.wait(0)
 
-        self.assertEqual(process._process.kill.called, True)
+        self.assertEqual(process._kill_process.called, True)
 
-    def test_wait_sets_stopped_to_true_before_process_kill(self):
+    @mock.patch.object(Process, '_kill_process')
+    def test_wait_sets_stopped_to_true_before_process_kill(self, *_):
         """Tests that stop() sets the _stopped attribute to True.
 
         This order is required to prevent the _exec_loop from calling
@@ -153,7 +155,7 @@ class ProcessTest(unittest.TestCase):
         process._process = mock.Mock()
         process._process.poll.return_value = None
         process._process.wait.side_effect = subprocess.TimeoutExpired('', '')
-        process._process.kill = test_call_order
+        process._kill_process = test_call_order
 
         process.wait()
 
@@ -236,7 +238,7 @@ class ProcessTest(unittest.TestCase):
         process = Process('cmd')
         process._process = mock.Mock()
         process._process.poll.return_value = None
-        process._process.kill = test_call_order
+        process._kill_process = test_call_order
         process._process.wait.side_effect = subprocess.TimeoutExpired('', '')
 
         process.stop()
