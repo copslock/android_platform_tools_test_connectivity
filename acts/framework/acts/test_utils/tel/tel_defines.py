@@ -588,6 +588,21 @@ NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA"
 NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA = "NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA"
 NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA"
 
+# Carrier Config Update
+CARRIER_ID_VERSION = "3"
+WAIT_TIME_FOR_CARRIERID_CHANGE = 6
+CARRIER_ID_METADATA_URL = "am broadcast -a com.google.android.gms." \
+     "phenotype.FLAG_OVERRIDE --es package 'com.google.android.configupdater'" \
+     " --es user '\*' --esa flags 'CarrierIdentification__metadata_url' " \
+     "--esa values 'https://www.gstatic.com/android/config_update/110618-" \
+     "carrier-id-metadata.txt' --esa types 'string' com.google.android.gms"
+
+CARRIER_ID_CONTENT_URL = "am broadcast -a com.google.android.gms." \
+     "phenotype.FLAG_OVERRIDE --es package 'com.google.android.configupdater'" \
+     " --es user '\*' --esa flags 'CarrierIdentification__content_url' " \
+     "--esa values 'https://www.gstatic.com/android/config_update/110618-" \
+     "carrier-id.pb' --esa types 'string' com.google.android.gms"
+
 # Constant for Messaging Event Name
 EventSmsDeliverSuccess = "SmsDeliverSuccess"
 EventSmsDeliverFailure = "SmsDeliverFailure"
@@ -656,7 +671,6 @@ NetworkCallbackSuspended = "Suspended"
 NetworkCallbackResumed = "Resumed"
 NetworkCallbackLinkPropertiesChanged = "LinkPropertiesChanged"
 NetworkCallbackInvalid = "Invalid"
-
 
 class SignalStrengthContainer:
     SIGNAL_STRENGTH_GSM = "gsmSignalStrength"

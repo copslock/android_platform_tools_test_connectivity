@@ -7067,6 +7067,17 @@ def get_screen_shot_logs(ads, test_name="", begin_time=None):
         get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)
 
 
+def get_carrier_id_version(ad):
+    out = ad.adb.shell("dumpsys activity service TelephonyDebugService | " \
+                       "grep -i carrier_list_version")
+    if out and ":" in out:
+        version = out.split(':')[1].lstrip()
+    else:
+        version = "0"
+    ad.log.debug("Carrier Config Version is %s", version)
+    return version
+
+
 def get_carrier_config_version(ad):
     out = ad.adb.shell("dumpsys carrier_config | grep version_string")
     if out and "-" in out:
@@ -7200,6 +7211,27 @@ def check_google_fi_activated(ad, retries=20):
             ad.log.info("SIM state is READY, SIM operator is Fi")
             return True
         time.sleep(5)
+
+
+def cleanup_configupdater(ad):
+    cmds = ('rm -rf /data/data/com.google.android.configupdater/shared_prefs',
+            'rm /data/misc/carrierid/carrier_list.pb',
+            'setprop persist.telephony.test.carrierid.ota true',
+            'rm /data/user_de/0/com.android.providers.telephony/shared_prefs'
+            '/CarrierIdProvider.xml')
+    for cmd in cmds:
+        ad.log.info("Cleanup ConfigUpdater - %s", cmd)
+        ad.adb.shell(cmd, ignore_status=True)
+
+
+def pull_carrier_id_files(ad, carrier_id_path):
+    utils.create_dir(carrier_id_path)
+    ad.log.info("Pull CarrierId Files")
+    cmds = ('/data/data/com.google.android.configupdater/shared_prefs/ %s' % carrier_id_path,
+            '/data/misc/carrierid/ %s' % carrier_id_path,
+            '/data/user_de/0/com.android.providers.telephony/shared_prefs/ %s' % carrier_id_path)
+    for cmd in cmds:
+        ad.adb.pull(cmd, timeout=30, ignore_status=True)
 
 
 def bring_up_connectivity_monitor(ad):
