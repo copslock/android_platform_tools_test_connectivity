@@ -4748,6 +4748,18 @@ def mms_receive_verify_after_call_hangup_for_subscription(
     return True
 
 
+def ensure_preferred_network_type_for_subscription(
+        ad,
+        network_preference
+        ):
+    sub_id = ad.droid.subscriptionGetDefaultSubId()
+    if not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
+            network_preference, sub_id):
+        ad.log.error("Set sub_id %s Preferred Networks Type %s failed.",
+                     sub_id, network_preference)
+    return True
+
+
 def ensure_network_rat(log,
                        ad,
                        network_preference,
