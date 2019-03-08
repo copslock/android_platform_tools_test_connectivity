@@ -153,6 +153,24 @@ class TelLabEtwsTest(TelephonyBaseTest):
             return False
         return True
 
+    def test_carrier_tmobile(self):
+        """ Sets the Carrier to TMO.
+        Returns: None
+        """
+        setattr(self.ad, "sim_card", "FiTMO")
+
+    def test_carrier_sprint(self):
+        """ Sets the Carrier to SPR.
+        Returns: None
+        """
+        setattr(self.ad, "sim_card", "FiSPR")
+
+    def test_carrier_uscc(self):
+        """ Sets the Carrier to USCC.
+        Returns: None
+        """
+        setattr(self.ad, "sim_card", "FiUSCC")
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="af4a00d0-9a91-45d5-9f65-9541e64a57f2")
