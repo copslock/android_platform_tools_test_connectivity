@@ -1,6 +1,6 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
-#   Copyright 2017 - Google
+#   Copyright 2016 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -14,13 +14,27 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 """
-    Test Script for Project Fi Setting
+Fi Switching Methods 
 """
-
 import time
-
-from acts.test_decorators import test_tracker_info
+from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
+from acts.controllers.anritsu_lib.md8475a import CBCHSetup
+from acts.controllers.anritsu_lib.md8475a import CTCHSetup
+from acts.controllers.anritsu_lib.md8475a import MD8475A
+from acts.test_utils.tel.anritsu_utils import cb_serial_number
+from acts.test_utils.tel.anritsu_utils import set_system_model_lte
+from acts.test_utils.tel.anritsu_utils import set_usim_parameters
+from acts.test_utils.tel.anritsu_utils import set_post_sim_params
+from acts.test_utils.tel.tel_test_utils import \
+    ensure_preferred_network_type_for_subscription
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_GSM_WCDMA
+from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
+from acts.test_decorators import test_tracker_info
+from acts.test_utils.tel.tel_defines import RAT_LTE
 from acts.test_utils.tel.tel_defines import CARRIER_SPT
 from acts.test_utils.tel.tel_defines import CARRIER_TMO
 from acts.test_utils.tel.tel_defines import CARRIER_USCC
@@ -39,6 +53,8 @@ from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_test_utils import add_google_account
 from acts.test_utils.tel.tel_test_utils import remove_google_account
 
+WAIT_TIME_BETWEEN_REG_AND_MSG = 15  # default 15 sec
+CARRIER = None
 CARRIER_AUTO = "auto"
 
 _CARRIER_DIALER_CODE_LOOKUP = {
@@ -53,7 +69,7 @@ _SWITCHING_PREF_FILE = (
 
 _INTENT_FLAGS = int(0x00008000 | 0x10000000 | 0x00080000 | 0x00020000)
 _TYCHO_PKG = 'com.google.android.apps.tycho'
-_MAX_WAIT_TIME = 600
+_MAX_WAIT_TIME = 120
 _TYCHO_VERBOSE_LOGGING_CMDS = [
     "setprop log.tag.Tycho VERBOSE",
     "CLASSPATH=/system/framework/am.jar su root app_process "
@@ -94,9 +110,90 @@ class ActionTypeId(object):
         'com.google.android.apps.tycho.ActionType.ACTIVATE_SUPER_NETWORK')
 
 
-class TelLiveProjectFiTest(TelephonyBaseTest):
+class TelLabProjectFiTest(TelephonyBaseTest):
+    SERIAL_NO = cb_serial_number()
+
+    def __init__(self, controllers):
+        TelephonyBaseTest.__init__(self, controllers)
+        self.ad = self.android_devices[0]
+        self.ad.sim_card = getattr(self.ad, "sim_card", None)
+        self.md8475a_ip_address = self.user_params[
+            "anritsu_md8475a_ip_address"]
+        self.wlan_option = self.user_params.get("anritsu_wlan_option", False)
+        self.md8475_version = self.user_params.get("md8475", "A")
+        self.ad.adb.shell("settings put secure cmas_additional_broadcast_pkg "
+                          "com.googlecode.android_scripting")
+        self.wait_time_between_reg_and_msg = self.user_params.get(
+            "wait_time_between_reg_and_msg", WAIT_TIME_BETWEEN_REG_AND_MSG)
+
     def setup_class(self):
+        try:
+            self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
+                                   self.wlan_option, self.md8475_version)
+        except AnritsuError:
+            self.log.error("Error in connecting to Anritsu Simulator")
+            return False
         self.activation_attemps = self.user_params.get("activation_attemps", 3)
+        return True
+
+    def setup_test(self):
+        if getattr(self, "qxdm_log", True):
+            start_qxdm_loggers(self.log, self.android_devices)
+        ensure_phones_idle(self.log, self.android_devices)
+        toggle_airplane_mode(self.log, self.ad, True)
+        return True
+
+    def teardown_test(self):
+        self.log.info("Stopping Simulation")
+        self.anritsu.stop_simulation()
+        toggle_airplane_mode(self.log, self.ad, True)
+
+    def teardown_class(self):
+        self.anritsu.disconnect()
+        return True
+
+    def _bring_up_callbox(
+            self,
+            set_simulation_func,
+            rat):
+        try:
+            [self.bts1] = set_simulation_func(self.anritsu, self.user_params,
+                                              self.ad.sim_card)
+            set_usim_parameters(self.anritsu, self.ad.sim_card)
+            if rat == RAT_LTE:
+                set_post_sim_params(self.anritsu, self.user_params,
+                                    self.ad.sim_card)
+            self.anritsu.start_simulation()
+
+            if rat == RAT_LTE:
+                preferred_network_setting = NETWORK_MODE_LTE_GSM_WCDMA
+                rat_family = RAT_FAMILY_LTE
+            else:
+                self.log.error("No valid RAT provided to bring up callbox.")
+                return False
+
+            if not ensure_preferred_network_type_for_subscription(
+                    self.ad,
+                    preferred_network_setting):
+                self.log.error(
+                    "Failed to set rat family {}, preferred network:{}".format(
+                        rat_family, preferred_network_setting))
+                return False
+
+            if self.ad.droid.connectivityCheckAirplaneMode():
+                toggle_airplane_mode(self.log, self.ad, False)
+        except AnritsuError as e:
+            self.log.error("Error in connection with Anritsu Simulator: " +
+                           str(e))
+            return False
+        return True
+
+    def pre_switching_callbox_setup(self):
+        """ Setup environment to enable carrier switching
+        Returns:
+            True if pass; False if fail
+        """
+        return self._bring_up_callbox(set_system_model_lte, RAT_LTE)
 
     def _install_account_util(self, ad):
         account_util = self.user_params["account_util"]
@@ -118,8 +215,8 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         if hasattr(ad, "user_account"):
             ad.exit_setup_wizard()
             if not ad.is_apk_installed("com.google.android.tradefed.account"
-                                       ) and self.user_params.get(
-                                           "account_util"):
+                                       ) and \
+                    self.user_params.get("account_util"):
                 for _ in range(2):
                     if self._install_account_util(ad):
                         break
@@ -344,7 +441,8 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
         """Requests an active carrier to be set on the device sim.
 
         If switching to a different carrier, after the switch is completed
-        auto-switching will be disabled. To re-enable, call enable_auto_switching.
+        auto-switching will be disabled. To re-enable, call
+        enable_auto_switching.
 
         Args:
             ad: An AndroidDevice Object.
@@ -357,6 +455,14 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                    the timeout window.
         """
         # If there's no need to switch, then don't.
+
+        if self.pre_switching_callbox_setup():
+            self.log.info("Turned ON Anritsu for Switching")
+            pass
+        else:
+            self.log.error("Failed to Camp to Anritsu")
+            return False
+
         max_time = timeout
         while max_time >= 0:
             if self.is_ready_to_make_carrier_switch(ad):
@@ -384,12 +490,14 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
     def is_switching_silent(self, ad):
         """Checks if Tycho switching controller is in silent mode.
 
-        Note that silent mode is a sign of airplane mode, not of a switching lock.
+        Note that silent mode is a sign of airplane mode, not of a switching \
+        lock.
 
         Args: ad: An AndroidDevice Object.
 
         Returns:
-            A Boolean True if the preferences file reports True, False otherwise.
+            A Boolean True if the preferences file reports True, False
+            otherwise.
         """
         return "isInSilentMode\" value=\"true" in ad.adb.shell(
             "cat %s | grep isInSilentMode" % _SWITCHING_PREF_FILE,
@@ -438,7 +546,8 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             ad: An AndroidDevice Object.
 
         Returns:
-             A Boolean True if the preferences file reports True, False otherwise.
+             A Boolean True if the preferences file reports True, False
+             otherwise.
         """
         switching_preferences = ad.adb.shell("cat %s" % _SWITCHING_PREF_FILE)
         return 'InProgress\" value=\"true' in switching_preferences
@@ -484,7 +593,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             return False
 
     def operator_network_switch(self, ad, carrier):
-        if ad.droid.telephonyGetSimOperatorName() == "Fi Network":
+        if ad.droid.telephonyGetSimOperatorName() == "Google Fi":
             for i in range(3):
                 if self.set_active_carrier(ad, carrier):
                     break
@@ -535,28 +644,31 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
+        setattr(self.ad, "sim_card", "FiTMO")
         return self.network_switch_test(CARRIER_TMO)
 
     @test_tracker_info(uuid="4f27944d-f3c5-423d-b0c5-5c66dbb98376")
     @TelephonyBaseTest.tel_test_wrap
     def test_switch_to_sprint_network(self):
-        """Test switch to tmobile network.
+        """Test switch to sprint network.
 
         Returns:
             True if success.
             False if failed.
         """
+        setattr(self.ad, "sim_card", "FiSPR")
         return self.network_switch_test(CARRIER_SPT)
 
     @test_tracker_info(uuid="5f30c9bd-b79e-4805-aa46-7855ed9023f0")
     @TelephonyBaseTest.tel_test_wrap
     def test_switch_to_uscc_network(self):
-        """Test switch to tmobile network.
+        """Test switch to uscc network.
 
         Returns:
             True if success.
             False if failed.
         """
+        setattr(self.ad, "sim_card", "FiUSCC")
         return self.network_switch_test(CARRIER_USCC)
 
     @test_tracker_info(uuid="0b062751-d59d-420e-941e-3ffa02aea0d5")
