@@ -42,7 +42,7 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
 
     def __init__(self, configs):
         super(A2dpCodecBaseTest, self).__init__(configs)
-        required_params = ["audio_params", "dut", "codecs"]
+        required_params = ["audio_params", "dut"]
         self.unpack_userparams(required_params)
 
         # Instantiate test devices

@@ -27,6 +27,7 @@ from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import verify_server_and_client_connected
 from acts.test_utils.bt.bt_test_utils import write_read_verify_data
 from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
+from acts.test_utils.bt.loggers.protos import bluetooth_metric_pb2 as proto_module
 from acts.utils import set_location_service
 
 
@@ -36,6 +37,8 @@ class BluetoothLatencyTest(BaseTestClass):
         Attributes:
              client_device: An Android device object that will be sending data
              server_device: An Android device object that will be receiving data
+             bt_logger: The proxy logger instance for each test case
+             data_transfer_type: Data transfer protocol used for the test
         """
 
     def __init__(self, configs):
@@ -51,6 +54,7 @@ class BluetoothLatencyTest(BaseTestClass):
         self.client_device = self.android_devices[0]
         self.server_device = self.android_devices[1]
         self.bt_logger = BluetoothMetricLogger.for_test_case()
+        self.data_transfer_type = proto_module.BluetoothDataTestResult.RFCOMM
         self.log.info('Successfully found required devices.')
 
     def setup_test(self):
@@ -117,6 +121,7 @@ class BluetoothLatencyTest(BaseTestClass):
         for _ in range(300):
             latency_list.append(self._measure_latency())
 
+        metrics['data_transfer_protocol'] = self.data_transfer_type
         metrics['data_latency_min_millis'] = int(min(latency_list))
         metrics['data_latency_max_millis'] = int(max(latency_list))
         metrics['data_latency_avg_millis'] = int(statistics.mean(latency_list))
