@@ -587,6 +587,7 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
                     ad.log.debug("Carrier Id Version Not Match")
                 time.sleep(60)
                 time_var += 1
+            time_var = 1
             ad.log.info("Success - CarrierId not upgraded during WiFi OFF")
 
             # WiFi Connect
