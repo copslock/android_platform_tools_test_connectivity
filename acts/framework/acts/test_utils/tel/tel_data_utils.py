@@ -341,6 +341,7 @@ def airplane_mode_test(log, ad, retries=3):
             ad.log.error("Current service state is not 'IN_SERVICE'.")
             return False
 
+        time.sleep(30)
         if not ad.droid.connectivityNetworkIsConnected():
             ad.log.error("Network is NOT connected!")
             return False
@@ -380,6 +381,7 @@ def airplane_mode_test(log, ad, retries=3):
             ad.log.error("Current service state is not 'IN_SERVICE'.")
             return False
 
+        time.sleep(30)
         if not ad.droid.connectivityNetworkIsConnected():
             ad.log.warning("Network is NOT connected!")
 
