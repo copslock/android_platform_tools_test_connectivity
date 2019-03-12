@@ -284,7 +284,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.messaging_ed.start()
             ad.messaging_droid.logI("[BEGIN]%s" % log_msg)
 
-        text = "%s: " % test_name
+        text = "%s:" % test_name
         text_length = len(text)
         if length < text_length:
             text = text[:length]
