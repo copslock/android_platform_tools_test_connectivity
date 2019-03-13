@@ -34,6 +34,8 @@ SCAN_RESULTS = 'wpa_cli scan_results'
 SIGNAL_POLL = 'wpa_cli signal_poll'
 CONST_3dB = 3.01029995664
 RSSI_ERROR_VAL = float('nan')
+RTT_REGEX = re.compile(r'^\[(?P<timestamp>\S+)\] .*? time=(?P<rtt>\S+)')
+LOSS_REGEX = re.compile(r'(?P<loss>\S+)% packet loss')
 
 
 # Threading decorator
@@ -105,7 +107,7 @@ def bokeh_plot(data_sets,
             legend=str(legend),
             fill_color=color)
 
-    #Plot properties
+    # Plot properties
     plot.xaxis.axis_label = fig_property['x_label']
     plot.yaxis.axis_label = fig_property['y_label']
     plot.legend.location = 'top_right'
@@ -123,11 +125,106 @@ def save_bokeh_plots(plot_array, output_file_path):
     bokeh.plotting.save(all_plots)
 
 
-# Ping Utilities
-@staticmethod
-def disconnected_ping_result():
-    return collections.OrderedDict([('connected', 0), ('rtt', [float('nan')]),
-                                    ('packet_loss_percentage', 100)])
+class PingResult(object):
+    """An object that contains the results of running ping command.
+
+    Attributes:
+        connected: True if a connection was made. False otherwise.
+        packet_loss_percentage: The total percentage of packets lost.
+        transmission_times: The list of PingTransmissionTimes containing the
+            timestamps gathered for transmitted packets.
+        rtts: An list-like object enumerating all round-trip-times of
+            transmitted packets.
+        timestamps: A list-like object enumerating the beginning timestamps of
+            each packet transmission.
+        ping_interarrivals: A list-like object enumerating the amount of time
+            between the beginning of each subsequent transmission.
+    """
+    def __init__(self, ping_output):
+        self.connected = len(ping_output) > 1
+        self.packet_loss_percentage = 100
+
+        self.transmission_times = []
+
+        self.rtts = _ListWrap(self.transmission_times, lambda entry: entry.rtt)
+        self.timestamps = _ListWrap(self.transmission_times,
+                                    lambda entry: entry.timestamp)
+        self.ping_interarrivals = _PingInterarrivals(self.transmission_times)
+
+        for line in ping_output:
+            if 'loss' in line:
+                match = re.search(LOSS_REGEX, line)
+                self.packet_loss_percentage = float(match.group('loss'))
+            if 'time=' in line:
+                match = re.search(RTT_REGEX, line)
+                self.transmission_times.append(PingTransmissionTimes(
+                    float(match.group('timestamp')), float(match.group('rtt'))))
+
+    def __getitem__(self, item):
+        if item == 'rtt':
+            return self.rtts
+        if item == 'connected':
+            return self.connected
+        if item == 'packet_loss_percentage':
+            return self.packet_loss_percentage
+        raise ValueError('Invalid key. Please use an attribute instead.')
+
+    def as_dict(self):
+        return {
+            'connected': 1 if self.connected else 0,
+            'rtt': list(self.rtts),
+            'time_stamp': list(self.timestamps),
+            'ping_interarrivals': list(self.ping_interarrivals),
+            'packet_loss_percentage': self.packet_loss_percentage
+        }
+
+
+class PingTransmissionTimes(object):
+    """A class that holds the timestamps for a packet sent via the ping command.
+
+    Attributes:
+        rtt: The round trip time for the packet sent.
+        timestamp: The timestamp the packet started its trip.
+    """
+    def __init__(self, timestamp, rtt):
+        self.rtt = rtt
+        self.timestamp = timestamp
+
+
+class _ListWrap(object):
+    """A convenient helper class for treating list iterators as native lists."""
+
+    def __init__(self, wrapped_list, func):
+        self.__wrapped_list = wrapped_list
+        self.__func = func
+
+    def __getitem__(self, key):
+        return self.__func(self.__wrapped_list[key])
+
+    def __iter__(self):
+        for item in self.__wrapped_list:
+            yield self.__func(item)
+
+    def __len__(self):
+        return len(self.__wrapped_list)
+
+
+class _PingInterarrivals(object):
+    """A helper class for treating ping interarrivals as a native list."""
+
+    def __init__(self, ping_entries):
+        self.__ping_entries = ping_entries
+
+    def __getitem__(self, key):
+        return (self.__ping_entries[key + 1].timestamp
+                - self.__ping_entries[key].timestamp)
+
+    def __iter__(self):
+        for index in range(len(self.__ping_entries) - 1):
+            yield self[index]
+
+    def __len__(self):
+        return len(self.__ping_entries) - 1
 
 
 def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
@@ -146,7 +243,7 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     Returns:
         ping_result: dict containing ping results and other meta data
     """
-    ping_cmd = 'ping -w {} -i {} -s {}'.format(
+    ping_cmd = 'ping -w {} -i {} -s {} -D'.format(
         ping_duration,
         ping_interval,
         ping_size,
@@ -158,28 +255,10 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     elif isinstance(src_device, ssh.connection.SshConnection):
         ping_cmd = 'sudo {} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.run(ping_cmd, ignore_status=True).stdout
-    ping_output = ping_output.splitlines()
-
-    if len(ping_output) == 1:
-        ping_result = disconnected_ping_result()
     else:
-        packet_loss_line = [line for line in ping_output if 'loss' in line]
-        packet_loss_percentage = int(
-            packet_loss_line[0].split('%')[0].split(' ')[-1])
-        if packet_loss_percentage == 100:
-            rtt = [float('nan')]
-        else:
-            rtt = [
-                line.split('time=')[1] for line in ping_output
-                if 'time=' in line
-            ]
-            rtt = [float(line.split(' ')[0]) for line in rtt]
-        ping_result = {
-            'connected': 1,
-            'rtt': rtt,
-            'packet_loss_percentage': packet_loss_percentage
-        }
-    return ping_result
+        raise TypeError('Unable to ping using src_device of type %s.'
+                        % type(src_device))
+    return PingResult(ping_output.splitlines())
 
 
 @nonblocking
