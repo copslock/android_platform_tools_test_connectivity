@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import enum
 import logging
 import os
 
@@ -26,18 +27,26 @@ from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.event.event import TestClassEvent
 
-_contexts = []  # stack for keeping track of the current test context
+
+class ContextLevel(enum.IntEnum):
+    ROOT = 0
+    TESTCLASS = 1
+    TESTCASE = 2
 
 
-def get_current_context():
-    """Get the current test context. Pulls the most recently created context
-    from the top of the _contexts stack.
+def get_current_context(depth=ContextLevel.TESTCASE):
+    """Get the current test context at the specified depth.
+    Pulls the most recently created context, with a level at or below the given
+    depth, from the _contexts stack.
 
-    Returns: An instance of TestContext, or a RootContext if _contexts is empty.
+    Args:
+        depth: The desired context level. For example, the TESTCLASS level would
+            yield the current test class context, even if the test is currently
+            within a test case.
+
+    Returns: An instance of TestContext.
     """
-    if _contexts:
-        return _contexts[-1]
-    return RootContext()
+    return _contexts[min(depth, len(_contexts)-1)]
 
 
 def get_context_for_event(event):
@@ -337,3 +346,7 @@ class TestCaseContext(TestContext):
         return os.path.join(
             self.test_class_name,
             self.test_case_name)
+
+
+# stack for keeping track of the current test context
+_contexts = [RootContext()]
