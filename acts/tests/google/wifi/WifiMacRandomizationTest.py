@@ -314,8 +314,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
         """
         self.check_mac_persistence(self.wpapsk_2g, REBOOT_DUT)
 
-    @test_tracker_info(uuid="82d691a0-22e4-4a3d-9596-e150531fcd34")
-    def test_persistent_mac_after_ap_reboot(self):
+    # Disable reboot test for debugging purpose.
+    #@test_tracker_info(uuid="82d691a0-22e4-4a3d-9596-e150531fcd34")
+    def persistent_mac_after_ap_reboot(self):
         """Check if MAC is persistent after AP reboots itself.
 
         Steps:
