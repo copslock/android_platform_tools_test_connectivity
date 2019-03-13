@@ -614,7 +614,7 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
                              WAIT_TIME_FOR_CARRIERID_CHANGE)
             # pb file check
             out = ad.adb.shell("ls -l data/misc/carrierid/carrier_list.pb")
-            if "No such" in out:
+            if not out or "No such" in out:
                 ad.log.error("carrier_list.pb file is missing")
                 result_flag = False
             else:
