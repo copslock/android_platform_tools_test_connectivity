@@ -46,7 +46,9 @@ class WifiPingTest(base_test.BaseTestClass):
     MAX_CONSECUTIVE_ZEROS = 5
     DISCONNECTED_PING_RESULT = {
         "connected": 0,
-        "rtt": [float("nan")],
+        "rtt": [],
+        "time_stamp": [],
+        "ping_interarrivals": [],
         "packet_loss_percentage": 100
     }
 
@@ -96,9 +98,9 @@ class WifiPingTest(base_test.BaseTestClass):
         utils.create_dir(self.log_path)
         if not hasattr(self, "golden_files_list"):
             self.golden_files_list = [
-                os.path.join(self.testbed_params["golden_results_path"],
-                             file) for file in os.listdir(
-                                 self.testbed_params["golden_results_path"])
+                os.path.join(self.testbed_params["golden_results_path"], file)
+                for file in os.listdir(
+                    self.testbed_params["golden_results_path"])
             ]
         self.testclass_results = []
 
@@ -153,8 +155,8 @@ class WifiPingTest(base_test.BaseTestClass):
             if rtt > self.testclass_params["rtt_threshold"] * 1000:
                 test_failed = True
                 self.log.info(
-                    "RTT Failed. Test %ile RTT = {}ms. Mean = {}ms. Stdev = {}".
-                    format(rtt, mean_rtt[idx], std_rtt[idx]))
+                    "RTT Failed. Test %ile RTT = {}ms. Mean = {}ms. Stdev = {}"
+                    .format(rtt, mean_rtt[idx], std_rtt[idx]))
         if test_failed:
             asserts.fail("RTT above threshold")
         else:
@@ -178,7 +180,8 @@ class WifiPingTest(base_test.BaseTestClass):
         # Set Blackbox metric
         self.ping_range_metric.metric_value = ping_range_result["range"]
         # Evaluate test pass/fail
-        if ping_range_result["range"] - rvr_range < -self.testclass_params["range_gap_threshold"]:
+        if ping_range_result["range"] - rvr_range < -self.testclass_params[
+                "range_gap_threshold"]:
             asserts.fail(
                 "Attenuation at range is {}dB. Golden range is {}dB".format(
                     ping_range_result["range"], rvr_range))
@@ -331,7 +334,7 @@ class WifiPingTest(base_test.BaseTestClass):
                 self.log.info(
                     "Attenuation = {}dB. Disconnected.".format(atten))
                 zero_counter = zero_counter + 1
-            test_result["ping_results"].append(current_ping_stats)
+            test_result["ping_results"].append(current_ping_stats.as_dict())
             if zero_counter == self.MAX_CONSECUTIVE_ZEROS:
                 self.log.info("Ping loss stable at 100%. Stopping test now.")
                 for idx in range(
@@ -351,11 +354,11 @@ class WifiPingTest(base_test.BaseTestClass):
         band = self.access_point.band_lookup_by_channel(
             testcase_params["channel"])
         if "2G" in band:
-            frequency = wutils.WifiEnums.channel_2G_to_freq[testcase_params[
-                "channel"]]
+            frequency = wutils.WifiEnums.channel_2G_to_freq[
+                testcase_params["channel"]]
         else:
-            frequency = wutils.WifiEnums.channel_5G_to_freq[testcase_params[
-                "channel"]]
+            frequency = wutils.WifiEnums.channel_5G_to_freq[
+                testcase_params["channel"]]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params["DFS_region"])
         else:
