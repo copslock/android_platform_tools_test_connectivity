@@ -142,8 +142,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             results_dict: dict containing consistency test results
         """
         self.detect_roam_events(result)
-
-        plot_file_path = os.path.join(context.get_current_context(),
+        current_context = context.get_current_context().get_full_output_path()
+        plot_file_path = os.path.join(current_context,
                                       self.current_test_name + '.html')
 
         if 'ping' in self.current_test_name:
@@ -155,7 +155,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             self.plot_iperf_result(
                 testcase_params, result, output_file_path=plot_file_path)
 
-        results_file_path = os.path.join(context.get_current_context(),
+        results_file_path = os.path.join(current_context,
                                          self.current_test_name + '.json')
         with open(results_file_path, 'w') as results_file:
             json.dump(result, results_file, indent=4)
@@ -181,6 +181,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             primary_y_axis = 'Throughput (Mbps)'
         # loop over results
         roam_stats = collections.OrderedDict()
+        current_context = context.get_current_context().get_full_output_path()
         for secondary_atten, results_list in results_dict.items():
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
@@ -199,12 +200,12 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             # save plot
             plot_file_name = (
                 self.current_test_name + '_' + secondary_atten + '.html')
-            plot_file_path = os.path.join(context.get_current_context(),
-                                          plot_file_name)
+
+            plot_file_path = os.path.join(current_context, plot_file_name)
             figure.save_figure(plot_file_path)
         results_dict['roam_stats'] = roam_stats
 
-        results_file_path = os.path.join(context.get_current_context(),
+        results_file_path = os.path.join(current_context,
                                          self.current_test_name + '.json')
         with open(results_file_path, 'w') as results_file:
             json.dump(result, results_file, indent=4)

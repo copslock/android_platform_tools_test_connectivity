@@ -55,6 +55,19 @@ class OtaChamber(object):
         raise NotImplementedError
 
 
+class MockChamber(OtaChamber):
+    """Class that implements mock chamber for test development and debug."""
+
+    def __init__(self, config):
+        self.config = config.copy()
+        self.device_id = self.config['device_id']
+        self.log = logger.create_tagged_trace_logger('OtaChamber|{}'.format(
+            self.device_id))
+
+    def set_orientation(self, orientation):
+        self.log.info('Setting orientation to {} degrees.'.format(orientation))
+
+
 class OctoboxChamber(OtaChamber):
     """Class that implements Octobox chamber."""
 
@@ -68,11 +81,6 @@ class OctoboxChamber(OtaChamber):
                                              self.device_id))
 
     def set_orientation(self, orientation):
-        """Set orientation for turn table in OTA chamber.
-
-        Args:
-            angle: desired turn table orientation in degrees
-        """
         self.log.info('Setting orientation to {} degrees.'.format(orientation))
         utils.exe_cmd('{} -d {} -p {}'.format(self.TURNTABLE_FILE_PATH,
                                               self.device_id, orientation))
