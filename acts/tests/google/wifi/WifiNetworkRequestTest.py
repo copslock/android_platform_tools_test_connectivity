@@ -83,6 +83,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         self.dut.droid.wifiReleaseNetworkAll()
+        self.dut.droid.wifiDisconnect()
         wutils.reset_wifi(self.dut)
         self.dut.ed.clear_all_events()
 
