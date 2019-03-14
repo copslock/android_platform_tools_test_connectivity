@@ -252,8 +252,8 @@ class IPerfServerBase(object):
 
         with IPerfServerBase.__log_file_lock:
             tags = [tag, IPerfServerBase.__log_file_counter]
-            out_file_name = 'IPerfServer,%s.log' % (
-                ','.join([str(x) for x in tags if x != '' and x is not None]))
+            out_file_name = 'IPerfServer,%s.log' % (','.join(
+                [str(x) for x in tags if x != '' and x is not None]))
             IPerfServerBase.__log_file_counter += 1
 
         file_path = os.path.join(out_dir, out_file_name)
@@ -474,8 +474,8 @@ class IPerfServerOverAdb(IPerfServerBase):
                 cmd=self._iperf_command,
                 extra_flags=extra_args,
                 log_file=self._get_device_log_path()))
-        self._iperf_process_adb_pid = None
-        while self._iperf_process_adb_pid == None:
+        self._iperf_process_adb_pid = ''
+        while len(self._iperf_process_adb_pid) == 0:
             self._iperf_process_adb_pid = self._android_device.adb.shell(
                 'pgrep iperf3 -n')
 
