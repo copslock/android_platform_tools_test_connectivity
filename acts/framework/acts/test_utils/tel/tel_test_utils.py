@@ -7240,10 +7240,12 @@ def cleanup_configupdater(ad):
 def pull_carrier_id_files(ad, carrier_id_path):
     utils.create_dir(carrier_id_path)
     ad.log.info("Pull CarrierId Files")
-    cmds = ('/data/data/com.google.android.configupdater/shared_prefs/ %s' % carrier_id_path,
-            '/data/misc/carrierid/ %s' % carrier_id_path,
-            '/data/user_de/0/com.android.providers.telephony/shared_prefs/ %s' % carrier_id_path)
+    cmds = ('/data/data/com.google.android.configupdater/shared_prefs/',
+            '/data/misc/carrierid/',
+            '/data/user_de/0/com.android.providers.telephony/shared_prefs/',
+            '/data/data/com.android.providers.downloads/databases/downloads.db')
     for cmd in cmds:
+        cmd = cmd + " %s" % carrier_id_path
         ad.adb.pull(cmd, timeout=30, ignore_status=True)
 
 
