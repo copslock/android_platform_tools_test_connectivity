@@ -23,7 +23,7 @@ import os
 from acts import asserts
 from acts import base_test
 from acts import utils
-from acts.controllers import iperf_server as ipf
+from acts.controllers import iperf_client
 from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -42,6 +42,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
     example_connectivity_performance_ap_sta.json.
     """
 
+    RSSI_POLL_INTERVAL = 0.2
     VALID_TEST_CONFIGS = {
         1: ["legacy", "VHT20"],
         2: ["legacy", "VHT20"],
@@ -57,18 +58,44 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         157: ["legacy", "VHT20"],
         161: ["legacy", "VHT20"]
     }
+    RateTuple = collections.namedtuple(("RateTuple"),
+                                       ["mcs", "streams", "data_rate"])
+    #yapf:disable
     VALID_RATES = {
-        "legacy_2GHz": [[54, 1], [48, 1], [36, 1], [24, 1], [18, 1], [12, 1],
-                        [11, 1], [9, 1], [6, 1], [5.5, 1], [2, 1], [1, 1]],
-        "legacy_5GHz": [[54, 1], [48, 1], [36, 1], [24, 1], [18, 1], [12, 1],
-                        [9, 1], [6, 1]],
-        "HT": [[8, 1], [7, 1], [6, 1], [5, 1], [4, 1], [3, 1], [2, 1], [1, 1],
-               [0, 1], [15, 2], [14, 2], [13, 2], [12, 2], [11, 2], [10, 2],
-               [9, 2], [8, 2]],
-        "VHT": [[9, 1], [8, 1], [7, 1], [6, 1], [5, 1], [4, 1], [3, 1], [2, 1],
-                [1, 1], [0, 1], [9, 2], [8, 2], [7, 2], [6, 2], [5, 2], [4, 2],
-                [3, 2], [2, 2], [1, 2], [0, 2]]
+        "legacy_2GHz": [
+            RateTuple(54, 1, 54), RateTuple(48, 1, 48),
+            RateTuple(36, 1, 36), RateTuple(24, 1, 24),
+            RateTuple(18, 1, 18), RateTuple(12, 1, 12),
+            RateTuple(11, 1, 11), RateTuple(9, 1, 9),
+            RateTuple(6, 1, 6), RateTuple(5.5, 1, 5.5),
+            RateTuple(2, 1, 2), RateTuple(1, 1, 1)],
+        "legacy_5GHz": [
+            RateTuple(54, 1, 54), RateTuple(48, 1, 48),
+            RateTuple(36, 1, 36), RateTuple(24, 1, 24),
+            RateTuple(18, 1, 18), RateTuple(12, 1, 12),
+            RateTuple(9, 1, 9), RateTuple(6, 1, 6)],
+        "HT20": [
+            RateTuple(7, 1, 72.2), RateTuple(6, 1, 65),
+            RateTuple(5, 1, 57.8), RateTuple(4, 1, 43.3),
+            RateTuple(3, 1, 26), RateTuple(2, 1, 21.7),
+            RateTuple(1, 1, 14.4), RateTuple(0, 1, 7.2),
+            RateTuple(15, 2, 144.4), RateTuple(14, 2, 130),
+            RateTuple(13, 2, 115.6), RateTuple(12, 2, 86.7),
+            RateTuple(11, 2, 57.8), RateTuple(10, 2, 43.4),
+            RateTuple(9, 2, 28.9), RateTuple(8, 2, 14.4)],
+        "VHT20": [
+            RateTuple(9, 1, 96), RateTuple(8, 1, 86.7),
+            RateTuple(7, 1, 72.2), RateTuple(6, 1, 65),
+            RateTuple(5, 1, 57.8), RateTuple(4, 1, 43.3),
+            RateTuple(3, 1, 28.9), RateTuple(2, 1, 21.7),
+            RateTuple(1, 1, 14.4), RateTuple(0, 1, 7.2),
+            RateTuple(9, 2, 192), RateTuple(8, 2, 173.3),
+            RateTuple(7, 2, 144.4), RateTuple(6, 2, 130.3),
+            RateTuple(5, 2, 115.6), RateTuple(4, 2, 86.7),
+            RateTuple(3, 2, 57.8), RateTuple(2, 2, 43.3),
+            RateTuple(1, 2, 28.9), RateTuple(0, 2, 14.4)],
     }
+    #yapf:enable
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
@@ -94,21 +121,16 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             ssh.settings.from_config(self.RemoteServer[0]["ssh_config"]))
         self.iperf_server = self.iperf_servers[0]
         self.iperf_client = self.iperf_clients[0]
-        if isinstance(self.iperf_server, ipf.IPerfServerOverSsh):
-            self.ping_server = self.iperf_server
-        else:
-            self.ping_server = self.iperf_client
-        self.access_points = retail_ap.create(self.RetailAccessPoints)
-        self.access_point = self.access_points[0]
+        self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
         self.log.info("Access Point Configuration: {}".format(
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, "results")
         utils.create_dir(self.log_path)
         if not hasattr(self, "golden_files_list"):
             self.golden_files_list = [
-                os.path.join(self.testbed_params["golden_results_path"],
-                             file) for file in os.listdir(
-                                 self.testbed_params["golden_results_path"])
+                os.path.join(self.testbed_params["golden_results_path"], file)
+                for file in os.listdir(
+                    self.testbed_params["golden_results_path"])
             ]
         self.testclass_results = []
 
@@ -135,15 +157,18 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                                if "sensitivity_targets" in file_name)
             with open(golden_path, 'r') as golden_file:
                 golden_results = json.load(golden_file)
-            golden_sensitivity = golden_results[self.current_test_name][
-                "sensitivity"]
+            golden_sensitivity = golden_results[
+                self.current_test_name]["sensitivity"]
         except:
             golden_sensitivity = float("nan")
 
-        result_string = "Througput = {}, Sensitivity = {}. Target Sensitivity = {}".format(
-            result["peak_throughput"], result["sensitivity"],
+        result_string = "Througput = {}%, Sensitivity = {}. Target Sensitivity = {}".format(
+            result["peak_throughput_pct"], result["sensitivity"],
             golden_sensitivity)
-        if result["sensitivity"] - golden_sensitivity < self.testclass_params["sensitivity_tolerance"]:
+        if result["peak_throughput_pct"] < 100:
+            self.log.warning("Result unreliable. Peak rate unstable")
+        if result["sensitivity"] - golden_sensitivity < self.testclass_params[
+                "sensitivity_tolerance"]:
             asserts.explicit_pass("Test Passed. {}".format(result_string))
         else:
             asserts.fail("Test Failed. {}".format(result_string))
@@ -152,36 +177,54 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         """Saves and plots test results from all executed test cases."""
         # write json output
         testclass_results_dict = collections.OrderedDict()
+        id_fields = ["mode", "rate", "num_streams", "chain_mask"]
+        channels_tested = []
         for result in self.testclass_results:
-            testclass_results_dict[result["test_name"]] = {
-                "peak_throughput": result["peak_throughput"],
-                "range": result["range"],
-                "sensitivity": result["sensitivity"]
-            }
-        results_file_path = os.path.join(self.log_path, 'results.json')
-        with open(results_file_path, 'w') as results_file:
-            json.dump(testclass_results_dict, results_file, indent=4)
+            testcase_params = self.parse_test_params(result["test_name"])
+            test_id = collections.OrderedDict(
+                (key, value) for key, value in testcase_params.items()
+                if key in id_fields)
+            test_id = tuple(test_id.items())
+            channel = testcase_params["channel"]
+            if channel not in channels_tested:
+                channels_tested.append(channel)
+            if result["peak_throughput_pct"] == 100:
+                if test_id in testclass_results_dict:
+                    testclass_results_dict[test_id][channel] = result[
+                        "sensitivity"]
+                else:
+                    testclass_results_dict[test_id] = {
+                        channel: result["sensitivity"]
+                    }
+
         # write csv
+        csv_header = ["Mode", "MCS", "Streams", "Chain", "Rate (Mbps)"]
+        for channel in channels_tested:
+            csv_header.append("Ch. " + str(channel))
         results_file_path = os.path.join(self.log_path, 'results.csv')
         with open(results_file_path, mode='w') as csv_file:
-            csv_header = [
-                "Channel", "Mode", "MCS", "Streams", "Chain", "Sensitivity",
-                "Range", "Peak Throughput"
-            ]
             writer = csv.DictWriter(csv_file, fieldnames=csv_header)
             writer.writeheader()
-            for result in self.testclass_results:
-                testcase_params = self.parse_test_params(result["test_name"])
-                writer.writerow({
-                    "Channel": testcase_params["channel"],
-                    "Mode": testcase_params["mode"],
-                    "MCS": testcase_params["rate"],
-                    "Streams": testcase_params["num_streams"],
-                    "Chain": testcase_params["chain_mask"],
-                    "Sensitivity": result["sensitivity"],
-                    "Range": result["range"],
-                    "Peak Throughput": result["peak_throughput"]
-                })
+            for test_id, test_results in testclass_results_dict.items():
+                test_id_dict = dict(test_id)
+                if "legacy" in test_id_dict["mode"]:
+                    rate_list = self.VALID_RATES["legacy_2GHz"]
+                else:
+                    rate_list = self.VALID_RATES[test_id_dict["mode"]]
+                data_rate = next(rate.data_rate for rate in rate_list
+                                 if rate[:-1] == (test_id_dict["rate"],
+                                                  test_id_dict["num_streams"]))
+                row_value = {
+                    "Mode": test_id_dict["mode"],
+                    "MCS": test_id_dict["rate"],
+                    "Streams": test_id_dict["num_streams"],
+                    "Chain": test_id_dict["chain_mask"],
+                    "Rate (Mbps)": data_rate,
+                }
+                for channel in channels_tested:
+                    row_value["Ch. " + str(channel)] = test_results.pop(
+                        channel, " ")
+                writer.writerow(row_value)
 
         if not self.testclass_params["traffic_type"].lower() == "ping":
             WifiRvrTest.process_testclass_results(self)
@@ -199,6 +242,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             data
         """
         rvr_result["peak_throughput"] = max(rvr_result["throughput_receive"])
+        rvr_result["peak_throughput_pct"] = 100
         throughput_check = [
             throughput < rvr_result["peak_throughput"] *
             (self.testclass_params["throughput_pct_at_sensitivity"] / 100)
@@ -229,8 +273,8 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             rvr_result: dict containing attenuation, throughput and other meta
             data
         """
-        testcase_params[
-            "range_ping_loss_threshold"] = 100 - testcase_params["throughput_pct_at_sensitivity"]
+        testcase_params["range_ping_loss_threshold"] = 100 - testcase_params[
+            "throughput_pct_at_sensitivity"]
         WifiPingTest.process_ping_results(self, testcase_params, ping_result)
         ping_result["sensitivity"] = self.testclass_params["ap_tx_power"] + (
             self.testbed_params["ap_tx_power_offset"][str(
@@ -245,11 +289,11 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         band = self.access_point.band_lookup_by_channel(
             testcase_params["channel"])
         if "2G" in band:
-            frequency = wutils.WifiEnums.channel_2G_to_freq[testcase_params[
-                "channel"]]
+            frequency = wutils.WifiEnums.channel_2G_to_freq[
+                testcase_params["channel"]]
         else:
-            frequency = wutils.WifiEnums.channel_5G_to_freq[testcase_params[
-                "channel"]]
+            frequency = wutils.WifiEnums.channel_5G_to_freq[
+                testcase_params["channel"]]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params["DFS_region"])
         else:
@@ -287,17 +331,20 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         # one performed at the current MCS+1
         current_test_params = self.parse_test_params(self.current_test_name)
         ref_test_params = current_test_params.copy()
-        if "legacy" in current_test_params["mode"] and current_test_params["rate"] < 54:
+        if "legacy" in current_test_params[
+                "mode"] and current_test_params["rate"] < 54:
             if current_test_params["channel"] <= 13:
                 ref_index = self.VALID_RATES["legacy_2GHz"].index(
-                    [current_test_params["rate"], 1]) - 1
+                    self.RateTuple(current_test_params["rate"], 1,
+                                   current_test_params["rate"])) - 1
                 ref_test_params["rate"] = self.VALID_RATES["legacy_2GHz"][
-                    ref_index][0]
+                    ref_index].mcs
             else:
                 ref_index = self.VALID_RATES["legacy_5GHz"].index(
-                    [current_test_params["rate"], 1]) - 1
+                    self.RateTuple(current_test_params["rate"], 1,
+                                   current_test_params["rate"])) - 1
                 ref_test_params["rate"] = self.VALID_RATES["legacy_5GHz"][
-                    ref_index][0]
+                    ref_index].mcs
         else:
             ref_test_params["rate"] = ref_test_params["rate"] + 1
 
@@ -308,8 +355,9 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         ]
         try:
             ref_index = previous_params.index(ref_test_params)
-            start_atten = self.testclass_results[ref_index]["atten_at_range"] - (
-                self.testclass_params["adjacent_mcs_range_gap"])
+            start_atten = self.testclass_results[ref_index][
+                "atten_at_range"] - (
+                    self.testclass_params["adjacent_mcs_range_gap"])
         except:
             print("Reference test not found. Starting from {} dB".format(
                 self.testclass_params["atten_start"]))
@@ -329,7 +377,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         else:
             testcase_params["rate"] = int(test_name_params[4][3:])
         testcase_params["num_streams"] = int(test_name_params[5][3:])
-        testcase_params["short_gi"] = 0
+        testcase_params["short_gi"] = 1
         testcase_params["chain_mask"] = test_name_params[6][2:]
         if testcase_params["chain_mask"] in ["0", "1"]:
             testcase_params["attenuated_chain"] = "DUT-Chain-{}".format(
@@ -345,7 +393,8 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             testcase_params["iperf_args"] = '-i 1 -t {} -J'.format(
                 self.testclass_params["iperf_duration"])
 
-        if not isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
+        if self.testclass_params["traffic_type"] != "ping" and isinstance(
+                self.iperf_client, iperf_client.IPerfClientOverAdb):
             testcase_params["iperf_args"] += ' -R'
             testcase_params["use_client_output"] = True
         else:
@@ -390,9 +439,9 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         for channel in channels:
             for mode in self.VALID_TEST_CONFIGS[channel]:
                 if "VHT" in mode:
-                    rates = self.VALID_RATES["VHT"]
+                    rates = self.VALID_RATES[mode]
                 elif "HT" in mode:
-                    rates = self.VALID_RATES["HT"]
+                    rates = self.VALID_RATES[mode]
                 elif "legacy" in mode and channel < 14:
                     rates = self.VALID_RATES["legacy_2GHz"]
                 elif "legacy" in mode and channel > 14:
@@ -406,10 +455,11 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                     if "legacy" in mode:
                         testcase_name = "test_sensitivity_ch{}_{}_{}_nss{}_ch{}".format(
                             channel, mode,
-                            str(rate[0]).replace(".", "p"), rate[1], chain)
+                            str(rate.mcs).replace(".", "p"), rate.streams,
+                            chain)
                     else:
                         testcase_name = "test_sensitivity_ch{}_{}_mcs{}_nss{}_ch{}".format(
-                            channel, mode, rate[0], rate[1], chain)
+                            channel, mode, rate.mcs, rate.streams, chain)
                     setattr(self, testcase_name, testcase_wrapper)
                     self.tests.append(testcase_name)
 

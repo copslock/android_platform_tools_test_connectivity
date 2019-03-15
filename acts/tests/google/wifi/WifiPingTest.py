@@ -214,8 +214,8 @@ class WifiPingTest(base_test.BaseTestClass):
             range_index = -1
         ping_range_result["atten_at_range"] = testcase_params["atten_range"][
             range_index]
-        ping_range_result["peak_throughput"] = "{}%".format(
-            100 - min(ping_loss_over_att))
+        ping_range_result["peak_throughput_pct"] = 100 - min(
+            ping_loss_over_att)
         ping_range_result["range"] = (ping_range_result["atten_at_range"] +
                                       ping_range_result["fixed_attenuation"])
 
