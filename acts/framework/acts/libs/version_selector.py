@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import bisect
+from collections import namedtuple
 import inspect
 import numbers
 
@@ -27,6 +28,21 @@ def _fully_qualified_name(func):
     See: https://www.python.org/dev/peps/pep-3155/#naming-choice
     """
     return '%s:%s' % (func.__module__, func.__qualname__)
+
+
+_FrameInfo = namedtuple('_FrameInfo', ['frame', 'filename', 'lineno',
+                                       'function', 'code_context', 'index'])
+
+
+def _inspect_stack():
+    """Returns named tuple for each tuple returned by inspect.stack().
+
+    For Python3.4 and earlier, which returns unnamed tuples for inspect.stack().
+
+    Returns:
+        list of _FrameInfo named tuples representing stack frame info.
+    """
+    return [_FrameInfo(*info) for info in inspect.stack()]
 
 
 def set_version(get_version_func, min_version, max_version):
@@ -46,7 +62,7 @@ def set_version(get_version_func, min_version, max_version):
         A VersionSelector containing all versioned calls to the decorated func.
     """
     func_owner_variables = None
-    for frame_info in inspect.stack():
+    for frame_info in _inspect_stack():
         if frame_info.function == '<module>':
             # We've reached the end of the most recently imported module in our
             # stack without finding a class first. This indicates that the
