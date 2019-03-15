@@ -23,8 +23,8 @@ from acts import asserts
 from acts.base_test import BaseTestClass
 from acts.controllers.buds_lib.test_actions.apollo_acts import ApolloTestActions
 from acts.signals import TestPass, TestFailure
-from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
 from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.bt_test_utils import factory_reset_bluetooth
 from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
 from acts.utils import set_location_service
 
@@ -70,7 +70,7 @@ class BluetoothReconnectTest(BaseTestClass):
         # Make sure Bluetooth is on
         enable_bluetooth(self.phone.droid, self.phone.ed)
         set_location_service(self.phone, True)
-        clear_bonded_devices(self.phone)
+        factory_reset_bluetooth([self.phone])
         self.apollo_act.factory_reset()
 
         # Initial pairing and connection of devices
@@ -83,6 +83,7 @@ class BluetoothReconnectTest(BaseTestClass):
 
     def teardown_test(self):
         self.log.info('Teardown test, shutting down all services...')
+        self.apollo_act.factory_reset()
         self.apollo.close()
 
     def _reconnect_bluetooth_from_phone(self):

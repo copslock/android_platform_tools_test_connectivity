@@ -27,7 +27,7 @@ from acts.controllers.buds_lib.test_actions.bt_utils import BTUtilsError
 from acts.controllers.buds_lib.test_actions.apollo_acts import ApolloTestActions
 from acts.signals import TestFailure
 from acts.signals import TestPass
-from acts.test_utils.bt.bt_test_utils import clear_bonded_devices
+from acts.test_utils.bt.bt_test_utils import factory_reset_bluetooth
 from acts.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
 from acts.utils import set_location_service
@@ -77,12 +77,13 @@ class BluetoothPairAndConnectTest(BaseTestClass):
         # Make sure Bluetooth is on
         enable_bluetooth(self.phone.droid, self.phone.ed)
         set_location_service(self.phone, True)
-        clear_bonded_devices(self.phone)
+        factory_reset_bluetooth([self.phone])
         self.apollo_act.factory_reset()
         self.log.info('===== START BLUETOOTH PAIR AND CONNECT TEST  =====')
 
     def teardown_test(self):
         self.log.info('Teardown test, shutting down all services...')
+        self.apollo_act.factory_reset()
         self.apollo.close()
 
     def _get_device_pair_and_connect_times(self):
@@ -113,7 +114,8 @@ class BluetoothPairAndConnectTest(BaseTestClass):
         connection_time = (connection_end_time -
                            connection_start_time) * 1000
 
-        self.bt_utils.bt_unpair(self.phone, self.apollo)
+        factory_reset_bluetooth([self.phone])
+        self.apollo_act.factory_reset()
 
         return pair_time, connection_time
 
