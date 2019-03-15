@@ -143,7 +143,7 @@ class WifiOtaPingTest(WifiPingTest):
         self.ota_chamber = self.ota_chambers[0]
 
     def teardown_class(self):
-        self.process_testclass_results(self)
+        self.process_testclass_results()
         self.ota_chamber.set_orientation(0)
 
     def process_testclass_results(self):
