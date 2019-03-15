@@ -23,6 +23,7 @@ import time
 from acts import asserts
 
 from acts.test_utils.net import connectivity_const as cconsts
+from acts.test_utils.net import socket_test_utils as sutils
 from acts.test_utils.wifi.aware import aware_const as aconsts
 
 # arbitrary timeout for events
@@ -430,6 +431,41 @@ def get_ipv6_addr(device, interface):
     if not res:
         return None
     return res.group(1)
+
+
+def verify_socket_connect(dut_s, dut_c, ipv6_s, ipv6_c, port):
+    """Verify the socket connection between server (dut_s) and client (dut_c)
+    using the given IPv6 addresses.
+
+    Opens a ServerSocket on the server and tries to connect to it
+    from the client.
+
+    Args:
+        dut_s, dut_c: the server and client devices under test (DUTs)
+        ipv6_s, ipv6_c: the scoped link-local addresses of the server and client.
+        port: the port to use
+    Return: True on success, False otherwise
+    """
+    server_sock = None
+    sock_c = None
+    sock_s = None
+    try:
+        server_sock = sutils.open_server_socket(dut_s, ipv6_s, port)
+        port_to_use = port
+        if port == 0:
+            port_to_use = dut_s.droid.getTcpServerSocketPort(server_sock)
+        sock_c, sock_s = sutils.open_connect_socket(
+            dut_c, dut_s, ipv6_c, ipv6_s, 0, port_to_use, server_sock)
+    except:
+        return False
+    finally:
+        if sock_c is not None:
+            sutils.close_socket(dut_c, sock_c)
+        if sock_s is not None:
+            sutils.close_socket(dut_s, sock_s)
+        if server_sock is not None:
+            sutils.close_server_socket(dut_s, server_sock)
+    return True
 
 
 #########################################################
