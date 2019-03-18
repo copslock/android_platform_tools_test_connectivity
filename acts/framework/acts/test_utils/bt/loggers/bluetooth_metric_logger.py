@@ -49,7 +49,9 @@ class BluetoothMetricLogger(MetricLogger):
                           'BluetoothThroughputTest': self.proto_module
                               .BluetoothDataTestResult(),
                           'BluetoothLatencyTest': self.proto_module
-                              .BluetoothDataTestResult()
+                              .BluetoothDataTestResult(),
+                          'BtCodecSweepTest': self.proto_module
+                              .BluetoothAudioTestResult(),
                           }
 
     @staticmethod

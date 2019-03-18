@@ -1,12 +1,14 @@
 import time
 
 from acts.test_utils.bt.A2dpCodecBaseTest import A2dpCodecBaseTest
+from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
 
 
 class BtCodecSweepTest(A2dpCodecBaseTest):
 
     def setup_test(self):
         super().setup_test()
+        self.bt_logger = BluetoothMetricLogger.for_test_case()
         req_params = ['dut',
                       'phone_music_file_dir',
                       'host_music_file_dir',
@@ -20,6 +22,8 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
         time.sleep(30)
 
     def teardown_test(self):
+        self.bt_logger.get_results(self.metrics, self.__class__.__name__,
+                                   self.android)
         # TODO (aidanhb): Modify abstract device classes to make this generic.
         self.bt_device.earstudio_controller.clean_up()
 
@@ -28,6 +32,8 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
         thdn_results = self.metrics['thdn']
         self.run_anomaly_detection()
         anomaly_results = self.metrics['anomalies']
+        # Get number of audio glitches on first channel
+        self.metrics['audio_glitches_count'] = len(anomaly_results[0])
         channnel_results = zip(thdn_results, anomaly_results)
         for ch_no, result in enumerate(channnel_results):
             self.log.info('======CHANNEL %s RESULTS======' % ch_no)
