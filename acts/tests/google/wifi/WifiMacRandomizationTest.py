@@ -29,12 +29,14 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
+from scapy.all import *
 
 WifiEnums = wutils.WifiEnums
 
 # Default timeout used for reboot, toggle WiFi and Airplane mode,
 # for the system to settle down after the operation.
 DEFAULT_TIMEOUT = 10
+SHORT_TIMEOUT = 5
 
 # Constants for WiFi state change operations.
 FORGET = 1
@@ -187,7 +189,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
                    'Randomized MAC = %s, Deafult MAC = %s' % (randomized_mac, default_mac))
         # Uncomment after b/123355618 is resolved.
         #asserts.assert_true(randomized_mac == default_mac, message)
-
+        self.factory_mac = factory_mac
         return randomized_mac
 
     def check_mac_persistence(self, network, condition):
@@ -428,3 +430,32 @@ class WifiMacRandomizationTest(WifiBaseTest):
             raise signals.TestFailure("Randomized MAC address changed after "
                    "roaming from AP1 to AP2.\nMAC before roam = %s\nMAC after "
                    "roam = %s" %(mac_before_roam, mac_after_roam))
+
+    @test_tracker_info(uuid="17b12f1a-7c62-4188-b5a5-52d7a0bb7849")
+    def test_check_mac_in_sniffer(self):
+        """Test to ensure Factory MAC is not exposed, using sniffer data.
+
+        Steps:
+            1. Configure and start the sniffer on 5GHz band.
+            2. Connect to 5GHz network, ping, get the Factory MAC.
+            3. Stop the sniffer.
+            4. Invoke scapy to read the .pcap file.
+            5. Read each packet summary and make sure Factory AMC is not used.
+
+        """
+        if hasattr(self, 'packet_capture'):
+            self.pcap_procs = wutils.start_pcap(
+                self.packet_capture[0], 'dual', self.log_path, self.test_name)
+        time.sleep(SHORT_TIMEOUT)
+        network = self.wpapsk_5g
+        rand_mac = self.connect_to_network_and_verify_mac_randomization(network)
+        pcap_fname = os.path.join(self.log_path, self.test_name,
+                         (self.test_name + '_5G.pcap'))
+        wutils.stop_pcap(self.packet_capture[0], self.pcap_procs, False)
+        time.sleep(SHORT_TIMEOUT)
+        packets = rdpcap(pcap_fname)
+        for pkt in packets:
+            self.log.debug("Packet Summary = %s" % pkt.summary())
+            if self.factory_mac in pkt.summary():
+                raise signals.TestFailure("Caught Factory MAC in packet sniffer."
+                                          "Packet = %s" % pkt.show())
