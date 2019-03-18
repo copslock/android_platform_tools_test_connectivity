@@ -120,7 +120,7 @@ class TelWifiDataTest(TelephonyBaseTest):
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_WIFI_5G], 0,
                  MIN_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_3G], 0,
-                 MIN_RSSI_RESERVED_VALUE)
+                 MAX_RSSI_RESERVED_VALUE)
         set_rssi(self.log, self.attens[ATTEN_NAME_FOR_CELL_4G], 0,
                  MAX_RSSI_RESERVED_VALUE)
 
