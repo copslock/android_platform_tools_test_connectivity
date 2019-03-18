@@ -17,7 +17,6 @@
 import functools
 import logging
 import os
-import subprocess
 from soundfile import SoundFile
 
 from acts.controllers.utils_lib.ssh import connection
@@ -46,6 +45,19 @@ class SshAudioCapture(AudioCapture):
         self.ssh_session = None
 
     def capture_audio(self, trim_beginning=0, trim_end=0):
+        """Captures audio and store results.
+
+        Args:
+            trim_beginning: To trim audio at the start in seconds.
+            trim_end: To trim audio at the end in seconds.
+
+        Returns:
+            Returns exit status of ssh connection.
+        """
+        if not trim_beginning:
+            trim_beginning = self.audio_params.get('trim_beginning', 0)
+        if not trim_end:
+            trim_end = self.audio_params.get('trim_end', 0)
         if self.audio_params["ssh_config"]:
             ssh_settings = settings.from_config(
                 self.audio_params["ssh_config"])
