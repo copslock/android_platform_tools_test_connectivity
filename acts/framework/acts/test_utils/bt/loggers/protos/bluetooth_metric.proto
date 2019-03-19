@@ -58,6 +58,7 @@ message BluetoothAudioTestResult {
   optional int32 audio_latency_avg_millis = 5;
   optional int32 audio_glitches_count = 6;
   optional int32 audio_missed_packets_count = 7;
+  optional float thdn = 8;
 }
 
 message BluetoothDataTestResult {
