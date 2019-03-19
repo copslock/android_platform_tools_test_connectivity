@@ -212,8 +212,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         """
         if self.rvr:
             with open(self.json_file, 'a') as results_file:
-                json.dump(OrderedDict(sorted(self.rvr.items(), key=str)),
-                          results_file, indent=4)
+                json.dump({str(k): v for k, v in self.rvr.items()}, 
+                          results_file, indent=4, sort_keys=True)
             self.plot_graph_for_attenuation()
             self.throughput_pass_fail_check()
         else:
