@@ -6,9 +6,12 @@ from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLo
 
 class BtCodecSweepTest(A2dpCodecBaseTest):
 
+    def __init__(self, configs):
+        super().__init__(configs)
+        self.bt_logger = BluetoothMetricLogger.for_test_case()
+
     def setup_test(self):
         super().setup_test()
-        self.bt_logger = BluetoothMetricLogger.for_test_case()
         req_params = ['dut',
                       'phone_music_file_dir',
                       'host_music_file_dir',
@@ -34,6 +37,8 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
         anomaly_results = self.metrics['anomalies']
         # Get number of audio glitches on first channel
         self.metrics['audio_glitches_count'] = len(anomaly_results[0])
+        # Get distortion for channnel one
+        self.metrics['total_harmonic_distortion_plus_noise'] = thdn_results[0]
         channnel_results = zip(thdn_results, anomaly_results)
         for ch_no, result in enumerate(channnel_results):
             self.log.info('======CHANNEL %s RESULTS======' % ch_no)
