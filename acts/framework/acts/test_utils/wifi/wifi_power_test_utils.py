@@ -358,7 +358,8 @@ def run_iperf_client_nonblocking(ad, server_host, extra_args=""):
 
     """
     log = logging.getLogger()
-    ad.adb.shell_nb("nohup iperf3 -c {} {} &".format(server_host, extra_args))
+    ad.adb.shell_nb("nohup >/dev/null 2>&1 sh -c 'iperf3 -c {} {} &'".format(
+        server_host, extra_args))
     log.info("IPerf client started")
 
 
