@@ -65,6 +65,7 @@ class DataPathStressTest(AwareBaseTest):
         ndp_init_setup_failures = 0
         ndp_resp_setup_success = 0
         ndp_resp_setup_failures = 0
+        ndp_full_socket_success = 0
 
         for attach_iter in range(attach_iterations):
             init_id = init_dut.droid.wifiAwareAttach(True)
@@ -124,10 +125,14 @@ class DataPathStressTest(AwareBaseTest):
                             resp_id, aconsts.DATA_PATH_RESPONDER, init_mac,
                             None))
 
+                init_ipv6 = None
+                resp_ipv6 = None
+
                 # Initiator: wait for network formation
                 got_on_available = False
                 got_on_link_props = False
-                while not got_on_available or not got_on_link_props:
+                got_on_net_cap = False
+                while not got_on_available or not got_on_link_props or not got_on_net_cap:
                     try:
                         nc_event = init_dut.ed.pop_event(
                             cconsts.EVENT_NETWORK_CALLBACK,
@@ -139,6 +144,12 @@ class DataPathStressTest(AwareBaseTest):
                         elif (nc_event['data'][cconsts.NETWORK_CB_KEY_EVENT] ==
                               cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED):
                             got_on_link_props = True
+                        elif (nc_event['data'][cconsts.NETWORK_CB_KEY_EVENT] ==
+                              cconsts.NETWORK_CB_CAPABILITIES_CHANGED):
+                            got_on_net_cap = True
+                            if aconsts.NET_CAP_IPV6 in nc_event["data"]:
+                                resp_ipv6 = nc_event["data"][
+                                    aconsts.NET_CAP_IPV6]
                     except queue.Empty:
                         ndp_init_setup_failures = ndp_init_setup_failures + 1
                         init_dut.log.info(
@@ -146,13 +157,14 @@ class DataPathStressTest(AwareBaseTest):
                             'EVENT_NETWORK_CALLBACK')
                         break
 
-                if got_on_available and got_on_link_props:
+                if got_on_available and got_on_link_props and got_on_net_cap:
                     ndp_init_setup_success = ndp_init_setup_success + 1
 
                 # Responder: wait for network formation
                 got_on_available = False
                 got_on_link_props = False
-                while not got_on_available or not got_on_link_props:
+                got_on_net_cap = False
+                while not got_on_available or not got_on_link_props or not got_on_net_cap:
                     try:
                         nc_event = resp_dut.ed.pop_event(
                             cconsts.EVENT_NETWORK_CALLBACK,
@@ -164,6 +176,12 @@ class DataPathStressTest(AwareBaseTest):
                         elif (nc_event['data'][cconsts.NETWORK_CB_KEY_EVENT] ==
                               cconsts.NETWORK_CB_LINK_PROPERTIES_CHANGED):
                             got_on_link_props = True
+                        elif (nc_event['data'][cconsts.NETWORK_CB_KEY_EVENT] ==
+                              cconsts.NETWORK_CB_CAPABILITIES_CHANGED):
+                            got_on_net_cap = True
+                            if aconsts.NET_CAP_IPV6 in nc_event["data"]:
+                                init_ipv6 = nc_event["data"][
+                                    aconsts.NET_CAP_IPV6]
                     except queue.Empty:
                         ndp_resp_setup_failures = ndp_resp_setup_failures + 1
                         init_dut.log.info(
@@ -171,8 +189,15 @@ class DataPathStressTest(AwareBaseTest):
                             'EVENT_NETWORK_CALLBACK')
                         break
 
-                if got_on_available and got_on_link_props:
+                if got_on_available and got_on_link_props and got_on_net_cap:
                     ndp_resp_setup_success = ndp_resp_setup_success + 1
+
+                # open sockets to test connection
+                if autils.verify_socket_connect(init_dut, resp_dut, init_ipv6,
+                                                resp_ipv6, 0):
+                    if autils.verify_socket_connect(resp_dut, init_dut,
+                                                    resp_ipv6, init_ipv6, 0):
+                        ndp_full_socket_success = ndp_full_socket_success + 1
 
                 # clean-up
                 init_dut.droid.connectivityUnregisterNetworkCallback(
@@ -189,6 +214,7 @@ class DataPathStressTest(AwareBaseTest):
         results['ndp_init_setup_failures'] = ndp_init_setup_failures
         results['ndp_resp_setup_success'] = ndp_resp_setup_success
         results['ndp_resp_setup_failures'] = ndp_resp_setup_failures
+        results['ndp_full_socket_success'] = ndp_full_socket_success
         max_failures = (self.MAX_FAILURE_PERCENTAGE * attach_iterations *
                         ndp_iterations / 100)
         if max_failures == 0:

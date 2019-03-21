@@ -281,7 +281,13 @@ class DataPathTest(AwareBaseTest):
             self.log.info("Interface addresses (IPv6): p=%s, s=%s", p_ipv6,
                           s_ipv6)
 
-            # TODO: possibly send messages back and forth, prefer to use netcat/nc
+            # open sockets to test connection
+            asserts.assert_true(
+                autils.verify_socket_connect(p_dut, s_dut, p_ipv6, s_ipv6, 0),
+                "Failed socket link with Pub as Server")
+            asserts.assert_true(
+                autils.verify_socket_connect(s_dut, p_dut, s_ipv6, p_ipv6, 0),
+                "Failed socket link with Sub as Server")
 
             # terminate sessions and wait for ON_LOST callbacks
             p_dut.droid.wifiAwareDestroy(p_id)
@@ -439,7 +445,15 @@ class DataPathTest(AwareBaseTest):
             self.log.info("Interface addresses (IPv6): I=%s, R=%s", init_ipv6,
                           resp_ipv6)
 
-            # TODO: possibly send messages back and forth, prefer to use netcat/nc
+            # open sockets to test connection
+            asserts.assert_true(
+                autils.verify_socket_connect(init_dut, resp_dut, init_ipv6,
+                                             resp_ipv6, 0),
+                "Failed socket link with Initiator as Server")
+            asserts.assert_true(
+                autils.verify_socket_connect(resp_dut, init_dut, resp_ipv6,
+                                             init_ipv6, 0),
+                "Failed socket link with Responder as Server")
 
             # terminate sessions and wait for ON_LOST callbacks
             init_dut.droid.wifiAwareDestroy(init_id)
