@@ -66,6 +66,12 @@ from acts.test_utils.tel.tel_test_utils import unlock_sim
 from acts.test_utils.tel.tel_test_utils import wait_for_sim_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import wait_for_sims_ready_by_adb
 from acts.test_utils.tel.tel_test_utils import activate_wfc_on_device
+from acts.test_utils.tel.tel_test_utils import install_googleaccountutil_apk
+from acts.test_utils.tel.tel_test_utils import add_google_account
+from acts.test_utils.tel.tel_test_utils import install_googlefi_apk
+from acts.test_utils.tel.tel_test_utils import activate_google_fi_account
+from acts.test_utils.tel.tel_test_utils import check_google_fi_activated
+from acts.test_utils.tel.tel_test_utils import check_fi_apk_installed
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import SINGLE_SIM_CONFIG, MULTI_SIM_CONFIG
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -94,6 +100,9 @@ class TelephonyBaseTest(BaseTestClass):
         self.enable_radio_log_on = self.user_params.get(
             "enable_radio_log_on", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
+        self.account_util = self.user_params["account_util"]
+        if isinstance(self.account_util, list):
+            self.account_util = self.account_util[0]
         tasks = [(self._init_device, [ad]) for ad in self.android_devices]
         multithread_func(self.log, tasks)
         self.skip_reset_between_cases = self.user_params.get(
@@ -237,6 +246,21 @@ class TelephonyBaseTest(BaseTestClass):
         if not unlock_sim(ad):
             raise signals.TestAbortClass("unable to unlock the SIM")
 
+        # eSIM enablement
+        if hasattr(ad, "fi_esim"):
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                ad.log.error("Failed to connect to wifi")
+                return False
+            if check_google_fi_activated(ad):
+                ad.log.info("Google Fi is already Activated")
+            else:
+                install_googleaccountutil_apk(ad, self.account_util)
+                add_google_account(ad)
+                install_googlefi_apk(ad, self.fi_util)
+                if not activate_google_fi_account(ad):
+                    return False
+                check_google_fi_activated(ad)
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
             ad.log.info("Device has no or unknown SIM in it")
             ensure_phone_idle(self.log, ad)
