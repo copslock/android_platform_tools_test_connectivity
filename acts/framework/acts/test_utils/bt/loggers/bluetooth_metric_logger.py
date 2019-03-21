@@ -79,7 +79,7 @@ class BluetoothMetricLogger(MetricLogger):
                     'android_build_number': device.build_info[
                         'incremental_build_id'],
                     'android_branch_name': 'git_qt-release',
-                    'software version': device.build_info['build_id']}
+                    'software_version': device.build_info['build_id']}
 
         if device.__class__.__name__ == 'ParentDevice':
             data = {'device_class': 'headset',
