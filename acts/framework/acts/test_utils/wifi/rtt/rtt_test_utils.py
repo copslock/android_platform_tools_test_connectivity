@@ -23,7 +23,7 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.rtt import rtt_const as rconsts
 
 # arbitrary timeout for events
-EVENT_TIMEOUT = 10
+EVENT_TIMEOUT = 15
 
 
 def decorate_event(event_name, id):
