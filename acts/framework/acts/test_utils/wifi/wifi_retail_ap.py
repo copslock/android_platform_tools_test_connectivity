@@ -43,6 +43,7 @@ def create(configs):
         ("Netgear", "R7500"): "NetgearR7500AP",
         ("Netgear", "R7800"): "NetgearR7800AP",
         ("Netgear", "R8000"): "NetgearR8000AP",
+        ("Netgear", "R8500"): "NetgearR8500AP",
         ("Google", "Wifi"): "GoogleWifiAP"
     }
     objs = []
@@ -373,24 +374,33 @@ class NetgearR7000AP(WifiRetailAP):
         self.init_gui_data()
         # Read and update AP settings
         self.read_ap_settings()
-        if ap_settings.items() <= self.ap_settings.items():
-            return
-        else:
+        if not set(ap_settings.items()).issubset(self.ap_settings.items()):
             self.update_ap_settings(ap_settings)
 
     def init_gui_data(self):
         """Function to initialize data used while interacting with web GUI"""
-        self.config_page = "{}://{}:{}@{}:{}/WLG_wireless_dual_band_r10.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["admin_username"],
-            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
-            self.ap_settings["port"])
-        self.config_page_nologin = "{}://{}:{}/WLG_wireless_dual_band_r10.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["ip_address"],
-            self.ap_settings["port"])
-        self.config_page_advanced = "{}://{}:{}@{}:{}/WLG_adv_dual_band2.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["admin_username"],
-            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
-            self.ap_settings["port"])
+        self.config_page = (
+            "{protocol}://{username}:{password}@"
+            "{ip_address}:{port}/WLG_wireless_dual_band_r10.htm").format(
+                protocol=self.ap_settings["protocol"],
+                username=self.ap_settings["admin_username"],
+                password=self.ap_settings["admin_password"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
+        self.config_page_nologin = (
+            "{protocol}://{ip_address}:{port}/"
+            "WLG_wireless_dual_band_r10.htm").format(
+                protocol=self.ap_settings["protocol"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
+        self.config_page_advanced = (
+            "{protocol}://{username}:{password}@"
+            "{ip_address}:{port}/WLG_adv_dual_band2.htm").format(
+                protocol=self.ap_settings["protocol"],
+                username=self.ap_settings["admin_username"],
+                password=self.ap_settings["admin_password"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
         self.networks = ["2G", "5G_1"]
         self.channel_band_map = {
             "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
@@ -478,8 +488,9 @@ class NetgearR7000AP(WifiRetailAP):
                 else:
                     config_item = browser.find_by_name(value)
                     if "bandwidth" in key:
-                        self.ap_settings["{}_{}".format(key[1], key[
-                            0])] = self.bw_mode_values[config_item.first.value]
+                        self.ap_settings["{}_{}".format(
+                            key[1], key[0])] = self.bw_mode_values[
+                                config_item.first.value]
                     elif "power" in key:
                         self.ap_settings["{}_{}".format(
                             key[1], key[0])] = self.power_mode_values[
@@ -533,8 +544,9 @@ class NetgearR7000AP(WifiRetailAP):
             # Update security settings (passwords updated only if applicable)
             for key, value in self.config_page_fields.items():
                 if "security_type" in key:
-                    browser.choose(value, self.ap_settings["{}_{}".format(
-                        key[1], key[0])])
+                    browser.choose(
+                        value, self.ap_settings["{}_{}".format(key[1],
+                                                               key[0])])
                     if self.ap_settings["{}_{}".format(key[1],
                                                        key[0])] == "WPA2-PSK":
                         config_item = browser.find_by_name(
@@ -624,21 +636,26 @@ class NetgearR7500AP(WifiRetailAP):
         self.init_gui_data()
         # Read and update AP settings
         self.read_ap_settings()
-        if ap_settings.items() <= self.ap_settings.items():
-            return
-        else:
+        if not set(ap_settings.items()).issubset(self.ap_settings.items()):
             self.update_ap_settings(ap_settings)
 
     def init_gui_data(self):
         """Function to initialize data used while interacting with web GUI"""
-        self.config_page = "{}://{}:{}@{}:{}/index.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["admin_username"],
-            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
-            self.ap_settings["port"])
-        self.config_page_advanced = "{}://{}:{}@{}:{}/adv_index.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["admin_username"],
-            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
-            self.ap_settings["port"])
+        self.config_page = ("{protocol}://{username}:{password}@"
+                            "{ip_address}:{port}/index.htm").format(
+                                protocol=self.ap_settings["protocol"],
+                                username=self.ap_settings["admin_username"],
+                                password=self.ap_settings["admin_password"],
+                                ip_address=self.ap_settings["ip_address"],
+                                port=self.ap_settings["port"])
+        self.config_page_advanced = (
+            "{protocol}://{username}:{password}@"
+            "{ip_address}:{port}/adv_index.htm").format(
+                protocol=self.ap_settings["protocol"],
+                username=self.ap_settings["admin_username"],
+                password=self.ap_settings["admin_password"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
         self.networks = ["2G", "5G_1"]
         self.channel_band_map = {
             "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
@@ -782,12 +799,12 @@ class NetgearR7500AP(WifiRetailAP):
                         config_item.fill(self.ap_settings["{}_{}".format(
                             key[1], key[0])])
                     elif "channel" in key:
-                        channel_string = "0" * (int(
-                            self.ap_settings["{}_{}".format(key[1], key[0])]
-                        ) < 10) + str(self.ap_settings["{}_{}".format(
-                            key[1], key[0])]) + "(DFS)" * (
-                                48 < int(self.ap_settings["{}_{}".format(
-                                    key[1], key[0])]) < 149)
+                        channel_string = "0" * (int(self.ap_settings[
+                            "{}_{}".format(key[1], key[0])]) < 10) + str(
+                                self.ap_settings["{}_{}".format(
+                                    key[1], key[0])]) + "(DFS)" * (48 < int(
+                                        self.ap_settings["{}_{}".format(
+                                            key[1], key[0])]) < 149)
                         config_item = iframe.find_by_name(value).first
                         try:
                             config_item.select_by_text(channel_string)
@@ -816,8 +833,9 @@ class NetgearR7500AP(WifiRetailAP):
                 # (Must be done after security type is selected)
                 for key, value in self.config_page_fields.items():
                     if "security_type" in key:
-                        iframe.choose(value, self.ap_settings["{}_{}".format(
-                            key[1], key[0])])
+                        iframe.choose(
+                            value, self.ap_settings["{}_{}".format(
+                                key[1], key[0])])
                         if self.ap_settings["{}_{}".format(
                                 key[1], key[0])] == "WPA2-PSK":
                             config_item = iframe.find_by_name(
@@ -920,9 +938,7 @@ class NetgearR7800AP(NetgearR7500AP):
         self.bw_mode_text_2g["VHT20"] = "Up to 347 Mbps"
         # Read and update AP settings
         self.read_ap_settings()
-        if ap_settings.items() <= self.ap_settings.items():
-            return
-        else:
+        if not set(ap_settings.items()).issubset(self.ap_settings.items()):
             self.update_ap_settings(ap_settings)
 
 
@@ -939,17 +955,28 @@ class NetgearR8000AP(NetgearR7000AP):
             self.ap_settings["ip_address"]))
         self.init_gui_data()
         # Overwrite minor differences from R7000 AP
-        self.config_page = "{}://{}:{}@{}:{}/WLG_wireless_dual_band_r8000.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["admin_username"],
-            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
-            self.ap_settings["port"])
-        self.config_page_nologin = "{}://{}:{}/WLG_wireless_dual_band_r8000.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["ip_address"],
-            self.ap_settings["port"])
-        self.config_page_advanced = "{}://{}:{}@{}:{}/WLG_adv_dual_band2_r8000.htm".format(
-            self.ap_settings["protocol"], self.ap_settings["admin_username"],
-            self.ap_settings["admin_password"], self.ap_settings["ip_address"],
-            self.ap_settings["port"])
+        self.config_page = (
+            "{protocol}://{username}:{password}@"
+            "{ip_address}:{port}/WLG_wireless_dual_band_r8000.htm").format(
+                protocol=self.ap_settings["protocol"],
+                username=self.ap_settings["admin_username"],
+                password=self.ap_settings["admin_password"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
+        self.config_page_nologin = (
+            "{protocol}://{ip_address}:{port}/"
+            "WLG_wireless_dual_band_r8000.htm").format(
+                protocol=self.ap_settings["protocol"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
+        self.config_page_advanced = (
+            "{protocol}://{username}:{password}@"
+            "{ip_address}:{port}/WLG_adv_dual_band2_r8000.htm").format(
+                protocol=self.ap_settings["protocol"],
+                username=self.ap_settings["admin_username"],
+                password=self.ap_settings["admin_password"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
         self.networks = ["2G", "5G_1", "5G_2"]
         self.channel_band_map = {
             "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
@@ -979,9 +1006,81 @@ class NetgearR8000AP(NetgearR7000AP):
         }
         # Read and update AP settings
         self.read_ap_settings()
-        if ap_settings.items() <= self.ap_settings.items():
-            return
-        else:
+        if not set(ap_settings.items()).issubset(self.ap_settings.items()):
+            self.update_ap_settings(ap_settings)
+
+
+class NetgearR8500AP(NetgearR7000AP):
+    """Class that implements Netgear R8500 AP.
+
+    Since most of the class' implementation is shared with the R7000, this
+    class inherits from NetgearR7000AP and simply redifines config parameters
+    """
+
+    def __init__(self, ap_settings):
+        self.ap_settings = ap_settings.copy()
+        self.log = logger.create_tagged_trace_logger("AccessPoint|{}".format(
+            self.ap_settings["ip_address"]))
+        self.init_gui_data()
+        # Overwrite minor differences from R8000 AP
+        self.config_page = (
+            "{protocol}://{username}:{password}@"
+            "{ip_address}:{port}/WLG_wireless_tri_band.htm").format(
+                protocol=self.ap_settings["protocol"],
+                username=self.ap_settings["admin_username"],
+                password=self.ap_settings["admin_password"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
+        self.config_page_nologin = (
+            "{protocol}://{ip_address}:{port}/"
+            "WLG_wireless_tri_band.htm").format(
+                protocol=self.ap_settings["protocol"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
+        self.config_page_advanced = (
+            "{protocol}://{username}:{password}@"
+            "{ip_address}:{port}/WLG_adv_tri_band2.htm").format(
+                protocol=self.ap_settings["protocol"],
+                username=self.ap_settings["admin_username"],
+                password=self.ap_settings["admin_password"],
+                ip_address=self.ap_settings["ip_address"],
+                port=self.ap_settings["port"])
+        self.networks = ["2G", "5G_1", "5G_2"]
+        self.channel_band_map = {
+            "2G": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            "5G_1": [36, 40, 44, 48],
+            "5G_2": [149, 153, 157, 161, 165]
+        }
+        self.config_page_fields = {
+            "region": "WRegion",
+            ("2G", "status"): "enable_ap",
+            ("5G_1", "status"): "enable_ap_an",
+            ("5G_2", "status"): "enable_ap_an_2",
+            ("2G", "ssid"): "ssid",
+            ("5G_1", "ssid"): "ssid_an",
+            ("5G_2", "ssid"): "ssid_an_2",
+            ("2G", "channel"): "w_channel",
+            ("5G_1", "channel"): "w_channel_an",
+            ("5G_2", "channel"): "w_channel_an_2",
+            ("2G", "bandwidth"): "opmode",
+            ("5G_1", "bandwidth"): "opmode_an",
+            ("5G_2", "bandwidth"): "opmode_an_2",
+            ("2G", "security_type"): "security_type",
+            ("5G_1", "security_type"): "security_type_an",
+            ("5G_2", "security_type"): "security_type_an_2",
+            ("2G", "password"): "passphrase",
+            ("5G_1", "password"): "passphrase_an",
+            ("5G_2", "password"): "passphrase_an_2"
+        }
+        self.bw_mode_text = {
+            "11g": "Up to 54 Mbps",
+            "VHT20": "Up to 433 Mbps",
+            "VHT40": "Up to 1000 Mbps",
+            "VHT80": "Up to 2165 Mbps"
+        }
+        # Read and update AP settings
+        self.read_ap_settings()
+        if not set(ap_settings.items()).issubset(self.ap_settings.items()):
             self.update_ap_settings(ap_settings)
 
 
