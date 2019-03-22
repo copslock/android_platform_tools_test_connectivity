@@ -4616,8 +4616,6 @@ def mms_send_receive_verify_for_subscription(
 
     for ad in (ad_tx, ad_rx):
         ad.send_keycode("BACK")
-        if "Permissive" not in ad.adb.shell("su root getenforce"):
-            ad.adb.shell("su root setenforce 0")
         if not getattr(ad, "messaging_droid", None):
             ad.messaging_droid, ad.messaging_ed = ad.get_droid()
             ad.messaging_ed.start()
