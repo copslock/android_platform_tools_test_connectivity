@@ -59,6 +59,7 @@ message BluetoothAudioTestResult {
   optional int32 audio_glitches_count = 6;
   optional int32 audio_missed_packets_count = 7;
   optional float total_harmonic_distortion_plus_noise = 8;
+  optional int64 audio_streaming_duration_millis = 9;
 }
 
 message BluetoothDataTestResult {

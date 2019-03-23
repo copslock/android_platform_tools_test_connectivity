@@ -95,6 +95,8 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
             # Get distortion for channnel one
             thdn = self.metrics['thdn']
             self.metrics['total_harmonic_distortion_plus_noise'] = thdn[0]
+            duration = int(self.mic.get_last_record_duration_millis())
+            self.metrics['audio_streaming_duration_millis'] = duration
         except IndexError:
             self.log.warning('self.generate_metrics_proto called before self.an'
                              'alyze. Anomaly and THD+N results not populated.')
