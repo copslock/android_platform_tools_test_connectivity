@@ -19,6 +19,7 @@ import os
 import time
 from collections import defaultdict
 from collections import OrderedDict
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
 from acts.test_utils.coex.coex_test_utils import bokeh_chart_plot
@@ -45,7 +46,6 @@ def get_atten_range(start, stop, step):
     atten_range = [start + x * step for x in range(0, atten_step)]
     return atten_range
 
-
 class CoexPerformanceBaseTest(CoexBaseTest):
     """Base test class for performance tests.
 
@@ -58,6 +58,14 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         super().__init__(controllers)
         self.a2dp_streaming = False
         self.rvr = {}
+        self.bt_range_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='bt_range')
+        self.wifi_max_atten_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='wifi_max_atten')
+        self.wifi_min_atten_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='wifi_min_atten')
+        self.wifi_range_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='wifi_range_metric')
 
     def setup_class(self):
         req_params = ["test_params", "Attenuator"]
@@ -141,6 +149,16 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             (self.rvr[bt_atten]["throughput_received"],
                  self.rvr[bt_atten]["a2dp_packet_drop"]) = (
                      self.rvr_throughput(bt_atten, called_func))
+            self.wifi_max_atten_metric.metric_value = max(self.rvr[bt_atten]
+                                                          ["attenuation"])
+            self.wifi_min_atten_metric.metric_value = min(self.rvr[bt_atten]
+                                                          ["attenuation"])
+            for i, atten in enumerate(self.rvr[bt_atten]["attenuation"]):
+                if self.rvr[bt_atten]["throughput_received"][i] < 1.0:
+                    self.wifi_range_metric = self.rvr[bt_atten]["attenuation"][i-1]
+                    break
+            else:
+                self.wifi_range_metric = max(self.rvr[bt_atten]["attenuation"])
             if self.a2dp_streaming:
                 if not any(x > 0 for x in self.a2dp_dropped_list):
                     self.rvr[bt_atten]["a2dp_packet_drop"] = []
@@ -212,8 +230,16 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         """
         if self.rvr:
             with open(self.json_file, 'a') as results_file:
-                json.dump(OrderedDict(sorted(self.rvr.items(), key=str)),
-                          results_file, indent=4)
+                json.dump({str(k): v for k, v in self.rvr.items()}, 
+                          results_file, indent=4, sort_keys=True)
+            self.bt_range_metric.metric_value = int(list(self.rvr["bt_range"].keys())[0])
+            self.log.info("BT range where gap has occured = %s" % self.rvr["bt_range"])
+            self.log.info("BT range metric = %s" % list(self.rvr["bt_range"].keys())[0])
+            self.log.info("BT min range = %s" % min(self.rvr["bt_attenuation"]))
+            self.log.info("BT max range = %s" % max(self.rvr["bt_attenuation"]))
+            with open(self.json_file, 'a') as result_file:
+                json.dump({str(k): v for k, v in self.rvr.items()}, result_file,
+                          indent=4, sort_keys=True)
             self.plot_graph_for_attenuation()
             self.throughput_pass_fail_check()
         else:
@@ -423,3 +449,4 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             throughput_limits[bt_atten]["lower_limit"] = lower_limit
             throughput_limits[bt_atten]["upper_limit"] = upper_limit
         return throughput_limits
+

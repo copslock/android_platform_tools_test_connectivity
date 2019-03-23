@@ -80,7 +80,8 @@ def create(configs):
     elif configs == ANDROID_DEVICE_PICK_ALL_TOKEN:
         ads = get_all_instances()
     elif not isinstance(configs, list):
-        raise errors.AndroidDeviceConfigError(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
+        raise errors.AndroidDeviceConfigError(
+            ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
     elif isinstance(configs[0], str):
         # Configs is a list of serials.
         ads = get_instances(configs)
@@ -94,7 +95,8 @@ def create(configs):
         if not ad.is_connected():
             raise errors.AndroidDeviceError(
                 ("Android device %s is specified in config"
-                 " but is not attached.") % ad.serial, serial=ad.serial)
+                 " but is not attached.") % ad.serial,
+                serial=ad.serial)
     _start_services_on_ads(ads)
     return ads
 
@@ -367,8 +369,9 @@ class AndroidDevice:
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
         self.log = tracelogger.TraceLogger(
-            AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                       {'serial': serial}))
+            AndroidDeviceLoggerAdapter(logging.getLogger(), {
+                'serial': serial
+            }))
         self._event_dispatchers = {}
         self._services = []
         self.register_service(services.AdbLogcatService(self))
@@ -428,8 +431,8 @@ class AndroidDevice:
 
         Stop adb logcat and terminate sl4a sessions if exist.
         """
-        event_bus.post(android_events.AndroidStopServicesEvent(self),
-                       ignore_errors=True)
+        event_bus.post(
+            android_events.AndroidStopServicesEvent(self), ignore_errors=True)
 
     def is_connected(self):
         out = self.adb.devices()
@@ -488,7 +491,8 @@ class AndroidDevice:
         if self._sdk_api_level is not None:
             return self._sdk_api_level
         if self.is_bootloader:
-            self.log.error('Device is in fastboot mode. Cannot get build info.')
+            self.log.error(
+                'Device is in fastboot mode. Cannot get build info.')
             return
         self._sdk_api_level = int(
             self.adb.shell('getprop ro.build.version.sdk'))
@@ -591,7 +595,8 @@ class AndroidDevice:
             if hasattr(self, k) and k != "skip_sl4a":
                 raise errors.AndroidDeviceError(
                     "Attempting to set existing attribute %s on %s" %
-                    (k, self.serial), serial=self.serial)
+                    (k, self.serial),
+                    serial=self.serial)
             setattr(self, k, v)
 
     def root_adb(self):
@@ -661,9 +666,8 @@ class AndroidDevice:
                 except (IndexError, ValueError) as e:
                     # Possible ValueError from string to int cast.
                     # Possible IndexError from split.
-                    self.log.warn(
-                        'Command \"%s\" returned output line: '
-                        '\"%s\".\nError: %s', cmd, out, e)
+                    self.log.warn('Command \"%s\" returned output line: '
+                                  '\"%s\".\nError: %s', cmd, out, e)
             except Exception as e:
                 self.log.warn(
                     'Device fails to check if %s running with \"%s\"\n'
@@ -689,21 +693,29 @@ class AndroidDevice:
                                                         target) >= 0
         return low and high
 
-    def cat_adb_log(self, tag, begin_time, dest_path="AdbLogExcerpts"):
+    def cat_adb_log(self,
+                    tag,
+                    begin_time,
+                    end_time=None,
+                    dest_path="AdbLogExcerpts"):
         """Takes an excerpt of the adb logcat log from a certain time point to
         current time.
 
         Args:
             tag: An identifier of the time period, usually the name of a test.
             begin_time: Epoch time of the beginning of the time period.
+            end_time: Epoch time of the ending of the time period, default None
             dest_path: Destination path of the excerpt file.
         """
         log_begin_time = acts_logger.epoch_to_log_line_timestamp(begin_time)
-        log_end_time = acts_logger.get_log_line_timestamp()
+        if end_time is None:
+            log_end_time = acts_logger.get_log_line_timestamp()
+        else:
+            log_end_time = acts_logger.epoch_to_log_line_timestamp(end_time)
         self.log.debug("Extracting adb log from logcat.")
         if not os.path.exists(self.adb_logcat_file_path):
-            self.log.warn("Logcat file %s does not exist." %
-                          self.adb_logcat_file_path)
+            self.log.warn(
+                "Logcat file %s does not exist." % self.adb_logcat_file_path)
             return
         adb_excerpt_path = os.path.join(self.log_path, dest_path)
         utils.create_dir(adb_excerpt_path)
@@ -717,7 +729,6 @@ class AndroidDevice:
         with open(full_adblog_path, 'w', encoding='utf-8') as out:
             in_file = self.adb_logcat_file_path
             with open(in_file, 'r', encoding='utf-8', errors='replace') as f:
-                in_range = False
                 while True:
                     line = None
                     try:
@@ -731,13 +742,10 @@ class AndroidDevice:
                         continue
                     if self._is_timestamp_in_range(line_time, log_begin_time,
                                                    log_end_time):
-                        in_range = True
                         if not line.endswith('\n'):
                             line += '\n'
                         out.write(line)
-                    else:
-                        if in_range:
-                            break
+        return full_adblog_path
 
     def start_adb_logcat(self):
         """Starts a standing adb logcat collection in separate subprocesses and
@@ -745,8 +753,8 @@ class AndroidDevice:
         """
         if self.is_adb_logcat_on:
             self.log.warn(
-                'Android device %s already has a running adb logcat thread. '
-                % self.serial)
+                'Android device %s already has a running adb logcat thread. ' %
+                self.serial)
             return
         # Disable adb log spam filter. Have to stop and clear settings first
         # because 'start' doesn't support --clear option before Android N.
@@ -766,8 +774,8 @@ class AndroidDevice:
         """
         if not self.is_adb_logcat_on:
             self.log.warn(
-                'Android device %s does not have an ongoing adb logcat '
-                % self.serial)
+                'Android device %s does not have an ongoing adb logcat ' %
+                self.serial)
             return
         # Set the last timestamp to the current timestamp. This may cause
         # a race condition that allows the same line to be logged twice,
@@ -808,9 +816,8 @@ class AndroidDevice:
                     'pm list packages | grep -w "package:%s"' % package_name))
 
         except Exception as err:
-            self.log.error(
-                'Could not determine if %s is installed. '
-                'Received error:\n%s', package_name, err)
+            self.log.error('Could not determine if %s is installed. '
+                           'Received error:\n%s', package_name, err)
             return False
 
     def is_sl4a_installed(self):
@@ -834,9 +841,8 @@ class AndroidDevice:
                     self.log.info("apk %s is running", package_name)
                     return True
             except Exception as e:
-                self.log.warn(
-                    "Device fails to check is %s running by %s "
-                    "Exception %s", package_name, cmd, e)
+                self.log.warn("Device fails to check is %s running by %s "
+                              "Exception %s", package_name, cmd, e)
                 continue
         self.log.debug("apk %s is not running", package_name)
         return False
@@ -1341,7 +1347,7 @@ class AndroidDevice:
             self.log.info("Device is in CrpytKeeper window")
             return True
         if "StatusBar" in current_window and (
-                (not current_app) or "FallbackHome" in current_app):
+            (not current_app) or "FallbackHome" in current_app):
             self.log.info("Device is locked")
             return True
         return False
@@ -1392,7 +1398,7 @@ class AndroidDevice:
 
     def exit_setup_wizard(self):
         if not self.is_user_setup_complete() or self.is_setupwizard_on():
-        # b/116709539 need this to prevent reboot after skip setup wizard
+            # b/116709539 need this to prevent reboot after skip setup wizard
             self.adb.shell(
                 "am start -a com.android.setupwizard.EXIT", ignore_status=True)
             self.adb.shell(

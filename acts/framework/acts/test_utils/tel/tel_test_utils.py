@@ -4617,8 +4617,6 @@ def mms_send_receive_verify_for_subscription(
 
     for ad in (ad_tx, ad_rx):
         ad.send_keycode("BACK")
-        if "Permissive" not in ad.adb.shell("su root getenforce"):
-            ad.adb.shell("su root setenforce 0")
         if not getattr(ad, "messaging_droid", None):
             ad.messaging_droid, ad.messaging_ed = ad.get_droid()
             ad.messaging_ed.start()
@@ -7118,8 +7116,14 @@ def install_googlefi_apk(ad, fi_util):
     ad.adb.install("-r -g --user 0 %s" % fi_util,
                    timeout=300, ignore_status=True)
     time.sleep(3)
+    if not check_fi_apk_installed(ad):
+        return False
+    return True
+
+
+def check_fi_apk_installed(ad):
     if not ad.is_apk_installed("com.google.android.apps.tycho"):
-        ad.log.info("com.google.android.apps.tycho is not installed")
+        ad.log.warning("com.google.android.apps.tycho is not installed")
         return False
     return True
 
@@ -7162,7 +7166,7 @@ def my_current_screen_content(ad, content):
     ad.adb.shell("uiautomator dump --window=WINDOW")
     out = ad.adb.shell("cat /sdcard/window_dump.xml | grep -E '%s'" % content)
     if not out:
-        ad.log.warning("Matching %s not found on current screen", content)
+        ad.log.warning("NOT FOUND - %s", content)
         return False
     return True
 
@@ -7173,29 +7177,38 @@ def activate_google_fi_account(ad, retries=3):
                         'com.google.android.apps.tycho/.InitActivity --ez '
                         'in_setup_wizard false --ez force_show_account_chooser '
                         'false')
+    toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
     ad.adb.shell("settings put system screen_off_timeout 1800000")
     page_match_dict = {
        "Setup" : "Activate Google Fi to use your device for calls",
        "Switch" : "Switch to the Google Fi mobile network",
+       "Connect" : "Connect to the Google Fi mobile network",
+       "Move" : "Move number",
        "Activate" : "This takes a minute or two, sometimes longer",
        "Welcome" : "Welcome to Google Fi",
+       "Account" : "Your current cycle ends in"
     }
-    page_title_list = ["Setup", "Switch", "Activate", "Welcome"]
+    page_list = ["Account", "Setup", "Switch", "Connect",
+                 "Activate", "Move", "Welcome"]
     for _ in range(retries):
         ad.force_stop_apk(_FI_APK)
         ad.ensure_screen_on()
         ad.send_keycode("HOME")
         ad.adb.shell(_FI_ACTIVATE_CMD)
         time.sleep(15)
-        for page in page_title_list:
+        for page in page_list:
             if my_current_screen_content(ad, page_match_dict[page]):
                 ad.log.info("Ready for Step %s", page)
                 log_screen_shot(ad, "fi_activation_step_%s" % page)
-                if page in ("Setup", "Switch"):
+                if page in ("Setup", "Switch", "Connect"):
                     ad.send_keycode("TAB")
                     ad.send_keycode("TAB")
                     ad.send_keycode("ENTER")
                     time.sleep(30)
+                elif page == "Move":
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("ENTER")
+                    time.sleep(5)
                 elif page == "Welcome":
                     ad.send_keycode("TAB")
                     ad.send_keycode("TAB")
@@ -7211,19 +7224,34 @@ def activate_google_fi_account(ad, retries=3):
                     time.sleep(60)
                     if my_current_screen_content(ad, page_match_dict[page]):
                         time.sleep(60)
+                elif page == "Account":
+                    return True
             else:
-                ad.log.info("Page %s not matching any content", page)
+                ad.log.info("NOT FOUND - Page %s", page)
                 log_screen_shot(ad, "fi_activation_step_%s_failure" % page)
     return False
 
 
 def check_google_fi_activated(ad, retries=20):
-    for _ in range(retries):
-        if is_sim_ready(ad.log, ad) and (
-                ad.droid.telephonyGetSimOperatorName() == "Google Fi"):
-            ad.log.info("SIM state is READY, SIM operator is Fi")
-            return True
-        time.sleep(5)
+    if check_fi_apk_installed(ad):
+        _FI_APK = "com.google.android.apps.tycho"
+        _FI_LAUNCH_CMD = ("am start -n %s/%s.AccountDetailsActivity" \
+                          % (_FI_APK, _FI_APK))
+        toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
+        ad.adb.shell("settings put system screen_off_timeout 1800000")
+        ad.force_stop_apk(_FI_APK)
+        ad.ensure_screen_on()
+        ad.send_keycode("HOME")
+        ad.adb.shell(_FI_LAUNCH_CMD)
+        time.sleep(10)
+        if not my_current_screen_content(ad, "Your current cycle ends in"):
+            ad.log.warning("Fi is not activated")
+            return False
+        ad.send_keycode("HOME")
+        return True
+    else:
+        ad.log.info("Fi Apk is not yet installed")
+        return False
 
 
 def cleanup_configupdater(ad):

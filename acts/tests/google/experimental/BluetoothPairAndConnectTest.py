@@ -108,14 +108,11 @@ class BluetoothPairAndConnectTest(BaseTestClass):
 
         pair_time *= 1000
         connection_start_time = time.perf_counter()
-        if not self.apollo_act.wait_for_bluetooth_a2dp_hfp():
+        if not self.apollo_act.wait_for_bluetooth_a2dp_hfp(30):
             raise BluetoothPairConnectError('Failed to connect devices')
         connection_end_time = time.perf_counter()
         connection_time = (connection_end_time -
                            connection_start_time) * 1000
-
-        factory_reset_bluetooth([self.phone])
-        self.apollo_act.factory_reset()
 
         return pair_time, connection_time
 
@@ -147,6 +144,10 @@ class BluetoothPairAndConnectTest(BaseTestClass):
                 connect_times.append(connect_time)
                 pair_times.append(pair_time)
                 pair_connect_success += 1
+
+            factory_reset_bluetooth([self.phone])
+            self.log.info('Factory resetting Apollo device...')
+            self.apollo_act.factory_reset()
 
             # Buffer between pair and connect attempts
             time.sleep(3)

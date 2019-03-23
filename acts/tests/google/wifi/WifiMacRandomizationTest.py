@@ -92,6 +92,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
             wutils.wifi_toggle_state(ad, True)
+        if hasattr(self, 'packet_capture'):
+            self.pcap_procs = wutils.start_pcap(
+                self.packet_capture, 'dual', self.log_path, self.test_name)
 
     def teardown_test(self):
         for ad in self.android_devices:
@@ -100,10 +103,15 @@ class WifiMacRandomizationTest(WifiBaseTest):
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
 
+    def on_pass(self, test_name, begin_time):
+        if hasattr(self, 'packet_capture'):
+            wutils.stop_pcap(self.packet_capture, self.pcap_procs, True)
+
     def on_fail(self, test_name, begin_time):
-        pass
-        #self.dut.cat_adb_log(test_name, begin_time)
-        #self.dut.take_bug_report(test_name, begin_time)
+        if hasattr(self, 'packet_capture'):
+            wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
+        self.dut.cat_adb_log(test_name, begin_time)
+        self.dut.take_bug_report(test_name, begin_time)
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:

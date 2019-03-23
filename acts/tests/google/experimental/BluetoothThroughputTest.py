@@ -131,9 +131,6 @@ class BluetoothThroughputTest(BaseTestClass):
         metrics['data_throughput_avg_bytes_per_second'] = int(statistics.mean(
             throughput_list))
 
-        self.bt_logger.get_results(metrics, self.__class__.__name__,
-                                   self.server_device, self.client_device)
-
         proto = self.bt_logger.get_results(metrics,
                                            self.__class__.__name__,
                                            self.server_device,
