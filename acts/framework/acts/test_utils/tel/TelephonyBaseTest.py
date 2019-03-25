@@ -103,6 +103,9 @@ class TelephonyBaseTest(BaseTestClass):
         self.account_util = self.user_params.get("account_util", None)
         if isinstance(self.account_util, list):
             self.account_util = self.account_util[0]
+        self.fi_util = self.user_params.get("fi_util", None)
+        if isinstance(self.fi_util, list):
+            self.fi_util = self.fi_util[0]
         tasks = [(self._init_device, [ad]) for ad in self.android_devices]
         multithread_func(self.log, tasks)
         self.skip_reset_between_cases = self.user_params.get(
