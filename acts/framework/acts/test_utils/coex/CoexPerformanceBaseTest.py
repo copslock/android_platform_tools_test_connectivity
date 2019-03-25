@@ -18,13 +18,12 @@ import json
 import os
 import time
 from collections import defaultdict
-from collections import OrderedDict
+
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
 from acts.test_utils.coex.coex_test_utils import bokeh_chart_plot
-from acts.test_utils.coex.coex_test_utils import (
-    collect_bluetooth_manager_dumpsys_logs)
+from acts.test_utils.coex.coex_test_utils import collect_bluetooth_manager_dumpsys_logs
 from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import wifi_connection_check
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
@@ -45,6 +44,7 @@ def get_atten_range(start, stop, step):
     atten_step = int(round((stop - start) / float(step)))
     atten_range = [start + x * step for x in range(0, atten_step)]
     return atten_range
+
 
 class CoexPerformanceBaseTest(CoexBaseTest):
     """Base test class for performance tests.
@@ -134,7 +134,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         self.rvr["bt_attenuation"] = []
         self.rvr["test_name"] = self.current_test_name
         self.rvr["bt_gap_analysis"] = {}
-        self.rvr["bt_range"] = {}
+        self.rvr["bt_range"] = []
+        status_flag = True
         for bt_atten in self.bt_atten_range:
             self.rvr[bt_atten] = {}
             self.rvr[bt_atten]["fixed_attenuation"] = (
@@ -147,8 +148,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                 wifi_test_device_init(self.pri_ad)
                 wifi_connect(self.pri_ad, self.network, num_of_tries=5)
             (self.rvr[bt_atten]["throughput_received"],
-                 self.rvr[bt_atten]["a2dp_packet_drop"]) = (
-                     self.rvr_throughput(bt_atten, called_func))
+             self.rvr[bt_atten]["a2dp_packet_drop"],
+             status_flag) = self.rvr_throughput(bt_atten, called_func)
             self.wifi_max_atten_metric.metric_value = max(self.rvr[bt_atten]
                                                           ["attenuation"])
             self.wifi_min_atten_metric.metric_value = min(self.rvr[bt_atten]
@@ -162,7 +163,9 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             if self.a2dp_streaming:
                 if not any(x > 0 for x in self.a2dp_dropped_list):
                     self.rvr[bt_atten]["a2dp_packet_drop"] = []
-        return True
+        if not self.rvr["bt_range"]:
+            self.rvr["bt_range"].append(0)
+        return status_flag
 
     def rvr_throughput(self, bt_atten, called_func=None):
         """Sets attenuation and runs the function passed.
@@ -172,7 +175,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             called_func: Functions object to run parallely.
 
         Returns:
-            Throughput.
+            Throughput, a2dp_drops and True/False.
         """
         self.iperf_received = []
         self.iperf_variables.received = []
@@ -181,7 +184,6 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         self.rvr[bt_atten]["audio_artifacts"] = {}
         self.rvr[bt_atten]["attenuation"] = []
         self.rvr["bt_gap_analysis"][bt_atten] = {}
-        self.rvr["bt_range"][bt_atten] = []
         for atten in self.wifi_atten_range:
             self.rvr[bt_atten]["attenuation"].append(
                 atten + self.rvr[bt_atten]["fixed_attenuation"])
@@ -194,7 +196,9 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             if called_func:
                 if not multithread_func(self.log, called_func):
                     self.teardown_result()
-                    return self.iperf_received, self.a2dp_dropped_list
+                    self.iperf_received.append(float(str(
+                        self.iperf_variables.received[-1]).strip("Mb/s")))
+                    return self.iperf_received, self.a2dp_dropped_list, False
             else:
                 self.run_iperf_and_get_result()
             if self.a2dp_streaming:
@@ -207,7 +211,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                     if data['artifacts']['delay_during_playback']:
                         self.rvr["bt_gap_analysis"][bt_atten][atten][idx] = (
                                 data['artifacts']['delay_during_playback'])
-                        self.rvr["bt_range"][bt_atten].append(atten)
+                        self.rvr["bt_range"].append(bt_atten)
                     else:
                         self.rvr["bt_gap_analysis"][bt_atten][atten][idx] = 0
                 file_path = collect_bluetooth_manager_dumpsys_logs(
@@ -219,7 +223,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                     float(str(self.iperf_variables.received[-1]).strip("Mb/s")))
         for i in range(self.num_atten - 1):
             self.attenuators[i].set_atten(0)
-        return self.iperf_received, self.a2dp_dropped_list
+        return self.iperf_received, self.a2dp_dropped_list, True
 
     def performance_baseline_check(self):
         """Checks for performance_result_path in config. If present, plots
@@ -230,11 +234,11 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         """
         if self.rvr:
             with open(self.json_file, 'a') as results_file:
-                json.dump({str(k): v for k, v in self.rvr.items()}, 
+                json.dump({str(k): v for k, v in self.rvr.items()},
                           results_file, indent=4, sort_keys=True)
-            self.bt_range_metric.metric_value = int(list(self.rvr["bt_range"].keys())[0])
-            self.log.info("BT range where gap has occured = %s" % self.rvr["bt_range"])
-            self.log.info("BT range metric = %s" % list(self.rvr["bt_range"].keys())[0])
+            self.bt_range_metric.metric_value = self.rvr["bt_range"]
+            self.log.info("BT range where gap has occurred = %s" %
+                          self.rvr["bt_range"][0])
             self.log.info("BT min range = %s" % min(self.rvr["bt_attenuation"]))
             self.log.info("BT max range = %s" % max(self.rvr["bt_attenuation"]))
             with open(self.json_file, 'a') as result_file:
