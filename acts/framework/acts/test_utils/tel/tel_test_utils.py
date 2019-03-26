@@ -6732,13 +6732,13 @@ def enable_connectivity_metrics(ad):
         #" -e usagestats:connectivity_metrics:data_collection_bitmap 62"
     ]
     for cmd in cmds:
-        ad.adb.shell(cmd)
+        ad.adb.shell(cmd, ignore_status=True)
 
 
 def force_connectivity_metrics_upload(ad):
     cmd = "cmd jobscheduler run --force com.android.connectivity.metrics %s"
     for job_id in [2, 3, 5, 4, 1, 6]:
-        ad.adb.shell(cmd % job_id)
+        ad.adb.shell(cmd % job_id, ignore_status=True)
 
 
 def system_file_push(ad, src_file_path, dst_file_path):
