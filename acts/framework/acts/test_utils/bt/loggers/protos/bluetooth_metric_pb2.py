@@ -19,11 +19,45 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='bluetooth_metric.proto',
   package='wireless.android.platform.testing.bluetooth.metrics',
   syntax='proto2',
-  serialized_pb=_b('\n\x16\x62luetooth_metric.proto\x12\x33wireless.android.platform.testing.bluetooth.metrics\"\xe8\x01\n\x13\x42luetoothTestDevice\x12\x14\n\x0c\x64\x65vice_class\x18\x01 \x01(\t\x12\x14\n\x0c\x64\x65vice_model\x18\x02 \x01(\t\x12\x18\n\x10hardware_version\x18\x03 \x01(\t\x12\x18\n\x10software_version\x18\x04 \x01(\t\x12\x1a\n\x12\x61ndroid_build_type\x18\x05 \x01(\t\x12\x1b\n\x13\x61ndroid_branch_name\x18\x06 \x01(\t\x12\x1c\n\x14\x61ndroid_build_number\x18\x07 \x01(\t\x12\x1a\n\x12\x61ndroid_release_id\x18\x08 \x01(\t\"\x83\x02\n#BluetoothContinuousTestResultHeader\x12\x16\n\x0etest_date_time\x18\x01 \x01(\x03\x12`\n\x0eprimary_device\x18\x02 \x01(\x0b\x32H.wireless.android.platform.testing.bluetooth.metrics.BluetoothTestDevice\x12\x62\n\x10\x63onnected_device\x18\x03 \x01(\x0b\x32H.wireless.android.platform.testing.bluetooth.metrics.BluetoothTestDevice\"\xe0\x03\n\x1c\x42luetoothReconnectTestResult\x12t\n\x12\x63onfiguration_data\x18\x01 \x01(\x0b\x32X.wireless.android.platform.testing.bluetooth.metrics.BluetoothContinuousTestResultHeader\x12 \n\x18\x63onnection_attempt_count\x18\x02 \x01(\x05\x12#\n\x1b\x63onnection_successful_count\x18\x03 \x01(\x05\x12\x1f\n\x17\x63onnection_failed_count\x18\x04 \x01(\x05\x12\"\n\x1a\x63onnection_max_time_millis\x18\x05 \x01(\x05\x12\"\n\x1a\x63onnection_min_time_millis\x18\x06 \x01(\x05\x12\"\n\x1a\x63onnection_avg_time_millis\x18\x07 \x01(\x05\x12&\n\x1e\x61\x63l_connection_max_time_millis\x18\x08 \x01(\x05\x12&\n\x1e\x61\x63l_connection_min_time_millis\x18\t \x01(\x05\x12&\n\x1e\x61\x63l_connection_avg_time_millis\x18\n \x01(\x05\"\xc7\x03\n!BluetoothPairAndConnectTestResult\x12t\n\x12\x63onfiguration_data\x18\x01 \x01(\x0b\x32X.wireless.android.platform.testing.bluetooth.metrics.BluetoothContinuousTestResultHeader\x12\x1a\n\x12pair_attempt_count\x18\x02 \x01(\x05\x12\x1d\n\x15pair_successful_count\x18\x03 \x01(\x05\x12\x19\n\x11pair_failed_count\x18\x04 \x01(\x05\x12\x1c\n\x14pair_max_time_millis\x18\x05 \x01(\x05\x12\x1c\n\x14pair_min_time_millis\x18\x06 \x01(\x05\x12\x1c\n\x14pair_avg_time_millis\x18\x07 \x01(\x05\x12(\n first_connection_max_time_millis\x18\x08 \x01(\x05\x12(\n first_connection_min_time_millis\x18\t \x01(\x05\x12(\n first_connection_avg_time_millis\x18\n \x01(\x05\"\xae\x04\n\x18\x42luetoothAudioTestResult\x12t\n\x12\x63onfiguration_data\x18\x01 \x01(\x0b\x32X.wireless.android.platform.testing.bluetooth.metrics.BluetoothContinuousTestResultHeader\x12q\n\raudio_profile\x18\x02 \x01(\x0e\x32Z.wireless.android.platform.testing.bluetooth.metrics.BluetoothAudioTestResult.AudioProfile\x12 \n\x18\x61udio_latency_min_millis\x18\x03 \x01(\x05\x12 \n\x18\x61udio_latency_max_millis\x18\x04 \x01(\x05\x12 \n\x18\x61udio_latency_avg_millis\x18\x05 \x01(\x05\x12\x1c\n\x14\x61udio_glitches_count\x18\x06 \x01(\x05\x12\"\n\x1a\x61udio_missed_packets_count\x18\x07 \x01(\x05\x12,\n$total_harmonic_distortion_plus_noise\x18\x08 \x01(\x02\x12\'\n\x1f\x61udio_streaming_duration_millis\x18\t \x01(\x03\"*\n\x0c\x41udioProfile\x12\x08\n\x04\x41\x32\x44P\x10\x00\x12\x07\n\x03HFP\x10\x01\x12\x07\n\x03HAP\x10\x02\"\xd5\x04\n\x17\x42luetoothDataTestResult\x12t\n\x12\x63onfiguration_data\x18\x01 \x01(\x0b\x32X.wireless.android.platform.testing.bluetooth.metrics.BluetoothContinuousTestResultHeader\x12\x81\x01\n\x16\x64\x61ta_transfer_protocol\x18\x02 \x01(\x0e\x32\x61.wireless.android.platform.testing.bluetooth.metrics.BluetoothDataTestResult.DataTransferProtocol\x12\x1f\n\x17\x64\x61ta_latency_min_millis\x18\x03 \x01(\x05\x12\x1f\n\x17\x64\x61ta_latency_max_millis\x18\x04 \x01(\x05\x12\x1f\n\x17\x64\x61ta_latency_avg_millis\x18\x05 \x01(\x05\x12,\n$data_throughput_min_bytes_per_second\x18\x06 \x01(\x05\x12,\n$data_throughput_max_bytes_per_second\x18\x07 \x01(\x05\x12,\n$data_throughput_avg_bytes_per_second\x18\x08 \x01(\x05\x12\x18\n\x10\x64\x61ta_packet_size\x18\t \x01(\x05\"9\n\x14\x44\x61taTransferProtocol\x12\n\n\x06RFCOMM\x10\x00\x12\t\n\x05L2CAP\x10\x01\x12\n\n\x06LE_COC\x10\x02')
+  serialized_pb=_b('\n\x16\x62luetooth_metric.proto\x12\x33wireless.android.platform.testing.bluetooth.metrics\"\xe8\x01\n\x13\x42luetoothTestDevice\x12\x14\n\x0c\x64\x65vice_class\x18\x01 \x01(\t\x12\x14\n\x0c\x64\x65vice_model\x18\x02 \x01(\t\x12\x18\n\x10hardware_version\x18\x03 \x01(\t\x12\x18\n\x10software_version\x18\x04 \x01(\t\x12\x1a\n\x12\x61ndroid_build_type\x18\x05 \x01(\t\x12\x1b\n\x13\x61ndroid_branch_name\x18\x06 \x01(\t\x12\x1c\n\x14\x61ndroid_build_number\x18\x07 \x01(\t\x12\x1a\n\x12\x61ndroid_release_id\x18\x08 \x01(\t\"\x83\x02\n#BluetoothContinuousTestResultHeader\x12\x16\n\x0etest_date_time\x18\x01 \x01(\x03\x12`\n\x0eprimary_device\x18\x02 \x01(\x0b\x32H.wireless.android.platform.testing.bluetooth.metrics.BluetoothTestDevice\x12\x62\n\x10\x63onnected_device\x18\x03 \x01(\x0b\x32H.wireless.android.platform.testing.bluetooth.metrics.BluetoothTestDevice\"\xe0\x03\n\x1c\x42luetoothReconnectTestResult\x12t\n\x12\x63onfiguration_data\x18\x01 \x01(\x0b\x32X.wireless.android.platform.testing.bluetooth.metrics.BluetoothContinuousTestResultHeader\x12 \n\x18\x63onnection_attempt_count\x18\x02 \x01(\x05\x12#\n\x1b\x63onnection_successful_count\x18\x03 \x01(\x05\x12\x1f\n\x17\x63onnection_failed_count\x18\x04 \x01(\x05\x12\"\n\x1a\x63onnection_max_time_millis\x18\x05 \x01(\x05\x12\"\n\x1a\x63onnection_min_time_millis\x18\x06 \x01(\x05\x12\"\n\x1a\x63onnection_avg_time_millis\x18\x07 \x01(\x05\x12&\n\x1e\x61\x63l_connection_max_time_millis\x18\x08 \x01(\x05\x12&\n\x1e\x61\x63l_connection_min_time_millis\x18\t \x01(\x05\x12&\n\x1e\x61\x63l_connection_avg_time_millis\x18\n \x01(\x05\"\xc7\x03\n!BluetoothPairAndConnectTestResult\x12t\n\x12\x63onfiguration_data\x18\x01 \x01(\x0b\x32X.wireless.android.platform.testing.bluetooth.metrics.BluetoothContinuousTestResultHeader\x12\x1a\n\x12pair_attempt_count\x18\x02 \x01(\x05\x12\x1d\n\x15pair_successful_count\x18\x03 \x01(\x05\x12\x19\n\x11pair_failed_count\x18\x04 \x01(\x05\x12\x1c\n\x14pair_max_time_millis\x18\x05 \x01(\x05\x12\x1c\n\x14pair_min_time_millis\x18\x06 \x01(\x05\x12\x1c\n\x14pair_avg_time_millis\x18\x07 \x01(\x05\x12(\n first_connection_max_time_millis\x18\x08 \x01(\x05\x12(\n first_connection_min_time_millis\x18\t \x01(\x05\x12(\n first_connection_avg_time_millis\x18\n \x01(\x05\"\x9d\x02\n\x18\x42luetoothA2dpCodecConfig\x12t\n\ncodec_type\x18\x01 \x01(\x0e\x32`.wireless.android.platform.testing.bluetooth.metrics.BluetoothA2dpCodecConfig.BluetoothA2dpCodec\x12\x13\n\x0bsample_rate\x18\x02 \x01(\x05\x12\x17\n\x0f\x62its_per_sample\x18\x03 \x01(\x05\x12\x14\n\x0c\x63hannel_mode\x18\x04 \x01(\x05\"G\n\x12\x42luetoothA2dpCodec\x12\x07\n\x03SBC\x10\x00\x12\x07\n\x03\x41\x41\x43\x10\x01\x12\x08\n\x04\x41PTX\x10\x02\x12\x0b\n\x07\x41PTX_HD\x10\x03\x12\x08\n\x04LDAC\x10\x04\"\x98\x05\n\x18\x42luetoothAudioTestResult\x12t\n\x12\x63onfiguration_data\x18\x01 \x01(\x0b\x32X.wireless.android.platform.testing.bluetooth.metrics.BluetoothContinuousTestResultHeader\x12q\n\raudio_profile\x18\x02 \x01(\x0e\x32Z.wireless.android.platform.testing.bluetooth.metrics.BluetoothAudioTestResult.AudioProfile\x12 \n\x18\x61udio_latency_min_millis\x18\x03 \x01(\x05\x12 \n\x18\x61udio_latency_max_millis\x18\x04 \x01(\x05\x12 \n\x18\x61udio_latency_avg_millis\x18\x05 \x01(\x05\x12\x1c\n\x14\x61udio_glitches_count\x18\x06 \x01(\x05\x12\"\n\x1a\x61udio_missed_packets_count\x18\x07 \x01(\x05\x12,\n$total_harmonic_distortion_plus_noise\x18\x08 \x01(\x02\x12\'\n\x1f\x61udio_streaming_duration_millis\x18\t \x01(\x03\x12h\n\x11\x61\x32\x64p_codec_config\x18\n \x01(\x0b\x32M.wireless.android.platform.testing.bluetooth.metrics.BluetoothA2dpCodecConfig\"*\n\x0c\x41udioProfile\x12\x08\n\x04\x41\x32\x44P\x10\x00\x12\x07\n\x03HFP\x10\x01\x12\x07\n\x03HAP\x10\x02\"\xd5\x04\n\x17\x42luetoothDataTestResult\x12t\n\x12\x63onfiguration_data\x18\x01 \x01(\x0b\x32X.wireless.android.platform.testing.bluetooth.metrics.BluetoothContinuousTestResultHeader\x12\x81\x01\n\x16\x64\x61ta_transfer_protocol\x18\x02 \x01(\x0e\x32\x61.wireless.android.platform.testing.bluetooth.metrics.BluetoothDataTestResult.DataTransferProtocol\x12\x1f\n\x17\x64\x61ta_latency_min_millis\x18\x03 \x01(\x05\x12\x1f\n\x17\x64\x61ta_latency_max_millis\x18\x04 \x01(\x05\x12\x1f\n\x17\x64\x61ta_latency_avg_millis\x18\x05 \x01(\x05\x12,\n$data_throughput_min_bytes_per_second\x18\x06 \x01(\x05\x12,\n$data_throughput_max_bytes_per_second\x18\x07 \x01(\x05\x12,\n$data_throughput_avg_bytes_per_second\x18\x08 \x01(\x05\x12\x18\n\x10\x64\x61ta_packet_size\x18\t \x01(\x05\"9\n\x14\x44\x61taTransferProtocol\x12\n\n\x06RFCOMM\x10\x00\x12\t\n\x05L2CAP\x10\x01\x12\n\n\x06LE_COC\x10\x02')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
+
+_BLUETOOTHA2DPCODECCONFIG_BLUETOOTHA2DPCODEC = _descriptor.EnumDescriptor(
+  name='BluetoothA2dpCodec',
+  full_name='wireless.android.platform.testing.bluetooth.metrics.BluetoothA2dpCodecConfig.BluetoothA2dpCodec',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='SBC', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='AAC', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='APTX', index=2, number=2,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='APTX_HD', index=3, number=3,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='LDAC', index=4, number=4,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=1732,
+  serialized_end=1803,
+)
+_sym_db.RegisterEnumDescriptor(_BLUETOOTHA2DPCODECCONFIG_BLUETOOTHA2DPCODEC)
 
 _BLUETOOTHAUDIOTESTRESULT_AUDIOPROFILE = _descriptor.EnumDescriptor(
   name='AudioProfile',
@@ -46,8 +80,8 @@ _BLUETOOTHAUDIOTESTRESULT_AUDIOPROFILE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2034,
-  serialized_end=2076,
+  serialized_start=2428,
+  serialized_end=2470,
 )
 _sym_db.RegisterEnumDescriptor(_BLUETOOTHAUDIOTESTRESULT_AUDIOPROFILE)
 
@@ -72,8 +106,8 @@ _BLUETOOTHDATATESTRESULT_DATATRANSFERPROTOCOL = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2619,
-  serialized_end=2676,
+  serialized_start=3013,
+  serialized_end=3070,
 )
 _sym_db.RegisterEnumDescriptor(_BLUETOOTHDATATESTRESULT_DATATRANSFERPROTOCOL)
 
@@ -391,6 +425,59 @@ _BLUETOOTHPAIRANDCONNECTTESTRESULT = _descriptor.Descriptor(
 )
 
 
+_BLUETOOTHA2DPCODECCONFIG = _descriptor.Descriptor(
+  name='BluetoothA2dpCodecConfig',
+  full_name='wireless.android.platform.testing.bluetooth.metrics.BluetoothA2dpCodecConfig',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='codec_type', full_name='wireless.android.platform.testing.bluetooth.metrics.BluetoothA2dpCodecConfig.codec_type', index=0,
+      number=1, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='sample_rate', full_name='wireless.android.platform.testing.bluetooth.metrics.BluetoothA2dpCodecConfig.sample_rate', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='bits_per_sample', full_name='wireless.android.platform.testing.bluetooth.metrics.BluetoothA2dpCodecConfig.bits_per_sample', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='channel_mode', full_name='wireless.android.platform.testing.bluetooth.metrics.BluetoothA2dpCodecConfig.channel_mode', index=3,
+      number=4, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _BLUETOOTHA2DPCODECCONFIG_BLUETOOTHA2DPCODEC,
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1518,
+  serialized_end=1803,
+)
+
+
 _BLUETOOTHAUDIOTESTRESULT = _descriptor.Descriptor(
   name='BluetoothAudioTestResult',
   full_name='wireless.android.platform.testing.bluetooth.metrics.BluetoothAudioTestResult',
@@ -461,6 +548,13 @@ _BLUETOOTHAUDIOTESTRESULT = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='a2dp_codec_config', full_name='wireless.android.platform.testing.bluetooth.metrics.BluetoothAudioTestResult.a2dp_codec_config', index=9,
+      number=10, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -474,8 +568,8 @@ _BLUETOOTHAUDIOTESTRESULT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1518,
-  serialized_end=2076,
+  serialized_start=1806,
+  serialized_end=2470,
 )
 
 
@@ -562,16 +656,19 @@ _BLUETOOTHDATATESTRESULT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2079,
-  serialized_end=2676,
+  serialized_start=2473,
+  serialized_end=3070,
 )
 
 _BLUETOOTHCONTINUOUSTESTRESULTHEADER.fields_by_name['primary_device'].message_type = _BLUETOOTHTESTDEVICE
 _BLUETOOTHCONTINUOUSTESTRESULTHEADER.fields_by_name['connected_device'].message_type = _BLUETOOTHTESTDEVICE
 _BLUETOOTHRECONNECTTESTRESULT.fields_by_name['configuration_data'].message_type = _BLUETOOTHCONTINUOUSTESTRESULTHEADER
 _BLUETOOTHPAIRANDCONNECTTESTRESULT.fields_by_name['configuration_data'].message_type = _BLUETOOTHCONTINUOUSTESTRESULTHEADER
+_BLUETOOTHA2DPCODECCONFIG.fields_by_name['codec_type'].enum_type = _BLUETOOTHA2DPCODECCONFIG_BLUETOOTHA2DPCODEC
+_BLUETOOTHA2DPCODECCONFIG_BLUETOOTHA2DPCODEC.containing_type = _BLUETOOTHA2DPCODECCONFIG
 _BLUETOOTHAUDIOTESTRESULT.fields_by_name['configuration_data'].message_type = _BLUETOOTHCONTINUOUSTESTRESULTHEADER
 _BLUETOOTHAUDIOTESTRESULT.fields_by_name['audio_profile'].enum_type = _BLUETOOTHAUDIOTESTRESULT_AUDIOPROFILE
+_BLUETOOTHAUDIOTESTRESULT.fields_by_name['a2dp_codec_config'].message_type = _BLUETOOTHA2DPCODECCONFIG
 _BLUETOOTHAUDIOTESTRESULT_AUDIOPROFILE.containing_type = _BLUETOOTHAUDIOTESTRESULT
 _BLUETOOTHDATATESTRESULT.fields_by_name['configuration_data'].message_type = _BLUETOOTHCONTINUOUSTESTRESULTHEADER
 _BLUETOOTHDATATESTRESULT.fields_by_name['data_transfer_protocol'].enum_type = _BLUETOOTHDATATESTRESULT_DATATRANSFERPROTOCOL
@@ -580,6 +677,7 @@ DESCRIPTOR.message_types_by_name['BluetoothTestDevice'] = _BLUETOOTHTESTDEVICE
 DESCRIPTOR.message_types_by_name['BluetoothContinuousTestResultHeader'] = _BLUETOOTHCONTINUOUSTESTRESULTHEADER
 DESCRIPTOR.message_types_by_name['BluetoothReconnectTestResult'] = _BLUETOOTHRECONNECTTESTRESULT
 DESCRIPTOR.message_types_by_name['BluetoothPairAndConnectTestResult'] = _BLUETOOTHPAIRANDCONNECTTESTRESULT
+DESCRIPTOR.message_types_by_name['BluetoothA2dpCodecConfig'] = _BLUETOOTHA2DPCODECCONFIG
 DESCRIPTOR.message_types_by_name['BluetoothAudioTestResult'] = _BLUETOOTHAUDIOTESTRESULT
 DESCRIPTOR.message_types_by_name['BluetoothDataTestResult'] = _BLUETOOTHDATATESTRESULT
 
@@ -610,6 +708,13 @@ BluetoothPairAndConnectTestResult = _reflection.GeneratedProtocolMessageType('Bl
   # @@protoc_insertion_point(class_scope:wireless.android.platform.testing.bluetooth.metrics.BluetoothPairAndConnectTestResult)
   ))
 _sym_db.RegisterMessage(BluetoothPairAndConnectTestResult)
+
+BluetoothA2dpCodecConfig = _reflection.GeneratedProtocolMessageType('BluetoothA2dpCodecConfig', (_message.Message,), dict(
+  DESCRIPTOR = _BLUETOOTHA2DPCODECCONFIG,
+  __module__ = 'bluetooth_metric_pb2'
+  # @@protoc_insertion_point(class_scope:wireless.android.platform.testing.bluetooth.metrics.BluetoothA2dpCodecConfig)
+  ))
+_sym_db.RegisterMessage(BluetoothA2dpCodecConfig)
 
 BluetoothAudioTestResult = _reflection.GeneratedProtocolMessageType('BluetoothAudioTestResult', (_message.Message,), dict(
   DESCRIPTOR = _BLUETOOTHAUDIOTESTRESULT,

@@ -19,6 +19,7 @@ import time
 from acts import asserts
 from acts.signals import TestPass
 from acts.test_utils.bt.A2dpCodecBaseTest import A2dpCodecBaseTest
+from acts.test_utils.bt import bt_constants
 from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
 
 DEFAULT_THDN_THRESHOLD = .1
@@ -49,6 +50,14 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
         # TODO(aidanhb): Modify abstract device classes to make this generic.
         self.bt_device.earstudio_controller.clean_up()
 
+    def store_codec_config_in_metrics(self, codec_type, sample_rate,
+                                      bits_per_sample, channel_mode,):
+        proto_d = {'codec_type': bt_constants.codec_types[str(codec_type)],
+                   'sample_rate': int(sample_rate),
+                   'bits_per_sample': int(bits_per_sample),
+                   'channel_mode': bt_constants.channel_modes[channel_mode]}
+        self.metrics['a2dp_codec_config'] = proto_d
+
     def analyze(self):
         self.run_thdn_analysis()
         thdn_results = self.metrics['thdn']
@@ -64,10 +73,25 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
                     anom[0], anom[1], anom[1] - anom[0]
                 ))
 
+    def base_codec_test(self, codec_type, sample_rate, bits_per_sample,
+                        channel_mode):
+        self.stream_music_on_codec(codec_type=codec_type,
+                                   sample_rate=sample_rate,
+                                   bits_per_sample=bits_per_sample,
+                                   channel_mode=channel_mode)
+        self.analyze()
+        self.store_codec_config_in_metrics(codec_type=codec_type,
+                                           sample_rate=sample_rate,
+                                           bits_per_sample=bits_per_sample,
+                                           channel_mode=channel_mode)
+        proto = self.generate_metrics_proto()
+        self.raise_pass_fail(proto)
+
     def generate_test_case(self, codec_config):
         def test_case_fn(inst):
             inst.stream_music_on_codec(**codec_config)
             inst.analyze()
+            self.store_codec_config_in_metrics(**codec_config)
             proto = inst.generate_metrics_proto()
             inst.raise_pass_fail(proto)
         test_case_name = 'test_{}'.format(
@@ -126,46 +150,31 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
         raise TestPass('Test passed.', extras=extras)
 
     def test_SBC_44100_16_STEREO(self):
-        self.stream_music_on_codec(codec_type='SBC',
-                                   sample_rate=44100,
-                                   bits_per_sample=16,
-                                   channel_mode='STEREO')
-        self.analyze()
-        proto = self.generate_metrics_proto()
-        self.raise_pass_fail(proto)
+        self.base_codec_test(codec_type='SBC',
+                             sample_rate=44100,
+                             bits_per_sample=16,
+                             channel_mode='STEREO')
 
     def test_AAC_44100_16_STEREO(self):
-        self.stream_music_on_codec(codec_type='AAC',
-                                   sample_rate=44100,
-                                   bits_per_sample=16,
-                                   channel_mode='STEREO')
-        self.analyze()
-        proto = self.generate_metrics_proto()
-        self.raise_pass_fail(proto)
+        self.base_codec_test(codec_type='AAC',
+                             sample_rate=44100,
+                             bits_per_sample=16,
+                             channel_mode='STEREO')
 
     def test_APTX_44100_16_STEREO(self):
-        self.stream_music_on_codec(codec_type='APTX',
-                                   sample_rate=44100,
-                                   bits_per_sample=16,
-                                   channel_mode='STEREO')
-        self.analyze()
-        proto = self.generate_metrics_proto()
-        self.raise_pass_fail(proto)
+        self.base_codec_test(codec_type='APTX',
+                             sample_rate=44100,
+                             bits_per_sample=16,
+                             channel_mode='STEREO')
 
     def test_APTX_HD_48000_24_STEREO(self):
-        self.stream_music_on_codec(codec_type='APTX-HD',
-                                   sample_rate=48000,
-                                   bits_per_sample=24,
-                                   channel_mode='STEREO')
-        self.analyze()
-        proto = self.generate_metrics_proto()
-        self.raise_pass_fail(proto)
+        self.base_codec_test(codec_type='APTX-HD',
+                             sample_rate=48000,
+                             bits_per_sample=24,
+                             channel_mode='STEREO')
 
     def test_LDAC_44100_16_STEREO(self):
-        self.stream_music_on_codec(codec_type='LDAC',
-                                   sample_rate=44100,
-                                   bits_per_sample=16,
-                                   channel_mode='STEREO')
-        self.analyze()
-        proto = self.generate_metrics_proto()
-        self.raise_pass_fail(proto)
+        self.base_codec_test(codec_type='LDAC',
+                             sample_rate=44100,
+                             bits_per_sample=16,
+                             channel_mode='STEREO')
