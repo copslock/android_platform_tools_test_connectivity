@@ -212,7 +212,7 @@ class TelephonyBaseTest(BaseTestClass):
 
     def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
         ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
-        if self.user_params.get("enable_connectivity_metrics", True):
+        if self.user_params.get("enable_connectivity_metrics", False):
             enable_connectivity_metrics(ad)
         if self.user_params.get("build_id_override", False):
             build_postfix = self.user_params.get("build_id_postfix",
@@ -358,7 +358,7 @@ class TelephonyBaseTest(BaseTestClass):
             ad.droid.disableDevicePassword()
         except Exception as e:
             self.log.error("Failure with %s", e)
-        if self.user_params.get("enable_connectivity_metrics", True):
+        if self.user_params.get("enable_connectivity_metrics", False):
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
                 ad.log.error("Failed to connect to wifi")

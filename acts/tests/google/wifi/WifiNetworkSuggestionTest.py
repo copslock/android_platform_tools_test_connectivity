@@ -146,6 +146,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                     "Received post connection broadcast")
         finally:
             self.dut.droid.wifiStopTrackingNetworkSuggestionStateChange()
+        self.dut.ed.clear_all_events()
 
 
     @test_tracker_info(uuid="bda8ed20-4382-4380-831a-64cf77eca108")
