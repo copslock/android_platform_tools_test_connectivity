@@ -104,7 +104,7 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
-        self.dut.droid.disableDevicePassword()
+        self.dut.droid.disableDevicePassword(self.device_password)
         self.dut.ed.clear_all_events()
         self.set_attns("default")
 
