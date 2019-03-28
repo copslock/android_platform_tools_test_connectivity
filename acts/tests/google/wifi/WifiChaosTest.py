@@ -159,6 +159,8 @@ class WifiChaosTest(WifiBaseTest):
         wutils.stop_pcap(self.pcap, self.pcap_procs, True)
 
     def on_fail(self, test_name, begin_time):
+        # Sleep to ensure all failed packets are captured.
+        time.sleep(5)
         wutils.stop_pcap(self.pcap, self.pcap_procs, False)
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
