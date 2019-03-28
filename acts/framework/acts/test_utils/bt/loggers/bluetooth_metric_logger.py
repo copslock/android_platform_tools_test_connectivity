@@ -15,6 +15,7 @@
 # the License.
 
 import base64
+from google.protobuf import message
 import os
 import time
 
@@ -25,6 +26,17 @@ from acts.metrics.logger import MetricLogger
 PROTO_PATH = os.path.join(os.path.dirname(__file__),
                           'protos',
                           'bluetooth_metric.proto')
+
+
+def recursive_assign(proto, dct):
+    """Assign values in dct to proto recursively."""
+    for metric in dir(proto):
+        if metric in dct:
+            if (isinstance(dct[metric], dict) and
+                    isinstance(getattr(proto, metric), message.Message)):
+                recursive_assign(getattr(proto, metric), dct[metric])
+            else:
+                setattr(proto, metric, dct[metric])
 
 
 class BluetoothMetricLogger(MetricLogger):
@@ -111,9 +123,7 @@ class BluetoothMetricLogger(MetricLogger):
 
         result.configuration_data.test_date_time = self.start_time
 
-        for metric in dir(result):
-            if metric in results:
-                setattr(result, metric, results[metric])
+        recursive_assign(result, results)
 
         pri_config = self.get_configuration_data(pri_device)
 
