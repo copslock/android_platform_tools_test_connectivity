@@ -80,7 +80,7 @@ class BluetoothMetricLogger(MetricLogger):
             A dictionary containing configuration data of a device.
         """
         # TODO(b/126931820): Genericize and move to lib when generic DUT interface is implemented
-        data = {}
+        data = {'device_class': device.__class__.__name__}
 
         if device.__class__.__name__ == 'AndroidDevice':
             # TODO(b/124066126): Add remaining config data
