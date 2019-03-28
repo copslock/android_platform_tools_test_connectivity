@@ -36,6 +36,7 @@ from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.libs.proc import job
+from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts.test_utils.tel.tel_defines import CarrierConfigs
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
@@ -198,10 +199,34 @@ WIFI_CONFIG_APBAND_5G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_5G
 WIFI_CONFIG_APBAND_AUTO = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_AUTO
 log = logging
 STORY_LINE = "+19523521350"
+CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 
 class TelTestUtilsError(Exception):
     pass
+
+
+class TelResultWrapper(object):
+    """Test results wrapper for Telephony test utils.
+
+    In order to enable metrics reporting without refactoring
+    all of the test utils this class is used to keep the
+    current return boolean scheme in tact.
+    """
+
+    def __init__(self, result_value):
+        self._result_value = result_value
+
+    @property
+    def result_value(self):
+        return self._result_value
+
+    @result_value.setter
+    def result_value(self, result_value):
+        self._result_value = result_value
+
+    def __bool__(self):
+        return self._result_value == CallResult('SUCCESS')
 
 
 def abort_all_tests(log, msg):
@@ -2094,8 +2119,7 @@ def call_setup_teardown_for_subscription(
             else, do nothing.
 
     Returns:
-        True if call process without any error.
-        False if error happened.
+        TelResultWrapper which will evaluate as False if error.
 
     """
     CHECK_INTERVAL = 5
@@ -2128,7 +2152,7 @@ def call_setup_teardown_for_subscription(
         else:
             callee_number = callee_dial_number
 
-    result = True
+    tel_result_wrapper = TelResultWrapper(CallResult('SUCCESS'))
     msg = "Call from %s to %s" % (caller_number, callee_number)
     if video_state:
         msg = "Video %s" % msg
@@ -2152,8 +2176,8 @@ def call_setup_teardown_for_subscription(
                 incall_ui_display=incall_ui_display,
                 video=video):
             ad_caller.log.error("Initiate call failed.")
-            result = False
-            return False
+            tel_result_wrapper.result_value = CallResult('INITIATE_FAILED')
+            return tel_result_wrapper
         else:
             ad_caller.log.info("Caller initate call successfully")
         if not wait_and_answer_call_for_subscription(
@@ -2165,8 +2189,9 @@ def call_setup_teardown_for_subscription(
                 incall_ui_display=incall_ui_display,
                 video_state=video_state):
             ad_callee.log.error("Answer call fail.")
-            result = False
-            return False
+            tel_result_wrapper.result_value = CallResult(
+                'NO_RING_EVENT_OR_ANSWER_FAILED')
+            return tel_result_wrapper
         else:
             ad_callee.log.info("Callee answered the call successfully")
 
@@ -2179,17 +2204,19 @@ def call_setup_teardown_for_subscription(
                     "No new call ids are found after call establishment")
                 ad.log.error("telecomCallGetCallIds returns %s",
                              ad.droid.telecomCallGetCallIds())
-                result = False
+                tel_result_wrapper.result_value = CallResult('NO_CALL_ID_FOUND')
             for new_call_id in new_call_ids:
                 if not wait_for_in_call_active(ad, call_id=new_call_id):
-                    result = False
+                    tel_result_wrapper.result_value = CallResult(
+                        'CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT')
                 else:
                     ad.log.info("callProperties = %s",
                                 ad.droid.telecomCallGetProperties(new_call_id))
 
             if not ad.droid.telecomCallGetAudioState():
                 ad.log.error("Audio is not in call state")
-                result = False
+                tel_result_wrapper.result_value = CallResult(
+                    'AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT')
 
             if call_func(log, ad):
                 ad.log.info("Call is in %s state", call_func.__name__)
@@ -2197,9 +2224,10 @@ def call_setup_teardown_for_subscription(
                 ad.log.error("Call is not in %s state, voice in RAT %s",
                              call_func.__name__,
                              ad.droid.telephonyGetCurrentVoiceNetworkType())
-                result = False
-        if not result:
-            return False
+                tel_result_wrapper.result_value = CallResult(
+                    'CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT')
+        if not tel_result_wrapper:
+            return tel_result_wrapper
         elapsed_time = 0
         while (elapsed_time < wait_time_in_call):
             CHECK_INTERVAL = min(CHECK_INTERVAL,
@@ -2215,24 +2243,26 @@ def call_setup_teardown_for_subscription(
                         "NOT in correct %s state at %s, voice in RAT %s",
                         call_func.__name__, time_message,
                         ad.droid.telephonyGetCurrentVoiceNetworkType())
-                    result = False
+                    tel_result_wrapper.result_value = CallResult(
+                        'CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED')
                 else:
                     ad.log.info("In correct %s state at %s",
                                 call_func.__name__, time_message)
                 if not ad.droid.telecomCallGetAudioState():
                     ad.log.error("Audio is not in call state at %s",
                                  time_message)
-                    result = False
-            if not result:
-                return False
+                    tel_result_wrapper.result_value = CallResult(
+                        'AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED')
+            if not tel_result_wrapper:
+                return tel_result_wrapper
 
         if ad_hangup:
             if not hangup_call(log, ad_hangup):
                 ad_hangup.log.info("Failed to hang up the call")
-                result = False
-                return False
+                tel_result_wrapper.result_value = CallResult('CALL_HANGUP_FAIL')
+                return tel_result_wrapper
     finally:
-        if not result:
+        if not tel_result_wrapper:
             for ad in (ad_caller, ad_callee):
                 last_call_drop_reason(ad, begin_time)
                 try:
@@ -2241,12 +2271,13 @@ def call_setup_teardown_for_subscription(
                         ad.droid.telecomEndCall()
                 except Exception as e:
                     log.error(str(e))
-        if ad_hangup or not result:
+        if ad_hangup or not tel_result_wrapper:
             for ad in (ad_caller, ad_callee):
                 if not wait_for_call_id_clearing(
                         ad, getattr(ad, "caller_ids", [])):
-                    result = False
-    return result
+                    tel_result_wrapper.result_value = CallResult(
+                        'CALL_ID_CLEANUP_FAIL')
+    return tel_result_wrapper
 
 
 def wait_for_call_id_clearing(ad,
