@@ -681,18 +681,19 @@ def check_network_location(ad, retries, location_type):
     ad.log.error("Unable to report network location \"%s\"." % location_type)
     return False
 
-def set_attenuator_gnss_signal(ad, atten_value):
+def set_attenuator_gnss_signal(ad, attenuator, atten_value):
     """Set attenuation value for different GNSS signal.
 
     Args:
         ad: An AndroidDevice object.
+        attenuator: The attenuator object.
         atten_value: attenuation value
     """
     ad.log.info("Set attenuation value to \"%d\" for GNSS signal." % atten_value)
     try:
-        attenuators[0].set_atten(atten_value)
+        attenuator[0].set_atten(atten_value)
         time.sleep(3)
-        atten_val = int(attenuators[0].get_atten())
+        atten_val = int(attenuator[0].get_atten())
         ad.log.info("Current attenuation value is \"%d\"" % atten_val)
     except Exception as e:
         ad.log.error(e)
