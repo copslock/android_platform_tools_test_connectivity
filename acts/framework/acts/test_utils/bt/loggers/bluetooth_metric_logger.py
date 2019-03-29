@@ -102,6 +102,43 @@ class BluetoothMetricLogger(MetricLogger):
 
         return data
 
+    def add_config_data_to_proto(self, proto, pri_device, conn_device=None):
+        """Add to configuration data field of proto.
+
+        Adds test start time and device configuration info.
+        Args:
+            proto: protobuf to add configuration data to.
+            pri_device: some controller object.
+            conn_device: optional second controller object.
+        """
+        pri_device_proto = proto.configuration_data.primary_device
+        conn_device_proto = proto.configuration_data.connected_device
+        proto.configuration_data.test_date_time = self.start_time
+
+        pri_config = self.get_configuration_data(pri_device)
+
+        for metric in dir(pri_device_proto):
+            if metric in pri_config:
+                setattr(pri_device_proto, metric, pri_config[metric])
+
+        if conn_device:
+            conn_config = self.get_configuration_data(conn_device)
+
+            for metric in dir(conn_device_proto):
+                if metric in conn_config:
+                    setattr(conn_device_proto, metric, conn_config[metric])
+
+    def get_proto_dict(self, test, proto):
+        """Return dict with proto, readable ascii proto, and test name."""
+        return {'proto': base64.b64encode(ProtoMetric(test, proto)
+                                          .get_binary()).decode('utf-8'),
+                'proto_ascii': ProtoMetric(test, proto).get_ascii(),
+                'test_name': test}
+
+    def add_proto_to_results(self, proto, test):
+        """Adds proto as ProtoMetric object to self.results."""
+        self.results.append(ProtoMetric(test, proto))
+
     def get_results(self, results, test, pri_device, conn_device=None):
         """Gets the metrics associated with each test case.
 
@@ -117,34 +154,11 @@ class BluetoothMetricLogger(MetricLogger):
 
         """
 
-        result = self.proto_map[test]
-        pri_device_proto = result.configuration_data.primary_device
-        conn_device_proto = result.configuration_data.connected_device
-
-        result.configuration_data.test_date_time = self.start_time
-
-        recursive_assign(result, results)
-
-        pri_config = self.get_configuration_data(pri_device)
-
-        for metric in dir(pri_device_proto):
-            if metric in pri_config:
-                setattr(pri_device_proto, metric, pri_config[metric])
-
-        if conn_device:
-            conn_config = self.get_configuration_data(conn_device)
-
-            for metric in dir(conn_device_proto):
-                if metric in conn_config:
-                    setattr(conn_device_proto, metric, conn_config[metric])
-
-        self.results.append(ProtoMetric(test, result))
-
-        return {'proto': base64.b64encode(ProtoMetric(test, result)
-                                          .get_binary()).decode('utf-8'),
-                'proto_ascii': ProtoMetric(test, result).get_ascii(),
-                'test_name': test
-                }
+        proto_result = self.proto_map[test]
+        recursive_assign(proto_result, results)
+        self.add_config_data_to_proto(proto_result, pri_device, conn_device)
+        self.add_proto_to_results(proto_result, test)
+        return self.get_proto_dict(test, proto_result)
 
     def end(self, event):
         return self.publisher.publish(self.results)
