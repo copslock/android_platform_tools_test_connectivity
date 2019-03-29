@@ -24,6 +24,10 @@ import wave
 RECORD_FILE_TEMPLATE = 'recorded_audio_%s.wav'
 
 
+class DeviceNotFound(Exception):
+    """Raises exception if audio capture device is not found."""
+
+
 class AudioCapture:
 
     def __init__(self, test_params, path):
@@ -34,19 +38,30 @@ class AudioCapture:
             path: Result path.
         """
         self.audio = pyaudio.PyAudio()
-        for i in range(self.audio.get_device_count()):
-            device_info = self.audio.get_device_info_by_index(i)
-            if test_params['input_device'] in device_info['name']:
-                self.input_device = device_info
-                break
         self.audio_format = pyaudio.paInt16
-        self.channels = test_params["channel"]
-        self.chunk = test_params["chunk"]
-        self.sample_rate = test_params["sample_rate"]
         self.audio_params = test_params
+        self.channels = self.audio_params["channel"]
+        self.chunk = self.audio_params["chunk"]
+        self.sample_rate = self.audio_params["sample_rate"]
         self.file_counter = 0
-        self.path = path
+        self.__input_device = None
         self.record_file_template = os.path.join(path, RECORD_FILE_TEMPLATE)
+        if not self.audio_params["ssh_config"]:
+            self.__input_device = self.__get_input_device()
+
+    def __get_input_device(self):
+        """Checks for the audio capture device."""
+        if self.__input_device is None:
+            for i in range(self.audio.get_device_count()):
+                device_info = self.audio.get_device_info_by_index(i)
+                if self.audio_params['input_device'] in device_info['name']:
+                    self.__input_device = device_info
+                    break
+            else:
+                logging.error("Audio Capture device {} not found.".format(
+                    self.audio_params["input_device"]))
+                raise DeviceNotFound("Audio Capture Input device not found")
+        return self.__input_device
 
     def capture_and_store_audio(self, trim_beginning=0, trim_end=0):
         """Records the A2DP streaming.
@@ -55,15 +70,15 @@ class AudioCapture:
             trim_beginning: how many seconds to trim from the beginning
             trim_end: how many seconds to trim from the end
         """
-        self.device_index = self.input_device['index']
+        if self.audio_params['ssh_config']:
+            self.__input_device = self.__get_input_device()
         stream = self.audio.open(
             format=self.audio_format,
             channels=self.channels,
             rate=self.sample_rate,
             input=True,
             frames_per_buffer=self.chunk,
-            input_device_index=self.device_index)
-
+            input_device_index=self.__input_device['index'])
         frames = []
         b_chunks = trim_beginning * (self.sample_rate // self.chunk)
         e_chunks = trim_end * (self.sample_rate // self.chunk)
