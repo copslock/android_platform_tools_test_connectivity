@@ -126,7 +126,8 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
                              'alyze. Anomaly and THD+N results not populated.')
         proto = self.bt_logger.get_results(self.metrics,
                                            self.__class__.__name__,
-                                           self.android)
+                                           self.android,
+                                           self.bt_device)
         return proto
 
     def raise_pass_fail(self, extras=None):
