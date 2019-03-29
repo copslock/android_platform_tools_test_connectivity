@@ -49,7 +49,8 @@ class GNSSSanityTest(BaseTestClass):
     def setup_class(self):
         self.ad.droid.wakeLockAcquireBright()
         self.ad.droid.wakeUpNow()
-        gutils.set_attenuator_gnss_signal(self.ad, self.default_gnss_signal_attenuation)
+        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                          self.default_gnss_signal_attenuation)
         gutils._init_device(self.ad)
         if not tutils.verify_internet_connection(self.ad.log,
                                                  self.ad,
@@ -82,8 +83,8 @@ class GNSSSanityTest(BaseTestClass):
             "settings get global wifi_scan_always_enabled")) == 1:
             gutils.set_wifi_and_bt_scanning(self.ad, True)
         if not int(attenuators[0].get_atten()) == self.default_gnss_signal_attenuation:
-            gutils.set_attenuator_gnss_signal(
-                self.ad, self.default_gnss_signal_attenuation)
+            gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                              self.default_gnss_signal_attenuation)
 
     def on_fail(self, test_name, begin_time):
         gutils.get_gnss_qxdm_log(self.ad, test_name)
@@ -503,11 +504,12 @@ class GNSSSanityTest(BaseTestClass):
                 return False
             self.ad.log.info("Let device do GNSS tracking for 1 minute.")
             time.sleep(60)
-            gutils.set_attenuator_gnss_signal(self.ad, self.no_gnss_signal_attenuation)
+            gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                              self.no_gnss_signal_attenuation)
             self.ad.log.info("Let device stay in no GNSS signal for 5 minutes.")
             time.sleep(300)
-            gutils.set_attenuator_gnss_signal(
-                self.ad, self.default_gnss_signal_attenuation)
+            gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                              self.default_gnss_signal_attenuation)
             supl_no_gnss_signal = gutils.check_location_api(self.ad, retries=3)
             gutils.start_gnss_by_gtw_gpstool(self.ad, False)
             self.ad.log.info("SUPL without GNSS signal test %d times -> %s"
@@ -532,7 +534,8 @@ class GNSSSanityTest(BaseTestClass):
         Return:
             True if PASS, False if FAIL.
         """
-        gutils.set_attenuator_gnss_signal(self.ad, self.weak_gnss_signal_attenuation)
+        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                          self.weak_gnss_signal_attenuation)
         begin_time = get_current_epoch_time()
         tutils.start_qxdm_logger(self.ad, begin_time)
         gutils.kill_xtra_daemon(self.ad)
@@ -637,7 +640,8 @@ class GNSSSanityTest(BaseTestClass):
         Return:
             True if PASS, False if FAIL.
         """
-        gutils.set_attenuator_gnss_signal(self.ad, self.weak_gnss_signal_attenuation)
+        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                          self.weak_gnss_signal_attenuation)
         begin_time = get_current_epoch_time()
         tutils.start_qxdm_logger(self.ad, begin_time)
         if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_xtra_cs_criteria):
