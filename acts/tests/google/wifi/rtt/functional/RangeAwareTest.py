@@ -77,10 +77,10 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
             id = init_dut.droid.wifiRttStartRangingToAwarePeerMac(resp_mac)
         else:
             id = init_dut.droid.wifiRttStartRangingToAwarePeerId(resp_peer_id)
+        event_name = rutils.decorate_event(rconsts.EVENT_CB_RANGING_ON_RESULT,
+                                           id)
         try:
-            event = init_dut.ed.pop_event(
-                rutils.decorate_event(rconsts.EVENT_CB_RANGING_ON_RESULT, id),
-                rutils.EVENT_TIMEOUT)
+            event = init_dut.ed.pop_event(event_name, rutils.EVENT_TIMEOUT)
             result = event["data"][rconsts.EVENT_CB_RANGING_KEY_RESULTS][0]
             if resp_mac is not None:
                 rutils.validate_aware_mac_result(result, resp_mac, "DUT")
@@ -89,6 +89,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                                                      "DUT")
             return result
         except queue.Empty:
+            self.log.warning("Timed-out waiting for %s", event_name)
             return None
 
     def run_rtt_ib_discovery_set(self, do_both_directions, iter_count,
