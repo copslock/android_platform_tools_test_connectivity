@@ -139,6 +139,9 @@ def _init_device(ad):
     Args:
         ad: An AndroidDevice object.
     """
+    set_mobile_data(ad, True)
+    disable_private_dns_mode(ad)
+    tutils.synchronize_device_time(ad)
     enable_gnss_verbose_logging(ad)
     disable_xtra_throttle(ad)
     enable_supl_mode(ad)
@@ -147,14 +150,11 @@ def _init_device(ad):
     wutils.wifi_toggle_state(ad, False)
     ad.log.info("Setting Bluetooth state to False")
     ad.droid.bluetoothToggleState(False)
-    tutils.synchronize_device_time(ad)
-    tutils.print_radio_info(ad)
     set_gnss_qxdm_mask(ad, QXDM_MASKS)
-    disable_private_dns_mode(ad)
-    ad.reboot()
-    ad.unlock_screen(password=None)
     check_location_service(ad)
     set_wifi_and_bt_scanning(ad, True)
+    ad.reboot()
+    ad.unlock_screen(password=None)
 
 def connect_to_wifi_network(ad, network):
     """Connection logic for open and psk wifi networks.
