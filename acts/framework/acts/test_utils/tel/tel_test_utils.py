@@ -3071,6 +3071,12 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
 
 def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
     result = False
+    if not ad.is_apk_installed("com.google.mdstest"):
+        raise signals.TestSkipClass("mdstest is not installed")
+    mode = ad.droid.telephonyGetPhoneCount()
+    if mode == 2:
+        ad.log.info("Device already in MSIM mode")
+        return True
     for i in range(retries):
         ad.adb.shell(
         "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
@@ -3087,8 +3093,8 @@ def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
         ad.adb.shell("setprop persist.radio.multisim.config dsds")
         reboot_device(ad)
         # Verify if device is really in msim mode
-        rat = ad.adb.getprop("gsm.network.type")
-        if "," in rat:
+        mode = ad.droid.telephonyGetPhoneCount()
+        if mode == 2:
             ad.log.info("Device correctly switched to MSIM mode")
             result = True
             break
@@ -3099,6 +3105,12 @@ def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
 
 def phone_switch_to_ssim_mode(ad, retries=3, timeout=30):
     result = False
+    if not ad.is_apk_installed("com.google.mdstest"):
+        raise signals.TestSkipClass("mdstest is not installed")
+    mode = ad.droid.telephonyGetPhoneCount()
+    if mode == 1:
+        ad.log.info("Device already in SSIM mode")
+        return True
     for i in range(retries):
         ad.adb.shell(
         "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
@@ -3120,8 +3132,8 @@ def phone_switch_to_ssim_mode(ad, retries=3, timeout=30):
         ad.adb.shell("setprop persist.radio.multisim.config ssss")
         reboot_device(ad)
         # Verify if device is really in ssim mode
-        rat = ad.adb.getprop("gsm.network.type")
-        if "," not in rat:
+        mode = ad.droid.telephonyGetPhoneCount()
+        if mode == 1:
             ad.log.info("Device correctly switched to SSIM mode")
             result = True
             break
@@ -4965,6 +4977,10 @@ def ensure_network_generation_for_subscription(
     if not set_preferred_network_mode_pref(log, ad, sub_id,
                                            network_preference):
         return False
+
+    if hasattr(ad, "dsds") and voice_or_data == "data" and sub_id != get_default_data_sub_id(ad):
+        ad.log.info("MSIM - Non DDS, ignore data RAT")
+        return True
 
     if is_droid_in_network_generation_for_subscription(
             log, ad, sub_id, generation, voice_or_data):
