@@ -46,9 +46,8 @@ class CommandError(Exception):
         self.result = result
 
     def __str__(self):
-        return 'cmd: %s\nstdout: %s\nstderr: %s' % (self.result.command,
-                                                    self.result.stdout,
-                                                    self.result.stderr)
+        return 'cmd: %s\nstdout: %s\nstderr: %s' % (
+            self.result.command, self.result.stdout, self.result.stderr)
 
 
 _Tunnel = collections.namedtuple('_Tunnel',
@@ -88,6 +87,12 @@ class SshConnection(object):
 
         self.log = logger.create_logger(log_line)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, _, __, ___):
+        self.close()
+
     def __del__(self):
         self.close()
 
@@ -107,16 +112,15 @@ class SshConnection(object):
         with self._lock:
             if self._master_ssh_proc is not None:
                 socket_path = self.socket_path
-                if (not os.path.exists(socket_path) or
-                        self._master_ssh_proc.poll() is not None):
+                if (not os.path.exists(socket_path)
+                        or self._master_ssh_proc.poll() is not None):
                     self.log.debug('Master ssh connection to %s is down.',
                                    self._settings.hostname)
                     self._cleanup_master_ssh()
 
             if self._master_ssh_proc is None:
                 # Create a shared socket in a temp location.
-                self._master_ssh_tempdir = tempfile.mkdtemp(
-                    prefix='ssh-master')
+                self._master_ssh_tempdir = tempfile.mkdtemp(prefix='ssh-master')
 
                 # Setup flags and options for running the master ssh
                 # -N: Do not execute a remote command.
@@ -202,7 +206,9 @@ class SshConnection(object):
         dns_retry_count = 2
         while True:
             result = job.run(
-                terminal_command, ignore_status=True, timeout=timeout,
+                terminal_command,
+                ignore_status=True,
+                timeout=timeout,
                 io_encoding=io_encoding)
             output = result.stdout
 
@@ -359,9 +365,8 @@ class SshConnection(object):
         # Exec the ssh process directly so that when we deliver signals, we
         # deliver them straight to the child process.
         tunnel_proc = job.run_async(tunnel_cmd)
-        self.log.debug('Started ssh tunnel, local = %d'
-                       ' remote = %d, pid = %d', local_port, port,
-                       tunnel_proc.pid)
+        self.log.debug('Started ssh tunnel, local = %d remote = %d, pid = %d',
+                       local_port, port, tunnel_proc.pid)
         self._tunnels.append(_Tunnel(local_port, port, tunnel_proc))
         return local_port
 
@@ -398,8 +403,9 @@ class SshConnection(object):
         """
         # TODO: This may belong somewhere else: b/32572515
         user_host = self._formatter.format_host_name(self._settings)
-        job.run('scp %s %s:%s' % (local_path, user_host, remote_path),
-                ignore_status=ignore_status)
+        job.run(
+            'scp %s %s:%s' % (local_path, user_host, remote_path),
+            ignore_status=ignore_status)
 
     def pull_file(self, local_path, remote_path, ignore_status=False):
         """Send a file from remote host to local host
@@ -410,8 +416,9 @@ class SshConnection(object):
             ignore_status: Whether or not to ignore the command's exit_status.
         """
         user_host = self._formatter.format_host_name(self._settings)
-        job.run('scp %s:%s %s' % (user_host, remote_path, local_path),
-                ignore_status=ignore_status)
+        job.run(
+            'scp %s:%s %s' % (user_host, remote_path, local_path),
+            ignore_status=ignore_status)
 
     def find_free_port(self, interface_name='localhost'):
         """Find a unused port on the remote host.
@@ -428,9 +435,9 @@ class SshConnection(object):
         """
         # TODO: This may belong somewhere else: b/3257251
         free_port_cmd = (
-                            'python -c "import socket; s=socket.socket(); '
-                            's.bind((\'%s\', 0)); print(s.getsockname()[1]); s.close()"'
-                        ) % interface_name
+            'python -c "import socket; s=socket.socket(); '
+            's.bind((\'%s\', 0)); print(s.getsockname()[1]); s.close()"'
+        ) % interface_name
         port = int(self.run(free_port_cmd).stdout)
         # Yield to the os to ensure the port gets cleaned up.
         time.sleep(0.001)

@@ -95,7 +95,7 @@ class UsbTetheringThroughputTest(base_test.BaseTestClass):
         """
         time.sleep(IFCONFIG_SETTLE_TIME)
         check_usb_tethering = job.run('ifconfig').stdout
-        matches = re.findall('inet (\d+.\d+.42.\d+)', check_usb_tethering)
+        matches = re.findall('inet addr:(\d+.\d+.42.\d+)', check_usb_tethering)
         if not matches:
             raise signals.TestFailure(
                 'Unable to find tethering IP. The device may not be tethered.')
