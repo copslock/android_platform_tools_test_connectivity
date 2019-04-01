@@ -34,6 +34,8 @@ from acts import utils
 
 from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
+from acts.test_utils.tel.tel_subscription_utils import \
+    set_default_sub_for_all_services
 from acts.test_utils.tel.tel_test_utils import build_id_override
 from acts.test_utils.tel.tel_test_utils import disable_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import enable_connectivity_metrics
@@ -72,6 +74,7 @@ from acts.test_utils.tel.tel_test_utils import install_googlefi_apk
 from acts.test_utils.tel.tel_test_utils import activate_google_fi_account
 from acts.test_utils.tel.tel_test_utils import check_google_fi_activated
 from acts.test_utils.tel.tel_test_utils import check_fi_apk_installed
+from acts.test_utils.tel.tel_test_utils import phone_switch_to_msim_mode
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import SINGLE_SIM_CONFIG, MULTI_SIM_CONFIG
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -264,6 +267,16 @@ class TelephonyBaseTest(BaseTestClass):
                 if not activate_google_fi_account(ad):
                     return False
                 check_google_fi_activated(ad)
+            if hasattr(ad, "dsds"):
+                sim_mode = ad.droid.telephonyGetPhoneCount()
+                if sim_mode == 1:
+                    ad.log.info("Phone in Single SIM Mode")
+                    if not phone_switch_to_msim_mode(ad):
+                        ad.log.error("Failed to switch to Dual SIM Mode")
+                        return False
+                elif sim_mode == 2:
+                    ad.log.info("Phone already in Dual SIM Mode")
+                set_default_sub_for_all_services(ad)
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
             ad.log.info("Device has no or unknown SIM in it")
             ensure_phone_idle(self.log, ad)
