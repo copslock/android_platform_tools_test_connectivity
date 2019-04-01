@@ -21,6 +21,7 @@ import time
 
 from acts import signals
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
@@ -104,6 +105,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             "long_duration_call_total_duration",
             DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
         self.number_of_devices = 2
+        self.tel_logger = TelephonyMetricLogger.for_test_case()
+
 
     """ Tests Begin """
 
@@ -1062,8 +1065,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneA, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneA, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success..
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -1074,9 +1077,13 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_3g, is_phone_in_call_3g, ads[1],
             phone_idle_3g, is_phone_in_call_3g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason":str(result.result_value)})
 
     @test_tracker_info(uuid="df57c481-010a-4d21-a5c1-5116917871b2")
     @TelephonyBaseTest.tel_test_wrap

@@ -16,6 +16,7 @@
 
 import time
 from acts import signals
+from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts.test_utils.tel.tel_defines import CALL_PROPERTY_HIGH_DEF_AUDIO
 from acts.test_utils.tel.tel_defines import CALL_STATE_ACTIVE
 from acts.test_utils.tel.tel_defines import CALL_STATE_HOLDING
@@ -70,6 +71,7 @@ from acts.test_utils.tel.tel_test_utils import \
     reset_preferred_network_type_to_allowable_range
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
+from acts.test_utils.tel.tel_test_utils import TelResultWrapper
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import toggle_volte_for_subscription
@@ -92,6 +94,8 @@ from acts.test_utils.tel.tel_test_utils import \
     wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
+
+CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 
 def two_phone_call_leave_voice_mail(
@@ -174,8 +178,7 @@ def two_phone_call_short_seq(log,
             This is optional, default is WAIT_TIME_IN_CALL
 
     Returns:
-        True: if call sequence succeed.
-        False: for errors
+        TelResultWrapper which will evaluate as False if error.
     """
     ads = [phone_a, phone_b]
 
@@ -186,6 +189,7 @@ def two_phone_call_short_seq(log,
          phone_b_in_call_check_func),
     ]
 
+    tel_result = TelResultWrapper(CallResult('SUCCESS'))
     for param in call_params:
         # Make sure phones are idle.
         ensure_phones_idle(log, ads)
@@ -202,12 +206,13 @@ def two_phone_call_short_seq(log,
         # Make call.
         log.info("---> Call test: %s to %s <---", param[0].serial,
                  param[1].serial)
-        if not call_setup_teardown(
-                log, *param, wait_time_in_call=wait_time_in_call):
+        tel_result = call_setup_teardown(
+                log, *param, wait_time_in_call=wait_time_in_call)
+        if not tel_result:
             log.error("Call Iteration Failed")
-            return False
+            break
 
-    return True
+    return tel_result
 
 
 def two_phone_call_msim_short_seq(log,

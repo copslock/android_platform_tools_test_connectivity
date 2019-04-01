@@ -38,14 +38,18 @@ from acts import utils
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
 from acts.controllers.fuchsia_lib.bt.bta_lib import FuchsiaBtaLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
-from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
+from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
+from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
 
 FUCHSIA_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 FUCHSIA_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
+FUCHSIA_DEVICE_INVALID_CONFIG = ("Fuchsia device config must be either a str "
+                                 "or dict. abort! Invalid elment %i in %r")
+FUCHSIA_DEVICE_NO_IP_MSG = "No IP address specified, abort!"
 
 SL4F_APK_NAME = "com.googlecode.android_scripting"
 
@@ -59,10 +63,13 @@ def create(configs):
         raise FuchsiaDeviceError(FUCHSIA_DEVICE_EMPTY_CONFIG_MSG)
     elif not isinstance(configs, list):
         raise FuchsiaDeviceError(FUCHSIA_DEVICE_NOT_LIST_CONFIG_MSG)
-    elif isinstance(configs[0], str):
-        # Configs is a list of IP addresses
-        f_devices = get_instances(configs)
-    return f_devices
+    for index, config in enumerate(configs):
+        if isinstance(config, str):
+            configs[index] = {'ip': config}
+        elif not isinstance(config, dict):
+            raise FuchsiaDeviceError(FUCHSIA_DEVICE_INVALID_CONFIG %
+                                     (index,configs))
+    return get_instances(configs)
 
 
 def destroy(fds):
@@ -86,17 +93,17 @@ def get_info(fds):
     return device_info
 
 
-def get_instances(ips):
+def get_instances(fds_conf_data):
     """Create FuchsiaDevice instances from a list of Fuchsia ips.
 
     Args:
-        ips: A list of Fuchsia ip addrs
+        fds_conf_data: A list of dicts that contain Fuchsia device info.
 
     Returns:
         A list of FuchsiaDevice objects.
     """
 
-    return [FuchsiaDevice(ip) for ip in ips]
+    return [FuchsiaDevice(fd_conf_data) for fd_conf_data in fds_conf_data]
 
 
 class FuchsiaDevice:
@@ -110,22 +117,28 @@ class FuchsiaDevice:
         port: The TCP port number of the Fuchsia device.
     """
 
-    def __init__(self, ip="", port=80):
+    def __init__(self, fd_conf_data):
         """
         Args:
-            ip: string, Ip address of fuchsia device.
-            port: int, Port number of connection
+            fd_conf_data: A dict of a fuchsia device configuration data
+                Required keys:
+                    ip: IP address of fuchsia device
+                optional key:
+                    port: Port for the sl4f web server on the fuchsia device
+                        (Default: 80)
+                    ssh_config: Location of the ssh_config file to connect to
+                        the fuchsia device
+                        (Default: None)
         """
-        log_path_base = getattr(logging, "log_path", "/tmp/logs")
-        self.log_path = os.path.join(log_path_base, "FuchsiaDevice%s" % ip)
-        self.log = tracelogger.TraceLogger(
-            FuchsiaDeviceLoggerAdapter(logging.getLogger(), {"ip": ip}))
+        if "ip" not in fd_conf_data:
+            raise FuchsiaDeviceError(FUCHSIA_DEVICE_NO_IP_MSG)
+        self.ip = fd_conf_data['ip']
+        self.port = fd_conf_data.get("port", 80)
 
-        self.ip = ip
-        self.log = logging.getLogger()
-        self.port = port
+        self.log = acts_logger.create_tagged_trace_logger("[FuchsiaDevice|%s]"
+                                                          % self.ip)
 
-        self.address = "http://{}:{}".format(ip, self.port)
+        self.address = "http://{}:{}".format(self.ip, self.port)
         self.init_address = self.address + "/init"
         self.cleanup_address = self.address + "/cleanup"
         self.print_address = self.address + "/print_clients"
@@ -143,15 +156,17 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaGattcLib
         self.gattc_lib = FuchsiaGattcLib(self.address, self.test_counter,
                                          self.client_id)
-
-        # Grab commands from FuchsiaWlanLib
-        self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
-                                       self.client_id)
-
         # Grab commands from FuchsiaGattsLib
         self.gatts_lib = FuchsiaGattsLib(self.address, self.test_counter,
                                          self.client_id)
 
+        # Grab commands from FuchsiaNetstackLib
+        self.netstack_lib = FuchsiaNetstackLib(self.address,
+                                               self.test_counter,
+                                               self.client_id)
+        # Grab commands from FuchsiaWlanLib
+        self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
+                                       self.client_id)
         #Init server
         self.init_server_connection()
 
