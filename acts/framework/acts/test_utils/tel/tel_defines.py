@@ -119,7 +119,7 @@ MAX_WAIT_TIME_PROVISIONING = 300
 
 # Time to wait after call setup before declaring
 # that the call is actually successful
-WAIT_TIME_IN_CALL = 15
+WAIT_TIME_IN_CALL = 30
 
 # (For IMS, e.g. VoLTE-VoLTE, WFC-WFC, VoLTE-WFC test only)
 # Time to wait after call setup before declaring
