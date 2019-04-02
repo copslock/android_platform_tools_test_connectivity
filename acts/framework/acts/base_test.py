@@ -467,8 +467,6 @@ class BaseTestClass(object):
         """
         self.current_test_name = test_name
 
-        event_bus.post(TestCaseBeginEvent(self, test_name))
-
         # Block the test if the consecutive test case failure limit is reached.
         if self.consecutive_failures == self.consecutive_failure_limit:
             raise signals.TestBlocked('Consecutive test failure')
@@ -496,13 +494,6 @@ class BaseTestClass(object):
         try:
             self.teardown_test()
         finally:
-            # TODO(markdr): pass the signal that was raised.
-            # Currently, this passes the TestSignal class, rather than the
-            # signal that was raised by the test case (or signal.TestPass if
-            # no signal was raised). This should be updated such that the signal
-            # is passed along to the event.
-            event_bus.post(TestCaseEndEvent(
-                self, test_name, signals.TestSignal))
             self.current_test_name = None
 
     def teardown_test(self):
@@ -667,6 +658,7 @@ class BaseTestClass(object):
         self.begin_time = int(tr_record.begin_time)
         self.log_begin_time = tr_record.log_begin_time
         self.test_name = tr_record.test_name
+        event_bus.post(TestCaseBeginEvent(self, self.test_name))
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
 
         # Enable test retry if specified in the ACTS config
@@ -676,6 +668,7 @@ class BaseTestClass(object):
             test_func = self.get_func_with_retry(test_func)
 
         verdict = None
+        test_signal = None
         try:
             try:
                 ret = self._setup_test(self.test_name)
@@ -696,6 +689,7 @@ class BaseTestClass(object):
                     tr_record.add_error("teardown_test", e)
                     self._exec_procedure_func(self._on_exception, tr_record)
         except (signals.TestFailure, AssertionError) as e:
+            test_signal = e
             if self.user_params.get(
                     keys.Config.key_test_failure_tracebacks.value, False):
                 self.log.exception(e)
@@ -703,26 +697,32 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestBlocked as e:
             # Test blocked.
+            test_signal = e
             tr_record.test_blocked(e)
             self._exec_procedure_func(self._on_blocked, tr_record)
         except signals.TestSkip as e:
             # Test skipped.
+            test_signal = e
             tr_record.test_skip(e)
             self._exec_procedure_func(self._on_skip, tr_record)
         except (signals.TestAbortClass, signals.TestAbortAll) as e:
             # Abort signals, pass along.
+            test_signal = e
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
             raise e
         except signals.TestPass as e:
             # Explicit test pass.
+            test_signal = e
             tr_record.test_pass(e)
             self._exec_procedure_func(self._on_pass, tr_record)
         except error.ActsError as e:
+            test_signal = e
             self.results.errors.append(e)
             self.log.error(
                 'BaseTest execute_one_test_case error: %s' % e.message)
         except Exception as e:
+            test_signal = e
             self.log.error(traceback.format_exc())
             # Exception happened during test.
             tr_record.test_unknown(e)
@@ -738,6 +738,7 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
             self.results.add_record(tr_record)
+            event_bus.post(TestCaseEndEvent(self, self.test_name, test_signal))
 
     def get_func_with_retry(self, func, attempts=2):
         """Returns a wrapped test method that re-runs after failure. Return test
