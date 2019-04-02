@@ -49,6 +49,7 @@ class GNSSSanityTest(BaseTestClass):
     def setup_class(self):
         self.ad.droid.wakeLockAcquireBright()
         self.ad.droid.wakeUpNow()
+        tutils.print_radio_info(self.ad)
         gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
                                           self.default_gnss_signal_attenuation)
         gutils._init_device(self.ad)
