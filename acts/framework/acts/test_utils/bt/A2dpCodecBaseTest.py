@@ -55,7 +55,7 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
             self.mic = SshAudioCapture(self.audio_params,
                                        logging.log_path)
             self.log.info('Recording device %s initialized.' %
-                          self.mic.input_device['name'])
+                          self.mic.name)
         else:
             raise KeyError('Config audio_params specify input_device.')
         self.phone_music_file = os.path.join(
@@ -131,7 +131,7 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
 
         try:
             self.log.info('Capturing audio through %s' %
-                          self.mic.input_device['name'])
+                          self.mic.name)
         except AttributeError as e:
             self.log.error('Mic not initialized correctly. Check your '
                            '"input_device" parameter in config.')
@@ -193,6 +193,7 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
             metrics_key = 'channel_%s_thdn' % ch_no
             self.metrics[metrics_key] = t
         self.metrics['thdn'] = thdn
+        return thdn
 
     def run_anomaly_detection(self):
         """Detect anomalies in latest recording.
@@ -217,3 +218,4 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
         else:
             self.log.info('%i anomalies detected.' % num_anom)
         self.metrics['anomalies'] = anom
+        return anom
