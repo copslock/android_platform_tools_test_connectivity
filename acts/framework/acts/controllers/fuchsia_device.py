@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import collections
+import enum
 import json
 import logging
 import math
@@ -41,6 +42,8 @@ from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
+from acts.controllers.utils_lib.ssh import connection
+from acts.controllers.utils_lib.ssh import settings
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -48,10 +51,18 @@ ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
 FUCHSIA_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 FUCHSIA_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 FUCHSIA_DEVICE_INVALID_CONFIG = ("Fuchsia device config must be either a str "
-                                 "or dict. abort! Invalid elment %i in %r")
+                                 "or dict. abort! Invalid element %i in %r")
 FUCHSIA_DEVICE_NO_IP_MSG = "No IP address specified, abort!"
+FUCHSIA_COULD_NOT_GET_DESIRED_STATE = "Could not %s SL4F."
+FUCHSIA_INVALID_CONTROL_STATE = "Invalid control state (%s). abort!"
+
+FUCHSIA_SSH_USERNAME = "fuchsia"
 
 SL4F_APK_NAME = "com.googlecode.android_scripting"
+SL4F_INIT_TIMEOUT_SEC = 1
+
+SL4F_ACTIVATED_STATES = ["running", "start"]
+SL4F_DEACTIVATED_STATES = ["stop", "stopped"]
 
 
 class FuchsiaDeviceError(signals.ControllerError):
@@ -65,10 +76,10 @@ def create(configs):
         raise FuchsiaDeviceError(FUCHSIA_DEVICE_NOT_LIST_CONFIG_MSG)
     for index, config in enumerate(configs):
         if isinstance(config, str):
-            configs[index] = {'ip': config}
+            configs[index] = {"ip": config}
         elif not isinstance(config, dict):
             raise FuchsiaDeviceError(FUCHSIA_DEVICE_INVALID_CONFIG %
-                                     (index,configs))
+                                     (index, configs))
     return get_instances(configs)
 
 
@@ -132,8 +143,11 @@ class FuchsiaDevice:
         """
         if "ip" not in fd_conf_data:
             raise FuchsiaDeviceError(FUCHSIA_DEVICE_NO_IP_MSG)
-        self.ip = fd_conf_data['ip']
+        self.ip = fd_conf_data["ip"]
         self.port = fd_conf_data.get("port", 80)
+        self.ssh_config = fd_conf_data.get("ssh_config", None)
+        self.ssh_username = fd_conf_data.get("ssh_username",
+                                             FUCHSIA_SSH_USERNAME)
 
         self.log = acts_logger.create_tagged_trace_logger("[FuchsiaDevice|%s]"
                                                           % self.ip)
@@ -167,7 +181,9 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
                                        self.client_id)
-        #Init server
+        # Start sl4f on device
+        self.start_services()
+        # Init server
         self.init_server_connection()
 
     def build_id(self, test_id):
@@ -189,7 +205,7 @@ class FuchsiaDevice:
                 "client_id": self.client_id
             }
         })
-        r = requests.get(url=self.init_address, data=init_data)
+        requests.get(url=self.init_address, data=init_data)
         self.test_counter += 1
 
     def print_clients(self):
@@ -230,24 +246,139 @@ class FuchsiaDevice:
         self.log.debug("Cleaned up with status: ", r)
         return r
 
-    def start_services(self, skip_sl4f=False, skip_setup_wizard=True):
+    def create_ssh_connection(self):
+        """Creates and ssh connection to a Fuchsia device
+
+        Returns:
+            An ssh connection object
+        """
+        ssh_settings = settings.from_config({
+            "host": self.ip,
+            "user": self.ssh_username,
+            "ssh_config": self.ssh_config
+        })
+        return connection.SshConnection(ssh_settings)
+
+    @staticmethod
+    def check_sl4f_state(ssh_connection):
+        """Checks the state of sl4f on the Fuchsia device
+
+        Args:
+            ssh_connection: An ssh connection object with a valid ssh
+                connection established
+        Returns:
+            True if sl4f is running
+            False if sl4f is not running
+        """
+        ps_cmd = ssh_connection.run("ps")
+        return "sl4f.cmx" in ps_cmd.stdout
+
+    def check_sl4f_with_expectation(self, ssh_connection, expectation=None):
+        """Checks the state of sl4f on the Fuchsia device and returns true or
+           or false depending the stated expectation
+
+        Args:
+            ssh_connection: An ssh connection object with a valid ssh
+                connection established
+            expectation: The state expectation of state of sl4f
+        Returns:
+            True if the state of sl4f matches the expectation
+            False if the state of sl4f does not match the expectation
+        """
+        sl4f_state = self.check_sl4f_state(ssh_connection)
+        if expectation in SL4F_ACTIVATED_STATES:
+            return sl4f_state
+        elif expectation in SL4F_DEACTIVATED_STATES:
+            return not sl4f_state
+        else:
+            raise ValueError("Invalid expectation value (%s). abort!"
+                             % expectation)
+
+    def control_sl4f(self, action):
+        """Starts or stops sl4f on a Fuchsia device
+
+        Args:
+            action: specify whether to start or stop sl4f
+        """
+        ssh_conn = None
+        unable_to_connect_msg = None
+        sl4f_state = False
+        try:
+            ssh_conn = self.create_ssh_connection()
+            ssh_conn.run_async("killall sl4f.cmx")
+            # This command will effectively stop sl4f but should
+            # be used as a cleanup before starting sl4f.  It is a bit
+            # confusing to have the msg saying "attempting to stop
+            # sl4f" after the command already tried but since both start
+            # and stop need to run this command, this is the best place
+            # for the command.
+            if action in SL4F_ACTIVATED_STATES:
+                self.log.debug("Attempting to start Fuchsia "
+                               "devices services.")
+                ssh_conn.run_async("run fuchsia-pkg://"
+                                   "fuchsia.com/sl4f#meta/sl4f.cmx &")
+                sl4f_initial_msg = ("SL4F has not started yet. "
+                                    "Waiting %i second and checking "
+                                    "again." % SL4F_INIT_TIMEOUT_SEC)
+                sl4f_timeout_msg = ("Timed out waiting for SL4F "
+                                    "to start.")
+                unable_to_connect_msg = ("Unable to connect to Fuchsia "
+                                         "device via SSH. SL4F may not "
+                                         "be started.")
+            elif action in SL4F_DEACTIVATED_STATES:
+                sl4f_initial_msg = ("SL4F is running. "
+                                    "Waiting %i second and checking "
+                                    "again." % SL4F_INIT_TIMEOUT_SEC)
+                sl4f_timeout_msg = ("Timed out waiting "
+                                    "trying to kill SL4F.")
+                unable_to_connect_msg = ("Unable to connect to Fuchsia "
+                                         "device via SSH. SL4F may "
+                                         "still be running.")
+            else:
+                raise FuchsiaDeviceError(FUCHSIA_INVALID_CONTROL_STATE
+                                         % action)
+            timeout_counter = 0
+            while not sl4f_state:
+                self.log.debug(sl4f_initial_msg)
+                time.sleep(SL4F_INIT_TIMEOUT_SEC)
+                timeout_counter += 1
+                sl4f_state = self.check_sl4f_with_expectation(
+                    ssh_connection=ssh_conn,
+                    expectation=action)
+                if timeout_counter == (SL4F_INIT_TIMEOUT_SEC * 3):
+                    self.log.error(sl4f_timeout_msg)
+                    break
+            if not sl4f_state:
+                raise FuchsiaDeviceError(FUCHSIA_COULD_NOT_GET_DESIRED_STATE
+                                         % action)
+        except Exception as e:
+            self.log.error(unable_to_connect_msg)
+            raise e
+        finally:
+            ssh_conn.close()
+
+    def start_services(self, skip_sl4f=False):
         """Starts long running services on the Fuchsia device.
 
-        1. Start adb logcat capture.
-        2. Start SL4F if not skipped.
+        1. Start SL4F if not skipped.
 
         Args:
             skip_sl4f: Does not attempt to start SL4F if True.
-            skip_setup_wizard: Whether or not to skip the setup wizard.
         """
-        pass
+        self.log.debug("Attempting to start Fuchsia device services on %s." %
+                       self.ip)
+        if self.ssh_config and not skip_sl4f:
+            self.control_sl4f("start")
 
     def stop_services(self):
         """Stops long running services on the android device.
 
-        Stop adb logcat and terminate sl4f sessions if exist.
+        Terminate sl4f sessions if exist.
         """
-        pass
+        self.log.debug("Attempting to stop Fuchsia device services on %s." %
+                       self.ip)
+        if self.ssh_config:
+            self.control_sl4f("stop")
 
     def load_config(self, config):
         pass
@@ -256,4 +387,4 @@ class FuchsiaDevice:
 class FuchsiaDeviceLoggerAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
         msg = "[FuchsiaDevice|%s] %s" % (self.extra["ip"], msg)
-        return (msg, kwargs)
+        return msg, kwargs
