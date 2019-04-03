@@ -9,6 +9,6 @@
         }
     ],
     "logpath": "~/logs",
-    "testpaths": ["./tools/test/connectivity/acts/tests/google/wifi"],
+    "testpaths": ["./tools/test/connectivity/acts/tests/google/wifi/p2p"],
     "adb_logcat_param": "-b all"
 }
