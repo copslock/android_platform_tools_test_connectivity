@@ -1745,12 +1745,52 @@ class _BaseTransceiverStation(object):
         """ Sets the UL/DL pattern configuration for TDD bands
 
         Args:
-            configuration: configuration number, from 0 to 6
+            configuration: configuration number, [ 0, 6 ] inclusive
 
         Returns:
             None
+
+        Raises:
+            ValueError: Frame structure has to be [ 0, 6 ] inclusive
         """
+        if uldl_configuration not in range(0, 7):
+            raise ValueError("The frame structure configuration has to be a "
+                             "number between 0 and 6 inclusive")
+
         cmd = "ULDLCONFIGURATION {},{}".format(configuration, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def tdd_special_subframe(self):
+        """ Gets SPECIALSUBFRAME of cell.
+
+        Args:
+            None
+
+        Returns:
+            tdd_special_subframe: integer between 0,9 inclusive
+        """
+        cmd = "SPECIALSUBFRAME? " + self._bts_number
+        tdd_special_subframe = int(self._anritsu.send_query(cmd))
+        return tdd_special_subframe
+
+    @tdd_special_subframe.setter
+    def tdd_special_subframe(self, tdd_special_subframe):
+        """ Sets SPECIALSUBFRAME of cell.
+
+        Args:
+            tdd_special_subframe: int between 0,9 inclusive
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: tdd_special_subframe has to be between 0,9 inclusive
+        """
+        if tdd_special_subframe not in range(0, 10):
+            raise ValueError("The special subframe config is not [0,9]")
+        cmd = "SPECIALSUBFRAME {},{}".format(tdd_special_subframe,
+                                             self._bts_number)
         self._anritsu.send_command(cmd)
 
     @property
