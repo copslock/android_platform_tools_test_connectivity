@@ -175,6 +175,12 @@ WAIT_TIME_TETHERING_AFTER_REBOOT = 10
 # Time to wait after changing data sub id
 WAIT_TIME_CHANGE_DATA_SUB_ID = 30
 
+# Time to wait after changing voice sub id
+WAIT_TIME_CHANGE_VOICE_SUB_ID = 5
+
+# Time to wait after changing message sub id
+WAIT_TIME_CHANGE_MESSAGE_SUB_ID = 5
+
 # Wait time for Data Stall to detect
 WAIT_TIME_FOR_DATA_STALL = 300
 
