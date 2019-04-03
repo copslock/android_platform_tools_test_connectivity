@@ -44,6 +44,8 @@ from acts.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_MESSAGE_SUB_ID
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_VOICE_SUB_ID
 from acts.test_utils.tel.tel_lookup_tables import is_rat_svd_capable
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
@@ -236,6 +238,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             sub_id = get_subid_from_slot_index(self.log, ads[0], slot_id)
             ads[0].log.info("Message - MO - slot_Id %d", slot_id)
             set_subid_for_message(ads[0], sub_id)
+            time.sleep(WAIT_TIME_CHANGE_MESSAGE_SUB_ID)
             slot_id_rx = random.randint(0,1)
             ads[1].log.info("Message - MT - slot_id %d", slot_id_rx)
         selection = random.randrange(0, 2)
@@ -341,6 +344,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             sub_id = get_subid_from_slot_index(self.log, ads[0], slot_id)
             ads[0].log.info("Voice - MO - slot_Id %d", slot_id)
             set_subid_for_outgoing_call(ads[0], sub_id)
+            time.sleep(WAIT_TIME_CHANGE_VOICE_SUB_ID)
             slot_id_callee = random.randint(0,1)
             ads[1].log.info("Voice - MT - slot_id %d", slot_id_callee)
         the_number = self.result_info["Call Total"] + 1
