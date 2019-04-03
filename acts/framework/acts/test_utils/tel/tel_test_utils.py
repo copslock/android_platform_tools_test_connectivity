@@ -608,18 +608,6 @@ def get_telephony_signal_strength(ad):
     except Exception as e:
         ad.log.error(e)
         signal_strength = {}
-    out = ad.adb.shell("dumpsys telephony.registry | grep -i signalstrength")
-    if out is None:
-        msg = "Signal Strength is Null."
-        fail(msg)
-
-    signals = re.findall(r"(-*\d+)", out)
-    for i, val in enumerate(
-        ("gsmSignalStrength", "gsmBitErrorRate", "cdmaDbm", "cdmaEcio",
-         "evdoDbm", "evdoEcio", "evdoSnr", "lteSignalStrength", "lteRsrp",
-         "lteRsrq", "lteRssnr", "lteCqi", "lteRsrpBoost")):
-        signal_strength[val] = signal_strength.get(val, int(signals[i]))
-    ad.log.info("Telephony Signal strength = %s", signal_strength)
     return signal_strength
 
 
