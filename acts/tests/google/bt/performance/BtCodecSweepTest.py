@@ -31,6 +31,7 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
     def __init__(self, configs):
         super().__init__(configs)
         self.bt_logger = BluetoothMetricLogger.for_test_case()
+        self.start_time = time.time()
 
     def setup_test(self):
         super().setup_test()
@@ -50,19 +51,7 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
         # TODO(aidanhb): Modify abstract device classes to make this generic.
         self.bt_device.earstudio_controller.clean_up()
 
-    def store_codec_config_in_metrics(self, codec_type, sample_rate,
-                                      bits_per_sample, channel_mode,):
-        proto_d = {'codec_type': bt_constants.codec_types[str(codec_type)],
-                   'sample_rate': int(sample_rate),
-                   'bits_per_sample': int(bits_per_sample),
-                   'channel_mode': bt_constants.channel_modes[channel_mode]}
-        self.metrics['a2dp_codec_config'] = proto_d
-
-    def analyze(self):
-        self.run_thdn_analysis()
-        thdn_results = self.metrics['thdn']
-        self.run_anomaly_detection()
-        anomaly_results = self.metrics['anomalies']
+    def print_results_summary(self, thdn_results, anomaly_results):
         channnel_results = zip(thdn_results, anomaly_results)
         for ch_no, result in enumerate(channnel_results):
             self.log.info('======CHANNEL %s RESULTS======' % ch_no)
@@ -75,24 +64,34 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
 
     def base_codec_test(self, codec_type, sample_rate, bits_per_sample,
                         channel_mode):
+        """Base test flow that all test cases in this class will follow.
+        Args:
+            codec_type (str): the desired codec type. For reference, see
+                test_utils.bt.bt_constants.codec_types
+            sample_rate (int|str): the desired sample rate. For reference, see
+                test_utils.bt.bt_constants.sample_rates
+            bits_per_sample (int|str): the desired bits per sample. For
+                reference, see test_utils.bt.bt_constants.bits_per_samples
+            channel_mode (str): the desired channel mode. For reference, see
+                test_utils.bt.bt_constants.channel_modes
+        Raises:
+            TestPass, TestFail, or TestError test signal.
+        """
         self.stream_music_on_codec(codec_type=codec_type,
                                    sample_rate=sample_rate,
                                    bits_per_sample=bits_per_sample,
                                    channel_mode=channel_mode)
-        self.analyze()
-        self.store_codec_config_in_metrics(codec_type=codec_type,
-                                           sample_rate=sample_rate,
-                                           bits_per_sample=bits_per_sample,
-                                           channel_mode=channel_mode)
-        proto = self.generate_metrics_proto()
+        proto = self.run_analysis_and_generate_proto(
+                codec_type=codec_type,
+                sample_rate=sample_rate,
+                bits_per_sample=bits_per_sample,
+                channel_mode=channel_mode)
         self.raise_pass_fail(proto)
 
     def generate_test_case(self, codec_config):
         def test_case_fn(inst):
             inst.stream_music_on_codec(**codec_config)
-            inst.analyze()
-            self.store_codec_config_in_metrics(**codec_config)
-            proto = inst.generate_metrics_proto()
+            proto = inst.run_analysis_and_generate_proto(**codec_config)
             inst.raise_pass_fail(proto)
         test_case_name = 'test_{}'.format(
             '_'.join([str(codec_config[key]) for key in [
@@ -110,25 +109,53 @@ class BtCodecSweepTest(A2dpCodecBaseTest):
             bound_test_case = test_case_fn.__get__(self, BtCodecSweepTest)
             setattr(self, test_case_name, bound_test_case)
 
-    def generate_metrics_proto(self):
-        """Create BluetoothAudioTestResult protobuf."""
-        try:
-            anomalies = self.metrics['anomalies']
-            # Get number of audio glitches on first channel
-            self.metrics['audio_glitches_count'] = len(anomalies[0])
-            # Get distortion for channnel one
-            thdn = self.metrics['thdn']
-            self.metrics['total_harmonic_distortion_plus_noise'] = thdn[0]
-            duration = int(self.mic.get_last_record_duration_millis())
-            self.metrics['audio_streaming_duration_millis'] = duration
-        except IndexError:
-            self.log.warning('self.generate_metrics_proto called before self.an'
-                             'alyze. Anomaly and THD+N results not populated.')
-        proto = self.bt_logger.get_results(self.metrics,
-                                           self.__class__.__name__,
-                                           self.android,
-                                           self.bt_device)
-        return proto
+    def run_analysis_and_generate_proto(self, codec_type, sample_rate,
+                                        bits_per_sample, channel_mode):
+        """Analyze audio and generate a results protobuf.
+
+        Args:
+            codec_type: The codec type config to store in the proto.
+            sample_rate: The sample rate config to store in the proto.
+            bits_per_sample: The bits per sample config to store in the proto.
+            channel_mode: The channel mode config to store in the proto.
+        Returns:
+             dict: Dictionary with key 'proto' mapping to serialized protobuf,
+               'proto_ascii' mapping to human readable protobuf info, and 'test'
+               mapping to the test class name that generated the results.
+        """
+        # Analyze audio and log results.
+        thdn_results = self.run_thdn_analysis()
+        anomaly_results = self.run_anomaly_detection()
+        self.print_results_summary(thdn_results, anomaly_results)
+
+        # Populate protobuf
+        test_case_proto = self.bt_logger.proto_module.BluetoothAudioTestResult()
+        audio_data_proto = test_case_proto.data_points.add()
+
+        audio_data_proto.timestamp_since_beginning_of_test_millis = int(
+                (time.time() - self.start_time) * 1000)
+        audio_data_proto.audio_streaming_duration_millis = (
+                int(self.mic.get_last_record_duration_millis()))
+        audio_data_proto.attenuation_db = 0
+        audio_data_proto.total_harmonic_distortion_plus_noise_percent = float(
+            thdn_results[0])
+        audio_data_proto.audio_glitches_count = len(anomaly_results[0])
+
+        codec_proto = test_case_proto.a2dp_codec_config
+        codec_proto.codec_type = bt_constants.codec_types[codec_type]
+        codec_proto.sample_rate = int(sample_rate)
+        codec_proto.bits_per_sample = int(bits_per_sample)
+        codec_proto.channel_mode = bt_constants.channel_modes[channel_mode]
+
+        self.bt_logger.add_config_data_to_proto(test_case_proto,
+                                                self.android,
+                                                self.bt_device)
+
+        self.bt_logger.add_proto_to_results(test_case_proto,
+                                            self.__class__.__name__)
+
+        return self.bt_logger.get_proto_dict(self.__class__.__name__,
+                                             test_case_proto)
 
     def raise_pass_fail(self, extras=None):
         """Raise pass or fail test signal based on analysis results."""

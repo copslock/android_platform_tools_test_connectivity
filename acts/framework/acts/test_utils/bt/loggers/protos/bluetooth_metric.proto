@@ -59,6 +59,14 @@ message BluetoothA2dpCodecConfig {
   optional int32 channel_mode = 4;
 }
 
+message AudioTestDataPoint {
+  optional int64 timestamp_since_beginning_of_test_millis = 1;
+  optional int64 audio_streaming_duration_millis = 2;
+  optional int32 attenuation_db = 3;
+  optional float total_harmonic_distortion_plus_noise_percent = 4;
+  optional int32 audio_glitches_count = 5;
+}
+
 message BluetoothAudioTestResult {
   optional BluetoothContinuousTestResultHeader configuration_data = 1;
   enum AudioProfile {
@@ -75,6 +83,7 @@ message BluetoothAudioTestResult {
   optional float total_harmonic_distortion_plus_noise = 8;
   optional int64 audio_streaming_duration_millis = 9;
   optional BluetoothA2dpCodecConfig a2dp_codec_config = 10;
+  repeated AudioTestDataPoint data_points = 11;
 }
 
 message BluetoothDataTestResult {
