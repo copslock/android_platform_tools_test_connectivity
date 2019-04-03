@@ -17,6 +17,7 @@
 Controller interface for Anritsu Signalling Tester MD8475A.
 """
 
+import logging
 import time
 import socket
 from enum import Enum
@@ -26,6 +27,8 @@ from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuUtils
 from acts.controllers.anritsu_lib._anritsu_utils import NO_ERROR
 from acts.controllers.anritsu_lib._anritsu_utils import OPERATION_COMPLETE
+
+from acts import tracelogger
 
 TERMINATOR = "\0"
 
@@ -73,11 +76,11 @@ WCDMA_BANDS = {
 }
 
 
-def create(configs, logger):
+def create(configs):
     objs = []
     for c in configs:
         ip_address = c["ip_address"]
-        objs.append(MD8475A(ip_address, logger))
+        objs.append(MD8475A(ip_address))
     return objs
 
 
@@ -399,10 +402,10 @@ class MD8475A(object):
     """Class to communicate with Anritsu MD8475A Signalling Tester.
        This uses GPIB command to interface with Anritsu MD8475A """
 
-    def __init__(self, ip_address, log_handle, wlan=False, md8475_version="A"):
+    def __init__(self, ip_address, wlan=False, md8475_version="A"):
         self._error_reporting = True
         self._ipaddr = ip_address
-        self.log = log_handle
+        self.log = tracelogger.TraceLogger(logging.getLogger())
         self._wlan = wlan
         port_number = 28002
         self._md8475_version = md8475_version
