@@ -33,10 +33,10 @@ class Sl4fSanityTest(BaseTestClass):
         BaseTestClass.__init__(self, controllers)
 
     def setup_class(self):
-        success_str = \
-            "Congratulations! Fuchsia controllers have been initialized successfully!"
-        err_str = \
-            "Sorry, please try verifying FuchsiaDevice is in your config file and try again."
+        success_str = ("Congratulations! Fuchsia controllers have been "
+                       "initialized successfully!")
+        err_str = ("Sorry, please try verifying FuchsiaDevice is in your "
+                   "config file and try again.")
         if len(self.fuchsia_devices) > 0:
             self.log.info(success_str)
         else:
@@ -45,3 +45,4 @@ class Sl4fSanityTest(BaseTestClass):
     def test_example(self):
         self.log.info("Congratulations! You've run your first test.")
         return True
+
