@@ -44,6 +44,11 @@ class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
     def test_rtt_non_80211mc_supporting_aps(self):
         """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs"""
         dut = self.android_devices[0]
+
+        asserts.skip_if(
+            not dut.rtt_capabilities[rconsts.CAP_RTT_ONE_SIDED_SUPPORTED],
+            "Device does not support one-sided RTT")
+
         non_rtt_aps = rutils.select_best_scan_results(
             rutils.scan_with_rtt_support_constraint(dut, False),
             select_count=1)
