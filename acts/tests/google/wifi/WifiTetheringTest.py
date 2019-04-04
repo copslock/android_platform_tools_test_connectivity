@@ -34,7 +34,7 @@ from acts.test_utils.net import arduino_test_utils as dutils
 from acts.test_utils.net import net_test_utils as nutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
-WAIT_TIME = 2
+WAIT_TIME = 5
 
 class WifiTetheringTest(base_test.BaseTestClass):
     """ Tests for Wifi Tethering """
@@ -59,7 +59,6 @@ class WifiTetheringTest(base_test.BaseTestClass):
 
     def on_fail(self, test_name, begin_time):
         """ Collect bug report on failure """
-        return
         for ad in self.android_devices:
             ad.take_bug_report(test_name, begin_time)
 

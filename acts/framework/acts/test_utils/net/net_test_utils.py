@@ -37,7 +37,6 @@ import urllib.request
 VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
 VPN_PARAMS = cconst.VpnReqParams
-VPN_PING_ADDR = "10.10.10.1"
 TCPDUMP_PATH = "/data/local/tmp/tcpdump"
 
 
@@ -74,7 +73,7 @@ def set_chrome_browser_permissions(ad):
             logging.warning("adb command %s failed on %s" % (cmd, ad.serial))
 
 
-def verify_ping_to_vpn_ip(ad):
+def verify_ping_to_vpn_ip(ad, vpn_ping_addr):
     """ Verify if IP behind VPN server is pingable.
     Ping should pass, if VPN is connected.
     Ping should fail, if VPN is disconnected.
@@ -85,13 +84,13 @@ def verify_ping_to_vpn_ip(ad):
     ping_result = None
     pkt_loss = "100% packet loss"
     try:
-        ping_result = ad.adb.shell("ping -c 3 -W 2 %s" % VPN_PING_ADDR)
+        ping_result = ad.adb.shell("ping -c 3 -W 2 %s" % vpn_ping_addr)
     except AdbError:
         pass
     return ping_result and pkt_loss not in ping_result
 
 
-def legacy_vpn_connection_test_logic(ad, vpn_profile):
+def legacy_vpn_connection_test_logic(ad, vpn_profile, vpn_ping_addr):
     """ Test logic for each legacy VPN connection
 
     Steps:
@@ -122,7 +121,7 @@ def legacy_vpn_connection_test_logic(ad, vpn_profile):
                          "Unable to establish VPN connection for %s"
                          % vpn_profile)
 
-    ping_result = verify_ping_to_vpn_ip(ad)
+    ping_result = verify_ping_to_vpn_ip(ad, vpn_ping_addr)
     ip_xfrm_state = ad.adb.shell("ip xfrm state")
     match_obj = re.search(r'hmac(.*)', "%s" % ip_xfrm_state)
     if match_obj:
