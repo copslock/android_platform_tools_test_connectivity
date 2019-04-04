@@ -101,7 +101,6 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
             self.anritsu = MD8475A(
                 self.md8475a_ip_address,
-                self.log,
                 self.wlan_option,
                 md8475_version=self.md8475_version)
             return True
