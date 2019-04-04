@@ -608,18 +608,6 @@ def get_telephony_signal_strength(ad):
     except Exception as e:
         ad.log.error(e)
         signal_strength = {}
-    out = ad.adb.shell("dumpsys telephony.registry | grep -i signalstrength")
-    if out is None:
-        msg = "Signal Strength is Null."
-        fail(msg)
-
-    signals = re.findall(r"(-*\d+)", out)
-    for i, val in enumerate(
-        ("gsmSignalStrength", "gsmBitErrorRate", "cdmaDbm", "cdmaEcio",
-         "evdoDbm", "evdoEcio", "evdoSnr", "lteSignalStrength", "lteRsrp",
-         "lteRsrq", "lteRssnr", "lteCqi", "lteRsrpBoost")):
-        signal_strength[val] = signal_strength.get(val, int(signals[i]))
-    ad.log.info("Telephony Signal strength = %s", signal_strength)
     return signal_strength
 
 
@@ -627,6 +615,30 @@ def get_wifi_signal_strength(ad):
     signal_strength = ad.droid.wifiGetConnectionInfo()['rssi']
     ad.log.info("WiFi Signal Strength is %s" % signal_strength)
     return signal_strength
+
+
+def get_lte_rsrp(ad):
+    try:
+        if ad.adb.getprop("ro.build.version.release")[0] in ("9", "P"):
+            out = ad.adb.shell(
+                "dumpsys telephony.registry | grep -i signalstrength")
+            if out:
+                lte_rsrp = out.split()[9]
+                if lte_rsrp:
+                    ad.log.info("lte_rsrp: %s ", lte_rsrp)
+                    return lte_rsrp
+        else:
+            out = ad.adb.shell(
+            "dumpsys telephony.registry |grep -i primary=CellSignalStrengthLte")
+            if out:
+                lte_cell_info = out.split('mLte=')[1]
+                lte_rsrp = re.match(r'.*rsrp=(\S+).*', lte_cell_info).group(1)
+                if lte_rsrp:
+                    ad.log.info("lte_rsrp: %s ", lte_rsrp)
+                    return lte_rsrp
+    except Exception as e:
+        ad.log.error(e)
+    return None
 
 
 def check_data_stall_detection(ad, wait_time=WAIT_TIME_FOR_DATA_STALL):

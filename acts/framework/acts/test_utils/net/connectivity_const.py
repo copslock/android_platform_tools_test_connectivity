@@ -122,9 +122,8 @@ class VpnReqParams(object):
     """ Config file parameters required for
         VPN connection
     """
-    wifi_network = "wifi_network"
     vpn_server_addresses = "vpn_server_addresses"
-    vpn_verify_address = "vpn_verify_address"
+    vpn_verify_addresses = "vpn_verify_addresses"
     vpn_username = "vpn_username"
     vpn_password = "vpn_password"
     psk_secret = "psk_secret"

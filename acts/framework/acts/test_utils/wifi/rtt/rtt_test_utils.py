@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import json
 import queue
 import statistics
 import time
@@ -71,6 +72,17 @@ def fail_on_event(ad, event_name, timeout=EVENT_TIMEOUT):
     except queue.Empty:
         ad.log.info('%s%s not seen (as expected)', prefix, event_name)
         return
+
+
+def get_rtt_capabilities(ad):
+    """Get the Wi-Fi RTT capabilities from the specified device. The
+  capabilities are a dictionary keyed by rtt_const.CAP_* keys.
+
+  Args:
+    ad: the Android device
+  Returns: the capability dictionary.
+  """
+    return json.loads(ad.adb.shell('cmd wifirtt get_capabilities'))
 
 
 def config_privilege_override(dut, override_to_no_privilege):

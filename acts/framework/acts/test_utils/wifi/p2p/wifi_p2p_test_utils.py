@@ -276,6 +276,10 @@ def requestServiceAndCheckResult(ad_serviceProvider, ad_serviceReceiver,
     """
     expectData = genExpectTestData(serviceType, queryString1, queryString2)
     find_p2p_device(ad_serviceReceiver, ad_serviceProvider)
+    ad_serviceReceiver.droid.wifiP2pStopPeerDiscovery();
+    ad_serviceReceiver.droid.wifiP2pClearServiceRequests();
+    time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
+
     ad_serviceReceiver.droid.wifiP2pDiscoverServices()
     serviceData = {}
     service_id = 0
@@ -323,6 +327,9 @@ def requestServiceAndCheckResult(ad_serviceProvider, ad_serviceReceiver,
                             p2pconsts.DNSSD_TXRECORD_EVENT_TXRECORDMAP_KEY]
                     serviceData[dns_service.toString()] = 1
             ad_serviceReceiver.log.info("serviceData %s" % serviceData)
+            if len(serviceData) == 0:
+                ad_serviceReceiver.droid.wifiP2pRemoveServiceRequest(service_id)
+                return -1;
         except queue.Empty as error:
             ad_serviceReceiver.log.info("dnssd event is empty",)
     elif (serviceType ==
@@ -349,6 +356,9 @@ def requestServiceAndCheckResult(ad_serviceProvider, ad_serviceReceiver,
                             p2pconsts.UPNP_EVENT_SERVICELIST_KEY]:
                         serviceData[service] = 1
             ad_serviceReceiver.log.info("serviceData %s" % serviceData)
+            if len(serviceData) == 0:
+                ad_serviceReceiver.droid.wifiP2pRemoveServiceRequest(service_id)
+                return -1;
         except queue.Empty as error:
             ad_serviceReceiver.log.info("p2p upnp event is empty",)
 
@@ -357,6 +367,31 @@ def requestServiceAndCheckResult(ad_serviceProvider, ad_serviceReceiver,
                   "ServiceList not same as Expect");
     # After service checked, remove the service_id
     ad_serviceReceiver.droid.wifiP2pRemoveServiceRequest(service_id)
+    return 0
+
+def requestServiceAndCheckResultWithRetry(ad_serviceProvider, ad_serviceReceiver,
+        serviceType, queryString1, queryString2, retryCount=3):
+    """ allow failures for requestServiceAndCheckResult. Service
+        discovery might fail unexpectedly because the request packet might not be
+        recevied by the service responder due to p2p state switch.
+
+    Args:
+        ad_serviceProvider: The android device which provide p2p local service
+        ad_serviceReceiver: The android device which query p2p local service
+        serviceType: P2p local service type, Upnp or Bonjour
+        queryString1: Query String, NonNull
+        queryString2: Query String, used for Bonjour, Nullable
+        retryCount: maximum retry count, default is 3
+    """
+    ret = 0
+    while retryCount > 0:
+        ret = requestServiceAndCheckResult(ad_serviceProvider, ad_serviceReceiver,
+                serviceType, queryString1, queryString2)
+        if (ret == 0):
+            break
+        retryCount -= 1
+
+    asserts.assert_equal(0, ret, "cannot find any services with retries.")
 
 def checkServiceQueryResult(serviceList, expectServiceList):
     """Check serviceList same as expectServiceList or not

@@ -78,18 +78,18 @@ class WifiP2pLocalServiceTest(WifiP2pBaseTest):
         wp2putils.createP2pLocalService(self.dut1, p2pconsts.P2P_LOCAL_SERVICE_IPP)
         wp2putils.createP2pLocalService(self.dut1, p2pconsts.P2P_LOCAL_SERVICE_AFP)
 
-        wp2putils.requestServiceAndCheckResult(self.dut1, self.dut2,
+        wp2putils.requestServiceAndCheckResultWithRetry(self.dut1, self.dut2,
                 wp2putils.WifiP2PEnums.WifiP2pServiceInfo.WIFI_P2P_SERVICE_TYPE_BONJOUR,
                 None, None)
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
-        wp2putils.requestServiceAndCheckResult(self.dut1,self.dut2,
+        wp2putils.requestServiceAndCheckResultWithRetry(self.dut1,self.dut2,
                 wp2putils.WifiP2PEnums.WifiP2pServiceInfo.WIFI_P2P_SERVICE_TYPE_BONJOUR,
                 "_ipp._tcp", None)
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
-        wp2putils.requestServiceAndCheckResult(self.dut1, self.dut2,
+        wp2putils.requestServiceAndCheckResultWithRetry(self.dut1, self.dut2,
                 wp2putils.WifiP2PEnums.WifiP2pServiceInfo.WIFI_P2P_SERVICE_TYPE_BONJOUR,
                 "_ipp._tcp", "MyPrinter")
         time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
-        wp2putils.requestServiceAndCheckResult(self.dut1, self.dut2,
+        wp2putils.requestServiceAndCheckResultWithRetry(self.dut1, self.dut2,
                 wp2putils.WifiP2PEnums.WifiP2pServiceInfo.WIFI_P2P_SERVICE_TYPE_BONJOUR,
                 "_afpovertcp._tcp", "Example")
