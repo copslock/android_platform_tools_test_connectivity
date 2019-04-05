@@ -55,6 +55,7 @@ class CoexBaseTest(BaseTestClass):
             self.sec_ad = self.android_devices[1]
         elif len(self.android_devices) == 3:
             self.third_ad = self.android_devices[2]
+        self.ssh_config = None
 
     class IperfVariables:
 
@@ -104,6 +105,8 @@ class CoexBaseTest(BaseTestClass):
         if hasattr(self, "IPerfClient"):
             self.log.info("Iperfclient is given in config file")
             self.iperf_client = self.iperf_clients[0]
+            if 'ssh_config' in self.IPerfClient[0]:
+                self.ssh_config = self.IPerfClient[0]["ssh_config"]
         else:
             self.log.warning("Iperfclient is not given in config file")
         wifi_test_device_init(self.pri_ad)
@@ -213,7 +216,8 @@ class CoexBaseTest(BaseTestClass):
             self.tag,
         )
 
-        cmd = "adb -s {} shell {}".format(self.pri_ad.serial, self.iperf_server)
+        cmd = "adb -s {} shell {}".format(self.pri_ad.serial,
+                                          self.iperf_server)
 
         def appender_iperf_logs(line):
             with open(out_file_name, 'a') as f:
@@ -246,8 +250,8 @@ class CoexBaseTest(BaseTestClass):
         if self.iperf_variables.is_bidirectional:
             self.iperf_variables.bidirectional_server_path = (
                 self.start_iperf_server_on_shell(self.iperf["port_2"]))
-        self.iperf_variables.iperf_server_path = self.start_iperf_server_on_shell(
-            self.iperf["port_1"])
+        self.iperf_variables.iperf_server_path = (
+            self.start_iperf_server_on_shell(self.iperf["port_1"]))
         if self.iperf_variables.protocol == "tcp":
             self.iperf_args = "-t {} -p {} {} -J".format(
                 self.iperf["duration"], self.iperf["port_1"],
@@ -293,9 +297,9 @@ class CoexBaseTest(BaseTestClass):
         ip = get_phone_ip(self.pri_ad)
 
         args = [
-            lambda: check_wifi_status(self.pri_ad, self.network,
-                                      self.iperf["ssh_config"])
-        ]
+                lambda: check_wifi_status(self.pri_ad, self.network,
+                                          ssh_config=self.ssh_config)
+            ]
         self.run_thread(args)
         if bidirectional:
             self.tag = self.tag + 1
@@ -427,5 +431,6 @@ class CoexBaseTest(BaseTestClass):
                 self.log.error("Increase volume failed")
                 return False
         else:
-            self.log.warning("No volume control pins specfied in relay config.")
+            self.log.warning(
+                "No volume control pins specified in relay config.")
         return True
