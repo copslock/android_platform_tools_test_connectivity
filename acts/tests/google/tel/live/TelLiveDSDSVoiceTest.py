@@ -18,6 +18,7 @@
 """
 
 import time
+import random
 import collections
 
 from queue import Empty
@@ -79,6 +80,9 @@ from acts.test_utils.tel.tel_test_utils import get_wifi_signal_strength
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import start_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import active_file_download_test
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -553,6 +557,7 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             msg = "Stress Call Test Iteration: <%s> / <%s>" % (
                 i, total_iteration)
             begin_time = get_current_epoch_time()
+            self.log.info(msg)
             start_qxdm_loggers(self.log, self.android_devices, begin_time)
 
             if dds_switch:
@@ -655,3 +660,71 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         """
         return self._test_stress_msim(DIRECTION_MOBILE_ORIGINATED,
                                       dds_switch=True)
+
+
+    def _test_msim_file_download_stress(self):
+        ad = self.android_devices[0]
+        total_iteration = self.stress_test_number
+        fail_count = collections.defaultdict(int)
+        for i in range(0,2):
+            sub_id = get_subid_from_slot_index(ad.log, ad, i)
+            operator = get_operatorname_from_slot_index(ad, i)
+            ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
+
+        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
+        current_iteration = 1
+        for i in range(1, total_iteration + 1):
+            msg = "File DL Iteration: <%s> / <%s>" % (i, total_iteration)
+            self.log.info(msg)
+            begin_time = get_current_epoch_time()
+            start_qxdm_logger(ad, begin_time)
+            current_dds = perform_dds_switch(ad)
+            time.sleep(15)
+            if not verify_internet_connection(ad.log, ad):
+                ad.log.warning("No Data after DDS. Waiting 1 more minute")
+                time.sleep(60)
+            try:
+                selection = random.randrange(0, len(file_names))
+                file_name = file_names[selection]
+                iteration_result = active_file_download_test(
+                                       ad.log, ad, file_name)
+                if not iteration_result:
+                    fail_count["%s" % current_dds] += 1
+            except Exception as e:
+                ad.log.error("Exception error %s", str(e))
+                iteration_result = False
+
+            if iteration_result:
+                ad.log.info(">----Iteration : %d/%d succeed.----<",
+                    i, total_iteration)
+            else:
+                ad.log.error("%s file download failure", file_name)
+                ad.log.error(">----Iteration : %d/%d failed.----<",
+                    i, total_iteration)
+                self._take_bug_report("%s_IterNo_%s" % (self.test_name, i),
+                                      begin_time)
+            current_iteration += 1
+
+        test_result = True
+        for failure, count in fail_count.items():
+            if count:
+                ad.log.error("%s: %s %s failures in %s iterations",
+                               self.test_name, count, failure,
+                               total_iteration)
+                test_result = False
+        return test_result
+
+
+    @test_tracker_info(uuid="82e10a34-5018-453a-bf20-52d3b225a36e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_dds_switch_file_download(self):
+        """ Test File DL stress on both DDS
+
+        Switch DDS
+        File Download on alternate slot
+        Repeat above steps
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_msim_file_download_stress()

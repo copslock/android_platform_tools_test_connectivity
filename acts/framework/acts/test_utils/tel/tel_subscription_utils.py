@@ -20,6 +20,8 @@ from future import standard_library
 standard_library.install_aliases()
 from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+
 import time
 
 
@@ -279,9 +281,12 @@ def perform_dds_switch(ad):
         ad.log.info("DDS Switch from %s to %s", slot_dict[0]['operator'],
                                                 slot_dict[1]['operator'])
         new_data = slot_dict[1]['sub_id']
+        new_oper = slot_dict[1]['operator']
     else:
         ad.log.info("DDS Switch from %s to %s", slot_dict[1]['operator'],
                                                 slot_dict[0]['operator'])
         new_data = slot_dict[0]['sub_id']
+        new_oper = slot_dict[0]['operator']
     set_subid_for_data(ad, new_data)
     ad.droid.telephonyToggleDataConnection(True)
+    return new_oper
