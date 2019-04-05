@@ -171,7 +171,9 @@ class TestRunner(object):
         for path, name, _ in file_list:
             sys.path.append(path)
             try:
-                module = importlib.import_module(name)
+                with utils.SuppressLogOutput(
+                        log_levels=[logging.INFO, logging.ERROR]):
+                    module = importlib.import_module(name)
             except:
                 for test_cls_name, _ in self.run_list:
                     alt_name = name.replace('_', '').lower()
