@@ -1756,7 +1756,7 @@ class _BaseTransceiverStation(object):
         Raises:
             ValueError: Frame structure has to be [ 0, 6 ] inclusive
         """
-        if uldl_configuration not in range(0, 7):
+        if configuration not in range(0, 7):
             raise ValueError("The frame structure configuration has to be a "
                              "number between 0 and 6 inclusive")
 
