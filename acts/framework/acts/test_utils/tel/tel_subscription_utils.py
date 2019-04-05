@@ -289,4 +289,8 @@ def perform_dds_switch(ad):
         new_oper = slot_dict[0]['operator']
     set_subid_for_data(ad, new_data)
     ad.droid.telephonyToggleDataConnection(True)
-    return new_oper
+    if get_default_data_sub_id(ad) == new_data:
+        return new_oper
+    else:
+        ad.log.error("DDS Switch Failed")
+        return False

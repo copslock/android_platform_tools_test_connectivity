@@ -60,6 +60,7 @@ from acts.test_utils.tel.tel_test_utils import get_network_rat
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import get_phone_number_for_subscription
 from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import is_network_call_back_event_match
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
@@ -237,7 +238,10 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             else:
                 self.log.info("Unexpected exception: <%s>, return False.", e)
                 return False
-
+        finally:
+            for ad in ads:
+                if ad.droid.telecomIsInCall():
+                    hangup_call_by_adb(ad)
         self.log.info("msim_call_sequence finished, return %s",
                       expected_result is True)
         return (expected_result is True)
@@ -561,7 +565,9 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             start_qxdm_loggers(self.log, self.android_devices, begin_time)
 
             if dds_switch:
-                perform_dds_switch(ads[0])
+                if not perform_dds_switch(ads[0]):
+                    ad.log.error("DDS Switch Failed")
+                    fail_count["dds_switch"] += 1
 
             result_0 = self._msim_call_sequence(
                 ads, mo_mt, 0,
@@ -671,7 +677,7 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             operator = get_operatorname_from_slot_index(ad, i)
             ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
 
-        file_names = ["5MB", "10MB", "20MB", "50MB", "200MB", "512MB"]
+        file_names = ["5MB", "10MB"]
         current_iteration = 1
         for i in range(1, total_iteration + 1):
             msg = "File DL Iteration: <%s> / <%s>" % (i, total_iteration)
@@ -679,6 +685,15 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             begin_time = get_current_epoch_time()
             start_qxdm_logger(ad, begin_time)
             current_dds = perform_dds_switch(ad)
+            if not current_dds:
+                ad.log.error("DDS Switch Failed")
+                fail_count["dds_switch"] += 1
+                ad.log.error(">----Iteration : %d/%d failed.----<",
+                    i, total_iteration)
+                self._take_bug_report("%s_IterNo_%s" % (self.test_name, i),
+                                      begin_time)
+                current_iteration += 1
+                continue
             time.sleep(15)
             if not verify_internet_connection(ad.log, ad):
                 ad.log.warning("No Data after DDS. Waiting 1 more minute")
@@ -728,3 +743,71 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         return self._test_msim_file_download_stress()
+
+
+    def _test_msim_pings_dds_stress(self):
+        ad = self.android_devices[0]
+        total_iteration = self.stress_test_number
+        fail_count = collections.defaultdict(int)
+        for i in range(0,2):
+            sub_id = get_subid_from_slot_index(ad.log, ad, i)
+            operator = get_operatorname_from_slot_index(ad, i)
+            ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
+
+        current_iteration = 1
+        for i in range(1, total_iteration + 1):
+            msg = "Ping test Iteration: <%s> / <%s>" % (i, total_iteration)
+            self.log.info(msg)
+            begin_time = get_current_epoch_time()
+            start_qxdm_logger(ad, begin_time)
+
+            current_dds = perform_dds_switch(ad)
+            if not current_dds:
+                ad.log.error("DDS Switch Failed")
+                fail_count["dds_switch"] += 1
+                ad.log.error(">----Iteration : %d/%d failed.----<",
+                    i, total_iteration)
+                self._take_bug_report("%s_IterNo_%s" % (self.test_name, i),
+                                      begin_time)
+                current_iteration += 1
+                continue
+
+            ad.log.info("Waiting for 30 secs before verifying data")
+            time.sleep(30)
+            iteration_result = verify_internet_connection(ad.log, ad)
+            if not iteration_result:
+                fail_count["%s" % current_dds] += 1
+
+            if iteration_result:
+                ad.log.info(">----Iteration : %d/%d succeed.----<",
+                    i, total_iteration)
+            else:
+                ad.log.error(">----Iteration : %d/%d failed.----<",
+                    i, total_iteration)
+                self._take_bug_report("%s_IterNo_%s" % (self.test_name, i),
+                                      begin_time)
+            current_iteration += 1
+
+        test_result = True
+        for failure, count in fail_count.items():
+            if count:
+                ad.log.error("%s: %s %s failures in %s iterations",
+                               self.test_name, count, failure,
+                               total_iteration)
+                test_result = False
+        return test_result
+
+
+    @test_tracker_info(uuid="7a5127dd-71e0-45cf-bb8a-52081b92ca7b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_dds_switch_pings(self):
+        """ Test pings stress on both DDS
+
+        Switch DDS
+        ICMP Pings on alternate slot
+        Repeat above steps
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_msim_pings_dds_stress()
