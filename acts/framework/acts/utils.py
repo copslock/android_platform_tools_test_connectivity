@@ -16,6 +16,7 @@
 
 import base64
 import concurrent.futures
+import copy
 import datetime
 import functools
 import json
@@ -1231,3 +1232,35 @@ def test_concurrent_actions(*calls, failure_exceptions=(Exception,)):
         raise
     except failure_exceptions as e:
         raise signals.TestFailure(e)
+
+
+class SuppressLogOutput(object):
+    """Context manager used to suppress all logging output for the specified
+    logger and level(s).
+    """
+
+    def __init__(self, logger=logging.getLogger(), log_levels=None):
+        """Create a SuppressLogOutput context manager
+
+        Args:
+            logger: The logger object to suppress
+            log_levels: Levels of log handlers to disable.
+        """
+
+        self._logger = logger
+        self._log_levels = log_levels or [logging.DEBUG, logging.INFO,
+                                          logging.WARNING, logging.ERROR,
+                                          logging.CRITICAL]
+        if isinstance(self._log_levels, int):
+            self._log_levels = [self._log_levels]
+        self._handlers = copy.copy(self._logger.handlers)
+
+    def __enter__(self):
+        for handler in self._handlers:
+            if handler.level in self._log_levels:
+                self._logger.removeHandler(handler)
+        return self
+
+    def __exit__(self, *_):
+        for handler in self._handlers:
+            self._logger.addHandler(handler)
