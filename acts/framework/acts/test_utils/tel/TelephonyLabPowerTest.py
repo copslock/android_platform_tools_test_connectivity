@@ -98,8 +98,7 @@ class TelephonyLabPowerTest(TelephonyBaseTest):
 
     def _configure_simulation(self):
         try:
-            self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
-                                   self.wlan_option)
+            self.anritsu = MD8475A(self.md8475a_ip_address, self.wlan_option)
             [lte_bts] = set_system_model_lte(self.anritsu, self.user_params,
                                              self.ad.sim_card)
             self.bts = lte_bts

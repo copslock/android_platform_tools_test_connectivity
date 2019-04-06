@@ -173,8 +173,8 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
         self.md8475a = None
         self.mg3710a = None
         try:
-            self.md8475a = MD8475A(self.md8475a_ip_address, self.log,
-                                   self.wlan_option, self.md8475_version)
+            self.md8475a = MD8475A(self.md8475a_ip_address, self.wlan_option,
+                                   self.md8475_version)
         except AnritsuError as e:
             self.log.error("Error in connecting to Anritsu MD8475A:{}".format(
                 e))
