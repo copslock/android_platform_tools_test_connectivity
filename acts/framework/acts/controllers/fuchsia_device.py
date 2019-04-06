@@ -55,6 +55,9 @@ FUCHSIA_DEVICE_INVALID_CONFIG = ("Fuchsia device config must be either a str "
 FUCHSIA_DEVICE_NO_IP_MSG = "No IP address specified, abort!"
 FUCHSIA_COULD_NOT_GET_DESIRED_STATE = "Could not %s SL4F."
 FUCHSIA_INVALID_CONTROL_STATE = "Invalid control state (%s). abort!"
+FUCHSIA_SSH_CONFIG_NOT_DEFINED = ("Cannot send ssh commands since the "
+                                  "ssh_config was not specified in the Fuchsia"
+                                  "device config.")
 
 FUCHSIA_SSH_USERNAME = "fuchsia"
 
@@ -127,7 +130,6 @@ class FuchsiaDevice:
         log: A logger object.
         port: The TCP port number of the Fuchsia device.
     """
-
     def __init__(self, fd_conf_data):
         """
         Args:
@@ -186,14 +188,6 @@ class FuchsiaDevice:
         # Init server
         self.init_server_connection()
 
-    def build_id(self, test_id):
-        """Concatenates client_id and test_id to form a command_id
-
-        Args:
-            test_id: string, unique identifier of test command
-        """
-        return self.client_id + "." + str(test_id)
-
     def init_server_connection(self):
         """Initializes HTTP connection with SL4F server."""
         self.log.debug("Initialziing server connection")
@@ -207,6 +201,57 @@ class FuchsiaDevice:
         })
         requests.get(url=self.init_address, data=init_data)
         self.test_counter += 1
+
+    def build_id(self, test_id):
+        """Concatenates client_id and test_id to form a command_id
+
+        Args:
+            test_id: string, unique identifier of test command
+        """
+        return self.client_id + "." + str(test_id)
+
+    def send_command_sl4f(self, test_id, test_cmd, test_args):
+        """Builds and sends a JSON command to SL4F server.
+
+        Args:
+            test_id: string, unique identifier of test command.
+            test_cmd: string, sl4f method name of command.
+            test_args: dictionary, arguments required to execute test_cmd.
+
+        Returns:
+            Dictionary, Result of sl4f command executed.
+        """
+        test_data = json.dumps({
+            "jsonrpc": "2.0",
+            "id": self.build_id(self.test_counter),
+            "method": test_cmd,
+            "params": test_args
+        })
+        return requests.get(url=self.ip, data=test_data).json()
+
+    def send_command_ssh(self, test_cmd):
+        """Sends an SSH command to a Fuchsia device
+
+        Args:
+            test_cmd: string, command to send to Fuchsia device over SSH.
+
+        Returns:
+            A job.Result containing the results of the ssh command.
+        """
+        command_result = False
+        ssh_conn = None
+        if not self.ssh_config:
+            self.log.warning(FUCHSIA_SSH_CONFIG_NOT_DEFINED)
+        else:
+            try:
+                ssh_conn = self.create_ssh_connection()
+                command_result = ssh_conn.run(test_cmd)
+            except Exception as e:
+                self.log.warning("Problem running ssh command: %s"
+                                 "\n Exception: %s" % (test_cmd, e))
+            finally:
+                ssh_conn.close()
+        return command_result
 
     def print_clients(self):
         """Gets connected clients from SL4F server"""
