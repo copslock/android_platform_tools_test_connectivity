@@ -37,13 +37,11 @@ def get_atten_range(start, stop, step):
         start: Start attenuation value.
         stop: Stop attenuation value.
         step: Step attenuation value.
-
-    Returns:
-        list of attenuation range.
     """
-    atten_step = int(round((stop - start) / float(step)))
-    atten_range = [start + x * step for x in range(0, atten_step)]
-    return atten_range
+    temp = start
+    while temp < stop:
+        yield temp
+        temp += step
 
 
 class CoexPerformanceBaseTest(CoexBaseTest):
@@ -84,14 +82,14 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                              files) for files in os.listdir(
                                  self.test_params["performance_result_path"])
             ]
-        self.bt_atten_range = get_atten_range(
+        self.bt_atten_range = list(get_atten_range(
                             self.test_params["bt_atten_start"],
                             self.test_params["bt_atten_stop"],
-                            self.test_params["bt_atten_step"])
-        self.wifi_atten_range = get_atten_range(
+                            self.test_params["bt_atten_step"]))
+        self.wifi_atten_range = list(get_atten_range(
                             self.test_params["attenuation_start"],
                             self.test_params["attenuation_stop"],
-                            self.test_params["attenuation_step"])
+                            self.test_params["attenuation_step"]))
 
     def setup_test(self):
         if "a2dp_streaming" in self.current_test_name:
@@ -191,7 +189,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             for i in range(self.num_atten - 1):
                 self.attenuators[i].set_atten(atten)
             if not wifi_connection_check(self.pri_ad, self.network["SSID"]):
-                return self.iperf_received, self.a2dp_dropped_list
+                return self.iperf_received, self.a2dp_dropped_list, False
             time.sleep(5)  # Time for attenuation to set.
             if called_func:
                 if not multithread_func(self.log, called_func):
