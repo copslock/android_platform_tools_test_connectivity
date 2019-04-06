@@ -181,7 +181,7 @@ class TelLabNeighborCellTest(TelephonyBaseTest):
             return False
 
         try:
-            self.mg3710a = MG3710A(self.mg3710a_ip_address, self.log)
+            self.mg3710a = MG3710A(self.mg3710a_ip_address)
         except AnritsuError as e:
             self.log.error("Error in connecting to Anritsu MG3710A :{}".format(
                 e))
