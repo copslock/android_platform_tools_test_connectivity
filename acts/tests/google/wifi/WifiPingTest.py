@@ -55,9 +55,9 @@ class WifiPingTest(base_test.BaseTestClass):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.ping_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_range')
+            metric_name="ping_range")
         self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_rtt')
+            metric_name="ping_rtt")
         self.tests = (
             "test_ping_range_ch1_VHT20", "test_fast_ping_rtt_ch1_VHT20",
             "test_slow_ping_rtt_ch1_VHT20", "test_ping_range_ch6_VHT20",
@@ -121,8 +121,9 @@ class WifiPingTest(base_test.BaseTestClass):
             if "range" in test["test_name"]:
                 testclass_summary[test["test_name"]] = test["range"]
         # Save results
-        results_file_path = "{}/testclass_summary.json".format(self.log_path)
-        with open(results_file_path, 'w') as results_file:
+        results_file_path = os.path.join(self.log_path,
+                                         "testclass_summary.json")
+        with open(results_file_path, "w") as results_file:
             json.dump(testclass_summary, results_file, indent=4)
 
     def pass_fail_check_ping_rtt(self, ping_range_result):
@@ -219,41 +220,28 @@ class WifiPingTest(base_test.BaseTestClass):
                                       ping_range_result["fixed_attenuation"])
 
         # Save results
-        results_file_path = "{}/{}.json".format(self.log_path,
-                                                self.current_test_name)
-        with open(results_file_path, 'w') as results_file:
+        results_file_path = os.path.join(
+            self.log_path, "{}.json".format(self.current_test_name))
+        with open(results_file_path, "w") as results_file:
             json.dump(ping_range_result, results_file, indent=4)
 
         # Plot results
-        x_data = [
-            list(range(len(x["rtt"])))
-            for x in ping_range_result["ping_results"] if len(x["rtt"]) > 1
-        ]
-        rtt_data = [
-            x["rtt"] for x in ping_range_result["ping_results"]
-            if len(x["rtt"]) > 1
-        ]
-        legend = [
-            "RTT @ {}dB".format(att)
-            for att in ping_range_result["attenuation"]
-        ]
+        figure = wputils.BokehFigure(
+            self.current_test_name,
+            x_label="Timestamp (s)",
+            primary_y="Round Trip Time (ms)")
+        for idx, result in enumerate(ping_range_result["ping_results"]):
+            if len(result["rtt"]) > 1:
+                x_data = [
+                    t - result["time_stamp"][0] for t in result["time_stamp"]
+                ]
+                figure.add_line(
+                    x_data, result["rtt"],
+                    "RTT @ {}dB".format(ping_range_result["attenuation"][idx]))
 
-        data_sets = [x_data, rtt_data]
-        fig_property = {
-            "title": self.current_test_name,
-            "x_label": 'Sample Index',
-            "y_label": 'Round Trip Time (ms)',
-            "linewidth": 3,
-            "markersize": 0
-        }
-        output_file_path = "{}/{}.html".format(self.log_path,
-                                               self.current_test_name)
-        wputils.bokeh_plot(
-            data_sets,
-            legend,
-            fig_property,
-            shaded_region=None,
-            output_file_path=output_file_path)
+        output_file_path = os.path.join(
+            self.log_path, "{}.html".format(self.current_test_name))
+        figure.generate_figure(output_file_path)
 
     def get_range_from_rvr(self):
         """Function gets range from RvR golden results
@@ -272,7 +260,7 @@ class WifiPingTest(base_test.BaseTestClass):
             file_name for file_name in self.golden_files_list
             if rvr_golden_file_name in file_name
         ]
-        with open(golden_path[0], 'r') as golden_file:
+        with open(golden_path[0], "r") as golden_file:
             golden_results = json.load(golden_file)
         # Get 0 Mbps attenuation and backoff by low_rssi_backoff_from_range
         try:
@@ -386,7 +374,7 @@ class WifiPingTest(base_test.BaseTestClass):
             num_of_tries=5,
             check_connectivity=False)
         self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
-            'wlan0')[0]
+            "wlan0")[0]
         time.sleep(self.MED_SLEEP)
 
     def setup_ping_test(self, testcase_params):

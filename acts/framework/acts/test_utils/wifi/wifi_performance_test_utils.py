@@ -222,6 +222,13 @@ class BokehFigure():
         bokeh.plotting.output_file(output_file)
         bokeh.plotting.save(self.plot)
 
+    @staticmethod
+    def save_figures(figure_array, output_file_path):
+        plot_array = [figure.plot for figure in figure_array]
+        all_plots = bokeh.layouts.column(children=plot_array)
+        bokeh.plotting.output_file(output_file_path)
+        bokeh.plotting.save(all_plots)
+
 
 def bokeh_plot(data_sets,
                legends,
