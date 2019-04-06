@@ -63,8 +63,7 @@ from acts.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
 from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_defines import MAX_SAVED_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
-from acts.test_utils.tel.tel_defines import \
-    MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_AIRPLANEMODE_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_INITIATION
@@ -149,36 +148,25 @@ from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts.test_utils.tel.tel_defines import ServiceStateContainer
 from acts.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
     CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
-from acts.test_utils.tel.tel_lookup_tables import \
-    connection_type_from_type_string
+from acts.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
 from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
 from acts.test_utils.tel.tel_lookup_tables import get_allowable_network_preference
-from acts.test_utils.tel.tel_lookup_tables import \
-    get_voice_mail_count_check_function
+from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_count_check_function
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_check_number
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_delete_digit
-from acts.test_utils.tel.tel_lookup_tables import \
-    network_preference_for_generation
-from acts.test_utils.tel.tel_lookup_tables import \
-    operator_name_from_network_name
+from acts.test_utils.tel.tel_lookup_tables import network_preference_for_generation
+from acts.test_utils.tel.tel_lookup_tables import operator_name_from_network_name
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
-from acts.test_utils.tel.tel_lookup_tables import \
-    rat_families_for_network_preference
+from acts.test_utils.tel.tel_lookup_tables import rat_families_for_network_preference
 from acts.test_utils.tel.tel_lookup_tables import rat_family_for_generation
 from acts.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_default_data_sub_id, get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_outgoing_message_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_incoming_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_incoming_message_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id, get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_incoming_message_sub_id
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts.test_utils.wifi import wifi_test_utils
 from acts.test_utils.wifi import wifi_constants
 from acts.utils import adb_shell_ping
@@ -2821,7 +2809,7 @@ def http_file_download_by_chrome(ad,
         "chrome_mobile_data_usage": get_mobile_data_usage(
             ad, None, chrome_apk)
     }
-    ad.log.info("Before downloading: %s", data_accounting)
+    ad.log.debug("Before downloading: %s", data_accounting)
     ad.log.info("Download %s with timeout %s", url, timeout)
     ad.ensure_screen_on()
     open_url_by_adb(ad, url)
@@ -2850,7 +2838,7 @@ def http_file_download_by_chrome(ad,
                 key: value - data_accounting[key]
                 for key, value in new_data_accounting.items()
             }
-            ad.log.info("Data accounting difference: %s", accounting_diff)
+            ad.log.debug("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
                 for key, value in accounting_diff.items():
                     if value < expected_file_size:
@@ -2927,7 +2915,7 @@ def http_file_download_by_sl4a(ad,
             "sl4a_mobile_data_usage":
             get_mobile_data_usage(ad, None, accounting_apk)
         }
-        ad.log.info("Before downloading: %s", data_accounting)
+        ad.log.debug("Before downloading: %s", data_accounting)
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
                     file_path)
         try:
@@ -2953,16 +2941,16 @@ def http_file_download_by_sl4a(ad,
                 "sl4a_mobile_data_usage":
                 get_mobile_data_usage(ad, None, accounting_apk)
             }
-            ad.log.info("After downloading: %s", new_data_accounting)
+            ad.log.debug("After downloading: %s", new_data_accounting)
             accounting_diff = {
                 key: value - data_accounting[key]
                 for key, value in new_data_accounting.items()
             }
-            ad.log.info("Data accounting difference: %s", accounting_diff)
+            ad.log.debug("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
                 for key, value in accounting_diff.items():
                     if value < expected_file_size:
-                        ad.log.warning("%s diff is %s less than %s", key,
+                        ad.log.debug("%s diff is %s less than %s", key,
                                        value, expected_file_size)
                         ad.data_accounting["%s_failure"] += 1
             else:
@@ -2993,10 +2981,10 @@ def get_mobile_data_usage(ad, sid=None, apk=None):
 
     if apk:
         uid = ad.get_apk_uid(apk)
-        ad.log.info("apk %s uid = %s", apk, uid)
+        ad.log.debug("apk %s uid = %s", apk, uid)
         try:
             usage_info = ad.droid.getMobileDataUsageInfoForUid(uid, sid)
-            ad.log.info("Mobile data usage info for uid %s = %s", uid,
+            ad.log.debug("Mobile data usage info for uid %s = %s", uid,
                         usage_info)
             return usage_info["UsageLevel"]
         except:
@@ -3012,7 +3000,7 @@ def get_mobile_data_usage(ad, sid=None, apk=None):
     else:
         try:
             usage_info = ad.droid.getMobileDataUsageInfo(sid)
-            ad.log.info("Mobile data usage info = %s", usage_info)
+            ad.log.debug("Mobile data usage info = %s", usage_info)
             return usage_info["UsageLevel"]
         except:
             try:
@@ -3029,7 +3017,7 @@ def get_mobile_data_usage(ad, sid=None, apk=None):
 def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
-    ad.log.info("Set subscriber mobile data usage limit to %s", limit)
+    ad.log.debug("Set subscriber mobile data usage limit to %s", limit)
     ad.droid.logV("Setting subscriber mobile data usage limit to %s" % limit)
     try:
         ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
