@@ -19,13 +19,11 @@ import json
 import logging
 import math
 import os
-import time
 from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
-from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -49,7 +47,7 @@ class WifiRvrTest(base_test.BaseTestClass):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.failure_count_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='failure_count')
+            metric_name="failure_count")
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -75,9 +73,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         utils.create_dir(self.log_path)
         if not hasattr(self, "golden_files_list"):
             self.golden_files_list = [
-                os.path.join(self.testbed_params["golden_results_path"],
-                             file) for file in os.listdir(
-                                 self.testbed_params["golden_results_path"])
+                os.path.join(self.testbed_params["golden_results_path"], file)
+                for file in os.listdir(
+                    self.testbed_params["golden_results_path"])
             ]
         self.testclass_results = []
 
@@ -97,37 +95,30 @@ class WifiRvrTest(base_test.BaseTestClass):
     def process_testclass_results(self):
         """Saves plot with all test results to enable comparison."""
         # Plot and save all results
-        plot_data = collections.OrderedDict()
-        plots = []
+        plots = collections.OrderedDict()
         for result in self.testclass_results:
             testcase_params = self.parse_test_params(result["test_name"])
             plot_id = (testcase_params["channel"], testcase_params["mode"])
-            if plot_id not in plot_data:
-                plot_data[plot_id] = {"x_data": [], "y_data": [], "legend": []}
+            if plot_id not in plots:
+                plots[plot_id] = wputils.BokehFigure(
+                    title=result["test_name"],
+                    x_label="Attenuation (dB)",
+                    primary_y="Throughput (Mbps)")
             total_attenuation = [
                 att + result["fixed_attenuation"]
                 for att in result["attenuation"]
             ]
-            plot_data[plot_id]["x_data"].append(total_attenuation)
-            plot_data[plot_id]["y_data"].append(result["throughput_receive"])
-            plot_data[plot_id]["legend"].append(result["test_name"])
-        for plot_id, plot_data in plot_data.items():
-            data_set = [plot_data["x_data"], plot_data["y_data"]]
-            fig_property = {
-                "title": "Channel {} - {}".format(plot_id[0], plot_id[1]),
-                "x_label": 'Attenuation (dB)',
-                "y_label": 'Throughput (Mbps)',
-                "linewidth": 3,
-                "markersize": 10
-            }
-            plots.append(
-                wputils.bokeh_plot(
-                    data_set,
-                    plot_data["legend"],
-                    fig_property,
-                    shaded_region=None))
-        output_file_path = os.path.join(self.log_path, 'results.html')
-        wputils.save_bokeh_plots(plots, output_file_path)
+            plots[plot_id].add_line(
+                total_attenuation,
+                result["throughput_receive"],
+                result["test_name"],
+                marker="circle")
+        figure_list = []
+        for plot_id, plot in plots.items():
+            plot.generate_figure()
+            figure_list.append(plot)
+        output_file_path = os.path.join(self.log_path, "results.html")
+        wputils.BokehFigure.save_figures(figure_list, output_file_path)
 
     def pass_fail_check(self, rvr_result):
         """Check the test result and decide if it passed or failed.
@@ -148,17 +139,10 @@ class WifiRvrTest(base_test.BaseTestClass):
         failure_count = 0
         for idx, current_throughput in enumerate(
                 rvr_result["throughput_receive"]):
-            current_att = rvr_result["attenuation"][idx] + rvr_result["fixed_attenuation"]
             if (current_throughput < throughput_limits["lower_limit"][idx]
                     or current_throughput >
                     throughput_limits["upper_limit"][idx]):
                 failure_count = failure_count + 1
-                self.log.info(
-                    "Throughput at {}dB attenuation is beyond limits. "
-                    "Throughput is {} Mbps. Expected within [{}, {}] Mbps.".
-                    format(current_att, current_throughput,
-                           throughput_limits["lower_limit"][idx],
-                           throughput_limits["upper_limit"][idx]))
         self.failure_count_metric.metric_value = failure_count
         if failure_count >= self.testclass_params["failure_count_tolerance"]:
             asserts.fail("Test failed. Found {} points outside limits.".format(
@@ -183,7 +167,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         test_name = self.current_test_name
         golden_path = next(file_name for file_name in self.golden_files_list
                            if test_name in file_name)
-        with open(golden_path, 'r') as golden_file:
+        with open(golden_path, "r") as golden_file:
             golden_results = json.load(golden_file)
             golden_attenuation = [
                 att + golden_results["fixed_attenuation"]
@@ -194,7 +178,8 @@ class WifiRvrTest(base_test.BaseTestClass):
         upper_limit = []
         for idx, current_throughput in enumerate(
                 rvr_result["throughput_receive"]):
-            current_att = rvr_result["attenuation"][idx] + rvr_result["fixed_attenuation"]
+            current_att = rvr_result["attenuation"][idx] + rvr_result[
+                "fixed_attenuation"]
             att_distances = [
                 abs(current_att - golden_att)
                 for golden_att in golden_attenuation
@@ -210,8 +195,9 @@ class WifiRvrTest(base_test.BaseTestClass):
 
             attenuation.append(current_att)
             lower_limit.append(
-                max(closest_throughputs[0] -
-                    max(self.testclass_params["abs_tolerance"],
+                max(
+                    closest_throughputs[0] - max(
+                        self.testclass_params["abs_tolerance"],
                         closest_throughputs[0] *
                         self.testclass_params["pct_tolerance"] / 100), 0))
             upper_limit.append(closest_throughputs[-1] + max(
@@ -233,51 +219,55 @@ class WifiRvrTest(base_test.BaseTestClass):
         """
         # Save output as text file
         test_name = self.current_test_name
-        results_file_path = "{}/{}.json".format(self.log_path,
-                                                self.current_test_name)
-        with open(results_file_path, 'w') as results_file:
+        results_file_path = os.path.join(
+            self.log_path, "{}.json".format(self.current_test_name))
+        with open(results_file_path, "w") as results_file:
             json.dump(rvr_result, results_file, indent=4)
         # Plot and save
-        legends = [self.current_test_name]
-        x_label = 'Attenuation (dB)'
-        y_label = 'Throughput (Mbps)'
-        total_attenuation = [
-            att + rvr_result["fixed_attenuation"]
-            for att in rvr_result["attenuation"]
-        ]
-        data_sets = [[total_attenuation], [rvr_result["throughput_receive"]]]
-        fig_property = {
-            "title": test_name,
-            "x_label": x_label,
-            "y_label": y_label,
-            "linewidth": 3,
-            "markersize": 10
-        }
+        figure = wputils.BokehFigure(
+            title=test_name,
+            x_label="Attenuation (dB)",
+            primary_y="Throughput (Mbps)")
         try:
             golden_path = next(file_name
                                for file_name in self.golden_files_list
                                if test_name in file_name)
-            with open(golden_path, 'r') as golden_file:
+            with open(golden_path, "r") as golden_file:
                 golden_results = json.load(golden_file)
-            legends.insert(0, "Golden Results")
             golden_attenuation = [
                 att + golden_results["fixed_attenuation"]
                 for att in golden_results["attenuation"]
             ]
-            data_sets[0].insert(0, golden_attenuation)
-            data_sets[1].insert(0, golden_results["throughput_receive"])
             throughput_limits = self.compute_throughput_limits(rvr_result)
             shaded_region = {
                 "x_vector": throughput_limits["attenuation"],
                 "lower_limit": throughput_limits["lower_limit"],
                 "upper_limit": throughput_limits["upper_limit"]
             }
+            figure.add_line(
+                golden_attenuation,
+                golden_results["throughput_receive"],
+                "Golden Results",
+                color="green",
+                marker="circle",
+                shaded_region=shaded_region)
         except:
-            shaded_region = None
             self.log.warning("ValueError: Golden file not found")
-        output_file_path = "{}/{}.html".format(self.log_path, test_name)
-        wputils.bokeh_plot(data_sets, legends, fig_property, shaded_region,
-                           output_file_path)
+
+        total_attenuation = [
+            att + rvr_result["fixed_attenuation"]
+            for att in rvr_result["attenuation"]
+        ]
+        figure.add_line(
+            total_attenuation,
+            rvr_result["throughput_receive"],
+            "Test Results",
+            color="red",
+            marker="circle")
+
+        output_file_path = os.path.join(self.log_path,
+                                        "{}.html".format(test_name))
+        figure.generate_figure(output_file_path)
 
     def run_rvr_test(self, testcase_params):
         """Test function to run RvR.
@@ -362,11 +352,11 @@ class WifiRvrTest(base_test.BaseTestClass):
         band = self.access_point.band_lookup_by_channel(
             testcase_params["channel"])
         if "2G" in band:
-            frequency = wutils.WifiEnums.channel_2G_to_freq[testcase_params[
-                "channel"]]
+            frequency = wutils.WifiEnums.channel_2G_to_freq[
+                testcase_params["channel"]]
         else:
-            frequency = wutils.WifiEnums.channel_5G_to_freq[testcase_params[
-                "channel"]]
+            frequency = wutils.WifiEnums.channel_5G_to_freq[
+                testcase_params["channel"]]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params["DFS_region"])
         else:
@@ -394,7 +384,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             num_of_tries=5,
             check_connectivity=False)
         self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
-            'wlan0')[0]
+            "wlan0")[0]
 
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
@@ -430,18 +420,19 @@ class WifiRvrTest(base_test.BaseTestClass):
             x * self.testclass_params["atten_step"]
             for x in range(0, num_atten_steps)
         ]
-        testcase_params["iperf_args"] = '-i 1 -t {} -J '.format(
+        testcase_params["iperf_args"] = "-i 1 -t {} -J ".format(
             self.testclass_params["iperf_duration"])
         if test_name_params[2] == "UDP":
-            testcase_params[
-                "iperf_args"] = testcase_params["iperf_args"] + "-u -b {}".format(
-                    self.testclass_params["UDP_rates"][testcase_params["mode"]])
+            testcase_params["iperf_args"] = testcase_params[
+                "iperf_args"] + "-u -b {}".format(
+                    self.testclass_params["UDP_rates"][
+                        testcase_params["mode"]])
         if (test_name_params[3] == "DL"
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
             ) or (test_name_params[3] == "UL"
                   and isinstance(self.iperf_server, ipf.IPerfServerOverAdb)):
             testcase_params[
-                "iperf_args"] = testcase_params["iperf_args"] + ' -R'
+                "iperf_args"] = testcase_params["iperf_args"] + " -R"
             testcase_params["use_client_output"] = True
         else:
             testcase_params["use_client_output"] = False
@@ -467,307 +458,231 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.pass_fail_check(rvr_result)
 
     #Test cases
-    @test_tracker_info(uuid='e7586217-3739-44a4-a87b-d790208b04b9')
     def test_rvr_TCP_DL_ch1_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='06b3e979-255c-482f-b570-d347fba048b6')
     def test_rvr_TCP_UL_ch1_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='e912db87-dbfb-4e86-b91c-827e6c53e840')
     def test_rvr_TCP_DL_ch6_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='ddafbe78-bd19-48fc-b653-69b23b1ab8dd')
     def test_rvr_TCP_UL_ch6_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='6fcb7fd8-4438-4913-a1c8-ea35050c79dd')
     def test_rvr_TCP_DL_ch11_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='a165884e-c928-46d9-b459-f550ceb0074f')
     def test_rvr_TCP_UL_ch11_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='a48ee2b4-3fb9-41fd-b292-0051bfc3b0cc')
     def test_rvr_TCP_DL_ch36_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='68f94e6b-b4ff-4839-904b-ec45cc661b89')
     def test_rvr_TCP_UL_ch36_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='a8b00098-5c07-44bb-ae17-5d0489786c62')
     def test_rvr_TCP_DL_ch36_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='ecfb4284-1794-4508-b35e-be56fa4c9035')
     def test_rvr_TCP_UL_ch36_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='6190c1a6-08f2-4a27-a65f-7321801f2cd6')
     def test_rvr_TCP_DL_ch36_VHT80(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='ae12712d-0ac3-4317-827d-544acfa4910c')
     def test_rvr_TCP_UL_ch36_VHT80(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='c8f8d107-5176-484b-a0d9-7a63aef8677e')
     def test_rvr_TCP_DL_ch40_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='6fa823c9-54bf-450d-b2c3-31a46fc73386')
     def test_rvr_TCP_UL_ch40_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='aa6cd955-eaef-4552-87a4-c4a0df59e184')
     def test_rvr_TCP_DL_ch44_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='14ad4b1c-7c8f-4650-be74-daf813021ad3')
     def test_rvr_TCP_UL_ch44_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='a5fdb54c-60e2-4cc6-a9ec-1a17e7827823')
     def test_rvr_TCP_DL_ch44_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='112113f1-7f50-4112-81b5-d9a4fdf153e7')
     def test_rvr_TCP_UL_ch44_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='cda3886c-8776-4077-acfd-cfe128772e2f')
     def test_rvr_TCP_DL_ch48_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='2e5ad031-6404-4e71-b3b3-8a3bb2c85d4f')
     def test_rvr_TCP_UL_ch48_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='c2e199ce-d23f-4a24-b146-74e762085620')
     def test_rvr_TCP_DL_ch52_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='5c5943e8-9d91-4270-a5ab-e7018807c64e')
     def test_rvr_TCP_UL_ch52_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='b52afe89-182f-4bad-8879-cbf7001d28ef')
     def test_rvr_TCP_DL_ch56_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='f8526241-3b96-463a-9082-a749a8650d5f')
     def test_rvr_TCP_UL_ch56_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='c3042d7e-7468-4ab8-aec3-9b3088ba3e4c')
     def test_rvr_TCP_DL_ch60_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='80426542-b035-4fb3-9010-e997f95d4964')
     def test_rvr_TCP_UL_ch60_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='aa0e7117-390c-4265-adf2-0990f65f8b0b')
     def test_rvr_TCP_DL_ch64_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='b2fdda85-256b-4368-8e8b-39274062264e')
     def test_rvr_TCP_UL_ch64_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='48b6590f-1553-4170-83a5-40d3976e9e77')
     def test_rvr_TCP_DL_ch100_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='2d0525fe-57ce-49d3-826d-4ebedd2ca6d6')
     def test_rvr_TCP_UL_ch100_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='52da922d-6c2f-4afa-aca3-c19438ae3217')
     def test_rvr_TCP_DL_ch100_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='2c7e7106-88c8-47ba-ac28-362475abec41')
     def test_rvr_TCP_UL_ch100_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='fd4a7118-e9fe-4931-b32c-f69efd3e6493')
     def test_rvr_TCP_DL_ch100_VHT80(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='146502b2-9cab-4bbe-8a5c-7ec625edc2ef')
     def test_rvr_TCP_UL_ch100_VHT80(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='a5e185d6-b523-4016-bc8a-2a32cdc67ae0')
     def test_rvr_TCP_DL_ch104_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='886aed91-0fdc-432d-b47e-ebfa85ac27ad')
     def test_rvr_TCP_UL_ch104_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='fda3de6e-3183-401b-b98c-1b076da139e1')
     def test_rvr_TCP_DL_ch108_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='29cc30f5-bbc8-4b64-9789-a56154907af5')
     def test_rvr_TCP_UL_ch108_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='5c52ccac-8c38-46fa-a7b3-d714b6a814ad')
     def test_rvr_TCP_DL_ch112_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='cc1c2a0b-71a3-4343-b7ff-489527c839d2')
     def test_rvr_TCP_UL_ch112_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='11c6ccc3-e347-44ce-9a79-6c90e9dfd0a0')
     def test_rvr_TCP_DL_ch116_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='29f0fce1-005d-4ad7-97d7-6b43cbdff01b')
     def test_rvr_TCP_UL_ch116_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='112302b1-8261-479a-b397-916b08fbbdd2')
     def test_rvr_TCP_DL_ch132_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='3bb0efb8-ddfc-4a0b-b7cf-6d6af1dbb9f4')
     def test_rvr_TCP_UL_ch132_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='11a4638f-d872-4730-82eb-71d9c64e0e16')
     def test_rvr_TCP_DL_ch136_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='4d797c24-3bbe-43a6-ac9e-291db1aa732a')
     def test_rvr_TCP_UL_ch136_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='5d433b44-0395-43cb-b85a-be138390b18b')
     def test_rvr_TCP_DL_ch140_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='47061772-21b1-4330-bd4f-daec21afa0c8')
     def test_rvr_TCP_UL_ch140_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='24aa1e7a-3978-4803-877f-3ac5812ab0ae')
     def test_rvr_TCP_DL_ch149_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='59f0443f-822d-4347-9c52-310f0b812500')
     def test_rvr_TCP_UL_ch149_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='3b1524b3-af15-41f1-8fca-9ee9b687d59a')
     def test_rvr_TCP_DL_ch149_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='36670787-3bfb-4e8b-8881-e88eb608ed46')
     def test_rvr_TCP_UL_ch149_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='8350cddd-7c62-4fad-bdae-a8267d321aa3')
     def test_rvr_TCP_DL_ch149_VHT80(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='7432fccb-526e-44d4-b0f4-2c343ca53188')
     def test_rvr_TCP_UL_ch149_VHT80(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='037eec49-2bae-49e3-949e-5af2885dc84b')
     def test_rvr_TCP_DL_ch153_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='04d5d873-7d5a-4590-bff3-093edeb92380')
     def test_rvr_TCP_UL_ch153_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='4ff83f6e-b130-4a88-8ced-04a09c6af666')
     def test_rvr_TCP_DL_ch157_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='c3436402-977e-40a5-a7eb-e2c886379d43')
     def test_rvr_TCP_UL_ch157_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='797a218b-1a8e-4233-835b-61b3f057f480')
     def test_rvr_TCP_DL_ch157_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='38d3e825-6e2c-4931-b0fd-aa19c5d1ef40')
     def test_rvr_TCP_UL_ch157_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='993e98c5-0647-4ed6-b62e-ab386ada37af')
     def test_rvr_TCP_DL_ch161_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='3bf9c844-749a-47d8-ac46-89249bd92c4a')
     def test_rvr_TCP_UL_ch161_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='05614f92-38fa-4289-bcff-d4b4a2a2ad5b')
     def test_rvr_UDP_DL_ch6_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='577632e9-fb2f-4a2b-b3c3-affee8264008')
     def test_rvr_UDP_UL_ch6_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='6f3fcc28-5f0c-49e6-8810-69c5873ecafa')
     def test_rvr_UDP_DL_ch36_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='8e518aaa-e61f-4c1d-b12f-1bbd550ec3e5')
     def test_rvr_UDP_UL_ch36_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='fd68ff32-c789-4a86-9924-2f5aeb3c9651')
     def test_rvr_UDP_DL_ch149_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='29d03492-fc0b-42d0-aa15-c0c838ba50c1')
     def test_rvr_UDP_UL_ch149_VHT20(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='044c414c-ac5e-4e28-9b56-a602e0cc9724')
     def test_rvr_UDP_DL_ch36_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='9cd16689-5053-4ffa-813c-d901384a105c')
     def test_rvr_UDP_UL_ch36_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='4e4b1e73-30ce-4005-9c34-8c0280bdb293')
     def test_rvr_UDP_DL_ch36_VHT80(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='780166a1-1847-45c2-b509-71612c82309d')
     def test_rvr_UDP_UL_ch36_VHT80(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='05abdb89-9744-479e-8443-cb8b9427f5e3')
     def test_rvr_UDP_DL_ch149_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='a321590a-4cbc-4044-9c2b-24e90f444213')
     def test_rvr_UDP_UL_ch149_VHT40(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='041fd613-24d9-4606-bca3-0ae0d8436b5e')
     def test_rvr_UDP_DL_ch149_VHT80(self):
         self._test_rvr()
 
-    @test_tracker_info(uuid='69aab23d-1408-4cdd-9f57-2520a1e9cea8')
     def test_rvr_UDP_UL_ch149_VHT80(self):
         self._test_rvr()
 
