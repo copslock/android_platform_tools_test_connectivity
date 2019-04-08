@@ -7245,6 +7245,7 @@ def activate_google_fi_account(ad, retries=3):
     for _ in range(retries):
         ad.force_stop_apk(_FI_APK)
         ad.ensure_screen_on()
+        ad.send_keycode("MENU")
         ad.send_keycode("HOME")
         ad.adb.shell(_FI_ACTIVATE_CMD)
         time.sleep(15)
