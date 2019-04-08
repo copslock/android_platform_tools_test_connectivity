@@ -32,7 +32,7 @@ from acts.utils import get_current_epoch_time
 WifiEnums = wutils.WifiEnums
 PULL_TIMEOUT = 300
 GNSSSTATUS_LOG_PATH = "/storage/emulated/0/Android/data/com.android.gpstool/files"
-QXDM_MASKS = ["GPS-general.cfg", "GPS.cfg", "default.cfg"]
+QXDM_MASKS = ["GPS.cfg", "GPS-general.cfg", "default.cfg"]
 
 
 class GnssTestUtilsError(Exception):
@@ -55,8 +55,19 @@ def remount_device(ad):
             remount_flag = 1
             disable_verity_result = ad.adb.disable_verity()
             ad.log.info("%s" % disable_verity_result)
-            ad.reboot()
-            ad.unlock_screen(password=None)
+            reboot(ad)
+
+def reboot(ad):
+    """Reboot device and check if mobile data is available.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    ad.log.info("Reboot device to make changes take effect.")
+    ad.reboot()
+    ad.unlock_screen(password=None)
+    if not int(ad.adb.shell("settings get global mobile_data")) == 1:
+        set_mobile_data(ad, True)
 
 def enable_gnss_verbose_logging(ad):
     """Enable GNSS VERBOSE Logging and logd.
@@ -106,9 +117,7 @@ def disable_supl_mode(ad):
     remount_device(ad)
     ad.log.info("Disable SUPL mode.")
     ad.adb.shell("echo SUPL_MODE=0 >> /etc/gps_debug.conf")
-    ad.log.info("Reboot device to make changes take effect.")
-    ad.reboot()
-    ad.unlock_screen(password=None)
+    reboot(ad)
 
 def kill_xtra_daemon(ad):
     """Kill XTRA daemon to test SUPL only test item.
@@ -139,9 +148,6 @@ def _init_device(ad):
     Args:
         ad: An AndroidDevice object.
     """
-    set_mobile_data(ad, True)
-    disable_private_dns_mode(ad)
-    tutils.synchronize_device_time(ad)
     enable_gnss_verbose_logging(ad)
     disable_xtra_throttle(ad)
     enable_supl_mode(ad)
@@ -153,8 +159,8 @@ def _init_device(ad):
     set_gnss_qxdm_mask(ad, QXDM_MASKS)
     check_location_service(ad)
     set_wifi_and_bt_scanning(ad, True)
-    ad.reboot()
-    ad.unlock_screen(password=None)
+    reboot(ad)
+    disable_private_dns_mode(ad)
 
 def connect_to_wifi_network(ad, network):
     """Connection logic for open and psk wifi networks.
@@ -221,8 +227,7 @@ def clear_logd_gnss_qxdm_log(ad):
     ad.adb.shell("rm -rf %s" % GNSSSTATUS_LOG_PATH, ignore_status=True)
     output_path = os.path.join(DEFAULT_QXDM_LOG_PATH, "logs")
     ad.adb.shell("rm -rf %s" % output_path, ignore_status=True)
-    ad.reboot()
-    ad.unlock_screen(password=None)
+    reboot(ad)
 
 def get_gnss_qxdm_log(ad, test_name=""):
     """Get /storage/emulated/0/Android/data/com.android.gpstool/files and
@@ -261,36 +266,6 @@ def get_gnss_qxdm_log(ad, test_name=""):
     else:
         ad.log.error("QXDM file count is %d. There is no QXDM log on device."
                      % int(file_count))
-
-def start_youtube_video(ad, url=None, retries=0):
-    """Start youtube video and verify if audio is in music state.
-
-    Args:
-        ad: An AndroidDevice object.
-        url: Website for youtube video
-        retries: Retry times if audio is not in music state.
-
-    Returns:
-        True if youtube video is playing normally.
-        False if youtube video is not playing properly.
-    """
-    ad.droid.setMediaVolume(25)
-    for i in range(retries):
-        ad.log.info("Open an youtube video - attempt %d" % (i+1))
-        ad.adb.shell("am start -a android.intent.action.VIEW -d \"%s\"" % url)
-        time.sleep(1)
-        out = ad.adb.shell("dumpsys activity | grep \"NewVersionAvailableActivity\"")
-        if out:
-            ad.log.info("Skip Youtube New Version Update.")
-            ad.send_keycode("BACK")
-        if tutils.wait_for_state(ad.droid.audioIsMusicActive, True, 15, 1):
-            ad.log.info("Started a video in youtube, audio is in MUSIC state")
-            return True
-        ad.log.info("Force-Stop youtube and reopen youtube again.")
-        ad.force_stop_apk("com.google.android.youtube")
-        time.sleep(1)
-    ad.log.error("Started a video in youtube, but audio is not in MUSIC state")
-    return False
 
 def set_mobile_data(ad, state):
     """Set mobile data on or off and check mobile data state.
@@ -493,6 +468,8 @@ def process_gnss_by_gtw_gpstool(ad, criteria):
     """
     retries = 3
     for i in range(retries):
+        ad.stop_adb_logcat()
+        ad.start_adb_logcat()
         begin_time = get_current_epoch_time()
         clear_aiding_data_by_gtw_gpstool(ad)
         ad.log.info("Start GNSS on GTW_GPSTool - attempt %d" % (i+1))
@@ -500,6 +477,7 @@ def process_gnss_by_gtw_gpstool(ad, criteria):
         for _ in range(10 + criteria):
             logcat_results = ad.search_logcat("First fixed", begin_time)
             if logcat_results:
+                ad.log.info(logcat_results[-1]["log_message"])
                 first_fixed = int(logcat_results[-1]["log_message"].split()[-1])
                 ad.log.info("GNSS First fixed = %.3f seconds" % (first_fixed / 1000))
                 if (first_fixed / 1000) <= criteria:
@@ -510,9 +488,9 @@ def process_gnss_by_gtw_gpstool(ad, criteria):
                 start_gnss_by_gtw_gpstool(ad, False)
                 return False
             time.sleep(1)
+            if not ad.is_adb_logcat_on:
+                ad.start_adb_logcat()
         start_gnss_by_gtw_gpstool(ad, False)
-        if not ad.is_adb_logcat_on:
-            ad.start_adb_logcat()
     ad.log.error("Test Abort. DUT can't get location fixed within %d attempts."
                  % retries)
     return False
