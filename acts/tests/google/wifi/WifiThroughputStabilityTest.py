@@ -56,8 +56,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         # Generate test cases
         modes = [(6, "VHT20"), (36, "VHT20"), (36, "VHT40"), (36, "VHT80"),
                  (149, "VHT20"), (149, "VHT40"), (149, "VHT80")]
-        traffic_types = [("TCP", "DL"), ("TCP", "UL"), ("UDP", "DL"), ("UDP",
-                                                                       "UL")]
+        traffic_types = [("TCP", "DL"), ("TCP", "UL"), ("UDP", "DL"),
+                         ("UDP", "UL")]
         signal_levels = ["high", "low"]
         self.generate_test_cases(modes, traffic_types, signal_levels)
 
@@ -81,9 +81,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             self.access_point.ap_settings))
         if not hasattr(self, "golden_files_list"):
             self.golden_files_list = [
-                os.path.join(self.testbed_params["golden_results_path"],
-                             file) for file in os.listdir(
-                                 self.testbed_params["golden_results_path"])
+                os.path.join(self.testbed_params["golden_results_path"], file)
+                for file in os.listdir(
+                    self.testbed_params["golden_results_path"])
             ]
 
     def teardown_test(self):
@@ -113,7 +113,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         min_throughput_check = (
             (min_throughput / avg_throughput) *
             100) > self.test_params["min_throughput_threshold"]
-        std_deviation_check = std_dev_percent < self.test_params["std_deviation_threshold"]
+        std_deviation_check = std_dev_percent < self.test_params[
+            "std_deviation_threshold"]
 
         if min_throughput_check and std_deviation_check:
             asserts.explicit_pass(
@@ -148,9 +149,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_result_dict["attenuation"] = self.atten_level
         if test_result["iperf_result"].instantaneous_rates:
             instantaneous_rates_Mbps = [
-                rate * 8 * (1.024**2)
-                for rate in test_result["iperf_result"].instantaneous_rates[
-                    self.test_params["iperf_ignored_interval"]:-1]
+                rate * 8 * (1.024**2) for rate in test_result["iperf_result"].
+                instantaneous_rates[self.
+                                    test_params["iperf_ignored_interval"]:-1]
             ]
         else:
             instantaneous_rates_Mbps = float("nan")
@@ -277,11 +278,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         # Fetch the golden RvR results
         test_name = self.current_test_name
         rvr_golden_file_name = "test_rvr_" + "_".join(test_name.split("_")[4:])
-        golden_path = [
-            file_name for file_name in self.golden_files_list
-            if rvr_golden_file_name in file_name
-        ]
-        with open(golden_path[0], 'r') as golden_file:
+        try:
+            golden_path = next(file_name
+                               for file_name in self.golden_files_list
+                               if rvr_golden_file_name in file_name)
+        except:
+            asserts.fail("Test failed. Golden data not found.")
+
+        with open(golden_path, 'r') as golden_file:
             golden_results = json.load(golden_file)
         test_target = {}
         rssi_high_low = test_name.split("_")[3]
@@ -318,7 +322,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.iperf_args = '-i 1 -t {} -J'.format(
             self.test_params["iperf_duration"])
         if test_params[4] == "UDP":
-            self.iperf_args = self.iperf_args + " -u -b {}".format(
+            self.iperf_args = self.iperf_args + " -u -b {} -l 1400".format(
                 self.test_params["UDP_rates"][mode])
         if (test_params[5] == "DL"
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
