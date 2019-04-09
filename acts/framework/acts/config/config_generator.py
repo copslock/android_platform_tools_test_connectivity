@@ -89,7 +89,7 @@ class ConfigGenerator(object):
         # TODO(b/29836695): Remove after the key has been deprecated.
         config_dir = os.path.dirname(
             self._master_config[Config.key_config_full_path.value])
-        self._master_config[Config.key_config_path] = config_dir
+        self._master_config[Config.key_config_path.value] = config_dir
 
         # Normalizes the "testbed" field to be a dictionary if not already.
         if type(self._master_config[Config.key_testbed.value]) is list:
