@@ -188,7 +188,8 @@ class TelephonyBaseTest(BaseTestClass):
             # relative to the config file.
             if not os.path.isfile(sim_conf_file):
                 sim_conf_file = os.path.join(
-                    self.user_params[Config.key_config_path], sim_conf_file)
+                    self.user_params[Config.key_config_path.value],
+                    sim_conf_file)
                 if not os.path.isfile(sim_conf_file):
                     self.log.error("Unable to load user config %s ",
                                    sim_conf_file)
@@ -329,7 +330,7 @@ class TelephonyBaseTest(BaseTestClass):
                         curl_file_path = os.path.join(tel_data, "curl")
                         if not os.path.isfile(curl_file_path):
                             curl_file_path = os.path.join(
-                                self.user_params[Config.key_config_path],
+                                self.user_params[Config.key_config_path.value],
                                 curl_file_path)
                         if os.path.isfile(curl_file_path):
                             ad.log.info("Pushing Curl to /data dir")
