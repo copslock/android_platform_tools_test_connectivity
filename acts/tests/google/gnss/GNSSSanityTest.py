@@ -370,8 +370,8 @@ class GNSSSanityTest(BaseTestClass):
         if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        if not gutils.start_youtube_video(
-            self.ad, "https://www.youtube.com/watch?v=AbdVsi1VjQY", retries=3):
+        if not tutils.start_youtube_video(
+            self.ad, url="https://www.youtube.com/watch?v=AbdVsi1VjQY"):
             return False
         ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
         return gutils.check_ttff_result(self.ad, ttff_result,
@@ -402,6 +402,8 @@ class GNSSSanityTest(BaseTestClass):
             before_modem_ssr = gutils.get_modem_ssr_crash_count(self.ad)
             tutils.trigger_modem_crash(self.ad, timeout=60)
             after_modem_ssr = gutils.get_modem_ssr_crash_count(self.ad)
+            if not int(self.ad.adb.shell("settings get global mobile_data")) == 1:
+                gutils.set_mobile_data(self.ad, True)
             if not int(after_modem_ssr) == int(before_modem_ssr) + 1:
                 self.ad.log.error("Simulated Modem SSR Failed.")
                 return False
@@ -717,6 +719,8 @@ class GNSSSanityTest(BaseTestClass):
             before_modem_ssr = gutils.get_modem_ssr_crash_count(self.ad)
             tutils.trigger_modem_crash(self.ad, timeout=60)
             after_modem_ssr = gutils.get_modem_ssr_crash_count(self.ad)
+            if not int(self.ad.adb.shell("settings get global mobile_data")) == 1:
+                gutils.set_mobile_data(self.ad, True)
             if not int(after_modem_ssr) == int(before_modem_ssr) + 1:
                 self.ad.log.error("Simulated Modem SSR Failed.")
                 return False
