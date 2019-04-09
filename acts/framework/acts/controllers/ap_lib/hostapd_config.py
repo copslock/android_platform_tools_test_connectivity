@@ -308,6 +308,7 @@ class HostapdConfig(object):
                  beacon_interval=None,
                  dtim_period=None,
                  frag_threshold=None,
+                 rts_threshold=None,
                  short_preamble=None,
                  ssid=None,
                  hidden=False,
@@ -340,6 +341,8 @@ class HostapdConfig(object):
             beacon_interval: int, beacon interval of AP.
             dtim_period: int, include a DTIM every |dtim_period| beacons.
             frag_threshold: int, maximum outgoing data frame size.
+            rts_threshold: int, maximum packet size without requiring explicit
+                protection via rts/cts or cts to self.
             short_preamble: Whether to use a short preamble.
             ssid: string, The name of the ssid to brodcast.
             hidden: bool, Should the ssid be hidden.
@@ -414,8 +417,8 @@ class HostapdConfig(object):
         self._beacon_interval = beacon_interval
         self._dtim_period = dtim_period
         self._frag_threshold = frag_threshold
+        self._rts_threshold = rts_threshold
         self._short_preamble = short_preamble
-
         self._ssid = ssid
         self._hidden = hidden
         self._security = security
@@ -573,6 +576,8 @@ class HostapdConfig(object):
             conf['dtim_period'] = self._dtim_period
         if self._frag_threshold:
             conf['fragm_threshold'] = self._frag_threshold
+        if self._rts_threshold:
+            conf['rts_threshold'] = self._rts_threshold
         if self._pmf_support:
             conf['ieee80211w'] = self._pmf_support
         if self._obss_interval:
