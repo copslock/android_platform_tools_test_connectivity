@@ -14,6 +14,8 @@ package wireless.android.platform.testing.telephony.metrics;
 message TelephonyVoiceTestResult {
 
   enum CallResult {
+    UNAVAILABLE_NETWORK_TYPE = -2;
+    CALL_SETUP_FAILURE = -1;
     SUCCESS = 0;
     INITIATE_FAILED = 1;
     NO_RING_EVENT_OR_ANSWER_FAILED = 2;
