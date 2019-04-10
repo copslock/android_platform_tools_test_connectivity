@@ -161,6 +161,8 @@ def _init_device(ad):
     set_wifi_and_bt_scanning(ad, True)
     reboot(ad)
     disable_private_dns_mode(ad)
+    utils.sync_device_time(ad)
+    tutils.set_phone_silent_mode(ad.log, ad)
 
 def connect_to_wifi_network(ad, network):
     """Connection logic for open and psk wifi networks.
@@ -425,7 +427,6 @@ def fastboot_factory_reset(ad):
     if ad.skip_sl4a:
         return status
     tutils.bring_up_sl4a(ad)
-    set_gnss_qxdm_mask(ad, QXDM_MASKS)
     return status
 
 def clear_aiding_data_by_gtw_gpstool(ad):
@@ -468,8 +469,6 @@ def process_gnss_by_gtw_gpstool(ad, criteria):
     """
     retries = 3
     for i in range(retries):
-        ad.stop_adb_logcat()
-        ad.start_adb_logcat()
         begin_time = get_current_epoch_time()
         clear_aiding_data_by_gtw_gpstool(ad)
         ad.log.info("Start GNSS on GTW_GPSTool - attempt %d" % (i+1))
@@ -488,8 +487,8 @@ def process_gnss_by_gtw_gpstool(ad, criteria):
                 start_gnss_by_gtw_gpstool(ad, False)
                 return False
             time.sleep(1)
-            if not ad.is_adb_logcat_on:
-                ad.start_adb_logcat()
+        if not ad.is_adb_logcat_on:
+            ad.start_adb_logcat()
         start_gnss_by_gtw_gpstool(ad, False)
     ad.log.error("Test Abort. DUT can't get location fixed within %d attempts."
                  % retries)
