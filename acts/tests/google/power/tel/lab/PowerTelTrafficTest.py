@@ -196,9 +196,8 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                 asserts.assert_true(
                     0.90 < throughput / expected_t < 1.10,
                     "{} throughput differed more than 10% from the expected "
-                    "value! ({}/{} = {})".format(direction,
-                                                 round(throughput, 3),
-                                                 round(expected_t, 3),
+                    "value! ({}/{} = {})".format(direction, round(
+                        throughput, 3), round(expected_t, 3),
                                                  round(throughput / expected_t,
                                                        3)))
 
@@ -227,13 +226,29 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         # Calculate TCP windows as a fraction of the expected throughput
         # Some simulation classes don't implement this method yed
         try:
-            dl_tcp_window = (self.simulation.maximum_downlink_throughput() /
-                             self.TCP_WINDOW_FRACTION)
-            ul_tcp_window = (self.simulation.maximum_uplink_throughput() /
-                             self.TCP_WINDOW_FRACTION)
+            dl_max_throughput = self.simulation.maximum_downlink_throughput()
+            ul_max_throughput = self.simulation.maximum_uplink_throughput()
         except NotImplementedError:
-            dl_tcp_window = None
-            ul_tcp_window = None
+            self.log.error(
+                "Maximum downlink/uplink throughput method not "
+                "implemented for simulation %s" % self.simulation.__name__)
+        # Use tcp_window_fraction if given in parameters. If tcp_window_fraction
+        # is false then send None.
+        if hasattr(self, 'tcp_window_fraction'):
+            if not self.tcp_window_fraction:
+                ul_tcp_window = None
+                dl_tcp_window = None
+            elif self.tcp_window_fraction > 0.0:
+                dl_tcp_window = dl_max_throughput / self.tcp_window_fraction
+                ul_tcp_window = ul_max_throughput / self.tcp_window_fraction
+            else:
+                self.log.warning("tcp_window_fraction should be positive int "
+                                 "or 'false'. Disabling window")
+                ul_tcp_window = None
+                dl_tcp_window = None
+        else:
+            dl_tcp_window = dl_max_throughput / self.TCP_WINDOW_FRACTION
+            ul_tcp_window = ul_max_throughput / self.TCP_WINDOW_FRACTION
 
         if self.traffic_direction in [
                 self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_DL_UL
