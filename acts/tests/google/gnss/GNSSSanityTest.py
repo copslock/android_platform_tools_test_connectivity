@@ -64,6 +64,7 @@ class GNSSSanityTest(BaseTestClass):
 
     def setup_test(self):
         gutils.clear_logd_gnss_qxdm_log(self.ad)
+        utils.sync_device_time(self.ad)
 
     def teardown_test(self):
         tutils.stop_qxdm_logger(self.ad)
@@ -367,6 +368,7 @@ class GNSSSanityTest(BaseTestClass):
         begin_time = get_current_epoch_time()
         tutils.start_qxdm_logger(self.ad, begin_time)
         gutils.kill_xtra_daemon(self.ad)
+        self.ad.droid.setMediaVolume(25)
         if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
