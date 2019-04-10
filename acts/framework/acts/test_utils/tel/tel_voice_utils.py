@@ -195,10 +195,10 @@ def two_phone_call_short_seq(log,
         ensure_phones_idle(log, ads)
         if phone_a_idle_func and not phone_a_idle_func(log, phone_a):
             phone_a.log.error("Phone A Failed to Reselect")
-            return False
+            return TelResultWrapper(CallResult('CALL_SETUP_FAILURE'))
         if phone_b_idle_func and not phone_b_idle_func(log, phone_b):
             phone_b.log.error("Phone B Failed to Reselect")
-            return False
+            return TelResultWrapper(CallResult('CALL_SETUP_FAILURE'))
 
         # TODO: b/26337871 Need to use proper API to check phone registered.
         time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
@@ -324,8 +324,8 @@ def two_phone_call_long_seq(log,
             This is optional, default is WAIT_TIME_IN_CALL
 
     Returns:
-        True: if call sequence succeed.
-        False: for errors
+        TelResultWrapper which will evaluate as False if error.
+
     """
     ads = [phone_a, phone_b]
 
@@ -340,15 +340,16 @@ def two_phone_call_long_seq(log,
          phone_a_in_call_check_func),
     ]
 
+    tel_result = TelResultWrapper(CallResult('SUCCESS'))
     for param in call_params:
         # Make sure phones are idle.
         ensure_phones_idle(log, ads)
         if phone_a_idle_func and not phone_a_idle_func(log, phone_a):
             phone_a.log.error("Phone A Failed to Reselect")
-            return False
+            return TelResultWrapper(CallResult('CALL_SETUP_FAILURE'))
         if phone_b_idle_func and not phone_b_idle_func(log, phone_b):
             phone_b.log.error("Phone B Failed to Reselect")
-            return False
+            return TelResultWrapper(CallResult('CALL_SETUP_FAILURE'))
 
         # TODO: b/26337871 Need to use proper API to check phone registered.
         time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
@@ -356,12 +357,13 @@ def two_phone_call_long_seq(log,
         # Make call.
         log.info("---> Call test: %s to %s <---", param[0].serial,
                  param[1].serial)
-        if not call_setup_teardown(
-                log, *param, wait_time_in_call=wait_time_in_call):
+        tel_result = call_setup_teardown(
+                log, *param, wait_time_in_call=wait_time_in_call)
+        if not tel_result:
             log.error("Call Iteration Failed")
-            return False
+            break
 
-    return True
+    return tel_result
 
 
 def phone_setup_iwlan(log,

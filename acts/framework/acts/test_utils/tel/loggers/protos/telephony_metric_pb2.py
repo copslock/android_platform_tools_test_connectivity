@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='wireless.android.platform.testing.telephony.metrics',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\x16telephony_metric.proto\x12\x33wireless.android.platform.testing.telephony.metrics\"\xae\x04\n\x18TelephonyVoiceTestResult\x12h\n\x06result\x18\x01 \x01(\x0e\x32X.wireless.android.platform.testing.telephony.metrics.TelephonyVoiceTestResult.CallResult\x12\x1f\n\x17\x63\x61ll_setup_time_latency\x18\x02 \x01(\x02\"\x86\x03\n\nCallResult\x12\x0b\n\x07SUCCESS\x10\x00\x12\x13\n\x0fINITIATE_FAILED\x10\x01\x12\"\n\x1eNO_RING_EVENT_OR_ANSWER_FAILED\x10\x02\x12\x14\n\x10NO_CALL_ID_FOUND\x10\x03\x12.\n*CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT\x10\x04\x12/\n+AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT\x10\x05\x12*\n&AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED\x10\x06\x12\x31\n-CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT\x10\x07\x12,\n(CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED\x10\x08\x12\x14\n\x10\x43\x41LL_HANGUP_FAIL\x10\t\x12\x18\n\x14\x43\x41LL_ID_CLEANUP_FAIL\x10\n\"|\n\x1aTelephonyVoiceStressResult\x12^\n\x07results\x18\x01 \x03(\x0b\x32M.wireless.android.platform.testing.telephony.metrics.TelephonyVoiceTestResult')
+  serialized_pb=_b('\n\x16telephony_metric.proto\x12\x33wireless.android.platform.testing.telephony.metrics\"\xf6\x04\n\x18TelephonyVoiceTestResult\x12h\n\x06result\x18\x01 \x01(\x0e\x32X.wireless.android.platform.testing.telephony.metrics.TelephonyVoiceTestResult.CallResult\x12\x1f\n\x17\x63\x61ll_setup_time_latency\x18\x02 \x01(\x02\"\xce\x03\n\nCallResult\x12%\n\x18UNAVAILABLE_NETWORK_TYPE\x10\xfe\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\x1f\n\x12\x43\x41LL_SETUP_FAILURE\x10\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\x0b\n\x07SUCCESS\x10\x00\x12\x13\n\x0fINITIATE_FAILED\x10\x01\x12\"\n\x1eNO_RING_EVENT_OR_ANSWER_FAILED\x10\x02\x12\x14\n\x10NO_CALL_ID_FOUND\x10\x03\x12.\n*CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT\x10\x04\x12/\n+AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT\x10\x05\x12*\n&AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED\x10\x06\x12\x31\n-CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT\x10\x07\x12,\n(CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED\x10\x08\x12\x14\n\x10\x43\x41LL_HANGUP_FAIL\x10\t\x12\x18\n\x14\x43\x41LL_ID_CLEANUP_FAIL\x10\n\"|\n\x1aTelephonyVoiceStressResult\x12^\n\x07results\x18\x01 \x03(\x0b\x32M.wireless.android.platform.testing.telephony.metrics.TelephonyVoiceTestResult')
 )
 
 
@@ -32,54 +32,62 @@ _TELEPHONYVOICETESTRESULT_CALLRESULT = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='SUCCESS', index=0, number=0,
+      name='UNAVAILABLE_NETWORK_TYPE', index=0, number=-2,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='INITIATE_FAILED', index=1, number=1,
+      name='CALL_SETUP_FAILURE', index=1, number=-1,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='NO_RING_EVENT_OR_ANSWER_FAILED', index=2, number=2,
+      name='SUCCESS', index=2, number=0,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='NO_CALL_ID_FOUND', index=3, number=3,
+      name='INITIATE_FAILED', index=3, number=1,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT', index=4, number=4,
+      name='NO_RING_EVENT_OR_ANSWER_FAILED', index=4, number=2,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT', index=5, number=5,
+      name='NO_CALL_ID_FOUND', index=5, number=3,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED', index=6, number=6,
+      name='CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT', index=6, number=4,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT', index=7, number=7,
+      name='AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT', index=7, number=5,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED', index=8, number=8,
+      name='AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED', index=8, number=6,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='CALL_HANGUP_FAIL', index=9, number=9,
+      name='CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT', index=9, number=7,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='CALL_ID_CLEANUP_FAIL', index=10, number=10,
+      name='CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED', index=10, number=8,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CALL_HANGUP_FAIL', index=11, number=9,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CALL_ID_CLEANUP_FAIL', index=12, number=10,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
   serialized_start=248,
-  serialized_end=638,
+  serialized_end=710,
 )
 _sym_db.RegisterEnumDescriptor(_TELEPHONYVOICETESTRESULT_CALLRESULT)
 
@@ -94,7 +102,7 @@ _TELEPHONYVOICETESTRESULT = _descriptor.Descriptor(
     _descriptor.FieldDescriptor(
       name='result', full_name='wireless.android.platform.testing.telephony.metrics.TelephonyVoiceTestResult.result', index=0,
       number=1, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
+      has_default_value=False, default_value=-2,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
@@ -119,7 +127,7 @@ _TELEPHONYVOICETESTRESULT = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=80,
-  serialized_end=638,
+  serialized_end=710,
 )
 
 
@@ -149,8 +157,8 @@ _TELEPHONYVOICESTRESSRESULT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=640,
-  serialized_end=764,
+  serialized_start=712,
+  serialized_end=836,
 )
 
 _TELEPHONYVOICETESTRESULT.fields_by_name['result'].enum_type = _TELEPHONYVOICETESTRESULT_CALLRESULT
