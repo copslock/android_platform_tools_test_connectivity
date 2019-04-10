@@ -21,6 +21,7 @@ import time
 
 from acts import signals
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_data_utils import wifi_cell_switching
@@ -49,6 +50,7 @@ from acts.test_utils.tel.tel_test_utils import \
     call_voicemail_erase_all_pending_voicemail
 from acts.test_utils.tel.tel_test_utils import active_file_download_task
 from acts.utils import adb_shell_ping
+from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts.test_utils.tel.tel_test_utils import hangup_call
@@ -66,7 +68,6 @@ from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_test_utils import start_youtube_video
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
-from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
@@ -95,6 +96,7 @@ from acts.test_utils.tel.tel_voice_utils import two_phone_call_short_seq
 DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default value 1 hour
 DEFAULT_PING_DURATION = 120  # in seconds
 
+CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 class TelLiveVoiceTest(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -120,8 +122,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -129,10 +131,16 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(self.log, ads[0], None, None, ads[1],
+        result = two_phone_call_short_seq(self.log, ads[0], None, None, ads[1],
                                         None, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="69faeb84-3830-47c0-ad80-dc657381a83b")
@@ -144,8 +152,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         4. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -153,10 +161,16 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_general, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(self.log, ads[1], None, None, ads[0],
+        result = two_phone_call_short_seq(self.log, ads[1], None, None, ads[0],
                                         None, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="b2de097b-70e1-4242-b555-c1aa0a5acd8c")
     @TelephonyBaseTest.tel_test_wrap
@@ -168,8 +182,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -177,12 +191,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_volte, is_phone_in_call_volte, ads[1],
             phone_idle_volte, is_phone_in_call_volte, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="3c7f5a09-0177-4469-9994-cd5e7dd7c7fe")
     @TelephonyBaseTest.tel_test_wrap
@@ -318,8 +338,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -327,11 +347,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_volte, is_phone_in_call_volte, ads[1],
             phone_idle_csfb, is_phone_in_call_csfb, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="38096fdb-324a-4ce0-8836-8bbe713cffc2")
     @TelephonyBaseTest.tel_test_wrap
@@ -343,8 +369,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -352,11 +378,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(self.log, ads[0], phone_idle_volte,
+        result = two_phone_call_short_seq(self.log, ads[0], phone_idle_volte,
                                         None, ads[1], phone_idle_csfb,
                                         is_phone_in_call_csfb, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="82f9515d-a52b-4dec-93a5-997ffdbca76c")
     @TelephonyBaseTest.tel_test_wrap
@@ -370,25 +402,33 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Make Sure PhoneB is CDMA phone.
         if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA:
             self.log.error(
                 "PhoneB not cdma phone, can not csfb 1x. Stop test.")
-            return False
+            self.tel_logger.set_result(CallResult("UNAVAILABLE_NETWORK_TYPE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "PhoneB not cdma, cannot csfb 1x."})
 
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_csfb,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_volte, is_phone_in_call_volte, ads[1],
             phone_idle_csfb, is_phone_in_call_1x, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="2e57fad6-5eaf-4e7d-8353-8aa6f4c52776")
     @TelephonyBaseTest.tel_test_wrap
@@ -402,25 +442,33 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Make Sure PhoneB is GSM phone.
         if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM:
             self.log.error(
                 "PhoneB not gsm phone, can not csfb wcdma. Stop test.")
-            return False
+            self.tel_logger.set_result(CallResult("UNAVAILABLE_NETWORK_TYPE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "PhoneB not gsm, cannot csfb wcdma."})
 
         tasks = [(phone_setup_volte, (self.log, ads[0])), (phone_setup_csfb,
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
-            self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.log.error("Phone Failed to Setup Properly")
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Setup Properly"})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_volte, is_phone_in_call_volte, ads[1],
             phone_idle_csfb, is_phone_in_call_csfb, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="4bab759f-7610-4cec-893c-0a8aed95f70c")
     @TelephonyBaseTest.tel_test_wrap
@@ -432,8 +480,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -441,11 +489,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_volte, is_phone_in_call_volte, ads[1],
             phone_idle_3g, is_phone_in_call_3g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="b394cdc5-d88d-4659-8a26-0e58fde69974")
     @TelephonyBaseTest.tel_test_wrap
@@ -459,24 +513,32 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Make Sure PhoneB is CDMA phone.
         if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_CDMA:
             self.log.error("PhoneB not cdma phone, can not 3g 1x. Stop test.")
-            return False
+            self.tel_logger.set_result(CallResult("UNAVAILABLE_NETWORK_TYPE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "PhoneB not cdma phone, can not 3g 1x."})
 
         tasks = [(phone_setup_volte, (self.log, ads[0])),
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_volte, is_phone_in_call_volte, ads[1],
             phone_idle_3g, is_phone_in_call_1x, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="b39a74a9-2a89-4c0b-ac4e-71ed9317bd75")
     @TelephonyBaseTest.tel_test_wrap
@@ -490,25 +552,33 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Make Sure PhoneB is GSM phone.
         if ads[1].droid.telephonyGetPhoneType() != PHONE_TYPE_GSM:
             self.log.error(
                 "PhoneB not gsm phone, can not 3g wcdma. Stop test.")
-            return False
+            self.tel_logger.set_result(CallResult('UNAVAILABLE_NETWORK_TYPE'))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "PhoneB not gsm phone, can not 3g wcdma."})
 
         tasks = [(phone_setup_volte, (self.log, ads[0])),
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "PhoneB not gsm phone, can not 3g wcdma."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_volte, is_phone_in_call_volte, ads[1],
             phone_idle_3g, is_phone_in_call_wcdma, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="573bbcf1-6cbd-4084-9cb7-e14fb6c9521e")
     @TelephonyBaseTest.tel_test_wrap
@@ -520,8 +590,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -529,11 +599,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_2g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_volte, is_phone_in_call_volte, ads[1],
             phone_idle_2g, is_phone_in_call_2g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     def _call_epdg_to_epdg_wfc(self, ads, apm_mode, wfc_mode, wifi_ssid,
                                wifi_pwd):
@@ -628,8 +704,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = [self.android_devices[0], self.android_devices[1]]
         tasks = [(phone_setup_iwlan_cellular_preferred,
@@ -640,11 +716,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                    self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], None, is_phone_in_call_not_iwlan, ads[1], None,
             is_phone_in_call_not_iwlan, None, WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="0d63c250-d9e7-490c-8c48-0a6afbad5f88")
     @TelephonyBaseTest.tel_test_wrap
@@ -707,8 +789,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         tasks = [(phone_setup_iwlan,
@@ -717,12 +799,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_volte, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_volte, is_phone_in_call_volte, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="6e0630a9-63b2-4ea1-8ec9-6560f001905c")
     @TelephonyBaseTest.tel_test_wrap
@@ -734,8 +822,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         tasks = [(phone_setup_iwlan,
@@ -744,12 +832,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_volte, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_volte, is_phone_in_call_volte, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="51077985-2229-491f-9a54-1ff53871758c")
     @TelephonyBaseTest.tel_test_wrap
@@ -761,8 +855,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         tasks = [(phone_setup_iwlan,
@@ -771,12 +865,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_volte, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_volte, is_phone_in_call_volte, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="fff9edcd-1ace-4f2d-a09b-06f3eea56cca")
     @TelephonyBaseTest.tel_test_wrap
@@ -788,8 +888,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         tasks = [(phone_setup_iwlan,
@@ -798,12 +898,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_volte, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_volte, is_phone_in_call_volte, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="8591554e-4e38-406c-97bf-8921d5329c47")
     @TelephonyBaseTest.tel_test_wrap
@@ -815,8 +921,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+             TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -827,11 +933,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_csfb, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_csfb, is_phone_in_call_csfb, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="9711888d-5b1e-4d05-86e9-98f94f46098b")
     @TelephonyBaseTest.tel_test_wrap
@@ -843,8 +955,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -855,11 +967,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_csfb, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_csfb, is_phone_in_call_csfb, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="902c96a4-858f-43ff-bd56-6d7d27004320")
     @TelephonyBaseTest.tel_test_wrap
@@ -871,8 +989,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -883,11 +1001,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_csfb, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_csfb, is_phone_in_call_csfb, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="362a5396-ebda-4706-a73a-d805e5028fd7")
     @TelephonyBaseTest.tel_test_wrap
@@ -899,8 +1023,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -911,11 +1035,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_csfb, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_csfb, is_phone_in_call_csfb, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="647bb859-46bc-4e3e-b6ab-7944d3bbcc26")
     @TelephonyBaseTest.tel_test_wrap
@@ -927,8 +1057,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -939,11 +1069,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_3g, is_phone_in_call_3g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="3688ea1f-a52d-4a35-9df4-d5ed0985e49b")
     @TelephonyBaseTest.tel_test_wrap
@@ -955,8 +1091,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -967,11 +1103,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_3g, is_phone_in_call_3g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="f4efc821-fbaf-4ec2-b89b-5a47354344f0")
     @TelephonyBaseTest.tel_test_wrap
@@ -983,8 +1125,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -995,11 +1137,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_3g, is_phone_in_call_3g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="2b1345b7-3b62-44bd-91ad-9c5a4925b0e1")
     @TelephonyBaseTest.tel_test_wrap
@@ -1011,8 +1159,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -1023,11 +1171,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_3g, is_phone_in_call_3g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="7b3fea22-114a-442e-aa12-dde3b6001681")
     @TelephonyBaseTest.tel_test_wrap
@@ -1039,8 +1193,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         3. Call from PhoneA to PhoneB, accept on PhoneA, hang up on PhoneA.
         4. Call from PhoneA to PhoneB, accept on PhoneA, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -1049,11 +1203,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_csfb, is_phone_in_call_csfb, ads[1],
             phone_idle_csfb, is_phone_in_call_csfb, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="91d751ea-40c8-4ffc-b9d3-03d0ad0902bd")
     @TelephonyBaseTest.tel_test_wrap
@@ -1066,7 +1226,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         4. Call from PhoneA to PhoneB, accept on PhoneA, hang up on PhoneB.
 
         Raises:
-            TestFailure if not success..
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -1075,7 +1235,9 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
         result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_3g, is_phone_in_call_3g, ads[1],
@@ -1083,7 +1245,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         self.tel_logger.set_result(result.result_value)
         if not result:
             raise signals.TestFailure("Failed",
-                extras={"fail_reason":str(result.result_value)})
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="df57c481-010a-4d21-a5c1-5116917871b2")
     @TelephonyBaseTest.tel_test_wrap
@@ -1097,8 +1259,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -1106,12 +1268,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                            (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_volte, is_phone_in_call_volte, ads[1],
             phone_idle_volte, is_phone_in_call_volte, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="b0712d8a-71cf-405f-910c-8592da082660")
     @TelephonyBaseTest.tel_test_wrap
@@ -1125,8 +1293,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -1138,12 +1306,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                    self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_iwlan, is_phone_in_call_iwlan, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="a7293d6c-0fdb-4842-984a-e4c6395fd41d")
     @TelephonyBaseTest.tel_test_wrap
@@ -1157,8 +1331,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -1170,12 +1344,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                    self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_iwlan, is_phone_in_call_iwlan, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="029af2a7-aba4-406b-9095-b32da57a7cdb")
     @TelephonyBaseTest.tel_test_wrap
@@ -1189,8 +1369,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -1202,12 +1382,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                    self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_iwlan, is_phone_in_call_iwlan, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="3c751d79-7159-4407-a63c-96f835dd6cb0")
     @TelephonyBaseTest.tel_test_wrap
@@ -1221,8 +1407,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -1234,12 +1420,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                    self.wifi_network_ssid, self.wifi_network_pass))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan, ads[1],
             phone_idle_iwlan, is_phone_in_call_iwlan, None,
             WAIT_TIME_IN_CALL_FOR_IMS)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="9deab765-e2da-4826-bae8-ba8755551a1b")
     @TelephonyBaseTest.tel_test_wrap
@@ -1253,8 +1445,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -1263,11 +1455,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                                                           (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_csfb, is_phone_in_call_csfb, ads[1],
             phone_idle_csfb, is_phone_in_call_csfb, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="54768178-818f-4126-9e50-4f49e43a6fd3")
     @TelephonyBaseTest.tel_test_wrap
@@ -1281,8 +1479,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         5. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         6. Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         # Turn OFF WiFi for Phone B
@@ -1291,11 +1489,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_3g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_3g, is_phone_in_call_3g, ads[1],
             phone_idle_3g, is_phone_in_call_3g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="")
     @TelephonyBaseTest.tel_test_wrap
@@ -2641,8 +2845,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -2650,11 +2854,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_2g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_short_seq(
+        result = two_phone_call_short_seq(
             self.log, ads[0], phone_idle_2g, is_phone_in_call_2g, ads[1],
             phone_idle_2g, is_phone_in_call_2g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="947f3178-735b-4ac2-877c-a06a94972457")
     @TelephonyBaseTest.tel_test_wrap
@@ -2668,8 +2878,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneB.
         Call from PhoneB to PhoneA, accept on PhoneA, hang up on PhoneA.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
 
@@ -2677,11 +2887,16 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                  (phone_setup_voice_2g, (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
-            return False
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-        return two_phone_call_long_seq(
+        result = two_phone_call_long_seq(
             self.log, ads[0], phone_idle_2g, is_phone_in_call_2g, ads[1],
             phone_idle_2g, is_phone_in_call_2g, None)
+        self.tel_logger.set_result(result.result_value)
+        if not result:
+            raise signals.TestFailure("Failed",
+                extras={"fail_reason": str(result.result_value)})
 
     @test_tracker_info(uuid="d109df55-ac2f-493f-9324-9be1d3d7d6d3")
     @TelephonyBaseTest.tel_test_wrap
@@ -3743,8 +3958,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         5. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure is not success.
         """
         ads = self.android_devices
         try:
@@ -3760,11 +3975,17 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_voice_3g, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+                raise signals.TestFailure("Failed",
+                    extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_iwlan, is_phone_in_call_iwlan,
                 ads[1], phone_idle_3g, is_phone_in_call_3g, None)
+            self.tel_logger.set_result(result.result_value)
+            if not result:
+                raise signals.TestFailure("Failed",
+                    extras={"fail_reason": str(result.result_value)})
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
 
@@ -3779,8 +4000,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
         5. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
 
-        Returns:
-            True if pass; False if fail.
+        Raises:
+            TestFailure if not success.
         """
         ads = self.android_devices
         try:
@@ -3792,12 +4013,18 @@ class TelLiveVoiceTest(TelephonyBaseTest):
                      (phone_setup_volte, (self.log, ads[1]))]
             if not multithread_func(self.log, tasks):
                 self.log.error("Phone Failed to Set Up Properly.")
-                return False
+                self.tel_logger.set_result(CallResult("CALL_SETUP_FAILURE"))
+                raise signals.TestFailure("Failed",
+                    extras={"fail_reason": "Phone Failed to Set Up Properly."})
 
-            return two_phone_call_short_seq(
+            result = two_phone_call_short_seq(
                 self.log, ads[0], phone_idle_volte, is_phone_in_call_volte,
                 ads[1], phone_idle_volte, is_phone_in_call_volte, None,
                 WAIT_TIME_IN_CALL_FOR_IMS)
+            self.tel_logger.set_result(result.result_value)
+            if not result:
+                raise signals.TestFailure("Failed",
+                    extras={"fail_reason": str(result.result_value)})
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
 
