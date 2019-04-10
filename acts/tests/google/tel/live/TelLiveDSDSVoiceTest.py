@@ -52,6 +52,7 @@ from acts.test_utils.tel.tel_defines import EventNetworkCallback
 from acts.test_utils.tel.tel_defines import NetworkCallbackAvailable
 from acts.test_utils.tel.tel_defines import NetworkCallbackLost
 from acts.test_utils.tel.tel_defines import SignalStrengthContainer
+from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
 from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_phones_default_state
@@ -84,6 +85,8 @@ from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
 from acts.test_utils.tel.tel_test_utils import start_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
+from acts.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -107,6 +110,8 @@ from acts.test_utils.tel.tel_subscription_utils import get_operatorname_from_slo
 from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_subscription_utils import perform_dds_switch
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
+from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
+from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts.utils import get_current_epoch_time
 
 
@@ -131,8 +136,11 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
     def _msim_call_sequence(self, ads, mo_mt, slot_id,
                             msim_phone_setup_func,
                             verify_msim_initial_idle_func,
+                            verify_data_initial_func,
                             verify_msim_in_call_state_func,
-                            incall_msim_setting_check_func, expected_result):
+                            verify_data_in_call_func,
+                            incall_msim_setting_check_func,
+                            verify_data_final_func, expected_result):
         """_msim_call_sequence
 
         Args:
@@ -192,6 +200,12 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
                 raise _MSIMCallSequenceException(
                     "verify_msim_initial_idle_func fail.")
 
+            # Ensure data checks are performed
+            if verify_data_initial_func and not \
+                verify_data_initial_func():
+                raise _MSIMCallSequenceException(
+                    "verify_data_initial_func fail.")
+
             # Make MO/MT call.
             if not initiate_call(self.log, ad_caller, callee_number):
                 raise _MSIMCallSequenceException("initiate_call fail.")
@@ -207,6 +221,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
 
             if is_phone_not_in_call(self.log, ads[1]):
                 raise _MSIMCallSequenceException("PhoneB not in call.")
+
+            # Ensure data checks are performed
+            if verify_data_in_call_func and not \
+                verify_data_in_call_func():
+                raise _MSIMCallSequenceException(
+                    "verify_data_in_call_func fail.")
+
             time.sleep(WAIT_TIME_IN_CALL)
 
             if (verify_msim_in_call_state_func and not
@@ -230,6 +251,12 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             else:
                 if incall_msim_setting_check_func is None:
                     raise _MSIMCallSequenceException("Unexpected call drop.")
+
+            # Ensure data checks are performed
+            if verify_data_final_func and not \
+                verify_data_final_func():
+                raise _MSIMCallSequenceException(
+                    "verify_data_final_func fail.")
 
         except _MSIMCallSequenceException as e:
             if str(e) == expected_result:
@@ -304,8 +331,165 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
     def _phone_setup_2g(self):
         return phone_setup_voice_2g(self.log, self.android_devices[0])
 
+    def _set_dds_on_slot_0(self):
+        return set_dds_on_slot_0(self.android_devices[0])
+
+    def _set_dds_on_slot_1(self):
+        return set_dds_on_slot_1(self.android_devices[0])
+
+    def _test_data_browsing_success_using_sl4a(self):
+        return test_data_browsing_success_using_sl4a(self.log,
+                                                     self.android_devices[0])
+
+    def _test_data_browsing_failure_using_sl4a(self):
+        return test_data_browsing_failure_using_sl4a(self.log,
+                                                     self.android_devices[0])
 
     """ Tests Begin """
+
+
+    @test_tracker_info(uuid="3af77c9e-b3bf-438f-bbce-97977a454402")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mo_concurrency_with_dds_volte(self):
+        """ Test MSIM MO Concurrency with DDS
+
+        Make Sure DDS is on same slot as Voice
+        Verify Data Browsing works fine before call
+        Call from PhoneA to PhoneB, call should succeed
+        Verify Data Browsing works fine during call
+        Terminate call
+        Verify Data Browsing works fine after call
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mo_result_0 = self._msim_call_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 0,
+            self._phone_setup_volte, self._set_dds_on_slot_0,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_phone_in_call_volte,
+            self._test_data_browsing_success_using_sl4a, None,
+            self._test_data_browsing_success_using_sl4a, True)
+
+        mo_result_1 = self._msim_call_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 1,
+            self._phone_setup_volte, self._set_dds_on_slot_1,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_phone_in_call_volte,
+            self._test_data_browsing_success_using_sl4a, None,
+            self._test_data_browsing_success_using_sl4a, True)
+
+        self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
+        return ((mo_result_0 is True) and (mo_result_1 is True))
+
+
+    @test_tracker_info(uuid="110af62d-fc08-42d4-ae52-5985755bff35")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mo_concurrency_without_dds_volte(self):
+        """ Test MSIM MO Concurrency without DDS
+
+        Make Sure DDS is NOT on same slot as Voice
+        Verify Data Browsing works fine before call
+        Call from PhoneA to PhoneB, call should succeed
+        Verify Data Browsing fails during call
+        Terminate call
+        Verify Data Browsing works fine after call
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mo_result_0 = self._msim_call_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 0,
+            self._phone_setup_volte, self._set_dds_on_slot_1,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_phone_in_call_volte,
+            self._test_data_browsing_failure_using_sl4a, None,
+            self._test_data_browsing_success_using_sl4a, True)
+
+        mo_result_1 = self._msim_call_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 1,
+            self._phone_setup_volte, self._set_dds_on_slot_0,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_phone_in_call_volte,
+            self._test_data_browsing_failure_using_sl4a, None,
+            self._test_data_browsing_success_using_sl4a, True)
+
+        self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
+        return ((mo_result_0 is True) and (mo_result_1 is True))
+
+
+    @test_tracker_info(uuid="35c90533-8e10-4d2b-af30-fe54aec380f2")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mt_concurrency_with_dds_volte(self):
+        """ Test MSIM MT Concurrency with DDS
+
+        Make Sure DDS is on same slot as Voice
+        Verify Data Browsing works fine before call
+        Call from PhoneB to PhoneA, call should succeed
+        Verify Data Browsing works fine during call
+        Terminate call
+        Verify Data Browsing works fine after call
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mt_result_0 = self._msim_call_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 0,
+            self._phone_setup_volte, self._set_dds_on_slot_0,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_phone_in_call_volte,
+            self._test_data_browsing_success_using_sl4a, None,
+            self._test_data_browsing_success_using_sl4a, True)
+
+        mt_result_1 = self._msim_call_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 1,
+            self._phone_setup_volte, self._set_dds_on_slot_1,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_phone_in_call_volte,
+            self._test_data_browsing_success_using_sl4a, None,
+            self._test_data_browsing_success_using_sl4a, True)
+
+        self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
+        return ((mt_result_0 is True) and (mt_result_1 is True))
+
+
+    @test_tracker_info(uuid="f67fab80-c010-4f73-b225-793d7db2c528")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mt_concurrency_without_dds_volte(self):
+        """ Test MSIM MT Concurrency without DDS
+
+        Make Sure DDS is NOT on same slot as Voice
+        Verify Data Browsing works fine before call
+        Call from PhoneB to PhoneA, call should succeed
+        Verify Data Browsing fails during call
+        Terminate call
+        Verify Data Browsing works fine after call
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mt_result_0 = self._msim_call_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 0,
+            self._phone_setup_volte, self._set_dds_on_slot_1,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_phone_in_call_volte,
+            self._test_data_browsing_failure_using_sl4a, None,
+            self._test_data_browsing_success_using_sl4a, True)
+
+        mt_result_1 = self._msim_call_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 1,
+            self._phone_setup_volte, self._set_dds_on_slot_0,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_phone_in_call_volte,
+            self._test_data_browsing_failure_using_sl4a, None,
+            self._test_data_browsing_success_using_sl4a, True)
+
+        self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
+        return ((mt_result_0 is True) and (mt_result_1 is True))
 
 
     @test_tracker_info(uuid="5a3ff3c0-5956-4b18-86a1-61ac60546330")
@@ -325,13 +509,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 0,
-            self._phone_setup_voice_general, None, self._is_phone_in_call,
-            None, True)
+            self._phone_setup_voice_general, None, None, self._is_phone_in_call,
+            None, None, None, True)
 
         mo_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 1,
-            self._phone_setup_voice_general, None, self._is_phone_in_call,
-            None, True)
+            self._phone_setup_voice_general, None, None, self._is_phone_in_call,
+            None, None, None, True)
 
         self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
         return ((mo_result_0 is True) and (mo_result_1 is True))
@@ -354,13 +538,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mt_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 0,
-            self._phone_setup_voice_general, None, self._is_phone_in_call,
-            None, True)
+            self._phone_setup_voice_general, None, None, self._is_phone_in_call,
+            None, None, None, True)
 
         mt_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 1,
-            self._phone_setup_voice_general, None, self._is_phone_in_call,
-            None, True)
+            self._phone_setup_voice_general, None, None, self._is_phone_in_call,
+            None, None, None, True)
 
         self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
         return ((mt_result_0 is True) and (mt_result_1 is True))
@@ -383,11 +567,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 0, self._phone_setup_volte,
-            self._phone_idle_volte, self._is_phone_in_call_volte, None, True)
+            self._phone_idle_volte, None, self._is_phone_in_call_volte, None,
+            None, None, True)
 
         mo_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 1, self._phone_setup_volte,
-            self._phone_idle_volte, self._is_phone_in_call_volte, None, True)
+            self._phone_idle_volte, None, self._is_phone_in_call_volte, None,
+            None, None, True)
 
         self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
         return ((mo_result_0 is True) and (mo_result_1 is True))
@@ -410,11 +596,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mt_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 0, self._phone_setup_volte,
-            self._phone_idle_volte, self._is_phone_in_call_volte, None, True)
+            self._phone_idle_volte, None, self._is_phone_in_call_volte, None,
+            None, None, True)
 
         mt_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 1, self._phone_setup_volte,
-            self._phone_idle_volte, self._is_phone_in_call_volte, None, True)
+            self._phone_idle_volte, None, self._is_phone_in_call_volte, None,
+            None, None, True)
 
         self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
         return ((mt_result_0 is True) and (mt_result_1 is True))
@@ -437,11 +625,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 0, self._phone_setup_3g,
-            self._phone_idle_3g, self._is_phone_in_call_3g, None, True)
+            self._phone_idle_3g, None, self._is_phone_in_call_3g, None, None,
+            None, True)
 
         mo_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 1, self._phone_setup_3g,
-            self._phone_idle_3g, self._is_phone_in_call_3g, None, True)
+            self._phone_idle_3g, None, self._is_phone_in_call_3g, None, None,
+            None, True)
 
         self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
         return ((mo_result_0 is True) and (mo_result_1 is True))
@@ -464,11 +654,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mt_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 0, self._phone_setup_3g,
-            self._phone_idle_3g, self._is_phone_in_call_3g, None, True)
+            self._phone_idle_3g, None, self._is_phone_in_call_3g, None, None,
+            None, True)
 
         mt_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 1, self._phone_setup_3g,
-            self._phone_idle_3g, self._is_phone_in_call_3g, None, True)
+            self._phone_idle_3g, None, self._is_phone_in_call_3g, None, None,
+            None, True)
 
         self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
         return ((mt_result_0 is True) and (mt_result_1 is True))
@@ -491,11 +683,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mo_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 0, self._phone_setup_2g,
-            self._phone_idle_2g, self._is_phone_in_call_2g, None, True)
+            self._phone_idle_2g, None, self._is_phone_in_call_2g, None, None,
+            None, True)
 
         mo_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_ORIGINATED, 1, self._phone_setup_2g,
-            self._phone_idle_2g, self._is_phone_in_call_2g, None, True)
+            self._phone_idle_2g, None, self._is_phone_in_call_2g, None, None,
+            None, True)
 
         self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
         return ((mo_result_0 is True) and (mo_result_1 is True))
@@ -518,11 +712,13 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mt_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 0, self._phone_setup_2g,
-            self._phone_idle_2g, self._is_phone_in_call_2g, None, True)
+            self._phone_idle_2g, None, self._is_phone_in_call_2g, None, None,
+            None, True)
 
         mt_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 1, self._phone_setup_2g,
-            self._phone_idle_2g, self._is_phone_in_call_2g, None, True)
+            self._phone_idle_2g, None, self._is_phone_in_call_2g, None, None,
+            None, True)
 
         self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
         return ((mt_result_0 is True) and (mt_result_1 is True))
@@ -571,15 +767,15 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
 
             result_0 = self._msim_call_sequence(
                 ads, mo_mt, 0,
-                self._phone_setup_voice_general, None, self._is_phone_in_call,
-                None, True)
+                self._phone_setup_voice_general, None, None,
+                self._is_phone_in_call, None, None, None, True)
             if not result_0:
                 fail_count["slot_0"] += 1
 
             result_1 = self._msim_call_sequence(
                 ads, mo_mt, 1,
-                self._phone_setup_voice_general, None, self._is_phone_in_call,
-                None, True)
+                self._phone_setup_voice_general, None, None,
+                self._is_phone_in_call, None, None, None, True)
             if not result_1:
                 fail_count["slot_1"] += 1
 
