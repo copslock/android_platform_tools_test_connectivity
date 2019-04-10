@@ -294,3 +294,29 @@ def perform_dds_switch(ad):
     else:
         ad.log.error("DDS Switch Failed")
         return False
+
+
+def set_dds_on_slot_0(ad):
+    sub_id = get_subid_from_slot_index(ad.log, ad, 0)
+    operator = get_operatorname_from_slot_index(ad, 0)
+    ad.log.info("Setting DDS on %s", operator)
+    set_subid_for_data(ad, sub_id)
+    ad.droid.telephonyToggleDataConnection(True)
+    time.sleep(WAIT_TIME_CHANGE_DATA_SUB_ID)
+    if get_default_data_sub_id(ad) == sub_id:
+        return True
+    else:
+        return False
+
+
+def set_dds_on_slot_1(ad):
+    sub_id = get_subid_from_slot_index(ad.log, ad, 1)
+    operator = get_operatorname_from_slot_index(ad, 1)
+    ad.log.info("Setting DDS on %s", operator)
+    set_subid_for_data(ad, sub_id)
+    ad.droid.telephonyToggleDataConnection(True)
+    time.sleep(WAIT_TIME_CHANGE_DATA_SUB_ID)
+    if get_default_data_sub_id(ad) == sub_id:
+        return True
+    else:
+        return False
