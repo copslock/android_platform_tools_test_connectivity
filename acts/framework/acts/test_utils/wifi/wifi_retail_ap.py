@@ -1295,8 +1295,10 @@ class GoogleWifiAP(WifiRetailAP):
             cmd_string = "iw dev {0} set bitrates legacy-{1} ht-mcs-{1} vht-mcs-{1} {2}:{3}".format(
                 interface, interface_short, num_streams, rate)
             if short_gi:
-                cmd_string = cmd_string + " sgi-interface_short"
+                cmd_string = cmd_string + " sgi-{}".format(interface_short)
         elif "ht" in mode.lower():
             cmd_string = "iw dev {0} set bitrates legacy-{1} ht-mcs-{1} {2} vht-mcs-{1}".format(
                 interface, interface_short, rate)
+            if short_gi:
+                cmd_string = cmd_string + " sgi-{}".format(interface_short)
         self.access_point.ssh.run(cmd_string)
