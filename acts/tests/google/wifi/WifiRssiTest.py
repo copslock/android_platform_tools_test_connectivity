@@ -59,10 +59,8 @@ class WifiRssiTest(base_test.BaseTestClass):
             "chain_1_rssi_stdev"
         ]
         for metric in test_metrics:
-            setattr(
-                self,
-                "{}_metric".format(metric),
-                BlackboxMetricLogger.for_test_case(metric_name=metric))
+            setattr(self, "{}_metric".format(metric),
+                    BlackboxMetricLogger.for_test_case(metric_name=metric))
 
     def setup_class(self):
         self.dut = self.android_devices[0]
@@ -280,40 +278,39 @@ class WifiRssiTest(base_test.BaseTestClass):
         Args:
             postprocessed_results: compiled arrays of RSSI data.
         """
-        data_sets = [[
+        figure = wputils.BokehFigure(
+            self.current_test_name,
+            x_label="Attenuation (dB)",
+            primary_y="RSSI (dBm)")
+        figure.add_line(
             postprocessed_results["total_attenuation"],
-            postprocessed_results["total_attenuation"],
-            postprocessed_results["total_attenuation"],
-            postprocessed_results["total_attenuation"],
-            postprocessed_results["total_attenuation"],
-            postprocessed_results["total_attenuation"]
-        ], [
             postprocessed_results["signal_poll_rssi"]["mean"],
-            postprocessed_results["signal_poll_avg_rssi"]["mean"],
+            "Signal Poll RSSI",
+            marker="circle")
+        figure.add_line(
+            postprocessed_results["total_attenuation"],
             postprocessed_results["scan_rssi"]["mean"],
+            "Scan RSSI",
+            marker="circle")
+        figure.add_line(
+            postprocessed_results["total_attenuation"],
             postprocessed_results["chain_0_rssi"]["mean"],
+            "Chain 0 RSSI",
+            marker="circle")
+        figure.add_line(
+            postprocessed_results["total_attenuation"],
             postprocessed_results["chain_1_rssi"]["mean"],
-            postprocessed_results["predicted_rssi"]
-        ]]
-        legends = [
-            "Signal Poll RSSI", "Signal Poll AVG_RSSI", "Scan RSSI",
-            "Chain 0 RSSI", "Chain 1 RSSI", "Predicted RSSI"
-        ]
-        fig_property = {
-            "title": self.current_test_name,
-            "x_label": 'Attenuation (dB)',
-            "y_label": 'RSSI (dBm)',
-            "linewidth": 3,
-            "markersize": 10
-        }
-        output_file_path = "{}/{}.html".format(self.log_path,
-                                               self.current_test_name)
-        wputils.bokeh_plot(
-            data_sets,
-            legends,
-            fig_property,
-            shaded_region=None,
-            output_file_path=output_file_path)
+            "Chain 1 RSSI",
+            marker="circle")
+        figure.add_line(
+            postprocessed_results["total_attenuation"],
+            postprocessed_results["predicted_rssi"],
+            "Predicted RSSI",
+            marker="circle")
+
+        output_file_path = os.path.join(self.log_path,
+                                        self.current_test_name + ".html")
+        figure.generate_figure(output_file_path)
 
     def plot_rssi_vs_time(self, rssi_result, postprocessed_results,
                           center_curves):
@@ -325,9 +322,12 @@ class WifiRssiTest(base_test.BaseTestClass):
             center_curvers: boolean indicating whether to shift curves to align
             them with predicted RSSIs
         """
-        x_data = []
-        y_data = []
-        legends = []
+        figure = wputils.BokehFigure(
+            self.current_test_name,
+            x_label='Time (s)',
+            primary_y=center_curves * 'Centered' + 'RSSI (dBm)',
+        )
+
         # yapf: disable
         rssi_time_series = collections.OrderedDict(
             [("signal_poll_rssi", []),
@@ -341,8 +341,8 @@ class WifiRssiTest(base_test.BaseTestClass):
             if "predicted_rssi" in key:
                 rssi_time_series[key] = [
                     x for x in postprocessed_results[key] for copies in range(
-                        len(rssi_result["rssi_result"][0]["signal_poll_rssi"][
-                            "data"]))
+                        len(rssi_result["rssi_result"][0]["signal_poll_rssi"]
+                            ["data"]))
                 ]
             elif "rssi" in key:
                 if center_curves:
@@ -365,25 +365,11 @@ class WifiRssiTest(base_test.BaseTestClass):
                 for x in range(len(rssi_time_series[key]))
             ]
             if len(rssi_time_series[key]) > 0:
-                x_data.append(time_vec)
-                y_data.append(rssi_time_series[key])
-                legends.append(key)
-        data_sets = [x_data, y_data]
-        fig_property = {
-            "title": self.current_test_name,
-            "x_label": 'Time (s)',
-            "y_label": center_curves * 'Centered' + 'RSSI (dBm)',
-            "linewidth": 3,
-            "markersize": 0
-        }
-        output_file_path = "{}/{}.html".format(self.log_path,
-                                               self.current_test_name)
-        wputils.bokeh_plot(
-            data_sets,
-            legends,
-            fig_property,
-            shaded_region=None,
-            output_file_path=output_file_path)
+                figure.add_line(time_vec, rssi_time_series[key], key)
+
+        output_file_path = os.path.join(self.log_path,
+                                        self.current_test_name + ".html")
+        figure.generate_figure(output_file_path)
 
     def rssi_test(self, iperf_traffic, connected_measurements,
                   scan_measurements, bssids, polling_frequency,
