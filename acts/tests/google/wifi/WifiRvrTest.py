@@ -424,7 +424,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.testclass_params["iperf_duration"])
         if test_name_params[2] == "UDP":
             testcase_params["iperf_args"] = testcase_params[
-                "iperf_args"] + "-u -b {}".format(
+                "iperf_args"] + "-u -b {} -l 1400".format(
                     self.testclass_params["UDP_rates"][
                         testcase_params["mode"]])
         if (test_name_params[3] == "DL"
