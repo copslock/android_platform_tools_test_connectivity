@@ -55,6 +55,8 @@ def nonblocking(f):
 
 # Plotting Utilities
 class BokehFigure():
+    """Class enabling  simplified Bokeh plotting."""
+
     def __init__(self,
                  title=None,
                  x_label=None,
@@ -131,6 +133,19 @@ class BokehFigure():
                  marker_size=10,
                  shaded_region=None,
                  y_axis='default'):
+        """Function to add line to existing BokehFigure.
+
+        Args:
+            x_data: list containing x-axis values for line
+            y_data: list containing y_axis values for line
+            legend: string containing line title
+            color: string describing line color
+            width: integer line width
+            style: string describing line style, e.g, solid or dash
+            marker: string specifying line marker, e.g., cross
+            shaded region: data describing shaded region to plot
+            y_axis: identifier for y-axis to plot line against
+        """
         if y_axis not in ['default', 'secondary']:
             raise ValueError('y_axis must be default or secondary')
         if color == None:
@@ -153,6 +168,11 @@ class BokehFigure():
         self.fig_property['num_lines'] += 1
 
     def generate_figure(self, output_file=None):
+        """Function to generate and save BokehFigure.
+
+        Args:
+            output_file: string specifying output file path
+        """
         two_axes = False
         for line in self.figure_data:
             self.plot.line(
@@ -219,11 +239,22 @@ class BokehFigure():
         return self.plot
 
     def save_figure(self, output_file):
+        """Function to save BokehFigure.
+
+        Args:
+            output_file: string specifying output file path
+        """
         bokeh.plotting.output_file(output_file)
         bokeh.plotting.save(self.plot)
 
     @staticmethod
     def save_figures(figure_array, output_file_path):
+        """Function to save list of BokehFigures in one file.
+
+        Args:
+            figure_array: list of BokehFigure object to be plotted
+            output_file: string specifying output file path
+        """
         plot_array = [figure.plot for figure in figure_array]
         all_plots = bokeh.layouts.column(children=plot_array)
         bokeh.plotting.output_file(output_file_path)
@@ -615,7 +646,7 @@ def get_scan_rssi_nb(dut, tracked_bssids, num_measurements=1):
     return get_scan_rssi(dut, tracked_bssids, num_measurements)
 
 
-## Attenuator Utilities
+# Attenuator Utilities
 def atten_by_label(atten_list, path_label, atten_level):
     """Attenuate signals according to their path label.
 
@@ -629,21 +660,31 @@ def atten_by_label(atten_list, path_label, atten_level):
             atten.set_atten(atten_level)
 
 
-def get_server_address(ssh_connection, subnet):
-    """Get server address on a specific subnet
+# Miscellaneous Utilities
+def get_server_address(ssh_connection, dut_ip, subnet_mask):
+    """Get server address on a specific subnet,
+
+    This function retrieves the LAN IP of a remote machine used in testing,
+    i.e., it returns the server's IP belonging to the same LAN as the DUT.
 
     Args:
         ssh_connection: object representing server for which we want an ip
-        subnet: string in ip address format, i.e., xxx.xxx.xxx.xxx,
-        representing the subnet of interest.
+        dut_ip: string in ip address format, i.e., xxx.xxx.xxx.xxx, specifying
+        the DUT LAN IP we wish to connect to
+        subnet_mask: string representing subnet mask
     """
-    subnet_str = subnet.split('.')[:-1]
-    subnet_str = '.'.join(subnet_str)
-    cmd = "ifconfig | grep 'inet addr:{}'".format(subnet_str)
-    try:
-        if_output = ssh_connection.run(cmd).stdout
-        ip_line = if_output.split('inet addr:')[1]
-        ip_address = ip_line.split(' ')[0]
-    except:
-        logging.warning('Could not find ip in requested subnet.')
-    return ip_address
+    subnet_mask = subnet_mask.split(".")
+    dut_subnet = [
+        int(dut) & int(subnet)
+        for dut, subnet in zip(dut_ip.split("."), subnet_mask)
+    ]
+    ifconfig_out = ssh_connection.run("ifconfig").stdout
+    ip_list = re.findall("inet (?:addr:)?(\d+.\d+.\d+.\d+)", ifconfig_out)
+    for current_ip in ip_list:
+        current_subnet = [
+            int(ip) & int(subnet)
+            for ip, subnet in zip(current_ip.split("."), subnet_mask)
+        ]
+        if current_subnet == dut_subnet:
+            return current_ip
+    logging.error("No IP address found in requested subnet")
