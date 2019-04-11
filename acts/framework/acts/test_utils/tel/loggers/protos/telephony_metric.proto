@@ -3,6 +3,8 @@
    directory:
    $ protoc -I=. --python_out=. telephony_metric.proto
 
+   Be sure that you are compiling with protoc 3.4.0
+
    More info can be found at:
    https://developers.google.com/protocol-buffers/docs/pythontutorial
 */
