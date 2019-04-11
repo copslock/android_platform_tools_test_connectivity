@@ -34,7 +34,7 @@ class RttBaseTest(BaseTestClass):
         self.unpack_userparams(required_params)
 
         # can be moved to JSON config file
-        self.rtt_reference_distance_margin_mm = 1000
+        self.rtt_reference_distance_margin_mm = 2000
         self.rtt_max_failure_rate_two_sided_rtt_percentage = 10
         self.rtt_max_failure_rate_one_sided_rtt_percentage = 50
         self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage = 10
