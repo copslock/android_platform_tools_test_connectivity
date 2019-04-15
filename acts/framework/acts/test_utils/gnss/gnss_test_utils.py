@@ -68,6 +68,7 @@ def reboot(ad):
     ad.unlock_screen(password=None)
     if not int(ad.adb.shell("settings get global mobile_data")) == 1:
         set_mobile_data(ad, True)
+    utils.sync_device_time(ad)
 
 def enable_gnss_verbose_logging(ad):
     """Enable GNSS VERBOSE Logging and logd.
@@ -151,7 +152,7 @@ def _init_device(ad):
     enable_gnss_verbose_logging(ad)
     disable_xtra_throttle(ad)
     enable_supl_mode(ad)
-    ad.adb.shell("svc power stayon true")
+    set_screen_brightness(ad, False)
     ad.adb.shell("settings put system screen_off_timeout 1800000")
     wutils.wifi_toggle_state(ad, False)
     ad.log.info("Setting Bluetooth state to False")
@@ -161,8 +162,6 @@ def _init_device(ad):
     set_wifi_and_bt_scanning(ad, True)
     reboot(ad)
     disable_private_dns_mode(ad)
-    utils.sync_device_time(ad)
-    tutils.set_phone_silent_mode(ad.log, ad)
 
 def connect_to_wifi_network(ad, network):
     """Connection logic for open and psk wifi networks.
@@ -599,6 +598,21 @@ def launch_google_map(ad):
     except Exception as e:
         ad.log.error(e)
         raise signals.TestFailure("Failed to launch google map.")
+    check_currrent_focus_app(ad, "com.google.android.apps.maps")
+
+def check_currrent_focus_app(ad, app):
+    """Check to see if current focused window and app is app_to_check.
+
+    Args:
+        ad: An AndroidDevice object.
+        app: Current focus app to check.
+    """
+    time.sleep(2)
+    focused_app = ad.adb.shell("dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'")
+    if not app in focused_app:
+        ad.log.error("%s" % focused_app)
+        raise signals.TestFailure("Fail to launch %s" % app)
+    ad.log.info("%s is current focused app at foreground." % app)
 
 def check_location_api(ad, retries):
     """Verify if GnssLocationProvider API reports location.
@@ -709,3 +723,26 @@ def set_gnss_qxdm_mask(ad, masks):
     except Exception as e:
         ad.log.error(e)
         raise signals.TestFailure("Failed to set any QXDM masks.")
+
+def set_screen_brightness(ad, state):
+    """Set screen brightness in setting->Display->Brightness
+
+    Args:
+        ad: An AndroidDevice object.
+        state: State for screen brightness. True or False.
+    """
+    utils.set_adaptive_brightness(ad, state)
+    ad.adb.shell("settings put system screen_brightness {}".format(
+        255 if state else 1))
+    screen_brightness_mode = int(ad.adb.shell(
+        "settings get system screen_brightness_mode"))
+    screen_brightness = int(ad.adb.shell(
+        "settings get system screen_brightness"))
+    if screen_brightness_mode == 1 and state == True:
+        ad.log.info("Adaptive brightness is on and brightness is set to %d"
+                    % screen_brightness)
+    elif screen_brightness_mode == 0 and state == False:
+        ad.log.info("Adaptive brightness is off and brightness is set to %d"
+                    % screen_brightness)
+    else:
+        ad.log.error("Fail to set adaptive brightness")
