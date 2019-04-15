@@ -85,6 +85,8 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
 
         self.log.info("Reconnect test, triggered by GO")
         # trigger reconnect from GO
+        go_dut.ed.clear_all_events()
+        gc_dut.ed.clear_all_events()
         wp2putils.p2p_connect(go_dut, gc_dut, True, WPS_PBC)
         wp2putils.p2p_disconnect(go_dut)
         wp2putils.check_disconnect(gc_dut)
@@ -92,6 +94,8 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
 
         # trigger reconnect from GC
         self.log.info("Reconnect test, triggered by GC")
+        go_dut.ed.clear_all_events()
+        gc_dut.ed.clear_all_events()
         wp2putils.p2p_connect(gc_dut, go_dut, True, WPS_PBC)
         wp2putils.p2p_disconnect(gc_dut)
         wp2putils.check_disconnect(go_dut)
@@ -129,6 +133,8 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
 
         self.log.info("Reconnect test, triggered by GO")
         # trigger reconnect from GO
+        go_dut.ed.clear_all_events()
+        gc_dut.ed.clear_all_events()
         wp2putils.p2p_connect(go_dut, gc_dut, True, WPS_DISPLAY)
         wp2putils.p2p_disconnect(go_dut)
         wp2putils.check_disconnect(gc_dut)
@@ -136,6 +142,8 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
 
         # trigger reconnect from GC
         self.log.info("Reconnect test, triggered by GC")
+        go_dut.ed.clear_all_events()
+        gc_dut.ed.clear_all_events()
         wp2putils.p2p_connect(gc_dut, go_dut, True, WPS_DISPLAY)
         wp2putils.p2p_disconnect(gc_dut)
         wp2putils.check_disconnect(go_dut)
