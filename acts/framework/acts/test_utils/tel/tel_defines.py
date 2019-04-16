@@ -119,7 +119,7 @@ MAX_WAIT_TIME_PROVISIONING = 300
 
 # Time to wait after call setup before declaring
 # that the call is actually successful
-WAIT_TIME_IN_CALL = 15
+WAIT_TIME_IN_CALL = 30
 
 # (For IMS, e.g. VoLTE-VoLTE, WFC-WFC, VoLTE-WFC test only)
 # Time to wait after call setup before declaring
@@ -174,6 +174,12 @@ WAIT_TIME_TETHERING_AFTER_REBOOT = 10
 
 # Time to wait after changing data sub id
 WAIT_TIME_CHANGE_DATA_SUB_ID = 30
+
+# Time to wait after changing voice sub id
+WAIT_TIME_CHANGE_VOICE_SUB_ID = 5
+
+# Time to wait after changing message sub id
+WAIT_TIME_CHANGE_MESSAGE_SUB_ID = 5
 
 # Wait time for Data Stall to detect
 WAIT_TIME_FOR_DATA_STALL = 300
@@ -588,6 +594,21 @@ NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA"
 NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA = "NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA"
 NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA"
 
+# Carrier Config Update
+CARRIER_ID_VERSION = "3"
+WAIT_TIME_FOR_CARRIERID_CHANGE = 6
+CARRIER_ID_METADATA_URL = "am broadcast -a com.google.android.gms." \
+     "phenotype.FLAG_OVERRIDE --es package 'com.google.android.configupdater'" \
+     " --es user '\*' --esa flags 'CarrierIdentification__metadata_url' " \
+     "--esa values 'https://www.gstatic.com/android/config_update/110618-" \
+     "carrier-id-metadata.txt' --esa types 'string' com.google.android.gms"
+
+CARRIER_ID_CONTENT_URL = "am broadcast -a com.google.android.gms." \
+     "phenotype.FLAG_OVERRIDE --es package 'com.google.android.configupdater'" \
+     " --es user '\*' --esa flags 'CarrierIdentification__content_url' " \
+     "--esa values 'https://www.gstatic.com/android/config_update/110618-" \
+     "carrier-id.pb' --esa types 'string' com.google.android.gms"
+
 # Constant for Messaging Event Name
 EventSmsDeliverSuccess = "SmsDeliverSuccess"
 EventSmsDeliverFailure = "SmsDeliverFailure"
@@ -656,7 +677,6 @@ NetworkCallbackSuspended = "Suspended"
 NetworkCallbackResumed = "Resumed"
 NetworkCallbackLinkPropertiesChanged = "LinkPropertiesChanged"
 NetworkCallbackInvalid = "Invalid"
-
 
 class SignalStrengthContainer:
     SIGNAL_STRENGTH_GSM = "gsmSignalStrength"

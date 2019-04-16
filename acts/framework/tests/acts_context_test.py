@@ -40,6 +40,10 @@ from mock import patch
 LOGGING = 'acts.context.logging'
 
 
+def reset_context():
+    context._contexts = [RootContext()]
+
+
 class TestClass:
     def __init__(self):
         self.test_name = self.test_case.__name__
@@ -80,7 +84,7 @@ class ModuleTest(TestCase):
 
         _update_test_class_context(event)
         self.assertIsInstance(get_current_context(), TestClassContext)
-        context._contexts.clear()
+        reset_context()
 
     def test_update_test_class_context_for_test_class_end(self):
         event = Mock(spec=TestClassBeginEvent)
@@ -92,7 +96,7 @@ class ModuleTest(TestCase):
         _update_test_class_context(event2)
 
         self.assertIsInstance(get_current_context(), RootContext)
-        context._contexts.clear()
+        reset_context()
 
     def test_update_test_case_context_for_test_case_begin(self):
         event = Mock(spec=TestClassBeginEvent)
@@ -105,7 +109,7 @@ class ModuleTest(TestCase):
         _update_test_case_context(event2)
 
         self.assertIsInstance(get_current_context(), TestCaseContext)
-        context._contexts.clear()
+        reset_context()
 
     def test_update_test_case_context_for_test_case_end(self):
         event = Mock(spec=TestClassBeginEvent)
@@ -122,7 +126,7 @@ class ModuleTest(TestCase):
         _update_test_case_context(event3)
 
         self.assertIsInstance(get_current_context(), TestClassContext)
-        context._contexts.clear()
+        reset_context()
 
 
 class TestContextTest(TestCase):
@@ -157,7 +161,8 @@ class TestContextTest(TestCase):
         self.assertEqual(context.get_subcontext('subcontext'), mock_path)
 
     @patch(LOGGING)
-    def test_get_full_output_path_returns_correct_path(self, _):
+    @patch('os.makedirs')
+    def test_get_full_output_path_returns_correct_path(self, *_):
         context = TestClassContext(TestClass())
         context.add_base_output_path('foo', 'base/path')
         context.add_subcontext('foo', 'subcontext')

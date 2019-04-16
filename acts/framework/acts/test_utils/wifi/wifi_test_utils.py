@@ -41,7 +41,7 @@ DEFAULT_TIMEOUT = 10
 # change.
 SHORT_TIMEOUT = 30
 ROAMING_TIMEOUT = 30
-
+WIFI_CONNECTION_TIMEOUT_DEFAULT = 30
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
 
@@ -1519,6 +1519,8 @@ def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR):
     Returns:
         ping output if successful, NULL otherwise.
     """
+    # Adding 2 secs timeout before pinging to allow for DHCP to complete.
+    time.sleep(2)
     ping = ad.droid.httpPing(ping_addr)
     ad.log.info("Http ping result: %s.", ping)
     return ping
@@ -1553,6 +1555,28 @@ def verify_wifi_connection_info(ad, expected_con):
                                                           actual_v)
         if actual_v != expected_v:
             raise signals.TestFailure(msg)
+
+
+def check_autoconnect_to_open_network(ad, conn_timeout=WIFI_CONNECTION_TIMEOUT_DEFAULT):
+    """Connects to any open WiFI AP
+     Args:
+         timeout value in sec to wait for UE to connect to a WiFi AP
+     Returns:
+         True if UE connects to WiFi AP (supplicant_state = completed)
+         False if UE fails to complete connection within WIFI_CONNECTION_TIMEOUT time.
+    """
+    if ad.droid.wifiCheckState():
+        return True
+    ad.droid.wifiToggleState()
+    wifi_connection_state = None
+    timeout = time.time() + conn_timeout
+    while wifi_connection_state != "completed":
+        wifi_connection_state = ad.droid.wifiGetConnectionInfo()[
+            'supplicant_state']
+        if time.time() > timeout:
+            ad.log.warning("Failed to connect to WiFi AP")
+            return False
+    return True
 
 
 def expand_enterprise_config_by_phase2(config):
@@ -1758,6 +1782,54 @@ def start_softap_and_verify(ad, band):
         start_wifi_connection_scan_and_ensure_network_found(ad.dut_client,
             config[WifiEnums.SSID_KEY])
         return config
+
+def wait_for_expected_number_of_softap_clients(ad, callbackId,
+        expected_num_of_softap_clients):
+    """Wait for the number of softap clients to be updated as expected.
+    Args:
+        callbackId: Id of the callback associated with registering.
+        expected_num_of_softap_clients: expected number of softap clients.
+    """
+    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_NUMBER_CLIENTS_CHANGED
+    asserts.assert_equal(ad.ed.pop_event(eventStr,
+            SHORT_TIMEOUT)['data'][wifi_constants.
+            SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY],
+            expected_num_of_softap_clients,
+            "Number of softap clients doesn't match with expected number")
+
+def wait_for_expected_softap_state(ad, callbackId, expected_softap_state):
+    """Wait for the expected softap state change.
+    Args:
+        callbackId: Id of the callback associated with registering.
+        expected_softap_state: The expected softap state.
+    """
+    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_STATE_CHANGED
+    asserts.assert_equal(ad.ed.pop_event(eventStr,
+            SHORT_TIMEOUT)['data'][wifi_constants.
+            SOFTAP_STATE_CHANGE_CALLBACK_KEY],
+            expected_softap_state,
+            "Softap state doesn't match with expected state")
+
+def get_current_number_of_softap_clients(ad, callbackId):
+    """pop up all of softap client updated event from queue.
+    Args:
+        callbackId: Id of the callback associated with registering.
+
+    Returns:
+        If exist aleast callback, returns last updated number_of_softap_clients.
+        Returns None when no any match callback event in queue.
+    """
+    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_NUMBER_CLIENTS_CHANGED
+    events = ad.ed.pop_all(eventStr)
+    for event in events:
+        num_of_clients = event['data'][wifi_constants.
+                SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY]
+    if len(events) == 0:
+        return None
+    return num_of_clients
 
 
 def start_pcap(pcap, wifi_band, log_path, test_name):

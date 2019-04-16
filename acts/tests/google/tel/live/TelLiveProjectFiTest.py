@@ -36,6 +36,8 @@ from acts.test_utils.tel.tel_test_utils import refresh_droid_config
 from acts.test_utils.tel.tel_test_utils import send_dialer_secret_code
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import wait_for_state
+from acts.test_utils.tel.tel_test_utils import add_google_account
+from acts.test_utils.tel.tel_test_utils import remove_google_account
 
 CARRIER_AUTO = "auto"
 
@@ -96,44 +98,6 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
     def setup_class(self):
         self.activation_attemps = self.user_params.get("activation_attemps", 3)
 
-    def _add_google_account(self, ad, retries=3):
-        for _ in range(3):
-            ad.ensure_screen_on()
-            output = ad.adb.shell(
-                'am instrument -w -e account "%s@gmail.com" -e password '
-                '"%s" -e sync true -e wait-for-checkin false '
-                'com.google.android.tradefed.account/.AddAccount' %
-                (ad.user_account, ad.user_password))
-            if "result=SUCCESS" in output:
-                ad.log.info("google account is added successfully")
-                return True
-        ad.log.error("Fail to add google account due to %s", output)
-        return False
-
-    def _remove_google_account(self, ad, retries=3):
-        if not ad.is_apk_installed("com.google.android.tradefed.account"
-                                   ) and self.user_params.get("account_util"):
-            account_util = self.user_params["account_util"]
-            if isinstance(account_util, list):
-                account_util = account_util[0]
-            ad.log.info("Install account_util %s", account_util)
-            ad.ensure_screen_on()
-            ad.adb.install("-r %s" % account_util, timeout=180)
-        if not ad.is_apk_installed("com.google.android.tradefed.account"):
-            ad.log.error(
-                "com.google.android.tradefed.account is not installed")
-            return False
-        for _ in range(retries):
-            ad.ensure_screen_on()
-            output = ad.adb.shell(
-                'am instrument -w '
-                'com.google.android.tradefed.account/.RemoveAccounts')
-            if "result=SUCCESS" in output:
-                ad.log.info("google account is removed successfully")
-                return True
-        ad.log.error("Fail to remove google account due to %s", output)
-        return False
-
     def _install_account_util(self, ad):
         account_util = self.user_params["account_util"]
         if isinstance(account_util, list):
@@ -169,7 +133,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 ad.log.error("Failed to connect to wifi")
                 return False
             ad.log.info("Add google account")
-            if not self._add_google_account(ad):
+            if not add_google_account(ad):
                 ad.log.error("Failed to add google account")
                 return False
             ad.adb.shell(
@@ -182,7 +146,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
                 ad.log.info("%s is not installed", _TYCHO_PKG)
                 return False
             ad.adb.shell('pm enable %s' % _TYCHO_PKG)
-            #ad.adb.shell(_TYCHO_SERVER_LAB_OVERRIDE_CMD)
+            # ad.adb.shell(_TYCHO_SERVER_LAB_OVERRIDE_CMD)
             for i in range(1, self.activation_attemps + 1):
                 if i == self.activation_attemps:
                     ad.log.info("Reboot and try Fi activation again")
@@ -622,7 +586,7 @@ class TelLiveProjectFiTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_remove_google_account(self):
         for ad in self.android_devices:
-            self._remove_google_account(ad)
+            remove_google_account(ad)
 
 
 """ Tests End """

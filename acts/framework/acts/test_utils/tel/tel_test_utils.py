@@ -36,6 +36,7 @@ from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.libs.proc import job
+from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
 from acts.test_utils.tel.tel_defines import CarrierConfigs
 from acts.test_utils.tel.tel_defines import AOSP_PREFIX
 from acts.test_utils.tel.tel_defines import CARD_POWER_DOWN
@@ -62,8 +63,7 @@ from acts.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
 from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_defines import MAX_SAVED_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
-from acts.test_utils.tel.tel_defines import \
-    MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_AIRPLANEMODE_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_INITIATION
@@ -148,36 +148,25 @@ from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts.test_utils.tel.tel_defines import ServiceStateContainer
 from acts.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
     CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
-from acts.test_utils.tel.tel_lookup_tables import \
-    connection_type_from_type_string
+from acts.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
 from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
 from acts.test_utils.tel.tel_lookup_tables import get_allowable_network_preference
-from acts.test_utils.tel.tel_lookup_tables import \
-    get_voice_mail_count_check_function
+from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_count_check_function
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_check_number
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_delete_digit
-from acts.test_utils.tel.tel_lookup_tables import \
-    network_preference_for_generation
-from acts.test_utils.tel.tel_lookup_tables import \
-    operator_name_from_network_name
+from acts.test_utils.tel.tel_lookup_tables import network_preference_for_generation
+from acts.test_utils.tel.tel_lookup_tables import operator_name_from_network_name
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
-from acts.test_utils.tel.tel_lookup_tables import \
-    rat_families_for_network_preference
+from acts.test_utils.tel.tel_lookup_tables import rat_families_for_network_preference
 from acts.test_utils.tel.tel_lookup_tables import rat_family_for_generation
 from acts.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_default_data_sub_id, get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_outgoing_message_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_incoming_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_incoming_message_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id, get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_incoming_message_sub_id
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts.test_utils.wifi import wifi_test_utils
 from acts.test_utils.wifi import wifi_constants
 from acts.utils import adb_shell_ping
@@ -198,10 +187,34 @@ WIFI_CONFIG_APBAND_5G = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_5G
 WIFI_CONFIG_APBAND_AUTO = wifi_test_utils.WifiEnums.WIFI_CONFIG_APBAND_AUTO
 log = logging
 STORY_LINE = "+19523521350"
+CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 
 class TelTestUtilsError(Exception):
     pass
+
+
+class TelResultWrapper(object):
+    """Test results wrapper for Telephony test utils.
+
+    In order to enable metrics reporting without refactoring
+    all of the test utils this class is used to keep the
+    current return boolean scheme in tact.
+    """
+
+    def __init__(self, result_value):
+        self._result_value = result_value
+
+    @property
+    def result_value(self):
+        return self._result_value
+
+    @result_value.setter
+    def result_value(self, result_value):
+        self._result_value = result_value
+
+    def __bool__(self):
+        return self._result_value == CallResult('SUCCESS')
 
 
 def abort_all_tests(log, msg):
@@ -583,18 +596,6 @@ def get_telephony_signal_strength(ad):
     except Exception as e:
         ad.log.error(e)
         signal_strength = {}
-    out = ad.adb.shell("dumpsys telephony.registry | grep -i signalstrength")
-    if out is None:
-        msg = "Signal Strength is Null."
-        fail(msg)
-
-    signals = re.findall(r"(-*\d+)", out)
-    for i, val in enumerate(
-        ("gsmSignalStrength", "gsmBitErrorRate", "cdmaDbm", "cdmaEcio",
-         "evdoDbm", "evdoEcio", "evdoSnr", "lteSignalStrength", "lteRsrp",
-         "lteRsrq", "lteRssnr", "lteCqi", "lteRsrpBoost")):
-        signal_strength[val] = signal_strength.get(val, int(signals[i]))
-    ad.log.info("Telephony Signal strength = %s", signal_strength)
     return signal_strength
 
 
@@ -602,6 +603,30 @@ def get_wifi_signal_strength(ad):
     signal_strength = ad.droid.wifiGetConnectionInfo()['rssi']
     ad.log.info("WiFi Signal Strength is %s" % signal_strength)
     return signal_strength
+
+
+def get_lte_rsrp(ad):
+    try:
+        if ad.adb.getprop("ro.build.version.release")[0] in ("9", "P"):
+            out = ad.adb.shell(
+                "dumpsys telephony.registry | grep -i signalstrength")
+            if out:
+                lte_rsrp = out.split()[9]
+                if lte_rsrp:
+                    ad.log.info("lte_rsrp: %s ", lte_rsrp)
+                    return lte_rsrp
+        else:
+            out = ad.adb.shell(
+            "dumpsys telephony.registry |grep -i primary=CellSignalStrengthLte")
+            if out:
+                lte_cell_info = out.split('mLte=')[1]
+                lte_rsrp = re.match(r'.*rsrp=(\S+).*', lte_cell_info).group(1)
+                if lte_rsrp:
+                    ad.log.info("lte_rsrp: %s ", lte_rsrp)
+                    return lte_rsrp
+    except Exception as e:
+        ad.log.error(e)
+    return None
 
 
 def check_data_stall_detection(ad, wait_time=WAIT_TIME_FOR_DATA_STALL):
@@ -615,7 +640,6 @@ def check_data_stall_detection(ad, wait_time=WAIT_TIME_FOR_DATA_STALL):
             ad.log.debug("Output is %s", out)
             if out:
                 ad.log.info("NetworkMonitor detected - %s", out)
-                ad.log.info("Time taken for Data Stall Detection %d secs", time_var)
                 data_stall_detected = True
                 break
             time.sleep(30)
@@ -2095,8 +2119,7 @@ def call_setup_teardown_for_subscription(
             else, do nothing.
 
     Returns:
-        True if call process without any error.
-        False if error happened.
+        TelResultWrapper which will evaluate as False if error.
 
     """
     CHECK_INTERVAL = 5
@@ -2129,7 +2152,7 @@ def call_setup_teardown_for_subscription(
         else:
             callee_number = callee_dial_number
 
-    result = True
+    tel_result_wrapper = TelResultWrapper(CallResult('SUCCESS'))
     msg = "Call from %s to %s" % (caller_number, callee_number)
     if video_state:
         msg = "Video %s" % msg
@@ -2153,8 +2176,8 @@ def call_setup_teardown_for_subscription(
                 incall_ui_display=incall_ui_display,
                 video=video):
             ad_caller.log.error("Initiate call failed.")
-            result = False
-            return False
+            tel_result_wrapper.result_value = CallResult('INITIATE_FAILED')
+            return tel_result_wrapper
         else:
             ad_caller.log.info("Caller initate call successfully")
         if not wait_and_answer_call_for_subscription(
@@ -2166,8 +2189,9 @@ def call_setup_teardown_for_subscription(
                 incall_ui_display=incall_ui_display,
                 video_state=video_state):
             ad_callee.log.error("Answer call fail.")
-            result = False
-            return False
+            tel_result_wrapper.result_value = CallResult(
+                'NO_RING_EVENT_OR_ANSWER_FAILED')
+            return tel_result_wrapper
         else:
             ad_callee.log.info("Callee answered the call successfully")
 
@@ -2180,17 +2204,19 @@ def call_setup_teardown_for_subscription(
                     "No new call ids are found after call establishment")
                 ad.log.error("telecomCallGetCallIds returns %s",
                              ad.droid.telecomCallGetCallIds())
-                result = False
+                tel_result_wrapper.result_value = CallResult('NO_CALL_ID_FOUND')
             for new_call_id in new_call_ids:
                 if not wait_for_in_call_active(ad, call_id=new_call_id):
-                    result = False
+                    tel_result_wrapper.result_value = CallResult(
+                        'CALL_STATE_NOT_ACTIVE_DURING_ESTABLISHMENT')
                 else:
                     ad.log.info("callProperties = %s",
                                 ad.droid.telecomCallGetProperties(new_call_id))
 
             if not ad.droid.telecomCallGetAudioState():
                 ad.log.error("Audio is not in call state")
-                result = False
+                tel_result_wrapper.result_value = CallResult(
+                    'AUDIO_STATE_NOT_INCALL_DURING_ESTABLISHMENT')
 
             if call_func(log, ad):
                 ad.log.info("Call is in %s state", call_func.__name__)
@@ -2198,9 +2224,10 @@ def call_setup_teardown_for_subscription(
                 ad.log.error("Call is not in %s state, voice in RAT %s",
                              call_func.__name__,
                              ad.droid.telephonyGetCurrentVoiceNetworkType())
-                result = False
-        if not result:
-            return False
+                tel_result_wrapper.result_value = CallResult(
+                    'CALL_DROP_OR_WRONG_STATE_DURING_ESTABLISHMENT')
+        if not tel_result_wrapper:
+            return tel_result_wrapper
         elapsed_time = 0
         while (elapsed_time < wait_time_in_call):
             CHECK_INTERVAL = min(CHECK_INTERVAL,
@@ -2216,24 +2243,26 @@ def call_setup_teardown_for_subscription(
                         "NOT in correct %s state at %s, voice in RAT %s",
                         call_func.__name__, time_message,
                         ad.droid.telephonyGetCurrentVoiceNetworkType())
-                    result = False
+                    tel_result_wrapper.result_value = CallResult(
+                        'CALL_DROP_OR_WRONG_STATE_AFTER_CONNECTED')
                 else:
                     ad.log.info("In correct %s state at %s",
                                 call_func.__name__, time_message)
                 if not ad.droid.telecomCallGetAudioState():
                     ad.log.error("Audio is not in call state at %s",
                                  time_message)
-                    result = False
-            if not result:
-                return False
+                    tel_result_wrapper.result_value = CallResult(
+                        'AUDIO_STATE_NOT_INCALL_AFTER_CONNECTED')
+            if not tel_result_wrapper:
+                return tel_result_wrapper
 
         if ad_hangup:
             if not hangup_call(log, ad_hangup):
                 ad_hangup.log.info("Failed to hang up the call")
-                result = False
-                return False
+                tel_result_wrapper.result_value = CallResult('CALL_HANGUP_FAIL')
+                return tel_result_wrapper
     finally:
-        if not result:
+        if not tel_result_wrapper:
             for ad in (ad_caller, ad_callee):
                 last_call_drop_reason(ad, begin_time)
                 try:
@@ -2242,12 +2271,13 @@ def call_setup_teardown_for_subscription(
                         ad.droid.telecomEndCall()
                 except Exception as e:
                     log.error(str(e))
-        if ad_hangup or not result:
+        if ad_hangup or not tel_result_wrapper:
             for ad in (ad_caller, ad_callee):
                 if not wait_for_call_id_clearing(
                         ad, getattr(ad, "caller_ids", [])):
-                    result = False
-    return result
+                    tel_result_wrapper.result_value = CallResult(
+                        'CALL_ID_CLEANUP_FAIL')
+    return tel_result_wrapper
 
 
 def wait_for_call_id_clearing(ad,
@@ -2779,7 +2809,7 @@ def http_file_download_by_chrome(ad,
         "chrome_mobile_data_usage": get_mobile_data_usage(
             ad, None, chrome_apk)
     }
-    ad.log.info("Before downloading: %s", data_accounting)
+    ad.log.debug("Before downloading: %s", data_accounting)
     ad.log.info("Download %s with timeout %s", url, timeout)
     ad.ensure_screen_on()
     open_url_by_adb(ad, url)
@@ -2808,7 +2838,7 @@ def http_file_download_by_chrome(ad,
                 key: value - data_accounting[key]
                 for key, value in new_data_accounting.items()
             }
-            ad.log.info("Data accounting difference: %s", accounting_diff)
+            ad.log.debug("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
                 for key, value in accounting_diff.items():
                     if value < expected_file_size:
@@ -2885,7 +2915,7 @@ def http_file_download_by_sl4a(ad,
             "sl4a_mobile_data_usage":
             get_mobile_data_usage(ad, None, accounting_apk)
         }
-        ad.log.info("Before downloading: %s", data_accounting)
+        ad.log.debug("Before downloading: %s", data_accounting)
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
                     file_path)
         try:
@@ -2911,16 +2941,16 @@ def http_file_download_by_sl4a(ad,
                 "sl4a_mobile_data_usage":
                 get_mobile_data_usage(ad, None, accounting_apk)
             }
-            ad.log.info("After downloading: %s", new_data_accounting)
+            ad.log.debug("After downloading: %s", new_data_accounting)
             accounting_diff = {
                 key: value - data_accounting[key]
                 for key, value in new_data_accounting.items()
             }
-            ad.log.info("Data accounting difference: %s", accounting_diff)
+            ad.log.debug("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
                 for key, value in accounting_diff.items():
                     if value < expected_file_size:
-                        ad.log.warning("%s diff is %s less than %s", key,
+                        ad.log.debug("%s diff is %s less than %s", key,
                                        value, expected_file_size)
                         ad.data_accounting["%s_failure"] += 1
             else:
@@ -2951,10 +2981,10 @@ def get_mobile_data_usage(ad, sid=None, apk=None):
 
     if apk:
         uid = ad.get_apk_uid(apk)
-        ad.log.info("apk %s uid = %s", apk, uid)
+        ad.log.debug("apk %s uid = %s", apk, uid)
         try:
             usage_info = ad.droid.getMobileDataUsageInfoForUid(uid, sid)
-            ad.log.info("Mobile data usage info for uid %s = %s", uid,
+            ad.log.debug("Mobile data usage info for uid %s = %s", uid,
                         usage_info)
             return usage_info["UsageLevel"]
         except:
@@ -2970,7 +3000,7 @@ def get_mobile_data_usage(ad, sid=None, apk=None):
     else:
         try:
             usage_info = ad.droid.getMobileDataUsageInfo(sid)
-            ad.log.info("Mobile data usage info = %s", usage_info)
+            ad.log.debug("Mobile data usage info = %s", usage_info)
             return usage_info["UsageLevel"]
         except:
             try:
@@ -2987,7 +3017,7 @@ def get_mobile_data_usage(ad, sid=None, apk=None):
 def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
-    ad.log.info("Set subscriber mobile data usage limit to %s", limit)
+    ad.log.debug("Set subscriber mobile data usage limit to %s", limit)
     ad.droid.logV("Setting subscriber mobile data usage limit to %s" % limit)
     try:
         ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
@@ -3037,6 +3067,79 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
     else:
         ad.log.warning("There is no modem subsystem failure reason logcat")
         return False
+
+
+def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
+    result = False
+    if not ad.is_apk_installed("com.google.mdstest"):
+        raise signals.TestSkipClass("mdstest is not installed")
+    mode = ad.droid.telephonyGetPhoneCount()
+    if mode == 2:
+        ad.log.info("Device already in MSIM mode")
+        return True
+    for i in range(retries):
+        ad.adb.shell(
+        "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
+        ad.adb.shell(
+        "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
+        disable_qxdm_logger(ad)
+        cmd = ('am instrument -w -e request "WriteEFS" -e item '
+               '"/google/pixel_multisim_config" -e data  "02 00 00 00" '
+               '"com.google.mdstest/com.google.mdstest.instrument.'
+               'ModemConfigInstrumentation"')
+        ad.log.info("Switch to MSIM mode by using %s", cmd)
+        ad.adb.shell(cmd, ignore_status=True)
+        time.sleep(timeout)
+        ad.adb.shell("setprop persist.radio.multisim.config dsds")
+        reboot_device(ad)
+        # Verify if device is really in msim mode
+        mode = ad.droid.telephonyGetPhoneCount()
+        if mode == 2:
+            ad.log.info("Device correctly switched to MSIM mode")
+            result = True
+            break
+        else:
+            ad.log.warning("Attempt %d - failed to switch to MSIM", (i + 1))
+    return result
+
+
+def phone_switch_to_ssim_mode(ad, retries=3, timeout=30):
+    result = False
+    if not ad.is_apk_installed("com.google.mdstest"):
+        raise signals.TestSkipClass("mdstest is not installed")
+    mode = ad.droid.telephonyGetPhoneCount()
+    if mode == 1:
+        ad.log.info("Device already in SSIM mode")
+        return True
+    for i in range(retries):
+        ad.adb.shell(
+        "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
+        ad.adb.shell(
+        "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
+        disable_qxdm_logger(ad)
+        cmds = ('am instrument -w -e request "WriteEFS" -e item '
+                '"/google/pixel_multisim_config" -e data  "01 00 00 00" '
+                '"com.google.mdstest/com.google.mdstest.instrument.'
+                'ModemConfigInstrumentation"',
+                'am instrument -w -e request "WriteEFS" -e item "/nv/item_files'
+                '/modem/uim/uimdrv/uim_extended_slot_mapping_config" -e data '
+                '"00 01 02 01" "com.google.mdstest/com.google.mdstest.'
+                'instrument.ModemConfigInstrumentation"')
+        for cmd in cmds:
+            ad.log.info("Switch to SSIM mode by using %s", cmd)
+            ad.adb.shell(cmd, ignore_status=True)
+            time.sleep(timeout)
+        ad.adb.shell("setprop persist.radio.multisim.config ssss")
+        reboot_device(ad)
+        # Verify if device is really in ssim mode
+        mode = ad.droid.telephonyGetPhoneCount()
+        if mode == 1:
+            ad.log.info("Device correctly switched to SSIM mode")
+            result = True
+            break
+        else:
+            ad.log.warning("Attempt %d - failed to switch to SSIM", (i + 1))
+    return result
 
 
 def lock_lte_band_by_mds(ad, band):
@@ -4185,7 +4288,7 @@ def is_sms_match(event, phonenumber_tx, text):
             and phone number match.
     """
     return (check_phone_number_match(event['data']['Sender'], phonenumber_tx)
-            and event['data']['Text'] == text)
+            and event['data']['Text'].strip() == text)
 
 
 def is_sms_partial_match(event, phonenumber_tx, text):
@@ -4201,7 +4304,7 @@ def is_sms_partial_match(event, phonenumber_tx, text):
         Return True if 'text' starts with event['data']['Text']
             and phone number match.
     """
-    event_text = event['data']['Text']
+    event_text = event['data']['Text'].strip()
     if event_text.startswith("("):
         event_text = event_text.split(")")[-1]
     return (check_phone_number_match(event['data']['Sender'], phonenumber_tx)
@@ -4279,7 +4382,7 @@ def wait_for_matching_sms(log,
                 event = ad_rx.messaging_ed.wait_for_event(
                     EventSmsReceived, is_sms_partial_match, max_wait_time,
                     phonenumber_tx, remaining_text)
-                event_text = event['data']['Text'].split(")")[-1]
+                event_text = event['data']['Text'].split(")")[-1].strip()
                 event_text_length = len(event_text)
                 ad_rx.log.info("Got event %s of text length %s from %s",
                                EventSmsReceived, event_text_length,
@@ -4612,6 +4715,9 @@ def mms_send_receive_verify_for_subscription(
             raise
         finally:
             ad_rx.droid.smsStopTrackingIncomingMmsMessage()
+            for ad in (ad_tx, ad_rx):
+                ad.send_keycode("BACK")
+                ad.adb.shell("su root setenforce 1")
     return True
 
 
@@ -4684,6 +4790,18 @@ def mms_receive_verify_after_call_hangup_for_subscription(
                 return False
         finally:
             ad_rx.droid.smsStopTrackingIncomingMmsMessage()
+    return True
+
+
+def ensure_preferred_network_type_for_subscription(
+        ad,
+        network_preference
+        ):
+    sub_id = ad.droid.subscriptionGetDefaultSubId()
+    if not ad.droid.telephonySetPreferredNetworkTypesForSubscription(
+            network_preference, sub_id):
+        ad.log.error("Set sub_id %s Preferred Networks Type %s failed.",
+                     sub_id, network_preference)
     return True
 
 
@@ -4864,6 +4982,10 @@ def ensure_network_generation_for_subscription(
     if not set_preferred_network_mode_pref(log, ad, sub_id,
                                            network_preference):
         return False
+
+    if hasattr(ad, "dsds") and voice_or_data == "data" and sub_id != get_default_data_sub_id(ad):
+        ad.log.info("MSIM - Non DDS, ignore data RAT")
+        return True
 
     if is_droid_in_network_generation_for_subscription(
             log, ad, sub_id, generation, voice_or_data):
@@ -6431,7 +6553,8 @@ def bring_up_sl4a(ad, attemps=3):
 def reboot_device(ad, recover_sim_state=True):
     sim_state = is_sim_ready(ad.log, ad)
     ad.reboot()
-    start_qxdm_logger(ad)
+    if ad.qxdm_log:
+        start_qxdm_logger(ad)
     ad.unlock_screen()
     if recover_sim_state:
         if not unlock_sim(ad):
@@ -6627,6 +6750,9 @@ def build_id_override(ad, new_build_id=None, postfix=None):
     else:
         build_id = None
     existing_build_id = ad.adb.getprop("ro.build.id")
+    if postfix in build_id:
+        ad.log.info("Build id already contains %s", postfix)
+        return
     if not new_build_id:
         if postfix and build_id:
             new_build_id = "%s.%s" % (build_id, postfix)
@@ -6658,13 +6784,13 @@ def enable_connectivity_metrics(ad):
         #" -e usagestats:connectivity_metrics:data_collection_bitmap 62"
     ]
     for cmd in cmds:
-        ad.adb.shell(cmd)
+        ad.adb.shell(cmd, ignore_status=True)
 
 
 def force_connectivity_metrics_upload(ad):
     cmd = "cmd jobscheduler run --force com.android.connectivity.metrics %s"
     for job_id in [2, 3, 5, 4, 1, 6]:
-        ad.adb.shell(cmd % job_id)
+        ad.adb.shell(cmd % job_id, ignore_status=True)
 
 
 def system_file_push(ad, src_file_path, dst_file_path):
@@ -7003,6 +7129,17 @@ def get_screen_shot_logs(ads, test_name="", begin_time=None):
         get_screen_shot_log(ad, test_name=test_name, begin_time=begin_time)
 
 
+def get_carrier_id_version(ad):
+    out = ad.adb.shell("dumpsys activity service TelephonyDebugService | " \
+                       "grep -i carrier_list_version")
+    if out and ":" in out:
+        version = out.split(':')[1].lstrip()
+    else:
+        version = "0"
+    ad.log.debug("Carrier Config Version is %s", version)
+    return version
+
+
 def get_carrier_config_version(ad):
     out = ad.adb.shell("dumpsys carrier_config | grep version_string")
     if out and "-" in out:
@@ -7011,6 +7148,191 @@ def get_carrier_config_version(ad):
         version = "0"
     ad.log.debug("Carrier Config Version is %s", version)
     return version
+
+
+def install_googleaccountutil_apk(ad, account_util):
+    ad.log.info("Install account_util %s", account_util)
+    ad.ensure_screen_on()
+    ad.adb.install("-r %s" % account_util, timeout=300, ignore_status=True)
+    time.sleep(3)
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.info("com.google.android.tradefed.account is not installed")
+        return False
+    return True
+
+
+def install_googlefi_apk(ad, fi_util):
+    ad.log.info("Install fi_util %s", fi_util)
+    ad.ensure_screen_on()
+    ad.adb.install("-r -g --user 0 %s" % fi_util,
+                   timeout=300, ignore_status=True)
+    time.sleep(3)
+    if not check_fi_apk_installed(ad):
+        return False
+    return True
+
+
+def check_fi_apk_installed(ad):
+    if not ad.is_apk_installed("com.google.android.apps.tycho"):
+        ad.log.warning("com.google.android.apps.tycho is not installed")
+        return False
+    return True
+
+
+def add_google_account(ad, retries=3):
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.error("GoogleAccountUtil is not installed")
+        return False
+    for _ in range(retries):
+        ad.ensure_screen_on()
+        output = ad.adb.shell(
+            'am instrument -w -e account "%s@gmail.com" -e password '
+            '"%s" -e sync true -e wait-for-checkin false '
+            'com.google.android.tradefed.account/.AddAccount' %
+            (ad.user_account, ad.user_password))
+        if "result=SUCCESS" in output:
+            ad.log.info("Google account is added successfully")
+            return True
+    ad.log.error("Failed to add google account - %s", output)
+    return False
+
+
+def remove_google_account(ad, retries=3):
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.error("GoogleAccountUtil is not installed")
+        return False
+    for _ in range(retries):
+        ad.ensure_screen_on()
+        output = ad.adb.shell(
+            'am instrument -w '
+            'com.google.android.tradefed.account/.RemoveAccounts')
+        if "result=SUCCESS" in output:
+            ad.log.info("google account is removed successfully")
+            return True
+    ad.log.error("Fail to remove google account due to %s", output)
+    return False
+
+
+def my_current_screen_content(ad, content):
+    ad.adb.shell("uiautomator dump --window=WINDOW")
+    out = ad.adb.shell("cat /sdcard/window_dump.xml | grep -E '%s'" % content)
+    if not out:
+        ad.log.warning("NOT FOUND - %s", content)
+        return False
+    return True
+
+
+def activate_google_fi_account(ad, retries=10):
+    _FI_APK = "com.google.android.apps.tycho"
+    _FI_ACTIVATE_CMD = ('am start -c android.intent.category.DEFAULT -n '
+                        'com.google.android.apps.tycho/.InitActivity --ez '
+                        'in_setup_wizard false --ez force_show_account_chooser '
+                        'false')
+    toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
+    ad.adb.shell("settings put system screen_off_timeout 1800000")
+    page_match_dict = {
+       "Setup" : "Activate Google Fi to use your device for calls",
+       "Switch" : "Switch to the Google Fi mobile network",
+       "Connect" : "Connect to the Google Fi mobile network",
+       "Move" : "Move number",
+       "Data" : "first turn on mobile data",
+       "Activate" : "This takes a minute or two, sometimes longer",
+       "Welcome" : "Welcome to Google Fi",
+       "Account" : "Your current cycle ends in"
+    }
+    page_list = ["Account", "Setup", "Switch", "Connect",
+                 "Activate", "Move", "Welcome", "Data"]
+    for _ in range(retries):
+        ad.force_stop_apk(_FI_APK)
+        ad.ensure_screen_on()
+        ad.send_keycode("MENU")
+        ad.send_keycode("HOME")
+        ad.adb.shell(_FI_ACTIVATE_CMD)
+        time.sleep(15)
+        for page in page_list:
+            if my_current_screen_content(ad, page_match_dict[page]):
+                ad.log.info("Ready for Step %s", page)
+                log_screen_shot(ad, "fi_activation_step_%s" % page)
+                if page in ("Setup", "Switch", "Connect"):
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("ENTER")
+                    time.sleep(30)
+                elif page == "Move":
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("ENTER")
+                    time.sleep(5)
+                elif page == "Welcome":
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("ENTER")
+                    ad.log.info("Activation SUCCESS using Fi App")
+                    time.sleep(5)
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("ENTER")
+                    return True
+                elif page == "Activate":
+                    time.sleep(60)
+                    if my_current_screen_content(ad, page_match_dict[page]):
+                        time.sleep(60)
+                elif page == "Account":
+                    return True
+                elif page == "Data":
+                    ad.log.error("Mobile Data is turned OFF by default")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("ENTER")
+            else:
+                ad.log.info("NOT FOUND - Page %s", page)
+                log_screen_shot(ad, "fi_activation_step_%s_failure" % page)
+    return False
+
+
+def check_google_fi_activated(ad, retries=20):
+    if check_fi_apk_installed(ad):
+        _FI_APK = "com.google.android.apps.tycho"
+        _FI_LAUNCH_CMD = ("am start -n %s/%s.AccountDetailsActivity" \
+                          % (_FI_APK, _FI_APK))
+        toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
+        ad.adb.shell("settings put system screen_off_timeout 1800000")
+        ad.force_stop_apk(_FI_APK)
+        ad.ensure_screen_on()
+        ad.send_keycode("HOME")
+        ad.adb.shell(_FI_LAUNCH_CMD)
+        time.sleep(10)
+        if not my_current_screen_content(ad, "Your current cycle ends in"):
+            ad.log.warning("Fi is not activated")
+            return False
+        ad.send_keycode("HOME")
+        return True
+    else:
+        ad.log.info("Fi Apk is not yet installed")
+        return False
+
+
+def cleanup_configupdater(ad):
+    cmds = ('rm -rf /data/data/com.google.android.configupdater/shared_prefs',
+            'rm /data/misc/carrierid/carrier_list.pb',
+            'setprop persist.telephony.test.carrierid.ota true',
+            'rm /data/user_de/0/com.android.providers.telephony/shared_prefs'
+            '/CarrierIdProvider.xml')
+    for cmd in cmds:
+        ad.log.info("Cleanup ConfigUpdater - %s", cmd)
+        ad.adb.shell(cmd, ignore_status=True)
+
+
+def pull_carrier_id_files(ad, carrier_id_path):
+    utils.create_dir(carrier_id_path)
+    ad.log.info("Pull CarrierId Files")
+    cmds = ('/data/data/com.google.android.configupdater/shared_prefs/',
+            '/data/misc/carrierid/',
+            '/data/user_de/0/com.android.providers.telephony/shared_prefs/',
+            '/data/data/com.android.providers.downloads/databases/downloads.db')
+    for cmd in cmds:
+        cmd = cmd + " %s" % carrier_id_path
+        ad.adb.pull(cmd, timeout=30, ignore_status=True)
 
 
 def bring_up_connectivity_monitor(ad):

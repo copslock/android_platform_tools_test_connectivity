@@ -33,18 +33,38 @@ ANALYSIS_FILE_TEMPLATE = "audio_analysis_%s.txt"
 bits_per_sample = 32
 
 
+class FileNotFound(Exception):
+    """Raises Exception if file is not present"""
+
+
 class SshAudioCapture(AudioCapture):
 
     def __init__(self, test_params, path):
         super(SshAudioCapture, self).__init__(test_params, path)
         self.remote_path = path
+        self.ssh_session = None
 
     def capture_audio(self, trim_beginning=0, trim_end=0):
+        """Captures audio and store results.
+
+        Args:
+            trim_beginning: To trim audio at the start in seconds.
+            trim_end: To trim audio at the end in seconds.
+
+        Returns:
+            Returns exit status of ssh connection.
+        """
+        if not trim_beginning:
+            trim_beginning = self.audio_params.get('trim_beginning', 0)
+        if not trim_end:
+            trim_end = self.audio_params.get('trim_end', 0)
         if self.audio_params["ssh_config"]:
             ssh_settings = settings.from_config(
                 self.audio_params["ssh_config"])
             self.ssh_session = connection.SshConnection(ssh_settings)
-            self.ssh_session.send_file(self.audio_params["src_path"],
+            cur_path = os.path.dirname(os.path.realpath(__file__))
+            local_path = os.path.join(cur_path, "audio_capture.py")
+            self.ssh_session.send_file(local_path,
                                        self.audio_params["dest_path"])
             path = self.audio_params["dest_path"]
             test_params = str(self.audio_params).replace("\'", "\"")
@@ -52,21 +72,18 @@ class SshAudioCapture(AudioCapture):
                 path, test_params)
             job_result = self.ssh_session.run(self.cmd)
             logging.debug("Job Result {}".format(job_result.stdout))
-            result = self.ssh_session.run("ls")
-            for res in result.stdout.split():
-                if ".wav" in res:
-                    self.ssh_session.run("scp *.wav %s@%s:%s" % (
-                        self.audio_params["user_name"],
-                        self.audio_params["ip_address"],
-                        self.remote_path))
-            return bool(job_result.stdout)
+            self.ssh_session.pull_file(
+                self.remote_path, os.path.join(
+                    self.audio_params["dest_path"], "*.wav"),
+                    ignore_status=True)
+            return bool(not job_result.exit_status)
         else:
             return self.capture_and_store_audio(trim_beginning, trim_end)
 
     def terminate_and_store_audio_results(self):
         """Terminates audio and stores audio files."""
         if self.audio_params["ssh_config"]:
-            self.ssh_session.run("rm *.wav")
+            self.ssh_session.run('rm *.wav', ignore_status=True)
         else:
             self.terminate_audio()
 
@@ -131,11 +148,20 @@ class SshAudioCapture(AudioCapture):
             tolerance=tolerance)
 
     def audio_quality_analysis(self, path):
-        """Measures audio quality based on the audio file given as input."""
+        """Measures audio quality based on the audio file given as input.
+
+        Args:
+            path: Log path
+
+        Returns:
+            analysis_path on success.
+        """
         dest_file_path = os.path.join(path,
                 RECORD_FILE_TEMPLATE % self.last_fileno())
         analysis_path = os.path.join(path,
                 ANALYSIS_FILE_TEMPLATE % self.last_fileno())
+        if not os.path.exists(dest_file_path):
+            raise FileNotFound("Recorded file not found")
         try:
             quality_analysis(
                 filename=dest_file_path,
@@ -147,3 +173,4 @@ class SshAudioCapture(AudioCapture):
         except Exception as err:
             logging.exception("Failed to analyze raw audio: %s" % err)
         return analysis_path
+

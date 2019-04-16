@@ -17,6 +17,7 @@
 Controller interface for Anritsu Signalling Tester MD8475A.
 """
 
+import logging
 import time
 import socket
 from enum import Enum
@@ -26,6 +27,8 @@ from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuUtils
 from acts.controllers.anritsu_lib._anritsu_utils import NO_ERROR
 from acts.controllers.anritsu_lib._anritsu_utils import OPERATION_COMPLETE
+
+from acts import tracelogger
 
 TERMINATOR = "\0"
 
@@ -73,11 +76,11 @@ WCDMA_BANDS = {
 }
 
 
-def create(configs, logger):
+def create(configs):
     objs = []
     for c in configs:
         ip_address = c["ip_address"]
-        objs.append(MD8475A(ip_address, logger))
+        objs.append(MD8475A(ip_address))
     return objs
 
 
@@ -399,10 +402,10 @@ class MD8475A(object):
     """Class to communicate with Anritsu MD8475A Signalling Tester.
        This uses GPIB command to interface with Anritsu MD8475A """
 
-    def __init__(self, ip_address, log_handle, wlan=False, md8475_version="A"):
+    def __init__(self, ip_address, wlan=False, md8475_version="A"):
         self._error_reporting = True
         self._ipaddr = ip_address
-        self.log = log_handle
+        self.log = tracelogger.TraceLogger(logging.getLogger())
         self._wlan = wlan
         port_number = 28002
         self._md8475_version = md8475_version
@@ -862,7 +865,7 @@ class MD8475A(object):
 
         sleep_interval = 1
         sim_model = (self.get_simulation_model()).split(",")
-        #wait 1 more round for GSM because of PS attach
+        # wait 1 more round for GSM because of PS attach
         registration_check_iterations = 2 if sim_model[bts - 1] == "GSM" else 1
         for _ in range(registration_check_iterations):
             waiting_time = 0
@@ -964,6 +967,7 @@ class MD8475A(object):
         """
         return self.send_query("TESTSTAT?")
 
+    # Common Default Gateway:
     @property
     def gateway_ipv4addr(self):
         """ Gets the IPv4 address of the default gateway
@@ -986,6 +990,30 @@ class MD8475A(object):
             None
         """
         cmd = "DGIPV4 " + ipv4_addr
+        self.send_command(cmd)
+
+    @property
+    def gateway_ipv6addr(self):
+        """ Gets the IPv6 address of the default gateway
+
+        Args:
+          None
+
+        Returns:
+            current UE status
+        """
+        return self.send_query("DGIPV6?")
+
+    @gateway_ipv6addr.setter
+    def gateway_ipv6addr(self, ipv6_addr):
+        """ sets the IPv6 address of the default gateway
+        Args:
+            ipv6_addr: IPv6 address of the default gateway
+
+        Returns:
+            None
+        """
+        cmd = "DGIPV6 " + ipv6_addr
         self.send_command(cmd)
 
     @property
@@ -1720,12 +1748,52 @@ class _BaseTransceiverStation(object):
         """ Sets the UL/DL pattern configuration for TDD bands
 
         Args:
-            configuration: configuration number, from 0 to 6
+            configuration: configuration number, [ 0, 6 ] inclusive
 
         Returns:
             None
+
+        Raises:
+            ValueError: Frame structure has to be [ 0, 6 ] inclusive
         """
+        if configuration not in range(0, 7):
+            raise ValueError("The frame structure configuration has to be a "
+                             "number between 0 and 6 inclusive")
+
         cmd = "ULDLCONFIGURATION {},{}".format(configuration, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def tdd_special_subframe(self):
+        """ Gets SPECIALSUBFRAME of cell.
+
+        Args:
+            None
+
+        Returns:
+            tdd_special_subframe: integer between 0,9 inclusive
+        """
+        cmd = "SPECIALSUBFRAME? " + self._bts_number
+        tdd_special_subframe = int(self._anritsu.send_query(cmd))
+        return tdd_special_subframe
+
+    @tdd_special_subframe.setter
+    def tdd_special_subframe(self, tdd_special_subframe):
+        """ Sets SPECIALSUBFRAME of cell.
+
+        Args:
+            tdd_special_subframe: int between 0,9 inclusive
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: tdd_special_subframe has to be between 0,9 inclusive
+        """
+        if tdd_special_subframe not in range(0, 10):
+            raise ValueError("The special subframe config is not [0,9]")
+        cmd = "SPECIALSUBFRAME {},{}".format(tdd_special_subframe,
+                                             self._bts_number)
         self._anritsu.send_command(cmd)
 
     @property
@@ -3512,6 +3580,86 @@ class _PacketDataNetwork(object):
         self._anritsu = anritsu
         self.log = anritsu.log
 
+    # Default Gateway Selection
+    @property
+    def pdn_DG_selection(self):
+        """ Gets the default gateway for the PDN
+
+        Args:
+          None
+
+        Returns:
+          Current UE status
+        """
+        cmd = "PDNDEFAULTGATEWAY? " + self._pdn_number
+        return self._anritsu.send_query(cmd)
+
+    @pdn_DG_selection.setter
+    def pdn_DG_selection(self, selection):
+        """ Sets the default gateway selection for the PDN
+
+        Args:
+          Selection: COMMON or USER
+
+        Returns:
+          None
+        """
+        cmd = "PDNDEFAULTGATEWAY {},{}".format(self._pdn_number, selection)
+        self._anritsu.send_command(cmd)
+
+    # PDN specific Default Gateway:
+    @property
+    def pdn_gateway_ipv4addr(self):
+        """ Gets the IPv4 address of the default gateway
+
+        Args:
+          None
+
+        Returns:
+            current UE status
+        """
+        cmd = "PDNDGIPV4? " + self._pdn_number
+        return self._anritsu.send_query(cmd)
+
+    @pdn_gateway_ipv4addr.setter
+    def pdn_gateway_ipv4addr(self, ipv4_addr):
+        """ sets the IPv4 address of the default gateway
+
+        Args:
+            ipv4_addr: IPv4 address of the default gateway
+
+        Returns:
+            None
+        """
+        cmd = "PDNDGIPV4 {},{}".format(self._pdn_number, ipv4_addr)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def pdn_gateway_ipv6addr(self):
+        """ Gets the IPv6 address of the default gateway
+
+        Args:
+          None
+
+        Returns:
+            current UE status
+        """
+        cmd = "PDNDGIPV6? " + self._pdn_number
+        return self._anritsu.send_query(cmd)
+
+    @pdn_gateway_ipv6addr.setter
+    def pdn_gateway_ipv6addr(self, ipv6_addr):
+        """ sets the IPv6 address of the default gateway
+
+        Args:
+            ipv6_addr: IPv6 address of the default gateway
+
+        Returns:
+            None
+        """
+        cmd = "PDNDGIPV6 {},{}".format(self._pdn_number, ipv6_addr)
+        self._anritsu.send_command(cmd)
+
     @property
     def ue_address_iptype(self):
         """ Gets IP type of UE for particular PDN
@@ -4135,6 +4283,37 @@ class _IMS_Services(object):
 
     @tmo_cscf_userslist_add.setter
     def tmo_cscf_userslist_add(self, username):
+        """ Set CSCF USER to USERLIST
+            This is needed if IMS AUTH is enabled
+
+        Args:
+            username: CSCF Username
+
+        Returns:
+            None
+        """
+        cmd = "IMSCSCFUSERSLISTADD {},{},00112233445566778899AABBCCDDEEFF,TS34108,AKAV1_MD5,\
+        OPC,00000000000000000000000000000000,8000,TRUE,FALSE,0123456789ABCDEF0123456789ABCDEF,\
+        54CDFEAB9889000001326754CDFEAB98,6754CDFEAB9889BAEFDC457623100132,\
+        326754CDFEAB9889BAEFDC4576231001,TRUE,TRUE,TRUE".format(
+            self._vnid, username)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def fi_cscf_userslist_add(self):
+        """ Get CSCF USERLIST
+
+        Args:
+            None
+
+        Returns:
+            CSCF USERLIST
+        """
+        cmd = "IMSCSCFUSERSLIST? " + self._vnid
+        return self._anritsu.send_query(cmd)
+
+    @fi_cscf_userslist_add.setter
+    def fi_cscf_userslist_add(self, username):
         """ Set CSCF USER to USERLIST
             This is needed if IMS AUTH is enabled
 

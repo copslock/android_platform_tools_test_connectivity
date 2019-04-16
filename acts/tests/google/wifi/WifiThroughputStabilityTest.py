@@ -23,8 +23,9 @@ from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
+from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
-from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -56,8 +57,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         # Generate test cases
         modes = [(6, "VHT20"), (36, "VHT20"), (36, "VHT40"), (36, "VHT80"),
                  (149, "VHT20"), (149, "VHT40"), (149, "VHT80")]
-        traffic_types = [("TCP", "DL"), ("TCP", "UL"), ("UDP", "DL"), ("UDP",
-                                                                       "UL")]
+        traffic_types = [("TCP", "DL"), ("TCP", "UL"), ("UDP", "DL"),
+                         ("UDP", "UL")]
         signal_levels = ["high", "low"]
         self.generate_test_cases(modes, traffic_types, signal_levels)
 
@@ -65,12 +66,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.dut = self.android_devices[0]
         req_params = [
             "throughput_stability_test_params", "testbed_params",
-            "main_network", "RetailAccessPoints"
+            "main_network", "RetailAccessPoints", "RemoteServer"
         ]
         opt_params = ["golden_files_list"]
         self.unpack_userparams(req_params, opt_params)
         self.test_params = self.throughput_stability_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
+        self.remote_server = ssh.connection.SshConnection(
+            ssh.settings.from_config(self.RemoteServer[0]["ssh_config"]))
         self.iperf_server = self.iperf_servers[0]
         self.iperf_client = self.iperf_clients[0]
         self.access_points = retail_ap.create(self.RetailAccessPoints)
@@ -81,9 +84,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             self.access_point.ap_settings))
         if not hasattr(self, "golden_files_list"):
             self.golden_files_list = [
-                os.path.join(self.testbed_params["golden_results_path"],
-                             file) for file in os.listdir(
-                                 self.testbed_params["golden_results_path"])
+                os.path.join(self.testbed_params["golden_results_path"], file)
+                for file in os.listdir(
+                    self.testbed_params["golden_results_path"])
             ]
 
     def teardown_test(self):
@@ -113,7 +116,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         min_throughput_check = (
             (min_throughput / avg_throughput) *
             100) > self.test_params["min_throughput_threshold"]
-        std_deviation_check = std_dev_percent < self.test_params["std_deviation_threshold"]
+        std_deviation_check = std_dev_percent < self.test_params[
+            "std_deviation_threshold"]
 
         if min_throughput_check and std_deviation_check:
             asserts.explicit_pass(
@@ -141,16 +145,16 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         """
         # Save output as text file
         test_name = self.current_test_name
-        results_file_path = "{}/{}.txt".format(self.log_path,
-                                               self.current_test_name)
+        results_file_path = os.path.join(self.log_path,
+                                         "{}.txt".format(test_name))
         test_result_dict = {}
         test_result_dict["ap_settings"] = test_result["ap_settings"].copy()
         test_result_dict["attenuation"] = self.atten_level
         if test_result["iperf_result"].instantaneous_rates:
             instantaneous_rates_Mbps = [
-                rate * 8 * (1.024**2)
-                for rate in test_result["iperf_result"].instantaneous_rates[
-                    self.test_params["iperf_ignored_interval"]:-1]
+                rate * 8 * (1.024**2) for rate in test_result["iperf_result"].
+                instantaneous_rates[self.
+                                    test_params["iperf_ignored_interval"]:-1]
             ]
         else:
             instantaneous_rates_Mbps = float("nan")
@@ -169,25 +173,17 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         with open(results_file_path, 'w') as results_file:
             json.dump(test_result_dict, results_file)
         # Plot and save
-        legends = self.current_test_name
-        x_label = 'Time (s)'
-        y_label = 'Throughput (Mbps)'
+        figure = wputils.BokehFigure(
+            test_name, x_label='Time (s)', primary_y='Throughput (Mbps)')
         time_data = list(range(0, len(instantaneous_rates_Mbps)))
-        data_sets = [[time_data], [instantaneous_rates_Mbps]]
-        fig_property = {
-            "title": test_name,
-            "x_label": x_label,
-            "y_label": y_label,
-            "linewidth": 3,
-            "markersize": 10
-        }
-        output_file_path = "{}/{}.html".format(self.log_path, test_name)
-        wputils.bokeh_plot(
-            data_sets,
-            legends,
-            fig_property,
-            shaded_region=None,
-            output_file_path=output_file_path)
+        figure.add_line(
+            time_data,
+            instantaneous_rates_Mbps,
+            legend=self.current_test_name,
+            marker='circle')
+        output_file_path = os.path.join(self.log_path,
+                                        "{}.html".format(test_name))
+        figure.generate_figure(output_file_path)
         return test_result_dict
 
     def throughput_stability_test_func(self, channel, mode):
@@ -233,12 +229,13 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             num_of_tries=5,
             check_connectivity=False)
         time.sleep(MED_SLEEP)
+        self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         # Get iperf_server address
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
-            iperf_server_address = self.dut.droid.connectivityGetIPv4Addresses(
-                'wlan0')[0]
+            iperf_server_address = self.dut_ip
         else:
-            iperf_server_address = self.testbed_params["iperf_server_address"]
+            iperf_server_address = wputils.get_server_address(
+                self.remote_server, self.dut_ip, "255.255.255.0")
         # Run test and log result
         # Start iperf session
         self.log.info("Starting iperf test.")
@@ -258,8 +255,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         try:
             iperf_result = ipf.IPerfResult(iperf_file)
         except:
-            self.log.warning("ValueError: Cannot get iperf result.")
-            iperf_result = None
+            asserts.fail("Cannot get iperf result.")
         test_result["ap_settings"] = self.access_point.ap_settings.copy()
         test_result["attenuation"] = self.atten_level
         test_result["iperf_result"] = iperf_result
@@ -278,11 +274,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         # Fetch the golden RvR results
         test_name = self.current_test_name
         rvr_golden_file_name = "test_rvr_" + "_".join(test_name.split("_")[4:])
-        golden_path = [
-            file_name for file_name in self.golden_files_list
-            if rvr_golden_file_name in file_name
-        ]
-        with open(golden_path[0], 'r') as golden_file:
+        try:
+            golden_path = next(file_name
+                               for file_name in self.golden_files_list
+                               if rvr_golden_file_name in file_name)
+        except:
+            asserts.fail("Test failed. Golden data not found.")
+
+        with open(golden_path, 'r') as golden_file:
             golden_results = json.load(golden_file)
         test_target = {}
         rssi_high_low = test_name.split("_")[3]
@@ -319,7 +318,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.iperf_args = '-i 1 -t {} -J'.format(
             self.test_params["iperf_duration"])
         if test_params[4] == "UDP":
-            self.iperf_args = self.iperf_args + " -u -b {}".format(
+            self.iperf_args = self.iperf_args + " -u -b {} -l 1400".format(
                 self.test_params["UDP_rates"][mode])
         if (test_params[5] == "DL"
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)

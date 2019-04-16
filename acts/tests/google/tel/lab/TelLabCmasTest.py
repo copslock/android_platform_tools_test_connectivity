@@ -83,8 +83,8 @@ class TelLabCmasTest(TelephonyBaseTest):
 
     def setup_class(self):
         try:
-            self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
-                                   self.wlan_option, self.md8475_version)
+            self.anritsu = MD8475A(self.md8475a_ip_address, self.wlan_option,
+                                   self.md8475_version)
         except AnritsuError:
             self.log.error("Error in connecting to Anritsu Simulator")
             return False
@@ -196,6 +196,24 @@ class TelLabCmasTest(TelephonyBaseTest):
             self.log.error("Exception during CMAS send/receive: " + str(e))
             return False
         return True
+
+    def test_carrier_tmobile(self):
+        """ Sets the Carrier to TMO.
+        Returns: None
+        """
+        setattr(self.ad, "sim_card", "FiTMO")
+
+    def test_carrier_sprint(self):
+        """ Sets the Carrier to SPR.
+        Returns: None
+        """
+        setattr(self.ad, "sim_card", "FiSPR")
+
+    def test_carrier_uscc(self):
+        """ Sets the Carrier to USCC.
+        Returns: None
+        """
+        setattr(self.ad, "sim_card", "FiUSCC")
 
     """ Tests Begin """
 

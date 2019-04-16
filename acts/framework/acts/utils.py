@@ -16,6 +16,7 @@
 
 import base64
 import concurrent.futures
+import copy
 import datetime
 import functools
 import json
@@ -498,8 +499,8 @@ def sync_device_time(ad):
     Args:
         ad: The android device to sync time on.
     """
-    ad.adb.shell("settings global put auto_time 0", ignore_status=True)
-    ad.adb.shell("settings global put auto_time_zone 0", ignore_status=True)
+    ad.adb.shell("settings put global auto_time 0", ignore_status=True)
+    ad.adb.shell("settings put global auto_time_zone 0", ignore_status=True)
     droid = ad.droid
     droid.setTimeZone(get_timezone_olson_id())
     droid.setTime(get_current_epoch_time())
@@ -612,6 +613,57 @@ def force_airplane_mode(ad, new_state, timeout_value=60):
         # adb wait for device timeout
         return False
     return True
+
+
+def get_device_usb_charging_status(ad):
+    """ Returns the usb charging status of the device.
+
+    Args:
+        ad: android device object
+
+    Returns:
+        True if charging
+        False if not charging
+     """
+    adb_shell_result = ad.adb.shell("dumpsys deviceidle get charging")
+    ad.log.info("Device Charging State: {}".format(adb_shell_result))
+    return adb_shell_result == 'true'
+
+
+def disable_usb_charging(ad):
+    """ Unplug device from usb charging.
+
+    Args:
+        ad: android device object
+
+    Returns:
+        True if device is unplugged
+        False otherwise
+    """
+    ad.adb.shell("dumpsys battery unplug")
+    if not get_device_usb_charging_status(ad):
+        return True
+    else:
+        ad.log.info("Could not disable USB charging")
+        return False
+
+
+def enable_usb_charging(ad):
+    """ Plug device to usb charging.
+
+    Args:
+        ad: android device object
+
+    Returns:
+        True if device is Plugged
+        False otherwise
+    """
+    ad.adb.shell("dumpsys battery reset")
+    if get_device_usb_charging_status(ad):
+        return True
+    else:
+        ad.log.info("Could not enable USB charging")
+        return False
 
 
 def enable_doze(ad):
@@ -749,11 +801,9 @@ def set_location_service(ad, new_state):
                  " content://com.google.settings/partner --bind "
                  "name:s:use_location_for_services --bind value:s:1")
     if new_state:
-        ad.adb.shell("settings put secure location_providers_allowed +gps")
-        ad.adb.shell("settings put secure location_providers_allowed +network")
+        ad.adb.shell("settings put secure location_mode 3")
     else:
-        ad.adb.shell("settings put secure location_providers_allowed -gps")
-        ad.adb.shell("settings put secure location_providers_allowed -network")
+        ad.adb.shell("settings put secure location_mode 0")
 
 
 def set_mobile_data_always_on(ad, new_state):
@@ -1097,3 +1147,35 @@ def test_concurrent_actions(*calls, failure_exceptions=(Exception,)):
         raise
     except failure_exceptions as e:
         raise signals.TestFailure(e)
+
+
+class SuppressLogOutput(object):
+    """Context manager used to suppress all logging output for the specified
+    logger and level(s).
+    """
+
+    def __init__(self, logger=logging.getLogger(), log_levels=None):
+        """Create a SuppressLogOutput context manager
+
+        Args:
+            logger: The logger object to suppress
+            log_levels: Levels of log handlers to disable.
+        """
+
+        self._logger = logger
+        self._log_levels = log_levels or [logging.DEBUG, logging.INFO,
+                                          logging.WARNING, logging.ERROR,
+                                          logging.CRITICAL]
+        if isinstance(self._log_levels, int):
+            self._log_levels = [self._log_levels]
+        self._handlers = copy.copy(self._logger.handlers)
+
+    def __enter__(self):
+        for handler in self._handlers:
+            if handler.level in self._log_levels:
+                self._logger.removeHandler(handler)
+        return self
+
+    def __exit__(self, *_):
+        for handler in self._handlers:
+            self._logger.addHandler(handler)

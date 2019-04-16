@@ -16,7 +16,6 @@
 
 import json
 import os
-import queue
 import threading
 import time
 
@@ -29,10 +28,10 @@ from acts.test_utils.bt.bt_test_utils import enable_bluetooth
 from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 from acts.test_utils.bt.bt_test_utils import take_btsnoop_logs
 from acts.test_utils.coex.coex_test_utils import A2dpDumpsysParser
-from acts.test_utils.coex.coex_test_utils import check_wifi_status
 from acts.test_utils.coex.coex_test_utils import (
     collect_bluetooth_manager_dumpsys_logs)
 from acts.test_utils.coex.coex_test_utils import configure_and_start_ap
+from acts.test_utils.coex.coex_test_utils import check_wifi_status
 from acts.test_utils.coex.coex_test_utils import iperf_result
 from acts.test_utils.coex.coex_test_utils import get_phone_ip
 from acts.test_utils.coex.coex_test_utils import parse_fping_results
@@ -56,6 +55,7 @@ class CoexBaseTest(BaseTestClass):
             self.sec_ad = self.android_devices[1]
         elif len(self.android_devices) == 3:
             self.third_ad = self.android_devices[2]
+        self.ssh_config = None
 
     class IperfVariables:
 
@@ -105,6 +105,8 @@ class CoexBaseTest(BaseTestClass):
         if hasattr(self, "IPerfClient"):
             self.log.info("Iperfclient is given in config file")
             self.iperf_client = self.iperf_clients[0]
+            if 'ssh_config' in self.IPerfClient[0]:
+                self.ssh_config = self.IPerfClient[0]["ssh_config"]
         else:
             self.log.warning("Iperfclient is not given in config file")
         wifi_test_device_init(self.pri_ad)
@@ -214,7 +216,8 @@ class CoexBaseTest(BaseTestClass):
             self.tag,
         )
 
-        cmd = "adb -s {} shell {}".format(self.pri_ad.serial, self.iperf_server)
+        cmd = "adb -s {} shell {}".format(self.pri_ad.serial,
+                                          self.iperf_server)
 
         def appender_iperf_logs(line):
             with open(out_file_name, 'a') as f:
@@ -244,19 +247,11 @@ class CoexBaseTest(BaseTestClass):
         """
         self.iperf_process = []
         self.flag_list = []
-        self.wifi_status_queue = queue.Queue()
-        args = [
-            lambda: check_wifi_status(self.pri_ad, self.network,
-                                      self.wifi_status_queue,
-                                      self.iperf["duration"])
-        ]
-        self.run_thread(args)
-
         if self.iperf_variables.is_bidirectional:
             self.iperf_variables.bidirectional_server_path = (
                 self.start_iperf_server_on_shell(self.iperf["port_2"]))
-        self.iperf_variables.iperf_server_path = self.start_iperf_server_on_shell(
-            self.iperf["port_1"])
+        self.iperf_variables.iperf_server_path = (
+            self.start_iperf_server_on_shell(self.iperf["port_1"]))
         if self.iperf_variables.protocol == "tcp":
             self.iperf_args = "-t {} -p {} {} -J".format(
                 self.iperf["duration"], self.iperf["port_1"],
@@ -300,15 +295,23 @@ class CoexBaseTest(BaseTestClass):
             bidirectional: True if testcase has bidirectional traffic.
         """
         ip = get_phone_ip(self.pri_ad)
+
+        args = [
+                lambda: check_wifi_status(self.pri_ad, self.network,
+                                          ssh_config=self.ssh_config)
+            ]
+        self.run_thread(args)
         if bidirectional:
             self.tag = self.tag + 1
             self.iperf_variables.bidirectional_client_path = (
-                    self.iperf_client.start(ip, self.bidirectional_args,
+                    self.iperf_client.start(ip,
+                                            self.bidirectional_args,
                                             self.tag))
         else:
             self.tag = self.tag + 1
             self.iperf_variables.iperf_client_path = (
-                    self.iperf_client.start(ip, iperf_args,
+                    self.iperf_client.start(ip,
+                                            iperf_args,
                                             self.tag))
 
         return True
@@ -324,20 +327,24 @@ class CoexBaseTest(BaseTestClass):
             if "-R" in iperf_args:
                 if bidirectional:
                     received = iperf_result(
-                        self.log,
+                        self.log, self.iperf_variables.protocol,
                         self.iperf_variables.bidirectional_client_path)
                 else:
                     received = iperf_result(
-                        self.log, self.iperf_variables.iperf_client_path)
+                        self.log, self.iperf_variables.protocol,
+                        self.iperf_variables.iperf_client_path)
             else:
                 received = iperf_result(self.log,
+                                        self.iperf_variables.protocol,
                                         self.iperf_variables.iperf_server_path)
         else:
             if bidirectional:
                 received = iperf_result(
-                    self.log, self.iperf_variables.bidirectional_client_path)
+                    self.log, self.iperf_variables.protocol,
+                    self.iperf_variables.bidirectional_client_path)
             else:
                 received = iperf_result(self.log,
+                                        self.iperf_variables.protocol,
                                         self.iperf_variables.iperf_client_path)
 
         if not received:
@@ -356,7 +363,6 @@ class CoexBaseTest(BaseTestClass):
 
         Args:
             test_name: Name of the test that triggered this function.
-            record: The records.TestResultRecord object
             begin_time: Logline format timestamp taken when the test started.
         """
         self.log.info("Test {} failed, Fetching Btsnoop logs and bugreport".
@@ -379,17 +385,13 @@ class CoexBaseTest(BaseTestClass):
         """Convenience function to join thread and fetch iperf result
         if iperf is started."""
         if self.iperf_variables.iperf_started:
-            if not self.iperf_variables.received:
-                self.teardown_thread()
-                if not self.wifi_status_queue.empty():
-                    if self.iperf_variables.is_bidirectional:
-                        self.result_parser(
-                            self.bidirectional_args, bidirectional=True)
-                    self.result_parser(self.iperf_args)
-                    if not self.wifi_status_queue.get():
-                        return False
-                    if False in self.flag_list:
-                        return False
+            self.teardown_thread()
+            self.result_parser(self.iperf_args)
+            if self.iperf_variables.is_bidirectional:
+                self.result_parser(self.bidirectional_args,
+                                   bidirectional=True)
+            if False in self.flag_list:
+                return False
         return True
 
     def teardown_thread(self):
@@ -429,5 +431,6 @@ class CoexBaseTest(BaseTestClass):
                 self.log.error("Increase volume failed")
                 return False
         else:
-            self.log.warning("No volume control pins specfied in relay config.")
+            self.log.warning(
+                "No volume control pins specified in relay config.")
         return True

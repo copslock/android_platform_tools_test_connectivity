@@ -115,8 +115,8 @@ class BtFunhausBaseTest(BtMetricsBaseTest):
         if type(music_path) is list:
             self.log.info("Media ready to push as is.")
         elif not os.path.isdir(music_path):
-            music_path = os.path.join(self.user_params[Config.key_config_path],
-                                      music_path)
+            music_path = os.path.join(
+                self.user_params[Config.key_config_path.value], music_path)
             if not os.path.isdir(music_path):
                 self.log.error(
                     "Unable to find music directory {}.".format(music_path))

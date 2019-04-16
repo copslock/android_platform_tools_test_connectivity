@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import time
 import unittest
 
@@ -246,6 +247,27 @@ class ConcurrentActionsTest(unittest.TestCase):
                 lambda: self.function_raises_passed_in_exception_type(KeyError),
                 failure_exceptions=KeyError
             )
+
+
+class SuppressLogOutputTest(unittest.TestCase):
+    """Tests SuppressLogOutput"""
+
+    def test_suppress_log_output(self):
+        """Tests that the SuppressLogOutput context manager removes handlers
+        of the specified levels upon entry and re-adds handlers upon exit.
+        """
+        handlers = [logging.NullHandler(level=lvl) for lvl in
+                    (logging.DEBUG, logging.INFO, logging.ERROR)]
+        log = logging.getLogger('test_log')
+        for handler in handlers:
+            log.addHandler(handler)
+        with utils.SuppressLogOutput(log, [logging.INFO, logging.ERROR]):
+            self.assertTrue(
+                any(handler.level == logging.DEBUG for handler in log.handlers))
+            self.assertFalse(
+                any(handler.level in (logging.INFO, logging.ERROR)
+                    for handler in log.handlers))
+        self.assertCountEqual(handlers, log.handlers)
 
 
 if __name__ == '__main__':

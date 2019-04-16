@@ -17,6 +17,7 @@
 """
 
 import collections
+import copy
 import json
 import logging
 
@@ -100,10 +101,10 @@ class TestResultRecord(object):
             self.result = TestResultEnums.TEST_RESULT_UNKNOWN
         if hasattr(e, 'details'):
             self.details = e.details
-        if hasattr(e, 'extras'):
-            self.extras = e.extras
         elif e:
             self.details = str(e)
+        if hasattr(e, 'extras'):
+            self.extras = e.extras
 
     def test_pass(self, e=None):
         """To mark the test as passed in this record.
@@ -261,11 +262,9 @@ class TestResult(object):
             if isinstance(r_value, list):
                 setattr(sum_result, name, l_value + r_value)
             elif isinstance(r_value, dict):
-                # '+' operator for TestResult is only valid when multiple
-                # TestResult objs were created in the same test run, which means
-                # the controller info would be the same across all of them.
-                # TODO(angli): have a better way to validate this situation.
-                setattr(sum_result, name, l_value)
+                sum_dict = copy.deepcopy(l_value)
+                sum_dict.update(copy.deepcopy(r_value))
+                setattr(sum_result, name, sum_dict)
         return sum_result
 
     def add_controller_info(self, name, info):

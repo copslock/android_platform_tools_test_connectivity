@@ -13,7 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import copy
 import fnmatch
+import importlib
 import logging
 import os
 import traceback
@@ -121,6 +123,8 @@ class BaseTestClass(object):
         current_test_name: A string that's the name of the test case currently
                            being executed. If no test is executing, this should
                            be None.
+        controller_registry: A dictionary that holds the controller objects used
+                             in a test run.
     """
 
     TAG = None
@@ -135,6 +139,7 @@ class BaseTestClass(object):
             self.TAG = self.__class__.__name__
         # Set all the controller objects and params.
         self.user_params = {}
+        self.testbed_configs = {}
         for name, value in configs.items():
             setattr(self, name, value)
         self.results = records.TestResult()
@@ -144,6 +149,12 @@ class BaseTestClass(object):
         self.consecutive_failure_limit = self.user_params.get(
             'consecutive_failure_limit', -1)
         self.size_limit_reached = False
+
+        self.controller_registry = {}
+        # Import and register the built-in controller modules specified
+        # in testbed config.
+        for module in self._import_builtin_controllers():
+            self.register_controller(module, builtin=True)
         if hasattr(self, 'android_devices'):
             for ad in self.android_devices:
                 if ad.droid:
@@ -207,6 +218,216 @@ class BaseTestClass(object):
                 self.log.warning(("Missing optional user param '%s' in "
                                   "configuration, continue."), name)
 
+    def _import_builtin_controllers(self):
+        """Import built-in controller modules.
+
+        Go through the testbed configs, find any built-in controller configs
+        and import the corresponding controller module from acts.controllers
+        package.
+
+        Returns:
+            A list of controller modules.
+        """
+        builtin_controllers = []
+        for ctrl_name in keys.Config.builtin_controller_names.value:
+            if ctrl_name in self.testbed_configs:
+                module_name = keys.get_module_name(ctrl_name)
+                module = importlib.import_module(
+                    "acts.controllers.%s" % module_name)
+                builtin_controllers.append(module)
+        return builtin_controllers
+
+    @staticmethod
+    def verify_controller_module(module):
+        """Verifies a module object follows the required interface for
+        controllers.
+
+        Args:
+            module: An object that is a controller module. This is usually
+                    imported with import statements or loaded by importlib.
+
+        Raises:
+            ControllerError is raised if the module does not match the ACTS
+            controller interface, or one of the required members is null.
+        """
+        required_attributes = ("create", "destroy",
+                               "ACTS_CONTROLLER_CONFIG_NAME")
+        for attr in required_attributes:
+            if not hasattr(module, attr):
+                raise signals.ControllerError(
+                    ("Module %s missing required "
+                     "controller module attribute %s.") % (module.__name__,
+                                                           attr))
+            if not getattr(module, attr):
+                raise signals.ControllerError(
+                    "Controller interface %s in %s cannot be null." %
+                    (attr, module.__name__))
+
+    @staticmethod
+    def get_module_reference_name(a_module):
+        """Returns the module's reference name.
+
+        This is largely for backwards compatibility with log parsing. If the
+        module defines ACTS_CONTROLLER_REFERENCE_NAME, it will return that
+        value, or the module's submodule name.
+
+        Args:
+            a_module: Any module. Ideally, a controller module.
+        Returns:
+            A string corresponding to the module's name.
+        """
+        if hasattr(a_module, 'ACTS_CONTROLLER_REFERENCE_NAME'):
+            return a_module.ACTS_CONTROLLER_REFERENCE_NAME
+        else:
+            return a_module.__name__.split('.')[-1]
+
+    def register_controller(self,
+                            controller_module,
+                            required=True,
+                            builtin=False):
+        """Registers an ACTS controller module for a test run.
+
+        An ACTS controller module is a Python lib that can be used to control
+        a device, service, or equipment. To be ACTS compatible, a controller
+        module needs to have the following members:
+
+            def create(configs):
+                [Required] Creates controller objects from configurations.
+                Args:
+                    configs: A list of serialized data like string/dict. Each
+                             element of the list is a configuration for a
+                             controller object.
+                Returns:
+                    A list of objects.
+
+            def destroy(objects):
+                [Required] Destroys controller objects created by the create
+                function. Each controller object shall be properly cleaned up
+                and all the resources held should be released, e.g. memory
+                allocation, sockets, file handlers etc.
+                Args:
+                    A list of controller objects created by the create function.
+
+            def get_info(objects):
+                [Optional] Gets info from the controller objects used in a test
+                run. The info will be included in test_result_summary.json under
+                the key "ControllerInfo". Such information could include unique
+                ID, version, or anything that could be useful for describing the
+                test bed and debugging.
+                Args:
+                    objects: A list of controller objects created by the create
+                             function.
+                Returns:
+                    A list of json serializable objects, each represents the
+                    info of a controller object. The order of the info object
+                    should follow that of the input objects.
+            def get_post_job_info(controller_list):
+                [Optional] Returns information about the controller after the
+                test has run. This info is sent to test_run_summary.json's
+                "Extras" key.
+                Args:
+                    The list of controller objects created by the module
+                Returns:
+                    A (name, data) tuple.
+        Registering a controller module declares a test class's dependency the
+        controller. If the module config exists and the module matches the
+        controller interface, controller objects will be instantiated with
+        corresponding configs. The module should be imported first.
+
+        Args:
+            controller_module: A module that follows the controller module
+                interface.
+            required: A bool. If True, failing to register the specified
+                controller module raises exceptions. If False, returns None upon
+                failures.
+            builtin: Specifies that the module is a builtin controller module in
+                ACTS. If true, adds itself to test attributes.
+        Returns:
+            A list of controller objects instantiated from controller_module, or
+            None.
+
+        Raises:
+            When required is True, ControllerError is raised if no corresponding
+            config can be found.
+            Regardless of the value of "required", ControllerError is raised if
+            the controller module has already been registered or any other error
+            occurred in the registration process.
+        """
+        BaseTestClass.verify_controller_module(controller_module)
+        module_ref_name = self.get_module_reference_name(controller_module)
+
+        if controller_module in self.controller_registry:
+            raise signals.ControllerError(
+                "Controller module %s has already been registered. It can not "
+                "be registered again." % module_ref_name)
+        # Create controller objects.
+        module_config_name = controller_module.ACTS_CONTROLLER_CONFIG_NAME
+        if module_config_name not in self.testbed_configs:
+            if required:
+                raise signals.ControllerError(
+                    "No corresponding config found for %s" %
+                    module_config_name)
+            else:
+                self.log.warning(
+                    "No corresponding config found for optional controller %s",
+                    module_config_name)
+            return None
+        try:
+            # Make a deep copy of the config to pass to the controller module,
+            # in case the controller module modifies the config internally.
+            original_config = self.testbed_configs[module_config_name]
+            controller_config = copy.deepcopy(original_config)
+            controllers = controller_module.create(controller_config)
+        except:
+            self.log.exception(
+                "Failed to initialize objects for controller %s, abort!",
+                module_config_name)
+            raise
+        if not isinstance(controllers, list):
+            raise signals.ControllerError(
+                "Controller module %s did not return a list of objects, abort."
+                % module_ref_name)
+        self.controller_registry[controller_module] = controllers
+        # Collect controller information and write to test result.
+        # Implementation of "get_info" is optional for a controller module.
+        if hasattr(controller_module, "get_info"):
+            controller_info = controller_module.get_info(controllers)
+            self.log.info("Controller %s: %s", module_config_name,
+                          controller_info)
+            self.results.add_controller_info(module_config_name,
+                                             controller_info)
+        else:
+            self.log.warning("No controller info obtained for %s",
+                             module_config_name)
+
+        if builtin:
+            setattr(self, module_ref_name, controllers)
+        self.log.debug("Found %d objects for controller %s", len(controllers),
+                       module_config_name)
+        return controllers
+
+    def unregister_controllers(self):
+        """Destroy controller objects and clear internal registry.
+
+        This will be called at the end of each TestRunner.run call.
+        """
+        for controller_module, controllers in self.controller_registry.items():
+            name = self.get_module_reference_name(controller_module)
+            if hasattr(controller_module, 'get_post_job_info'):
+                self.log.debug('Getting post job info for %s', name)
+                try:
+                    name, value = controller_module.get_post_job_info(
+                        controllers)
+                    self.results.set_extra_data(name, value)
+                except:
+                    self.log.error("Fail to get post job info for %s", name)
+            try:
+                self.log.debug('Destroying %s.', name)
+                controller_module.destroy(controllers)
+            except:
+                self.log.exception("Exception occurred destroying %s.", name)
+        self.controller_registry = {}
+
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
@@ -230,6 +451,7 @@ class BaseTestClass(object):
         is called.
         """
         self.teardown_class()
+        self.unregister_controllers()
         event_bus.post(TestClassEndEvent(self, self.results))
 
     def teardown_class(self):
@@ -244,8 +466,6 @@ class BaseTestClass(object):
         called.
         """
         self.current_test_name = test_name
-
-        event_bus.post(TestCaseBeginEvent(self, test_name))
 
         # Block the test if the consecutive test case failure limit is reached.
         if self.consecutive_failures == self.consecutive_failure_limit:
@@ -274,13 +494,6 @@ class BaseTestClass(object):
         try:
             self.teardown_test()
         finally:
-            # TODO(markdr): pass the signal that was raised.
-            # Currently, this passes the TestSignal class, rather than the
-            # signal that was raised by the test case (or signal.TestPass if
-            # no signal was raised). This should be updated such that the signal
-            # is passed along to the event.
-            event_bus.post(TestCaseEndEvent(
-                self, test_name, signals.TestSignal))
             self.current_test_name = None
 
     def teardown_test(self):
@@ -439,14 +652,23 @@ class BaseTestClass(object):
             args: A tuple of params.
             kwargs: Extra kwargs.
         """
-        is_generate_trigger = False
-        tr_record = records.TestResultRecord(test_name, self.TAG)
+        class_name = self.__class__.__name__
+        tr_record = records.TestResultRecord(test_name, class_name)
         tr_record.test_begin()
         self.begin_time = int(tr_record.begin_time)
         self.log_begin_time = tr_record.log_begin_time
         self.test_name = tr_record.test_name
+        event_bus.post(TestCaseBeginEvent(self, self.test_name))
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
+
+        # Enable test retry if specified in the ACTS config
+        retry_tests = self.user_params.get('retry_tests', [])
+        full_test_name = '%s.%s' % (class_name, self.test_name)
+        if any(name in retry_tests for name in [class_name, full_test_name]):
+            test_func = self.get_func_with_retry(test_func)
+
         verdict = None
+        test_signal = None
         try:
             try:
                 ret = self._setup_test(self.test_name)
@@ -467,38 +689,40 @@ class BaseTestClass(object):
                     tr_record.add_error("teardown_test", e)
                     self._exec_procedure_func(self._on_exception, tr_record)
         except (signals.TestFailure, AssertionError) as e:
+            test_signal = e
             if self.user_params.get(
                     keys.Config.key_test_failure_tracebacks.value, False):
                 self.log.exception(e)
-            else:
-                self.log.error(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
+        except signals.TestBlocked as e:
+            # Test blocked.
+            test_signal = e
+            tr_record.test_blocked(e)
+            self._exec_procedure_func(self._on_blocked, tr_record)
         except signals.TestSkip as e:
             # Test skipped.
+            test_signal = e
             tr_record.test_skip(e)
             self._exec_procedure_func(self._on_skip, tr_record)
         except (signals.TestAbortClass, signals.TestAbortAll) as e:
             # Abort signals, pass along.
+            test_signal = e
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
             raise e
         except signals.TestPass as e:
             # Explicit test pass.
+            test_signal = e
             tr_record.test_pass(e)
             self._exec_procedure_func(self._on_pass, tr_record)
-        except signals.TestSilent as e:
-            # This is a trigger test for generated tests, suppress reporting.
-            is_generate_trigger = True
-            self.results.requested.remove(test_name)
-        except signals.TestBlocked as e:
-            tr_record.test_blocked(e)
-            self._exec_procedure_func(self._on_blocked, tr_record)
         except error.ActsError as e:
+            test_signal = e
             self.results.errors.append(e)
             self.log.error(
                 'BaseTest execute_one_test_case error: %s' % e.message)
         except Exception as e:
+            test_signal = e
             self.log.error(traceback.format_exc())
             # Exception happened during test.
             tr_record.test_unknown(e)
@@ -513,8 +737,40 @@ class BaseTestClass(object):
             tr_record.test_fail()
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
-            if not is_generate_trigger:
-                self.results.add_record(tr_record)
+            self.results.add_record(tr_record)
+            event_bus.post(TestCaseEndEvent(self, self.test_name, test_signal))
+
+    def get_func_with_retry(self, func, attempts=2):
+        """Returns a wrapped test method that re-runs after failure. Return test
+        result upon success. If attempt limit reached, collect all failure
+        messages and raise a TestFailure signal.
+
+        Params:
+            func: The test method
+            attempts: Number of attempts to run test
+
+        Returns: result of the test method
+        """
+        def wrapper(*args, **kwargs):
+            error_msgs = []
+            extras = {}
+            retry = False
+            for i in range(attempts):
+                try:
+                    if retry:
+                        self.teardown_test()
+                        self.setup_test()
+                    return func(*args, **kwargs)
+                except signals.TestFailure as e:
+                    retry = True
+                    msg = 'Failure on attempt %d: %s' % (i+1, e.details)
+                    self.log.warning(msg)
+                    error_msgs.append(msg)
+                    if e.extras:
+                        extras['Attempt %d' % (i+1)] = e.extras
+            raise signals.TestFailure('\n'.join(error_msgs), extras)
+
+        return wrapper
 
     def run_generated_testcases(self,
                                 test_func,
@@ -719,10 +975,11 @@ class BaseTestClass(object):
         if test_names:
             # Match test cases with any of the user-specified patterns
             matches = []
-            for valid_test in valid_tests:
-                if any(fnmatch.fnmatch(valid_test, test_name)
-                       for test_name in test_names):
-                    matches.append(valid_test)
+            for test_name in test_names:
+                for valid_test in valid_tests:
+                    if (fnmatch.fnmatch(valid_test, test_name)
+                            and valid_test not in matches):
+                        matches.append(valid_test)
         else:
             matches = valid_tests
         self.results.requested = matches
@@ -736,17 +993,13 @@ class BaseTestClass(object):
                 self._block_all_test_cases(tests)
                 setup_fail = True
         except signals.TestAbortClass:
-            try:
-                self._exec_func(self._teardown_class)
-            except Exception as e:
-                self.log.warning(e)
             setup_fail = True
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
             self._block_all_test_cases(tests)
-            self._exec_func(self._teardown_class)
             setup_fail = True
         if setup_fail:
+            self._exec_func(self._teardown_class)
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
             return self.results
@@ -808,8 +1061,11 @@ class BaseTestClass(object):
             result = False
         return result
 
-    def _skip_bug_report(self):
+    def _skip_bug_report(self, test_name):
         """A function to check whether we should skip creating a bug report.
+
+        Args:
+            test_name: The test case name
 
         Returns: True if bug report is to be skipped.
         """
@@ -825,7 +1081,7 @@ class BaseTestClass(object):
             self.log.info(
                 "Skipping bug report, as directed for this test class.")
             return True
-        full_test_name = '%s.%s' % (class_name, self.test_name)
+        full_test_name = '%s.%s' % (class_name, test_name)
         if full_test_name in quiet_tests:
             self.log.info(
                 "Skipping bug report, as directed for this test case.")
@@ -852,7 +1108,7 @@ class BaseTestClass(object):
         return False
 
     def _take_bug_report(self, test_name, begin_time):
-        if self._skip_bug_report():
+        if self._skip_bug_report(test_name):
             return
 
         executor = ThreadPoolExecutor(max_workers=10)

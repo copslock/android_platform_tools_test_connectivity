@@ -25,7 +25,7 @@ from acts import base_test
 from acts import utils
 from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
-from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -40,21 +40,24 @@ class WifiPingTest(base_test.BaseTestClass):
     """
 
     TEST_TIMEOUT = 10
+    RSSI_POLL_INTERVAL = 0.2
     SHORT_SLEEP = 1
     MED_SLEEP = 5
     MAX_CONSECUTIVE_ZEROS = 5
     DISCONNECTED_PING_RESULT = {
         "connected": 0,
-        "rtt": [float("nan")],
+        "rtt": [],
+        "time_stamp": [],
+        "ping_interarrivals": [],
         "packet_loss_percentage": 100
     }
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.ping_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_range')
+            metric_name="ping_range")
         self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_rtt')
+            metric_name="ping_rtt")
         self.tests = (
             "test_ping_range_ch1_VHT20", "test_fast_ping_rtt_ch1_VHT20",
             "test_slow_ping_rtt_ch1_VHT20", "test_ping_range_ch6_VHT20",
@@ -95,15 +98,33 @@ class WifiPingTest(base_test.BaseTestClass):
         utils.create_dir(self.log_path)
         if not hasattr(self, "golden_files_list"):
             self.golden_files_list = [
-                os.path.join(self.testbed_params["golden_results_path"],
-                             file) for file in os.listdir(
-                                 self.testbed_params["golden_results_path"])
+                os.path.join(self.testbed_params["golden_results_path"], file)
+                for file in os.listdir(
+                    self.testbed_params["golden_results_path"])
             ]
         self.testclass_results = []
 
         # Turn WiFi ON
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, True)
+
+    def teardown_class(self):
+        # Turn WiFi OFF
+        for dev in self.android_devices:
+            wutils.wifi_toggle_state(dev, False)
+        self.process_testclass_results()
+
+    def process_testclass_results(self):
+        """Saves all test results to enable comparison."""
+        testclass_summary = {}
+        for test in self.testclass_results:
+            if "range" in test["test_name"]:
+                testclass_summary[test["test_name"]] = test["range"]
+        # Save results
+        results_file_path = os.path.join(self.log_path,
+                                         "testclass_summary.json")
+        with open(results_file_path, "w") as results_file:
+            json.dump(testclass_summary, results_file, indent=4)
 
     def pass_fail_check_ping_rtt(self, ping_range_result):
         """Check the test result and decide if it passed or failed.
@@ -135,8 +156,8 @@ class WifiPingTest(base_test.BaseTestClass):
             if rtt > self.testclass_params["rtt_threshold"] * 1000:
                 test_failed = True
                 self.log.info(
-                    "RTT Failed. Test %ile RTT = {}ms. Mean = {}ms. Stdev = {}".
-                    format(rtt, mean_rtt[idx], std_rtt[idx]))
+                    "RTT Failed. Test %ile RTT = {}ms. Mean = {}ms. Stdev = {}"
+                    .format(rtt, mean_rtt[idx], std_rtt[idx]))
         if test_failed:
             asserts.fail("RTT above threshold")
         else:
@@ -160,7 +181,8 @@ class WifiPingTest(base_test.BaseTestClass):
         # Set Blackbox metric
         self.ping_range_metric.metric_value = ping_range_result["range"]
         # Evaluate test pass/fail
-        if ping_range_result["range"] - rvr_range < -self.testclass_params["range_gap_threshold"]:
+        if ping_range_result["range"] - rvr_range < -self.testclass_params[
+                "range_gap_threshold"]:
             asserts.fail(
                 "Attenuation at range is {}dB. Golden range is {}dB".format(
                     ping_range_result["range"], rvr_range))
@@ -192,47 +214,34 @@ class WifiPingTest(base_test.BaseTestClass):
             range_index = -1
         ping_range_result["atten_at_range"] = testcase_params["atten_range"][
             range_index]
-        ping_range_result["peak_throughput"] = "{}%".format(
-            100 - min(ping_loss_over_att))
+        ping_range_result["peak_throughput_pct"] = 100 - min(
+            ping_loss_over_att)
         ping_range_result["range"] = (ping_range_result["atten_at_range"] +
                                       ping_range_result["fixed_attenuation"])
 
         # Save results
-        results_file_path = "{}/{}.json".format(self.log_path,
-                                                self.current_test_name)
-        with open(results_file_path, 'w') as results_file:
+        results_file_path = os.path.join(
+            self.log_path, "{}.json".format(self.current_test_name))
+        with open(results_file_path, "w") as results_file:
             json.dump(ping_range_result, results_file, indent=4)
 
         # Plot results
-        x_data = [
-            list(range(len(x["rtt"])))
-            for x in ping_range_result["ping_results"] if len(x["rtt"]) > 1
-        ]
-        rtt_data = [
-            x["rtt"] for x in ping_range_result["ping_results"]
-            if len(x["rtt"]) > 1
-        ]
-        legend = [
-            "RTT @ {}dB".format(att)
-            for att in ping_range_result["attenuation"]
-        ]
+        figure = wputils.BokehFigure(
+            self.current_test_name,
+            x_label="Timestamp (s)",
+            primary_y="Round Trip Time (ms)")
+        for idx, result in enumerate(ping_range_result["ping_results"]):
+            if len(result["rtt"]) > 1:
+                x_data = [
+                    t - result["time_stamp"][0] for t in result["time_stamp"]
+                ]
+                figure.add_line(
+                    x_data, result["rtt"],
+                    "RTT @ {}dB".format(ping_range_result["attenuation"][idx]))
 
-        data_sets = [x_data, rtt_data]
-        fig_property = {
-            "title": self.current_test_name,
-            "x_label": 'Sample Index',
-            "y_label": 'Round Trip Time (ms)',
-            "linewidth": 3,
-            "markersize": 0
-        }
-        output_file_path = "{}/{}.html".format(self.log_path,
-                                               self.current_test_name)
-        wputils.bokeh_plot(
-            data_sets,
-            legend,
-            fig_property,
-            shaded_region=None,
-            output_file_path=output_file_path)
+        output_file_path = os.path.join(
+            self.log_path, "{}.html".format(self.current_test_name))
+        figure.generate_figure(output_file_path)
 
     def get_range_from_rvr(self):
         """Function gets range from RvR golden results
@@ -251,7 +260,7 @@ class WifiPingTest(base_test.BaseTestClass):
             file_name for file_name in self.golden_files_list
             if rvr_golden_file_name in file_name
         ]
-        with open(golden_path[0], 'r') as golden_file:
+        with open(golden_path[0], "r") as golden_file:
             golden_results = json.load(golden_file)
         # Get 0 Mbps attenuation and backoff by low_rssi_backoff_from_range
         try:
@@ -261,59 +270,6 @@ class WifiPingTest(base_test.BaseTestClass):
         except ValueError:
             rvr_range = float("nan")
         return rvr_range
-
-    def get_ping_stats(self, ping_from_dut, ping_duration, ping_interval,
-                       ping_size):
-        """Run ping to or from the DUT.
-
-        The function computes either pings the DUT or pings a remote ip from
-        DUT.
-
-        Args:
-            ping_from_dut: boolean set to true if pinging from the DUT
-            ping_duration: timeout to set on the the ping process (in seconds)
-            ping_interval: time between pings (in seconds)
-            ping_size: size of ping packet payload
-        Returns:
-            ping_result: dict containing ping results and other meta data
-        """
-        ping_cmd = "ping -w {} -i {} -s {}".format(
-            ping_duration,
-            ping_interval,
-            ping_size,
-        )
-        if ping_from_dut:
-            ping_cmd = "{} {}".format(
-                ping_cmd, self.testbed_params["outgoing_ping_address"])
-            ping_output = self.client_dut.adb.shell(
-                ping_cmd,
-                timeout=ping_duration + self.TEST_TIMEOUT,
-                ignore_status=True)
-        else:
-            ping_cmd = "sudo {} {}".format(ping_cmd, self.dut_ip)
-            ping_output = self.ping_server.run(ping_cmd, ignore_status=True)
-        ping_output = ping_output.stdout.splitlines()
-
-        if len(ping_output) == 1:
-            ping_result = self.DISCONNECTED_PING_RESULT
-        else:
-            packet_loss_line = [line for line in ping_output if "loss" in line]
-            packet_loss_percentage = int(
-                packet_loss_line[0].split("%")[0].split(" ")[-1])
-            if packet_loss_percentage == 100:
-                rtt = [float("nan")]
-            else:
-                rtt = [
-                    line.split("time=")[1] for line in ping_output
-                    if "time=" in line
-                ]
-                rtt = [float(line.split(" ")[0]) for line in rtt]
-            ping_result = {
-                "connected": 1,
-                "rtt": rtt,
-                "packet_loss_percentage": packet_loss_percentage
-            }
-        return ping_result
 
     def run_ping_test(self, testcase_params):
         """Main function to test ping.
@@ -333,21 +289,31 @@ class WifiPingTest(base_test.BaseTestClass):
         test_result["attenuation"] = testcase_params["atten_range"]
         test_result["fixed_attenuation"] = self.testbed_params[
             "fixed_attenuation"][str(testcase_params["channel"])]
+        test_result["rssi_results"] = []
         test_result["ping_results"] = []
         # Run ping and sweep attenuation as needed
         zero_counter = 0
         for atten in testcase_params["atten_range"]:
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
-            time.sleep(self.SHORT_SLEEP)
-            current_ping_stats = self.get_ping_stats(
-                0, testcase_params["ping_duration"],
+            rssi_future = wputils.get_connected_rssi_nb(
+                self.client_dut,
+                int(testcase_params["ping_duration"] / 2 /
+                    self.RSSI_POLL_INTERVAL), self.RSSI_POLL_INTERVAL,
+                testcase_params["ping_duration"] / 2)
+            current_ping_stats = wputils.get_ping_stats(
+                self.ping_server, self.dut_ip,
+                testcase_params["ping_duration"],
                 testcase_params["ping_interval"], testcase_params["ping_size"])
+            current_rssi = rssi_future.result()["signal_poll_rssi"]["mean"]
+            test_result["rssi_results"].append(current_rssi)
             if current_ping_stats["connected"]:
-                self.log.info(
-                    "Attenuation = {0}dB Packet Loss Rate = {1}%. Avg Ping RTT = {2:.2f}ms".
-                    format(atten, current_ping_stats["packet_loss_percentage"],
-                           statistics.mean(current_ping_stats["rtt"])))
+                self.log.info("Attenuation = {0}dB\tPacket Loss = {1}%\t"
+                              "Avg RTT = {2:.2f}ms\tRSSI = {3}\t".format(
+                                  atten,
+                                  current_ping_stats["packet_loss_percentage"],
+                                  statistics.mean(current_ping_stats["rtt"]),
+                                  current_rssi))
                 if current_ping_stats["packet_loss_percentage"] == 100:
                     zero_counter = zero_counter + 1
                 else:
@@ -356,7 +322,7 @@ class WifiPingTest(base_test.BaseTestClass):
                 self.log.info(
                     "Attenuation = {}dB. Disconnected.".format(atten))
                 zero_counter = zero_counter + 1
-            test_result["ping_results"].append(current_ping_stats)
+            test_result["ping_results"].append(current_ping_stats.as_dict())
             if zero_counter == self.MAX_CONSECUTIVE_ZEROS:
                 self.log.info("Ping loss stable at 100%. Stopping test now.")
                 for idx in range(
@@ -376,11 +342,11 @@ class WifiPingTest(base_test.BaseTestClass):
         band = self.access_point.band_lookup_by_channel(
             testcase_params["channel"])
         if "2G" in band:
-            frequency = wutils.WifiEnums.channel_2G_to_freq[testcase_params[
-                "channel"]]
+            frequency = wutils.WifiEnums.channel_2G_to_freq[
+                testcase_params["channel"]]
         else:
-            frequency = wutils.WifiEnums.channel_5G_to_freq[testcase_params[
-                "channel"]]
+            frequency = wutils.WifiEnums.channel_5G_to_freq[
+                testcase_params["channel"]]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params["DFS_region"])
         else:
@@ -408,7 +374,7 @@ class WifiPingTest(base_test.BaseTestClass):
             num_of_tries=5,
             check_connectivity=False)
         self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
-            'wlan0')[0]
+            "wlan0")[0]
         time.sleep(self.MED_SLEEP)
 
     def setup_ping_test(self, testcase_params):
@@ -485,6 +451,7 @@ class WifiPingTest(base_test.BaseTestClass):
         self.setup_ping_test(testcase_params)
         ping_result = self.run_ping_test(testcase_params)
         # Postprocess results
+        self.testclass_results.append(ping_result)
         self.process_ping_results(testcase_params, ping_result)
         self.pass_fail_check_ping_range(ping_result)
 

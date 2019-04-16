@@ -83,8 +83,8 @@ class TelLabSmsTest(TelephonyBaseTest):
 
     def setup_class(self):
         try:
-            self.anritsu = MD8475A(self.md8475a_ip_address, self.log,
-                                   self.wlan_option, self.md8475_version)
+            self.anritsu = MD8475A(self.md8475a_ip_address, self.wlan_option,
+                                   self.md8475_version)
         except AnritsuError:
             self.log.error("Error in connecting to Anritsu Simulator")
             return False

@@ -148,8 +148,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
             if not os.path.exists(path):
                 self.log.error("path %s does not exist", path)
                 self.log.info(self.user_params)
-                path = os.path.join(self.user_params[Config.key_config_path],
-                                    path)
+                path = os.path.join(
+                    self.user_params[Config.key_config_path.value], path)
                 if not os.path.exists(path):
                     self.log.error("path %s does not exist", path)
                     continue

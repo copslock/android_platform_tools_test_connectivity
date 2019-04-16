@@ -283,7 +283,7 @@ def load_test_config_file(test_config_path,
 
     # TODO: See if there is a better way to do this: b/29836695
     config_path, _ = os.path.split(utils.abs_path(test_config_path))
-    configs[keys.Config.key_config_path] = config_path
+    configs[keys.Config.key_config_path.value] = config_path
     _validate_test_config(configs)
     _validate_testbed_configs(testbeds, config_path)
     # Unpack testbeds into separate json objects.

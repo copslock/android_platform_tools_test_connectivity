@@ -554,7 +554,7 @@ class LteSimulation(BaseSimulation):
 
         return super().downlink_calibration(
             bts,
-            rat='lteRsrp',
+            rat='lteDbm',
             power_units_conversion_func=self.rsrp_to_signal_power)
 
     def rsrp_to_signal_power(self, rsrp, bts):
@@ -940,10 +940,10 @@ class LteSimulation(BaseSimulation):
             return range(int(math.ceil(math.log(max_value, base))))
 
         possible_ul_rbs = [
-            2**a * 3**b * 5**c
-            for a in pow_range(max_rbs, 2) for b in pow_range(max_rbs, 3)
-            for c in pow_range(max_rbs, 5) if 2**a * 3**b * 5**c <= max_rbs
-        ]
+            2**a * 3**b * 5**c for a in pow_range(max_rbs, 2)
+            for b in pow_range(max_rbs, 3)
+            for c in pow_range(max_rbs, 5)
+            if 2**a * 3**b * 5**c <= max_rbs] # yapf: disable
 
         # Find the value in the list that is closest to desired_ul_rbs
         differences = [abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs]
@@ -952,8 +952,7 @@ class LteSimulation(BaseSimulation):
         # Report what are the obtained RB percentages
         self.log.info("Requested a {}% / {}% RB allocation. Closest possible "
                       "percentages are {}% / {}%.".format(
-                          dl, ul,
-                          round(100 * dl_rbs / max_rbs),
+                          dl, ul, round(100 * dl_rbs / max_rbs),
                           round(100 * ul_rbs / max_rbs)))
 
         return dl_rbs, ul_rbs

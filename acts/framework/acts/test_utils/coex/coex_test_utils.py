@@ -19,15 +19,16 @@ import logging
 import math
 import os
 import re
-import subprocess
 import time
-import xlsxwriter
 
+from acts import asserts
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+from acts.controllers.iperf_server import IPerfResult
+from acts.libs.proc import job
 from acts.test_utils.bt.bt_constants import (
     bluetooth_profile_connection_state_changed)
 from acts.test_utils.bt.bt_constants import bt_default_timeout
@@ -75,7 +76,12 @@ def avrcp_actions(pri_ad, audio_receiver):
     """Performs avrcp controls like volume up, volume down, skip next and
     skip previous.
 
-    Returns: True if successful, otherwise False.
+    Args:
+        pri_ad: Android device.
+        audio_receiver: Relay instance.
+
+    Returns:
+        True if successful, otherwise False.
     """
     if "Volume_up" and "Volume_down" in (audio_receiver.relays.keys()):
         current_volume = pri_ad.droid.getMediaVolume()
@@ -530,80 +536,66 @@ def initiate_disconnect_call_dut(pri_ad, sec_ad, duration, callee_number):
     return flag
 
 
-def check_wifi_status(pri_ad, network, wifi_status_queue, duration):
+def check_wifi_status(pri_ad, network, ssh_config=None):
     """Function to check existence of wifi connection.
 
     Args:
         pri_ad: An android device.
-        network: network ssid .
-        wifi_status_queue: queue object to store results.
-        duration: No of seconds wifi connection check should happen.
+        network: network ssid.
+        ssh_config: ssh config for iperf client.
     """
-    start_time = time.time()
-    while time.time() < (start_time + duration):
+    time.sleep(5)
+    proc = job.run("pgrep -f 'iperf3 -c'")
+    pid_list = proc.stdout.split()
+
+    while True:
+        iperf_proc = job.run(["pgrep", "-f", "iperf3"])
+        process_list = iperf_proc.stdout.split()
         if not wifi_connection_check(pri_ad, network["SSID"]):
-            wifi_status_queue.put(False)
             pri_ad.adb.shell("killall iperf3")
-            subprocess.Popen(
-                "killall iperf3", stdout=subprocess.PIPE, shell=True)
-            wifi_test_device_init(pri_ad)
-            wifi_connect(pri_ad, network)
-    wifi_status_queue.put(True)
+            if ssh_config:
+                time.sleep(5)
+                ssh_settings = settings.from_config(ssh_config)
+                ssh_session = connection.SshConnection(ssh_settings)
+                result = ssh_session.run("pgrep iperf3")
+                res = result.stdout.split("\n")
+                for pid in res:
+                    try:
+                        ssh_session.run("kill -9 %s" % pid)
+                    except Exception as e:
+                        logging.warning("No such process: %s" % e)
+                for pid in pid_list[:-1]:
+                    job.run(["kill", " -9", " %s" % pid], ignore_status=True)
+            else:
+                job.run(["killall", " iperf3"], ignore_status=True)
+            break
+        elif pid_list[0] not in process_list:
+            break
 
 
-def iperf_result(log, result):
+def iperf_result(log, protocol, result):
     """Accepts the iperf result in json format and parse the output to
     get throughput value.
 
     Args:
         log: Logger object.
+        protocol : TCP or UDP protocol.
         result: iperf result's filepath.
 
     Returns:
         rx_rate: Data received from client.
     """
-    try:
-        with open(result, 'r') as f:
-            time.sleep(1)
-            iperf_output = f.readlines()
-            if "}\n" in iperf_output:
-                iperf_output = iperf_output[0:iperf_output.index("}\n") + 1]
-            iperf_string = ''.join(iperf_output)
+    if os.path.exists(result):
+        ip_cl = IPerfResult(result)
 
-            iperf_string = iperf_string.replace("-nan", '0')
-            iperf_string = iperf_string.replace("nan", '0')
-            json_data = json.loads(iperf_string)
-    except ValueError:
-        with open(result, 'r') as f:
-            # Possibly a result from interrupted iperf run, skip first line
-            # and try again.
-            time.sleep(1)
-            lines = f.readlines()[1:]
-            json_data = json.loads(''.join(lines))
-
-    if "error" in json_data:
-        #As of now this can be bypassed as this is not a failure which affects
-        # test.
-        if "OUT OF ORDER" in json_data["error"]:
-            pass
+        if protocol == "udp":
+            rx_rate = (math.fsum(ip_cl.instantaneous_rates) /
+                       len(ip_cl.instantaneous_rates))*8
         else:
-            log.error(json_data["error"])
-            return False
-    protocol = json_data["start"]["test_start"]["protocol"]
-    if protocol == "UDP":
-        if "intervals" in json_data.keys():
-            interval = [
-                interval["sum"]["bits_per_second"] / 1e6
-                for interval in json_data["intervals"]
-            ]
-            rx_rate = math.fsum(interval) / len(interval)
-            return rx_rate
-        else:
-            log.error("Unable to retrive client results")
-    elif protocol == "TCP":
-        rx_rate = json_data['end']['sum_received']['bits_per_second']
-        return rx_rate / 1e6
+            rx_rate = ip_cl.avg_receive_rate * 8
+        return rx_rate
     else:
+        log.error("IPerf file not found")
         return False
 
 
@@ -777,27 +769,38 @@ def pair_dev_to_headset(pri_ad, dev_to_pair):
     return False
 
 
-def pair_and_connect_headset(pri_ad, headset_mac_address, profile_to_connect):
+def pair_and_connect_headset(pri_ad, headset_mac_address, profile_to_connect, retry=5):
     """Pair and connect android device with third party headset.
 
     Args:
         pri_ad: An android device.
         headset_mac_address: Mac address of third party headset.
         profile_to_connect: Profile to be connected with headset.
+        retry: Number of times pair and connection should happen.
 
     Returns:
         True if pair and connect to headset successful, False otherwise.
     """
-    if not pair_dev_to_headset(pri_ad, headset_mac_address):
-        pri_ad.log.error("Could not pair to headset.")
-        return False
-    # Wait until pairing gets over.
-    time.sleep(2)
-    if not connect_dev_to_headset(pri_ad, headset_mac_address,
-                                  profile_to_connect):
-        pri_ad.log.error("Could not connect to headset.")
-        return False
-    return True
+
+    paired = False
+    for _ in range(retry):
+        if pair_dev_to_headset(pri_ad, headset_mac_address):
+            paired = True
+            break
+        else:
+            pri_ad.log.error("Could not pair to headset. Retrying.")
+
+    time.sleep(2)  # Wait until pairing gets over.
+
+    if paired:
+        for _ in range(retry):
+            if connect_dev_to_headset(pri_ad, headset_mac_address,
+                                      profile_to_connect):
+                return True
+            else:
+                pri_ad.log.error("Could not connect to headset. Retrying.")
+    else:
+        asserts.fail("Failed to pair and connect to headset")
 
 
 def perform_classic_discovery(pri_ad, duration, file_name, dev_list=None):
@@ -816,7 +819,7 @@ def perform_classic_discovery(pri_ad, duration, file_name, dev_list=None):
         devices_required = device_discoverability(dev_list)
     else:
         devices_required = None
-    iter = 0
+    iteration = 0
     result = {}
     result["discovered_devices"] = {}
     discover_result = []
@@ -832,15 +835,15 @@ def perform_classic_discovery(pri_ad, duration, file_name, dev_list=None):
         pri_ad.log.info("Discovered device list {}".format(
             pri_ad.droid.bluetoothGetDiscoveredDevices()))
         if devices_required is not None:
-            result["discovered_devices"][iter] = []
+            result["discovered_devices"][iteration] = []
             devices_name = {
                 element.get('name', element['address'])
                 for element in pri_ad.droid.bluetoothGetDiscoveredDevices()
                 if element["address"] in devices_required
             }
-            result["discovered_devices"][iter] = list(devices_name)
+            result["discovered_devices"][iteration] = list(devices_name)
             discover_result.extend([len(devices_name) == len(devices_required)])
-            iter += 1
+            iteration += 1
             with open(file_name, 'a') as results_file:
                 json.dump(result, results_file, indent=4)
             if False in discover_result:
@@ -970,7 +973,7 @@ def start_fping(pri_ad, duration, fping_params):
     else:
         cmd = cmd.split()
         with open(full_out_path, "w") as f:
-            subprocess.call(cmd, stderr=f, stdout=f)
+            job.run(cmd)
     result = parse_fping_results(fping_params["fping_drop_tolerance"],
                                  full_out_path)
     return bool(result)
@@ -1001,7 +1004,7 @@ def parse_fping_results(failure_rate, full_out_path):
             return False
         return loss_percent.group()
     except Exception as e:
-        logging.error("Error in parsing fping results : {}".format(e))
+        logging.error("Error in parsing fping results : %s" %(e))
         return False
 
 
@@ -1063,8 +1066,9 @@ def push_music_to_android_device(ad, audio_params):
             ad.adb.push(item, android_music_path)
         return music_file_to_play
     else:
-        ad.log.error("Music file should be of type list")
-        return False
+        music_file_to_play = audio_params["music_file"]
+        ad.adb.push("{} {}".format(music_file_to_play, android_music_path))
+        return (os.path.basename(music_file_to_play))
 
 
 def bokeh_chart_plot(bt_attenuation_range,
@@ -1078,8 +1082,8 @@ def bokeh_chart_plot(bt_attenuation_range,
     Args:
         bt_attenuation_range: range of BT attenuation.
         data_sets: data sets including lists of x_data and lists of y_data
-        ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
-            legends: list of legend for each curve
+            ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
+        legends: list of legend for each curve
         fig_property: dict containing the plot property, including title,
                       lables, linewidth, circle size, etc.
         shaded_region: optional dict containing data for plot shading
@@ -1229,6 +1233,7 @@ class A2dpDumpsysParser():
     def __init__(self):
         self.count_list = []
         self.frame_list = []
+        self.dropped_count = None
 
     def parse(self, file_path):
         """Convenience function to parse a2dp dumpsys logs.
