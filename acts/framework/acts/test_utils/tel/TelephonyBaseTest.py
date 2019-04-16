@@ -486,7 +486,7 @@ class TelephonyBaseTest(BaseTestClass):
         return result
 
     def _take_bug_report(self, test_name, begin_time):
-        if self._skip_bug_report():
+        if self._skip_bug_report(test_name):
             return
         test_log_path = os.path.join(self.log_path, test_name)
         utils.create_dir(test_log_path)
