@@ -1767,6 +1767,8 @@ def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR):
     Returns:
         ping output if successful, NULL otherwise.
     """
+    # Adding 2 secs timeout before pinging to allow for DHCP to complete.
+    time.sleep(2)
     ping = ad.droid.httpPing(ping_addr)
     ad.log.info("Http ping result: %s.", ping)
     return ping
