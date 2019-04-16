@@ -1065,8 +1065,11 @@ class BaseTestClass(object):
             result = False
         return result
 
-    def _skip_bug_report(self):
+    def _skip_bug_report(self, test_name):
         """A function to check whether we should skip creating a bug report.
+
+        Args:
+            test_name: The test case name
 
         Returns: True if bug report is to be skipped.
         """
@@ -1082,7 +1085,7 @@ class BaseTestClass(object):
             self.log.info(
                 "Skipping bug report, as directed for this test class.")
             return True
-        full_test_name = '%s.%s' % (class_name, self.test_name)
+        full_test_name = '%s.%s' % (class_name, test_name)
         if full_test_name in quiet_tests:
             self.log.info(
                 "Skipping bug report, as directed for this test case.")
@@ -1109,7 +1112,7 @@ class BaseTestClass(object):
         return False
 
     def _take_bug_report(self, test_name, begin_time):
-        if self._skip_bug_report():
+        if self._skip_bug_report(test_name):
             return
 
         executor = ThreadPoolExecutor(max_workers=10)
