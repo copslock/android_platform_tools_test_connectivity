@@ -37,7 +37,7 @@ from acts import tracelogger
 from acts import utils
 
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
-from acts.controllers.fuchsia_lib.bt.bta_lib import FuchsiaBtaLib
+from acts.controllers.fuchsia_lib.bt.bta_lib import FuchsiaBtcLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
@@ -130,6 +130,7 @@ class FuchsiaDevice:
         log: A logger object.
         port: The TCP port number of the Fuchsia device.
     """
+
     def __init__(self, fd_conf_data):
         """
         Args:
@@ -151,8 +152,8 @@ class FuchsiaDevice:
         self.ssh_username = fd_conf_data.get("ssh_username",
                                              FUCHSIA_SSH_USERNAME)
 
-        self.log = acts_logger.create_tagged_trace_logger("[FuchsiaDevice|%s]"
-                                                          % self.ip)
+        self.log = acts_logger.create_tagged_trace_logger(
+            "[FuchsiaDevice|%s]" % self.ip)
 
         self.address = "http://{}:{}".format(self.ip, self.port)
         self.init_address = self.address + "/init"
@@ -166,8 +167,8 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaBleLib
         self.ble_lib = FuchsiaBleLib(self.address, self.test_counter,
                                      self.client_id)
-        # Grab commands from FuchsiaBtaLib
-        self.bta_lib = FuchsiaBtaLib(self.address, self.test_counter,
+        # Grab commands from FuchsiaBtcLib
+        self.btc_lib = FuchsiaBtcLib(self.address, self.test_counter,
                                      self.client_id)
         # Grab commands from FuchsiaGattcLib
         self.gattc_lib = FuchsiaGattcLib(self.address, self.test_counter,
@@ -177,8 +178,7 @@ class FuchsiaDevice:
                                          self.client_id)
 
         # Grab commands from FuchsiaNetstackLib
-        self.netstack_lib = FuchsiaNetstackLib(self.address,
-                                               self.test_counter,
+        self.netstack_lib = FuchsiaNetstackLib(self.address, self.test_counter,
                                                self.client_id)
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
@@ -336,8 +336,8 @@ class FuchsiaDevice:
         elif expectation in SL4F_DEACTIVATED_STATES:
             return not sl4f_state
         else:
-            raise ValueError("Invalid expectation value (%s). abort!"
-                             % expectation)
+            raise ValueError("Invalid expectation value (%s). abort!" %
+                             expectation)
 
     def control_sl4f(self, action):
         """Starts or stops sl4f on a Fuchsia device
@@ -365,8 +365,7 @@ class FuchsiaDevice:
                 sl4f_initial_msg = ("SL4F has not started yet. "
                                     "Waiting %i second and checking "
                                     "again." % SL4F_INIT_TIMEOUT_SEC)
-                sl4f_timeout_msg = ("Timed out waiting for SL4F "
-                                    "to start.")
+                sl4f_timeout_msg = ("Timed out waiting for SL4F " "to start.")
                 unable_to_connect_msg = ("Unable to connect to Fuchsia "
                                          "device via SSH. SL4F may not "
                                          "be started.")
@@ -380,22 +379,21 @@ class FuchsiaDevice:
                                          "device via SSH. SL4F may "
                                          "still be running.")
             else:
-                raise FuchsiaDeviceError(FUCHSIA_INVALID_CONTROL_STATE
-                                         % action)
+                raise FuchsiaDeviceError(FUCHSIA_INVALID_CONTROL_STATE %
+                                         action)
             timeout_counter = 0
             while not sl4f_state:
                 self.log.debug(sl4f_initial_msg)
                 time.sleep(SL4F_INIT_TIMEOUT_SEC)
                 timeout_counter += 1
                 sl4f_state = self.check_sl4f_with_expectation(
-                    ssh_connection=ssh_conn,
-                    expectation=action)
+                    ssh_connection=ssh_conn, expectation=action)
                 if timeout_counter == (SL4F_INIT_TIMEOUT_SEC * 3):
                     self.log.error(sl4f_timeout_msg)
                     break
             if not sl4f_state:
-                raise FuchsiaDeviceError(FUCHSIA_COULD_NOT_GET_DESIRED_STATE
-                                         % action)
+                raise FuchsiaDeviceError(FUCHSIA_COULD_NOT_GET_DESIRED_STATE %
+                                         action)
         except Exception as e:
             self.log.error(unable_to_connect_msg)
             raise e
