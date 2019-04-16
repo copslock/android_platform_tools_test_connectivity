@@ -258,6 +258,7 @@ class TelephonyBaseTest(BaseTestClass):
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
                                          self.wifi_network_pass):
                 ad.log.error("Failed to connect to wifi")
+                return False
             if check_google_fi_activated(ad):
                 ad.log.info("Google Fi is already Activated")
             else:
@@ -266,6 +267,7 @@ class TelephonyBaseTest(BaseTestClass):
                 install_googlefi_apk(ad, self.fi_util)
                 if not activate_google_fi_account(ad):
                     ad.log.error("Failed to activate Fi")
+                    return False
                 check_google_fi_activated(ad)
             if hasattr(ad, "dsds"):
                 sim_mode = ad.droid.telephonyGetPhoneCount()
@@ -273,6 +275,7 @@ class TelephonyBaseTest(BaseTestClass):
                     ad.log.info("Phone in Single SIM Mode")
                     if not phone_switch_to_msim_mode(ad):
                         ad.log.error("Failed to switch to Dual SIM Mode")
+                        return False
                 elif sim_mode == 2:
                     ad.log.info("Phone already in Dual SIM Mode")
                 set_default_sub_for_all_services(ad)
