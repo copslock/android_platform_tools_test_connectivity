@@ -23,6 +23,7 @@ import statistics
 from acts import asserts
 from acts import base_test
 from acts import utils
+from acts.controllers.utils_lib import ssh
 from acts.controllers import iperf_server as ipf
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_decorators import test_tracker_info
@@ -73,6 +74,8 @@ class WifiRssiTest(base_test.BaseTestClass):
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
         self.iperf_client = self.iperf_clients[0]
+        self.remote_server = ssh.connection.SshConnection(
+            ssh.settings.from_config(self.RemoteServer[0]["ssh_config"]))
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
         self.log_path = os.path.join(logging.log_path, "results")
         utils.create_dir(self.log_path)
@@ -400,8 +403,8 @@ class WifiRssiTest(base_test.BaseTestClass):
             if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
                 iperf_server_address = self.dut_ip
             else:
-                iperf_server_address = self.testbed_params[
-                    "iperf_server_address"]
+                iperf_server_address = wputils.get_server_address(
+                    self.remote_server, self.dut_ip, "255.255.255.0")
             executor = ThreadPoolExecutor(max_workers=1)
             thread_future = executor.submit(
                 self.iperf_client.start, iperf_server_address, self.iperf_args,
