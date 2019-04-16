@@ -7223,7 +7223,7 @@ def my_current_screen_content(ad, content):
     return True
 
 
-def activate_google_fi_account(ad, retries=3):
+def activate_google_fi_account(ad, retries=10):
     _FI_APK = "com.google.android.apps.tycho"
     _FI_ACTIVATE_CMD = ('am start -c android.intent.category.DEFAULT -n '
                         'com.google.android.apps.tycho/.InitActivity --ez '
@@ -7236,12 +7236,13 @@ def activate_google_fi_account(ad, retries=3):
        "Switch" : "Switch to the Google Fi mobile network",
        "Connect" : "Connect to the Google Fi mobile network",
        "Move" : "Move number",
+       "Data" : "first turn on mobile data",
        "Activate" : "This takes a minute or two, sometimes longer",
        "Welcome" : "Welcome to Google Fi",
        "Account" : "Your current cycle ends in"
     }
     page_list = ["Account", "Setup", "Switch", "Connect",
-                 "Activate", "Move", "Welcome"]
+                 "Activate", "Move", "Welcome", "Data"]
     for _ in range(retries):
         ad.force_stop_apk(_FI_APK)
         ad.ensure_screen_on()
@@ -7279,6 +7280,11 @@ def activate_google_fi_account(ad, retries=3):
                         time.sleep(60)
                 elif page == "Account":
                     return True
+                elif page == "Data":
+                    ad.log.error("Mobile Data is turned OFF by default")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("ENTER")
             else:
                 ad.log.info("NOT FOUND - Page %s", page)
                 log_screen_shot(ad, "fi_activation_step_%s_failure" % page)
