@@ -87,6 +87,7 @@ from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
 from acts.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
+from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -174,6 +175,8 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             set_subid_for_outgoing_call(ads[0], sub_id)
             caller_number = get_phone_number(self.log, ad_caller)
             callee_number = get_phone_number(self.log, ad_callee)
+            mo_operator = get_operatorname_from_slot_index(ads[0], slot_id)
+            mt_operator = get_operator_name(ads[1].log, ads[1])
         else:
             ad_caller = ads[1]
             ad_callee = ads[0]
@@ -181,9 +184,12 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             callee_number = get_phone_number_for_subscription(ads[0].log,
                                                           ads[0], sub_id)
             setattr(ads[0], "incoming_voice_sub_id", sub_id)
+            mt_operator = get_operatorname_from_slot_index(ads[0], slot_id)
+            mo_operator = get_operator_name(ads[1].log, ads[1])
 
         self.log.info("-->Begin msim_call_sequence: %s to %s<--",
                       caller_number, callee_number)
+        self.log.info("--> %s to %s <--", mo_operator, mt_operator)
 
         try:
             # Setup
