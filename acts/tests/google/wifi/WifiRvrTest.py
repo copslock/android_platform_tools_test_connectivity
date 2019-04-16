@@ -23,6 +23,7 @@ from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
+from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -57,13 +58,16 @@ class WifiRvrTest(base_test.BaseTestClass):
         """
         self.client_dut = self.android_devices[-1]
         req_params = [
-            "RetailAccessPoints", "rvr_test_params", "testbed_params"
+            "RetailAccessPoints", "rvr_test_params", "testbed_params",
+            "RemoteServer"
         ]
         opt_params = ["main_network", "golden_files_list"]
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.rvr_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = self.iperf_servers[0]
+        self.remote_server = ssh.connection.SshConnection(
+            ssh.settings.from_config(self.RemoteServer[0]["ssh_config"]))
         self.iperf_client = self.iperf_clients[0]
         self.access_points = retail_ap.create(self.RetailAccessPoints)
         self.access_point = self.access_points[0]
@@ -403,8 +407,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
             testcase_params["iperf_server_address"] = self.dut_ip
         else:
-            testcase_params["iperf_server_address"] = self.testbed_params[
-                "iperf_server_address"]
+            testcase_params[
+                "iperf_server_address"] = wputils.get_server_address(
+                    self.remote_server, self.dut_ip, "255.255.255.0")
 
     def parse_test_params(self, test_name):
         """Function that generates test params based on the test name."""
