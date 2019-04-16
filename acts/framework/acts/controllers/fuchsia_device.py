@@ -37,7 +37,7 @@ from acts import tracelogger
 from acts import utils
 
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
-from acts.controllers.fuchsia_lib.bt.bta_lib import FuchsiaBtcLib
+from acts.controllers.fuchsia_lib.bt.btc_lib import FuchsiaBtcLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
