@@ -1217,7 +1217,7 @@ def ensure_no_disconnect(ad, duration=10):
 
 
 def connect_to_wifi_network(ad, network, assert_on_fail=True,
-        check_connectivity=True):
+        check_connectivity=True, hidden=False):
     """Connection logic for open and psk wifi networks.
 
     Args:
@@ -1225,9 +1225,14 @@ def connect_to_wifi_network(ad, network, assert_on_fail=True,
         network: network info of the network to connect to
         assert_on_fail: If true, errors from wifi_connect will raise
                         test failure signals.
+        hidden: Is the Wifi network hidden.
     """
-    start_wifi_connection_scan_and_ensure_network_found(
-        ad, network[WifiEnums.SSID_KEY])
+    if hidden:
+        start_wifi_connection_scan_and_ensure_network_not_found(
+            ad, network[WifiEnums.SSID_KEY])
+    else:
+        start_wifi_connection_scan_and_ensure_network_found(
+            ad, network[WifiEnums.SSID_KEY])
     wifi_connect(ad,
                  network,
                  num_of_tries=3,
@@ -2168,3 +2173,11 @@ def turn_ap_on(test, AP):
     if not hostapd_5g.is_alive():
         hostapd_5g.start(hostapd_5g.config)
         logging.debug('Turned WLAN1 AP%d on' % AP)
+
+
+def turn_location_off_and_scan_toggle_off(ad):
+    """Turns off wifi location scans."""
+    utils.set_location_service(ad, False)
+    ad.droid.wifiScannerToggleAlwaysAvailable(False)
+    msg = "Failed to turn off location service's scan."
+    asserts.assert_true(not ad.droid.wifiScannerIsAlwaysAvailable(), msg)
