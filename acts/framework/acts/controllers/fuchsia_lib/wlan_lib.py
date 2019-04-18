@@ -13,7 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+from acts import logger
 from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 COMMAND_SCAN = "wlan.scan"
@@ -25,6 +25,7 @@ class FuchsiaWlanLib(BaseLib):
         self.address = addr
         self.test_counter = tc
         self.client_id = client_id
+        self.log = logger.create_tagged_trace_logger(str(addr))
 
     def wlanStartScan(self):
         """ Starts a wlan scan
@@ -56,6 +57,25 @@ class FuchsiaWlanLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def check_connection_for_response(self, connection_response):
+        if connection_response.get("error") is None:
+            # the command did not get an error response - go ahead and check the
+            # result
+            connection_result = connection_response.get("result")
+            if not connection_result:
+                # ideally, we would have the actual error...
+                # but logging here to cover that error case
+                self.log.error("Connect call failed, aborting!")
+                return False
+            else:
+                # connection successful
+                return True
+        else:
+            # the response indicates an error - log and raise failure
+            self.log.error("Aborting! - Connect call failed with error: %s"
+                           % connection_response.get("error"))
+            return False
 
     def wlanDisconnect(self):
         """ Disconnect any current wifi connections"""
