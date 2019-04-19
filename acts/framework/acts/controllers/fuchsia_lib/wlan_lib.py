@@ -58,25 +58,6 @@ class FuchsiaWlanLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def check_connection_for_response(self, connection_response):
-        if connection_response.get("error") is None:
-            # the command did not get an error response - go ahead and check the
-            # result
-            connection_result = connection_response.get("result")
-            if not connection_result:
-                # ideally, we would have the actual error...
-                # but logging here to cover that error case
-                self.log.error("Connect call failed, aborting!")
-                return False
-            else:
-                # connection successful
-                return True
-        else:
-            # the response indicates an error - log and raise failure
-            self.log.error("Aborting! - Connect call failed with error: %s"
-                           % connection_response.get("error"))
-            return False
-
     def wlanDisconnect(self):
         """ Disconnect any current wifi connections"""
         test_cmd = COMMAND_DISCONNECT
