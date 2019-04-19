@@ -57,6 +57,40 @@ def nonblocking(f):
 class BokehFigure():
     """Class enabling  simplified Bokeh plotting."""
 
+    COLORS = [
+        'black',
+        'blue',
+        'blueviolet',
+        'brown',
+        'burlywood',
+        'cadetblue',
+        'cornflowerblue',
+        'crimson',
+        'cyan',
+        'darkblue',
+        'darkgreen',
+        'darkmagenta',
+        'darkorange',
+        'darkred',
+        'deepskyblue',
+        'goldenrod',
+        'green',
+        'grey',
+        'indigo',
+        'navy',
+        'olive',
+        'orange',
+        'red',
+        'salmon',
+        'teal',
+        'yellow',
+    ]
+    MARKERS = [
+        'asterisk', 'circle', 'circle_cross', 'circle_x', 'cross', 'diamond',
+        'diamond_cross', 'hex', 'inverted_triangle', 'square', 'square_x',
+        'square_cross', 'triangle', 'x'
+    ]
+
     def __init__(self,
                  title=None,
                  x_label=None,
@@ -78,39 +112,6 @@ class BokehFigure():
         }
         self.TOOLS = (
             'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
-        self.COLORS = [
-            'black',
-            'blue',
-            'blueviolet',
-            'brown',
-            'burlywood',
-            'cadetblue',
-            'cornflowerblue',
-            'crimson',
-            'cyan',
-            'darkblue',
-            'darkgreen',
-            'darkmagenta',
-            'darkorange',
-            'darkred',
-            'deepskyblue',
-            'goldenrod',
-            'green',
-            'grey',
-            'indigo',
-            'navy',
-            'olive',
-            'orange',
-            'red',
-            'salmon',
-            'teal',
-            'yellow',
-        ]
-        self.MARKERS = [
-            'asterisk', 'circle', 'circle_cross', 'circle_x', 'cross',
-            'diamond', 'diamond_cross', 'hex', 'inverted_triangle', 'square',
-            'square_x', 'square_cross', 'triangle', 'x'
-        ]
         self.plot = bokeh.plotting.figure(
             plot_width=width,
             plot_height=height,
@@ -141,7 +142,7 @@ class BokehFigure():
             legend: string containing line title
             color: string describing line color
             width: integer line width
-            style: string describing line style, e.g, solid or dash
+            style: string describing line style, e.g, solid or dashed
             marker: string specifying line marker, e.g., cross
             shaded region: data describing shaded region to plot
             y_axis: identifier for y-axis to plot line against
@@ -202,6 +203,7 @@ class BokehFigure():
                     line['y_data'],
                     size=line['marker_size'],
                     legend=line['legend'],
+                    line_color=line['color'],
                     fill_color=line['color'],
                     name=line['y_range_name'],
                     y_range_name=line['y_range_name'])
