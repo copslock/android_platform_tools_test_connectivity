@@ -210,7 +210,7 @@ class FuchsiaWlanDevice(WlanDevice):
         """
         connection_response = self.device.wlan_lib.wlanConnectToNetwork(
             target_ssid, target_pwd=target_pwd)
-        return self.device.wlan_lib.check_connection_for_response(
+        return self.device.check_connection_for_response(
             connection_response)
 
     def disconnect(self):

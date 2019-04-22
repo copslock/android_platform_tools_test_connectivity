@@ -25,6 +25,7 @@ MIXED = 3
 ENT = 4 # get the correct constant
 MAX_WPA_PSK_LENGTH = 64
 MIN_WPA_PSK_LENGTH = 8
+MAX_WPA_PASSWORD_LENGTH = 63
 WPA_STRICT_REKEY = 1
 WPA_DEFAULT_CIPHER = 'TKIP'
 WPA2_DEFAULT_CIPER = 'CCMP'
@@ -59,6 +60,10 @@ AP_SSID_MAX_LENGTH_5G = 32
 AP_PASSPHRASE_LENGTH_5G = 10
 INTERFACE_2G_LIST = [WLAN0_STRING, WLAN0_GALE]
 INTERFACE_5G_LIST = [WLAN1_STRING, WLAN1_GALE]
+HIGH_BEACON_INTERVAL = 300
+LOW_BEACON_INTERVAL = 100
+HIGH_DTIM = 3
+LOW_DTIM = 1
 
 # A mapping of frequency to channel number.  This includes some
 # frequencies used outside the US.
@@ -364,6 +369,8 @@ VENDOR_IE = {
         {'vendor_elements': 'dd0011223301'},
     'zero_length_beacon_without_data':
         {'vendor_elements': 'dd00'},
+    'simliar_to_wpa':
+        {'vendor_elements': 'dd040050f203'},
     'correct_length_association_response':
         {'assocresp_elements=': 'dd0411223301'},
     'too_short_length_association_response':
