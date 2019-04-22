@@ -453,6 +453,25 @@ class FuchsiaDevice:
         finally:
             ssh_conn.close()
 
+    def check_connection_for_response(self, connection_response):
+        if connection_response.get("error") is None:
+            # Checks the response from SL4F and if there is no error, check
+            # the result.
+            connection_result = connection_response.get("result")
+            if not connection_result:
+                # Ideally the error would be present but just outputting a log
+                # message until available.
+                self.log.error("Connect call failed, aborting!")
+                return False
+            else:
+                # Returns True if connection was successful.
+                return True
+        else:
+            # the response indicates an error - log and raise failure
+            self.log.error("Aborting! - Connect call failed with error: %s"
+                           % connection_response.get("error"))
+            return False
+
     def start_services(self, skip_sl4f=False):
         """Starts long running services on the Fuchsia device.
 

@@ -25,7 +25,7 @@ def _get_or_default(var, default_value):
 
    Returns:
         Variable value if not None, default value otherwise.
-"""
+    """
     return var if var is not None else default_value
 
 
@@ -143,7 +143,7 @@ def create_ap_preset(profile_name='whirlwind',
                 extended_channel = hostapd_constants.N_CAPABILITY_HT40_MINUS
             # Define the n capability vector for 20 MHz and higher bandwidth
             if not vht_bandwidth:
-               pass
+                pass
             elif vht_bandwidth >= 40:
                 n_capabilities = _get_or_default(
                     n_capabilities,
@@ -206,6 +206,7 @@ def create_ap_preset(profile_name='whirlwind',
                                   ssid=ssid,
                                   channel=channel,
                                   mode=mode,
+                                  security=security,
                                   hidden=hidden,
                                   force_wmm=force_wmm,
                                   beacon_interval=beacon_interval,
@@ -227,6 +228,7 @@ def create_ap_preset(profile_name='whirlwind',
                                   ssid=ssid,
                                   channel=channel,
                                   mode=mode,
+                                  security=security,
                                   hidden=hidden,
                                   force_wmm=force_wmm,
                                   beacon_interval=beacon_interval,

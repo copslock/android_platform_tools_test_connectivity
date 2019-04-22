@@ -103,7 +103,7 @@ class Security(object):
     def generate_dict(self):
         """Returns: an ordered dictionary of settings"""
         settings = collections.OrderedDict()
-        if self.security_mode != None:
+        if self.security_mode:
             if self.security_mode == hostapd_constants.WEP:
                 settings['wep_default_key'] = self.wep_default_key
                 settings['wep_key' + str(self.wep_default_key)] = self.password
@@ -120,7 +120,6 @@ class Security(object):
                     settings['wpa_psk'] = self.password
                 else:
                     settings['wpa_passphrase'] = self.password
-
                 if self.security_mode == hostapd_constants.MIXED:
                     settings['wpa_pairwise'] = self.wpa_cipher
                     settings['rsn_pairwise'] = self.wpa2_cipher
@@ -128,7 +127,6 @@ class Security(object):
                     settings['wpa_pairwise'] = self.wpa_cipher
                 elif self.security_mode == hostapd_constants.WPA2:
                     settings['rsn_pairwise'] = self.wpa2_cipher
-
                 if self.wpa_group_rekey:
                     settings['wpa_group_rekey'] = self.wpa_group_rekey
                 if self.wpa_strict_rekey:
