@@ -44,6 +44,7 @@ from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLi
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
+from acts.libs.proc.job import Error
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -159,6 +160,8 @@ class FuchsiaDevice:
         self.init_address = self.address + "/init"
         self.cleanup_address = self.address + "/cleanup"
         self.print_address = self.address + "/print_clients"
+        self.ping_rtt_match = re.compile(r'RTT Min/Max/Avg '
+                                         r'= \[ (.*?) / (.*?) / (.*?) \] ms')
 
         # TODO(): Come up with better client numbering system
         self.client_id = "FuchsiaClient" + str(random.randint(0, 1000000))
@@ -249,9 +252,59 @@ class FuchsiaDevice:
             except Exception as e:
                 self.log.warning("Problem running ssh command: %s"
                                  "\n Exception: %s" % (test_cmd, e))
+                return e
             finally:
                 ssh_conn.close()
         return command_result
+
+    def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
+        """Pings from a Fuchsia device to an IPv4 address or hostname
+
+        Args:
+            dest_ip: (str) The ip or hostname to ping.
+            count: (int) How many icmp packets to send.
+            timeout: (int) How long to wait before having the icmp packet
+                timeout (ms).
+            size: (int) Size of the icmp packet.
+
+        Returns:
+            A dictionary for the results of the ping.  The dictionary contains
+            the following items:
+                status: Whether the ping was successful.
+                rtt_min: The minimum round trip time of the ping.
+                rtt_max: The minimum round trip time of the ping.
+                rtt_avg: The avg round trip time of the ping.
+                stdout: The standard out of the ping command.
+                stderr: The standard error of the ping command.
+        """
+        rtt_min = None
+        rtt_max = None
+        rtt_avg = None
+        self.log.info("Pinging %s...", dest_ip)
+        ping_result = self.send_command_ssh(
+            'ping -c %s -i %s -t %s -s %s %s' % (count,
+                                                 interval,
+                                                 timeout,
+                                                 size,
+                                                 dest_ip))
+        if isinstance(ping_result, Error):
+            ping_result = ping_result.result
+
+        if ping_result.stderr:
+            status = False
+        else:
+            status = True
+            rtt_stats = re.search(self.ping_rtt_match,
+                                  ping_result.stdout.split('\n')[-1])
+            rtt_min = rtt_stats.group(1)
+            rtt_max = rtt_stats.group(2)
+            rtt_avg = rtt_stats.group(3)
+        return {'status': status,
+                'rtt_min': rtt_min,
+                'rtt_max': rtt_max,
+                'rtt_avg': rtt_avg,
+                'stdout': ping_result.stdout,
+                'stderr': ping_result.stderr}
 
     def print_clients(self):
         """Gets connected clients from SL4F server"""
