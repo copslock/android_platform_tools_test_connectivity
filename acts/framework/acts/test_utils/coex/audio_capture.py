@@ -93,7 +93,7 @@ class AudioCapture:
             'record_duration']
         for i in range(total_chunks):
             try:
-                data = stream.read(self.chunk)
+                data = stream.read(self.chunk, exception_on_overflow=False)
             except IOError as ex:
                 logging.error("Cannot record audio :{}".format(ex))
                 return False
