@@ -37,7 +37,8 @@ install_requires = [
     'scapy',
     'pylibftdi',
     'xlsxwriter',
-    'mobly'
+    'mobly',
+    'grpcio'
 ]
 
 if sys.version_info < (3,):
