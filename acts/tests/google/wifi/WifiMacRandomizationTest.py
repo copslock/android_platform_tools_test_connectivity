@@ -94,9 +94,6 @@ class WifiMacRandomizationTest(WifiBaseTest):
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
             wutils.wifi_toggle_state(ad, True)
-        if hasattr(self, 'packet_capture'):
-            self.pcap_procs = wutils.start_pcap(
-                self.packet_capture, 'dual', self.log_path, self.test_name)
 
     def teardown_test(self):
         for ad in self.android_devices:
@@ -105,13 +102,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
 
-    def on_pass(self, test_name, begin_time):
-        if hasattr(self, 'packet_capture'):
-            wutils.stop_pcap(self.packet_capture, self.pcap_procs, True)
-
     def on_fail(self, test_name, begin_time):
-        if hasattr(self, 'packet_capture'):
-            wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         self.dut.cat_adb_log(test_name, begin_time)
         self.dut.take_bug_report(test_name, begin_time)
 
@@ -453,13 +444,13 @@ class WifiMacRandomizationTest(WifiBaseTest):
         """
         if hasattr(self, 'packet_capture'):
             self.pcap_procs = wutils.start_pcap(
-                self.packet_capture[0], 'dual', self.log_path, self.test_name)
+                self.packet_capture, 'dual', self.log_path, self.test_name)
         time.sleep(SHORT_TIMEOUT)
         network = self.wpapsk_5g
         rand_mac = self.connect_to_network_and_verify_mac_randomization(network)
         pcap_fname = os.path.join(self.log_path, self.test_name,
                          (self.test_name + '_5G.pcap'))
-        wutils.stop_pcap(self.packet_capture[0], self.pcap_procs, False)
+        wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         time.sleep(SHORT_TIMEOUT)
         packets = rdpcap(pcap_fname)
         for pkt in packets:
