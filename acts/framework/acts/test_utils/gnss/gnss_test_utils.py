@@ -69,6 +69,9 @@ def reboot(ad):
     if not int(ad.adb.shell("settings get global mobile_data")) == 1:
         set_mobile_data(ad, True)
     utils.sync_device_time(ad)
+    if ad.model == "sailfish" or ad.model == "marlin":
+        remount_device(ad)
+        ad.adb.shell("echo at@test=8 >> /dev/at_mdm0")
 
 def enable_gnss_verbose_logging(ad):
     """Enable GNSS VERBOSE Logging and logd.
@@ -82,8 +85,10 @@ def enable_gnss_verbose_logging(ad):
     ad.adb.shell("echo log.tag.LocationManagerService=VERBOSE >> /data/local.prop")
     ad.adb.shell("echo log.tag.GnssLocationProvider=VERBOSE >> /data/local.prop")
     ad.adb.shell("echo log.tag.GnssMeasurementsProvider=VERBOSE >> /data/local.prop")
+    ad.adb.shell("echo log.tag.GpsNetInitiatedHandler >> /data/local.prop")
     ad.adb.shell("chmod 644 /data/local.prop")
     ad.adb.shell("setprop persist.logd.logpersistd logcatd")
+    ad.adb.shell("setprop persist.logd.size 16777216")
     ad.adb.shell("setprop persist.vendor.radio.adb_log_on 1")
     ad.adb.shell("setprop log.tag.copresGcore VERBOSE")
     ad.adb.shell("sync")
@@ -152,7 +157,6 @@ def _init_device(ad):
     enable_gnss_verbose_logging(ad)
     disable_xtra_throttle(ad)
     enable_supl_mode(ad)
-    set_screen_brightness(ad, False)
     ad.adb.shell("settings put system screen_off_timeout 1800000")
     wutils.wifi_toggle_state(ad, False)
     ad.log.info("Setting Bluetooth state to False")
@@ -160,8 +164,8 @@ def _init_device(ad):
     set_gnss_qxdm_mask(ad, QXDM_MASKS)
     check_location_service(ad)
     set_wifi_and_bt_scanning(ad, True)
-    reboot(ad)
     disable_private_dns_mode(ad)
+    reboot(ad)
 
 def connect_to_wifi_network(ad, network):
     """Connection logic for open and psk wifi networks.
@@ -358,6 +362,18 @@ def reinstall_gtw_gpstool(ad):
     """
     ad.log.info("Re-install GTW GPSTool")
     ad.adb.install("-r -g /tmp/GNSS/base.apk")
+
+def init_gtw_gpstool(ad):
+    """Init GTW_GPSTool apk.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    remount_device(ad)
+    pull_gtw_gpstool(ad)
+    ad.adb.shell("settings put global verifier_verify_adb_installs 0")
+    ad.adb.shell("settings put global package_verifier_enable 0")
+    reinstall_gtw_gpstool(ad)
 
 def fastboot_factory_reset(ad):
     """Factory reset the device in fastboot mode.
@@ -723,26 +739,3 @@ def set_gnss_qxdm_mask(ad, masks):
     except Exception as e:
         ad.log.error(e)
         raise signals.TestFailure("Failed to set any QXDM masks.")
-
-def set_screen_brightness(ad, state):
-    """Set screen brightness in setting->Display->Brightness
-
-    Args:
-        ad: An AndroidDevice object.
-        state: State for screen brightness. True or False.
-    """
-    utils.set_adaptive_brightness(ad, state)
-    ad.adb.shell("settings put system screen_brightness {}".format(
-        255 if state else 1))
-    screen_brightness_mode = int(ad.adb.shell(
-        "settings get system screen_brightness_mode"))
-    screen_brightness = int(ad.adb.shell(
-        "settings get system screen_brightness"))
-    if screen_brightness_mode == 1 and state == True:
-        ad.log.info("Adaptive brightness is on and brightness is set to %d"
-                    % screen_brightness)
-    elif screen_brightness_mode == 0 and state == False:
-        ad.log.info("Adaptive brightness is off and brightness is set to %d"
-                    % screen_brightness)
-    else:
-        ad.log.error("Fail to set adaptive brightness")

@@ -54,6 +54,7 @@ class GNSSSanityTest(BaseTestClass):
         tutils.print_radio_info(self.ad)
         gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
                                           self.default_gnss_signal_attenuation)
+        gutils.init_gtw_gpstool(self.ad)
         gutils._init_device(self.ad)
         if not tutils.verify_internet_connection(self.ad.log,
                                                  self.ad,
@@ -88,6 +89,10 @@ class GNSSSanityTest(BaseTestClass):
         if not int(self.attenuators[0].get_atten()) == self.default_gnss_signal_attenuation:
             gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
                                               self.default_gnss_signal_attenuation)
+
+    def on_pass(self, test_name, begin_time):
+        gutils.get_gnss_qxdm_log(self.ad, test_name)
+        self.ad.take_bug_report(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
         gutils.get_gnss_qxdm_log(self.ad, test_name)
@@ -338,7 +343,7 @@ class GNSSSanityTest(BaseTestClass):
         if tutils.check_call_state_idle_by_adb(self.ad):
             self.ad.log.error("Call is not connected.")
             return False
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -370,7 +375,7 @@ class GNSSSanityTest(BaseTestClass):
                                  None, None, True, 3600))
         download.start()
         time.sleep(10)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria):
             download.terminate()
             time.sleep(3)
             return False
@@ -402,7 +407,7 @@ class GNSSSanityTest(BaseTestClass):
         tutils.start_qxdm_logger(self.ad, begin_time)
         gutils.kill_xtra_daemon(self.ad)
         self.ad.droid.setMediaVolume(25)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         if not tutils.start_youtube_video(
@@ -447,7 +452,7 @@ class GNSSSanityTest(BaseTestClass):
                                                      retries=3,
                                                      expected_state=True):
                 return False
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria):
                 return False
             gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
             ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -537,7 +542,7 @@ class GNSSSanityTest(BaseTestClass):
         supl_no_gnss_signal_all = []
         tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
         for times in range(1, 6):
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria):
                 return False
             self.ad.log.info("Let device do GNSS tracking for 1 minute.")
             time.sleep(60)
@@ -576,7 +581,7 @@ class GNSSSanityTest(BaseTestClass):
         begin_time = get_current_epoch_time()
         tutils.start_qxdm_logger(self.ad, begin_time)
         gutils.kill_xtra_daemon(self.ad)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_supl_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -608,7 +613,7 @@ class GNSSSanityTest(BaseTestClass):
             begin_time = get_current_epoch_time()
             tutils.start_qxdm_logger(self.ad, begin_time)
             gutils.kill_xtra_daemon(self.ad)
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria):
                 return False
             gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
             ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -641,7 +646,7 @@ class GNSSSanityTest(BaseTestClass):
         gutils.disable_supl_mode(self.ad)
         begin_time = get_current_epoch_time()
         tutils.start_qxdm_logger(self.ad, begin_time)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -649,7 +654,7 @@ class GNSSSanityTest(BaseTestClass):
                                         self.xtra_ws_criteria):
             return False
         begin_time = get_current_epoch_time()
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -680,7 +685,7 @@ class GNSSSanityTest(BaseTestClass):
                                           self.weak_gnss_signal_attenuation)
         begin_time = get_current_epoch_time()
         tutils.start_qxdm_logger(self.ad, begin_time)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_xtra_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -688,7 +693,7 @@ class GNSSSanityTest(BaseTestClass):
                                         self.weak_signal_xtra_ws_criteria):
             return False
         begin_time = get_current_epoch_time()
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_xtra_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -720,7 +725,7 @@ class GNSSSanityTest(BaseTestClass):
         wutils.wifi_toggle_state(self.ad, True)
         gutils.connect_to_wifi_network(
             self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -728,7 +733,7 @@ class GNSSSanityTest(BaseTestClass):
                                         self.xtra_ws_criteria):
             return False
         begin_time = get_current_epoch_time()
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -769,7 +774,7 @@ class GNSSSanityTest(BaseTestClass):
                                                      retries=3,
                                                      expected_state=True):
                 return False
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria):
                 return False
             gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
             ttff_result = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time)
@@ -803,7 +808,7 @@ class GNSSSanityTest(BaseTestClass):
         tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria):
                 return False
             time.sleep(5)
             gutils.start_gnss_by_gtw_gpstool(self.ad, False)
@@ -839,7 +844,7 @@ class GNSSSanityTest(BaseTestClass):
             self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria):
+            if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria):
                 return False
             time.sleep(5)
             gutils.start_gnss_by_gtw_gpstool(self.ad, False)
