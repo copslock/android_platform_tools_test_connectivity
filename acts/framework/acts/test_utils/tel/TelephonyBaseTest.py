@@ -267,16 +267,16 @@ class TelephonyBaseTest(BaseTestClass):
                 if not activate_google_fi_account(ad):
                     ad.log.error("Failed to activate Fi")
                 check_google_fi_activated(ad)
-            if hasattr(ad, "dsds"):
-                sim_mode = ad.droid.telephonyGetPhoneCount()
-                if sim_mode == 1:
-                    ad.log.info("Phone in Single SIM Mode")
-                    if not phone_switch_to_msim_mode(ad):
-                        ad.log.error("Failed to switch to Dual SIM Mode")
-                        return False
-                elif sim_mode == 2:
-                    ad.log.info("Phone already in Dual SIM Mode")
-                set_default_sub_for_all_services(ad)
+        if hasattr(ad, "dsds"):
+            sim_mode = ad.droid.telephonyGetPhoneCount()
+            if sim_mode == 1:
+                ad.log.info("Phone in Single SIM Mode")
+                if not phone_switch_to_msim_mode(ad):
+                    ad.log.error("Failed to switch to Dual SIM Mode")
+                    return False
+            elif sim_mode == 2:
+                ad.log.info("Phone already in Dual SIM Mode")
+            set_default_sub_for_all_services(ad)
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
             ad.log.info("Device has no or unknown SIM in it")
             ensure_phone_idle(self.log, ad)
