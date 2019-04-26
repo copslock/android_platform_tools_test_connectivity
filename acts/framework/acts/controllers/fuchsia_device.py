@@ -45,6 +45,8 @@ from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.libs.proc.job import Error
+from acts.utils import is_valid_ipv4_address
+from acts.utils import is_valid_ipv6_address
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -156,7 +158,13 @@ class FuchsiaDevice:
         self.log = acts_logger.create_tagged_trace_logger(
             "[FuchsiaDevice|%s]" % self.ip)
 
-        self.address = "http://{}:{}".format(self.ip, self.port)
+        if is_valid_ipv4_address(self.ip):
+            self.address = "http://{}:{}".format(self.ip, self.port)
+        elif is_valid_ipv6_address(self.ip):
+            self.address = "http://[{}]:{}".format(self.ip, self.port)
+        else:
+            raise ValueError('Invalid IP: %s' % self.ip)
+
         self.init_address = self.address + "/init"
         self.cleanup_address = self.address + "/cleanup"
         self.print_address = self.address + "/print_clients"
@@ -230,7 +238,7 @@ class FuchsiaDevice:
             "method": test_cmd,
             "params": test_args
         })
-        return requests.get(url=self.ip, data=test_data).json()
+        return requests.get(url=self.address, data=test_data).json()
 
     def send_command_ssh(self, test_cmd):
         """Sends an SSH command to a Fuchsia device

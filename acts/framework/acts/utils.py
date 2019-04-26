@@ -26,6 +26,7 @@ import random
 import re
 import signal
 import string
+import socket
 import subprocess
 import time
 import traceback
@@ -1264,3 +1265,28 @@ class SuppressLogOutput(object):
     def __exit__(self, *_):
         for handler in self._handlers:
             self._logger.addHandler(handler)
+
+
+def is_valid_ipv4_address(address):
+    try:
+        socket.inet_pton(socket.AF_INET, address)
+    except AttributeError:  # no inet_pton here, sorry
+        try:
+            socket.inet_aton(address)
+        except socket.error:
+            return False
+        return address.count('.') == 3
+    except socket.error:  # not a valid address
+        return False
+
+    return True
+
+
+def is_valid_ipv6_address(address):
+    if '%' in address:
+        address = address.split('%')[0]
+    try:
+        socket.inet_pton(socket.AF_INET6, address)
+    except socket.error:  # not a valid address
+        return False
+    return True
