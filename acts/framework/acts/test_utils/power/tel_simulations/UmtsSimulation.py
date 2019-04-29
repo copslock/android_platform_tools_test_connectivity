@@ -48,11 +48,14 @@ class UmtsSimulation(BaseSimulation):
     PARAM_DL_PW = 'pdl'
     PARAM_BAND = "band"
 
+    # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
+    DOWNLINK_SIGNAL_LEVEL_UNITS = "RSCP"
+
     # RSCP signal levels thresholds (as reported by Android). Units are dBm
     # Using LTE thresholds + 24 dB to have equivalent SPD
     # 24 dB comes from 10 * log10(3.84 MHz / 15 KHz)
 
-    downlink_rscp_dictionary = {
+    DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {
         'excellent': -51,
         'high': -76,
         'medium': -86,
@@ -63,7 +66,7 @@ class UmtsSimulation(BaseSimulation):
     # Stronger Tx power means that the signal received by the BTS is weaker
     # Units are dBm
 
-    uplink_signal_level_dictionary = {
+    UPLINK_SIGNAL_LEVEL_DICTIONARY = {
         'excellent': -20,
         'high': 2,
         'medium': 8,
@@ -139,33 +142,19 @@ class UmtsSimulation(BaseSimulation):
 
         # Setup uplink power
 
-        values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
-        if not values or values[1] not in self.uplink_signal_level_dictionary:
-            raise ValueError(
-                "The test name needs to include parameter {} followed by "
-                "one the following values: {}.".format(self.PARAM_UL_PW, [
-                    "\n" + val
-                    for val in self.uplink_signal_level_dictionary.keys()
-                ]))
+        ul_power = self.get_uplink_power_from_parameters(parameters)
 
         # Power is not set on the callbox until after the simulation is
-        # started. Will save this value in a variable and use it later
-        self.sim_ul_power = self.uplink_signal_level_dictionary[values[1]]
+        # started. Saving this value in a variable for later
+        self.sim_ul_power = ul_power
 
         # Setup downlink power
 
-        values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
-
-        if not values or values[1] not in self.downlink_rscp_dictionary:
-            raise ValueError(
-                "The test name needs to include parameter {} followed by "
-                "one of the following values: {}.".format(
-                    self.PARAM_DL_PW,
-                    [val for val in self.downlink_rscp_dictionary.keys()]))
+        dl_power = self.get_downlink_power_from_parameters(parameters)
 
         # Power is not set on the callbox until after the simulation is
-        # started. Will save this value in a variable and use it later
-        self.sim_dl_power = self.downlink_rscp_dictionary[values[1]]
+        # started. Saving this value in a variable for later
+        self.sim_dl_power = dl_power
 
     def set_release_version(self, bts, release_version):
         """ Sets the release version.

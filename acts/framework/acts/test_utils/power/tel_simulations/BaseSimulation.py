@@ -57,6 +57,15 @@ class BaseSimulation():
     # Max retries before giving up attaching the phone
     ATTACH_MAX_RETRIES = 3
 
+    # These two dictionaries allow to map from a string to a signal level and
+    # have to be overriden by the simulations inheriting from this class.
+    UPLINK_SIGNAL_LEVEL_DICTIONARY = {}
+    DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {}
+
+    # Units for downlink signal level. This variable has to be overriden by
+    # the simulations inheriting from this class.
+    DOWNLINK_SIGNAL_LEVEL_UNITS = None
+
     def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Initializes the Simulation object.
 
@@ -274,6 +283,39 @@ class BaseSimulation():
                     parameter_name, num_values))
 
         return return_list
+
+    def get_uplink_power_from_parameters(self, parameters):
+        """ Reads uplink power from a list of parameters. """
+
+        values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
+
+        if not values or values[1] not in self.UPLINK_SIGNAL_LEVEL_DICTIONARY:
+            raise ValueError(
+                "The test name needs to include parameter {} followed by one "
+                "the following values: {}.".format(
+                    self.PARAM_UL_PW,
+                    list(self.UPLINK_SIGNAL_LEVEL_DICTIONARY.keys())))
+
+        return self.UPLINK_SIGNAL_LEVEL_DICTIONARY[values[1]]
+
+    def get_downlink_power_from_parameters(self, parameters):
+        """ Reads downlink power from a list of parameters. """
+
+        values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
+
+        if values:
+            if values[1] not in self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY:
+                raise ValueError("Invalid signal level value {}.".format(
+                    values[1]))
+            else:
+                return self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY[values[1]]
+        else:
+            # Use default value
+            power = self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY['excellent']
+            self.log.info("No DL signal level value was indicated in the test "
+                          "parameters. Using default value of {} {}.".format(
+                              power, self.DOWNLINK_SIGNAL_LEVEL_UNITS))
+            return power
 
     def set_downlink_rx_power(self, bts, signal_level):
         """ Sets downlink rx power using calibration if available
