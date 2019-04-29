@@ -182,6 +182,31 @@ def get_timezone_olson_id():
     return GMT_to_olson[gmt]
 
 
+def get_next_device(test_bed_controllers, used_devices):
+    """Gets the next device in a list of testbed controllers
+
+    Args:
+        test_bed_controllers: A list of testbed controllers of a particular
+            type, for example a list ACTS Android devices.
+        used_devices: A list of devices that have been used.  This can be a
+            mix of devices, for example a fuchsia device and an Android device.
+    Returns:
+        The next device in the test_bed_controllers list or None if there are
+        no items that are not in the used devices list.
+    """
+    if test_bed_controllers:
+        device_list = test_bed_controllers
+    else:
+        raise ValueError('test_bed_controllers is empty.')
+    for used_device in used_devices:
+        if used_device in device_list:
+            device_list.remove(used_device)
+    if device_list:
+        return device_list[0]
+    else:
+        return None
+
+
 def find_files(paths, file_predicate):
     """Locate files whose names and extensions match the given predicate in
     the specified directories.
