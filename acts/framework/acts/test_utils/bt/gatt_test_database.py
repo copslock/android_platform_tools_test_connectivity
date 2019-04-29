@@ -323,6 +323,7 @@ LARGE_DB_1 = {
             'handles': 7,
             'characteristics': [{
                 'uuid': '0000b009-0000-0000-0123-456789abcdef',
+                'enforce_initial_attribute_length': True,
                 'properties': gatt_characteristic['property_write'] |
                 gatt_characteristic['property_extended_props'] |
                 gatt_characteristic['property_read'],
@@ -365,6 +366,7 @@ LARGE_DB_1 = {
                 },
                 {
                     'uuid': '0000b00f-0000-1000-8000-00805f9b34fb',
+                    'enforce_initial_attribute_length': True,
                     'properties': gatt_characteristic['property_read'] |
                     gatt_characteristic['property_write'],
                     'permissions': gatt_characteristic['permission_read'] |
@@ -393,6 +395,7 @@ LARGE_DB_1 = {
                 },
                 {
                     'uuid': '0000b007-0000-1000-8000-00805f9b34fb',
+                    'enforce_initial_attribute_length': True,
                     'properties': gatt_characteristic['property_read'] |
                     gatt_characteristic['property_write'],
                     'permissions': gatt_characteristic['permission_read'] |
@@ -750,6 +753,7 @@ DB_TEST = {
             'permissions': 0x10 | 0x01,
             'value_type': gatt_characteristic_value_format['byte'],
             'value': [0x01],
+            'enforce_initial_attribute_length': True,
             'descriptors': [{
                 'uuid': '0000b004-0000-1000-8000-00805f9b34fb',
                 'permissions': gatt_descriptor['permission_read'] |
@@ -1308,6 +1312,7 @@ LARGE_DB_3 = {
                 'value': [0x01],
             }, {
                 'uuid': '0000b002-0000-1000-8000-00805f9b34fb',
+                'enforce_initial_attribute_length': True,
                 'instance_id': 0x0076,
                 'properties': 0x0a,
                 'permissions': gatt_characteristic['permission_read'] |
@@ -1412,6 +1417,7 @@ LARGE_DB_3 = {
                 {
                     'uuid': '0000b002-0000-1000-8000-00805f9b34fb',
                     'instance_id': 0x00a4,
+                    'enforce_initial_attribute_length': True,
                     'properties': 0x0a,
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1421,6 +1427,7 @@ LARGE_DB_3 = {
                 {
                     'uuid': '0000b002-0000-1000-8000-00805f9b34fb',
                     'instance_id': 0x00a6,
+                    'enforce_initial_attribute_length': True,
                     'properties': 0x0a,
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1430,6 +1437,7 @@ LARGE_DB_3 = {
                 {
                     'uuid': '0000b002-0000-1000-8000-00805f9b34fb',
                     'instance_id': 0x00a8,
+                    'enforce_initial_attribute_length': True,
                     'properties': 0x0a,
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1439,6 +1447,7 @@ LARGE_DB_3 = {
                 {
                     'uuid': '0000b002-0000-1000-8000-00805f9b34fb',
                     'instance_id': 0x00aa,
+                    'enforce_initial_attribute_length': True,
                     'properties': 0x0a,
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1448,6 +1457,7 @@ LARGE_DB_3 = {
                 {
                     'uuid': '0000b002-0000-1000-8000-00805f9b34fb',
                     'instance_id': 0x00ac,
+                    'enforce_initial_attribute_length': True,
                     'properties': 0x0a,
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
@@ -1457,6 +1467,7 @@ LARGE_DB_3 = {
                 {
                     'uuid': '0000b002-0000-1000-8000-00805f9b34fb',
                     'instance_id': 0x00ae,
+                    'enforce_initial_attribute_length': True,
                     'properties': 0x0a,
                     'permissions': gatt_characteristic['permission_read'] |
                     gatt_characteristic['permission_write'],
