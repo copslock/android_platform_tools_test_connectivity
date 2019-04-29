@@ -14,39 +14,31 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import collections
-import enum
 import json
 import logging
-import math
 import os
 import random
 import re
 import requests
-import socket
 import time
-import urllib as ul
-import webbrowser
-import xmlrpc.client
 
-from subprocess import call
-
+from acts import context
 from acts import logger as acts_logger
 from acts import signals
-from acts import tracelogger
-from acts import utils
 
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
 from acts.controllers.fuchsia_lib.bt.btc_lib import FuchsiaBtcLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
+from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.libs.proc.job import Error
 from acts.utils import is_valid_ipv4_address
 from acts.utils import is_valid_ipv6_address
+
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -70,6 +62,12 @@ SL4F_INIT_TIMEOUT_SEC = 1
 SL4F_ACTIVATED_STATES = ["running", "start"]
 SL4F_DEACTIVATED_STATES = ["stop", "stopped"]
 
+FUCHSIA_DEFAULT_LOG_CMD = 'iquery --absolute_paths --cat --format= --recursive'
+FUCHSIA_DEFAULT_LOG_ITEMS = ['/hub/c/scenic.cmx/[0-9]*/out/objects',
+                             '/hub/c/root_presenter.cmx/[0-9]*/out/objects',
+                             '/hub/c/wlanstack2.cmx/[0-9]*/out/public',
+                             '/hub/c/basemgr.cmx/[0-9]*/out/objects']
+
 
 class FuchsiaDeviceError(signals.ControllerError):
     pass
@@ -91,6 +89,7 @@ def create(configs):
 
 def destroy(fds):
     for fd in fds:
+        fd.clean_up()
         del fd
 
 
@@ -174,6 +173,14 @@ class FuchsiaDevice:
         # TODO(): Come up with better client numbering system
         self.client_id = "FuchsiaClient" + str(random.randint(0, 1000000))
         self.test_counter = 0
+
+        self.serial = self.ip.replace('.', '_').replace(':', '_')
+        log_path_base = getattr(logging, 'log_path', '/tmp/logs')
+        self.log_path = os.path.join(log_path_base,
+                                     'FuchsiaDevice%s' % self.serial)
+        self.fuchsia_log_file_path = os.path.join(
+            self.log_path, "fuchsialog_%s_debug.txt" % self.serial)
+        self.log_process = None
 
         # Grab commands from FuchsiaBleLib
         self.ble_lib = FuchsiaBleLib(self.address, self.test_counter,
@@ -271,6 +278,7 @@ class FuchsiaDevice:
         Args:
             dest_ip: (str) The ip or hostname to ping.
             count: (int) How many icmp packets to send.
+            interval: (int) How long to wait between pings (ms)
             timeout: (int) How long to wait before having the icmp packet
                 timeout (ms).
             size: (int) Size of the icmp packet.
@@ -350,6 +358,7 @@ class FuchsiaDevice:
         self.test_counter += 1
 
         self.log.debug("Cleaned up with status: ", r)
+        self.stop_services()
         return r
 
     def create_ssh_connection(self):
@@ -426,7 +435,7 @@ class FuchsiaDevice:
                 sl4f_initial_msg = ("SL4F has not started yet. "
                                     "Waiting %i second and checking "
                                     "again." % SL4F_INIT_TIMEOUT_SEC)
-                sl4f_timeout_msg = ("Timed out waiting for SL4F " "to start.")
+                sl4f_timeout_msg = "Timed out waiting for SL4F to start."
                 unable_to_connect_msg = ("Unable to connect to Fuchsia "
                                          "device via SSH. SL4F may not "
                                          "be started.")
@@ -490,8 +499,14 @@ class FuchsiaDevice:
         """
         self.log.debug("Attempting to start Fuchsia device services on %s." %
                        self.ip)
-        if self.ssh_config and not skip_sl4f:
-            self.control_sl4f("start")
+        if self.ssh_config:
+            self.log_process = start_syslog(self.serial,
+                                            self.log_path,
+                                            self.ip,
+                                            self.ssh_config)
+            self.log_process.start()
+            if not skip_sl4f:
+                self.control_sl4f("start")
 
     def stop_services(self):
         """Stops long running services on the android device.
@@ -502,9 +517,57 @@ class FuchsiaDevice:
                        self.ip)
         if self.ssh_config:
             self.control_sl4f("stop")
+            if self.log_process:
+                self.log_process.stop()
 
     def load_config(self, config):
         pass
+
+    def take_bug_report(self,
+                        test_name,
+                        begin_time,
+                        additional_log_objects=None):
+        """Takes a bug report on the device and stores it in a file.
+
+        Args:
+            test_name: Name of the test case that triggered this bug report.
+            begin_time: Epoch time when the test started.
+            additional_log_objects: A list of additional objects in Fuchsia to
+                query in the bug report.  Must be in the following format:
+                /hub/c/scenic.cmx/[0-9]*/out/objects
+        """
+        if not additional_log_objects:
+            additional_log_objects = []
+        log_items = []
+        matching_log_items = FUCHSIA_DEFAULT_LOG_ITEMS
+        for additional_log_object in additional_log_objects:
+            if additional_log_object not in matching_log_items:
+                matching_log_items.append(additional_log_object)
+        br_path = context.get_current_context().get_full_output_path()
+        os.makedirs(br_path, exist_ok=True)
+        time_stamp = acts_logger.normalize_log_line_timestamp(
+            acts_logger.epoch_to_log_line_timestamp(begin_time))
+        out_name = "FuchsiaDevice%s_%s" % (
+            self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
+        out_name = "%s.txt" % out_name
+        full_out_path = os.path.join(br_path, out_name)
+        self.log.info("Taking bugreport for %s on FuchsiaDevice%s."
+                      % (test_name, self.serial))
+        system_objects = self.send_command_ssh('iquery --find /hub').stdout
+        system_objects = system_objects.split()
+
+        for matching_log_item in matching_log_items:
+            for system_object in system_objects:
+                if re.match(matching_log_item, system_object):
+                    log_items.append(system_object)
+
+        log_command = '%s %s' % (FUCHSIA_DEFAULT_LOG_CMD,
+                                 ' '.join(log_items))
+        bug_report_data = self.send_command_ssh(log_command).stdout
+
+        bug_report_file = open(full_out_path,'w')
+        bug_report_file.write(bug_report_data)
+        bug_report_file.close()
 
 
 class FuchsiaDeviceLoggerAdapter(logging.LoggerAdapter):
