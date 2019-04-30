@@ -229,9 +229,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             dl_max_throughput = self.simulation.maximum_downlink_throughput()
             ul_max_throughput = self.simulation.maximum_uplink_throughput()
         except NotImplementedError:
-            self.log.error(
-                "Maximum downlink/uplink throughput method not "
-                "implemented for simulation %s" % self.simulation.__name__)
+            self.log.error("Maximum downlink/uplink throughput method not "
+                           "implemented for %s." %
+                           type(self.simulation).__name__)
         # Use tcp_window_fraction if given in parameters. If tcp_window_fraction
         # is false then send None.
         if hasattr(self, 'tcp_window_fraction'):
