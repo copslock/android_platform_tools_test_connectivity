@@ -72,6 +72,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
+        if hasattr(self, 'packet_capture'):
+            self.configure_packet_capture()
+
         if "AccessPoint" in self.user_params:
             if "AccessPoint" in self.user_params:
                 self.legacy_configure_ap_and_start(wep_network=True, ap_count=2)
