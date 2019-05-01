@@ -232,23 +232,27 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             self.log.error("Maximum downlink/uplink throughput method not "
                            "implemented for %s." %
                            type(self.simulation).__name__)
-        # Use tcp_window_fraction if given in parameters. If tcp_window_fraction
-        # is false then send None.
-        if hasattr(self, 'tcp_window_fraction'):
-            if not self.tcp_window_fraction:
-                ul_tcp_window = None
-                dl_tcp_window = None
-            elif self.tcp_window_fraction > 0.0:
-                dl_tcp_window = dl_max_throughput / self.tcp_window_fraction
-                ul_tcp_window = ul_max_throughput / self.tcp_window_fraction
-            else:
-                self.log.warning("tcp_window_fraction should be positive int "
-                                 "or 'false'. Disabling window")
-                ul_tcp_window = None
-                dl_tcp_window = None
+            ul_tcp_window = None
+            dl_tcp_window = None
         else:
-            dl_tcp_window = dl_max_throughput / self.TCP_WINDOW_FRACTION
-            ul_tcp_window = ul_max_throughput / self.TCP_WINDOW_FRACTION
+            # Calculate the TCP window only if dl/ul max throughput was
+            # obtained. Use tcp_window_fraction if given in parameters. If
+            # tcp_window_fraction is false then send None.
+            if hasattr(self, 'tcp_window_fraction'):
+                if not self.tcp_window_fraction:
+                    ul_tcp_window = None
+                    dl_tcp_window = None
+                elif self.tcp_window_fraction > 0.0:
+                    dl_tcp_window = dl_max_throughput / self.tcp_window_fraction
+                    ul_tcp_window = ul_max_throughput / self.tcp_window_fraction
+                else:
+                    self.log.warning("tcp_window_fraction should be positive "
+                                     "int or 'false'. Disabling window")
+                    ul_tcp_window = None
+                    dl_tcp_window = None
+            else:
+                dl_tcp_window = dl_max_throughput / self.TCP_WINDOW_FRACTION
+                ul_tcp_window = ul_max_throughput / self.TCP_WINDOW_FRACTION
 
         if self.traffic_direction in [
                 self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_DL_UL
