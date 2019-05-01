@@ -13,6 +13,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
+import ntpath
+
 from acts.controllers.anritsu_lib.md8475a import BtsGprsMode
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.anritsu_utils import GSM_BAND_DCS1800
@@ -31,11 +34,9 @@ class GsmSimulation(BaseSimulation):
     # These should be replaced in the future by setting up
     # the same configuration manually.
 
-    GSM_BASIC_SIM_FILE = ('C:\\Users\MD8475A\Documents\DAN_configs\\'
-                          'SIM_default_GSM.wnssp')
+    GSM_BASIC_SIM_FILE = 'SIM_default_GSM.wnssp'
 
-    GSM_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\'
-                     'CELL_GSM_config.wnscp')
+    GSM_CELL_FILE = 'CELL_GSM_config.wnscp'
 
     # Test name parameters
 
@@ -70,8 +71,10 @@ class GsmSimulation(BaseSimulation):
 
         super().__init__(anritsu, log, dut, test_config, calibration_table)
 
-        anritsu.load_simulation_paramfile(self.GSM_BASIC_SIM_FILE)
-        self.anritsu.load_cell_paramfile(self.GSM_CELL_FILE)
+        anritsu.load_simulation_paramfile(
+            ntpath.join(self.callbox_config_path, self.GSM_BASIC_SIM_FILE))
+        self.anritsu.load_cell_paramfile(
+            ntpath.join(self.callbox_config_path, self.GSM_CELL_FILE))
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_GSM_ONLY,
