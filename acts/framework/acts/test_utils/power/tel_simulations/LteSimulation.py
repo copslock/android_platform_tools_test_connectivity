@@ -86,9 +86,12 @@ class LteSimulation(BaseSimulation):
         FDD = "FDD"
         TDD = "TDD"
 
+    # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
+    DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
+
     # RSRP signal levels thresholds (as reported by Android) in dBm/15KHz.
     # Excellent is set to -75 since callbox B Tx power is limited to -30 dBm
-    downlink_rsrp_dictionary = {
+    DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {
         'excellent': -75,
         'high': -110,
         'medium': -115,
@@ -96,7 +99,7 @@ class LteSimulation(BaseSimulation):
     }
 
     # Transmitted output power for the phone (dBm)
-    uplink_signal_level_dictionary = {
+    UPLINK_SIGNAL_LEVEL_DICTIONARY = {
         'max': 23,
         'high': 13,
         'medium': 3,
@@ -477,39 +480,6 @@ class LteSimulation(BaseSimulation):
         # Power is not set on the callbox until after the simulation is
         # started. Saving this value in a variable for later
         self.sim_dl_power = dl_power
-
-    def get_uplink_power_from_parameters(self, parameters):
-        """ Reads uplink power from a list of parameters. """
-
-        values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
-
-        if not values or values[1] not in self.uplink_signal_level_dictionary:
-            raise ValueError(
-                "The test name needs to include parameter {} followed by one "
-                "the following values: {}.".format(self.PARAM_UL_PW, [
-                    val for val in self.uplink_signal_level_dictionary.keys()
-                ]))
-
-        return self.uplink_signal_level_dictionary[values[1]]
-
-    def get_downlink_power_from_parameters(self, parameters):
-        """ Reads downlink power from a list of parameters. """
-
-        values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
-
-        if values:
-            if values[1] not in self.downlink_rsrp_dictionary:
-                raise ValueError("Invalid signal level value {}.".format(
-                    values[1]))
-            else:
-                return self.downlink_rsrp_dictionary[values[1]]
-        else:
-            # Use default value
-            power = self.downlink_rsrp_dictionary['excellent']
-            self.log.info(
-                "No DL signal level value was indicated in the test "
-                "parameters. Using default value of {} RSRP.".format(power))
-            return power
 
     def set_downlink_rx_power(self, bts, rsrp):
         """ Sets downlink rx power in RSRP using calibration
