@@ -16,6 +16,7 @@
 
 import time
 import math
+import ntpath
 from enum import Enum
 
 from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
@@ -32,8 +33,8 @@ class LteSimulation(BaseSimulation):
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
     # the same configuration manually.
-    LTE_BASIC_SIM_FILE = 'SIM_default_LTE'
-    LTE_BASIC_CELL_FILE = 'CELL_LTE_config'
+    LTE_BASIC_SIM_FILE = 'SIM_default_LTE.wnssp'
+    LTE_BASIC_CELL_FILE = 'CELL_LTE_config.wnscp'
 
     # Simulation config keywords contained in the test name
     PARAM_FRAME_CONFIG = "tddconfig"
@@ -231,19 +232,18 @@ class LteSimulation(BaseSimulation):
         """
 
         super().__init__(anritsu, log, dut, test_config, calibration_table)
-        self.file_path = 'C:\\Users\\MD8475{}\\Documents\\DAN_configs\\'.format(
-            self.anritsu._md8475_version)
 
-        if self.anritsu._md8475_version == 'A':
-            self.sim_file_path = "{}{}.wnssp".format(self.file_path,
-                                                     self.LTE_BASIC_SIM_FILE)
-            self.cell_file_path = "{}{}.wnscp".format(self.file_path,
-                                                      self.LTE_BASIC_CELL_FILE)
-        else:
-            self.sim_file_path = "{}{}.wnssp2".format(self.file_path,
-                                                      self.LTE_BASIC_SIM_FILE)
-            self.cell_file_path = "{}{}.wnscp2".format(
-                self.file_path, self.LTE_BASIC_CELL_FILE)
+        cell_file_name = self.LTE_BASIC_CELL_FILE
+        sim_file_name = self.LTE_BASIC_SIM_FILE
+
+        if self.anritsu._md8475_version == 'B':
+            cell_file_name += '2'
+            sim_file_name += '2'
+
+        self.cell_file_path = ntpath.join(self.callbox_config_path,
+                                          cell_file_name)
+        self.sim_file_path = ntpath.join(self.callbox_config_path,
+                                         sim_file_name)
 
         anritsu.load_simulation_paramfile(self.sim_file_path)
         anritsu.load_cell_paramfile(self.cell_file_path)

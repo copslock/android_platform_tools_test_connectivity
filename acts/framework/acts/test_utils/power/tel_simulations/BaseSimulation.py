@@ -46,6 +46,10 @@ class BaseSimulation():
     # Key to read the calibration setting from the test_config dictionary.
     KEY_CALIBRATION = "calibration"
 
+    # Filepath to the config files stored in the Anritsu callbox. Needs to be
+    # formatted to replace {} with either A or B depending on the model.
+    CALLBOX_PATH_FORMAT_STR = 'C:\\Users\\MD8475{}\\Documents\\DAN_configs\\'
+
     # Time in seconds to wait for the phone to settle
     # after attaching to the base station.
     SETTLING_TIME = 10
@@ -118,6 +122,10 @@ class BaseSimulation():
 
         # Enable roaming on the phone
         toggle_cell_data_roaming(self.dut, True)
+
+        # Set
+        self.callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
+            self.anritsu._md8475_version)
 
     def start(self):
         """ Start simulation.
