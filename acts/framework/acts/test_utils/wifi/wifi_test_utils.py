@@ -19,6 +19,7 @@ import os
 import shutil
 import time
 
+from collections import namedtuple
 from enum import IntEnum
 from queue import Empty
 
@@ -2143,6 +2144,65 @@ def get_cnss_diag_log(ad, test_name=""):
                                 "CNSS_DIAG_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
+
+
+LinkProbeResult = namedtuple('LinkProbeResult', (
+    'is_success', 'stdout', 'elapsed_time', 'failure_reason'))
+
+
+def send_link_probe(ad):
+    """Sends a link probe to the currently connected AP, and returns whether the
+    probe succeeded or not.
+
+    Args:
+         ad: android device object
+    Returns:
+        LinkProbeResult namedtuple
+    """
+    stdout = ad.adb.shell('cmd wifi send-link-probe')
+    asserts.assert_false('Error' in stdout or 'Exception' in stdout,
+                         'Exception while sending link probe: ' + stdout)
+
+    is_success = False
+    elapsed_time = None
+    failure_reason = None
+    if 'succeeded' in stdout:
+        is_success = True
+        elapsed_time = next(
+            (int(token) for token in stdout.split() if token.isdigit()), None)
+    elif 'failed with reason' in stdout:
+        failure_reason = next(
+            (int(token) for token in stdout.split() if token.isdigit()), None)
+    else:
+        asserts.fail('Unexpected link probe result: ' + stdout)
+
+    return LinkProbeResult(
+        is_success=is_success, stdout=stdout,
+        elapsed_time=elapsed_time, failure_reason=failure_reason)
+
+
+def send_link_probes(ad, num_probes, delay_sec):
+    """Sends a sequence of link probes to the currently connected AP, and
+    returns whether the probes succeeded or not.
+
+    Args:
+         ad: android device object
+         num_probes: number of probes to perform
+         delay_sec: delay time between probes, in seconds
+    Returns:
+        List[LinkProbeResult] one LinkProbeResults for each probe
+    """
+    logging.info('Sending link probes')
+    results = []
+    for _ in range(num_probes):
+        # send_link_probe() will also fail the test if it sees an exception
+        # in the stdout of the adb shell command
+        result = send_link_probe(ad)
+        logging.info('link probe results: ' + str(result))
+        results.append(result)
+        time.sleep(delay_sec)
+
+    return results
 
 
 def ap_setup(test, index, ap, network, bandwidth=80, channel=6):
