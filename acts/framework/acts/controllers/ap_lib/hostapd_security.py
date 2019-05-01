@@ -83,7 +83,9 @@ class Security(object):
         self.security_mode = security_mode
         if password:
             if security_mode == hostapd_constants.WEP:
-                if len(password) in hostapd_constants.WEP_HEX_LENGTH and all(
+                if len(password) in hostapd_constants.WEP_STR_LENGTH:
+                    self.password = '"%s"' % password
+                elif len(password) in hostapd_constants.WEP_HEX_LENGTH and all(
                         c in string.hexdigits for c in password):
                     self.password = password
                 else:
@@ -103,7 +105,7 @@ class Security(object):
     def generate_dict(self):
         """Returns: an ordered dictionary of settings"""
         settings = collections.OrderedDict()
-        if self.security_mode:
+        if self.security_mode is not None:
             if self.security_mode == hostapd_constants.WEP:
                 settings['wep_default_key'] = self.wep_default_key
                 settings['wep_key' + str(self.wep_default_key)] = self.password
