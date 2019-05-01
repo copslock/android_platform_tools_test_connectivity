@@ -13,6 +13,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
+import ntpath
+
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
@@ -27,17 +30,13 @@ class UmtsSimulation(BaseSimulation):
     # These should be replaced in the future by setting up
     # the same configuration manually.
 
-    UMTS_BASIC_SIM_FILE = ('C:\\Users\MD8475A\Documents\DAN_configs\\'
-                           'SIM_default_WCDMA.wnssp')
+    UMTS_BASIC_SIM_FILE = 'SIM_default_WCDMA.wnssp'
 
-    UMTS_R99_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\'
-                          'CELL_WCDMA_R99_config.wnscp')
+    UMTS_R99_CELL_FILE = 'CELL_WCDMA_R99_config.wnscp'
 
-    UMTS_R7_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\'
-                         'CELL_WCDMA_R7_config.wnscp')
+    UMTS_R7_CELL_FILE = 'CELL_WCDMA_R7_config.wnscp'
 
-    UMTS_R8_CELL_FILE = ('C:\\Users\MD8475A\Documents\\DAN_configs\\'
-                         'CELL_WCDMA_R8_config.wnscp')
+    UMTS_R8_CELL_FILE = 'CELL_WCDMA_R8_config.wnscp'
 
     # Test name parameters
     PARAM_RELEASE_VERSION = "r"
@@ -92,7 +91,8 @@ class UmtsSimulation(BaseSimulation):
 
         super().__init__(anritsu, log, dut, test_config, calibration_table)
 
-        anritsu.load_simulation_paramfile(self.UMTS_BASIC_SIM_FILE)
+        anritsu.load_simulation_paramfile(
+            ntpath.join(self.callbox_config_path, self.UMTS_BASIC_SIM_FILE))
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_WCDMA_ONLY,
@@ -186,7 +186,8 @@ class UmtsSimulation(BaseSimulation):
         else:
             raise ValueError("Invalid UMTS release version number.")
 
-        self.anritsu.load_cell_paramfile(cell_parameter_file)
+        self.anritsu.load_cell_paramfile(
+            ntpath.join(self.callbox_config_path, cell_parameter_file))
 
         # Loading a cell parameter file stops the simulation
         self.start()
