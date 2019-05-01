@@ -46,6 +46,7 @@ WLAN1_GALE = 'wlan-5000mhz'
 WEP_STRING = 'wep'
 WEP_DEFAULT_KEY = 0
 WEP_HEX_LENGTH = [10, 26, 32, 58]
+WEP_STR_LENGTH = [5, 13, 16]
 AP_DEFAULT_CHANNEL_2G = 6
 AP_DEFAULT_CHANNEL_5G = 36
 AP_DEFAULT_MAX_SSIDS_2G = 8
@@ -290,6 +291,12 @@ OFDM_ONLY_BASIC_RATES = {
 
 CCK_AND_OFDM_BASIC_RATES = {
     'basic_rates': '10 20 55 11'
+}
+
+WEP_AUTH = {
+    'open': {'auth_algs': 1},
+    'shared': {'auth_algs': 2},
+    'open_and_shared': {'auth_algs': 3}
 }
 
 WMM_11B_DEFAULT_PARAMS = {
