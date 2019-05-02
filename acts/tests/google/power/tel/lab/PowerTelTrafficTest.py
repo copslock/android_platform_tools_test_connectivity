@@ -19,6 +19,7 @@ import time
 import scapy.all as scapy
 
 from acts import asserts
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power import IperfHelper as IPH
 from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
@@ -62,6 +63,13 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         # Throughput obtained from iPerf
         self.iperf_results = None
+
+        # Blackbox metrics loggers
+
+        self.dl_throughput_logger = BlackboxMetricLogger.for_test_case(
+            metric_name='avg_dl_tput')
+        self.ul_throughput_logger = BlackboxMetricLogger.for_test_case(
+            metric_name='avg_ul_tput')
 
     def setup_test(self):
         """ Executed before every test case.
@@ -136,6 +144,10 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         # Collect throughput measurement
         self.iperf_results = self.get_iperf_results(self.dut, iperf_helpers)
+
+        # Store DL/UL throughput
+        self.dl_throughput_logger.metric_value = self.iperf_results.get('DL', 0)
+        self.ul_throughput_logger.metric_value = self.iperf_results.get('UL', 0)
 
         # Check if power measurement is below the required value
         self.pass_fail_check()
