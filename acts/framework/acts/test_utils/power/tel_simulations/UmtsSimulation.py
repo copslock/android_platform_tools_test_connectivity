@@ -189,6 +189,8 @@ class UmtsSimulation(BaseSimulation):
         self.anritsu.load_cell_paramfile(
             ntpath.join(self.callbox_config_path, cell_parameter_file))
 
+        self.release_version = release_version
+
         # Loading a cell parameter file stops the simulation
         self.start()
 
