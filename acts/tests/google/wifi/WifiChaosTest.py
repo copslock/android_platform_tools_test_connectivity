@@ -41,6 +41,9 @@ TIMEOUT = 60
 TEST = 'test_'
 PING_ADDR = 'www.google.com'
 
+NUM_LINK_PROBES = 3
+PROBE_DELAY_SEC = 1
+
 
 class WifiChaosTest(WifiBaseTest):
     """ Tests for wifi IOT
@@ -203,6 +206,30 @@ class WifiChaosTest(WifiBaseTest):
         if "100% packet loss" in result:
             raise signals.TestFailure("100% packet loss during ping")
 
+    def send_link_probes(self, network):
+        """
+        Send link probes, and verify that the device and AP did not crash.
+        Also verify that at least one link probe succeeded.
+
+        Steps:
+        1. Send a few link probes.
+        2. Verify that at least one link probe succeeded.
+        3. Ensure that the device and AP did not crash (by checking that the
+           device remains connected to the expected network).
+        """
+        results = wutils.send_link_probes(
+            self.dut, NUM_LINK_PROBES, PROBE_DELAY_SEC)
+
+        asserts.assert_true(any(result.is_success for result in results),
+                            "Expect at least 1 probe success: " + str(results))
+
+        wifi_info = self.dut.droid.wifiGetConnectionInfo()
+        expected = network[WifiEnums.SSID_KEY]
+        actual = wifi_info[WifiEnums.SSID_KEY]
+        asserts.assert_equal(
+            expected, actual,
+            "Device did not remain connected after sending link probes!")
+
     def unlock_and_turn_off_ap(self, hostname, rpm_port, rpm_ip):
         """UNlock the AP in datastore and turn off the AP.
 
@@ -242,6 +269,7 @@ class WifiChaosTest(WifiBaseTest):
                 self.log.info("Connecting to %s" % ssid)
                 self.scan_and_connect_by_id(network, net_id)
                 self.run_ping(10)
+                self.send_link_probes(network)
                 wutils.wifi_forget_network(self.dut, ssid)
                 time.sleep(WAIT_BEFORE_CONNECTION)
             except:
