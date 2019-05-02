@@ -986,12 +986,30 @@ class LteSimulation(BaseSimulation):
             self.bts1.transmode = "TM1"
             time.sleep(5)  # It takes some time to propagate the new settings
 
+        # SET TBS pattern for calibration
+        self.bts1.tbs_pattern = "FULLALLOCATION" if self.tbs_pattern_on else "OFF"
+
         super().calibrate()
 
         if init_dl_antenna is not None:
             self.bts1.dl_antenna = init_dl_antenna
             self.bts1.transmode = init_transmode
             time.sleep(5)  # It takes some time to propagate the new settings
+
+    def start_traffic_for_calibration(self):
+        """
+            If TBS pattern is set to full allocation, there is no need to start
+            IP traffic.
+        """
+        if not self.tbs_pattern_on:
+            super().start_traffic_for_calibration()
+
+    def stop_traffic_for_calibration(self):
+        """
+            If TBS pattern is set to full allocation, IP traffic wasn't started
+        """
+        if not self.tbs_pattern_on:
+            super().stop_traffic_for_calibration()
 
     def get_duplex_mode(self, band):
         """ Determines if the band uses FDD or TDD duplex mode
