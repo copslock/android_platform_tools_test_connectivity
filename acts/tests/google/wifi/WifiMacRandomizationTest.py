@@ -254,11 +254,13 @@ class WifiMacRandomizationTest(WifiBaseTest):
                                   % mac)
 
     def get_sta_mac_address(self):
+        """Gets the current MAC address being used for client mode."""
         out = self.dut.adb.shell("ifconfig wlan0")
         res = re.match(".* HWaddr (\S+).*", out, re.S)
         return res.group(1)
 
     def get_soft_ap_mac_address(self):
+        """Gets the current MAC address being used for SoftAp."""
         if self.dut.model in self.dbs_supported_models:
             out = self.dut.adb.shell("ifconfig wlan1")
             return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
@@ -505,15 +507,16 @@ class WifiMacRandomizationTest(WifiBaseTest):
                    "roam = %s" %(mac_before_roam, mac_after_roam))
 
     @test_tracker_info(uuid="17b12f1a-7c62-4188-b5a5-52d7a0bb7849")
-    def test_check_mac_in_sniffer(self):
+    def test_check_mac_sta_with_link_probe(self):
         """Test to ensure Factory MAC is not exposed, using sniffer data.
 
         Steps:
             1. Configure and start the sniffer on 5GHz band.
-            2. Connect to 5GHz network, ping, get the Factory MAC.
-            3. Stop the sniffer.
-            4. Invoke scapy to read the .pcap file.
-            5. Read each packet summary and make sure Factory MAC is not used.
+            2. Connect to 5GHz network.
+            3. Send link probes.
+            4. Stop the sniffer.
+            5. Invoke scapy to read the .pcap file.
+            6. Read each packet summary and make sure Factory MAC is not used.
 
         """
         self.pcap_procs = wutils.start_pcap(
@@ -521,6 +524,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         time.sleep(SHORT_TIMEOUT)
         network = self.wpapsk_5g
         rand_mac = self.connect_to_network_and_verify_mac_randomization(network)
+        wutils.send_link_probes(self.dut, 3, 3)
         pcap_fname = os.path.join(self.log_path, self.test_name,
                          (self.test_name + '_5G.pcap'))
         wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
