@@ -110,7 +110,7 @@ class CoexBaseTest(BaseTestClass):
         else:
             self.log.warning("Iperfclient is not given in config file")
         wifi_test_device_init(self.pri_ad)
-        wifi_connect(self.pri_ad, self.network)
+        wifi_connect(self.pri_ad, self.network, num_of_tries=5)
 
     def setup_test(self):
         self.tag = 0
