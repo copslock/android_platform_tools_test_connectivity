@@ -15,6 +15,7 @@
 #   limitations under the License.
 import time
 import os
+import fnmatch
 from multiprocessing import Process
 
 from acts import utils
@@ -25,6 +26,8 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.tel import tel_test_utils as tutils
 from acts.test_utils.gnss import gnss_test_utils as gutils
 from acts.utils import get_current_epoch_time
+from acts.utils import unzip_maintain_permissions
+from acts.test_utils.tel.tel_test_utils import flash_radio
 
 
 class GNSSSanityTest(BaseTestClass):
@@ -47,6 +50,7 @@ class GNSSSanityTest(BaseTestClass):
         for network in self.pixel_lab_network:
             SSID = network['SSID']
             self.ssid_map[SSID] = network
+        self.flash_new_radio_or_mbn()
 
     def setup_class(self):
         self.ad.droid.wakeLockAcquireBright()
@@ -98,6 +102,83 @@ class GNSSSanityTest(BaseTestClass):
         gutils.get_gnss_qxdm_log(self.ad, test_name)
         self.ad.take_bug_report(test_name, begin_time)
 
+    def flash_new_radio_or_mbn(self):
+        paths = {}
+        path = self.user_params.get("radio_image")
+        if isinstance(path, list):
+            path = path[0]
+        if "dev/null" in path:
+            self.ad.log.info("Radio image path is not defined in Test flag.")
+            return False
+        for path_key in os.listdir(path):
+            if fnmatch.fnmatch(path_key, "*.img"):
+                paths["radio_image"] = os.path.join(path, path_key)
+                os.system("chmod -R 777 %s" % paths["radio_image"])
+                self.ad.log.info("radio_image = %s" % paths["radio_image"])
+            if fnmatch.fnmatch(path_key, "*.zip"):
+                zip_path = os.path.join(path, path_key)
+                self.ad.log.info("Unzip %s", zip_path)
+                dest_path = os.path.join(path, "mbn")
+                unzip_maintain_permissions(zip_path, dest_path)
+                paths["mbn_path"] = dest_path
+                os.system("chmod -R 777 %s" % paths["mbn_path"])
+                self.ad.log.info("mbn_path = %s" % paths["mbn_path"])
+        if not paths.get("radio_image"):
+            self.ad.log.info("No radio image is provided. Skip flashing radio step.")
+            return False
+        else:
+            tutils.print_radio_info(self.ad, "Before flash radio, ")
+            flash_radio(self.ad, paths["radio_image"])
+            tutils.print_radio_info(self.ad, "After flash radio, ")
+        if not paths.get("mbn_path"):
+            self.ad.log.info("No need to push mbn files")
+            return False
+        else:
+            try:
+                mcfg_ver = self.ad.adb.shell(
+                    "cat /vendor/rfs/msm/mpss/readonly/vendor/mbn/mcfg.version")
+                if mcfg_ver:
+                    self.ad.log.info("Before push mcfg, mcfg.version = %s",
+                                     mcfg_ver)
+                else:
+                    self.ad.log.info("There is no mcfg.version before push, "
+                                     "unmatching device")
+                    return False
+            except:
+                self.ad.log.info("There is no mcfg.version before push, "
+                                 "unmatching device")
+                return False
+            tutils.print_radio_info(self.ad, "Before push mcfg, ")
+            try:
+                gutils.remount_device(self.ad)
+                cmd = "%s %s" % (paths["mbn_path"] + "/.",
+                                 "/vendor/rfs/msm/mpss/readonly/vendor/mbn/")
+                out = self.ad.adb.push(cmd, timeout=300, ignore_status=True)
+                self.ad.log.info(out)
+                if "Read-only file system" in out:
+                    gutils.remount_device(self.ad)
+                    self.ad.adb.push(cmd, timeout=300, ignore_status=True)
+                gutils.reboot(self.ad)
+            except Exception as e:
+                self.ad.log.error("Push mbn files error %s", e)
+                return False
+            tutils.print_radio_info(self.ad, "After push mcfg, ")
+            try:
+                new_mcfg_ver = self.ad.adb.shell(
+                    "cat /vendor/rfs/msm/mpss/readonly/vendor/mbn/mcfg.version")
+                if new_mcfg_ver:
+                    self.ad.log.info("New mcfg.version = %s", new_mcfg_ver)
+                    if new_mcfg_ver == mcfg_ver:
+                        self.ad.log.error("mcfg.version is the same before and "
+                                          "after push")
+                        return True
+                else:
+                    self.ad.log.error("Unable to get new mcfg.version")
+                    return False
+            except Exception as e:
+                self.ad.log.error("cat mcfg.version with error %s", e)
+                return False
+
     """ Test Cases """
 
     @test_tracker_info(uuid="499d2091-640a-4735-9c58-de67370e4421")
@@ -124,8 +205,6 @@ class GNSSSanityTest(BaseTestClass):
                 self.ad.log.error("\n%s" % error_results)
             else:
                 self.ad.log.info("NO \"%s\" initialization error found." % attr)
-        if not error_mismatch:
-            raise signals.TestError("Require to check error logs")
         return error_mismatch
 
     @test_tracker_info(uuid="ff318483-411c-411a-8b1a-422bd54f4a3f")
