@@ -29,6 +29,6 @@ $(ACTS_DISTRO): $(sort $(shell find $(LOCAL_PATH)/acts))
 	$(hide) zip $(HOST_OUT)/acts-dist/acts.zip $(shell find tools/test/connectivity/acts/* ! -wholename "*__pycache__*")
 acts: $(ACTS_DISTRO)
 
-$(call dist-for-goals,tests,$(ACTS_DISTRO))
+$(call dist-for-goals,acts tests,$(ACTS_DISTRO))
 
 endif
