@@ -178,8 +178,7 @@ class FuchsiaDevice:
         # TODO(): Come up with better client numbering system
         self.client_id = "FuchsiaClient" + str(random.randint(0, 1000000))
         self.test_counter = 0
-
-        self.serial = self.ip.replace('.', '_').replace(':', '_')
+        self.serial = re.sub('[.:%]', '_', self.ip)
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base,
                                      'FuchsiaDevice%s' % self.serial)
