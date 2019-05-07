@@ -387,8 +387,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
             ad.start_adb_logcat()
             # Verify start did the correct operations.
             self.assertTrue(ad.adb_logcat_process)
-            log_dir = os.path.join(logging.log_path,
-                                   "AndroidDevice%s" % ad.serial)
+            log_dir = "AndroidDevice%s" % ad.serial
             create_proc_mock.assert_called_with(
                 ad.serial, log_dir, '-b all')
             proc_mock.start.assert_called_with()
@@ -417,8 +416,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ad.start_adb_logcat()
         # Verify that create_logcat_keepalive_process is called with the
         # correct command.
-        log_dir = os.path.join(logging.log_path,
-                               "AndroidDevice%s" % ad.serial)
+        log_dir = "AndroidDevice%s" % ad.serial
         create_proc_mock.assert_called_with(
             ad.serial, log_dir, '-b radio')
 
