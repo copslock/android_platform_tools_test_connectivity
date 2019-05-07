@@ -17,6 +17,7 @@
 import itertools
 import pprint
 import queue
+import re
 import time
 
 import acts.base_test
@@ -30,6 +31,7 @@ from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from scapy.all import *
+from acts.controllers.ap_lib import hostapd_constants
 
 WifiEnums = wutils.WifiEnums
 
@@ -65,15 +67,17 @@ class WifiMacRandomizationTest(WifiBaseTest):
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
-        req_params = []
+        req_params = ["dbs_supported_models"]
         opt_param = [
             "open_network", "reference_networks", "wep_networks"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
-        if hasattr(self, 'packet_capture'):
-            self.configure_packet_capture()
+        if not hasattr(self, 'packet_capture'):
+            raise signals.TestFailure("Needs packet_capture attribute to "
+                                      "support sniffing.")
+        self.configure_packet_capture()
 
         if "AccessPoint" in self.user_params:
             if "AccessPoint" in self.user_params:
@@ -83,8 +87,15 @@ class WifiMacRandomizationTest(WifiBaseTest):
             len(self.reference_networks) > 0,
             "Need at least one reference network with psk.")
 
+        # Reboot device to reset factory MAC of wlan1
+        self.dut.reboot()
+        self.dut_client.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
         wutils.wifi_toggle_state(self.dut, True)
         wutils.wifi_toggle_state(self.dut_client, True)
+        self.soft_ap_factory_mac = self.get_soft_ap_mac_address()
+        self.sta_factory_mac = self.dut.droid.wifigetFactorymacAddresses()[0]
+
         self.wpapsk_2g = self.reference_networks[0]["2g"]
         self.wpapsk_5g = self.reference_networks[0]["5g"]
         self.wep_2g = self.wep_networks[0]["2g"]
@@ -173,25 +184,20 @@ class WifiMacRandomizationTest(WifiBaseTest):
             The randomized MAC address string for the network.
 
         """
-        network_info = self.dut.droid.wifiGetConnectionInfo()
-        factory_mac = self.dut.droid.wifigetFactorymacAddresses()[0]
         randomized_mac = self.get_randomized_mac(network)
-        default_mac = network_info['mac_address']
+        default_mac = self.get_sta_mac_address()
         self.log.info("Factory MAC = %s\nRandomized MAC = %s\nDefault MAC = %s" %
-              (factory_mac, randomized_mac, default_mac))
-
-        if status == RANDOMIZATION_NONE:
-            asserts.assert_true(default_mac == factory_mac, "Connection is not "
-                "using Factory MAC as the default MAC.")
+              (self.sta_factory_mac, randomized_mac, default_mac))
         message = ('Randomized MAC and Factory MAC are the same. '
-                   'Randomized MAC = %s, Factory MAC = %s' % (randomized_mac, factory_mac))
-        asserts.assert_true(randomized_mac != factory_mac, message)
-
-        message = ('Connection is not using randomized MAC as the default MAC. '
-                   'Randomized MAC = %s, Deafult MAC = %s' % (randomized_mac, default_mac))
-        # Uncomment after b/123355618 is resolved.
-        #asserts.assert_true(randomized_mac == default_mac, message)
-        self.factory_mac = factory_mac
+                   'Randomized MAC = %s, Factory MAC = %s' % (randomized_mac, self.sta_factory_mac))
+        asserts.assert_true(randomized_mac != self.sta_factory_mac, message)
+        if status == RANDOMIZATION_NONE:
+            asserts.assert_true(default_mac == self.sta_factory_mac, "Connection is not "
+                "using Factory MAC as the default MAC.")
+        else:
+            message = ('Connection is not using randomized MAC as the default MAC. '
+                       'Randomized MAC = %s, Deafult MAC = %s' % (randomized_mac, default_mac))
+            asserts.assert_true(default_mac == randomized_mac, message)
         return randomized_mac
 
     def check_mac_persistence(self, network, condition):
@@ -232,16 +238,52 @@ class WifiMacRandomizationTest(WifiBaseTest):
                                       'forgetting networ. Old MAC = %s New MAC'
                                       ' = %s' % (rand_mac1, rand_mac2))
 
+    def verify_mac_not_found_in_pcap(self, mac, packets):
+        for pkt in packets:
+            self.log.debug("Packet Summary = %s" % pkt.summary())
+            if mac in pkt.summary():
+                raise signals.TestFailure("Caught Factory MAC in packet sniffer."
+                                          "Packet = %s" % pkt.show())
+
+    def verify_mac_is_found_in_pcap(self, mac, packets):
+        for pkt in packets:
+            self.log.debug("Packet Summary = %s" % pkt.summary())
+            if mac in pkt.summary():
+                return
+        raise signals.TestFailure("Did not find MAC = %s in packet sniffer."
+                                  % mac)
+
+    def get_sta_mac_address(self):
+        """Gets the current MAC address being used for client mode."""
+        out = self.dut.adb.shell("ifconfig wlan0")
+        res = re.match(".* HWaddr (\S+).*", out, re.S)
+        return res.group(1)
+
+    def get_soft_ap_mac_address(self):
+        """Gets the current MAC address being used for SoftAp."""
+        if self.dut.model in self.dbs_supported_models:
+            out = self.dut.adb.shell("ifconfig wlan1")
+            return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
+        else:
+            return self.get_sta_mac_address()
     """Tests"""
 
 
     @test_tracker_info(uuid="2dd0a05e-a318-45a6-81cd-962e098fa242")
     def test_set_mac_randomization_to_none(self):
+        self.pcap_procs = wutils.start_pcap(
+            self.packet_capture, 'dual', self.log_path, self.test_name)
         network = self.wpapsk_2g
         # Set macRandomizationSetting to RANDOMIZATION_NONE.
         network["macRand"] = RANDOMIZATION_NONE
         self.connect_to_network_and_verify_mac_randomization(network,
             status=RANDOMIZATION_NONE)
+        pcap_fname = os.path.join(self.log_path, self.test_name,
+                                  (self.test_name + '_2G.pcap'))
+        time.sleep(SHORT_TIMEOUT)
+        wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
+        packets = rdpcap(pcap_fname)
+        self.verify_mac_is_found_in_pcap(self.sta_factory_mac, packets)
 
     @test_tracker_info(uuid="d9e64202-02d5-421a-967c-42e45f1f7f91")
     def test_mac_randomization_wpapsk(self):
@@ -388,6 +430,9 @@ class WifiMacRandomizationTest(WifiBaseTest):
             2. Bring up softAP on the DUT.
             3. Connect to softAP network on the client and get MAC.
             4. Verify AP and STA use different randomized MACs.
+            5. Find the channel of the SoftAp network.
+            6. Configure sniffer on that channel.
+            7. Verify the factory MAC is not leaked.
 
         """
         self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
@@ -401,6 +446,34 @@ class WifiMacRandomizationTest(WifiBaseTest):
         if mac_sta == mac_ap:
             raise signals.TestFailure("Same MAC address was used for both "
                                       "AP and STA: %s" % mac_sta)
+
+        # Verify SoftAp MAC is randomized
+        softap_mac = self.get_soft_ap_mac_address()
+        message = ('Randomized SoftAp MAC and Factory SoftAp MAC are the same. '
+                   'Randomized SoftAp MAC = %s, Factory SoftAp MAC = %s'
+                   % (softap_mac, self.soft_ap_factory_mac))
+        asserts.assert_true(softap_mac != self.soft_ap_factory_mac, message)
+
+        softap_channel = hostapd_constants.CHANNEL_MAP[softap_info['frequency']]
+        self.log.info("softap_channel = %s\n" % (softap_channel))
+        result = self.packet_capture.configure_monitor_mode(
+            hostapd_constants.BAND_2G, softap_channel)
+        if not result:
+            raise ValueError("Failed to configure channel for 2G band")
+        self.pcap_procs = wutils.start_pcap(
+            self.packet_capture, 'dual', self.log_path, self.test_name)
+        # re-connect to the softAp network after sniffer is started
+        wutils.connect_to_wifi_network(self.dut_client, self.wpapsk_2g)
+        wutils.connect_to_wifi_network(self.dut_client, softap)
+        time.sleep(SHORT_TIMEOUT)
+        wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
+        pcap_fname = os.path.join(self.log_path, self.test_name,
+                                  (self.test_name + '_2G.pcap'))
+        packets = rdpcap(pcap_fname)
+        self.verify_mac_not_found_in_pcap(self.soft_ap_factory_mac, packets)
+        self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)
+        self.verify_mac_is_found_in_pcap(softap_mac, packets)
+        self.verify_mac_is_found_in_pcap(self.get_sta_mac_address(), packets)
 
     @test_tracker_info(uuid="3ca3f911-29f1-41fb-b836-4d25eac1669f")
     def test_roaming_mac_randomization(self):
@@ -434,30 +507,50 @@ class WifiMacRandomizationTest(WifiBaseTest):
                    "roam = %s" %(mac_before_roam, mac_after_roam))
 
     @test_tracker_info(uuid="17b12f1a-7c62-4188-b5a5-52d7a0bb7849")
-    def test_check_mac_in_sniffer(self):
+    def test_check_mac_sta_with_link_probe(self):
         """Test to ensure Factory MAC is not exposed, using sniffer data.
 
         Steps:
             1. Configure and start the sniffer on 5GHz band.
-            2. Connect to 5GHz network, ping, get the Factory MAC.
-            3. Stop the sniffer.
-            4. Invoke scapy to read the .pcap file.
-            5. Read each packet summary and make sure Factory AMC is not used.
+            2. Connect to 5GHz network.
+            3. Send link probes.
+            4. Stop the sniffer.
+            5. Invoke scapy to read the .pcap file.
+            6. Read each packet summary and make sure Factory MAC is not used.
 
         """
-        if hasattr(self, 'packet_capture'):
-            self.pcap_procs = wutils.start_pcap(
-                self.packet_capture, 'dual', self.log_path, self.test_name)
+        self.pcap_procs = wutils.start_pcap(
+            self.packet_capture, 'dual', self.log_path, self.test_name)
         time.sleep(SHORT_TIMEOUT)
         network = self.wpapsk_5g
         rand_mac = self.connect_to_network_and_verify_mac_randomization(network)
+        wutils.send_link_probes(self.dut, 3, 3)
         pcap_fname = os.path.join(self.log_path, self.test_name,
                          (self.test_name + '_5G.pcap'))
         wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         time.sleep(SHORT_TIMEOUT)
         packets = rdpcap(pcap_fname)
-        for pkt in packets:
-            self.log.debug("Packet Summary = %s" % pkt.summary())
-            if self.factory_mac in pkt.summary():
-                raise signals.TestFailure("Caught Factory MAC in packet sniffer."
-                                          "Packet = %s" % pkt.show())
+        self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)
+        self.verify_mac_is_found_in_pcap(self.get_sta_mac_address(), packets)
+
+    @test_tracker_info(uuid="1c2cc0fd-a340-40c4-b679-6acc5f526451")
+    def test_check_mac_in_wifi_scan(self):
+        """Test to ensure Factory MAC is not exposed, in Wi-Fi scans
+
+        Steps:
+          1. Configure and start the sniffer on both bands.
+          2. Perform a full scan.
+          3. Stop the sniffer.
+          4. Invoke scapy to read the .pcap file.
+          5. Read each packet summary and make sure Factory MAC is not used.
+
+        """
+        self.pcap_procs = wutils.start_pcap(
+            self.packet_capture, 'dual', self.log_path, self.test_name)
+        wutils.start_wifi_connection_scan(self.dut)
+        time.sleep(SHORT_TIMEOUT)
+        wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
+        pcap_fname = os.path.join(self.log_path, self.test_name,
+                                  (self.test_name + '_2G.pcap'))
+        packets = rdpcap(pcap_fname)
+        self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)
