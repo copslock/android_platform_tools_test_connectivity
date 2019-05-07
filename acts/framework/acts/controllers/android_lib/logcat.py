@@ -79,20 +79,20 @@ def _on_retry(serial, extra_params, timestamp_tracker):
     return on_retry
 
 
-def create_logcat_keepalive_process(serial, base_path, extra_params=''):
+def create_logcat_keepalive_process(serial, logcat_dir, extra_params=''):
     """Creates a Logcat Process that automatically attempts to reconnect.
 
     Args:
         serial: The serial of the device to read the logcat of.
-        base_path: The base directory used for logcat file output.
+        logcat_dir: The directory used for logcat file output.
         extra_params: Any additional params to be added to the logcat cmdline.
 
     Returns:
         A acts.libs.proc.process.Process object.
     """
     logger = log_stream.create_logger(
-        'adblog_%s' % serial, base_path=base_path,
-        log_styles=(LogStyles.LOG_DEBUG | LogStyles.MONOLITH_LOG))
+        'adblog_%s' % serial, subcontext=logcat_dir,
+        log_styles=(LogStyles.LOG_DEBUG | LogStyles.TESTCASE_LOG))
     process = Process('adb -s %s logcat -T 1 -v year %s' %
                       (serial, extra_params))
     timestamp_tracker = TimestampTracker()
