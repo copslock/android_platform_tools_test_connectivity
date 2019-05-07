@@ -367,7 +367,8 @@ class AndroidDevice:
         self.serial = serial
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
-        self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
+        self.log_dir = 'AndroidDevice%s' % serial
+        self.log_path = os.path.join(log_path_base, self.log_dir)
         self.log = tracelogger.TraceLogger(
             AndroidDeviceLoggerAdapter(logging.getLogger(), {
                 'serial': serial
@@ -766,7 +767,7 @@ class AndroidDevice:
             extra_params = "-b all"
 
         self.adb_logcat_process = logcat.create_logcat_keepalive_process(
-            self.serial, self.log_path, extra_params)
+            self.serial, self.log_dir, extra_params)
         self.adb_logcat_process.start()
 
     def stop_adb_logcat(self):
