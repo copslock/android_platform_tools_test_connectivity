@@ -75,7 +75,7 @@ class WifiNetworkSelectorTest(WifiBaseTest):
 
         if hasattr(self, 'packet_capture'):
             self.pcap_procs = wutils.start_pcap(
-                self.packet_capture, 'dual', self.log_path, self.test_name)
+                self.packet_capture, 'dual', self.test_name)
 
     def teardown_test(self):
         #turn off the screen

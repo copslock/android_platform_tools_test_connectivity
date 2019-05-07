@@ -15,23 +15,19 @@
 # the License.
 
 import logging
+import os
 import random
+import re
 import string
-from queue import Empty
 import threading
 import time
-from acts import utils
-import re
+from queue import Empty
 from subprocess import call
 
-from acts.test_utils.bt.bt_constants import bits_per_samples
-from acts.test_utils.bt.bt_constants import channel_modes
-from acts.test_utils.bt.bt_constants import codec_types
-from acts.test_utils.bt.bt_constants import codec_priorities
-from acts.test_utils.bt.bt_constants import sample_rates
 from acts.test_utils.bt.bt_constants import adv_fail
 from acts.test_utils.bt.bt_constants import adv_succ
 from acts.test_utils.bt.bt_constants import batch_scan_not_supported_list
+from acts.test_utils.bt.bt_constants import bits_per_samples
 from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
 from acts.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
 from acts.test_utils.bt.bt_constants import bluetooth_a2dp_codec_config_changed
@@ -39,26 +35,31 @@ from acts.test_utils.bt.bt_constants import bluetooth_off
 from acts.test_utils.bt.bt_constants import bluetooth_on
 from acts.test_utils.bt.bt_constants import \
     bluetooth_profile_connection_state_changed
-from acts.test_utils.bt.bt_constants import bt_default_timeout
-from acts.test_utils.bt.bt_constants import bt_profile_states
-from acts.test_utils.bt.bt_constants import bt_profile_constants
-from acts.test_utils.bt.bt_constants import bt_rfcomm_uuids
 from acts.test_utils.bt.bt_constants import bluetooth_socket_conn_test_uuid
+from acts.test_utils.bt.bt_constants import bt_default_timeout
+from acts.test_utils.bt.bt_constants import bt_profile_constants
+from acts.test_utils.bt.bt_constants import bt_profile_states
+from acts.test_utils.bt.bt_constants import bt_rfcomm_uuids
 from acts.test_utils.bt.bt_constants import bt_scan_mode_types
 from acts.test_utils.bt.bt_constants import btsnoop_last_log_path_on_device
 from acts.test_utils.bt.bt_constants import btsnoop_log_path_on_device
-from acts.test_utils.bt.bt_constants import default_rfcomm_timeout_ms
+from acts.test_utils.bt.bt_constants import channel_modes
+from acts.test_utils.bt.bt_constants import codec_types
 from acts.test_utils.bt.bt_constants import default_bluetooth_socket_timeout_ms
+from acts.test_utils.bt.bt_constants import default_rfcomm_timeout_ms
+from acts.test_utils.bt.bt_constants import hid_id_keyboard
 from acts.test_utils.bt.bt_constants import pairing_variant_passkey_confirmation
 from acts.test_utils.bt.bt_constants import pan_connect_timeout
-from acts.test_utils.bt.bt_constants import small_timeout
+from acts.test_utils.bt.bt_constants import sample_rates
 from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_constants import sig_uuid_constants
-from acts.test_utils.bt.bt_constants import hid_id_keyboard
-
+from acts.test_utils.bt.bt_constants import small_timeout
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.utils import exe_cmd
+
+from acts import context
+from acts import utils
 
 log = logging
 
@@ -1411,7 +1412,7 @@ def take_btsnoop_log(ad, testcase, testname):
     device_model = ad.droid.getBuildModel()
     device_model = device_model.replace(" ", "")
     out_name = ','.join((testname, device_model, serial))
-    snoop_path = ad.log_path + "/BluetoothSnoopLogs"
+    snoop_path = os.path.join(ad.device_log_path, 'BluetoothSnoopLogs')
     utils.create_dir(snoop_path)
     cmd = ''.join(("adb -s ", serial, " pull ", btsnoop_log_path_on_device,
                    " ", snoop_path + '/' + out_name, ".btsnoop_hci.log"))
