@@ -1868,7 +1868,7 @@ def get_internet_connection_type(log, ad):
 
 def verify_http_connection(log,
                            ad,
-                           url="www.google.com",
+                           url="https://www.google.com",
                            retry=5,
                            retry_interval=15,
                            expected_state=True):
@@ -1882,26 +1882,21 @@ def verify_http_connection(log,
 
     """
     for i in range(0, retry + 1):
-        # b/18899134 httpPing will hang
-        #try:
-        #    http_response = ad.droid.httpPing(url)
-        #except:
-        #    http_response = None
-        # If httpPing failed, it may return {} (if phone just turn off APM) or
-        # None (regular fail)
-        state = ad.droid.pingHost(url)
-        ad.log.info("Connection to %s is %s", url, state)
-        if expected_state == state:
-            ad.log.info("Verify Internet connection state is %s succeeded",
-                        str(expected_state))
+        try:
+            http_response = ad.droid.httpPing(url)
+        except:
+            http_response = None
+        if (expected_state and http_response) or (not expected_state
+                                                  and not http_response):
+            ad.log.info("Verify http connection to %s is %s as expected", url,
+                        expected_state)
             return True
         if i < retry:
-            ad.log.info(
-                "Verify Internet connection state=%s failed. Try again",
-                str(expected_state))
+            ad.log.info("Verify http connection to %s is %s failed. Try again",
+                        url, expected_state)
             time.sleep(retry_interval)
-    ad.log.info("Verify Internet state=%s failed after %s second",
-                expected_state, i * retry_interval)
+    ad.log.info("Verify http connection to %s is %s failed after %s second",
+                url, expected_state, i * retry_interval)
     return False
 
 
@@ -1999,7 +1994,8 @@ def active_file_download_test(log, ad, file_name="5MB", method="chrome"):
     return task[0](*task[1])
 
 
-def verify_internet_connection(log, ad, retries=1):
+def verify_internet_connection_by_ping(log, ad, retries=1,
+                                       expected_state=True):
     """Verify internet connection by ping test.
 
     Args:
@@ -2007,14 +2003,45 @@ def verify_internet_connection(log, ad, retries=1):
         ad: Android Device Object.
 
     """
-    for i in range(retries):
-        ad.log.info("Verify internet connection - attempt %d", i + 1)
-        dest_to_ping = ["www.google.com", "www.amazon.com", "54.230.144.105"]
-        for dest in dest_to_ping:
+    ip_addr = "54.230.144.105"
+    for dest in ("www.google.com", "www.amazon.com", ip_addr):
+        for i in range(retries):
+            ad.log.info("Ping %s - attempt %d", dest, i + 1)
             result = adb_shell_ping(
                 ad, count=5, timeout=60, loss_tolerance=40, dest_ip=dest)
-            if result:
+            if result == expected_state:
+                ad.log.info(
+                    "Internet connection by ping test to %s is %s as expected",
+                    dest, expected_state)
+                if dest == ip_addr:
+                    ad.log.warning("Suspect dns failure")
+                    ad.log.info("DNS config: %s",
+                                ad.adb.shell("getprop | grep dns"))
+                    return False
                 return True
+            else:
+                ad.log.error(
+                    "Internet connection by ping test to %s is not %s as expected",
+                    dest, expected_state)
+    return False
+
+
+def verify_internet_connection(log, ad, retries=3, expected_state=True):
+    """Verify internet connection by ping test and http connection.
+
+    Args:
+        log: log object
+        ad: Android Device Object.
+
+    """
+    if verify_internet_connection_by_ping(
+            log, ad, retries=retries, expected_state=expected_state):
+        return True
+    for url in ("https://www.google.com", "https://www.amazon.com"):
+        if verify_http_connection(
+                log, ad, url=url, retry=retries,
+                expected_state=expected_state):
+            return True
     return False
 
 

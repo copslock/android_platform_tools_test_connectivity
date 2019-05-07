@@ -26,6 +26,8 @@ import acts.utils
 
 from acts import asserts
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.bt.bt_test_utils import enable_bluetooth
+from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 WifiEnums = wutils.WifiEnums
@@ -961,3 +963,19 @@ class WifiManagerTest(WifiBaseTest):
             "ping DUT %s failed" % dut_address)
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
+
+    @test_tracker_info(uuid="402cfaa8-297f-4865-9e27-6bab6adca756")
+    def test_reboot_wifi_and_bluetooth_on(self):
+        """Toggle WiFi and bluetooth ON then reboot """
+        wutils.wifi_toggle_state(self.dut, True)
+        enable_bluetooth(self.dut.droid, self.dut.ed)
+
+        self.dut.reboot()
+        time.sleep(DEFAULT_TIMEOUT)
+
+        asserts.assert_true(self.dut.droid.bluetoothCheckState(),
+                "bluetooth state changed after reboot")
+        asserts.assert_true(self.dut.droid.wifiCheckState(),
+                "wifi state changed after reboot")
+
+        disable_bluetooth(self.dut.droid)
