@@ -25,6 +25,7 @@ from builtins import open
 from builtins import str
 from datetime import datetime
 
+from acts import context
 from acts import logger as acts_logger
 from acts import tracelogger
 from acts import utils
@@ -367,7 +368,8 @@ class AndroidDevice:
         self.serial = serial
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
-        self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
+        self.log_dir = 'AndroidDevice%s' % serial
+        self.log_path = os.path.join(log_path_base, self.log_dir)
         self.log = tracelogger.TraceLogger(
             AndroidDeviceLoggerAdapter(logging.getLogger(), {
                 'serial': serial
@@ -576,6 +578,13 @@ class AndroidDevice:
                 return False
         return False
 
+    @property
+    def device_log_path(self):
+        """Returns the directory for all Android device logs for the current
+        test context and serial.
+        """
+        return context.get_current_context().get_full_output_path(self.log_dir)
+
     def update_sdk_api_level(self):
         self._sdk_api_level = None
         self.sdk_api_level()
@@ -766,7 +775,7 @@ class AndroidDevice:
             extra_params = "-b all"
 
         self.adb_logcat_process = logcat.create_logcat_keepalive_process(
-            self.serial, self.log_path, extra_params)
+            self.serial, self.log_dir, extra_params)
         self.adb_logcat_process.start()
 
     def stop_adb_logcat(self):
@@ -889,7 +898,7 @@ class AndroidDevice:
                 new_br = False
         except adb.AdbError:
             new_br = False
-        br_path = os.path.join(self.log_path, test_name)
+        br_path = self.device_log_path
         utils.create_dir(br_path)
         time_stamp = acts_logger.normalize_log_line_timestamp(
             acts_logger.epoch_to_log_line_timestamp(begin_time))
@@ -938,7 +947,7 @@ class AndroidDevice:
         return files
 
     def pull_files(self, files, remote_path=None):
-        """Pull files from devies."""
+        """Pull files from devices."""
         if not remote_path:
             remote_path = self.log_path
         for file_name in files:
@@ -981,7 +990,7 @@ class AndroidDevice:
         qxdm_logs = self.get_file_names(
             log_path, begin_time=begin_time, match_string="*.qmdl")
         if qxdm_logs:
-            qxdm_log_path = os.path.join(self.log_path, test_name,
+            qxdm_log_path = os.path.join(self.device_log_path,
                                          "QXDM_%s" % self.serial)
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
@@ -993,7 +1002,7 @@ class AndroidDevice:
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
-            omadm_log_path = os.path.join(self.log_path, test_name,
+            omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)
             utils.create_dir(omadm_log_path)
             self.log.info("Pull OMADM Log")
