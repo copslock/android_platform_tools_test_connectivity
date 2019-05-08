@@ -146,7 +146,7 @@ def _setup_test_logger(log_path, prefix=None):
     """
     logging.log_path = log_path
     log_styles = [LogStyles.LOG_INFO + LogStyles.TO_STDOUT,
-                  LogStyles.DEFAULT_LEVELS + LogStyles.MONOLITH_LOG]
+                  LogStyles.DEFAULT_LEVELS + LogStyles.TESTCASE_LOG]
     terminal_format = log_line_format
     if prefix:
         terminal_format = "[{}] {}".format(prefix, log_line_format)
