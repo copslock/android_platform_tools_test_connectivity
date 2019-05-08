@@ -23,6 +23,7 @@ from enum import IntEnum
 from queue import Empty
 
 from acts import asserts
+from acts import context
 from acts import signals
 from acts import utils
 from acts.controllers import attenuator
@@ -67,6 +68,7 @@ roaming_attn = {
             0
         ]
     }
+
 
 class WifiEnums():
 
@@ -929,6 +931,7 @@ def save_wifi_soft_ap_config(ad, wifi_config, band=None, hidden=None):
     asserts.assert_true(
         wifi_ap[WifiEnums.SSID_KEY] == wifi_config[WifiEnums.SSID_KEY],
         "Hotspot SSID doesn't match with expected SSID")
+
 
 def start_wifi_tethering_saved_config(ad):
     """ Turn on wifi hotspot with a config that is already saved """
@@ -1837,20 +1840,20 @@ def get_current_number_of_softap_clients(ad, callbackId):
     return num_of_clients
 
 
-def start_pcap(pcap, wifi_band, log_path, test_name):
+def start_pcap(pcap, wifi_band, test_name):
     """Start packet capture in monitor mode.
 
     Args:
         pcap: packet capture object
         wifi_band: '2g' or '5g' or 'dual'
-        log_path: current test log path
         test_name: test name to be used for pcap file name
 
     Returns:
         Dictionary with wifi band as key and the tuple
         (pcap Process object, log directory) as the value
     """
-    log_dir = os.path.join(log_path, test_name)
+    log_dir = os.path.join(
+        context.get_current_context.get_full_output_path(), 'PacketCapture')
     utils.create_dir(log_dir)
     if wifi_band == 'dual':
         bands = [BAND_2G, BAND_5G]
@@ -1929,8 +1932,7 @@ def get_cnss_diag_log(ad, test_name=""):
     logs = ad.get_file_names("/data/vendor/wifi/cnss_diag/wlan_logs/")
     if logs:
         ad.log.info("Pulling cnss_diag logs %s", logs)
-        log_path = os.path.join(ad.log_path, test_name,
-                                "CNSS_DIAG_%s" % ad.serial)
+        log_path = os.path.join(ad.device_log_path, "CNSS_DIAG_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
 
