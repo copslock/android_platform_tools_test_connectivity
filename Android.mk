@@ -31,7 +31,7 @@ $(ACTS_DISTRO): $(sort $(shell find $(LOCAL_PATH)/acts))
 acts: $(ACTS_DISTRO)
 .PHONY: acts
 
-$(call dist-for-goals,tests,$(ACTS_DISTRO))
+$(call dist-for-goals,acts tests,$(ACTS_DISTRO))
 
 # Wear specific Android Connectivity Test Suite
 WTS_ACTS_DISTRO_DIR := $(HOST_OUT)/wts-acts-dist
@@ -56,7 +56,7 @@ $(WTS_ACTS_DISTRO): $(SOONG_ZIP)
 wts-acts: $(WTS_ACTS_DISTRO)
 .PHONY: wts-acts
 
-$(call dist-for-goals,tests,$(WTS_ACTS_DISTRO))
+$(call dist-for-goals,wts-acts tests,$(WTS_ACTS_DISTRO))
 
 
 
