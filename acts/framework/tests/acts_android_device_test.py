@@ -116,7 +116,7 @@ class MockAdbProxy(object):
     def bugreport(self, params, timeout=android_device.BUG_REPORT_TIMEOUT):
         expected = os.path.join(
             logging.log_path, "AndroidDevice%s" % self.serial,
-            "test_something", "AndroidDevice%s_%s" %
+            "AndroidDevice%s_%s.txt" %
             (self.serial,
              logger.normalize_log_line_timestamp(MOCK_ADB_LOGCAT_BEGIN_TIME)))
         assert expected in params, "Expected '%s', got '%s'." % (expected,
@@ -317,16 +317,19 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
-    def test_AndroidDevice_take_bug_report(self, exe_mock, create_dir_mock,
-                                           FastbootProxy, MockAdbProxy):
+    @mock.patch('acts.controllers.android_device.AndroidDevice.device_log_path',
+                new_callable=mock.PropertyMock)
+    def test_AndroidDevice_take_bug_report(self, mock_log_path, exe_mock,
+                                           create_dir_mock, FastbootProxy,
+                                           MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report calls the correct adb command
         and writes the bugreport file to the correct path.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        mock_log_path.return_value = os.path.join(
+            logging.log_path, "AndroidDevice%s" % ad.serial)
         ad.take_bug_report("test_something", 234325.32)
-        expected_path = os.path.join(
-            logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
-        create_dir_mock.assert_called_with(expected_path)
+        create_dir_mock.assert_called_with(mock_log_path())
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
@@ -336,12 +339,17 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
+    @mock.patch('acts.controllers.android_device.AndroidDevice.device_log_path',
+                new_callable=mock.PropertyMock)
     def test_AndroidDevice_take_bug_report_fail(
-            self, exe_mock, create_dir_mock, FastbootProxy, MockAdbProxy):
+            self, mock_log_path, exe_mock, create_dir_mock, FastbootProxy,
+            MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report writes out the correct message
         when taking bugreport fails.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        mock_log_path.return_value = os.path.join(
+            logging.log_path, "AndroidDevice%s" % ad.serial)
         expected_msg = "Failed to take bugreport on 1: OMG I died!"
         with self.assertRaisesRegex(errors.AndroidDeviceError,
                                     expected_msg):
@@ -355,16 +363,19 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
+    @mock.patch('acts.controllers.android_device.AndroidDevice.device_log_path',
+                new_callable=mock.PropertyMock)
     def test_AndroidDevice_take_bug_report_fallback(
-            self, exe_mock, create_dir_mock, FastbootProxy, MockAdbProxy):
+            self, mock_log_path, exe_mock, create_dir_mock, FastbootProxy,
+            MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report falls back to traditional
         bugreport on builds that do not have bugreportz.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        mock_log_path.return_value = os.path.join(
+            logging.log_path, "AndroidDevice%s" % ad.serial)
         ad.take_bug_report("test_something", MOCK_ADB_EPOCH_BEGIN_TIME)
-        expected_path = os.path.join(
-            logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
-        create_dir_mock.assert_called_with(expected_path)
+        create_dir_mock.assert_called_with(mock_log_path())
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
