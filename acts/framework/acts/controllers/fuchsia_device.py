@@ -153,6 +153,7 @@ class FuchsiaDevice:
         self.ssh_config = fd_conf_data.get("ssh_config", None)
         self.ssh_username = fd_conf_data.get("ssh_username",
                                              FUCHSIA_SSH_USERNAME)
+        self.sl4f_ssh_conn = None
 
         self.log = acts_logger.create_tagged_trace_logger(
             "[FuchsiaDevice|%s]" % self.ip)
@@ -419,8 +420,9 @@ class FuchsiaDevice:
         unable_to_connect_msg = None
         sl4f_state = False
         try:
-            ssh_conn = self.create_ssh_connection()
-            ssh_conn.run_async("killall sl4f.cmx")
+            if not self.sl4f_ssh_conn:
+                self.sl4f_ssh_conn = self.create_ssh_connection()
+            self.sl4f_ssh_conn.run_async("killall sl4f.cmx")
             # This command will effectively stop sl4f but should
             # be used as a cleanup before starting sl4f.  It is a bit
             # confusing to have the msg saying "attempting to stop
@@ -430,8 +432,8 @@ class FuchsiaDevice:
             if action in SL4F_ACTIVATED_STATES:
                 self.log.debug("Attempting to start Fuchsia "
                                "devices services.")
-                ssh_conn.run_async("run fuchsia-pkg://"
-                                   "fuchsia.com/sl4f#meta/sl4f.cmx &")
+                self.sl4f_ssh_conn.run_async("run fuchsia-pkg://"
+                                             "fuchsia.com/sl4f#meta/sl4f.cmx &")
                 sl4f_initial_msg = ("SL4F has not started yet. "
                                     "Waiting %i second and checking "
                                     "again." % SL4F_INIT_TIMEOUT_SEC)
@@ -457,7 +459,7 @@ class FuchsiaDevice:
                 time.sleep(SL4F_INIT_TIMEOUT_SEC)
                 timeout_counter += 1
                 sl4f_state = self.check_sl4f_with_expectation(
-                    ssh_connection=ssh_conn, expectation=action)
+                    ssh_connection=self.sl4f_ssh_conn, expectation=action)
                 if timeout_counter == (SL4F_INIT_TIMEOUT_SEC * 3):
                     self.log.error(sl4f_timeout_msg)
                     break
@@ -468,7 +470,9 @@ class FuchsiaDevice:
             self.log.error(unable_to_connect_msg)
             raise e
         finally:
-            ssh_conn.close()
+            if action == 'stop':
+                self.sl4f_ssh_conn.close()
+                self.sl4f_ssh_conn = None
 
     def check_connection_for_response(self, connection_response):
         if connection_response.get("error") is None:
