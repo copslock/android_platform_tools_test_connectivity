@@ -22,7 +22,7 @@ WEP = 0
 WPA1 = 1
 WPA2 = 2
 MIXED = 3
-ENT = 4 # get the correct constant
+ENT = 4  # get the correct constant
 MAX_WPA_PSK_LENGTH = 64
 MIN_WPA_PSK_LENGTH = 8
 MAX_WPA_PASSWORD_LENGTH = 63
@@ -127,6 +127,7 @@ CHANNEL_MAP = {
     5805: 161,
     5825: 165
 }
+FREQUENCY_MAP = {v: k for k, v in CHANNEL_MAP.items()}
 
 MODE_11A = 'a'
 MODE_11B = 'b'
@@ -234,6 +235,12 @@ VHT_CHANNEL_WIDTH_40 = 0
 VHT_CHANNEL_WIDTH_80 = 1
 VHT_CHANNEL_WIDTH_160 = 2
 VHT_CHANNEL_WIDTH_80_80 = 3
+
+VHT_CHANNEL = {
+    40: VHT_CHANNEL_WIDTH_40,
+    80: VHT_CHANNEL_WIDTH_80,
+    160: VHT_CHANNEL_WIDTH_160
+}
 
 # This is a loose merging of the rules for US and EU regulatory
 # domains as taken from IEEE Std 802.11-2012 Appendix E.  For instance,
