@@ -137,15 +137,17 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
         self.access_point.stop_all_aps()
 
     def setup_test(self):
-        for ad in self.android_devices:
-            ad.droid.wakeLockAcquireBright()
-            ad.droid.wakeUpNow()
+        if hasattr(self, "android_devices"):
+            for ad in self.android_devices:
+                ad.droid.wakeLockAcquireBright()
+                ad.droid.wakeUpNow()
         self.dut.wifi_toggle_state(True)
 
     def teardown_test(self):
-        for ad in self.android_devices:
-            ad.droid.wakeLockRelease()
-            ad.droid.goToSleepNow()
+        if hasattr(self, "android_devices"):
+            for ad in self.android_devices:
+                ad.droid.wakeLockRelease()
+                ad.droid.goToSleepNow()
         self.dut.turn_location_off_and_scan_toggle_off()
         self.dut.disconnect()
         self.dut.reset_wifi()
