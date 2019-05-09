@@ -583,7 +583,7 @@ class AndroidDevice:
         """Returns the directory for all Android device logs for the current
         test context and serial.
         """
-        return context.get_current_context().get_full_output_path(self.log_dir)
+        return context.get_current_context().get_full_output_path(self.serial)
 
     def update_sdk_api_level(self):
         self._sdk_api_level = None
