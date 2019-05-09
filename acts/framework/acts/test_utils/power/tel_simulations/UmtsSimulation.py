@@ -73,6 +73,21 @@ class UmtsSimulation(BaseSimulation):
         'edge': 23
     }
 
+    # Converts packet rate to the throughput that can be actually obtained in
+    # Mbits/s
+
+    packet_rate_to_dl_throughput = {
+        BtsPacketRate.WCDMA_DL384K_UL64K: 0.362,
+        BtsPacketRate.WCDMA_DL21_6M_UL5_76M: 18.5,
+        BtsPacketRate.WCDMA_DL43_2M_UL5_76M: 36.9
+    }
+
+    packet_rate_to_ul_throughput = {
+        BtsPacketRate.WCDMA_DL384K_UL64K: 0.0601,
+        BtsPacketRate.WCDMA_DL21_6M_UL5_76M: 5.25,
+        BtsPacketRate.WCDMA_DL43_2M_UL5_76M: 5.25
+    }
+
     def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for UMTS simulation with 1 basetation
 
@@ -102,6 +117,7 @@ class UmtsSimulation(BaseSimulation):
             log.info("Preferred network type set.")
 
         self.release_version = None
+        self.packet_rate = None
 
     def parse_parameters(self, parameters):
         """ Configs an UMTS simulation using a list of parameters.
@@ -171,17 +187,17 @@ class UmtsSimulation(BaseSimulation):
         if release_version == self.PARAM_RELEASE_VERSION_99:
 
             cell_parameter_file = self.UMTS_R99_CELL_FILE
-            packet_rate = BtsPacketRate.WCDMA_DL384K_UL64K
+            self.packet_rate = BtsPacketRate.WCDMA_DL384K_UL64K
 
         elif release_version == self.PARAM_RELEASE_VERSION_7:
 
             cell_parameter_file = self.UMTS_R7_CELL_FILE
-            packet_rate = BtsPacketRate.WCDMA_DL21_6M_UL5_76M
+            self.packet_rate = BtsPacketRate.WCDMA_DL21_6M_UL5_76M
 
         elif release_version == self.PARAM_RELEASE_VERSION_8:
 
             cell_parameter_file = self.UMTS_R8_CELL_FILE
-            packet_rate = BtsPacketRate.WCDMA_DL43_2M_UL5_76M
+            self.packet_rate = BtsPacketRate.WCDMA_DL43_2M_UL5_76M
 
         else:
             raise ValueError("Invalid UMTS release version number.")
@@ -194,4 +210,32 @@ class UmtsSimulation(BaseSimulation):
         # Loading a cell parameter file stops the simulation
         self.start()
 
-        bts.packet_rate = packet_rate
+        bts.packet_rate = self.packet_rate
+
+    def maximum_downlink_throughput(self):
+        """ Calculates maximum achievable downlink throughput in the current
+            simulation state.
+
+        Returns:
+            Maximum throughput in mbps.
+
+        """
+
+        if self.packet_rate not in self.packet_rate_to_dl_throughput:
+            raise NotImplementedError("Packet rate not contained in the "
+                                      "throughput dictionary.")
+        return self.packet_rate_to_dl_throughput[self.packet_rate]
+
+    def maximum_uplink_throughput(self):
+        """ Calculates maximum achievable uplink throughput in the current
+            simulation state.
+
+        Returns:
+            Maximum throughput in mbps.
+
+        """
+
+        if self.packet_rate not in self.packet_rate_to_ul_throughput:
+            raise NotImplementedError("Packet rate not contained in the "
+                                      "throughput dictionary.")
+        return self.packet_rate_to_ul_throughput[self.packet_rate]
