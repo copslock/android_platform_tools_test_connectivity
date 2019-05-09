@@ -20,6 +20,7 @@ import os
 import random
 import re
 import requests
+import subprocess
 import time
 
 from acts import context
@@ -38,6 +39,7 @@ from acts.controllers.utils_lib.ssh import settings
 from acts.libs.proc.job import Error
 from acts.utils import is_valid_ipv4_address
 from acts.utils import is_valid_ipv6_address
+from acts.utils import SuppressLogOutput
 
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
@@ -67,6 +69,8 @@ FUCHSIA_DEFAULT_LOG_ITEMS = ['/hub/c/scenic.cmx/[0-9]*/out/objects',
                              '/hub/c/root_presenter.cmx/[0-9]*/out/objects',
                              '/hub/c/wlanstack2.cmx/[0-9]*/out/public',
                              '/hub/c/basemgr.cmx/[0-9]*/out/objects']
+
+FUCHSIA_RECONNECT_AFTER_REBOOT_TIME = 5
 
 
 class FuchsiaDeviceError(signals.ControllerError):
@@ -248,11 +252,55 @@ class FuchsiaDevice:
         })
         return requests.get(url=self.address, data=test_data).json()
 
-    def send_command_ssh(self, test_cmd):
+    def reboot(self, timeout=60):
+        """Reboot a Fuchsia device and restablish all the services after reboot
+
+        Args:
+            timeout: How long to wait for the device to reboot.
+
+              Disables the logging when sending the reboot command
+              because the ssh session does not disconnect cleanly and therefore
+              would throw an error.  This is expected and thus the error logging
+              is disabled for this call.
+        """
+        ping_command = ['ping', '-t', '1', '-c', '1', self.ip]
+        self.clean_up()
+        self.log.info('Rebooting FuchsiaDevice %s' % self.ip)
+        # Disables the logging when sending the reboot command
+        # because the ssh session does not disconnect cleanly and therefore
+        # would throw an error.  This is expected and thus the error logging
+        # is disabled for this call to not confuse the user.
+        with SuppressLogOutput():
+            self.send_command_ssh('dm reboot',
+                                  timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME)
+        start_time = time.time()
+        self.log.info('Waiting for FuchsiaDevice %s to come back up.' % self.ip)
+        while not subprocess.call(ping_command,
+                                  stdout=subprocess.DEVNULL,
+                                  stderr=subprocess.STDOUT) == 0:
+            elapsed_time = time.time() - start_time
+            if elapsed_time > timeout:
+                raise TimeoutError('Waited %s seconds, and FuchsiaDevice %s'
+                                   'did not come back up.' % (elapsed_time,
+                                                              self.ip))
+        # Wait another 5 seconds after receiving a ping packet to just to let
+        # the OS get everything up and running.
+        time.sleep(5)
+        # Start sl4f on device
+        self.start_services()
+        # Init server
+        self.init_server_connection()
+
+    def send_command_ssh(self,
+                         test_cmd,
+                         connect_timeout=30,
+                         timeout=3600):
         """Sends an SSH command to a Fuchsia device
 
         Args:
             test_cmd: string, command to send to Fuchsia device over SSH.
+            connect_timeout: Timeout to wait for connecting via SSH.
+            timeout: Timeout to wait for a command to complete.
 
         Returns:
             A job.Result containing the results of the ssh command.
@@ -263,8 +311,9 @@ class FuchsiaDevice:
             self.log.warning(FUCHSIA_SSH_CONFIG_NOT_DEFINED)
         else:
             try:
-                ssh_conn = self.create_ssh_connection()
-                command_result = ssh_conn.run(test_cmd)
+                ssh_conn = self.create_ssh_connection(
+                    connect_timeout=connect_timeout)
+                command_result = ssh_conn.run(test_cmd, timeout=timeout)
             except Exception as e:
                 self.log.warning("Problem running ssh command: %s"
                                  "\n Exception: %s" % (test_cmd, e))
@@ -362,7 +411,8 @@ class FuchsiaDevice:
         self.stop_services()
         return r
 
-    def create_ssh_connection(self):
+    def create_ssh_connection(self,
+                              connect_timeout=30):
         """Creates and ssh connection to a Fuchsia device
 
         Returns:
@@ -371,7 +421,8 @@ class FuchsiaDevice:
         ssh_settings = settings.from_config({
             "host": self.ip,
             "user": self.ssh_username,
-            "ssh_config": self.ssh_config
+            "ssh_config": self.ssh_config,
+            "connect_timeout": connect_timeout
         })
         return connection.SshConnection(ssh_settings)
 
