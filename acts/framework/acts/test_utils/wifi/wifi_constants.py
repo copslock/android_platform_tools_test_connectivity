@@ -25,24 +25,6 @@ WIFI_FORGET_NW_SUCCESS = "WifiManagerForgetNetworkOnSuccess"
 CONNECT_BY_CONFIG_SUCCESS = 'WifiManagerConnectByConfigOnSuccess'
 CONNECT_BY_NETID_SUCCESS = 'WifiManagerConnectByNetIdOnSuccess'
 
-# Softap related constants
-SOFTAP_CALLBACK_EVENT = "WifiManagerSoftApCallback-"
-# Callback Event for softap state change
-# WifiManagerSoftApCallback-[callbackId]-OnStateChanged
-SOFTAP_STATE_CHANGED = "-OnStateChanged"
-# Cllback Event for client number change:
-# WifiManagerSoftApCallback-[callbackId]-OnNumClientsChanged
-SOFTAP_NUMBER_CLIENTS_CHANGED = "-OnNumClientsChanged"
-SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY = "NumClients"
-SOFTAP_STATE_CHANGE_CALLBACK_KEY = "State"
-WIFI_AP_DISABLING_STATE = 10
-WIFI_AP_DISABLED_STATE = 11
-WIFI_AP_ENABLING_STATE = 12
-WIFI_AP_ENABLED_STATE = 13
-WIFI_AP_FAILED_STATE = 14
-DEFAULT_SOFTAP_TIMEOUT_S = 600 # 10 minutes
-
-
 # AP related constants
 AP_MAIN = "main_AP"
 AP_AUX = "aux_AP"

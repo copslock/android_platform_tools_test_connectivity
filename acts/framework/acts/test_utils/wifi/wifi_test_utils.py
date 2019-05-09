@@ -1791,54 +1791,6 @@ def start_softap_and_verify(ad, band):
             config[WifiEnums.SSID_KEY])
         return config
 
-def wait_for_expected_number_of_softap_clients(ad, callbackId,
-        expected_num_of_softap_clients):
-    """Wait for the number of softap clients to be updated as expected.
-    Args:
-        callbackId: Id of the callback associated with registering.
-        expected_num_of_softap_clients: expected number of softap clients.
-    """
-    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
-            callbackId) + wifi_constants.SOFTAP_NUMBER_CLIENTS_CHANGED
-    asserts.assert_equal(ad.ed.pop_event(eventStr,
-            SHORT_TIMEOUT)['data'][wifi_constants.
-            SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY],
-            expected_num_of_softap_clients,
-            "Number of softap clients doesn't match with expected number")
-
-def wait_for_expected_softap_state(ad, callbackId, expected_softap_state):
-    """Wait for the expected softap state change.
-    Args:
-        callbackId: Id of the callback associated with registering.
-        expected_softap_state: The expected softap state.
-    """
-    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
-            callbackId) + wifi_constants.SOFTAP_STATE_CHANGED
-    asserts.assert_equal(ad.ed.pop_event(eventStr,
-            SHORT_TIMEOUT)['data'][wifi_constants.
-            SOFTAP_STATE_CHANGE_CALLBACK_KEY],
-            expected_softap_state,
-            "Softap state doesn't match with expected state")
-
-def get_current_number_of_softap_clients(ad, callbackId):
-    """pop up all of softap client updated event from queue.
-    Args:
-        callbackId: Id of the callback associated with registering.
-
-    Returns:
-        If exist aleast callback, returns last updated number_of_softap_clients.
-        Returns None when no any match callback event in queue.
-    """
-    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
-            callbackId) + wifi_constants.SOFTAP_NUMBER_CLIENTS_CHANGED
-    events = ad.ed.pop_all(eventStr)
-    for event in events:
-        num_of_clients = event['data'][wifi_constants.
-                SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY]
-    if len(events) == 0:
-        return None
-    return num_of_clients
-
 
 def start_pcap(pcap, wifi_band, test_name):
     """Start packet capture in monitor mode.
