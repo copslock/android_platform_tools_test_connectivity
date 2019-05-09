@@ -14,8 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import logging
-
 from acts.libs.proc.process import Process
 from acts.libs.logging import log_stream
 from acts.libs.logging.log_stream import LogStyles
@@ -24,29 +22,12 @@ from acts.controllers.android_lib.logcat import TimestampTracker
 TIMESTAMP_REGEX = r'((?:\d+-)?\d+-\d+ \d+:\d+:\d+.\d+)'
 
 
-def _get_log_level(message):
-    """Returns the log level for the given message."""
-    if message.startswith('-') or len(message) < 37:
-        return logging.ERROR
-    else:
-        log_level = message[36]
-        if log_level in ('V', 'D'):
-            return logging.DEBUG
-        elif log_level == 'I':
-            return logging.INFO
-        elif log_level == 'W':
-            return logging.WARNING
-        elif log_level == 'E':
-            return logging.ERROR
-    return logging.NOTSET
-
-
 def _log_line_func(log, timestamp_tracker):
     """Returns a lambda that logs a message to the given logger."""
 
     def log_line(message):
         timestamp_tracker.read_output(message)
-        log.log(_get_log_level(message), message)
+        log.info(message)
 
     return log_line
 
