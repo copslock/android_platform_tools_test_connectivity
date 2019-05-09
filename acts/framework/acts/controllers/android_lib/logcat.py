@@ -91,7 +91,7 @@ def create_logcat_keepalive_process(serial, logcat_dir, extra_params=''):
         A acts.libs.proc.process.Process object.
     """
     logger = log_stream.create_logger(
-        'adblog_%s' % serial, subcontext=logcat_dir,
+        'adblog_%s' % serial, log_name=serial, subcontext=logcat_dir,
         log_styles=(LogStyles.LOG_DEBUG | LogStyles.TESTCASE_LOG))
     process = Process('adb -s %s logcat -T 1 -v year %s' %
                       (serial, extra_params))
