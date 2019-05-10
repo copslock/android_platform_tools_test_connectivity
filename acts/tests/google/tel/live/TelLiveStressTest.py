@@ -503,8 +503,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     synchronize_device_time(ad)
                     force_connectivity_metrics_upload(ad)
                     if self.get_binder_logs:
-                        log_path = os.path.join(self.log_path,
-                                                "%s_binder_logs" % test_name,
+                        log_path = os.path.join(self.log_path, test_name,
                                                 "%s_binder_logs" % ad.serial)
                         utils.create_dir(log_path)
                         ad.pull_files(BINDER_LOGS, log_path)

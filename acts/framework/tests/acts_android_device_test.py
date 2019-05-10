@@ -73,13 +73,15 @@ class MockAdbProxy(object):
                  fail_br=False,
                  fail_br_before_N=False,
                  build_id=MOCK_RELEASE_BUILD_ID,
-                 return_value=None):
+                 return_value=None,
+                 test_name=''):
         self.serial = serial
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
         self.return_value = return_value
         self.return_multiple = False
         self.build_id = build_id
+        self.test_name = test_name
 
     def shell(self, params, ignore_status=False, timeout=60):
         if params == "id -u":
@@ -115,7 +117,7 @@ class MockAdbProxy(object):
 
     def bugreport(self, params, timeout=android_device.BUG_REPORT_TIMEOUT):
         expected = os.path.join(
-            logging.log_path, "AndroidDevice%s" % self.serial,
+            logging.log_path, "AndroidDevice%s" % self.serial, self.test_name,
             "AndroidDevice%s_%s.txt" %
             (self.serial,
              logger.normalize_log_line_timestamp(MOCK_ADB_LOGCAT_BEGIN_TIME)))
@@ -326,10 +328,12 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         and writes the bugreport file to the correct path.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        test_name = "test_something"
         mock_log_path.return_value = os.path.join(
             logging.log_path, "AndroidDevice%s" % ad.serial)
-        ad.take_bug_report("test_something", 234325.32)
-        create_dir_mock.assert_called_with(mock_log_path())
+        ad.take_bug_report(test_name, 234325.32)
+        create_dir_mock.assert_called_with(
+            os.path.join(mock_log_path(), test_name))
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
@@ -357,7 +361,8 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL, fail_br_before_N=True))
+        return_value=MockAdbProxy(
+            MOCK_SERIAL, fail_br_before_N=True, test_name='test_something'))
     @mock.patch(
         'acts.controllers.fastboot.FastbootProxy',
         return_value=MockFastbootProxy(MOCK_SERIAL))
@@ -372,10 +377,12 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         bugreport on builds that do not have bugreportz.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        test_name = "test_something"
         mock_log_path.return_value = os.path.join(
             logging.log_path, "AndroidDevice%s" % ad.serial)
-        ad.take_bug_report("test_something", MOCK_ADB_EPOCH_BEGIN_TIME)
-        create_dir_mock.assert_called_with(mock_log_path())
+        ad.take_bug_report(test_name, MOCK_ADB_EPOCH_BEGIN_TIME)
+        create_dir_mock.assert_called_with(
+            os.path.join(mock_log_path(), test_name))
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
