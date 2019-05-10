@@ -35,10 +35,6 @@ class GattServerSetupTest(BaseTestClass):
         BaseTestClass.__init__(self, controllers)
         self.fuchsia_dut = self.fuchsia_devices[0]
 
-    def teardown_test(self):
-        for fd in self.fuchsia_devices:
-            fd.clean_up()
-
     def setup_database(self, database):
         setup_result = self.fuchsia_dut.gatts_lib.publishServer(database)
         if setup_result.get("error") is None:

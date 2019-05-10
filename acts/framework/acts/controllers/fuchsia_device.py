@@ -358,7 +358,7 @@ class FuchsiaDevice:
         r = requests.get(url=self.cleanup_address, data=data).json()
         self.test_counter += 1
 
-        self.log.debug("Cleaned up with status: ", r)
+        self.log.debug("Cleaned up with status: {}".format(r))
         self.stop_services()
         return r
 
