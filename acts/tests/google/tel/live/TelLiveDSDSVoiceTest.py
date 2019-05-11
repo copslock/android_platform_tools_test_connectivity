@@ -88,6 +88,7 @@ from acts.test_utils.tel.tel_test_utils import verify_internet_connection
 from acts.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
 from acts.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -117,6 +118,7 @@ from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_0
 from acts.test_utils.tel.tel_subscription_utils import set_dds_on_slot_1
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
+from acts.test_utils.tel.tel_subscription_utils import set_slways_allow_mms_data
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
@@ -317,6 +319,7 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             return False
 
         sub_id = get_subid_from_slot_index(ads[0].log, ads[0], slot_id)
+        set_slways_allow_mms_data(ads[0], sub_id)
         if mo_mt == DIRECTION_MOBILE_ORIGINATED:
             ad_sender = ads[0]
             ad_receiver = ads[1]
@@ -480,6 +483,50 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             else:
                 ad_sender.log.info("SMS of length %s test succeeded", length)
         self.log.info("SMS test of length %s characters succeeded.",
+                      self.message_lengths)
+        return True
+
+
+    def _mms_test_msim_mo(self):
+        """Test MMS between two phones.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ad_sender = self.android_devices[0]
+        ad_receiver = self.android_devices[1]
+        for length in self.message_lengths:
+            message_array = [("Test Message", rand_ascii_str(length), None)]
+            if not mms_send_receive_verify(self.log, ad_sender, ad_receiver,
+                                           message_array):
+                ad_sender.log.warning("MMS of length %s test failed", length)
+                return False
+            else:
+                ad_sender.log.info("MMS of length %s test succeeded", length)
+        self.log.info("MMS test of length %s characters succeeded.",
+                      self.message_lengths)
+        return True
+
+
+    def _mms_test_msim_mt(self):
+        """Test MMS between two phones.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ad_sender = self.android_devices[1]
+        ad_receiver = self.android_devices[0]
+        for length in self.message_lengths:
+            message_array = [("Test Message", rand_ascii_str(length), None)]
+            if not mms_send_receive_verify(self.log, ad_sender, ad_receiver,
+                                           message_array):
+                ad_sender.log.warning("MMS of length %s test failed", length)
+                return False
+            else:
+                ad_sender.log.info("MMS of length %s test succeeded", length)
+        self.log.info("MMS test of length %s characters succeeded.",
                       self.message_lengths)
         return True
 
@@ -1078,6 +1125,222 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         return ((mt_result_0 is True) and (mt_result_1 is True))
 
 
+    @test_tracker_info(uuid="1aeb2b27-fbd5-4f58-9b5f-21e10e1e577c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mo_to_ssim_mms_general(self):
+        """ Test MSIM MO MMS on both slots
+
+        Airplane mode is off. Phone in default state.
+        Send MMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mo_result_0 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 0,
+            self._phone_setup_voice_general, self._mms_test_msim_mo, True)
+
+        mo_result_1 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 1,
+            self._phone_setup_voice_general, self._mms_test_msim_mo, True)
+
+        self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
+        return ((mo_result_0 is True) and (mo_result_1 is True))
+
+
+    @test_tracker_info(uuid="c3f3cd1a-6314-4bb4-bf8b-37bc4360dfa3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mo_to_ssim_mms_lte(self):
+        """ Test MSIM MO MMS on both slots
+
+        Airplane mode is off. Phone in 4G.
+        Send MMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mo_result_0 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 0,
+            self._phone_setup_volte, self._mms_test_msim_mo, True)
+
+        mo_result_1 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 1,
+            self._phone_setup_volte, self._mms_test_msim_mo, True)
+
+        self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
+        return ((mo_result_0 is True) and (mo_result_1 is True))
+
+
+    @test_tracker_info(uuid="c99d3ee5-394e-4230-aae7-0f092b8bde84")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mo_to_ssim_mms_3g(self):
+        """ Test MSIM MO MMS on both slots
+
+        Airplane mode is off. Phone in 3G.
+        Send MMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mo_result_0 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 0,
+            self._phone_setup_3g, self._mms_test_msim_mo, True)
+
+        mo_result_1 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 1,
+            self._phone_setup_3g, self._mms_test_msim_mo, True)
+
+        self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
+        return ((mo_result_0 is True) and (mo_result_1 is True))
+
+
+    @test_tracker_info(uuid="54d5de46-9691-4b23-bcab-9ac5f96841b9")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mo_to_ssim_mms_2g(self):
+        """ Test MSIM MO MMS on both slots
+
+        Airplane mode is off. Phone in 2G.
+        Send MMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mo_result_0 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 0,
+            self._phone_setup_2g, self._mms_test_msim_mo, True)
+
+        mo_result_1 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_ORIGINATED, 1,
+            self._phone_setup_2g, self._mms_test_msim_mo, True)
+
+        self.log.info("MO Slot0: %s, MO Slot1: %s", mo_result_0, mo_result_1)
+        return ((mo_result_0 is True) and (mo_result_1 is True))
+
+
+    @test_tracker_info(uuid="ffcad40f-420d-46ac-affb-f8f559173b0e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mt_from_ssim_mms_general(self):
+        """ Test MSIM MT MMS on both slots
+
+        Airplane mode is off. Phone in default state.
+        Send MMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mt_result_0 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 0,
+            self._phone_setup_voice_general, self._mms_test_msim_mt, True)
+
+        mt_result_1 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 1,
+            self._phone_setup_voice_general, self._mms_test_msim_mt, True)
+
+        self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
+        return ((mt_result_0 is True) and (mt_result_1 is True))
+
+
+    @test_tracker_info(uuid="73bfcedf-5725-4f91-a245-aeae5471f75c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mt_from_ssim_mms_lte(self):
+        """ Test MSIM MT MMS on both slots
+
+        Airplane mode is off. Phone in 4G.
+        Send MMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mt_result_0 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 0,
+            self._phone_setup_volte, self._mms_test_msim_mt, True)
+
+        mt_result_1 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 1,
+            self._phone_setup_volte, self._mms_test_msim_mt, True)
+
+        self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
+        return ((mt_result_0 is True) and (mt_result_1 is True))
+
+
+    @test_tracker_info(uuid="76befdc8-df06-4c50-8f20-d6171c9c91f4")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mt_from_ssim_mms_3g(self):
+        """ Test MSIM MT MMS on both slots
+
+        Airplane mode is off. Phone in 3G.
+        Send MMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mt_result_0 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 0,
+            self._phone_setup_3g, self._mms_test_msim_mt, True)
+
+        mt_result_1 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 1,
+            self._phone_setup_3g, self._mms_test_msim_mt, True)
+
+        self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
+        return ((mt_result_0 is True) and (mt_result_1 is True))
+
+
+    @test_tracker_info(uuid="855631c8-30fd-43f5-9a1b-0461b4c4ed86")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_msim_mt_from_ssim_mms_2g(self):
+        """ Test MSIM MT MMS on both slots
+
+        Airplane mode is off. Phone in 2G.
+        Send MMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ads = [self.android_devices[0], self.android_devices[1]]
+        mt_result_0 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 0,
+            self._phone_setup_2g, self._mms_test_msim_mt, True)
+
+        mt_result_1 = self._msim_sms_sequence(
+            ads, DIRECTION_MOBILE_TERMINATED, 1,
+            self._phone_setup_2g, self._mms_test_msim_mt, True)
+
+        self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
+        return ((mt_result_0 is True) and (mt_result_1 is True))
+
+
     def _test_stress_msim(self, mo_mt, dds_switch=False):
         """ Test MSIM/SSIM Voice General Stress
 
@@ -1218,7 +1481,7 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
                                       dds_switch=True)
 
 
-    def _test_stress_msim_sms(self, mo_mt, dds_switch=False):
+    def _test_stress_msim_sms(self, mo_mt, sms_mms, dds_switch=False):
         """ Test MSIM/SSIM SMS Stress
 
             mo_mt: indicating this call sequence is MO or MT.
@@ -1235,9 +1498,14 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
             return False
         ads = [self.android_devices[0], self.android_devices[1]]
         if mo_mt == DIRECTION_MOBILE_ORIGINATED:
-            sms_test_func = self._sms_test_msim_mo
+            sms_test_func = self._mms_test_msim_mo
+            if sms_mms == "sms":
+                sms_test_func = self._sms_test_msim_mo
         else:
-            sms_test_func = self._sms_test_msim_mt
+            sms_test_func = self._mms_test_msim_mt
+            if sms_mms == "sms":
+                sms_test_func = self._sms_test_msim_mt
+
         total_iteration = self.stress_test_number
         fail_count = collections.defaultdict(int)
         for i in range(0,2):
@@ -1311,7 +1579,7 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        return self._test_stress_msim_sms(DIRECTION_MOBILE_ORIGINATED)
+        return self._test_stress_msim_sms(DIRECTION_MOBILE_ORIGINATED, "sms")
 
 
     @test_tracker_info(uuid="6b2f0796-dd1c-4e18-9e87-e37bb45f1bba")
@@ -1329,9 +1597,44 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        return self._test_stress_msim_sms(DIRECTION_MOBILE_ORIGINATED,
+        return self._test_stress_msim_sms(DIRECTION_MOBILE_ORIGINATED, "sms",
                                           dds_switch=True)
 
+
+    @test_tracker_info(uuid="3b2d6fe8-eb6a-43ff-b3e1-a16a12f108c6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_msim_mo_mms(self):
+        """ Test MSIM to SSIM MMS MO stress
+
+        Airplane mode is off. Phone in default state.
+        Send MMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_stress_msim_sms(DIRECTION_MOBILE_ORIGINATED, "mms")
+
+
+    @test_tracker_info(uuid="2b2fae63-d2f2-49c8-974f-3af88391904f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_dds_switch_msim_mo_mms(self):
+        """ Test MSIM to SSIM MMS MO stress
+
+        Airplane mode is off. Phone in default state.
+        Switch DDS
+        Send MMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_stress_msim_sms(DIRECTION_MOBILE_ORIGINATED, "mms",
+                                          dds_switch=True)
 
     @test_tracker_info(uuid="71a51e15-ccfa-417d-a3fb-9c6eba214e45")
     @TelephonyBaseTest.tel_test_wrap
@@ -1347,7 +1650,7 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        return self._test_stress_msim_sms(DIRECTION_MOBILE_TERMINATED)
+        return self._test_stress_msim_sms(DIRECTION_MOBILE_TERMINATED, "sms")
 
 
     @test_tracker_info(uuid="ac61311d-4100-498e-893d-7669b5de1226")
@@ -1365,7 +1668,43 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         Returns:
             True if pass; False if fail.
         """
-        return self._test_stress_msim_sms(DIRECTION_MOBILE_TERMINATED,
+        return self._test_stress_msim_sms(DIRECTION_MOBILE_TERMINATED, "sms",
+                                          dds_switch=True)
+
+
+    @test_tracker_info(uuid="33316449-d802-472d-8a51-85322f83a501")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_msim_mt_mms(self):
+        """ Test MSIM MMS MT from SSIM stress
+
+        Airplane mode is off. Phone in default state.
+        Send MMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_stress_msim_sms(DIRECTION_MOBILE_TERMINATED, "mms")
+
+
+    @test_tracker_info(uuid="25fecd17-b4a1-4010-acf6-ae72fbe905df")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_dds_switch_msim_mt_mms(self):
+        """ Test MSIM MMS MT from SSIM stress
+
+        Airplane mode is off. Phone in default state.
+        Switch DDS
+        Send MMS from PhoneB to PhoneA.
+        Verify received message on PhoneA is correct.
+        Above steps to be done for 3 different message lengths
+        Above steps to be done for slot0 and slot1
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_stress_msim_sms(DIRECTION_MOBILE_TERMINATED, "mms",
                                           dds_switch=True)
 
 
