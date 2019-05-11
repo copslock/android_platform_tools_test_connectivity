@@ -320,3 +320,18 @@ def set_dds_on_slot_1(ad):
         return True
     else:
         return False
+
+
+def set_slways_allow_mms_data(ad, sub_id, state=True):
+    """Set always allow mms data on sub_id
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+        state: True or False
+
+    Returns:
+        None
+    """
+    ad.log.debug("Setting MMS Data Always ON to %s sub_id %s", state, sub_id)
+    return ad.droid.subscriptionSetAlwaysAllowMmsData(sub_id, state)
