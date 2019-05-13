@@ -32,20 +32,20 @@ class PowerWiFiscanTest(PWBT.PowerWiFiBaseTest):
             ' -e class com.google.android.platform.powertests.'
             'WifiScanTest#testWifiSingleShotScan'
             ' com.google.android.platform.powertests/'
-            'android.test.InstrumentationTestRunner > /dev/null &' %
+            'androidx.test.runner.AndroidJUnitRunner > /dev/null &' %
             (self.mon_duration + self.mon_offset + 10))
         BACKGROUND_SCAN = ('am instrument -w -r -e min_scan_count \"1\" -e '
                            'WifiScanTest-testWifiBackgroundScan %d -e class '
                            'com.google.android.platform.powertests.WifiScan'
                            'Test#testWifiBackgroundScan com.google.android.'
-                           'platform.powertests/android.test.Instrumentation'
-                           'TestRunner > /dev/null &' %
+                           'platform.powertests/androidx.test.runner.'
+                           'AndroidJUnitRunner > /dev/null &' %
                            (self.mon_duration + self.mon_offset + 10))
         WIFI_SCAN = ('am instrument -w -r -e min_scan_count \"1\" -e '
                      'WifiScanTest-testWifiScan %d -e class '
                      'com.google.android.platform.powertests.WifiScanTest#'
                      'testWifiScan com.google.android.platform.powertests/'
-                     'android.test.InstrumentationTestRunner > /dev/null &' %
+                     'androidx.test.runner.AndroidJUnitRunner > /dev/null &' %
                      (self.mon_duration + self.mon_offset + 10))
         self.APK_SCAN_CMDS = {
             'singleshot': SINGLE_SHOT_SCAN,
