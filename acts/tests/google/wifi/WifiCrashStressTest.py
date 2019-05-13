@@ -21,7 +21,7 @@ from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts.test_utils.tel.tel_test_utils import disable_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import stop_qxdm_logger
 
 WifiEnums = wutils.WifiEnums
 
@@ -85,14 +85,14 @@ class WifiCrashStressTest(WifiBaseTest):
             del self.user_params["reference_networks"]
 
     """Helper Functions"""
-    def trigger_wifi_firmware_crash(self, ad, timeout=30):
+    def trigger_wifi_firmware_crash(self, ad, timeout=15):
         pre_timestamp = ad.adb.getprop("vendor.debug.ssrdump.timestamp")
         ad.adb.shell(
             "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
         # Legacy pixels use persist.sys.modem.diag.mdlog.
         ad.adb.shell(
             "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
-        disable_qxdm_logger(ad)
+        stop_qxdm_logger(ad)
         cmd = ('am instrument -w -e request "4b 25 03 b0 00" '
                '"com.google.mdstest/com.google.mdstest.instrument.'
                'ModemCommandInstrumentation"')
@@ -105,7 +105,7 @@ class WifiCrashStressTest(WifiBaseTest):
             "SSR didn't happened %s %s" % (subsystem, timestamp))
 
     """Tests"""
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="b5a982ef-10ef-4f36-a1b5-1e5d1fec06a4")
     def test_firmware_crash_wifi_reconnect_stress(self):
         """Firmware crash stress test for station mode
 
@@ -124,7 +124,7 @@ class WifiCrashStressTest(WifiBaseTest):
             self.trigger_wifi_firmware_crash(self.dut)
             wutils.connect_to_wifi_network(self.dut, self.network)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="204a921b-b0de-47f7-9b70-9384317051c8")
     def test_firmware_crash_softap_reconnect_stress(self):
         """Firmware crash stress test for softap mode
 
@@ -153,14 +153,13 @@ class WifiCrashStressTest(WifiBaseTest):
         asserts.assert_true(
             utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_addr, timeout=20),
             "%s ping %s failed" % (self.dut_client.serial, dut_addr))
-        wutils.reset_wifi(self.dut_client)
         for count in range(self.stress_count):
             self.log.info("%s: %d/%d" %
                 (self.current_test_name, count + 1, self.stress_count))
+            wutils.reset_wifi(self.dut_client)
             # Trigger firmware crash
             self.trigger_wifi_firmware_crash(self.dut)
             # Connect DUT to Network
-            wutils.wifi_toggle_state(self.dut_client, True)
             wutils.connect_to_wifi_network(self.dut_client, config, check_connectivity=False)
             # Ping the DUT
             server_addr = self.dut.droid.connectivityGetIPv4Addresses("wlan0")[0]
@@ -169,7 +168,7 @@ class WifiCrashStressTest(WifiBaseTest):
                 "%s ping %s failed" % (self.dut_client.serial, dut_addr))
         wutils.stop_wifi_tethering(self.dut)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="4b7f2d89-82be-41de-9277-e938cc1c318b")
     def test_firmware_crash_concurrent_reconnect_stress(self):
         """Firmware crash stress test for concurrent mode
 
@@ -199,11 +198,11 @@ class WifiCrashStressTest(WifiBaseTest):
         # Client connects to Softap
         wutils.wifi_toggle_state(self.dut_client, True)
         wutils.connect_to_wifi_network(self.dut_client, config)
-        wutils.reset_wifi(self.dut_client)
-        wutils.reset_wifi(self.dut)
         for count in range(self.stress_count):
             self.log.info("%s: %d/%d" %
                 (self.current_test_name, count + 1, self.stress_count))
+            wutils.reset_wifi(self.dut_client)
+            wutils.reset_wifi(self.dut)
             # Trigger firmware crash
             self.trigger_wifi_firmware_crash(self.dut)
             wutils.connect_to_wifi_network(self.dut, self.network)
