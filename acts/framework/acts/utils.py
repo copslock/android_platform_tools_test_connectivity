@@ -33,6 +33,7 @@ import traceback
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
+from acts import context
 from acts import signals
 from acts.controllers import adb
 from acts.libs.proc import job
@@ -1258,6 +1259,20 @@ def test_concurrent_actions(*calls, failure_exceptions=(Exception,)):
         raise
     except failure_exceptions as e:
         raise signals.TestFailure(e)
+
+
+def is_subtest(test_name):
+    """Given a test name, check if it matches the name of the currently running
+    test case. If not, then deem it a subtest.
+
+    Args:
+        test_name: Name of test case or subtest.
+    """
+    curr_context = context.get_current_context()
+    test_case_name = (curr_context.test_case_name
+                      if isinstance(curr_context, context.TestCaseContext)
+                      else '')
+    return test_name != test_case_name
 
 
 class SuppressLogOutput(object):
