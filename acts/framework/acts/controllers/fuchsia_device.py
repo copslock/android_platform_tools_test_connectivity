@@ -504,11 +504,13 @@ class FuchsiaDevice:
         self.log.debug("Attempting to start Fuchsia device services on %s." %
                        self.ip)
         if self.ssh_config:
+            """
             self.log_process = start_syslog(self.serial,
                                             self.log_path,
                                             self.ip,
                                             self.ssh_config)
             self.log_process.start()
+            """
             if not skip_sl4f:
                 self.control_sl4f("start")
 
