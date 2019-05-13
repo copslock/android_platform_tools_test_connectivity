@@ -447,7 +447,7 @@ class TelephonyBaseTest(BaseTestClass):
 
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
         extract_test_log(self.log, ad.adb_logcat_file_path,
-                         os.path.join(ad.device_log_path,
+                         os.path.join(ad.device_log_path, test_name,
                                       "%s_%s.logcat" % (ad.serial, test_name)),
                          test_name)
         ad.adb.wait_for_device()
