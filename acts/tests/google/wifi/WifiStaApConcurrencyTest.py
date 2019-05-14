@@ -189,6 +189,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         network, ad = params
         SSID = network[WifiEnums.SSID_KEY]
+        wutils.reset_wifi(ad)
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             ad, SSID)
         wutils.wifi_connect(ad, network, num_of_tries=3)
@@ -205,6 +206,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             network: config of the ap we are looking for.
         """
         SSID = network[WifiEnums.SSID_KEY]
+        wutils.reset_wifi(self.dut_client)
         wutils.start_wifi_connection_scan_and_ensure_network_found(
             self.dut_client, SSID)
         wutils.wifi_connect(self.dut_client, network, check_connectivity=check_connectivity)
@@ -257,17 +259,8 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.run_iperf_client((softap_config, self.dut_client))
         if len(self.android_devices) > 2:
             self.log.info("Testbed has extra android devices, do more validation")
-            ad1 = self.dut_client
-            ad2 = self.android_devices[2]
-            ad1_ip = ad1.droid.connectivityGetIPv4Addresses('wlan0')[0]
-            ad2_ip = ad2.droid.connectivityGetIPv4Addresses('wlan0')[0]
-            # Ping each other
-            asserts.assert_true(
-                utils.adb_shell_ping(ad1, count=10, dest_ip=ad2_ip, timeout=20),
-                "%s ping %s failed" % (ad1.serial, ad2_ip))
-            asserts.assert_true(
-                utils.adb_shell_ping(ad2, count=10, dest_ip=ad1_ip, timeout=20),
-                "%s ping %s failed" % (ad2.serial, ad1_ip))
+            self.verify_traffic_between_softap_clients(
+                    self.dut_client, self.android_devices[2])
         # Verify that both softap & wifi is enabled concurrently.
         self.verify_wifi_and_softap_enabled()
 
@@ -292,17 +285,8 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.run_iperf_client((softap_config, self.dut_client))
         if len(self.android_devices) > 2:
             self.log.info("Testbed has extra android devices, do more validation")
-            ad1 = self.dut
-            ad2 = self.android_devices[2]
-            ad1_ip = ad1.droid.connectivityGetIPv4Addresses(interface)[0]
-            ad2_ip = ad2.droid.connectivityGetIPv4Addresses('wlan0')[0]
-            # Ping each other
-            asserts.assert_true(
-                utils.adb_shell_ping(ad1, count=10, dest_ip=ad2_ip, timeout=20),
-                "%s ping %s failed" % (ad1.serial, ad2_ip))
-            asserts.assert_true(
-                utils.adb_shell_ping(ad2, count=10, dest_ip=ad1_ip, timeout=20),
-                "%s ping %s failed" % (ad2.serial, ad1_ip))
+            self.verify_traffic_between_ap_clients(
+                    self.dut, self.android_devices[2], interface)
         # Verify that both softap & wifi is enabled concurrently.
         self.verify_wifi_and_softap_enabled()
 
@@ -313,6 +297,48 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
                             "Wifi is not reported as running")
         asserts.assert_true(self.dut.droid.wifiIsApEnabled(),
                              "SoftAp is not reported as running")
+
+    def verify_traffic_between_softap_clients(self, ad1, ad2, num_of_tries=2):
+        """Test the clients that connect to DUT's softap can ping each other.
+
+        Args:
+            num_of_tries: the retry times of ping test.
+        """
+        ad1_ip = ad1.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        ad2_ip = ad2.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        # Ping each other
+        for _ in range(num_of_tries):
+            if utils.adb_shell_ping(ad1, count=10, dest_ip=ad2_ip, timeout=20):
+                break
+        else:
+            asserts.fail("%s ping %s failed" % (ad1.serial, ad2_ip))
+        for _ in range(num_of_tries):
+            if utils.adb_shell_ping(ad2, count=10, dest_ip=ad1_ip, timeout=20):
+                break
+        else:
+            asserts.fail("%s ping %s failed" % (ad2.serial, ad1_ip))
+
+    def verify_traffic_between_ap_clients(
+            self, ad1, ad2, interface, num_of_tries=2):
+        """Test the clients that connect to access point can ping each other.
+
+        Args:
+            interface: the wifi interface used by DUT.
+            num_of_tries: the retry times of ping test.
+        """
+        ad1_ip = ad1.droid.connectivityGetIPv4Addresses(interface)[0]
+        ad2_ip = ad2.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        # Ping each other
+        for _ in range(num_of_tries):
+            if utils.adb_shell_ping(ad1, count=10, dest_ip=ad2_ip, timeout=20):
+                break
+        else:
+            asserts.fail("%s ping %s failed" % (ad1.serial, ad2_ip))
+        for _ in range(num_of_tries):
+            if utils.adb_shell_ping(ad2, count=10, dest_ip=ad1_ip, timeout=20):
+                break
+        else:
+            asserts.fail("%s ping %s failed" % (ad2.serial, ad1_ip))
 
     """Tests"""
     @test_tracker_info(uuid="c396e7ac-cf22-4736-a623-aa6d3c50193a")
