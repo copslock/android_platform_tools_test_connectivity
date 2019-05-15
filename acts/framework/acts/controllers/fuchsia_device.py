@@ -160,7 +160,7 @@ class FuchsiaDevice:
         self.sl4f_ssh_conn = None
 
         self.log = acts_logger.create_tagged_trace_logger(
-            "[FuchsiaDevice|%s]" % self.ip)
+            "FuchsiaDevice | %s" % self.ip)
 
         if is_valid_ipv4_address(self.ip):
             self.address = "http://{}:{}".format(self.ip, self.port)
