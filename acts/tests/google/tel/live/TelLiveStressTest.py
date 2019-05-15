@@ -129,7 +129,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.android_devices = self.android_devices[:2]
         for ad in self.android_devices:
             ad.adb.shell("setprop nfc.debug_enable 1")
-            if self.user_params.get("turn_on_tcpdump", True):
+            if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")
         self.user_params["telephony_auto_rerun"] = 0
         self.phone_call_iteration = int(
@@ -269,7 +269,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s begin", log_msg)
         for ad in self.android_devices:
-            if self.user_params.get("turn_on_tcpdump", True):
+            if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")
             if not getattr(ad, "messaging_droid", None):
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
@@ -356,7 +356,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("%s for %s seconds begin", log_msg, duration)
         begin_time = get_device_epoch_time(ads[0])
         for ad in self.android_devices:
-            if self.user_params.get("turn_on_tcpdump", True):
+            if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")
             if not getattr(ad, "droid", None):
                 ad.droid, ad.ed = ad.get_droid()
