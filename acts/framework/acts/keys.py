@@ -41,6 +41,7 @@ class Config(enum.Enum):
     key_test_failure_tracebacks = "test_failure_tracebacks"
     # Config names for controllers packaged in ACTS.
     key_android_device = "AndroidDevice"
+    key_bluetooth_pts_device = "BluetoothPtsDevice"
     key_fuchsia_device = "FuchsiaDevice"
     key_chameleon_device = "ChameleonDevice"
     key_native_android_device = "NativeAndroidDevice"
@@ -64,6 +65,7 @@ class Config(enum.Enum):
     m_key_monsoon = "monsoon"
     m_key_android_device = "android_device"
     m_key_fuchsia_device = "fuchsia_device"
+    m_key_bluetooth_pts_device = "bluetooth_pts_device"
     m_key_chameleon_device = "chameleon_controller"
     m_key_native_android_device = "native_android_device"
     m_key_relay_device = "relay_device_controller"
@@ -83,6 +85,7 @@ class Config(enum.Enum):
     # Controller names packaged with ACTS.
     builtin_controller_names = [
         key_android_device,
+        key_bluetooth_pts_device,
         key_fuchsia_device,
         key_native_android_device,
         key_relay_device,
