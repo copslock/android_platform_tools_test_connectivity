@@ -2009,6 +2009,22 @@ def start_softap_and_verify(ad, band):
     return config
 
 
+def get_ssrdumps(ad, test_name=""):
+    """Pulls dumps in the ssrdump dir
+    Args:
+        ad: android device object.
+        test_name: test case name
+    """
+    logs = ad.get_file_names("/data/vendor/ssrdump/")
+    if logs:
+        ad.log.info("Pulling ssrdumps %s", logs)
+        log_path = os.path.join(ad.log_path, test_name,
+                                "SSRDUMP_%s" % ad.serial)
+        utils.create_dir(log_path)
+        ad.pull_files(logs, log_path)
+    ad.adb.shell("find /data/vendor/ssrdump/ -type f -delete")
+
+
 def start_pcap(pcap, wifi_band, test_name):
     """Start packet capture in monitor mode.
 
