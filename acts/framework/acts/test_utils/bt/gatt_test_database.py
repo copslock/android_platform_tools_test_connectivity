@@ -119,8 +119,7 @@ LARGE_DB_1 = {
                     gatt_descriptor['permission_write'],
                 }, {
                     'uuid': '0000b017-0000-1000-8000-00805f9b34fb',
-                    'permissions': gatt_descriptor['permission_read'] |
-                    gatt_descriptor['permission_write'] |
+                    'permissions':
                     gatt_characteristic['permission_read_encrypted_mitm'],
                 }]
             }]

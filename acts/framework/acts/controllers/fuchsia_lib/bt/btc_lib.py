@@ -82,6 +82,35 @@ class FuchsiaBtcLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
+    def inputPairingPin(self, pin):
+        """Inputs the pairing pin to the Fuchsia devices' pairing delegate.
+
+        Args:
+            pin: A string that represents the pin to input.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "bt_control_facade.BluetoothInputPairingPin"
+        test_args = {"pin": pin}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def getPairingPin(self):
+        """Gets the pairing pin from the Fuchsia devices' pairing delegate.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "bt_control_facade.BluetoothGetPairingPin"
+        test_args = {}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
     def initBluetoothControl(self):
         """Initialises the Bluetooth Control Interface proxy in SL4F.
 
