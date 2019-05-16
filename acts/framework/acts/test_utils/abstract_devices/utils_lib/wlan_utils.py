@@ -23,6 +23,7 @@ def setup_ap_and_associate(access_point,
                            profile_name,
                            channel,
                            ssid,
+                           mode=None,
                            preamble=None,
                            beacon_interval=None,
                            dtim_period=None,
@@ -33,7 +34,10 @@ def setup_ap_and_associate(access_point,
                            security=None,
                            additional_ap_parameters=None,
                            password=None,
-                           check_connectivity=False):
+                           check_connectivity=False,
+                           n_capabilities=None,
+                           ac_capabilities=None,
+                           vht_bandwidth=None):
     """Sets up the AP and associates a client.
 
     Args:
@@ -59,6 +63,7 @@ def setup_ap_and_associate(access_point,
         iface_wlan_5g=access_point.wlan_5g,
         channel=channel,
         ssid=ssid,
+        mode=mode,
         short_preamble=preamble,
         beacon_interval=beacon_interval,
         dtim_period=dtim_period,
@@ -67,7 +72,10 @@ def setup_ap_and_associate(access_point,
         force_wmm=force_wmm,
         hidden=hidden,
         bss_settings=[],
-        security=security)
+        security=security,
+        n_capabilities=n_capabilities,
+        ac_capabilities=ac_capabilities,
+        vht_bandwidth=vht_bandwidth)
     access_point.start_ap(
         hostapd_config=ap,
         additional_parameters=additional_ap_parameters)
