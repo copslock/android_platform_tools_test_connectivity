@@ -41,7 +41,6 @@ from acts.utils import is_valid_ipv4_address
 from acts.utils import is_valid_ipv6_address
 from acts.utils import SuppressLogOutput
 
-
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
 
@@ -65,10 +64,12 @@ SL4F_ACTIVATED_STATES = ["running", "start"]
 SL4F_DEACTIVATED_STATES = ["stop", "stopped"]
 
 FUCHSIA_DEFAULT_LOG_CMD = 'iquery --absolute_paths --cat --format= --recursive'
-FUCHSIA_DEFAULT_LOG_ITEMS = ['/hub/c/scenic.cmx/[0-9]*/out/objects',
-                             '/hub/c/root_presenter.cmx/[0-9]*/out/objects',
-                             '/hub/c/wlanstack2.cmx/[0-9]*/out/public',
-                             '/hub/c/basemgr.cmx/[0-9]*/out/objects']
+FUCHSIA_DEFAULT_LOG_ITEMS = [
+    '/hub/c/scenic.cmx/[0-9]*/out/objects',
+    '/hub/c/root_presenter.cmx/[0-9]*/out/objects',
+    '/hub/c/wlanstack2.cmx/[0-9]*/out/public',
+    '/hub/c/basemgr.cmx/[0-9]*/out/objects'
+]
 
 FUCHSIA_RECONNECT_AFTER_REBOOT_TIME = 5
 
@@ -273,15 +274,16 @@ class FuchsiaDevice:
             self.send_command_ssh('dm reboot',
                                   timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME)
         start_time = time.time()
-        self.log.info('Waiting for FuchsiaDevice %s to come back up.' % self.ip)
+        self.log.info('Waiting for FuchsiaDevice %s to come back up.' %
+                      self.ip)
         while not subprocess.call(ping_command,
                                   stdout=subprocess.DEVNULL,
                                   stderr=subprocess.STDOUT) == 0:
             elapsed_time = time.time() - start_time
             if elapsed_time > timeout:
                 raise TimeoutError('Waited %s seconds, and FuchsiaDevice %s'
-                                   'did not come back up.' % (elapsed_time,
-                                                              self.ip))
+                                   'did not come back up.' %
+                                   (elapsed_time, self.ip))
         # Wait another 5 seconds after receiving a ping packet to just to let
         # the OS get everything up and running.
         time.sleep(5)
@@ -290,10 +292,7 @@ class FuchsiaDevice:
         # Init server
         self.init_server_connection()
 
-    def send_command_ssh(self,
-                         test_cmd,
-                         connect_timeout=30,
-                         timeout=3600):
+    def send_command_ssh(self, test_cmd, connect_timeout=30, timeout=3600):
         """Sends an SSH command to a Fuchsia device
 
         Args:
@@ -347,11 +346,8 @@ class FuchsiaDevice:
         rtt_avg = None
         self.log.info("Pinging %s...", dest_ip)
         ping_result = self.send_command_ssh(
-            'ping -c %s -i %s -t %s -s %s %s' % (count,
-                                                 interval,
-                                                 timeout,
-                                                 size,
-                                                 dest_ip))
+            'ping -c %s -i %s -t %s -s %s %s' %
+            (count, interval, timeout, size, dest_ip))
         if isinstance(ping_result, Error):
             ping_result = ping_result.result
 
@@ -364,12 +360,14 @@ class FuchsiaDevice:
             rtt_min = rtt_stats.group(1)
             rtt_max = rtt_stats.group(2)
             rtt_avg = rtt_stats.group(3)
-        return {'status': status,
-                'rtt_min': rtt_min,
-                'rtt_max': rtt_max,
-                'rtt_avg': rtt_avg,
-                'stdout': ping_result.stdout,
-                'stderr': ping_result.stderr}
+        return {
+            'status': status,
+            'rtt_min': rtt_min,
+            'rtt_max': rtt_max,
+            'rtt_avg': rtt_avg,
+            'stdout': ping_result.stdout,
+            'stderr': ping_result.stderr
+        }
 
     def print_clients(self):
         """Gets connected clients from SL4F server"""
@@ -410,8 +408,7 @@ class FuchsiaDevice:
         self.stop_services()
         return r
 
-    def create_ssh_connection(self,
-                              connect_timeout=30):
+    def create_ssh_connection(self, connect_timeout=30):
         """Creates and ssh connection to a Fuchsia device
 
         Returns:
@@ -482,8 +479,9 @@ class FuchsiaDevice:
             if action in SL4F_ACTIVATED_STATES:
                 self.log.debug("Attempting to start Fuchsia "
                                "devices services.")
-                self.sl4f_ssh_conn.run_async("run fuchsia-pkg://"
-                                             "fuchsia.com/sl4f#meta/sl4f.cmx &")
+                self.sl4f_ssh_conn.run_async(
+                    "run fuchsia-pkg://"
+                    "fuchsia.com/sl4f#meta/sl4f.cmx &")
                 sl4f_initial_msg = ("SL4F has not started yet. "
                                     "Waiting %i second and checking "
                                     "again." % SL4F_INIT_TIMEOUT_SEC)
@@ -539,8 +537,8 @@ class FuchsiaDevice:
                 return True
         else:
             # the response indicates an error - log and raise failure
-            self.log.error("Aborting! - Connect call failed with error: %s"
-                           % connection_response.get("error"))
+            self.log.error("Aborting! - Connect call failed with error: %s" %
+                           connection_response.get("error"))
             return False
 
     def start_services(self, skip_sl4f=False):
@@ -607,8 +605,8 @@ class FuchsiaDevice:
             self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
         out_name = "%s.txt" % out_name
         full_out_path = os.path.join(br_path, out_name)
-        self.log.info("Taking bugreport for %s on FuchsiaDevice%s."
-                      % (test_name, self.serial))
+        self.log.info("Taking bugreport for %s on FuchsiaDevice%s." %
+                      (test_name, self.serial))
         system_objects = self.send_command_ssh('iquery --find /hub').stdout
         system_objects = system_objects.split()
 
@@ -617,13 +615,32 @@ class FuchsiaDevice:
                 if re.match(matching_log_item, system_object):
                     log_items.append(system_object)
 
-        log_command = '%s %s' % (FUCHSIA_DEFAULT_LOG_CMD,
-                                 ' '.join(log_items))
+        log_command = '%s %s' % (FUCHSIA_DEFAULT_LOG_CMD, ' '.join(log_items))
         bug_report_data = self.send_command_ssh(log_command).stdout
 
-        bug_report_file = open(full_out_path,'w')
+        bug_report_file = open(full_out_path, 'w')
         bug_report_file.write(bug_report_data)
         bug_report_file.close()
+
+    def take_bt_snoop_log(self, custom_name=None):
+        """Takes a the bt-snoop log from the device and stores it in a file
+        in a pcap format.
+        """
+        bt_snoop_path = context.get_current_context().get_full_output_path()
+        time_stamp = acts_logger.normalize_log_line_timestamp(
+            acts_logger.epoch_to_log_line_timestamp(time.time()))
+        out_name = "FuchsiaDevice%s_%s" % (
+            self.serial, time_stamp.replace(" ", "_").replace(":", "-"))
+        out_name = "%s.pcap" % out_name
+        if custom_name:
+            out_name = "%s.pcap" % custom_name
+        else:
+            out_name = "%s.pcap" % out_name
+        full_out_path = os.path.join(bt_snoop_path, out_name)
+        bt_snoop_data = self.send_command_ssh('bt-snoop-cli -d -f pcap').stdout
+        bt_snoop_file = open(full_out_path, 'w')
+        bt_snoop_file.write(bt_snoop_data)
+        bt_snoop_file.close()
 
 
 class FuchsiaDeviceLoggerAdapter(logging.LoggerAdapter):

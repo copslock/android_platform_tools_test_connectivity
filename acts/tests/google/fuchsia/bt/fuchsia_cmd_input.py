@@ -133,6 +133,22 @@ class CmdInput(cmd.Cmd):
                         break
         self.pri_dut.btc_lib.requestDiscovery(False)
 
+
+    def do_tool_take_bt_snoop_log(self, custom_name):
+        """
+        Description: Takes the bt snoop log from the Fuchsia device.
+        Logs will show up in your config files' logpath directory.
+
+        Input(s):
+            custom_name: Optional. Override the default pcap file name.
+
+        Usage: tool_set_target_device_name new_target_device name
+          Examples:
+            tool_take_bt_snoop_log connection_error
+            tool_take_bt_snoop_log
+        """
+        self.pri_dut.take_bt_snoop_log(custom_name)
+
     def do_tool_refresh_unique_id(self, line):
         """
         Description: Refresh command line tool mac unique id.
