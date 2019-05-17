@@ -39,6 +39,9 @@ from acts.test_utils.tel.tel_defines import ATT_CARRIER_CONFIG_VERSION
 from acts.test_utils.tel.tel_defines import CARRIER_ID_METADATA_URL
 from acts.test_utils.tel.tel_defines import CARRIER_ID_CONTENT_URL
 from acts.test_utils.tel.tel_defines import CARRIER_ID_VERSION
+from acts.test_utils.tel.tel_defines import CARRIER_ID_METADATA_URL_P
+from acts.test_utils.tel.tel_defines import CARRIER_ID_CONTENT_URL_P
+from acts.test_utils.tel.tel_defines import CARRIER_ID_VERSION_P
 from acts.test_utils.tel.tel_lookup_tables import device_capabilities
 from acts.test_utils.tel.tel_lookup_tables import operator_capabilities
 from acts.test_utils.tel.tel_test_utils import lock_lte_band_by_mds
@@ -498,6 +501,11 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             result_flag = False
             time_var = 1
             ad = self.android_devices[0]
+            if ad.adb.getprop("ro.build.version.release")[0] in ("9", "P"):
+                CARRIER_ID_VERSION = CARRIER_ID_VERSION_P
+                CARRIER_ID_METADATA_URL = CARRIER_ID_METADATA_URL_P
+                CARRIER_ID_CONTENT_URL = CARRIER_ID_CONTENT_URL_P
+
             ad.log.info("Before - CarrierId is %s", get_carrier_id_version(ad))
             # Setup Steps
             if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
