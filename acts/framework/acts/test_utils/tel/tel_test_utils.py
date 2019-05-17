@@ -7233,14 +7233,16 @@ def my_current_screen_content(ad, content):
 def activate_google_fi_account(ad, retries=10):
     _FI_APK = "com.google.android.apps.tycho"
     _FI_ACTIVATE_CMD = ('am start -c android.intent.category.DEFAULT -n '
-                        'com.google.android.apps.tycho/.InitActivity --ez '
+                        'com.google.android.apps.tycho/.AccountDetailsActivity --ez '
                         'in_setup_wizard false --ez force_show_account_chooser '
                         'false')
     toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
     ad.adb.shell("settings put system screen_off_timeout 1800000")
     page_match_dict = {
+       "SelectAccount" : "Choose an account to use",
        "Setup" : "Activate Google Fi to use your device for calls",
        "Switch" : "Switch to the Google Fi mobile network",
+       "WiFi" : "Fi to download your SIM",
        "Connect" : "Connect to the Google Fi mobile network",
        "Move" : "Move number",
        "Data" : "first turn on mobile data",
@@ -7248,7 +7250,7 @@ def activate_google_fi_account(ad, retries=10):
        "Welcome" : "Welcome to Google Fi",
        "Account" : "Your current cycle ends in"
     }
-    page_list = ["Account", "Setup", "Switch", "Connect",
+    page_list = ["Account", "Setup", "WiFi", "Switch", "Connect",
                  "Activate", "Move", "Welcome", "Data"]
     for _ in range(retries):
         ad.force_stop_apk(_FI_APK)
@@ -7261,12 +7263,12 @@ def activate_google_fi_account(ad, retries=10):
             if my_current_screen_content(ad, page_match_dict[page]):
                 ad.log.info("Ready for Step %s", page)
                 log_screen_shot(ad, "fi_activation_step_%s" % page)
-                if page in ("Setup", "Switch", "Connect"):
+                if page in ("Setup", "Switch", "Connect", "WiFi"):
                     ad.send_keycode("TAB")
                     ad.send_keycode("TAB")
                     ad.send_keycode("ENTER")
                     time.sleep(30)
-                elif page == "Move":
+                elif page == "Move" or page == "SelectAccount":
                     ad.send_keycode("TAB")
                     ad.send_keycode("ENTER")
                     time.sleep(5)
@@ -7295,6 +7297,7 @@ def activate_google_fi_account(ad, retries=10):
             else:
                 ad.log.info("NOT FOUND - Page %s", page)
                 log_screen_shot(ad, "fi_activation_step_%s_failure" % page)
+                get_screen_shot_log(ad)
     return False
 
 
