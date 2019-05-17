@@ -993,6 +993,21 @@ class CmdInput(cmd.Cmd):
     """End LE scan wrappers"""
     """Begin GATT Server wrappers"""
 
+    def do_gatts_close(self, line):
+        """
+        Description: Close active GATT server.
+
+        Usage:
+          Examples:
+            gatts_close
+        """
+        cmd = "Close active GATT server."
+        try:
+            result = self.pri_dut.gatts_lib.closeServer()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def complete_gatts_setup_database(self, text, line, begidx, endidx):
         if not text:
             completions = list(

@@ -43,6 +43,9 @@ class GattServerSetupTest(BaseTestClass):
             raise signals.TestFailure(
                 self.err_message.format(setup_result.get("error")))
 
+    def test_teardown(self):
+        self.fuchsia_dut.gatts_lib.closeServer()
+
     @test_tracker_info(uuid='25f3463b-b6bd-408b-9924-f18ed3b9bbe2')
     def test_single_primary_service(self):
         """Test GATT Server Setup: Single Primary Service
