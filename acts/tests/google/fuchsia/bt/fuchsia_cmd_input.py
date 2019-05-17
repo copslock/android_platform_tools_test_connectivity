@@ -1284,4 +1284,36 @@ class CmdInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_btc_input_pairing_pin(self, line):
+        """
+        Description: Sends a pairing pin to SL4F's Bluetooth Control's
+        Pairing Delegate.
+
+        Usage:
+          Examples:
+            btc_input_pairing_pin 123456
+        """
+        cmd = "Input pairing pin to the Fuchsia device."
+        try:
+            result = self.pri_dut.btc_lib.inputPairingPin(line)['result']
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_get_pairing_pin(self, line):
+        """
+        Description: Gets the pairing pin from SL4F's Bluetooth Control's
+        Pairing Delegate.
+
+        Usage:
+          Examples:
+            btc_get_pairing_pin
+        """
+        cmd = "Get the pairing pin from the Fuchsia device."
+        try:
+            result = self.pri_dut.btc_lib.getPairingPin()['result']
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     """End Bluetooth Control wrappers"""
