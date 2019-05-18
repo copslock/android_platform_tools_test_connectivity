@@ -132,8 +132,10 @@ class WlanScanTest(WifiBaseTest):
         # randomly generated so there is no chance of re associating to a
         # previously saved ssid on the device.
         if self.start_access_point_2g:
+            self.start_access_point = True
             self.access_points[0].start_ap(hostapd_config=self.ap_2g)
         if self.start_access_point_5g:
+            self.start_access_point = True
             self.access_points[0].start_ap(hostapd_config=self.ap_5g)
 
     def setup_test(self):
