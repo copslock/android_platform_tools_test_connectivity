@@ -31,6 +31,7 @@ from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
 from acts.controllers.fuchsia_lib.bt.btc_lib import FuchsiaBtcLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
+from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
@@ -199,6 +200,10 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaGattsLib
         self.gatts_lib = FuchsiaGattsLib(self.address, self.test_counter,
                                          self.client_id)
+
+        # Grab commands from FuchsiaLoggingLib
+        self.logging_lib = FuchsiaLoggingLib(self.address, self.test_counter,
+                                             self.client_id)
 
         # Grab commands from FuchsiaNetstackLib
         self.netstack_lib = FuchsiaNetstackLib(self.address, self.test_counter,
