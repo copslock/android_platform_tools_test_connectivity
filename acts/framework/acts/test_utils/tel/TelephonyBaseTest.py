@@ -484,8 +484,6 @@ class TelephonyBaseTest(BaseTestClass):
     def _take_bug_report(self, test_name, begin_time):
         if self._skip_bug_report(test_name):
             return
-        test_log_path = os.path.join(self.log_path, test_name)
-        utils.create_dir(test_log_path)
         dev_num = getattr(self, "number_of_devices", None) or len(
             self.android_devices)
         tasks = [(self._ad_take_bugreport, (ad, test_name, begin_time))
@@ -500,6 +498,7 @@ class TelephonyBaseTest(BaseTestClass):
         # Zip log folder
         if not self.user_params.get("zip_log", False): return
         src_dir = os.path.join(self.log_path, test_name)
+        utils.create_dir(src_dir)
         file_name = "%s_%s" % (src_dir, begin_time)
         self.log.info("Zip folder %s to %s.zip", src_dir, file_name)
         shutil.make_archive(file_name, "zip", src_dir)
