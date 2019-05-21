@@ -20,6 +20,8 @@ from future import standard_library
 standard_library.install_aliases()
 from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_DATA_SUB_ID
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
+
 import time
 
 
@@ -279,9 +281,57 @@ def perform_dds_switch(ad):
         ad.log.info("DDS Switch from %s to %s", slot_dict[0]['operator'],
                                                 slot_dict[1]['operator'])
         new_data = slot_dict[1]['sub_id']
+        new_oper = slot_dict[1]['operator']
     else:
         ad.log.info("DDS Switch from %s to %s", slot_dict[1]['operator'],
                                                 slot_dict[0]['operator'])
         new_data = slot_dict[0]['sub_id']
+        new_oper = slot_dict[0]['operator']
     set_subid_for_data(ad, new_data)
     ad.droid.telephonyToggleDataConnection(True)
+    if get_default_data_sub_id(ad) == new_data:
+        return new_oper
+    else:
+        ad.log.error("DDS Switch Failed")
+        return False
+
+
+def set_dds_on_slot_0(ad):
+    sub_id = get_subid_from_slot_index(ad.log, ad, 0)
+    operator = get_operatorname_from_slot_index(ad, 0)
+    ad.log.info("Setting DDS on %s", operator)
+    set_subid_for_data(ad, sub_id)
+    ad.droid.telephonyToggleDataConnection(True)
+    time.sleep(WAIT_TIME_CHANGE_DATA_SUB_ID)
+    if get_default_data_sub_id(ad) == sub_id:
+        return True
+    else:
+        return False
+
+
+def set_dds_on_slot_1(ad):
+    sub_id = get_subid_from_slot_index(ad.log, ad, 1)
+    operator = get_operatorname_from_slot_index(ad, 1)
+    ad.log.info("Setting DDS on %s", operator)
+    set_subid_for_data(ad, sub_id)
+    ad.droid.telephonyToggleDataConnection(True)
+    time.sleep(WAIT_TIME_CHANGE_DATA_SUB_ID)
+    if get_default_data_sub_id(ad) == sub_id:
+        return True
+    else:
+        return False
+
+
+def set_slways_allow_mms_data(ad, sub_id, state=True):
+    """Set always allow mms data on sub_id
+
+    Args:
+        ad: android device object.
+        sub_id: subscription id (integer)
+        state: True or False
+
+    Returns:
+        None
+    """
+    ad.log.debug("Setting MMS Data Always ON to %s sub_id %s", state, sub_id)
+    return ad.droid.subscriptionSetAlwaysAllowMmsData(sub_id, state)

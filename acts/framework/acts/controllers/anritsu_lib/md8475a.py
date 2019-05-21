@@ -967,6 +967,27 @@ class MD8475A(object):
         """
         return self.send_query("TESTSTAT?")
 
+    def start_ip_traffic(self, pdn):
+        """ Starts IP data traffic with the selected PDN.
+
+        Args:
+            pdn: the pdn to be used for data traffic. Defaults to 1.
+        """
+        if not pdn:
+            pdn = '1'
+        self.anritsu.send_command('OPERATEIPTRAFFIC START,' + pdn)
+
+    def stop_ip_traffic(self, pdn):
+        """ Stops IP data traffic with the selected PDN.
+
+         Args:
+            pdn: pdn for which data traffic has to be stopped. Defaults to 1.
+
+        """
+        if not pdn:
+            pdn = '1'
+        self.anritsu.send_command('OPERATEIPTRAFFIC STOP,' + pdn)
+
     # Common Default Gateway:
     @property
     def gateway_ipv4addr(self):
@@ -1756,7 +1777,7 @@ class _BaseTransceiverStation(object):
         Raises:
             ValueError: Frame structure has to be [ 0, 6 ] inclusive
         """
-        if uldl_configuration not in range(0, 7):
+        if configuration not in range(0, 7):
             raise ValueError("The frame structure configuration has to be a "
                              "number between 0 and 6 inclusive")
 

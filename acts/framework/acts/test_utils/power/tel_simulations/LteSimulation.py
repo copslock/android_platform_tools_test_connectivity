@@ -16,6 +16,7 @@
 
 import time
 import math
+import ntpath
 from enum import Enum
 
 from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
@@ -32,8 +33,8 @@ class LteSimulation(BaseSimulation):
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
     # the same configuration manually.
-    LTE_BASIC_SIM_FILE = 'SIM_default_LTE'
-    LTE_BASIC_CELL_FILE = 'CELL_LTE_config'
+    LTE_BASIC_SIM_FILE = 'SIM_default_LTE.wnssp'
+    LTE_BASIC_CELL_FILE = 'CELL_LTE_config.wnscp'
 
     # Simulation config keywords contained in the test name
     PARAM_FRAME_CONFIG = "tddconfig"
@@ -86,9 +87,12 @@ class LteSimulation(BaseSimulation):
         FDD = "FDD"
         TDD = "TDD"
 
+    # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
+    DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
+
     # RSRP signal levels thresholds (as reported by Android) in dBm/15KHz.
     # Excellent is set to -75 since callbox B Tx power is limited to -30 dBm
-    downlink_rsrp_dictionary = {
+    DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {
         'excellent': -75,
         'high': -110,
         'medium': -115,
@@ -96,7 +100,7 @@ class LteSimulation(BaseSimulation):
     }
 
     # Transmitted output power for the phone (dBm)
-    uplink_signal_level_dictionary = {
+    UPLINK_SIGNAL_LEVEL_DICTIONARY = {
         'max': 23,
         'high': 13,
         'medium': 3,
@@ -228,19 +232,18 @@ class LteSimulation(BaseSimulation):
         """
 
         super().__init__(anritsu, log, dut, test_config, calibration_table)
-        self.file_path = 'C:\\Users\\MD8475{}\\Documents\\DAN_configs\\'.format(
-            self.anritsu._md8475_version)
 
-        if self.anritsu._md8475_version == 'A':
-            self.sim_file_path = "{}{}.wnssp".format(self.file_path,
-                                                     self.LTE_BASIC_SIM_FILE)
-            self.cell_file_path = "{}{}.wnscp".format(self.file_path,
-                                                      self.LTE_BASIC_CELL_FILE)
-        else:
-            self.sim_file_path = "{}{}.wnssp2".format(self.file_path,
-                                                      self.LTE_BASIC_SIM_FILE)
-            self.cell_file_path = "{}{}.wnscp2".format(
-                self.file_path, self.LTE_BASIC_CELL_FILE)
+        cell_file_name = self.LTE_BASIC_CELL_FILE
+        sim_file_name = self.LTE_BASIC_SIM_FILE
+
+        if self.anritsu._md8475_version == 'B':
+            cell_file_name += '2'
+            sim_file_name += '2'
+
+        self.cell_file_path = ntpath.join(self.callbox_config_path,
+                                          cell_file_name)
+        self.sim_file_path = ntpath.join(self.callbox_config_path,
+                                         sim_file_name)
 
         anritsu.load_simulation_paramfile(self.sim_file_path)
         anritsu.load_cell_paramfile(self.cell_file_path)
@@ -478,39 +481,6 @@ class LteSimulation(BaseSimulation):
         # started. Saving this value in a variable for later
         self.sim_dl_power = dl_power
 
-    def get_uplink_power_from_parameters(self, parameters):
-        """ Reads uplink power from a list of parameters. """
-
-        values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
-
-        if not values or values[1] not in self.uplink_signal_level_dictionary:
-            raise ValueError(
-                "The test name needs to include parameter {} followed by one "
-                "the following values: {}.".format(self.PARAM_UL_PW, [
-                    val for val in self.uplink_signal_level_dictionary.keys()
-                ]))
-
-        return self.uplink_signal_level_dictionary[values[1]]
-
-    def get_downlink_power_from_parameters(self, parameters):
-        """ Reads downlink power from a list of parameters. """
-
-        values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
-
-        if values:
-            if values[1] not in self.downlink_rsrp_dictionary:
-                raise ValueError("Invalid signal level value {}.".format(
-                    values[1]))
-            else:
-                return self.downlink_rsrp_dictionary[values[1]]
-        else:
-            # Use default value
-            power = self.downlink_rsrp_dictionary['excellent']
-            self.log.info(
-                "No DL signal level value was indicated in the test "
-                "parameters. Using default value of {} RSRP.".format(power))
-            return power
-
     def set_downlink_rx_power(self, bts, rsrp):
         """ Sets downlink rx power in RSRP using calibration
 
@@ -554,7 +524,7 @@ class LteSimulation(BaseSimulation):
 
         return super().downlink_calibration(
             bts,
-            rat='lteRsrp',
+            rat='lteDbm',
             power_units_conversion_func=self.rsrp_to_signal_power)
 
     def rsrp_to_signal_power(self, rsrp, bts):
@@ -940,10 +910,10 @@ class LteSimulation(BaseSimulation):
             return range(int(math.ceil(math.log(max_value, base))))
 
         possible_ul_rbs = [
-            2**a * 3**b * 5**c
-            for a in pow_range(max_rbs, 2) for b in pow_range(max_rbs, 3)
-            for c in pow_range(max_rbs, 5) if 2**a * 3**b * 5**c <= max_rbs
-        ]
+            2**a * 3**b * 5**c for a in pow_range(max_rbs, 2)
+            for b in pow_range(max_rbs, 3)
+            for c in pow_range(max_rbs, 5)
+            if 2**a * 3**b * 5**c <= max_rbs] # yapf: disable
 
         # Find the value in the list that is closest to desired_ul_rbs
         differences = [abs(rbs - desired_ul_rbs) for rbs in possible_ul_rbs]
@@ -952,8 +922,7 @@ class LteSimulation(BaseSimulation):
         # Report what are the obtained RB percentages
         self.log.info("Requested a {}% / {}% RB allocation. Closest possible "
                       "percentages are {}% / {}%.".format(
-                          dl, ul,
-                          round(100 * dl_rbs / max_rbs),
+                          dl, ul, round(100 * dl_rbs / max_rbs),
                           round(100 * ul_rbs / max_rbs)))
 
         return dl_rbs, ul_rbs
@@ -1017,12 +986,30 @@ class LteSimulation(BaseSimulation):
             self.bts1.transmode = "TM1"
             time.sleep(5)  # It takes some time to propagate the new settings
 
+        # SET TBS pattern for calibration
+        self.bts1.tbs_pattern = "FULLALLOCATION" if self.tbs_pattern_on else "OFF"
+
         super().calibrate()
 
         if init_dl_antenna is not None:
             self.bts1.dl_antenna = init_dl_antenna
             self.bts1.transmode = init_transmode
             time.sleep(5)  # It takes some time to propagate the new settings
+
+    def start_traffic_for_calibration(self):
+        """
+            If TBS pattern is set to full allocation, there is no need to start
+            IP traffic.
+        """
+        if not self.tbs_pattern_on:
+            super().start_traffic_for_calibration()
+
+    def stop_traffic_for_calibration(self):
+        """
+            If TBS pattern is set to full allocation, IP traffic wasn't started
+        """
+        if not self.tbs_pattern_on:
+            super().stop_traffic_for_calibration()
 
     def get_duplex_mode(self, band):
         """ Determines if the band uses FDD or TDD duplex mode

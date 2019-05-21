@@ -19,7 +19,6 @@ import logging
 import math
 import os
 import re
-import subprocess
 import time
 
 from acts import asserts
@@ -29,7 +28,7 @@ from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.controllers.iperf_server import IPerfResult
-from acts.test_utils.bt import BtEnum
+from acts.libs.proc import job
 from acts.test_utils.bt.bt_constants import (
     bluetooth_profile_connection_state_changed)
 from acts.test_utils.bt.bt_constants import bt_default_timeout
@@ -537,7 +536,7 @@ def initiate_disconnect_call_dut(pri_ad, sec_ad, duration, callee_number):
     return flag
 
 
-def check_wifi_status(pri_ad, network, ssh_config):
+def check_wifi_status(pri_ad, network, ssh_config=None):
     """Function to check existence of wifi connection.
 
     Args:
@@ -546,12 +545,12 @@ def check_wifi_status(pri_ad, network, ssh_config):
         ssh_config: ssh config for iperf client.
     """
     time.sleep(5)
-    proc = subprocess.Popen("pgrep -f 'iperf3 -c'", stdout=subprocess.PIPE, shell=True)
-    pid_list = proc.communicate()[0].decode('utf-8').split()
+    proc = job.run("pgrep -f 'iperf3 -c'")
+    pid_list = proc.stdout.split()
 
     while True:
-        p = subprocess.Popen(["pgrep", "-f", "iperf3"], stdout=subprocess.PIPE)
-        process_list = p.communicate()[0].decode('utf-8').split()
+        iperf_proc = job.run(["pgrep", "-f", "iperf3"])
+        process_list = iperf_proc.stdout.split()
         if not wifi_connection_check(pri_ad, network["SSID"]):
             pri_ad.adb.shell("killall iperf3")
             if ssh_config:
@@ -562,12 +561,13 @@ def check_wifi_status(pri_ad, network, ssh_config):
                 res = result.stdout.split("\n")
                 for pid in res:
                     try:
-                        ssh_session.run("kill -9 %s" %pid)
+                        ssh_session.run("kill -9 %s" % pid)
                     except Exception as e:
-                        logging.warning("No such process: %s" %e)
+                        logging.warning("No such process: %s" % e)
                 for pid in pid_list[:-1]:
-                    subprocess.Popen("kill -9 {}".format(pid),
-                                 stdout=subprocess.PIPE, shell=True)
+                    job.run(["kill", " -9", " %s" % pid], ignore_status=True)
+            else:
+                job.run(["killall", " iperf3"], ignore_status=True)
             break
         elif pid_list[0] not in process_list:
             break
@@ -973,7 +973,7 @@ def start_fping(pri_ad, duration, fping_params):
     else:
         cmd = cmd.split()
         with open(full_out_path, "w") as f:
-            subprocess.call(cmd, stderr=f, stdout=f)
+            job.run(cmd)
     result = parse_fping_results(fping_params["fping_drop_tolerance"],
                                  full_out_path)
     return bool(result)

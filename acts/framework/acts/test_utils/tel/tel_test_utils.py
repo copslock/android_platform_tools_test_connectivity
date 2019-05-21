@@ -63,8 +63,7 @@ from acts.test_utils.tel.tel_defines import INVALID_SIM_SLOT_INDEX
 from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 from acts.test_utils.tel.tel_defines import MAX_SAVED_VOICE_MAIL
 from acts.test_utils.tel.tel_defines import MAX_SCREEN_ON_TIME
-from acts.test_utils.tel.tel_defines import \
-    MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_ACCEPT_CALL_TO_OFFHOOK_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_AIRPLANEMODE_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_DROP
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_INITIATION
@@ -149,36 +148,25 @@ from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts.test_utils.tel.tel_defines import ServiceStateContainer
 from acts.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
     CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
-from acts.test_utils.tel.tel_lookup_tables import \
-    connection_type_from_type_string
+from acts.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
 from acts.test_utils.tel.tel_lookup_tables import is_valid_rat
 from acts.test_utils.tel.tel_lookup_tables import get_allowable_network_preference
-from acts.test_utils.tel.tel_lookup_tables import \
-    get_voice_mail_count_check_function
+from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_count_check_function
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_check_number
 from acts.test_utils.tel.tel_lookup_tables import get_voice_mail_delete_digit
-from acts.test_utils.tel.tel_lookup_tables import \
-    network_preference_for_generation
-from acts.test_utils.tel.tel_lookup_tables import \
-    operator_name_from_network_name
+from acts.test_utils.tel.tel_lookup_tables import network_preference_for_generation
+from acts.test_utils.tel.tel_lookup_tables import operator_name_from_network_name
 from acts.test_utils.tel.tel_lookup_tables import operator_name_from_plmn_id
-from acts.test_utils.tel.tel_lookup_tables import \
-    rat_families_for_network_preference
+from acts.test_utils.tel.tel_lookup_tables import rat_families_for_network_preference
 from acts.test_utils.tel.tel_lookup_tables import rat_family_for_generation
 from acts.test_utils.tel.tel_lookup_tables import rat_family_from_rat
 from acts.test_utils.tel.tel_lookup_tables import rat_generation_from_rat
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_default_data_sub_id, get_subid_from_slot_index
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_outgoing_message_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_incoming_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    get_incoming_message_sub_id
-from acts.test_utils.tel.tel_subscription_utils import \
-    set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id, get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
+from acts.test_utils.tel.tel_subscription_utils import get_incoming_message_sub_id
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
 from acts.test_utils.wifi import wifi_test_utils
 from acts.test_utils.wifi import wifi_constants
 from acts.utils import adb_shell_ping
@@ -2821,7 +2809,7 @@ def http_file_download_by_chrome(ad,
         "chrome_mobile_data_usage": get_mobile_data_usage(
             ad, None, chrome_apk)
     }
-    ad.log.info("Before downloading: %s", data_accounting)
+    ad.log.debug("Before downloading: %s", data_accounting)
     ad.log.info("Download %s with timeout %s", url, timeout)
     ad.ensure_screen_on()
     open_url_by_adb(ad, url)
@@ -2850,7 +2838,7 @@ def http_file_download_by_chrome(ad,
                 key: value - data_accounting[key]
                 for key, value in new_data_accounting.items()
             }
-            ad.log.info("Data accounting difference: %s", accounting_diff)
+            ad.log.debug("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
                 for key, value in accounting_diff.items():
                     if value < expected_file_size:
@@ -2927,7 +2915,7 @@ def http_file_download_by_sl4a(ad,
             "sl4a_mobile_data_usage":
             get_mobile_data_usage(ad, None, accounting_apk)
         }
-        ad.log.info("Before downloading: %s", data_accounting)
+        ad.log.debug("Before downloading: %s", data_accounting)
         ad.log.info("Download file from %s to %s by sl4a RPC call", url,
                     file_path)
         try:
@@ -2953,16 +2941,16 @@ def http_file_download_by_sl4a(ad,
                 "sl4a_mobile_data_usage":
                 get_mobile_data_usage(ad, None, accounting_apk)
             }
-            ad.log.info("After downloading: %s", new_data_accounting)
+            ad.log.debug("After downloading: %s", new_data_accounting)
             accounting_diff = {
                 key: value - data_accounting[key]
                 for key, value in new_data_accounting.items()
             }
-            ad.log.info("Data accounting difference: %s", accounting_diff)
+            ad.log.debug("Data accounting difference: %s", accounting_diff)
             if getattr(ad, "on_mobile_data", False):
                 for key, value in accounting_diff.items():
                     if value < expected_file_size:
-                        ad.log.warning("%s diff is %s less than %s", key,
+                        ad.log.debug("%s diff is %s less than %s", key,
                                        value, expected_file_size)
                         ad.data_accounting["%s_failure"] += 1
             else:
@@ -2993,10 +2981,10 @@ def get_mobile_data_usage(ad, sid=None, apk=None):
 
     if apk:
         uid = ad.get_apk_uid(apk)
-        ad.log.info("apk %s uid = %s", apk, uid)
+        ad.log.debug("apk %s uid = %s", apk, uid)
         try:
             usage_info = ad.droid.getMobileDataUsageInfoForUid(uid, sid)
-            ad.log.info("Mobile data usage info for uid %s = %s", uid,
+            ad.log.debug("Mobile data usage info for uid %s = %s", uid,
                         usage_info)
             return usage_info["UsageLevel"]
         except:
@@ -3012,7 +3000,7 @@ def get_mobile_data_usage(ad, sid=None, apk=None):
     else:
         try:
             usage_info = ad.droid.getMobileDataUsageInfo(sid)
-            ad.log.info("Mobile data usage info = %s", usage_info)
+            ad.log.debug("Mobile data usage info = %s", usage_info)
             return usage_info["UsageLevel"]
         except:
             try:
@@ -3029,7 +3017,7 @@ def get_mobile_data_usage(ad, sid=None, apk=None):
 def set_mobile_data_usage_limit(ad, limit, subscriber_id=None):
     if not subscriber_id:
         subscriber_id = ad.droid.telephonyGetSubscriberId()
-    ad.log.info("Set subscriber mobile data usage limit to %s", limit)
+    ad.log.debug("Set subscriber mobile data usage limit to %s", limit)
     ad.droid.logV("Setting subscriber mobile data usage limit to %s" % limit)
     try:
         ad.droid.connectivitySetDataUsageLimit(subscriber_id, str(limit))
@@ -6424,10 +6412,14 @@ def get_tcpdump_log(ad, test_name="", begin_time=None):
         test_name: test case name
         begin_time: test begin time
     """
+
     logs = ad.get_file_names("/data/local/tmp/tcpdump", begin_time=begin_time)
     if logs:
         ad.log.info("Pulling tcpdumps %s", logs)
-        log_path = os.path.join(ad.log_path, test_name,
+        # Check if test_name is the name of a subtest, if so, generate a new
+        # directory for this specific subtest.
+        subtest = test_name if utils.is_subtest(test_name) else ''
+        log_path = os.path.join(ad.device_log_path, subtest,
                                 "TCPDUMP_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
@@ -7008,6 +7000,7 @@ def power_on_sim(ad, sim_slot_id=None):
 
 
 def extract_test_log(log, src_file, dst_file, test_tag):
+    utils.create_dir(os.path.dirname(dst_file))
     cmd = "grep -n '%s' %s" % (test_tag, src_file)
     result = job.run(cmd, ignore_status=True)
     if not result.stdout or result.exit_status == 1:
@@ -7129,7 +7122,10 @@ def get_screen_shot_log(ad, test_name="", begin_time=None):
     logs = ad.get_file_names("/sdcard/Pictures", begin_time=begin_time)
     if logs:
         ad.log.info("Pulling %s", logs)
-        log_path = os.path.join(ad.log_path, test_name,
+        # Check if test_name is the name of a subtest, if so, generate a new
+        # directory for this specific subtest.
+        subtest = test_name if utils.is_subtest(test_name) else ''
+        log_path = os.path.join(ad.device_log_path, subtest,
                                 "Screenshot_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
@@ -7234,28 +7230,32 @@ def my_current_screen_content(ad, content):
     return True
 
 
-def activate_google_fi_account(ad, retries=3):
+def activate_google_fi_account(ad, retries=10):
     _FI_APK = "com.google.android.apps.tycho"
     _FI_ACTIVATE_CMD = ('am start -c android.intent.category.DEFAULT -n '
-                        'com.google.android.apps.tycho/.InitActivity --ez '
+                        'com.google.android.apps.tycho/.AccountDetailsActivity --ez '
                         'in_setup_wizard false --ez force_show_account_chooser '
                         'false')
     toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
     ad.adb.shell("settings put system screen_off_timeout 1800000")
     page_match_dict = {
+       "SelectAccount" : "Choose an account to use",
        "Setup" : "Activate Google Fi to use your device for calls",
        "Switch" : "Switch to the Google Fi mobile network",
+       "WiFi" : "Fi to download your SIM",
        "Connect" : "Connect to the Google Fi mobile network",
        "Move" : "Move number",
+       "Data" : "first turn on mobile data",
        "Activate" : "This takes a minute or two, sometimes longer",
        "Welcome" : "Welcome to Google Fi",
        "Account" : "Your current cycle ends in"
     }
-    page_list = ["Account", "Setup", "Switch", "Connect",
-                 "Activate", "Move", "Welcome"]
+    page_list = ["Account", "Setup", "WiFi", "Switch", "Connect",
+                 "Activate", "Move", "Welcome", "Data"]
     for _ in range(retries):
         ad.force_stop_apk(_FI_APK)
         ad.ensure_screen_on()
+        ad.send_keycode("MENU")
         ad.send_keycode("HOME")
         ad.adb.shell(_FI_ACTIVATE_CMD)
         time.sleep(15)
@@ -7263,12 +7263,12 @@ def activate_google_fi_account(ad, retries=3):
             if my_current_screen_content(ad, page_match_dict[page]):
                 ad.log.info("Ready for Step %s", page)
                 log_screen_shot(ad, "fi_activation_step_%s" % page)
-                if page in ("Setup", "Switch", "Connect"):
+                if page in ("Setup", "Switch", "Connect", "WiFi"):
                     ad.send_keycode("TAB")
                     ad.send_keycode("TAB")
                     ad.send_keycode("ENTER")
                     time.sleep(30)
-                elif page == "Move":
+                elif page == "Move" or page == "SelectAccount":
                     ad.send_keycode("TAB")
                     ad.send_keycode("ENTER")
                     time.sleep(5)
@@ -7289,9 +7289,15 @@ def activate_google_fi_account(ad, retries=3):
                         time.sleep(60)
                 elif page == "Account":
                     return True
+                elif page == "Data":
+                    ad.log.error("Mobile Data is turned OFF by default")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("TAB")
+                    ad.send_keycode("ENTER")
             else:
                 ad.log.info("NOT FOUND - Page %s", page)
                 log_screen_shot(ad, "fi_activation_step_%s_failure" % page)
+                get_screen_shot_log(ad)
     return False
 
 

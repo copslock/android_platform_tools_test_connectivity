@@ -218,15 +218,17 @@ class AccessPoint(object):
 
         # For multi bssid configurations the mac address
         # of the wireless interface needs to have enough space to mask out
-        # up to 8 different mac addresses.  The easiest way to do this
-        # is to set the last byte to 0.  While technically this could
-        # cause a duplicate mac address it is unlikely and will allow for
-        # one radio to have up to 8 APs on the interface.
+        # up to 8 different mac addresses. So in for one interface the range is
+        # hex 0-7 and for the other the range is hex 8-f.
         interface_mac_orig = None
         cmd = "ifconfig %s|grep ether|awk -F' ' '{print $2}'" % interface
         interface_mac_orig = self.ssh.run(cmd)
-        hostapd_config.bssid = interface_mac_orig.stdout[:-1] + '0'
-
+        if interface == self.wlan_5g:
+            hostapd_config.bssid = interface_mac_orig.stdout[:-1] + '0'
+            last_octet = 1
+        if interface == self.wlan_2g:
+            hostapd_config.bssid = interface_mac_orig.stdout[:-1] + '8'
+            last_octet = 9
         if interface in self._aps:
             raise ValueError('No WiFi interface available for AP on '
                              'channel %d' % hostapd_config.channel)
@@ -254,8 +256,8 @@ class AccessPoint(object):
             for bss in hostapd_config.bss_lookup:
                 if interface_mac_orig:
                     hostapd_config.bss_lookup[
-                        bss].bssid = interface_mac_orig.stdout[:-1] + str(
-                            counter)
+                        bss].bssid = (interface_mac_orig.stdout[:-1]
+                                      + hex(last_octet)[-1:])
                 self._route_cmd.clear_routes(net_interface=str(bss))
                 if interface is self.wlan_2g:
                     starting_ip_range = self._AP_2G_SUBNET_STR
@@ -266,6 +268,7 @@ class AccessPoint(object):
                     ipaddress.ip_network('%s.%s.%s.%s' %
                                          (a, b, str(int(c) + counter), d)))
                 counter = counter + 1
+                last_octet = last_octet + 1
 
         apd.start(hostapd_config, additional_parameters=additional_parameters)
 

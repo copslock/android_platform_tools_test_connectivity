@@ -29,12 +29,6 @@ class ConfigWrapper(object):
         self._dictionary = dictionary
 
     def __getitem__(self, key):
-        if key == Config.key_config_path:
-            logging.warning(
-                'The config key "%s" is pending deprecation. For resolving '
-                'files in the same directory as your config, please use a '
-                'key-value entry in your config that contains an absolute '
-                'path.' % Config.key_config_path)
         return self._dictionary[key]
 
     def __contains__(self, key):

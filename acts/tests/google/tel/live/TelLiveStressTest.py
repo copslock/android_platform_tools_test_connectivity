@@ -23,6 +23,7 @@ import os
 import random
 import time
 
+from acts import context
 from acts import signals
 from acts import utils
 from acts.libs.proc import job
@@ -54,6 +55,7 @@ from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
+from acts.test_utils.tel.tel_test_utils import extract_test_log
 from acts.test_utils.tel.tel_test_utils import force_connectivity_metrics_upload
 from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
@@ -129,7 +131,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.android_devices = self.android_devices[:2]
         for ad in self.android_devices:
             ad.adb.shell("setprop nfc.debug_enable 1")
-            if self.user_params.get("turn_on_tcpdump", True):
+            if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")
         self.user_params["telephony_auto_rerun"] = 0
         self.phone_call_iteration = int(
@@ -163,6 +165,28 @@ class TelLiveStressTest(TelephonyBaseTest):
 
     def on_fail(self, test_name, begin_time):
         pass
+
+    def _take_bug_report(self, test_name, begin_time):
+        if self._skip_bug_report(test_name):
+            return
+        src_dir = context.get_current_context().get_full_output_path()
+        dst_dir = os.path.join(self.log_path, test_name)
+
+        # Extract test_run_info.txt, test_run_debug.txt
+        for file_name in ("test_run_info.txt", "test_run_debug.txt"):
+            extract_test_log(self.log, os.path.join(src_dir, file_name),
+                             os.path.join(dst_dir,
+                                          "%s_%s" % (test_name, file_name)),
+                             "\[Test Case\] %s " % test_name)
+        super()._take_bug_report(test_name, begin_time)
+
+    def _ad_take_extra_logs(self, ad, test_name, begin_time):
+        src_file = os.path.join(ad.device_log_path,
+                                'adblog_%s_debug.txt' % ad.serial)
+        dst_file = os.path.join(ad.device_log_path, test_name,
+                                "%s_%s.logcat" % (ad.serial, test_name))
+        extract_test_log(self.log, src_file, dst_file, test_name)
+        return super()._ad_take_extra_logs(ad, test_name, begin_time)
 
     def _setup_wfc(self):
         for ad in self.android_devices:
@@ -269,7 +293,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s begin", log_msg)
         for ad in self.android_devices:
-            if self.user_params.get("turn_on_tcpdump", True):
+            if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")
             if not getattr(ad, "messaging_droid", None):
                 ad.messaging_droid, ad.messaging_ed = ad.get_droid()
@@ -356,7 +380,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("%s for %s seconds begin", log_msg, duration)
         begin_time = get_device_epoch_time(ads[0])
         for ad in self.android_devices:
-            if self.user_params.get("turn_on_tcpdump", True):
+            if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")
             if not getattr(ad, "droid", None):
                 ad.droid, ad.ed = ad.get_droid()
@@ -503,8 +527,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     synchronize_device_time(ad)
                     force_connectivity_metrics_upload(ad)
                     if self.get_binder_logs:
-                        log_path = os.path.join(self.log_path,
-                                                "%s_binder_logs" % test_name,
+                        log_path = os.path.join(self.log_path, test_name,
                                                 "%s_binder_logs" % ad.serial)
                         utils.create_dir(log_path)
                         ad.pull_files(BINDER_LOGS, log_path)

@@ -123,7 +123,7 @@ class A2dpPowerTest(PowerBaseTest):
                 "Push bt_config file so it will connect automatically")
             if not push_file_to_device(
                     self.ad, bt_config_path, bt_conf_path_dut,
-                    self.user_params[Config.key_config_path]):
+                    self.user_params[Config.key_config_path.value]):
                 self.log.error(
                     "Unable to push file {} to DUT.".format(bt_config_path))
 
@@ -220,18 +220,18 @@ class A2dpPowerTest(PowerBaseTest):
             0]
         self.log.info(
             "Push CD quality music file {}".format(self.cd_quality_music_file))
-        if not push_file_to_device(self.ad, self.cd_quality_music_file,
-                                   music_path_dut,
-                                   self.user_params[Config.key_config_path]):
+        if not push_file_to_device(
+                self.ad, self.cd_quality_music_file, music_path_dut,
+                self.user_params[Config.key_config_path.value]):
             self.log.error("Unable to push file {} to DUT.".format(
                 self.cd_quality_music_file))
 
         self.hi_res_music_file = self.user_params["hi_res_music_file"][0]
         self.log.info(
             "Push Hi Res quality music file {}".format(self.hi_res_music_file))
-        if not push_file_to_device(self.ad, self.hi_res_music_file,
-                                   music_path_dut,
-                                   self.user_params[Config.key_config_path]):
+        if not push_file_to_device(
+                self.ad, self.hi_res_music_file, music_path_dut,
+                self.user_params[Config.key_config_path.value]):
             self.log.error(
                 "Unable to find file {}.".format(self.hi_res_music_file))
 

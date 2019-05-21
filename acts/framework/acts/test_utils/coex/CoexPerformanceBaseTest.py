@@ -37,13 +37,11 @@ def get_atten_range(start, stop, step):
         start: Start attenuation value.
         stop: Stop attenuation value.
         step: Step attenuation value.
-
-    Returns:
-        list of attenuation range.
     """
-    atten_step = int(round((stop - start) / float(step)))
-    atten_range = [start + x * step for x in range(0, atten_step)]
-    return atten_range
+    temp = start
+    while temp < stop:
+        yield temp
+        temp += step
 
 
 class CoexPerformanceBaseTest(CoexBaseTest):
@@ -84,14 +82,14 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                              files) for files in os.listdir(
                                  self.test_params["performance_result_path"])
             ]
-        self.bt_atten_range = get_atten_range(
+        self.bt_atten_range = list(get_atten_range(
                             self.test_params["bt_atten_start"],
                             self.test_params["bt_atten_stop"],
-                            self.test_params["bt_atten_step"])
-        self.wifi_atten_range = get_atten_range(
+                            self.test_params["bt_atten_step"]))
+        self.wifi_atten_range = list(get_atten_range(
                             self.test_params["attenuation_start"],
                             self.test_params["attenuation_stop"],
-                            self.test_params["attenuation_step"])
+                            self.test_params["attenuation_step"]))
 
     def setup_test(self):
         if "a2dp_streaming" in self.current_test_name:
@@ -156,10 +154,12 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                                                           ["attenuation"])
             for i, atten in enumerate(self.rvr[bt_atten]["attenuation"]):
                 if self.rvr[bt_atten]["throughput_received"][i] < 1.0:
-                    self.wifi_range_metric = self.rvr[bt_atten]["attenuation"][i-1]
+                    self.wifi_range_metric.metric_value = (
+                        self.rvr[bt_atten]["attenuation"][i-1])
                     break
             else:
-                self.wifi_range_metric = max(self.rvr[bt_atten]["attenuation"])
+                self.wifi_range_metric.metric_value = max(
+                    self.rvr[bt_atten]["attenuation"])
             if self.a2dp_streaming:
                 if not any(x > 0 for x in self.a2dp_dropped_list):
                     self.rvr[bt_atten]["a2dp_packet_drop"] = []
@@ -191,7 +191,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             for i in range(self.num_atten - 1):
                 self.attenuators[i].set_atten(atten)
             if not wifi_connection_check(self.pri_ad, self.network["SSID"]):
-                return self.iperf_received, self.a2dp_dropped_list
+                self.iperf_received.append(0)
+                return self.iperf_received, self.a2dp_dropped_list, False
             time.sleep(5)  # Time for attenuation to set.
             if called_func:
                 if not multithread_func(self.log, called_func):
@@ -236,9 +237,9 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             with open(self.json_file, 'a') as results_file:
                 json.dump({str(k): v for k, v in self.rvr.items()},
                           results_file, indent=4, sort_keys=True)
-            self.bt_range_metric.metric_value = self.rvr["bt_range"]
+            self.bt_range_metric.metric_value = self.rvr["bt_range"][0]
             self.log.info("BT range where gap has occurred = %s" %
-                          self.rvr["bt_range"][0])
+                          self.bt_range_metric.metric_value)
             self.log.info("BT min range = %s" % min(self.rvr["bt_attenuation"]))
             self.log.info("BT max range = %s" % max(self.rvr["bt_attenuation"]))
             with open(self.json_file, 'a') as result_file:

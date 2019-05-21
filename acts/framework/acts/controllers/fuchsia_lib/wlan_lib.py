@@ -13,7 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+from acts import logger
 from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 COMMAND_SCAN = "wlan.scan"
@@ -25,6 +25,7 @@ class FuchsiaWlanLib(BaseLib):
         self.address = addr
         self.test_counter = tc
         self.client_id = client_id
+        self.log = logger.create_tagged_trace_logger(str(addr))
 
     def wlanStartScan(self):
         """ Starts a wlan scan

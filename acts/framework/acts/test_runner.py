@@ -22,6 +22,7 @@ import copy
 import importlib
 import inspect
 import fnmatch
+import json
 import logging
 import os
 import pkgutil
@@ -141,6 +142,7 @@ class TestRunner(object):
             self.write_test_campaign()
         else:
             self.run_list = run_list
+        self.dump_config()
         self.results = records.TestResult()
         self.running = False
 
@@ -171,7 +173,9 @@ class TestRunner(object):
         for path, name, _ in file_list:
             sys.path.append(path)
             try:
-                module = importlib.import_module(name)
+                with utils.SuppressLogOutput(
+                        log_levels=[logging.INFO, logging.ERROR]):
+                    module = importlib.import_module(name)
             except:
                 for test_cls_name, _ in self.run_list:
                     alt_name = name.replace('_', '').lower()
@@ -359,6 +363,12 @@ class TestRunner(object):
         path = os.path.join(self.log_path, "test_run_summary.json")
         with open(path, 'w') as f:
             f.write(self.results.json_str())
+
+    def dump_config(self):
+        """Writes the test config to a JSON file under self.log_path"""
+        config_path = os.path.join(self.log_path, 'test_configs.json')
+        with open(config_path, 'a') as f:
+            json.dump(self.test_configs, f, skipkeys=True, indent=4)
 
     def write_test_campaign(self):
         """Log test campaign file."""

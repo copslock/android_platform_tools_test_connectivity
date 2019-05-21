@@ -337,10 +337,14 @@ class BleStressTest(BluetoothBaseTest):
                 self.log.error("Failed to bond devices.")
                 return False
             self.log.info("Total time (ms): {}".format(self.end_timer()))
-            if not clear_bonded_devices(self.scn_ad):
+            if not self._verify_successful_bond(self.adv_ad.droid.bluetoothGetLocalAddress()):
+                self.log.error("Failed to bond BREDR devices.")
+                return False
+            if not self.scn_ad.droid.bluetoothUnbond(target_address):
                 self.log.error("Failed to unbond device from scanner.")
                 return False
-            if not clear_bonded_devices(self.adv_ad):
+            time.sleep(2)
+            if not self.adv_ad.droid.bluetoothUnbond(self.scn_ad.droid.bluetoothGetLocalAddress()):
                 self.log.error("Failed to unbond device from advertiser.")
                 return False
             self.adv_ad.droid.bleStopBleAdvertising(adv_callback)

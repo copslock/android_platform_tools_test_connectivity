@@ -31,9 +31,6 @@ class NetstackFuchsiaTest(BaseTestClass):
         self.log.info("Running testbed setup with one fuchsia devices")
         self.fuchsia_dev = self.fuchsia_devices[0]
 
-    def teardown_test(self):
-        self.fuchsia_dev.clean_up()
-
     def test_fuchsia_publish_service(self):
         asserts.assert_false(self.fuchsia_dev.netstack_lib.netstackListInterfaces()['error'],
                              "Expected list interfaces to succeed")
