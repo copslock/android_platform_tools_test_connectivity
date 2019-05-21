@@ -7001,6 +7001,7 @@ def power_on_sim(ad, sim_slot_id=None):
 
 
 def extract_test_log(log, src_file, dst_file, test_tag):
+    utils.create_dir(os.path.dirname(dst_file))
     cmd = "grep -n '%s' %s" % (test_tag, src_file)
     result = job.run(cmd, ignore_status=True)
     if not result.stdout or result.exit_status == 1:
