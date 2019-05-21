@@ -46,6 +46,10 @@ class BaseSimulation():
     # Key to read the calibration setting from the test_config dictionary.
     KEY_CALIBRATION = "calibration"
 
+    # Filepath to the config files stored in the Anritsu callbox. Needs to be
+    # formatted to replace {} with either A or B depending on the model.
+    CALLBOX_PATH_FORMAT_STR = 'C:\\Users\\MD8475{}\\Documents\\DAN_configs\\'
+
     # Time in seconds to wait for the phone to settle
     # after attaching to the base station.
     SETTLING_TIME = 10
@@ -56,6 +60,15 @@ class BaseSimulation():
 
     # Max retries before giving up attaching the phone
     ATTACH_MAX_RETRIES = 3
+
+    # These two dictionaries allow to map from a string to a signal level and
+    # have to be overriden by the simulations inheriting from this class.
+    UPLINK_SIGNAL_LEVEL_DICTIONARY = {}
+    DOWNLINK_SIGNAL_LEVEL_DICTIONARY = {}
+
+    # Units for downlink signal level. This variable has to be overriden by
+    # the simulations inheriting from this class.
+    DOWNLINK_SIGNAL_LEVEL_UNITS = None
 
     def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Initializes the Simulation object.
@@ -109,6 +122,10 @@ class BaseSimulation():
 
         # Enable roaming on the phone
         toggle_cell_data_roaming(self.dut, True)
+
+        # Set
+        self.callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
+            self.anritsu._md8475_version)
 
     def start(self):
         """ Start simulation.
@@ -275,6 +292,39 @@ class BaseSimulation():
 
         return return_list
 
+    def get_uplink_power_from_parameters(self, parameters):
+        """ Reads uplink power from a list of parameters. """
+
+        values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
+
+        if not values or values[1] not in self.UPLINK_SIGNAL_LEVEL_DICTIONARY:
+            raise ValueError(
+                "The test name needs to include parameter {} followed by one "
+                "the following values: {}.".format(
+                    self.PARAM_UL_PW,
+                    list(self.UPLINK_SIGNAL_LEVEL_DICTIONARY.keys())))
+
+        return self.UPLINK_SIGNAL_LEVEL_DICTIONARY[values[1]]
+
+    def get_downlink_power_from_parameters(self, parameters):
+        """ Reads downlink power from a list of parameters. """
+
+        values = self.consume_parameter(parameters, self.PARAM_DL_PW, 1)
+
+        if values:
+            if values[1] not in self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY:
+                raise ValueError("Invalid signal level value {}.".format(
+                    values[1]))
+            else:
+                return self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY[values[1]]
+        else:
+            # Use default value
+            power = self.DOWNLINK_SIGNAL_LEVEL_DICTIONARY['excellent']
+            self.log.info("No DL signal level value was indicated in the test "
+                          "parameters. Using default value of {} {}.".format(
+                              power, self.DOWNLINK_SIGNAL_LEVEL_UNITS))
+            return power
+
     def set_downlink_rx_power(self, bts, signal_level):
         """ Sets downlink rx power using calibration if available
 
@@ -369,8 +419,6 @@ class BaseSimulation():
         """ Calculates UL and DL path loss if it wasn't done before.
 
         """
-        # SET TBS pattern for calibration
-        self.bts1.tbs_pattern = "FULLALLOCATION" if self.tbs_pattern_on else "OFF"
 
         if self.dl_path_loss and self.ul_path_loss:
             self.log.info("Measurements are already calibrated.")
@@ -389,6 +437,29 @@ class BaseSimulation():
 
         # Detach after calibrating
         self.detach()
+        time.sleep(2)
+
+    def start_traffic_for_calibration(self):
+        """
+            Starts UDP IP traffic before running calibration. Uses APN_1
+            configured in the phone.
+        """
+        try:
+            self.anritsu.start_ip_traffic()
+        except AnritsuError as inst:
+            # This typically happens when traffic is already running
+            self.log.warning("{}\n".format(inst))
+        time.sleep(4)
+
+    def stop_traffic_for_calibration(self):
+        """
+            Stops IP traffic after calibration.
+        """
+        try:
+            self.anritsu.stop_ip_traffic()
+        except AnritsuError as inst:
+            # This typically happens when traffic has already been stopped
+            self.log.warning("{}\n".format(inst))
         time.sleep(2)
 
     def downlink_calibration(self,
@@ -431,15 +502,8 @@ class BaseSimulation():
         self.dut.droid.goToSleepNow()
         time.sleep(2)
 
-        # Starting first the IP traffic (UDP): Using always APN 1
-        if not self.tbs_pattern_on:
-            try:
-                cmd = 'OPERATEIPTRAFFIC START,1'
-                self.anritsu.send_command(cmd)
-            except AnritsuError as inst:
-                self.log.warning(
-                    "{}\n".format(inst))  # Typically RUNNING already
-            time.sleep(4)
+        # Starting IP traffic
+        self.start_traffic_for_calibration()
 
         down_power_measured = []
         for i in range(0, self.NUM_DL_CAL_READS):
@@ -451,15 +515,8 @@ class BaseSimulation():
             self.dut.droid.goToSleepNow()
             time.sleep(5)
 
-        # Stop the IP traffic (UDP)
-        if not self.tbs_pattern_on:
-            try:
-                cmd = 'OPERATEIPTRAFFIC STOP,1'
-                self.anritsu.send_command(cmd)
-            except AnritsuError as inst:
-                self.log.warning(
-                    "{}\n".format(inst))  # Typically STOPPED already
-            time.sleep(2)
+        # Stop IP traffic
+        self.stop_traffic_for_calibration()
 
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
@@ -519,15 +576,8 @@ class BaseSimulation():
         self.dut.droid.wakeUpNow()
         time.sleep(2)
 
-        # Starting first the IP traffic (UDP): Using always APN 1
-        if not self.tbs_pattern_on:
-            try:
-                cmd = 'OPERATEIPTRAFFIC START,1'
-                self.anritsu.send_command(cmd)
-            except AnritsuError as inst:
-                self.log.warning(
-                    "{}\n".format(inst))  # Typically RUNNING already
-            time.sleep(4)
+        # Start IP traffic
+        self.start_traffic_for_calibration()
 
         up_power_per_chain = []
         # Get the number of chains
@@ -551,15 +601,8 @@ class BaseSimulation():
 
             time.sleep(3)
 
-        # Stop the IP traffic (UDP)
-        if not self.tbs_pattern_on:
-            try:
-                cmd = 'OPERATEIPTRAFFIC STOP,1'
-                self.anritsu.send_command(cmd)
-            except AnritsuError as inst:
-                self.log.warning(
-                    "{}\n".format(inst))  # Typically STOPPED already
-            time.sleep(2)
+        # Stop IP traffic
+        self.stop_traffic_for_calibration()
 
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()

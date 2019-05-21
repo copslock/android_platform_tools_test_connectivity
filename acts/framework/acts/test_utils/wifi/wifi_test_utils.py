@@ -23,6 +23,7 @@ from enum import IntEnum
 from queue import Empty
 
 from acts import asserts
+from acts import context
 from acts import signals
 from acts import utils
 from acts.controllers import attenuator
@@ -67,6 +68,7 @@ roaming_attn = {
             0
         ]
     }
+
 
 class WifiEnums():
 
@@ -930,6 +932,7 @@ def save_wifi_soft_ap_config(ad, wifi_config, band=None, hidden=None):
         wifi_ap[WifiEnums.SSID_KEY] == wifi_config[WifiEnums.SSID_KEY],
         "Hotspot SSID doesn't match with expected SSID")
 
+
 def start_wifi_tethering_saved_config(ad):
     """ Turn on wifi hotspot with a config that is already saved """
     ad.droid.wifiStartTrackingTetherStateChange()
@@ -1128,7 +1131,7 @@ def wait_for_disconnect(ad):
 
 
 def connect_to_wifi_network(ad, network, assert_on_fail=True,
-        check_connectivity=True):
+        check_connectivity=True, hidden=False):
     """Connection logic for open and psk wifi networks.
 
     Args:
@@ -1136,9 +1139,14 @@ def connect_to_wifi_network(ad, network, assert_on_fail=True,
         network: network info of the network to connect to
         assert_on_fail: If true, errors from wifi_connect will raise
                         test failure signals.
+        hidden: Is the Wifi network hidden.
     """
-    start_wifi_connection_scan_and_ensure_network_found(
-        ad, network[WifiEnums.SSID_KEY])
+    if hidden:
+        start_wifi_connection_scan_and_ensure_network_not_found(
+            ad, network[WifiEnums.SSID_KEY])
+    else:
+        start_wifi_connection_scan_and_ensure_network_found(
+            ad, network[WifiEnums.SSID_KEY])
     wifi_connect(ad,
                  network,
                  num_of_tries=3,
@@ -1783,69 +1791,37 @@ def start_softap_and_verify(ad, band):
             config[WifiEnums.SSID_KEY])
         return config
 
-def wait_for_expected_number_of_softap_clients(ad, callbackId,
-        expected_num_of_softap_clients):
-    """Wait for the number of softap clients to be updated as expected.
+
+def get_ssrdumps(ad, test_name=""):
+    """Pulls dumps in the ssrdump dir
     Args:
-        callbackId: Id of the callback associated with registering.
-        expected_num_of_softap_clients: expected number of softap clients.
+        ad: android device object.
+        test_name: test case name
     """
-    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
-            callbackId) + wifi_constants.SOFTAP_NUMBER_CLIENTS_CHANGED
-    asserts.assert_equal(ad.ed.pop_event(eventStr,
-            SHORT_TIMEOUT)['data'][wifi_constants.
-            SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY],
-            expected_num_of_softap_clients,
-            "Number of softap clients doesn't match with expected number")
-
-def wait_for_expected_softap_state(ad, callbackId, expected_softap_state):
-    """Wait for the expected softap state change.
-    Args:
-        callbackId: Id of the callback associated with registering.
-        expected_softap_state: The expected softap state.
-    """
-    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
-            callbackId) + wifi_constants.SOFTAP_STATE_CHANGED
-    asserts.assert_equal(ad.ed.pop_event(eventStr,
-            SHORT_TIMEOUT)['data'][wifi_constants.
-            SOFTAP_STATE_CHANGE_CALLBACK_KEY],
-            expected_softap_state,
-            "Softap state doesn't match with expected state")
-
-def get_current_number_of_softap_clients(ad, callbackId):
-    """pop up all of softap client updated event from queue.
-    Args:
-        callbackId: Id of the callback associated with registering.
-
-    Returns:
-        If exist aleast callback, returns last updated number_of_softap_clients.
-        Returns None when no any match callback event in queue.
-    """
-    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
-            callbackId) + wifi_constants.SOFTAP_NUMBER_CLIENTS_CHANGED
-    events = ad.ed.pop_all(eventStr)
-    for event in events:
-        num_of_clients = event['data'][wifi_constants.
-                SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY]
-    if len(events) == 0:
-        return None
-    return num_of_clients
+    logs = ad.get_file_names("/data/vendor/ssrdump/")
+    if logs:
+        ad.log.info("Pulling ssrdumps %s", logs)
+        log_path = os.path.join(ad.log_path, test_name,
+                                "SSRDUMP_%s" % ad.serial)
+        utils.create_dir(log_path)
+        ad.pull_files(logs, log_path)
+    ad.adb.shell("find /data/vendor/ssrdump/ -type f -delete")
 
 
-def start_pcap(pcap, wifi_band, log_path, test_name):
+def start_pcap(pcap, wifi_band, test_name):
     """Start packet capture in monitor mode.
 
     Args:
         pcap: packet capture object
         wifi_band: '2g' or '5g' or 'dual'
-        log_path: current test log path
         test_name: test name to be used for pcap file name
 
     Returns:
         Dictionary with wifi band as key and the tuple
         (pcap Process object, log directory) as the value
     """
-    log_dir = os.path.join(log_path, test_name)
+    log_dir = os.path.join(
+        context.get_current_context.get_full_output_path(), 'PacketCapture')
     utils.create_dir(log_dir)
     if wifi_band == 'dual':
         bands = [BAND_2G, BAND_5G]
@@ -1924,8 +1900,7 @@ def get_cnss_diag_log(ad, test_name=""):
     logs = ad.get_file_names("/data/vendor/wifi/cnss_diag/wlan_logs/")
     if logs:
         ad.log.info("Pulling cnss_diag logs %s", logs)
-        log_path = os.path.join(ad.log_path, test_name,
-                                "CNSS_DIAG_%s" % ad.serial)
+        log_path = os.path.join(ad.device_log_path, "CNSS_DIAG_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
 
@@ -1999,3 +1974,11 @@ def turn_ap_on(test, AP):
     if not hostapd_5g.is_alive():
         hostapd_5g.start(hostapd_5g.config)
         logging.debug('Turned WLAN1 AP%d on' % AP)
+
+
+def turn_location_off_and_scan_toggle_off(ad):
+    """Turns off wifi location scans."""
+    utils.set_location_service(ad, False)
+    ad.droid.wifiScannerToggleAlwaysAvailable(False)
+    msg = "Failed to turn off location service's scan."
+    asserts.assert_true(not ad.droid.wifiScannerIsAlwaysAvailable(), msg)

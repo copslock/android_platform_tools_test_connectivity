@@ -26,12 +26,14 @@ import random
 import re
 import signal
 import string
+import socket
 import subprocess
 import time
 import traceback
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
+from acts import context
 from acts import signals
 from acts.controllers import adb
 from acts.libs.proc import job
@@ -179,6 +181,31 @@ def get_timezone_olson_id():
     else:
         gmt = "GMT-{}".format(tzoffset)
     return GMT_to_olson[gmt]
+
+
+def get_next_device(test_bed_controllers, used_devices):
+    """Gets the next device in a list of testbed controllers
+
+    Args:
+        test_bed_controllers: A list of testbed controllers of a particular
+            type, for example a list ACTS Android devices.
+        used_devices: A list of devices that have been used.  This can be a
+            mix of devices, for example a fuchsia device and an Android device.
+    Returns:
+        The next device in the test_bed_controllers list or None if there are
+        no items that are not in the used devices list.
+    """
+    if test_bed_controllers:
+        device_list = test_bed_controllers
+    else:
+        raise ValueError('test_bed_controllers is empty.')
+    for used_device in used_devices:
+        if used_device in device_list:
+            device_list.remove(used_device)
+    if device_list:
+        return device_list[0]
+    else:
+        return None
 
 
 def find_files(paths, file_predicate):
@@ -1149,6 +1176,20 @@ def test_concurrent_actions(*calls, failure_exceptions=(Exception,)):
         raise signals.TestFailure(e)
 
 
+def is_subtest(test_name):
+    """Given a test name, check if it matches the name of the currently running
+    test case. If not, then deem it a subtest.
+
+    Args:
+        test_name: Name of test case or subtest.
+    """
+    curr_context = context.get_current_context()
+    test_case_name = (curr_context.test_case_name
+                      if isinstance(curr_context, context.TestCaseContext)
+                      else '')
+    return test_name != test_case_name
+
+
 class SuppressLogOutput(object):
     """Context manager used to suppress all logging output for the specified
     logger and level(s).
@@ -1179,3 +1220,28 @@ class SuppressLogOutput(object):
     def __exit__(self, *_):
         for handler in self._handlers:
             self._logger.addHandler(handler)
+
+
+def is_valid_ipv4_address(address):
+    try:
+        socket.inet_pton(socket.AF_INET, address)
+    except AttributeError:  # no inet_pton here, sorry
+        try:
+            socket.inet_aton(address)
+        except socket.error:
+            return False
+        return address.count('.') == 3
+    except socket.error:  # not a valid address
+        return False
+
+    return True
+
+
+def is_valid_ipv6_address(address):
+    if '%' in address:
+        address = address.split('%')[0]
+    try:
+        socket.inet_pton(socket.AF_INET6, address)
+    except socket.error:  # not a valid address
+        return False
+    return True

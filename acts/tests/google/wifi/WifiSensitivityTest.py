@@ -49,11 +49,11 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         6: ["legacy", "VHT20"],
         10: ["legacy", "VHT20"],
         11: ["legacy", "VHT20"],
-        36: ["legacy", "VHT20"],
+        36: ["legacy", "VHT20", "VHT40", "VHT80"],
         40: ["legacy", "VHT20"],
         44: ["legacy", "VHT20"],
         48: ["legacy", "VHT20"],
-        149: ["legacy", "VHT20"],
+        149: ["legacy", "VHT20", "VHT40", "VHT80"],
         153: ["legacy", "VHT20"],
         157: ["legacy", "VHT20"],
         161: ["legacy", "VHT20"]
@@ -84,6 +84,28 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             RateTuple(11, 2, 57.8), RateTuple(10, 2, 43.4),
             RateTuple(9, 2, 28.9), RateTuple(8, 2, 14.4)],
         "VHT20": [
+            RateTuple(9, 1, 96), RateTuple(8, 1, 86.7),
+            RateTuple(7, 1, 72.2), RateTuple(6, 1, 65),
+            RateTuple(5, 1, 57.8), RateTuple(4, 1, 43.3),
+            RateTuple(3, 1, 28.9), RateTuple(2, 1, 21.7),
+            RateTuple(1, 1, 14.4), RateTuple(0, 1, 7.2),
+            RateTuple(9, 2, 192), RateTuple(8, 2, 173.3),
+            RateTuple(7, 2, 144.4), RateTuple(6, 2, 130.3),
+            RateTuple(5, 2, 115.6), RateTuple(4, 2, 86.7),
+            RateTuple(3, 2, 57.8), RateTuple(2, 2, 43.3),
+            RateTuple(1, 2, 28.9), RateTuple(0, 2, 14.4)],
+        "VHT40": [
+            RateTuple(9, 1, 96), RateTuple(8, 1, 86.7),
+            RateTuple(7, 1, 72.2), RateTuple(6, 1, 65),
+            RateTuple(5, 1, 57.8), RateTuple(4, 1, 43.3),
+            RateTuple(3, 1, 28.9), RateTuple(2, 1, 21.7),
+            RateTuple(1, 1, 14.4), RateTuple(0, 1, 7.2),
+            RateTuple(9, 2, 192), RateTuple(8, 2, 173.3),
+            RateTuple(7, 2, 144.4), RateTuple(6, 2, 130.3),
+            RateTuple(5, 2, 115.6), RateTuple(4, 2, 86.7),
+            RateTuple(3, 2, 57.8), RateTuple(2, 2, 43.3),
+            RateTuple(1, 2, 28.9), RateTuple(0, 2, 14.4)],
+        "VHT80": [
             RateTuple(9, 1, 96), RateTuple(8, 1, 86.7),
             RateTuple(7, 1, 72.2), RateTuple(6, 1, 65),
             RateTuple(5, 1, 57.8), RateTuple(4, 1, 43.3),
@@ -162,9 +184,10 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         except:
             golden_sensitivity = float("nan")
 
-        result_string = "Througput = {}%, Sensitivity = {}. Target Sensitivity = {}".format(
-            result["peak_throughput_pct"], result["sensitivity"],
-            golden_sensitivity)
+        result_string = ("Througput = {}%, Sensitivity = {}."
+                         "Target Sensitivity = {}".format(
+                             result["peak_throughput_pct"],
+                             result["sensitivity"], golden_sensitivity))
         if result["peak_throughput_pct"] < 100:
             self.log.warning("Result unreliable. Peak rate unstable")
         if result["sensitivity"] - golden_sensitivity < self.testclass_params[
@@ -280,6 +303,18 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             self.testbed_params["ap_tx_power_offset"][str(
                 testcase_params["channel"])] - ping_result["range"])
 
+    def setup_sensitivity_test(self, testcase_params):
+        if testcase_params["traffic_type"].lower() == "ping":
+            self.setup_ping_test(testcase_params)
+            self.run_sensitivity_test = self.run_ping_test
+            self.process_sensitivity_test_results = (
+                self.process_ping_test_results)
+        else:
+            self.setup_rvr_test(testcase_params)
+            self.run_sensitivity_test = self.run_rvr_test
+            self.process_sensitivity_test_results = (
+                self.process_rvr_test_results)
+
     def setup_ap(self, testcase_params):
         """Sets up the AP and attenuator to compensate for AP chain imbalance.
 
@@ -330,23 +365,20 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         # Get the current and reference test config. The reference test is the
         # one performed at the current MCS+1
         current_test_params = self.parse_test_params(self.current_test_name)
+        current_rate = current_test_params["rate"]
         ref_test_params = current_test_params.copy()
-        if "legacy" in current_test_params[
-                "mode"] and current_test_params["rate"] < 54:
+        if "legacy" in current_test_params["mode"]:
             if current_test_params["channel"] <= 13:
-                ref_index = self.VALID_RATES["legacy_2GHz"].index(
-                    self.RateTuple(current_test_params["rate"], 1,
-                                   current_test_params["rate"])) - 1
-                ref_test_params["rate"] = self.VALID_RATES["legacy_2GHz"][
-                    ref_index].mcs
+                rate_list = self.VALID_RATES["legacy_2GHz"]
             else:
-                ref_index = self.VALID_RATES["legacy_5GHz"].index(
-                    self.RateTuple(current_test_params["rate"], 1,
-                                   current_test_params["rate"])) - 1
-                ref_test_params["rate"] = self.VALID_RATES["legacy_5GHz"][
-                    ref_index].mcs
+                rate_list = self.VALID_RATES["legacy_5GHz"]
+            ref_index = max(
+                0,
+                rate_list.index(self.RateTuple(current_rate, 1, current_rate))
+                - 1)
+            ref_test_params["rate"] = rate_list[ref_index].mcs
         else:
-            ref_test_params["rate"] = ref_test_params["rate"] + 1
+            ref_test_params["rate"] = current_rate + 1
 
         # Check if reference test has been run and set attenuation accordingly
         previous_params = [
@@ -358,7 +390,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             start_atten = self.testclass_results[ref_index][
                 "atten_at_range"] - (
                     self.testclass_params["adjacent_mcs_range_gap"])
-        except:
+        except ValueError:
             print("Reference test not found. Starting from {} dB".format(
                 self.testclass_params["atten_start"]))
             start_atten = self.testclass_params["atten_start"]
@@ -421,14 +453,10 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         ]
 
         # Prepare devices and run test
-        if testcase_params["traffic_type"].lower() == "ping":
-            self.setup_ping_test(testcase_params)
-            result = self.run_ping_test(testcase_params)
-            self.process_ping_test_results(testcase_params, result)
-        else:
-            self.setup_rvr_test(testcase_params)
-            result = self.run_rvr_test(testcase_params)
-            self.process_rvr_test_results(testcase_params, result)
+        self.setup_sensitivity_test(testcase_params)
+        result = self.run_sensitivity_test(testcase_params)
+        self.process_sensitivity_test_results(testcase_params, result)
+
         # Post-process results
         self.testclass_results.append(result)
         self.pass_fail_check(result)
@@ -453,13 +481,16 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                         # Do not test 2-stream rates in single chain mode
                         continue
                     if "legacy" in mode:
-                        testcase_name = "test_sensitivity_ch{}_{}_{}_nss{}_ch{}".format(
-                            channel, mode,
-                            str(rate.mcs).replace(".", "p"), rate.streams,
-                            chain)
+                        testcase_name = ("test_sensitivity_ch{}_{}_{}_nss{}"
+                                         "_ch{}".format(
+                                             channel, mode,
+                                             str(rate.mcs).replace(".", "p"),
+                                             rate.streams, chain))
                     else:
-                        testcase_name = "test_sensitivity_ch{}_{}_mcs{}_nss{}_ch{}".format(
-                            channel, mode, rate.mcs, rate.streams, chain)
+                        testcase_name = ("test_sensitivity_ch{}_{}_mcs{}_nss{}"
+                                         "_ch{}".format(
+                                             channel, mode, rate.mcs,
+                                             rate.streams, chain))
                     setattr(self, testcase_name, testcase_wrapper)
                     self.tests.append(testcase_name)
 

@@ -19,6 +19,7 @@ import time
 import scapy.all as scapy
 
 from acts import asserts
+from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power import IperfHelper as IPH
 from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
@@ -62,6 +63,13 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         # Throughput obtained from iPerf
         self.iperf_results = None
+
+        # Blackbox metrics loggers
+
+        self.dl_throughput_logger = BlackboxMetricLogger.for_test_case(
+            metric_name='avg_dl_tput')
+        self.ul_throughput_logger = BlackboxMetricLogger.for_test_case(
+            metric_name='avg_ul_tput')
 
     def setup_test(self):
         """ Executed before every test case.
@@ -136,6 +144,10 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         # Collect throughput measurement
         self.iperf_results = self.get_iperf_results(self.dut, iperf_helpers)
+
+        # Store DL/UL throughput
+        self.dl_throughput_logger.metric_value = self.iperf_results.get('DL', 0)
+        self.ul_throughput_logger.metric_value = self.iperf_results.get('UL', 0)
 
         # Check if power measurement is below the required value
         self.pass_fail_check()
@@ -229,26 +241,30 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             dl_max_throughput = self.simulation.maximum_downlink_throughput()
             ul_max_throughput = self.simulation.maximum_uplink_throughput()
         except NotImplementedError:
-            self.log.error(
-                "Maximum downlink/uplink throughput method not "
-                "implemented for simulation %s" % self.simulation.__name__)
-        # Use tcp_window_fraction if given in parameters. If tcp_window_fraction
-        # is false then send None.
-        if hasattr(self, 'tcp_window_fraction'):
-            if not self.tcp_window_fraction:
-                ul_tcp_window = None
-                dl_tcp_window = None
-            elif self.tcp_window_fraction > 0.0:
-                dl_tcp_window = dl_max_throughput / self.tcp_window_fraction
-                ul_tcp_window = ul_max_throughput / self.tcp_window_fraction
-            else:
-                self.log.warning("tcp_window_fraction should be positive int "
-                                 "or 'false'. Disabling window")
-                ul_tcp_window = None
-                dl_tcp_window = None
+            self.log.error("Maximum downlink/uplink throughput method not "
+                           "implemented for %s." %
+                           type(self.simulation).__name__)
+            ul_tcp_window = None
+            dl_tcp_window = None
         else:
-            dl_tcp_window = dl_max_throughput / self.TCP_WINDOW_FRACTION
-            ul_tcp_window = ul_max_throughput / self.TCP_WINDOW_FRACTION
+            # Calculate the TCP window only if dl/ul max throughput was
+            # obtained. Use tcp_window_fraction if given in parameters. If
+            # tcp_window_fraction is false then send None.
+            if hasattr(self, 'tcp_window_fraction'):
+                if not self.tcp_window_fraction:
+                    ul_tcp_window = None
+                    dl_tcp_window = None
+                elif self.tcp_window_fraction > 0.0:
+                    dl_tcp_window = dl_max_throughput / self.tcp_window_fraction
+                    ul_tcp_window = ul_max_throughput / self.tcp_window_fraction
+                else:
+                    self.log.warning("tcp_window_fraction should be positive "
+                                     "int or 'false'. Disabling window")
+                    ul_tcp_window = None
+                    dl_tcp_window = None
+            else:
+                dl_tcp_window = dl_max_throughput / self.TCP_WINDOW_FRACTION
+                ul_tcp_window = ul_max_throughput / self.TCP_WINDOW_FRACTION
 
         if self.traffic_direction in [
                 self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_DL_UL

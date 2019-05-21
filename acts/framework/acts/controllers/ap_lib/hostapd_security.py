@@ -83,7 +83,9 @@ class Security(object):
         self.security_mode = security_mode
         if password:
             if security_mode == hostapd_constants.WEP:
-                if len(password) in hostapd_constants.WEP_HEX_LENGTH and all(
+                if len(password) in hostapd_constants.WEP_STR_LENGTH:
+                    self.password = '"%s"' % password
+                elif len(password) in hostapd_constants.WEP_HEX_LENGTH and all(
                         c in string.hexdigits for c in password):
                     self.password = password
                 else:
@@ -103,7 +105,7 @@ class Security(object):
     def generate_dict(self):
         """Returns: an ordered dictionary of settings"""
         settings = collections.OrderedDict()
-        if self.security_mode != None:
+        if self.security_mode is not None:
             if self.security_mode == hostapd_constants.WEP:
                 settings['wep_default_key'] = self.wep_default_key
                 settings['wep_key' + str(self.wep_default_key)] = self.password
@@ -120,7 +122,6 @@ class Security(object):
                     settings['wpa_psk'] = self.password
                 else:
                     settings['wpa_passphrase'] = self.password
-
                 if self.security_mode == hostapd_constants.MIXED:
                     settings['wpa_pairwise'] = self.wpa_cipher
                     settings['rsn_pairwise'] = self.wpa2_cipher
@@ -128,7 +129,6 @@ class Security(object):
                     settings['wpa_pairwise'] = self.wpa_cipher
                 elif self.security_mode == hostapd_constants.WPA2:
                     settings['rsn_pairwise'] = self.wpa2_cipher
-
                 if self.wpa_group_rekey:
                     settings['wpa_group_rekey'] = self.wpa_group_rekey
                 if self.wpa_strict_rekey:

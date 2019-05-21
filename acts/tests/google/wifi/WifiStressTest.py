@@ -19,14 +19,12 @@ import time
 
 import acts.base_test
 import acts.test_utils.wifi.wifi_test_utils as wutils
-import acts.utils
+import acts.test_utils.tel.tel_test_utils as tutils
 
 from acts import asserts
 from acts import signals
 from acts import utils
 from acts.test_decorators import test_tracker_info
-from acts.test_utils.bt.bt_test_utils import enable_bluetooth
-from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 WifiEnums = wutils.WifiEnums
 
@@ -55,7 +53,7 @@ class WifiStressTest(WifiBaseTest):
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
-            "stress_count", "stress_hours", "attn_vals", "pno_interval"]
+            "stress_count", "stress_hours"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
@@ -80,8 +78,6 @@ class WifiStressTest(WifiBaseTest):
         self.dut.droid.wakeUpNow()
 
     def teardown_test(self):
-        if self.dut.droid.wifiIsApEnabled():
-            wutils.stop_wifi_tethering(self.dut)
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
         wutils.reset_wifi(self.dut)
@@ -138,53 +134,30 @@ class WifiStressTest(WifiBaseTest):
         if "100% packet loss" in result:
             raise signals.TestFailure("100% packet loss during ping")
 
-    def add_networks(self, ad, networks):
-        """Add Wi-Fi networks to an Android device and verify the networks were
-        added correctly.
+    def start_youtube_video(self, url=None, secs=60):
+        """Start a youtube video and check if it's playing.
 
         Args:
-            ad: the AndroidDevice object to add networks to.
-            networks: a list of dicts, each dict represents a Wi-Fi network.
-        """
-        for network in networks:
-            ret = ad.droid.wifiAddNetwork(network)
-            asserts.assert_true(ret != -1, "Failed to add network %s" %
-                                network)
-            ad.droid.wifiEnableNetwork(ret, 0)
-        configured_networks = ad.droid.wifiGetConfiguredNetworks()
-        self.log.debug("Configured networks: %s", configured_networks)
+            url: The URL of the youtube video to play.
+            secs: Time to play video in seconds.
 
-    def connect_and_verify_connected_ssid(self, expected_con, is_pno=False):
-        """Start a scan to get the DUT connected to an AP and verify the DUT
-        is connected to the correct SSID.
-
-        Args:
-            expected_con: The expected info of the network to we expect the DUT
-                to roam to.
         """
-        connection_info = self.dut.droid.wifiGetConnectionInfo()
-        self.log.info("Triggering network selection from %s to %s",
-                      connection_info[WifiEnums.SSID_KEY],
-                      expected_con[WifiEnums.SSID_KEY])
-        self.attenuators[0].set_atten(0)
-        if is_pno:
-            self.log.info("Wait %ss for PNO to trigger.", self.pno_interval)
-            time.sleep(self.pno_interval)
-        else:
-            # force start a single scan so we don't have to wait for the scheduled scan.
-            wutils.start_wifi_connection_scan_and_return_status(self.dut)
-            self.log.info("Wait 20s for network selection.")
-            time.sleep(20)
-        try:
-            self.log.info("Connected to %s network after network selection"
-                          % self.dut.droid.wifiGetConnectionInfo())
-            expected_ssid = expected_con[WifiEnums.SSID_KEY]
-            verify_con = {WifiEnums.SSID_KEY: expected_ssid}
-            wutils.verify_wifi_connection_info(self.dut, verify_con)
-            self.log.info("Connected to %s successfully after network selection",
-                          expected_ssid)
-        finally:
-            pass
+        ad = self.dut
+        ad.log.info("Start a youtube video")
+        ad.ensure_screen_on()
+        video_played = False
+        for count in range(2):
+            ad.unlock_screen()
+            ad.adb.shell('am start -a android.intent.action.VIEW -d "%s"' % url)
+            if tutils.wait_for_state(ad.droid.audioIsMusicActive, True, 15, 1):
+                ad.log.info("Started a video in youtube.")
+                # Play video for given seconds.
+                time.sleep(secs)
+                video_played = True
+                break
+        if not video_played:
+            raise signals.TestFailure("Youtube video did not start. Current WiFi "
+                "state is %d" % self.dut.droid.wifiCheckState())
 
     """Tests"""
 
@@ -205,28 +178,6 @@ class WifiStressTest(WifiBaseTest):
             except:
                 signals.TestFailure(details="", extras={"Iterations":"%d" %
                     self.stress_count, "Pass":"%d" %count})
-        raise signals.TestPass(details="", extras={"Iterations":"%d" %
-            self.stress_count, "Pass":"%d" %(count+1)})
-
-    @test_tracker_info(uuid="4e591cec-9251-4d52-bc6e-6621507524dc")
-    def test_stress_toggle_wifi_state_bluetooth_on(self):
-        """Toggle WiFi state ON and OFF for N times when bluetooth ON."""
-        enable_bluetooth(self.dut.droid, self.dut.ed)
-        for count in range(self.stress_count):
-            """Test toggling wifi"""
-            try:
-                self.log.debug("Going from on to off.")
-                wutils.wifi_toggle_state(self.dut, False)
-                self.log.debug("Going from off to on.")
-                startTime = time.time()
-                wutils.wifi_toggle_state(self.dut, True)
-                startup_time = time.time() - startTime
-                self.log.debug("WiFi was enabled on the device in %s s." %
-                    startup_time)
-            except:
-                signals.TestFailure(details="", extras={"Iterations":"%d" %
-                    self.stress_count, "Pass":"%d" %count})
-        disable_bluetooth(self.dut.droid)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
@@ -280,17 +231,54 @@ class WifiStressTest(WifiBaseTest):
             sec = self.stress_hours * 60 * 60
             args = "-p {} -t {} -R".format(self.iperf_server.port, sec)
             self.log.info("Running iperf client {}".format(args))
+            start_time = time.time()
             result, data = self.dut.run_iperf_client(self.iperf_server_address,
                 args, timeout=sec+1)
             if not result:
                 self.log.debug("Error occurred in iPerf traffic.")
+                start_time = time.time()
                 self.run_ping(sec)
         except:
+            total_time = time.time() - start_time
             raise signals.TestFailure("Network long-connect failed."
-                "Look at logs", extras={"Total Hours":"%d" %self.stress_hours,
-                    "Seconds Run":"UNKNOWN"})
+                "WiFi State = %d" %self.dut.droid.wifiCheckState(),
+                extras={"Total Hours":"%d" %self.stress_hours,
+                    "Seconds Run":"%d" %total_time})
+        total_time = time.time() - start_time
+        self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
         raise signals.TestPass(details="", extras={"Total Hours":"%d" %
-            self.stress_hours, "Seconds":"%d" %sec})
+            self.stress_hours, "Seconds Run":"%d" %total_time})
+
+    def test_stress_youtube_5g(self):
+        """Test to connect to network and play various youtube videos.
+
+           Steps:
+               1. Scan and connect to a network.
+               2. Loop through and play a list of youtube videos.
+               3. Verify no WiFi disconnects/data interruption.
+
+        """
+        # List of Youtube 4K videos.
+        videos = ["https://www.youtube.com/watch?v=TKmGU77INaM",
+                  "https://www.youtube.com/watch?v=WNCl-69POro",
+                  "https://www.youtube.com/watch?v=dVkK36KOcqs",
+                  "https://www.youtube.com/watch?v=0wCC3aLXdOw",
+                  "https://www.youtube.com/watch?v=rN6nlNC9WQA",
+                  "https://www.youtube.com/watch?v=U--7hxRNPvk"]
+        try:
+            self.scan_and_connect_by_ssid(self.wpa_5g)
+            start_time = time.time()
+            for video in videos:
+                self.start_youtube_video(url=video, secs=10*60)
+        except:
+            total_time = time.time() - start_time
+            raise signals.TestFailure("The youtube stress test has failed."
+                "WiFi State = %d" %self.dut.droid.wifiCheckState(),
+                extras={"Total Hours":"1", "Seconds Run":"%d" %total_time})
+        total_time = time.time() - start_time
+        self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
+        raise signals.TestPass(details="", extras={"Total Hours":"1",
+            "Seconds Run":"%d" %total_time})
 
     @test_tracker_info(uuid="d367c83e-5b00-4028-9ed8-f7b875997d13")
     def test_stress_wifi_failover(self):
@@ -313,7 +301,6 @@ class WifiStressTest(WifiBaseTest):
                 ret = self.dut.droid.wifiAddNetwork(network)
                 asserts.assert_true(ret != -1, "Add network %r failed" % network)
                 self.dut.droid.wifiEnableNetwork(ret, 0)
-            self.dut.droid.wifiStartScan()
             time.sleep(WAIT_FOR_AUTO_CONNECT)
             cur_network = self.dut.droid.wifiGetConnectionInfo()
             cur_ssid = cur_network[WifiEnums.SSID_KEY]
@@ -405,52 +392,3 @@ class WifiStressTest(WifiBaseTest):
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %((count+1)*2)})
 
-    @test_tracker_info(uuid="e8ae8cd2-c315-4c08-9eb3-83db65b78a58")
-    def test_stress_network_selector_2G_connection(self):
-        """
-            1. Add one saved 2G network to DUT.
-            2. Move the DUT in range.
-            3. Verify the DUT is connected to the network.
-            4. Move the DUT out of range
-            5. Repeat step 2-4
-        """
-        for attenuator in self.attenuators:
-            attenuator.set_atten(95)
-        # add a saved network to DUT
-        networks = [self.reference_networks[0]['2g']]
-        self.add_networks(self.dut, networks)
-        for count in range(self.stress_count):
-            self.connect_and_verify_connected_ssid(self.reference_networks[0]['2g'])
-            # move the DUT out of range
-            self.attenuators[0].set_atten(95)
-            time.sleep(10)
-        wutils.set_attns(self.attenuators, "default")
-        raise signals.TestPass(details="", extras={"Iterations":"%d" %
-            self.stress_count, "Pass":"%d" %(count+1)})
-
-    @test_tracker_info(uuid="5d5d14cb-3cd1-4b3d-8c04-0d6f4b764b6b")
-    def test_stress_pno_connection_to_2g(self):
-        """Test PNO triggered autoconnect to a network for N times
-
-        Steps:
-        1. Save 2Ghz valid network configuration in the device.
-        2. Screen off DUT
-        3. Attenuate 5Ghz network and wait for a few seconds to trigger PNO.
-        4. Check the device connected to 2Ghz network automatically.
-        5. Repeat step 3-4
-        """
-        for attenuator in self.attenuators:
-            attenuator.set_atten(95)
-        # add a saved network to DUT
-        networks = [self.reference_networks[0]['2g']]
-        self.add_networks(self.dut, networks)
-        self.dut.droid.wakeLockRelease()
-        self.dut.droid.goToSleepNow()
-        for count in range(self.stress_count):
-            self.connect_and_verify_connected_ssid(self.reference_networks[0]['2g'], is_pno=True)
-            # move the DUT out of range
-            self.attenuators[0].set_atten(95)
-            time.sleep(10)
-        wutils.set_attns(self.attenuators, "default")
-        raise signals.TestPass(details="", extras={"Iterations":"%d" %
-            self.stress_count, "Pass":"%d" %(count+1)})

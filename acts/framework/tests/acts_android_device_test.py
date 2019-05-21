@@ -73,13 +73,15 @@ class MockAdbProxy(object):
                  fail_br=False,
                  fail_br_before_N=False,
                  build_id=MOCK_RELEASE_BUILD_ID,
-                 return_value=None):
+                 return_value=None,
+                 test_name=''):
         self.serial = serial
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
         self.return_value = return_value
         self.return_multiple = False
         self.build_id = build_id
+        self.test_name = test_name
 
     def shell(self, params, ignore_status=False, timeout=60):
         if params == "id -u":
@@ -115,8 +117,8 @@ class MockAdbProxy(object):
 
     def bugreport(self, params, timeout=android_device.BUG_REPORT_TIMEOUT):
         expected = os.path.join(
-            logging.log_path, "AndroidDevice%s" % self.serial,
-            "test_something", "AndroidDevice%s_%s" %
+            logging.log_path, "AndroidDevice%s" % self.serial, self.test_name,
+            "AndroidDevice%s_%s.txt" %
             (self.serial,
              logger.normalize_log_line_timestamp(MOCK_ADB_LOGCAT_BEGIN_TIME)))
         assert expected in params, "Expected '%s', got '%s'." % (expected,
@@ -317,16 +319,21 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
-    def test_AndroidDevice_take_bug_report(self, exe_mock, create_dir_mock,
-                                           FastbootProxy, MockAdbProxy):
+    @mock.patch('acts.controllers.android_device.AndroidDevice.device_log_path',
+                new_callable=mock.PropertyMock)
+    def test_AndroidDevice_take_bug_report(self, mock_log_path, exe_mock,
+                                           create_dir_mock, FastbootProxy,
+                                           MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report calls the correct adb command
         and writes the bugreport file to the correct path.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.take_bug_report("test_something", 234325.32)
-        expected_path = os.path.join(
-            logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
-        create_dir_mock.assert_called_with(expected_path)
+        test_name = "test_something"
+        mock_log_path.return_value = os.path.join(
+            logging.log_path, "AndroidDevice%s" % ad.serial)
+        ad.take_bug_report(test_name, 234325.32)
+        create_dir_mock.assert_called_with(
+            os.path.join(mock_log_path(), test_name))
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
@@ -336,12 +343,17 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
+    @mock.patch('acts.controllers.android_device.AndroidDevice.device_log_path',
+                new_callable=mock.PropertyMock)
     def test_AndroidDevice_take_bug_report_fail(
-            self, exe_mock, create_dir_mock, FastbootProxy, MockAdbProxy):
+            self, mock_log_path, exe_mock, create_dir_mock, FastbootProxy,
+            MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report writes out the correct message
         when taking bugreport fails.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        mock_log_path.return_value = os.path.join(
+            logging.log_path, "AndroidDevice%s" % ad.serial)
         expected_msg = "Failed to take bugreport on 1: OMG I died!"
         with self.assertRaisesRegex(errors.AndroidDeviceError,
                                     expected_msg):
@@ -349,22 +361,28 @@ class ActsAndroidDeviceTest(unittest.TestCase):
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
-        return_value=MockAdbProxy(MOCK_SERIAL, fail_br_before_N=True))
+        return_value=MockAdbProxy(
+            MOCK_SERIAL, fail_br_before_N=True, test_name='test_something'))
     @mock.patch(
         'acts.controllers.fastboot.FastbootProxy',
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
+    @mock.patch('acts.controllers.android_device.AndroidDevice.device_log_path',
+                new_callable=mock.PropertyMock)
     def test_AndroidDevice_take_bug_report_fallback(
-            self, exe_mock, create_dir_mock, FastbootProxy, MockAdbProxy):
+            self, mock_log_path, exe_mock, create_dir_mock, FastbootProxy,
+            MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report falls back to traditional
         bugreport on builds that do not have bugreportz.
         """
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        ad.take_bug_report("test_something", MOCK_ADB_EPOCH_BEGIN_TIME)
-        expected_path = os.path.join(
-            logging.log_path, "AndroidDevice%s" % ad.serial, "test_something")
-        create_dir_mock.assert_called_with(expected_path)
+        test_name = "test_something"
+        mock_log_path.return_value = os.path.join(
+            logging.log_path, "AndroidDevice%s" % ad.serial)
+        ad.take_bug_report(test_name, MOCK_ADB_EPOCH_BEGIN_TIME)
+        create_dir_mock.assert_called_with(
+            os.path.join(mock_log_path(), test_name))
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
@@ -387,8 +405,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
             ad.start_adb_logcat()
             # Verify start did the correct operations.
             self.assertTrue(ad.adb_logcat_process)
-            log_dir = os.path.join(logging.log_path,
-                                   "AndroidDevice%s" % ad.serial)
+            log_dir = "AndroidDevice%s" % ad.serial
             create_proc_mock.assert_called_with(
                 ad.serial, log_dir, '-b all')
             proc_mock.start.assert_called_with()
@@ -417,8 +434,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ad.start_adb_logcat()
         # Verify that create_logcat_keepalive_process is called with the
         # correct command.
-        log_dir = os.path.join(logging.log_path,
-                               "AndroidDevice%s" % ad.serial)
+        log_dir = "AndroidDevice%s" % ad.serial
         create_proc_mock.assert_called_with(
             ad.serial, log_dir, '-b radio')
 

@@ -56,12 +56,17 @@ BASIC_ADV_NAME = "fs_test"
 
 class CmdInput(cmd.Cmd):
     ble_advertise_interval = 1000
+    bt_control_ids = []
+    bt_control_names = []
+    bt_control_devices = []
+    bt_scan_poll_timer = 0.5
     target_device_name = ""
     le_ids = []
     unique_mac_addr_id = None
 
     def setup_vars(self, fuchsia_devices, target_device_name, log):
         self.pri_dut = fuchsia_devices[0]
+        self.pri_dut.btc_lib.initBluetoothControl()
         if len(fuchsia_devices) > 1:
             self.sec_dut = fuchsia_devices[1]
         self.target_device_name = target_device_name
@@ -76,23 +81,18 @@ class CmdInput(cmd.Cmd):
 
     """ Useful Helper functions and cmd line tooling """
 
-    def _find_unique_id(self):
-        scan_time_ms = 100000
+    def _find_unique_id_over_le(self):
         scan_filter = {"name_substring": self.target_device_name}
-        scan_count = 1
         self.unique_mac_addr_id = None
         self.pri_dut.gattc_lib.bleStartBleScan(scan_filter)
-        for i in range(100):
-            time.sleep(.5)
-            scan_res = self.pri_dut.gattc_lib.bleGetDiscoveredDevices()[
-                'result']
+        tries = 10
+        for i in range(tries):
+            time.sleep(self.bt_scan_poll_timer)
+            scan_res = self.pri_dut.gattc_lib.bleGetDiscoveredDevices(
+            )['result']
             for device in scan_res:
                 name, did, connectable = device["name"], device["id"], device[
                     "connectable"]
-                if (name):
-                    self.log.info(
-                        "Discovered device with name, id: {}, {}".format(
-                            name, did))
                 if (self.target_device_name in name):
                     self.unique_mac_addr_id = did
                     self.log.info(
@@ -103,7 +103,53 @@ class CmdInput(cmd.Cmd):
                 break
         self.pri_dut.gattc_lib.bleStopBleScan()
 
-    def do_tool_refesh_unique_id(self, line):
+    def _find_unique_id_over_bt_control(self):
+        self.unique_mac_addr_id = None
+        self.bt_control_devices = []
+        self.pri_dut.btc_lib.requestDiscovery(True)
+        tries = 10
+        for i in range(tries):
+            if self.unique_mac_addr_id:
+                break
+            time.sleep(self.bt_scan_poll_timer)
+            device_list = self.pri_dut.btc_lib.getKnownRemoteDevices(
+            )['result']
+            for id_dict in device_list:
+                device = device_list[id_dict]
+                self.bt_control_devices.append(device)
+                name = None
+                if device['name'] is not None:
+                    name = device['name']
+                did, address = device['id'], device['address']
+
+                self.bt_control_ids.append(did)
+                if name is not None:
+                    self.bt_control_names.append(name)
+                    if self.target_device_name in name:
+                        self.unique_mac_addr_id = did
+                        self.log.info(
+                            "Successfully found device: name, id, address: {}, {}, {}"
+                            .format(name, did, address))
+                        break
+        self.pri_dut.btc_lib.requestDiscovery(False)
+
+
+    def do_tool_take_bt_snoop_log(self, custom_name):
+        """
+        Description: Takes the bt snoop log from the Fuchsia device.
+        Logs will show up in your config files' logpath directory.
+
+        Input(s):
+            custom_name: Optional. Override the default pcap file name.
+
+        Usage: tool_set_target_device_name new_target_device name
+          Examples:
+            tool_take_bt_snoop_log connection_error
+            tool_take_bt_snoop_log
+        """
+        self.pri_dut.take_bt_snoop_log(custom_name)
+
+    def do_tool_refresh_unique_id(self, line):
         """
         Description: Refresh command line tool mac unique id.
         Usage:
@@ -111,7 +157,20 @@ class CmdInput(cmd.Cmd):
             tool_refresh_unique_id
         """
         try:
-            self._find_unique_id()
+            self._find_unique_id_over_le()
+        except Exception as err:
+            self.log.error(
+                "Failed to scan or find scan result: {}".format(err))
+
+    def do_tool_refresh_unique_id_using_bt_control(self, line):
+        """
+        Description: Refresh command line tool mac unique id.
+        Usage:
+          Examples:
+            tool_refresh_unique_id_using_bt_control
+        """
+        try:
+            self._find_unique_id_over_bt_control()
         except Exception as err:
             self.log.error(
                 "Failed to scan or find scan result: {}".format(err))
@@ -934,6 +993,21 @@ class CmdInput(cmd.Cmd):
     """End LE scan wrappers"""
     """Begin GATT Server wrappers"""
 
+    def do_gatts_close(self, line):
+        """
+        Description: Close active GATT server.
+
+        Usage:
+          Examples:
+            gatts_close
+        """
+        cmd = "Close active GATT server."
+        try:
+            result = self.pri_dut.gatts_lib.closeServer()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def complete_gatts_setup_database(self, text, line, begidx, endidx):
         if not text:
             completions = list(
@@ -960,8 +1034,301 @@ class CmdInput(cmd.Cmd):
         try:
             scan_results = self.pri_dut.gatts_lib.publishServer(
                 gatt_test_database.GATT_SERVER_DB_MAPPING.get(line))
-            print(scan_results)
+            self.log.info(scan_results)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
     """End GATT Server wrappers"""
+    """Begin Bluetooth Controller wrappers"""
+
+    def do_btc_accept_pairing(self, line):
+        """
+        Description: Accept all incoming pairing requests.
+
+        Usage:
+          Examples:
+            btc_accept_pairing
+        """
+        cmd = "Accept incoming pairing requests"
+        try:
+            result = self.pri_dut.btc_lib.acceptPairing()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_forget_device(self, line):
+        """
+        Description: Forget pairing of the current device under test.
+            Current device under test is the device found by
+            tool_refresh_unique_id from custom user param. This function
+            will also perform a clean disconnect if actively connected.
+
+        Usage:
+          Examples:
+            btc_forget_device
+        """
+        cmd = "For pairing of the current device under test."
+        try:
+            self.log.info("Forgetting device id: {}".format(
+                self.unique_mac_addr_id))
+            result = self.pri_dut.btc_lib.forgetDevice(self.unique_mac_addr_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_set_discoverable(self, discoverable):
+        """
+        Description: Change Bluetooth Controller discoverablility.
+        Input(s):
+            discoverable: true to set discoverable
+                          false to set non-discoverable
+        Usage:
+          Examples:
+            btc_set_discoverable true
+            btc_set_discoverable false
+        """
+        cmd = "Change Bluetooth Controller discoverablility."
+        try:
+            result = self.pri_dut.btc_lib.setDiscoverable(bool(discoverable))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_set_name(self, name):
+        """
+        Description: Change Bluetooth Controller local name.
+        Input(s):
+            name: The name to set the Bluetooth Controller name to.
+
+        Usage:
+          Examples:
+            btc_set_name fs_test
+        """
+        cmd = "Change Bluetooth Controller local name."
+        try:
+            result = self.pri_dut.btc_lib.setName(name)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_request_discovery(self, discover):
+        """
+        Description: Change whether the Bluetooth Controller is in active.
+            discovery or not.
+        Input(s):
+            discover: true to start discovery
+                      false to end discovery
+        Usage:
+          Examples:
+            btc_request_discovery true
+            btc_request_discovery false
+        """
+        cmd = "Change whether the Bluetooth Controller is in active."
+        try:
+            result = self.pri_dut.btc_lib.requestDiscovery(bool(discover))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_get_known_remote_devices(self, line):
+        """
+        Description: Get a list of known devices.
+
+        Usage:
+          Examples:
+            btc_get_known_remote_devices
+        """
+        cmd = "Get a list of known devices."
+        self.bt_control_devices = []
+        try:
+            device_list = self.pri_dut.btc_lib.getKnownRemoteDevices(
+            )['result']
+            for id_dict in device_list:
+                device = device_list[id_dict]
+                self.bt_control_devices.append(device)
+                self.log.info("Device found {}".format(device))
+
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_forget_all_known_devices(self, line):
+        """
+        Description: Forget all known devices.
+
+        Usage:
+          Examples:
+            btc_forget_all_known_devices
+        """
+        cmd = "Forget all known devices."
+        try:
+            device_list = self.pri_dut.btc_lib.getKnownRemoteDevices(
+            )['result']
+            for device in device_list:
+                d = device_list[device]
+                if d['bonded'] or d['connected']:
+                    self.log.info("Unbonding deivce: {}".format(d))
+                    self.log.info(
+                        self.pri_dut.btc_lib.forgetDevice(d['id'])['result'])
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_connect_device(self, line):
+        """
+        Description: Connect to device under test.
+            Device under test is specified by either user params
+            or
+                tool_set_target_device_name <name>
+                do_tool_refresh_unique_id_using_bt_control
+
+        Usage:
+          Examples:
+            btc_connect_device
+        """
+        cmd = "Connect to device under test."
+        try:
+            result = self.pri_dut.btc_lib.connectDevice(
+                self.unique_mac_addr_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def complete_btc_connect_device_by_id(self, text, line, begidx, endidx):
+        if not text:
+            completions = list(self.bt_control_ids)[:]
+        else:
+            completions = [
+                s for s in self.bt_control_ids if s.startswith(text)
+            ]
+        return completions
+
+    def do_btc_connect_device_by_id(self, device_id):
+        """
+        Description: Connect to device id based on pre-defined inputs.
+            Supports Tab Autocomplete.
+        Input(s):
+            device_id: The device id to connect to.
+
+        Usage:
+          Examples:
+            btc_connect_device_by_id <device_id>
+        """
+        cmd = "Connect to device id based on pre-defined inputs."
+        try:
+            result = self.pri_dut.btc_lib.connectDevice(device_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def complete_btc_connect_device_by_name(self, text, line, begidx, endidx):
+        if not text:
+            completions = list(self.bt_control_names)[:]
+        else:
+            completions = [
+                s for s in self.bt_control_names if s.startswith(text)
+            ]
+        return completions
+
+    def do_btc_connect_device_by_name(self, device_name):
+        """
+        Description: Connect to device id based on pre-defined inputs.
+            Supports Tab Autocomplete.
+        Input(s):
+            device_id: The device id to connect to.
+
+        Usage:
+          Examples:
+            btc_connect_device_by_name <device_id>
+        """
+        cmd = "Connect to device name based on pre-defined inputs."
+        try:
+            for device in self.bt_control_devices:
+                if device_name is device['name']:
+
+                    result = self.pri_dut.btc_lib.connectDevice(device['id'])
+                    self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_disconnect_device(self, line):
+        """
+        Description: Disconnect to device under test.
+            Device under test is specified by either user params
+            or
+                tool_set_target_device_name <name>
+                do_tool_refresh_unique_id_using_bt_control
+
+        Usage:
+          Examples:
+            btc_disconnect_device
+        """
+        cmd = "Disconnect to device under test."
+        try:
+            result = self.pri_dut.btc_lib.disconnectDevice(
+                self.unique_mac_addr_id)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_init_bluetooth_control(self, line):
+        """
+        Description: Initialize the Bluetooth Controller.
+
+        Usage:
+          Examples:
+            btc_init_bluetooth_control
+        """
+        cmd = "Initialize the Bluetooth Controller."
+        try:
+            result = self.pri_dut.btc_lib.initBluetoothControl()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_get_local_address(self, line):
+        """
+        Description: Get the local BR/EDR address of the Bluetooth Controller.
+
+        Usage:
+          Examples:
+            btc_get_local_address
+        """
+        cmd = "Get the local BR/EDR address of the Bluetooth Controller."
+        try:
+            result = self.pri_dut.btc_lib.getActiveAdapterAddress()['result']
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_input_pairing_pin(self, line):
+        """
+        Description: Sends a pairing pin to SL4F's Bluetooth Control's
+        Pairing Delegate.
+
+        Usage:
+          Examples:
+            btc_input_pairing_pin 123456
+        """
+        cmd = "Input pairing pin to the Fuchsia device."
+        try:
+            result = self.pri_dut.btc_lib.inputPairingPin(line)['result']
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_btc_get_pairing_pin(self, line):
+        """
+        Description: Gets the pairing pin from SL4F's Bluetooth Control's
+        Pairing Delegate.
+
+        Usage:
+          Examples:
+            btc_get_pairing_pin
+        """
+        cmd = "Get the pairing pin from the Fuchsia device."
+        try:
+            result = self.pri_dut.btc_lib.getPairingPin()['result']
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End Bluetooth Control wrappers"""

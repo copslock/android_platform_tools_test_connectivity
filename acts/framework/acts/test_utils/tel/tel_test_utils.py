@@ -6412,10 +6412,14 @@ def get_tcpdump_log(ad, test_name="", begin_time=None):
         test_name: test case name
         begin_time: test begin time
     """
+
     logs = ad.get_file_names("/data/local/tmp/tcpdump", begin_time=begin_time)
     if logs:
         ad.log.info("Pulling tcpdumps %s", logs)
-        log_path = os.path.join(ad.log_path, test_name,
+        # Check if test_name is the name of a subtest, if so, generate a new
+        # directory for this specific subtest.
+        subtest = test_name if utils.is_subtest(test_name) else ''
+        log_path = os.path.join(ad.device_log_path, subtest,
                                 "TCPDUMP_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
@@ -6996,6 +7000,7 @@ def power_on_sim(ad, sim_slot_id=None):
 
 
 def extract_test_log(log, src_file, dst_file, test_tag):
+    utils.create_dir(os.path.dirname(dst_file))
     cmd = "grep -n '%s' %s" % (test_tag, src_file)
     result = job.run(cmd, ignore_status=True)
     if not result.stdout or result.exit_status == 1:
@@ -7117,7 +7122,10 @@ def get_screen_shot_log(ad, test_name="", begin_time=None):
     logs = ad.get_file_names("/sdcard/Pictures", begin_time=begin_time)
     if logs:
         ad.log.info("Pulling %s", logs)
-        log_path = os.path.join(ad.log_path, test_name,
+        # Check if test_name is the name of a subtest, if so, generate a new
+        # directory for this specific subtest.
+        subtest = test_name if utils.is_subtest(test_name) else ''
+        log_path = os.path.join(ad.device_log_path, subtest,
                                 "Screenshot_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
@@ -7225,14 +7233,16 @@ def my_current_screen_content(ad, content):
 def activate_google_fi_account(ad, retries=10):
     _FI_APK = "com.google.android.apps.tycho"
     _FI_ACTIVATE_CMD = ('am start -c android.intent.category.DEFAULT -n '
-                        'com.google.android.apps.tycho/.InitActivity --ez '
+                        'com.google.android.apps.tycho/.AccountDetailsActivity --ez '
                         'in_setup_wizard false --ez force_show_account_chooser '
                         'false')
     toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
     ad.adb.shell("settings put system screen_off_timeout 1800000")
     page_match_dict = {
+       "SelectAccount" : "Choose an account to use",
        "Setup" : "Activate Google Fi to use your device for calls",
        "Switch" : "Switch to the Google Fi mobile network",
+       "WiFi" : "Fi to download your SIM",
        "Connect" : "Connect to the Google Fi mobile network",
        "Move" : "Move number",
        "Data" : "first turn on mobile data",
@@ -7240,7 +7250,7 @@ def activate_google_fi_account(ad, retries=10):
        "Welcome" : "Welcome to Google Fi",
        "Account" : "Your current cycle ends in"
     }
-    page_list = ["Account", "Setup", "Switch", "Connect",
+    page_list = ["Account", "Setup", "WiFi", "Switch", "Connect",
                  "Activate", "Move", "Welcome", "Data"]
     for _ in range(retries):
         ad.force_stop_apk(_FI_APK)
@@ -7253,12 +7263,12 @@ def activate_google_fi_account(ad, retries=10):
             if my_current_screen_content(ad, page_match_dict[page]):
                 ad.log.info("Ready for Step %s", page)
                 log_screen_shot(ad, "fi_activation_step_%s" % page)
-                if page in ("Setup", "Switch", "Connect"):
+                if page in ("Setup", "Switch", "Connect", "WiFi"):
                     ad.send_keycode("TAB")
                     ad.send_keycode("TAB")
                     ad.send_keycode("ENTER")
                     time.sleep(30)
-                elif page == "Move":
+                elif page == "Move" or page == "SelectAccount":
                     ad.send_keycode("TAB")
                     ad.send_keycode("ENTER")
                     time.sleep(5)
@@ -7287,6 +7297,7 @@ def activate_google_fi_account(ad, retries=10):
             else:
                 ad.log.info("NOT FOUND - Page %s", page)
                 log_screen_shot(ad, "fi_activation_step_%s_failure" % page)
+                get_screen_shot_log(ad)
     return False
 
 
