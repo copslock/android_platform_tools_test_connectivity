@@ -267,6 +267,10 @@ class DiscoveryTest(AwareBaseTest):
                 if ptype == aconsts.PUBLISH_TYPE_UNSOLICITED else s_config[
                     aconsts.DISCOVERY_KEY_MATCH_FILTER_LIST]),
             "Discovery mismatch: match filter")
+        asserts.assert_equal(
+            peer_id_on_sub,
+            discovery_event["data"][aconsts.SESSION_CB_KEY_PEER_ID],
+            "Peer ID changed when publish was updated!?")
 
         # Subscribe: update subscribe and wait for confirmation
         s_config = self.create_subscribe_config(
