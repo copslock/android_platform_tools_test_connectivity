@@ -23,8 +23,9 @@ from acts import context
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
-from WifiRvrTest import WifiRvrTest
 from WifiPingTest import WifiPingTest
+from WifiRvrTest import WifiRvrTest
+from WifiSensitivityTest import WifiSensitivityTest
 
 
 class WifiOtaRvrTest(WifiRvrTest):
@@ -44,8 +45,7 @@ class WifiOtaRvrTest(WifiRvrTest):
         WifiRvrTest.setup_class(self)
         req_params = ['OTAChamber']
         self.unpack_userparams(req_params)
-        self.ota_chambers = ota_chamber.create(self.OTAChamber)
-        self.ota_chamber = self.ota_chambers[0]
+        self.ota_chamber = ota_chamber.create(self.OTAChamber)[0]
 
     def teardown_class(self):
         WifiRvrTest.teardown_class(self)
@@ -139,8 +139,7 @@ class WifiOtaPingTest(WifiPingTest):
         WifiPingTest.setup_class(self)
         req_params = ['OTAChamber']
         self.unpack_userparams(req_params)
-        self.ota_chambers = ota_chamber.create(self.OTAChamber)
-        self.ota_chamber = self.ota_chambers[0]
+        self.ota_chamber = ota_chamber.create(self.OTAChamber)[0]
 
     def teardown_class(self):
         self.process_testclass_results()
@@ -241,3 +240,198 @@ class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
         self.tests = self.generate_test_cases(
             [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], ['VHT20'],
             list(range(0, 360, 45)))
+
+
+# Sensitivity Test
+class WifiOtaSensitivityTest(WifiSensitivityTest):
+    """Class to test over-the-air senstivity.
+
+    This class implements measures WiFi sensitivity tests in an OTA chamber.
+    It allows setting orientation and other chamber parameters to study
+    performance in varying channel conditions
+    """
+
+    def setup_class(self):
+        WifiSensitivityTest.setup_class(self)
+        req_params = ['OTAChamber']
+        self.unpack_userparams(req_params)
+        self.ota_chamber = ota_chamber.create(self.OTAChamber)[0]
+
+    def teardown_class(self):
+        WifiSensitivityTest.teardown_class(self)
+        self.ota_chamber.set_orientation(0)
+
+    def process_testclass_results(self):
+        """Saves and plots test results from all executed test cases."""
+        testclass_results_dict = collections.OrderedDict()
+        id_fields = ['mode', 'rate', 'num_streams', 'chain_mask']
+        for result in self.testclass_results:
+            testcase_params = self.parse_test_params(result['test_name'])
+            test_id = collections.OrderedDict(
+                (key, value) for key, value in testcase_params.items()
+                if key in id_fields)
+            test_id = tuple(test_id.items())
+            channel = testcase_params['channel']
+            if test_id not in testclass_results_dict:
+                testclass_results_dict[test_id] = {
+                    channel: {
+                        'orientation': [],
+                        'sensitivity': []
+                    }
+                }
+            testclass_results_dict[test_id][channel]['orientation'].append(
+                testcase_params['orientation'])
+            if result['peak_throughput_pct'] == 100:
+                testclass_results_dict[test_id][channel]['sensitivity'].append(
+                    result['sensitivity'])
+            else:
+                testclass_results_dict[test_id][channel]['sensitivity'].append(
+                    float('nan'))
+
+        for test_id, test_data in testclass_results_dict.items():
+            curr_plot = wputils.BokehFigure(
+                title=str(test_id),
+                x_label='Orientation (deg)',
+                primary_y='Sensitivity (dBm)')
+            for channel, channel_results in test_data.items():
+                curr_plot.add_line(
+                    channel_results['orientation'],
+                    channel_results['sensitivity'],
+                    legend='Channel {}'.format(channel))
+            current_context = (
+                context.get_current_context().get_full_output_path())
+            output_file_path = os.path.join(current_context,
+                                            str(test_id) + '.html')
+            curr_plot.generate_figure(output_file_path)
+
+    def setup_sensitivity_test(self, testcase_params):
+        # Setup turntable
+        self.ota_chamber.set_orientation(testcase_params['orientation'])
+        # Continue test setup
+        WifiSensitivityTest.setup_sensitivity_test(self, testcase_params)
+
+    def get_start_atten(self):
+        """Gets the starting attenuation for this sensitivity test.
+
+        The function gets the starting attenuation by checking whether a test
+        at the same rate configuration has executed. If so it sets the starting
+        point a configurable number of dBs below the reference test.
+
+        Returns:
+            start_atten: starting attenuation for current test
+        """
+        # Get the current and reference test config. The reference test is the
+        # one performed at the current MCS+1
+        current_test_params = self.parse_test_params(self.current_test_name)
+        current_test_params.pop('orientation')
+        ref_test_params = current_test_params.copy()
+
+        # Check if reference test has been run and set attenuation accordingly
+        previous_params = []
+        for result in self.testclass_results:
+            test_param = self.parse_test_params(result['test_name'])
+            test_param.pop('orientation')
+            previous_params.append(test_param)
+
+        try:
+            ref_index = previous_params[::-1].index(ref_test_params)
+            ref_index = len(previous_params) - 1 - ref_index
+            start_atten = self.testclass_results[ref_index][
+                'atten_at_range'] - (
+                    self.testclass_params['adjacent_mcs_range_gap'])
+        except ValueError:
+            print('Reference test not found. Starting from {} dB'.format(
+                self.testclass_params['atten_start']))
+            start_atten = self.testclass_params['atten_start']
+        return start_atten
+
+    def parse_test_params(self, test_name):
+        """Function that generates test params based on the test name."""
+        # Call parent parsing function
+        testcase_params = WifiSensitivityTest.parse_test_params(
+            self, test_name)
+        # Add orientation information
+        test_name_params = test_name.split('_')
+        testcase_params['orientation'] = int(test_name_params[7][0:-3])
+        return testcase_params
+
+    def generate_test_cases(self, channels, requested_rates, chain_mask,
+                            angles):
+        """Function that auto-generates test cases for a test class."""
+        testcase_wrapper = self._test_sensitivity
+        test_cases = []
+        for channel in channels:
+            for mode in self.VALID_TEST_CONFIGS[channel]:
+                if 'VHT' in mode:
+                    valid_rates = self.VALID_RATES[mode]
+                elif 'HT' in mode:
+                    valid_rates = self.VALID_RATES[mode]
+                elif 'legacy' in mode and channel < 14:
+                    valid_rates = self.VALID_RATES['legacy_2GHz']
+                elif 'legacy' in mode and channel > 14:
+                    valid_rates = self.VALID_RATES['legacy_5GHz']
+                else:
+                    raise ValueError('Invalid test mode.')
+                for chain, rate, angle in itertools.product(
+                        chain_mask, valid_rates, angles):
+                    if rate not in requested_rates:
+                        continue
+                    if str(chain) in ['0', '1'] and rate[1] == 2:
+                        # Do not test 2-stream rates in single chain mode
+                        continue
+                    if 'legacy' in mode:
+                        testcase_name = ('test_sensitivity_ch{}_{}_{}_nss{}'
+                                         '_ch{}_{}deg'.format(
+                                             channel, mode,
+                                             str(rate.mcs).replace('.', 'p'),
+                                             rate.streams, chain, angle))
+                    else:
+                        testcase_name = ('test_sensitivity_ch{}_{}_mcs{}_nss{}'
+                                         '_ch{}_{}deg'.format(
+                                             channel, mode, rate.mcs,
+                                             rate.streams, chain, angle))
+                    setattr(self, testcase_name, testcase_wrapper)
+                    test_cases.append(testcase_name)
+        return test_cases
+
+
+class WifiOtaSensitivity_10Degree_Test(WifiOtaSensitivityTest):
+    def __init__(self, controllers):
+        WifiSensitivityTest.__init__(self, controllers)
+        requested_channels = [6, 36, 149]
+        requested_rates = [
+            self.RateTuple(8, 1, 86.7),
+            self.RateTuple(0, 1, 7.2),
+            self.RateTuple(8, 2, 173.3),
+            self.RateTuple(0, 2, 14.4)
+        ]
+        self.tests = self.generate_test_cases(requested_channels,
+                                              requested_rates, ['2x2'],
+                                              list(range(0, 360, 10)))
+
+
+class WifiOtaSensitivity_SingleChain_10Degree_Test(WifiOtaSensitivityTest):
+    def __init__(self, controllers):
+        WifiSensitivityTest.__init__(self, controllers)
+        requested_channels = [6, 36, 149]
+        requested_rates = [
+            self.RateTuple(8, 1, 86.7),
+            self.RateTuple(0, 1, 7.2),
+        ]
+        self.tests = self.generate_test_cases(requested_channels,
+                                              requested_rates, ['2x2'],
+                                              list(range(0, 360, 10)))
+
+
+class WifiOtaSensitivity_45Degree_Test(WifiOtaSensitivityTest):
+    def __init__(self, controllers):
+        WifiSensitivityTest.__init__(self, controllers)
+        requested_rates = [
+            self.RateTuple(8, 1, 86.7),
+            self.RateTuple(0, 1, 7.2),
+            self.RateTuple(8, 2, 173.3),
+            self.RateTuple(0, 2, 14.4)
+        ]
+        self.tests = self.generate_test_cases(
+            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], requested_rates,
+            ['2x2'], list(range(0, 360, 45)))
