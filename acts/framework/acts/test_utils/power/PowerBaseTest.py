@@ -98,6 +98,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         BlackboxMetricLogger.for_test_case(
             metric_name='avg_power', result_attr='power_consumption')
         self.start_meas_time = 0
+        self.rockbottom_script = None
 
     def setup_class(self):
 
@@ -124,6 +125,8 @@ class PowerBaseTest(base_test.BaseTestClass):
                 self.attenuation_file = file
             elif 'network_config' in file:
                 self.network_file = file
+            elif 'rockbottom_' + self.dut.model in file:
+                self.rockbottom_script = file
 
         # Unpack test specific configs
         self.unpack_testparams(getattr(self, TEST_PARAMS))
@@ -228,6 +231,19 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         """
         self.dut.log.info('Now set the device to Rockbottom State')
+
+        if self.rockbottom_script:
+            # The rockbottom script might include a device reboot, so it is
+            # necessary to stop SL4A during its execution.
+            self.dut.stop_services()
+            self.log.info('Executing rockbottom script for ' + self.dut.model)
+            os.chmod(self.rockbottom_script, 0o777)
+            os.system('{} {}'.format(self.rockbottom_script, self.dut.serial))
+            # Make sure the DUT is in root mode after coming back
+            self.dut.root_adb()
+            # Restart SL4A
+            self.dut.start_services()
+
         utils.require_sl4a((self.dut, ))
         self.dut.droid.connectivityToggleAirplaneMode(False)
         time.sleep(2)
