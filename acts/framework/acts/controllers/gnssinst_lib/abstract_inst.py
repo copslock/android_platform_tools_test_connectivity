@@ -72,10 +72,6 @@ class SocketInstrument(object):
         try:
             self._socket = socket.create_connection(
                 (self._ip_addr, self._ip_port), timeout=self._socket_timeout)
-            resp = self._query('*IDN?')
-
-            infmsg = 'Inst-ID: {}'.format(resp)
-            self._logger.debug(infmsg)
 
             infmsg = 'Opened Socket connection to {}:{} with handle {}.'.format(
                 repr(self._ip_addr), repr(self._ip_port), repr(self._socket))
@@ -98,6 +94,10 @@ class SocketInstrument(object):
             cmd: Command to send,
                 Type, Str.
         """
+        if not self._socket:
+            self._logger.warning('Socket instrument is not connected')
+            self._connect_socket()
+
         cmd_es = cmd + self._escseq
 
         try:
@@ -130,6 +130,10 @@ class SocketInstrument(object):
             resp: Response from Instrument via Socket,
                 Type, Str.
         """
+        if not self._socket:
+            self._logger.warning('Socket instrument is not connected')
+            self._connect_socket()
+
         resp = ''
 
         try:
