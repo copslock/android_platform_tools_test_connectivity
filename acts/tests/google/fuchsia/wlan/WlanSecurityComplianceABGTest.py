@@ -20,7 +20,7 @@ from functools import wraps
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
+from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 from acts.utils import rand_hex_str
@@ -159,7 +159,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_5_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -173,7 +173,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_13_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -187,7 +187,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_16_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -201,7 +201,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_10_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -215,7 +215,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_26_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -229,7 +229,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_32_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -243,7 +243,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_5_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -257,7 +257,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_13_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -271,7 +271,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_16_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -285,7 +285,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_10_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -299,7 +299,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_26_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -313,7 +313,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_32_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -327,7 +327,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -340,7 +340,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -353,7 +353,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -366,7 +366,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -379,7 +379,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -392,7 +392,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -405,7 +405,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -418,7 +418,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -431,7 +431,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -444,7 +444,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -458,7 +458,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -472,7 +472,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -486,7 +486,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_430_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -500,7 +500,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_430_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -514,7 +514,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -528,7 +528,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_256_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -543,7 +543,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_high_dtim_low_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -558,7 +558,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_low_dtim_high_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -573,7 +573,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_WMM_with_default_values_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -588,7 +588,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -602,7 +602,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -616,7 +616,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -631,7 +631,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -644,7 +644,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -657,7 +657,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -670,7 +670,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -683,7 +683,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -696,7 +696,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -709,7 +709,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -722,7 +722,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -735,7 +735,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -748,7 +748,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -762,7 +762,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -776,7 +776,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -790,7 +790,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_430_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -804,7 +804,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_430_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -818,7 +818,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -832,7 +832,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -847,7 +847,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -862,7 +862,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -877,7 +877,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -891,7 +891,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -905,7 +905,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -919,7 +919,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -933,7 +933,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -946,7 +946,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -959,7 +959,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -972,7 +972,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -985,7 +985,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -998,7 +998,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1011,7 +1011,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1024,7 +1024,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1037,7 +1037,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1050,7 +1050,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1064,7 +1064,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1078,7 +1078,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1092,7 +1092,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_430_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1106,7 +1106,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1120,7 +1120,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1134,7 +1134,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_rts_256_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1149,7 +1149,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_high_dtim_low_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1164,7 +1164,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_low_dtim_high_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1179,7 +1179,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_WMM_with_default_values_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1193,7 +1193,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1207,7 +1207,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1221,7 +1221,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1235,7 +1235,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_5_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1249,7 +1249,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_13_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1263,7 +1263,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_16_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1277,7 +1277,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_10_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1291,7 +1291,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_26_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1305,7 +1305,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_32_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1319,7 +1319,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_5_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1333,7 +1333,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_13_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1347,7 +1347,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_16_chars_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1361,7 +1361,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_10_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1375,7 +1375,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_26_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1389,7 +1389,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_32_hex_ptk_none(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1403,7 +1403,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1416,7 +1416,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1429,7 +1429,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1442,7 +1442,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1455,7 +1455,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1468,7 +1468,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1481,7 +1481,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1494,7 +1494,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1507,7 +1507,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1520,7 +1520,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1534,7 +1534,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1548,7 +1548,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1562,7 +1562,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_430_sec_wpa_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1576,7 +1576,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_430_sec_wpa_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1590,7 +1590,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1604,7 +1604,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_256_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1619,7 +1619,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1634,7 +1634,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1649,7 +1649,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_WMM_with_default_values_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1663,7 +1663,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1677,7 +1677,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1691,7 +1691,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1705,7 +1705,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1718,7 +1718,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1731,7 +1731,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1744,7 +1744,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1757,7 +1757,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1770,7 +1770,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1783,7 +1783,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1796,7 +1796,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1809,7 +1809,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1822,7 +1822,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1836,7 +1836,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1850,7 +1850,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1864,7 +1864,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_430_sec_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1878,7 +1878,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_430_sec_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1892,7 +1892,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1906,7 +1906,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1921,7 +1921,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1936,7 +1936,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1951,7 +1951,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1965,7 +1965,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1979,7 +1979,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -1993,7 +1993,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2007,7 +2007,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2020,7 +2020,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2033,7 +2033,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2046,7 +2046,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2059,7 +2059,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2072,7 +2072,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2085,7 +2085,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2098,7 +2098,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2111,7 +2111,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2124,7 +2124,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2138,7 +2138,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2152,7 +2152,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2166,7 +2166,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_430_sec_wpa_wpa2_psk_ptk_tkip(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2180,7 +2180,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2194,7 +2194,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2208,7 +2208,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_rts_256_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2223,7 +2223,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2238,7 +2238,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2253,7 +2253,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_WMM_with_default_values_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2268,7 +2268,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2282,7 +2282,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
@@ -2296,7 +2296,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,

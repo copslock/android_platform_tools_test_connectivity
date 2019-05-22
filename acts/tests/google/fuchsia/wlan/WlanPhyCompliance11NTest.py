@@ -20,7 +20,7 @@ from acts import utils
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
+from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 FREQUENCY_24 = ['2.4GHz']
@@ -145,7 +145,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
                                  % channel)
             n_capabilities.append(extended_channel)
 
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind',
