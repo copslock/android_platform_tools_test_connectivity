@@ -443,7 +443,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.start_softap_and_connect_to_wifi_network(
             self.wpapsk_5g, WIFI_CONFIG_APBAND_2G, 'wlan1')
 
-    @test_tracker_info(uuid="a2c62bc6-9ccd-4bc4-8a23-9a1b5d0b4b5c")
+    @test_tracker_info(uuid="75400685-a9d9-4091-8af3-97bd539c246a")
     def test_softap_2G_wifi_connection_5G_DFS(self):
         """Tests bringing up SoftAp on 2G followed by connection to 5G DFS network.
         """
