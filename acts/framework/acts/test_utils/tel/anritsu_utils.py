@@ -1446,7 +1446,7 @@ def call_mo_setup_teardown(
                 raise _CallSequenceException("DUT call not drop.")
         else:
             log.info("Disconnecting the call from DUT")
-            if not hangup_call(log, ad):
+            if not hangup_call(log, ad, is_emergency):
                 raise _CallSequenceException(
                     "Error in Hanging-Up Call on DUT.")
 
@@ -1689,7 +1689,7 @@ def ims_call_ho(log,
             raise _CallSequenceException("Call ended before delay_in_call.")
         # end the call from phone
         log.info("Disconnecting the call from DUT")
-        if not hangup_call(log, ad):
+        if not hangup_call(log, ad, is_emergency):
             raise _CallSequenceException("Error in Hanging-Up Call on DUT.")
         # confirm if CSCF status is back to idle
         if not wait_for_ims_cscf_status(log, anritsu_handle,
@@ -1826,7 +1826,7 @@ def ims_call_cs_teardown(
                 raise _CallSequenceException("DUT call not drop.")
         else:
             log.info("Disconnecting the call from DUT")
-            if not hangup_call(log, ad):
+            if not hangup_call(log, ad, is_emergency):
                 raise _CallSequenceException(
                     "Error in Hanging-Up Call on DUT.")
         # confirm if virtual phone status is back to idle
