@@ -1362,7 +1362,7 @@ def wait_and_reject_call_for_subscription(log,
     return True
 
 
-def hangup_call(log, ad):
+def hangup_call(log, ad, is_emergency=False):
     """Hang up ongoing active call.
 
     Args:
@@ -1379,7 +1379,11 @@ def hangup_call(log, ad):
     ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallState()
     ad.log.info("Hangup call.")
-    ad.droid.telecomEndCall()
+    if is_emergency:
+        for call in ad.droid.telecomCallGetCallIds():
+            ad.droid.telecomCallDisconnect(call)
+    else:
+        ad.droid.telecomEndCall()
 
     try:
         ad.ed.wait_for_event(
