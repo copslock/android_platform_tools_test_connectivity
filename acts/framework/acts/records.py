@@ -18,16 +18,45 @@
 
 import collections
 import copy
+import io
 import json
 import logging
 
 from acts import logger
-from acts import utils
+from acts.libs import yaml_writer
 
 from mobly.records import ExceptionRecord
+from mobly.records import OUTPUT_FILE_SUMMARY
 from mobly.records import TestResultEnums as MoblyTestResultEnums
 from mobly.records import TestResultRecord as MoblyTestResultRecord
 from mobly.records import TestResult as MoblyTestResult
+from mobly.records import TestSummaryEntryType
+from mobly.records import TestSummaryWriter as MoblyTestSummaryWriter
+
+
+class TestSummaryWriter(MoblyTestSummaryWriter):
+    """Writes test results to a summary file in real time. Inherits from Mobly's
+    TestSummaryWriter.
+    """
+
+    def dump(self, content, entry_type):
+        """Update Mobly's implementation of dump to work on OrderedDict.
+
+        See MoblyTestSummaryWriter.dump for documentation.
+        """
+        new_content = collections.OrderedDict(copy.deepcopy(content))
+        new_content['Type'] = entry_type.value
+        new_content.move_to_end('Type', last=False)
+        # Both user code and Mobly code can trigger this dump, hence the lock.
+        with self._lock:
+            # For Python3, setting the encoding on yaml.safe_dump does not work
+            # because Python3 file descriptors set an encoding by default, which
+            # PyYAML uses instead of the encoding on yaml.safe_dump. So, the
+            # encoding has to be set on the open call instead.
+            with io.open(self._path, 'a', encoding='utf-8') as f:
+                # Use safe_dump here to avoid language-specific tags in final
+                # output.
+                yaml_writer.safe_dump(new_content, f)
 
 
 class TestResultEnums(MoblyTestResultEnums):

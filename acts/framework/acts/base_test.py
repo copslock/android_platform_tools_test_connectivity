@@ -709,6 +709,8 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
             self.results.add_record(tr_record)
+            self.summary_writer.dump(
+                tr_record.to_dict(), records.TestSummaryEntryType.RECORD)
             self.current_test_name = None
             event_bus.post(TestCaseEndEvent(self, self.test_name, test_signal))
 
@@ -914,6 +916,8 @@ class BaseTestClass(object):
                 signal.extras = test_func.gather()
             record.test_error(signal)
             self.results.add_record(record)
+            self.summary_writer.dump(
+                record.to_dict(), records.TestSummaryEntryType.RECORD)
             self._on_skip(record)
 
     def run(self, test_names=None, test_case_iterations=1):
@@ -955,8 +959,10 @@ class BaseTestClass(object):
         else:
             matches = valid_tests
         self.results.requested = matches
+        self.summary_writer.dump(self.results.requested_test_names_dict(),
+                                 records.TestSummaryEntryType.TEST_NAME_LIST)
         tests = self._get_test_funcs(matches)
-        # A TestResultRecord used for when setup_class fails.
+
         # Setup for the class.
         setup_fail = False
         try:

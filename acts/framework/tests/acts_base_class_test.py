@@ -52,6 +52,7 @@ class ActsBaseClassTest(unittest.TestCase):
             'reporter': mock.MagicMock(),
             'log': mock.MagicMock(),
             'log_path': self.tmp_dir,
+            'summary_writer': mock.MagicMock(),
             'cli_args': None,
             'user_params': {
                 'some_param': 'hahaha'
