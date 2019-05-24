@@ -932,10 +932,7 @@ class AndroidDevice:
                 new_br = False
         except adb.AdbError:
             new_br = False
-
         br_path = self.device_log_path
-        if utils.is_subtest(test_name):
-            br_path = os.path.join(br_path, test_name)
         utils.create_dir(br_path)
         time_stamp = acts_logger.normalize_log_line_timestamp(
             acts_logger.epoch_to_log_line_timestamp(begin_time))
@@ -1021,16 +1018,13 @@ class AndroidDevice:
 
     def get_qxdm_logs(self, test_name="", begin_time=None):
         """Get qxdm logs."""
-        # Check if test_name is the name of a subtest, if so, generate a new
-        # directory for this specific subtest.
-        subtest = test_name if utils.is_subtest(test_name) else ''
         # Sleep 10 seconds for the buffered log to be written in qxdm log file
         time.sleep(10)
         log_path = getattr(self, "qxdm_log_path", DEFAULT_QXDM_LOG_PATH)
         qxdm_logs = self.get_file_names(
             log_path, begin_time=begin_time, match_string="*.qmdl")
         if qxdm_logs:
-            qxdm_log_path = os.path.join(self.device_log_path, subtest,
+            qxdm_log_path = os.path.join(self.device_log_path,
                                          "QXDM_%s" % self.serial)
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
@@ -1042,7 +1036,7 @@ class AndroidDevice:
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
-            omadm_log_path = os.path.join(self.device_log_path, subtest,
+            omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)
             utils.create_dir(omadm_log_path)
             self.log.info("Pull OMADM Log")
