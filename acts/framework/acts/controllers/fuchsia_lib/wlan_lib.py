@@ -19,6 +19,7 @@ from acts.controllers.fuchsia_lib.base_lib import BaseLib
 COMMAND_SCAN = "wlan.scan"
 COMMAND_CONNECT = "wlan.connect"
 COMMAND_DISCONNECT = "wlan.disconnect"
+COMMAND_STATUS = "wlan.status"
 
 class FuchsiaWlanLib(BaseLib):
     def __init__(self, addr, tc, client_id):
@@ -49,10 +50,7 @@ class FuchsiaWlanLib(BaseLib):
                     boolean indicating if the connection was successful
         """
         test_cmd = COMMAND_CONNECT
-        test_args = {
-            "target_ssid": target_ssid,
-            "target_pwd": target_pwd
-        }
+        test_args = {"target_ssid": target_ssid, "target_pwd": target_pwd}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
@@ -66,3 +64,15 @@ class FuchsiaWlanLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, {})
 
+    def wlanStatus(self):
+        """ Request connection status
+
+                Returns:
+                    Client state summary containing WlanClientState and
+                    status of various networks connections
+        """
+        test_cmd = COMMAND_STATUS
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, {})
