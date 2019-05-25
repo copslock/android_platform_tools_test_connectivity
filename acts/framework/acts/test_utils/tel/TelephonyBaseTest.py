@@ -227,7 +227,7 @@ class TelephonyBaseTest(BaseTestClass):
                 postfix=build_postfix)
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
-        if "sdm" in ad.model:
+        if "sdm" in ad.model or "msm" in ad.model:
             if ad.adb.getprop("persist.radio.multisim.config") != \
                               self.sim_config["config"]:
                 ad.adb.shell("setprop persist.radio.multisim.config %s" \
