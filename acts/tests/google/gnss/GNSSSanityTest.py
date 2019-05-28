@@ -204,6 +204,7 @@ class GNSSSanityTest(BaseTestClass):
                 for whitelist in self.gnss_init_error_whitelist:
                     if whitelist in error:
                         error = re.sub(".*"+whitelist+".*\n?", "", error)
+                        self.ad.log.info("\"%s\" is removed from error" % whitelist)
                 if error:
                     error_mismatch = False
                     self.ad.log.error("\n%s" % error)

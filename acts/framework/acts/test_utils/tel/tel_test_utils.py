@@ -1362,7 +1362,7 @@ def wait_and_reject_call_for_subscription(log,
     return True
 
 
-def hangup_call(log, ad):
+def hangup_call(log, ad, is_emergency=False):
     """Hang up ongoing active call.
 
     Args:
@@ -1379,7 +1379,11 @@ def hangup_call(log, ad):
     ad.ed.clear_events(EventCallStateChanged)
     ad.droid.telephonyStartTrackingCallState()
     ad.log.info("Hangup call.")
-    ad.droid.telecomEndCall()
+    if is_emergency:
+        for call in ad.droid.telecomCallGetCallIds():
+            ad.droid.telecomCallDisconnect(call)
+    else:
+        ad.droid.telecomEndCall()
 
     try:
         ad.ed.wait_for_event(
@@ -6412,15 +6416,10 @@ def get_tcpdump_log(ad, test_name="", begin_time=None):
         test_name: test case name
         begin_time: test begin time
     """
-
     logs = ad.get_file_names("/data/local/tmp/tcpdump", begin_time=begin_time)
     if logs:
         ad.log.info("Pulling tcpdumps %s", logs)
-        # Check if test_name is the name of a subtest, if so, generate a new
-        # directory for this specific subtest.
-        subtest = test_name if utils.is_subtest(test_name) else ''
-        log_path = os.path.join(ad.device_log_path, subtest,
-                                "TCPDUMP_%s" % ad.serial)
+        log_path = os.path.join(ad.device_log_path, "TCPDUMP_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
     return True
@@ -7122,11 +7121,7 @@ def get_screen_shot_log(ad, test_name="", begin_time=None):
     logs = ad.get_file_names("/sdcard/Pictures", begin_time=begin_time)
     if logs:
         ad.log.info("Pulling %s", logs)
-        # Check if test_name is the name of a subtest, if so, generate a new
-        # directory for this specific subtest.
-        subtest = test_name if utils.is_subtest(test_name) else ''
-        log_path = os.path.join(ad.device_log_path, subtest,
-                                "Screenshot_%s" % ad.serial)
+        log_path = os.path.join(ad.device_log_path, "Screenshot_%s" % ad.serial)
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
     ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
