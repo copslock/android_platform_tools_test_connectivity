@@ -273,11 +273,11 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             test_id = tuple(test_id.items())
             channel = testcase_params['channel']
             if test_id not in testclass_results_dict:
-                testclass_results_dict[test_id] = {
-                    channel: {
-                        'orientation': [],
-                        'sensitivity': []
-                    }
+                testclass_results_dict[test_id] = collections.OrderedDict()
+            if channel not in testclass_results_dict[test_id]:
+                testclass_results_dict[test_id][channel] = {
+                    'orientation': [],
+                    'sensitivity': []
                 }
             testclass_results_dict[test_id][channel]['orientation'].append(
                 testcase_params['orientation'])

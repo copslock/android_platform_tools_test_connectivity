@@ -1379,7 +1379,7 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
 
             if dds_switch:
                 if not perform_dds_switch(ads[0]):
-                    ad.log.error("DDS Switch Failed")
+                    ads[0].log.error("DDS Switch Failed")
                     fail_count["dds_switch"] += 1
 
             result_0 = self._msim_call_sequence(
@@ -1528,7 +1528,7 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
 
             if dds_switch:
                 if not perform_dds_switch(ads[0]):
-                    ad.log.error("DDS Switch Failed")
+                    ads[0].log.error("DDS Switch Failed")
                     fail_count["dds_switch"] += 1
 
             result_0 = self._msim_sms_sequence(
