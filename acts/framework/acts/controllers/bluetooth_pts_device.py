@@ -54,8 +54,10 @@ import logging
 import os
 import subprocess
 import time
+import xml.etree.ElementTree as ET
 
-from ctypes import *
+from xml.dom import minidom
+from xml.etree.ElementTree import Element
 
 
 class BluetoothPtsDeviceConfigError(signals.ControllerError):
@@ -125,7 +127,7 @@ PTS_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 def create(config):
     if not config:
         raise errors.PTS_DEVICE_EMPTY_CONFIG_MSG
-    return getinstance(config)
+    return get_instance(config)
 
 
 def destroy(pts):
@@ -155,7 +157,7 @@ def get_info(pts_devices):
     }
 
 
-def getinstance(config):
+def get_instance(config):
     """Create BluetoothPtsDevice instance from a dictionary containing
     information related to PTS. Namely the SIG root directory as
     sig_root_directory and the log directory represented by the log_directory.
@@ -229,29 +231,33 @@ class BluetoothPtsDevice:
         if pts_sniffer_directory is not None:
             self.pts_sniffer_directory = pts_sniffer_directory
         # Define callback functions
-        self.USEAUTOIMPLSENDFUNC = CFUNCTYPE(c_bool)
+        self.USEAUTOIMPLSENDFUNC = ctypes.CFUNCTYPE(ctypes.c_bool)
         self.use_auto_impl_send_func = self.USEAUTOIMPLSENDFUNC(
             self.UseAutoImplicitSend)
 
-        self.DONGLE_MSG_FUNC = CFUNCTYPE(c_bool, c_char_p)
+        self.DONGLE_MSG_FUNC = ctypes.CFUNCTYPE(ctypes.c_bool, ctypes.c_char_p)
         self.dongle_msg_func = self.DONGLE_MSG_FUNC(self.DongleMsg)
 
-        self.DEVICE_SEARCH_MSG_FUNC = CFUNCTYPE(c_bool, c_char_p, c_char_p,
-                                                c_char_p)
+        self.DEVICE_SEARCH_MSG_FUNC = ctypes.CFUNCTYPE(ctypes.c_bool,
+                                                       ctypes.c_char_p,
+                                                       ctypes.c_char_p,
+                                                       ctypes.c_char_p)
         self.dev_search_msg_func = self.DEVICE_SEARCH_MSG_FUNC(
             self.DeviceSearchMsg)
 
-        self.LOGFUNC = CFUNCTYPE(c_bool, c_char_p, c_char_p, c_char_p, c_int,
-                                 c_void_p)
+        self.LOGFUNC = ctypes.CFUNCTYPE(ctypes.c_bool, ctypes.c_char_p,
+                                        ctypes.c_char_p, ctypes.c_char_p,
+                                        ctypes.c_int, ctypes.c_void_p)
         self.log_func = self.LOGFUNC(self.Log)
 
-        self.ONIMPLSENDFUNC = CFUNCTYPE(c_char_p, c_char_p, c_int)
+        self.ONIMPLSENDFUNC = ctypes.CFUNCTYPE(ctypes.c_char_p,
+                                               ctypes.c_char_p, ctypes.c_int)
         self.onimplsend_func = self.ONIMPLSENDFUNC(self.ImplicitSend)
 
         # Helps with PTS reliability.
         os.chdir(self.pts_installation_directory)
         # Load EtsManager
-        self.pts_library = cdll.LoadLibrary(self.ets_manager_library)
+        self.pts_library = ctypes.cdll.LoadLibrary(self.ets_manager_library)
         self.log.info("ETS Manager library {0:s} has been loaded".format(
             self.ets_manager_library))
         # If post-logging is turned on all callbacks to LPLOG-type function
@@ -259,6 +265,17 @@ class BluetoothPtsDevice:
         # that post-logging is turned on to avoid simultaneous invocations of
         # LPLOG and LPAUTOIMPLICITSEND callbacks.
         self.pts_library.SetPostLoggingEx(True)
+
+        self.xml_root = Element("ARCHIVE")
+        version = Element("VERSION")
+        version.text = "2.0"
+        self.xml_root.append(version)
+        self.xml_pts_pixit = Element("PicsPixit")
+        self.xml_pts_pixit.text = ""
+        self.xml_pts_running_log = Element("LOG")
+        self.xml_pts_running_log.text = ""
+        self.xml_pts_running_summary = Element("SUMMARY")
+        self.xml_pts_running_summary.text = ""
 
     def clean_up(self):
         # Since we have no insight to the actual PTS library,
@@ -271,7 +288,7 @@ class BluetoothPtsDevice:
                 "Failed to clean up BluetoothPtsDevice: {}".format(err))
         try:
             self.log.info("Unregistering Profile...")
-            self.pts_library.UnregisterProfileEx.argtypes = [c_char_p]
+            self.pts_library.UnregisterProfileEx.argtypes = [ctypes.c_char_p]
             self.pts_library.UnregisterProfileEx(
                 self.profile_under_test.encode())
             self.pts_library.UnRegisterGetDevInfoEx()
@@ -285,6 +302,18 @@ class BluetoothPtsDevice:
             self.log.error(
                 "Failed to clean up BluetoothPtsDevice: {}".format(err))
         self.log.info("Cleanup Done.")
+
+    def write_xml_pts_pixit_values_for_current_test(self):
+        """ Writes the current PICS and IXIT values to the XML result.
+        """
+        self.xml_pts_pixit.text = "ICS VALUES:\n\n"
+        for key, value in self.ics.items():
+            self.xml_pts_pixit.text += "{} {}\n".format(
+                key.decode(), value.decode())
+        self.xml_pts_pixit.text += "\nIXIT VALUES:\n\n"
+        for key, (_, value) in self.ixit.items():
+            self.xml_pts_pixit.text += "{} {}\n".format(
+                key.decode(), value.decode())
 
     def set_ics_and_ixit(self, ics, ixit):
         self.ics = ics
@@ -303,7 +332,7 @@ class BluetoothPtsDevice:
 
         # Register layer to test with callbacks
         self.pts_library.RegisterProfileWithCallbacks.argtypes = [
-            c_char_p, self.USEAUTOIMPLSENDFUNC, self.ONIMPLSENDFUNC,
+            ctypes.c_char_p, self.USEAUTOIMPLSENDFUNC, self.ONIMPLSENDFUNC,
             self.LOGFUNC, self.DEVICE_SEARCH_MSG_FUNC, self.DONGLE_MSG_FUNC
         ]
         res = self.pts_library.RegisterProfileWithCallbacks(
@@ -318,7 +347,7 @@ class BluetoothPtsDevice:
         # Initialize GetDeviceInfo and register it with callbacks
         # First parameter is PTS executable directory
         self.pts_library.InitGetDevInfoWithCallbacks.argtypes = [
-            c_char_p, self.DEVICE_SEARCH_MSG_FUNC, self.DONGLE_MSG_FUNC
+            ctypes.c_char_p, self.DEVICE_SEARCH_MSG_FUNC, self.DONGLE_MSG_FUNC
         ]
         res = self.pts_library.InitGetDevInfoWithCallbacks(
             self.pts_installation_directory.encode(), self.dev_search_msg_func,
@@ -356,7 +385,7 @@ class BluetoothPtsDevice:
         # Register to recieve Bluetooth Protocol Viewer notofications
         self.pts_library.SnifferRegisterNotificationEx()
         self.pts_library.SetParameterEx.argtypes = [
-            c_char_p, c_char_p, c_char_p, c_char_p
+            ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p
         ]
 
         for ics_name in self.ics:
@@ -387,7 +416,7 @@ class BluetoothPtsDevice:
 
         address_b = self.address_str.encode("utf-8")
         self.pts_library.InitEtsEx.argtypes = [
-            c_char_p, c_char_p, c_char_p, c_char_p
+            ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p
         ]
 
         implicit_send_path = "{}\\implicit_send3.dll".format(
@@ -399,13 +428,15 @@ class BluetoothPtsDevice:
             str(res)))
 
         # Initialize Host Stack DLL
-        self.pts_library.InitStackEx.argtypes = [c_char_p]
+        self.pts_library.InitStackEx.argtypes = [ctypes.c_char_p]
         res = self.pts_library.InitStackEx(self.profile_under_test.encode())
         self.log.info("Stack has been initialized with result {0:s}".format(
             str(res)))
 
         # Select to receive Log messages after test is done
-        self.pts_library.SetPostLoggingEx.argtypes = [c_bool, c_char_p]
+        self.pts_library.SetPostLoggingEx.argtypes = [
+            ctypes.c_bool, ctypes.c_char_p
+        ]
         self.pts_library.SetPostLoggingEx(True,
                                           self.profile_under_test.encode())
 
@@ -496,8 +527,13 @@ class BluetoothPtsDevice:
         log_time = (ctypes.c_char_p(log_time_str).value).decode("utf-8")
         log_descr = (ctypes.c_char_p(log_descr_str).value).decode("utf-8")
         log_msg = (ctypes.c_char_p(log_msg_str).value).decode("utf-8")
-
+        if "Verdict Description" in log_descr:
+            self.xml_pts_running_summary.text += "\t- {}".format(log_msg)
+        if "Final Verdict" in log_descr:
+            self.xml_pts_running_summary.text += "{}{}\n".format(
+                log_descr.strip(), log_msg.strip())
         full_log_msg = "{}{}{}".format(log_time, log_descr, log_msg)
+        self.xml_pts_running_log.text += "{}\n".format(str(full_log_msg))
 
         if ctypes.c_int(log_type).value == LOG_TYPE_FINAL_VERDICT:
             indx = log_msg.find(VERDICT)
@@ -608,10 +644,10 @@ class BluetoothPtsDevice:
         path = self.test_log_directory.encode() + file_name
 
         if canSave == True:
-            self.pts_library.SnifferSaveEx.argtypes = [c_char_p]
+            self.pts_library.SnifferSaveEx.argtypes = [ctypes.c_char_p]
             self.pts_library.SnifferSaveEx(path)
         else:
-            self.pts_library.SnifferSaveAndClearEx.argtypes = [c_char_p]
+            self.pts_library.SnifferSaveAndClearEx.argtypes = [ctypes.c_char_p]
             self.pts_library.SnifferSaveAndClearEx(path)
         end_time = time.time() + 60
         while self.sniffer_ready == False and end_time > time.time():
@@ -632,7 +668,17 @@ class BluetoothPtsDevice:
             test_name: string, name of the test to execute.
         """
         today = datetime.now()
+        self.write_xml_pts_pixit_values_for_current_test()
+        # TODO: Find out how to grab the PTS version. Temporarily
+        # hardcoded to v.7.4.1.2.
+        self.xml_pts_pixit.text = (
+            "Test Case Started: {} v.7.4.1.2, {} started on {}\n\n{}".format(
+                self.profile_under_test, test_name,
+                today.strftime("%A, %B %d, %Y, %H:%M:%S"),
+                self.xml_pts_pixit.text))
 
+        self.xml_pts_running_summary.text += "Test case : {} started\n".format(
+            test_name)
         log_time_formatted = "{:%Y_%m_%d_%H_%M_%S}".format(datetime.now())
         formatted_test_name = test_name.replace('/', '_')
         formatted_test_name = formatted_test_name.replace('-', '_')
@@ -645,7 +691,7 @@ class BluetoothPtsDevice:
         curr_test = test_name.encode()
 
         self.pts_library.StartTestCaseEx.argtypes = [
-            c_char_p, c_char_p, c_bool
+            ctypes.c_char_p, ctypes.c_char_p, ctypes.c_bool
         ]
         res = self.pts_library.StartTestCaseEx(
             curr_test, self.profile_under_test.encode(), True)
@@ -662,11 +708,27 @@ class BluetoothPtsDevice:
             self.pts_test_result))
 
         # Clean up after test is done
-        self.pts_library.TestCaseFinishedEx.argtypes = [c_char_p, c_char_p]
+        self.pts_library.TestCaseFinishedEx.argtypes = [
+            ctypes.c_char_p, ctypes.c_char_p
+        ]
         res = self.pts_library.TestCaseFinishedEx(
             curr_test, self.profile_under_test.encode())
 
         self.log_results(test_name)
+        self.xml_pts_running_summary.text += "{} finished\n".format(test_name)
+        # Add the log results to the XML output
+        self.xml_root.append(self.xml_pts_pixit)
+        self.xml_root.append(self.xml_pts_running_log)
+        self.xml_root.append(self.xml_pts_running_summary)
+        rough_string = ET.tostring(self.xml_root,
+                                   encoding='utf-8',
+                                   method='xml')
+        reparsed = minidom.parseString(rough_string)
+        with open(
+                "{}\\{}.xml".format(self.test_log_directory,
+                                    self.test_log_prefix), "w") as writter:
+            writter.write(
+                reparsed.toprettyxml(indent="  ", encoding="utf-8").decode())
 
         if self.pts_test_result is VERDICT_STRINGS['RESULT_PASS']:
             return True
