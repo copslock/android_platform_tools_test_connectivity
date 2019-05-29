@@ -50,7 +50,7 @@ FUCHSIA_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 FUCHSIA_DEVICE_INVALID_CONFIG = ("Fuchsia device config must be either a str "
                                  "or dict. abort! Invalid element %i in %r")
 FUCHSIA_DEVICE_NO_IP_MSG = "No IP address specified, abort!"
-FUCHSIA_COULD_NOT_GET_DESIRED_STATE = "Could not %s SL4F."
+FUCHSIA_COULD_NOT_GET_DESIRED_STATE = "Could not %s %s."
 FUCHSIA_INVALID_CONTROL_STATE = "Invalid control state (%s). abort!"
 FUCHSIA_SSH_CONFIG_NOT_DEFINED = ("Cannot send ssh commands since the "
                                   "ssh_config was not specified in the Fuchsia"
@@ -59,10 +59,10 @@ FUCHSIA_SSH_CONFIG_NOT_DEFINED = ("Cannot send ssh commands since the "
 FUCHSIA_SSH_USERNAME = "fuchsia"
 
 SL4F_APK_NAME = "com.googlecode.android_scripting"
-SL4F_INIT_TIMEOUT_SEC = 1
+DAEMON_INIT_TIMEOUT_SEC = 1
 
-SL4F_ACTIVATED_STATES = ["running", "start"]
-SL4F_DEACTIVATED_STATES = ["stop", "stopped"]
+DAEMON_ACTIVATED_STATES = ["running", "start"]
+DAEMON_DEACTIVATED_STATES = ["stop", "stopped"]
 
 FUCHSIA_DEFAULT_LOG_CMD = 'iquery --absolute_paths --cat --format= --recursive'
 FUCHSIA_DEFAULT_LOG_ITEMS = [
@@ -161,7 +161,7 @@ class FuchsiaDevice:
         self.ssh_config = fd_conf_data.get("ssh_config", None)
         self.ssh_username = fd_conf_data.get("ssh_username",
                                              FUCHSIA_SSH_USERNAME)
-        self.sl4f_ssh_conn = None
+        self._persistent_ssh_conn = None
 
         self.log = acts_logger.create_tagged_trace_logger(
             "FuchsiaDevice | %s" % self.ip)
@@ -424,100 +424,111 @@ class FuchsiaDevice:
         self.stop_services()
         return r
 
-    def check_sl4f_state(self):
-        """Checks the state of sl4f on the Fuchsia device
+    def check_process_state(self, process_name):
+        """Checks the state of a process on the Fuchsia device
 
         Returns:
-            True if sl4f is running
-            False if sl4f is not running
+            True if the process_name is running
+            False if process_name is not running
         """
         ps_cmd = self.send_command_ssh("ps")
-        return "sl4f.cmx" in ps_cmd.stdout
+        return process_name in ps_cmd.stdout
 
-    def check_sl4f_with_expectation(self, expectation=None):
-        """Checks the state of sl4f on the Fuchsia device and returns true or
-           or false depending the stated expectation
+    def check_process_with_expectation(self, process_name, expectation=None):
+        """Checks the state of a process on the Fuchsia device and returns
+        true or false depending the stated expectation
 
         Args:
-            expectation: The state expectation of state of sl4f
+            expectation: The state expectation of state of process
         Returns:
-            True if the state of sl4f matches the expectation
-            False if the state of sl4f does not match the expectation
+            True if the state of the process matches the expectation
+            False if the state of the process does not match the expectation
         """
-        sl4f_state = self.check_sl4f_state()
-        if expectation in SL4F_ACTIVATED_STATES:
-            return sl4f_state
-        elif expectation in SL4F_DEACTIVATED_STATES:
-            return not sl4f_state
+        process_state = self.check_process_state(process_name)
+        if expectation in DAEMON_ACTIVATED_STATES:
+            return process_state
+        elif expectation in DAEMON_DEACTIVATED_STATES:
+            return not process_state
         else:
             raise ValueError("Invalid expectation value (%s). abort!" %
                              expectation)
 
-    def control_sl4f(self, action):
-        """Starts or stops sl4f on a Fuchsia device
+    def control_daemon(self, process_name, action):
+        """Starts or stops a process on a Fuchsia device
 
         Args:
-            action: specify whether to start or stop sl4f
+            process_name: the name of the process to start or stop
+            action: specify whether to start or stop a process
         """
+        if not process_name[-4:] == '.cmx':
+            process_name = '%s.cmx' % process_name
         unable_to_connect_msg = None
-        sl4f_state = False
+        process_state = False
         try:
-            if not self.sl4f_ssh_conn:
-                self.sl4f_ssh_conn = create_ssh_connection(self.ip,
-                                                           self.ssh_username,
-                                                           self.ssh_config)
-            self.sl4f_ssh_conn.exec_command("killall sl4f.cmx")
-            # This command will effectively stop sl4f but should
-            # be used as a cleanup before starting sl4f.  It is a bit
+            if not self._persistent_ssh_conn:
+                self._persistent_ssh_conn = (
+                    create_ssh_connection(self.ip,
+                                          self.ssh_username,
+                                          self.ssh_config))
+            self._persistent_ssh_conn.exec_command("killall %s"
+                                                      % process_name)
+            # This command will effectively stop the process but should
+            # be used as a cleanup before starting a process.  It is a bit
             # confusing to have the msg saying "attempting to stop
-            # sl4f" after the command already tried but since both start
+            # the process" after the command already tried but since both start
             # and stop need to run this command, this is the best place
             # for the command.
-            if action in SL4F_ACTIVATED_STATES:
+            if action in DAEMON_ACTIVATED_STATES:
                 self.log.debug("Attempting to start Fuchsia "
                                "devices services.")
-                self.sl4f_ssh_conn.exec_command("run fuchsia-pkg://"
-                                                "fuchsia.com/sl4f#meta/sl4f.cmx"
-                                                " &")
-                sl4f_initial_msg = ("SL4F has not started yet. "
-                                    "Waiting %i second and checking "
-                                    "again." % SL4F_INIT_TIMEOUT_SEC)
-                sl4f_timeout_msg = "Timed out waiting for SL4F to start."
-                unable_to_connect_msg = ("Unable to connect to Fuchsia "
-                                         "device via SSH. SL4F may not "
-                                         "be started.")
-            elif action in SL4F_DEACTIVATED_STATES:
-                sl4f_initial_msg = ("SL4F is running. "
-                                    "Waiting %i second and checking "
-                                    "again." % SL4F_INIT_TIMEOUT_SEC)
-                sl4f_timeout_msg = ("Timed out waiting "
-                                    "trying to kill SL4F.")
-                unable_to_connect_msg = ("Unable to connect to Fuchsia "
-                                         "device via SSH. SL4F may "
-                                         "still be running.")
+                self._persistent_ssh_conn.exec_command(
+                    "run fuchsia-pkg://fuchsia.com/%s#meta/%s &"
+                    % (process_name[:-4], process_name))
+                process_initial_msg = (
+                        "%s has not started yet. Waiting %i second and "
+                        "checking again." % (process_name,
+                                             DAEMON_INIT_TIMEOUT_SEC))
+                process_timeout_msg = ("Timed out waiting for %s to start."
+                                       % process_name)
+                unable_to_connect_msg = ("Unable to start %s no Fuchsia "
+                                         "device via SSH. %s may not "
+                                         "be started." % (process_name,
+                                                          process_name))
+            elif action in DAEMON_DEACTIVATED_STATES:
+                process_initial_msg = ("%s is running. Waiting %i second and "
+                                       "checking again."
+                                       % (process_name,
+                                          DAEMON_INIT_TIMEOUT_SEC))
+                process_timeout_msg = ("Timed out waiting trying to kill %s."
+                                       % process_name)
+                unable_to_connect_msg = ("Unable to stop %s on Fuchsia "
+                                         "device via SSH. %s may "
+                                         "still be running." % (process_name,
+                                                                process_name))
             else:
                 raise FuchsiaDeviceError(FUCHSIA_INVALID_CONTROL_STATE %
                                          action)
             timeout_counter = 0
-            while not sl4f_state:
-                self.log.debug(sl4f_initial_msg)
-                time.sleep(SL4F_INIT_TIMEOUT_SEC)
+            while not process_state:
+                self.log.info(process_initial_msg)
+                time.sleep(DAEMON_INIT_TIMEOUT_SEC)
                 timeout_counter += 1
-                sl4f_state = self.check_sl4f_with_expectation(
-                    expectation=action)
-                if timeout_counter == (SL4F_INIT_TIMEOUT_SEC * 3):
-                    self.log.error(sl4f_timeout_msg)
+                process_state = (
+                    self.check_process_with_expectation(process_name,
+                                                        expectation=action))
+                if timeout_counter == (DAEMON_INIT_TIMEOUT_SEC * 3):
+                    self.log.info(process_timeout_msg)
                     break
-            if not sl4f_state:
+            if not process_state:
                 raise FuchsiaDeviceError(FUCHSIA_COULD_NOT_GET_DESIRED_STATE %
-                                         action)
+                                         (action, process_name))
         except Exception as e:
-            self.log.error(unable_to_connect_msg)
+            self.log.info(unable_to_connect_msg)
             raise e
         finally:
             if action == 'stop':
-                self.sl4f_ssh_conn.close()
-                self.sl4f_ssh_conn = None
+                self._persistent_ssh_conn.close()
+                self._persistent_ssh_conn = None
 
     def check_connection_for_response(self, connection_response):
         if connection_response.get("error") is None:
@@ -558,7 +569,7 @@ class FuchsiaDevice:
                 self.log_process.start()
 
             if not skip_sl4f:
-                self.control_sl4f("start")
+                self.control_daemon("sl4f.cmx", "start")
 
     def stop_services(self):
         """Stops long running services on the android device.
@@ -568,7 +579,7 @@ class FuchsiaDevice:
         self.log.debug("Attempting to stop Fuchsia device services on %s." %
                        self.ip)
         if self.ssh_config:
-            self.control_sl4f("stop")
+            self.control_daemon("sl4f.cmx", "stop")
             if self.log_process:
                 if ENABLE_LOG_LISTENER:
                     self.log_process.stop()
