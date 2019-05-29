@@ -106,7 +106,7 @@ class FuchsiaSyslogProcess(object):
         self._listening_thread = Thread(target=self._exec_loop)
         self._listening_thread.start()
 
-        time_up_at = time.time() + 1
+        time_up_at = time.time() + 10
 
         while self._ssh_client is None:
             if time.time() > time_up_at:
