@@ -228,10 +228,12 @@ class TelephonyBaseTest(BaseTestClass):
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
         if "sdm" in ad.model or "msm" in ad.model:
-            if ad.adb.getprop("persist.radio.multisim.config") != \
-                              self.sim_config["config"]:
+            phone_mode = "ssss"
+            if hasattr(ad, "mtp_dsds"):
+                phone_mode = "dsds"
+            if ad.adb.getprop("persist.radio.multisim.config") != phone_mode:
                 ad.adb.shell("setprop persist.radio.multisim.config %s" \
-                             % self.sim_config["config"])
+                             % phone_mode)
                 reboot_device(ad)
 
         stop_qxdm_logger(ad)
