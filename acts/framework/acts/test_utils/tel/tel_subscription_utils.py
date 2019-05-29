@@ -333,5 +333,8 @@ def set_slways_allow_mms_data(ad, sub_id, state=True):
     Returns:
         None
     """
-    ad.log.debug("Setting MMS Data Always ON to %s sub_id %s", state, sub_id)
-    return ad.droid.subscriptionSetAlwaysAllowMmsData(sub_id, state)
+    if "sdm" in ad.model or "msm" in ad.model:
+        ad.log.info("Always allow MMS Data is not supported on platform")
+    else:
+        ad.log.debug("Setting MMS Data Always ON %s sub_id %s", state, sub_id)
+        return ad.droid.subscriptionSetAlwaysAllowMmsData(sub_id, state)
