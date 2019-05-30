@@ -15,6 +15,7 @@
 #   limitations under the License.
 """Python module for Rohde & Schwarz SMBV100 Vector Signal Generator."""
 
+import numbers
 import acts.controllers.gnssinst_lib.abstract_inst as abstract_inst
 
 
@@ -69,7 +70,7 @@ class SMBV100(abstract_inst.SocketInstrument):
 
         self._logger.debug('Preset SMBV100')
 
-    def set_rfout(self, state):
+    def set_rfout_state(self, state):
         """set SMBV100 RF output state.
 
         Args:
@@ -88,3 +89,75 @@ class SMBV100(abstract_inst.SocketInstrument):
 
         infmsg = 'set SMBV100 RF output to "{}"'.format(state)
         self._logger.debug(infmsg)
+
+    def set_rfout_freq(self, freq):
+        """set SMBV100 RF output frequency.
+
+        Args:
+            freq: RF output frequency.
+                Type, num.
+
+        Raises:
+            SMBV100Error: raise when 'freq' is not numerical value.
+        """
+
+        if not isinstance(freq, numbers.Number):
+            raise SMBV100Error(error='"freq" input must be numerical value',
+                               command='set_rfoutfreq')
+
+        self._send(':SOUR:FREQ:CW ' + str(freq))
+
+        infmsg = 'set SMBV100 RF output frequency to {} Hz'.format(freq)
+        self._logger.debug(infmsg)
+
+    def get_rfout_freq(self):
+        """get SMBV100 RF output frequency.
+
+        Return:
+            freq: RF output frequency.
+                Type, num.
+        """
+        resp = self._query(':SOUR:FREQ:CW?')
+
+        freq = float(resp.split(';')[0])
+
+        infmsg = 'get SMBV100 RF output frequency as {} Hz'.format(freq)
+        self._logger.debug(infmsg)
+
+        return freq
+
+    def set_rfout_level(self, level):
+        """set SMBV100 RF output level.
+
+        Args:
+            level: RF Level.
+                Type, num.
+
+        Raises:
+            SMBV100Error: raise when 'level' is not numerical value.
+        """
+
+        if not isinstance(level, numbers.Number):
+            raise SMBV100Error(error='"level" input must be numerical value',
+                               command='set_rflevel')
+
+        self._send(':SOUR:POW:LEV:IMM:AMPL ' + str(level))
+
+        infmsg = 'set SMBV100 RF level to {} dBm'.format(level)
+        self._logger.debug(infmsg)
+
+    def get_rfout_level(self):
+        """get SMBV100 RF out level.
+
+        Return:
+            level: RF Level.
+                Type, num.
+        """
+        resp = self._query(':SOUR:POW:LEV:IMM:AMPL?')
+
+        level = float(resp.split(';')[0])
+
+        infmsg = 'get SMBV100 RF level as {} dBm'.format(level)
+        self._logger.debug(infmsg)
+
+        return level
