@@ -490,11 +490,7 @@ class BaseTestClass(object):
         is called.
         """
         self.log.debug('Tearing down test %s' % test_name)
-
-        try:
-            self.teardown_test()
-        finally:
-            self.current_test_name = None
+        self.teardown_test()
 
     def teardown_test(self):
         """Teardown function that will be called every time a test case has
@@ -738,6 +734,7 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
             self.results.add_record(tr_record)
+            self.current_test_name = None
             event_bus.post(TestCaseEndEvent(self, self.test_name, test_signal))
 
     def get_func_with_retry(self, func, attempts=2):
