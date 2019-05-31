@@ -17,134 +17,111 @@
 from PowerTelTrafficTest import PowerTelTrafficTest
 
 class PowerTelTraffic_LTE_Test(PowerTelTrafficTest):
-    def test_lte_traffic_band_2_pdl_excellent_pul_low_bw_14_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_1(self):
+    def test_lte_traffic_band_12_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_1(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_2_pdl_excellent_pul_low_bw_3_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_2(self):
+    def test_lte_traffic_band_12_pdl_excellent_pul_max_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_2(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_2_pdl_excellent_pul_low_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_3(self):
+    def test_lte_traffic_band_12_pdl_excellent_pul_low_bw_14_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_3(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_2_pdl_excellent_pul_low_bw_10_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_4(self):
+    def test_lte_traffic_band_20_pdl_excellent_pul_low_bw_5_tm_3_mimo_2x2_scheduling_static_direction_dl_pattern_100_0_4(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_2_pdl_excellent_pul_low_bw_15_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_5(self):
+    def test_lte_traffic_band_13_pdl_excellent_pul_low_bw_5_tm_1_mimo_1x1_scheduling_static_direction_dlul_pattern_75_25_5(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_2_pdl_excellent_pul_low_bw_20_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_6(self):
+    def test_lte_traffic_band_13_pdl_excellent_pul_max_bw_10_tm_1_mimo_1x1_scheduling_static_direction_dl_pattern_100_0_6(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_13_pdl_excellent_pul_max_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_7(self):
+    def test_lte_traffic_band_5_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_7(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_13_pdl_excellent_pul_high_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_8(self):
+    def test_lte_traffic_band_1_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_8(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_13_pdl_excellent_pul_medium_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_9(self):
+    def test_lte_traffic_band_1_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_9(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_13_pdl_excellent_pul_low_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_10(self):
+    def test_lte_traffic_band_3_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_10(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_13_pdl_excellent_pul_low_bw_5_tm_1_mimo_1x1_scheduling_static_direction_dl_pattern_100_0_11(self):
+    def test_lte_traffic_band_3_pdl_excellent_pul_max_bw_10_tm_1_mimo_1x1_scheduling_static_direction_dl_pattern_100_0_11(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_13_pdl_excellent_pul_low_bw_5_tm_1_mimo_1x1_scheduling_static_direction_dlul_pattern_50_50_12(self):
+    def test_lte_traffic_band_2_pdl_excellent_pul_low_bw_3_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_12(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_13_pdl_excellent_pul_low_bw_5_tm_1_mimo_1x1_scheduling_static_direction_dlul_pattern_75_25_13(self):
+    def test_lte_traffic_band_2_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_13(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_13_pdl_excellent_pul_low_bw_5_tm_1_mimo_1x1_scheduling_static_direction_dlul_pattern_90_10_14(self):
+    def test_lte_traffic_band_2_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_14(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_4_pdl_excellent_pul_low_bw_5_tm_1_mimo_1x1_scheduling_static_direction_dl_pattern_100_0_15(self):
+    def test_lte_traffic_band_4_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_15(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_4_pdl_excellent_pul_low_bw_5_tm_4_mimo_2x2_scheduling_static_direction_dl_pattern_100_0_16(self):
+    def test_lte_traffic_band_4_pdl_excellent_pul_low_bw_5_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_16(self):
         self.power_tel_traffic_test()
 
     def test_lte_traffic_band_4_pdl_excellent_pul_max_bw_5_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_17(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_4_pdl_excellent_pul_low_bw_5_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_18(self):
+    def test_lte_traffic_band_4_pdl_excellent_pul_medium_bw_10_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_18(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_7_pdl_excellent_pul_max_bw_20_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_19(self):
+    def test_lte_traffic_band_4_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_19(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_7_pdl_excellent_pul_high_bw_20_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_20(self):
+    def test_lte_traffic_band_4_pdl_excellent_pul_max_bw_20_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_20(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_7_pdl_excellent_pul_medium_bw_20_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_21(self):
+    def test_lte_traffic_band_7_pdl_excellent_pul_high_bw_15_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_21(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_7_pdl_excellent_pul_low_bw_20_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_22(self):
+    def test_lte_traffic_band_7_pdl_excellent_pul_high_bw_20_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_22(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_2_pdl_excellent_pul_max_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_29(self):
+    def test_lte_traffic_band_7_pdl_excellent_pul_max_bw_10_tm_1_mimo_1x1_scheduling_static_direction_dl_pattern_100_0_23(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_4_pdl_excellent_pul_max_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_30(self):
+    def test_lte_traffic_band_7_pdl_excellent_pul_max_bw_20_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_24(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_5_pdl_excellent_pul_max_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_31(self):
+    def test_lte_traffic_band_7_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_25(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_7_pdl_excellent_pul_max_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_32(self):
+    def test_lte_traffic_band_7_pdl_excellent_pul_medium_bw_10_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_26(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_12_pdl_excellent_pul_max_bw_5_tm_1_mimo_1x1_scheduling_static_direction_ul_pattern_0_100_33(self):
+    def test_lte_traffic_band_7_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_27(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_13_pdl_excellent_pul_max_bw_10_tm_1_mimo_1x1_scheduling_static_direction_dl_pattern_100_0_34(self):
+    def test_lte_traffic_band_38_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dlul_tddconfig_2_28(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_4_pdl_excellent_pul_max_bw_10_tm_1_mimo_1x1_scheduling_static_direction_dl_pattern_100_0_35(self):
+    def test_lte_traffic_band_38_pdl_excellent_pul_max_bw_10_tm_1_mimo_1x1_scheduling_static_direction_dlul_tddconfig_1_29(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_7_pdl_excellent_pul_max_bw_10_tm_1_mimo_1x1_scheduling_static_direction_dl_pattern_100_0_36(self):
+    def test_lte_traffic_band_38_pdl_excellent_pul_high_bw_5_tm_1_mimo_1x1_scheduling_static_direction_dlul_tddconfig_5_30(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_3_pdl_excellent_pul_max_bw_10_tm_1_mimo_1x1_scheduling_static_direction_dl_pattern_100_0_37(self):
+    def test_lte_traffic_band_40_pdl_excellent_pul_low_bw_20_tm_4_mimo_2x2_scheduling_static_direction_dlul_tddconfig_2_31(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_1_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_38(self):
+    def test_lte_traffic_band_40_pdl_excellent_pul_max_bw_10_tm_1_mimo_1x1_scheduling_static_direction_dlul_tddconfig_5_32(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_2_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_39(self):
+    def test_lte_traffic_band_41_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dlul_tddconfig_2_33(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_3_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_40(self):
+    def test_lte_traffic_band_41_pdl_excellent_pul_high_bw_15_tm_1_mimo_1x1_scheduling_static_direction_dlul_tddconfig_1_34(self):
         self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_4_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_41(self):
-        self.power_tel_traffic_test()
+    def test_lte_traffic_band_42_pdl_excellent_pul_low_bw_20_tm_4_mimo_2x2_scheduling_static_direction_dlul_tddconfig_2_35(self):
+       self.power_tel_traffic_test()
 
-    def test_lte_traffic_band_7_pdl_excellent_pul_medium_bw_20_tm_3_mimo_4x4_scheduling_static_direction_dl_pattern_100_0_42(self):
-        self.power_tel_traffic_test()
-
-    def test_lte_traffic_band_1_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_43(self):
-        self.power_tel_traffic_test()
-
-    def test_lte_traffic_band_2_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_44(self):
-        self.power_tel_traffic_test()
-
-    def test_lte_traffic_band_3_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_45(self):
-        self.power_tel_traffic_test()
-
-    def test_lte_traffic_band_4_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_46(self):
-        self.power_tel_traffic_test()
-
-    def test_lte_traffic_band_5_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_47(self):
-        self.power_tel_traffic_test()
-
-    def test_lte_traffic_band_7_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_48(self):
-        self.power_tel_traffic_test()
-
-    def test_lte_traffic_band_12_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_49(self):
-        self.power_tel_traffic_test()
 
 class PowerTelTraffic_LTECA_Test(PowerTelTrafficTest):
 
