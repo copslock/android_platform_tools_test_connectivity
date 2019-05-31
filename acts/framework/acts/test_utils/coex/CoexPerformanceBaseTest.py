@@ -28,6 +28,10 @@ from acts.test_utils.coex.coex_test_utils import multithread_func
 from acts.test_utils.coex.coex_test_utils import wifi_connection_check
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
+from acts.utils import get_current_epoch_time
+
+RSSI_POLL_RESULTS = "Monitoring , Handle: 0x0003, POLL"
+RSSI_RESULTS = "Monitoring , Handle: 0x0003, "
 
 
 def get_atten_range(start, stop, step):
@@ -76,6 +80,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         for i in range(self.num_atten):
             self.attenuators[i].set_atten(0)
         super().setup_class()
+        self.performance_files_list = []
         if "performance_result_path" in self.user_params["test_params"]:
             self.performance_files_list = [
                 os.path.join(self.test_params["performance_result_path"],
@@ -137,7 +142,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         for bt_atten in self.bt_atten_range:
             self.rvr[bt_atten] = {}
             self.rvr[bt_atten]["fixed_attenuation"] = (
-                self.test_params["fixed_attenuation"][str(self.network["channel"])])
+                self.test_params["fixed_attenuation"][str(
+                    self.network["channel"])])
             self.log.info("Setting bt attenuation = {}".format(bt_atten))
             self.attenuators[self.num_atten - 1].set_atten(bt_atten)
             for i in range(self.num_atten - 1):
@@ -145,6 +151,11 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             if not wifi_connection_check(self.pri_ad, self.network["SSID"]):
                 wifi_test_device_init(self.pri_ad)
                 wifi_connect(self.pri_ad, self.network, num_of_tries=5)
+            adb_rssi_results = self.pri_ad.search_logcat(RSSI_RESULTS)
+            if adb_rssi_results:
+                self.log.debug(adb_rssi_results[-1])
+                self.log.info("Android device RSSI = {}".format(
+                    (adb_rssi_results[-1]['log_message']).split(',')[5]))
             (self.rvr[bt_atten]["throughput_received"],
              self.rvr[bt_atten]["a2dp_packet_drop"],
              status_flag) = self.rvr_throughput(bt_atten, called_func)
@@ -152,11 +163,16 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                                                           ["attenuation"])
             self.wifi_min_atten_metric.metric_value = min(self.rvr[bt_atten]
                                                           ["attenuation"])
-            for i, atten in enumerate(self.rvr[bt_atten]["attenuation"]):
-                if self.rvr[bt_atten]["throughput_received"][i] < 1.0:
-                    self.wifi_range_metric.metric_value = (
-                        self.rvr[bt_atten]["attenuation"][i-1])
-                    break
+
+            if self.rvr[bt_atten]["throughput_received"]:
+                for i, atten in enumerate(self.rvr[bt_atten]["attenuation"]):
+                    if self.rvr[bt_atten]["throughput_received"][i] < 1.0:
+                        self.wifi_range_metric.metric_value = (
+                            self.rvr[bt_atten]["attenuation"][i-1])
+                        break
+                else:
+                    self.wifi_range_metric.metric_value = max(
+                        self.rvr[bt_atten]["attenuation"])
             else:
                 self.wifi_range_metric.metric_value = max(
                     self.rvr[bt_atten]["attenuation"])
@@ -194,6 +210,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                 self.iperf_received.append(0)
                 return self.iperf_received, self.a2dp_dropped_list, False
             time.sleep(5)  # Time for attenuation to set.
+            begin_time = get_current_epoch_time()
             if called_func:
                 if not multithread_func(self.log, called_func):
                     self.teardown_result()
@@ -202,6 +219,15 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                     return self.iperf_received, self.a2dp_dropped_list, False
             else:
                 self.run_iperf_and_get_result()
+            adb_rssi_poll_results = self.pri_ad.search_logcat(
+                RSSI_POLL_RESULTS, begin_time)
+            adb_rssi_results = self.pri_ad.search_logcat(
+                RSSI_RESULTS, begin_time)
+            if adb_rssi_results:
+                self.log.debug(adb_rssi_poll_results)
+                self.log.debug(adb_rssi_results[-1])
+                self.log.info("Android device RSSI = {}".format((
+                    adb_rssi_results[-1]['log_message']).split(',')[5]))
             if self.a2dp_streaming:
                 analysis_path = self.audio.audio_quality_analysis(self.log_path)
                 with open(analysis_path) as f:
@@ -242,10 +268,11 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                           self.bt_range_metric.metric_value)
             self.log.info("BT min range = %s" % min(self.rvr["bt_attenuation"]))
             self.log.info("BT max range = %s" % max(self.rvr["bt_attenuation"]))
-            with open(self.json_file, 'a') as result_file:
-                json.dump({str(k): v for k, v in self.rvr.items()}, result_file,
-                          indent=4, sort_keys=True)
             self.plot_graph_for_attenuation()
+            if not self.performance_files_list:
+                self.log.warning("Performance file list is empty. Couldn't"
+                                 "calculate throughput limits")
+                return
             self.throughput_pass_fail_check()
         else:
             self.log.error("Throughput dict empty!")
@@ -254,16 +281,16 @@ class CoexPerformanceBaseTest(CoexBaseTest):
 
     def plot_graph_for_attenuation(self):
         """Plots graph and add as JSON formatted results for attenuation with
-        respect to its iperf values. Compares rvr results with baseline
-        values by calculating throughput limits.
+        respect to its iperf values.
         """
         data_sets = defaultdict(dict)
-        test_name = self.current_test_name
+        legends = defaultdict(list)
+
         x_label = 'WIFI Attenuation (dB)'
         y_label = []
-        legends = defaultdict(list)
+
         fig_property = {
-            "title": test_name,
+            "title": self.current_test_name,
             "x_label": x_label,
             "linewidth": 3,
             "markersize": 10
@@ -277,46 +304,6 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                 self.rvr[bt_atten]["attenuation"])
             data_sets[bt_atten]["throughput_received"] = (
                 self.rvr[bt_atten]["throughput_received"])
-        shaded_region = None
-
-        if "performance_result_path" in self.user_params["test_params"]:
-            try:
-                attenuation_path = [
-                    file_name for file_name in self.performance_files_list
-                    if test_name in file_name
-                ]
-                attenuation_path = attenuation_path[0]
-                with open(attenuation_path, 'r') as throughput_file:
-                    throughput_results = json.load(throughput_file)
-                for bt_atten in self.bt_atten_range:
-                    throughput_received = []
-                    legends[bt_atten].insert(
-                        0, ('Performance Results @ {}dB'.format(bt_atten)))
-                    throughput_attenuation = [
-                        att +
-                        (throughput_results[str(bt_atten)]["fixed_attenuation"])
-                        for att in self.rvr[bt_atten]["attenuation"]
-                    ]
-                    for idx, _ in enumerate(throughput_attenuation):
-                        throughput_received.append(throughput_results[str(
-                            bt_atten)]["throughput_received"][idx])
-                    data_sets[bt_atten][
-                        "user_attenuation"] = throughput_attenuation
-                    data_sets[bt_atten]["user_throughput"] = throughput_received
-                throughput_limits = self.get_throughput_limits(attenuation_path)
-                shaded_region = defaultdict(dict)
-                for bt_atten in self.bt_atten_range:
-                    shaded_region[bt_atten] = {}
-                    shaded_region[bt_atten] = {
-                        "x_vector": throughput_limits[bt_atten]["attenuation"],
-                        "lower_limit":
-                        throughput_limits[bt_atten]["lower_limit"],
-                        "upper_limit":
-                        throughput_limits[bt_atten]["upper_limit"]
-                    }
-            except Exception as e:
-                shaded_region = None
-                self.log.warning("ValueError: Performance file not found")
 
         if self.a2dp_streaming:
             for bt_atten in self.bt_atten_range:
@@ -328,15 +315,69 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                     self.rvr[bt_atten]["a2dp_packet_drop"])
             y_label.insert(0, "Packets Dropped")
         fig_property["y_label"] = y_label
-        output_file_path = os.path.join(self.pri_ad.log_path, test_name,
+        shaded_region = None
+
+        if "performance_result_path" in self.user_params["test_params"]:
+            shaded_region = self.comparision_results_calculation(data_sets, legends)
+
+        output_file_path = os.path.join(self.pri_ad.log_path,
+                                        self.current_test_name,
                                         "attenuation_plot.html")
-        bokeh_chart_plot(
-            list(self.rvr["bt_attenuation"]),
-            data_sets,
-            legends,
-            fig_property,
-            shaded_region=shaded_region,
-            output_file_path=output_file_path)
+        bokeh_chart_plot(list(self.rvr["bt_attenuation"]),
+                         data_sets,
+                         legends,
+                         fig_property,
+                         shaded_region=shaded_region,
+                         output_file_path=output_file_path)
+
+    def comparision_results_calculation(self, data_sets, legends):
+        """Compares rvr results with baseline values by calculating throughput
+        limits.
+
+        Args:
+            data_sets: including lists of x_data and lists of y_data.
+                ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
+            legends: list of legend for each curve.
+
+        Returns:
+            None if test_file is not found, otherwise shaded_region
+            will be returned.
+        """
+        try:
+            attenuation_path = next(
+                file_name for file_name in self.performance_files_list
+                if self.current_test_name in file_name
+            )
+        except StopIteration:
+            self.log.warning("Test_file not found. "
+                             "No comparision values to calculate")
+            return
+        with open(attenuation_path, 'r') as throughput_file:
+            throughput_results = json.load(throughput_file)
+        for bt_atten in self.bt_atten_range:
+            throughput_received = []
+            user_attenuation = []
+            legends[bt_atten].insert(
+                0, ('Performance Results @ {}dB'.format(bt_atten)))
+            for att in self.rvr[bt_atten]["attenuation"]:
+                attenuation = att - self.rvr[bt_atten]["fixed_attenuation"]
+                throughput_received.append(throughput_results[str(bt_atten)]
+                    ["throughput_received"][attenuation])
+                user_attenuation.append(att)
+            data_sets[bt_atten][
+                "user_attenuation"] = user_attenuation
+            data_sets[bt_atten]["user_throughput"] = throughput_received
+        throughput_limits = self.get_throughput_limits(attenuation_path)
+        shaded_region = defaultdict(dict)
+        for bt_atten in self.bt_atten_range:
+            shaded_region[bt_atten] = {
+                "x_vector": throughput_limits[bt_atten]["attenuation"],
+                "lower_limit":
+                throughput_limits[bt_atten]["lower_limit"],
+                "upper_limit":
+                throughput_limits[bt_atten]["upper_limit"]
+            }
+        return shaded_region
 
     def total_attenuation(self, performance_dict):
         """Calculates attenuation with adding fixed attenuation.
@@ -360,47 +401,47 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         provided in the config file.
 
         Returns:
-            True if successful, False otherwise.
+            None if test_file is not found, True if successful,
+            False otherwise.
         """
-        test_name = self.current_test_name
         try:
-            performance_path = [
+            performance_path = next(
                 file_name for file_name in self.performance_files_list
-                if test_name in file_name
-            ]
-            performance_path = performance_path[0]
-            throughput_limits = self.get_throughput_limits(performance_path)
-
-            failure_count = 0
-            for bt_atten in self.bt_atten_range:
-                for idx, current_throughput in enumerate(
-                        self.rvr[bt_atten]["throughput_received"]):
-                    current_att = self.rvr[bt_atten]["attenuation"][idx] + (
-                        self.rvr[bt_atten]["fixed_attenuation"])
-                    if (current_throughput <
-                            (throughput_limits[bt_atten]["lower_limit"][idx]) or
-                            current_throughput >
-                            (throughput_limits[bt_atten]["upper_limit"][idx])):
-                        failure_count = failure_count + 1
-                        self.log.info(
-                            "Throughput at {} dB attenuation is beyond limits. "
-                            "Throughput is {} Mbps. Expected within [{}, {}] Mbps.".
-                            format(
-                                current_att, current_throughput,
-                                throughput_limits[bt_atten]["lower_limit"][idx],
-                                throughput_limits[bt_atten]["upper_limit"][
-                                    idx]))
-                if failure_count >= self.test_params["failure_count_tolerance"]:
-                    self.log.error(
-                        "Test failed. Found {} points outside throughput limits.".
-                        format(failure_count))
-                    return False
-                self.log.info(
-                    "Test passed. Found {} points outside throughput limits.".
-                    format(failure_count))
-        except Exception as e:
-            self.log.warning("ValueError: Performance file not found cannot "
+                if self.current_test_name in file_name
+            )
+        except StopIteration:
+            self.log.warning("Test_file not found. Couldn't "
                              "calculate throughput limits")
+            return
+        throughput_limits = self.get_throughput_limits(performance_path)
+
+        failure_count = 0
+        for bt_atten in self.bt_atten_range:
+            for idx, current_throughput in enumerate(
+                    self.rvr[bt_atten]["throughput_received"]):
+                current_att = self.rvr[bt_atten]["attenuation"][idx]
+                if (current_throughput <
+                        (throughput_limits[bt_atten]["lower_limit"][idx]) or
+                        current_throughput >
+                        (throughput_limits[bt_atten]["upper_limit"][idx])):
+                    failure_count = failure_count + 1
+                    self.log.info(
+                        "Throughput at {} dB attenuation is beyond limits. "
+                        "Throughput is {} Mbps. Expected within [{}, {}] Mbps.".
+                        format(
+                            current_att, current_throughput,
+                            throughput_limits[bt_atten]["lower_limit"][idx],
+                            throughput_limits[bt_atten]["upper_limit"][
+                                idx]))
+            if failure_count >= self.test_params["failure_count_tolerance"]:
+                self.log.error(
+                    "Test failed. Found {} points outside throughput limits.".
+                    format(failure_count))
+                return False
+            self.log.info(
+                "Test passed. Found {} points outside throughput limits.".
+                format(failure_count))
+            return True
 
     def get_throughput_limits(self, performance_path):
         """Compute throughput limits for current test.
@@ -427,8 +468,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             upper_limit = []
             for idx, current_throughput in enumerate(
                     self.rvr[bt_atten]["throughput_received"]):
-                current_att = self.rvr[bt_atten]["attenuation"][idx] + (
-                    self.rvr[bt_atten]["fixed_attenuation"])
+                current_att = self.rvr[bt_atten]["attenuation"][idx]
                 att_distances = [
                     abs(current_att - performance_att)
                     for performance_att in performance_attenuation
