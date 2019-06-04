@@ -264,14 +264,13 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         # Verify that both softap & wifi is enabled concurrently.
         self.verify_wifi_and_softap_enabled()
 
-    def start_softap_and_connect_to_wifi_network(self, nw_params, softap_band, interface):
+    def start_softap_and_connect_to_wifi_network(self, nw_params, softap_band):
         """Test concurrent wifi connection and softap.
         This helper method first starts SoftAp and then makes a wifi connection.
 
         Args:
             nw_params: Params for network STA connection.
             softap_band: Band for the AP.
-            interface: the wlan interface of DUT
 
         1. Bring up softap and verify AP can be connected by a client device.
         2. Bring up wifi.
@@ -286,7 +285,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         if len(self.android_devices) > 2:
             self.log.info("Testbed has extra android devices, do more validation")
             self.verify_traffic_between_ap_clients(
-                    self.dut, self.android_devices[2], interface)
+                    self.dut, self.android_devices[2])
         # Verify that both softap & wifi is enabled concurrently.
         self.verify_wifi_and_softap_enabled()
 
@@ -319,14 +318,13 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             asserts.fail("%s ping %s failed" % (ad2.serial, ad1_ip))
 
     def verify_traffic_between_ap_clients(
-            self, ad1, ad2, interface, num_of_tries=2):
+            self, ad1, ad2, num_of_tries=2):
         """Test the clients that connect to access point can ping each other.
 
         Args:
-            interface: the wifi interface used by DUT.
             num_of_tries: the retry times of ping test.
         """
-        ad1_ip = ad1.droid.connectivityGetIPv4Addresses(interface)[0]
+        ad1_ip = ad1.droid.connectivityGetIPv4Addresses('wlan0')[0]
         ad2_ip = ad2.droid.connectivityGetIPv4Addresses('wlan0')[0]
         # Ping each other
         for _ in range(num_of_tries):
@@ -409,7 +407,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_2g, WIFI_CONFIG_APBAND_2G, 'wlan1')
+            self.wpapsk_2g, WIFI_CONFIG_APBAND_2G)
 
     @test_tracker_info(uuid="5f954957-ad20-4de1-b20c-6c97d0463bdd")
     def test_softap_5G_wifi_connection_5G(self):
@@ -417,7 +415,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G, 'wlan1')
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
 
     @test_tracker_info(uuid="1306aafc-a07e-4654-ba78-674f90cf748e")
     def test_softap_5G_wifi_connection_5G_DFS(self):
@@ -425,7 +423,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_DFS)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G, 'wlan1')
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_5G)
 
     @test_tracker_info(uuid="5e28e8b5-3faa-4cff-a782-13a796d7f572")
     def test_softap_5G_wifi_connection_2G(self):
@@ -433,7 +431,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_2g, WIFI_CONFIG_APBAND_5G, 'wlan1')
+            self.wpapsk_2g, WIFI_CONFIG_APBAND_5G)
 
     @test_tracker_info(uuid="a2c62bc6-9ccd-4bc4-8a23-9a1b5d0b4b5c")
     def test_softap_2G_wifi_connection_5G(self):
@@ -441,7 +439,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_5g, WIFI_CONFIG_APBAND_2G, 'wlan1')
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
 
     @test_tracker_info(uuid="75400685-a9d9-4091-8af3-97bd539c246a")
     def test_softap_2G_wifi_connection_5G_DFS(self):
@@ -449,7 +447,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         """
         self.configure_ap(channel_5g=WIFI_NETWORK_AP_CHANNEL_5G_DFS)
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_5g, WIFI_CONFIG_APBAND_2G, 'wlan1')
+            self.wpapsk_5g, WIFI_CONFIG_APBAND_2G)
 
     @test_tracker_info(uuid="aa23a3fc-31a1-4d5c-8cf5-2eb9fdf9e7ce")
     def test_softap_5G_wifi_connection_2G_with_location_scan_on(self):
@@ -459,7 +457,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.configure_ap(channel_2g=WIFI_NETWORK_AP_CHANNEL_2G)
         self.turn_location_on_and_scan_toggle_on()
         self.start_softap_and_connect_to_wifi_network(
-            self.wpapsk_2g, WIFI_CONFIG_APBAND_5G, 'wlan0')
+            self.wpapsk_2g, WIFI_CONFIG_APBAND_5G)
         # Now toggle wifi off & ensure we can still scan.
         wutils.wifi_toggle_state(self.dut, False)
         wutils.start_wifi_connection_scan_and_ensure_network_found(
