@@ -78,6 +78,7 @@ from acts.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
 from acts.test_utils.tel.tel_test_utils import wait_for_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
 from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts.test_utils.tel.tel_test_utils import is_current_data_on_cbrs
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -97,6 +98,7 @@ from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_incoming_message_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import get_operatorname_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
@@ -149,8 +151,11 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.user_params.get("min_phone_call_duration", 10))
         self.crash_check_interval = int(
             self.user_params.get("crash_check_interval", 300))
+        self.cbrs_check_interval = int(
+            self.user_params.get("cbrs_check_interval", 100))
         self.dut_incall = False
         self.dsds_esim = self.user_params.get("dsds_esim", False)
+        self.cbrs_esim = self.user_params.get("cbrs_esim", False)
         telephony_info = getattr(self.dut, "telephony", {})
         self.dut_capabilities = telephony_info.get("capabilities", [])
         self.dut_wfc_modes = telephony_info.get("wfc_modes", [])
@@ -667,6 +672,60 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
+    def cbrs_data_check_test(self):
+        failure = 0
+        for ad in self.android_devices:
+            if not getattr(ad, 'cbrs', {}):
+                setattr(ad, 'cbrs', None)
+            for i in range(0,2):
+                sub_id = get_subid_from_slot_index(ad.log, ad, i)
+                operator = get_operatorname_from_slot_index(ad, i)
+                ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
+                if "Google" in operator:
+                    ad.cbrs = sub_id
+        while time.time() < self.finishing_time:
+            try:
+                self.log.info(dict(self.result_info))
+                self._update_perf_json()
+                begin_time = get_device_epoch_time(self.dut)
+                run_time_in_seconds = (begin_time - self.begin_time) / 1000
+                test_name = "%s_cbrs_%s_seconds_after_start" % (
+                    self.test_name, run_time_in_seconds)
+                time.sleep(self.cbrs_check_interval)
+                for ad in self.android_devices:
+                    if not self.dut_incall:
+                        if is_current_data_on_cbrs(ad, ad.cbrs):
+                            self.result_info["CBRS-Data-Pass"] += 1
+                            cbrs_fail = False
+                        else:
+                            self.result_info["CBRS-Data-Fail"] += 1
+                            cbrs_fail = True
+                    else:
+                        if is_current_data_on_cbrs(ad, ad.cbrs):
+                            self.result_info["CBRS-InCall-Fail"] += 1
+                            cbrs_fail = True
+                        else:
+                            self.result_info["CBRS-InCall-Pass"] += 1
+                            cbrs_fail = False
+                    if cbrs_fail:
+                        ad.log.error("found cbrs data checks failures")
+                        failure += 1
+                        try:
+                            ad.take_bug_report(test_name, begin_time)
+                        except Exception as e:
+                            self.log.exception(e)
+            except Exception as e:
+                self.log.error("Exception error %s", str(e))
+                self.result_info["Exception Errors"] += 1
+            self.log.info("Crashes found: %s", failure)
+            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
+                self.log.error("Too many exception errors, quit test")
+                return False
+        if failure:
+            return False
+        else:
+            return True
+
     def call_test(self, call_verification_func=None):
         while time.time() < self.finishing_time:
             time.sleep(
@@ -722,6 +781,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         selection = random.randrange(0, len(file_names))
         file_name = file_names[selection]
         self.result_info["Internet Connection Check Total"] += 1
+
         if not self.internet_connection_check_method(self.log, self.dut):
             rat = self.dut.adb.getprop("gsm.network.type")
             if "," in rat:
@@ -903,10 +963,17 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.log.info(
                 "==== Start parallel voice/message/data stress test ====")
             self.perf_data["testing method"] = "parallel"
-            results = run_multithread_func(
-                self.log, [(self.call_test, [call_verification_func]),
-                           (self.message_test, []), (self.data_test, []),
-                           (self.crash_check_test, [])])
+            if not self.cbrs_esim:
+                results = run_multithread_func(
+                    self.log, [(self.call_test, [call_verification_func]),
+                               (self.message_test, []), (self.data_test, []),
+                               (self.crash_check_test, [])])
+            else:
+                results = run_multithread_func(
+                    self.log, [(self.call_test, [call_verification_func]),
+                               (self.message_test, []), (self.data_test, []),
+                               (self.cbrs_data_check_test, []),
+                               (self.crash_check_test, [])])
         else:
             self.log.info(
                 "==== Start sequential voice/message/data stress test ====")
