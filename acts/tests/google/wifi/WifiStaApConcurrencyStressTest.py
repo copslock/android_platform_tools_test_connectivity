@@ -111,7 +111,7 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
 
     """Helper Functions"""
 
-    def verify_wifi_full_on_off(self, network, softap_config, interface):
+    def verify_wifi_full_on_off(self, network, softap_config):
         wutils.wifi_toggle_state(self.dut, True)
         self.connect_to_wifi_network_and_verify((network, self.dut))
         self.run_iperf_client((network, self.dut))
@@ -119,7 +119,7 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
         if len(self.android_devices) > 2:
             self.log.info("Testbed has extra android devices, do more validation")
             self.verify_traffic_between_ap_clients(
-                    self.dut, self.android_devices[2], interface)
+                    self.dut, self.android_devices[2])
         wutils.wifi_toggle_state(self.dut, False)
 
     def verify_softap_full_on_off(self, network, softap_band):
@@ -130,6 +130,9 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
             self.log.info("Testbed has extra android devices, do more validation")
             self.verify_traffic_between_softap_clients(
                     self.dut_client, self.android_devices[2])
+        wutils.reset_wifi(self.dut_client)
+        if len(self.android_devices) > 2:
+            wutils.reset_wifi(self.android_devices[2])
         wutils.stop_wifi_tethering(self.dut)
 
     """Tests"""
@@ -234,7 +237,7 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
                 WIFI_CONFIG_APBAND_2G, check_connectivity=False)
         for count in range(self.stress_count):
             self.log.info("Iteration %d", count+1)
-            self.verify_wifi_full_on_off(self.wpapsk_2g, softap_config, 'wlan1')
+            self.verify_wifi_full_on_off(self.wpapsk_2g, softap_config)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
@@ -247,7 +250,7 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
                 WIFI_CONFIG_APBAND_5G, check_connectivity=False)
         for count in range(self.stress_count):
             self.log.info("Iteration %d", count+1)
-            self.verify_wifi_full_on_off(self.wpapsk_5g, softap_config, 'wlan1')
+            self.verify_wifi_full_on_off(self.wpapsk_5g, softap_config)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
@@ -260,7 +263,7 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
                 WIFI_CONFIG_APBAND_5G, check_connectivity=False)
         for count in range(self.stress_count):
             self.log.info("Iteration %d", count+1)
-            self.verify_wifi_full_on_off(self.wpapsk_5g, softap_config, 'wlan1')
+            self.verify_wifi_full_on_off(self.wpapsk_5g, softap_config)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
@@ -273,7 +276,7 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
                 WIFI_CONFIG_APBAND_5G, check_connectivity=False)
         for count in range(self.stress_count):
             self.log.info("Iteration %d", count+1)
-            self.verify_wifi_full_on_off(self.wpapsk_2g, softap_config, 'wlan1')
+            self.verify_wifi_full_on_off(self.wpapsk_2g, softap_config)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
@@ -286,7 +289,7 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
                 WIFI_CONFIG_APBAND_2G, check_connectivity=False)
         for count in range(self.stress_count):
             self.log.info("Iteration %d", count+1)
-            self.verify_wifi_full_on_off(self.wpapsk_5g, softap_config, 'wlan1')
+            self.verify_wifi_full_on_off(self.wpapsk_5g, softap_config)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
@@ -299,7 +302,7 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
                 WIFI_CONFIG_APBAND_2G, check_connectivity=False)
         for count in range(self.stress_count):
             self.log.info("Iteration %d", count+1)
-            self.verify_wifi_full_on_off(self.wpapsk_5g, softap_config, 'wlan1')
+            self.verify_wifi_full_on_off(self.wpapsk_5g, softap_config)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
@@ -314,6 +317,6 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
                 WIFI_CONFIG_APBAND_5G, check_connectivity=False)
         for count in range(self.stress_count):
             self.log.info("Iteration %d", count+1)
-            self.verify_wifi_full_on_off(self.wpapsk_2g, softap_config, 'wlan0')
+            self.verify_wifi_full_on_off(self.wpapsk_2g, softap_config)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
