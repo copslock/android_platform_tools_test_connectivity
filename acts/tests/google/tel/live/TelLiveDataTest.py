@@ -494,8 +494,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                         self.log, self.android_devices[0], False):
                     raise _LocalException("Failed to Disable Cellular Data")
 
-                if verify_internet_connection(self.log,
-                                              self.android_devices[0]):
+                if not verify_internet_connection(self.log,
+                                              self.android_devices[0], expected_state=False):
                     raise _LocalException("Internet Accessible when Disabled")
 
                 self.log.info("Step5 Re-enable data.")
