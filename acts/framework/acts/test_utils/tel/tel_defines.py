@@ -670,6 +670,7 @@ EventSignalStrengthChanged = "SignalStrengthChanged"
 EventVolteServiceStateChanged = "VolteServiceStateChanged"
 EventMessageWaitingIndicatorChanged = "MessageWaitingIndicatorChanged"
 EventConnectivityChanged = "ConnectivityChanged"
+EventActiveDataSubIdChanged = "ActiveDataSubIdChanged"
 
 # Constant for Packet Keep Alive Call Back
 EventPacketKeepaliveCallback = "PacketKeepaliveCallback"
