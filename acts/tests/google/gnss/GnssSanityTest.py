@@ -32,7 +32,7 @@ from acts.test_utils.tel.tel_test_utils import print_radio_info
 from acts.test_utils.tel.tel_test_utils import flash_radio
 
 
-class GNSSSanityTest(BaseTestClass):
+class GnssSanityTest(BaseTestClass):
     """ GNSS Function Sanity Tests"""
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
@@ -46,13 +46,18 @@ class GNSSSanityTest(BaseTestClass):
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
-                      "gnss_init_error_whitelist", "pixel_lab_location"]
+                      "gnss_init_error_whitelist", "pixel_lab_location",
+                      "legacy_wifi_xtra_cs_criteria"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
         for network in self.pixel_lab_network:
             SSID = network['SSID']
             self.ssid_map[SSID] = network
+        if self.ad.model == "marlin" or self.ad.model == "walleye":
+            self.wifi_xtra_cs_criteria = self.legacy_wifi_xtra_cs_criteria
+        else:
+            self.wifi_xtra_cs_criteria = self.xtra_cs_criteria
         self.flash_new_radio_or_mbn()
 
     def setup_class(self):
@@ -94,12 +99,12 @@ class GNSSSanityTest(BaseTestClass):
             gutils.set_attenuator_gnss_signal(self.ad, self.attenuators, self.default_gnss_signal_attenuation)
 
     def on_pass(self, test_name, begin_time):
-        gutils.get_gnss_qxdm_log(self.ad, test_name)
         self.ad.take_bug_report(test_name, begin_time)
+        gutils.get_gnss_qxdm_log(self.ad, test_name)
 
     def on_fail(self, test_name, begin_time):
-        gutils.get_gnss_qxdm_log(self.ad, test_name)
         self.ad.take_bug_report(test_name, begin_time)
+        gutils.get_gnss_qxdm_log(self.ad, test_name)
 
     def flash_new_radio_or_mbn(self):
         paths = {}
@@ -840,8 +845,7 @@ class GNSSSanityTest(BaseTestClass):
         wutils.wifi_toggle_state(self.ad, True)
         gutils.connect_to_wifi_network(
             self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                  self.xtra_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_data = gutils.process_ttff_by_gtw_gpstool(
@@ -850,14 +854,13 @@ class GNSSSanityTest(BaseTestClass):
                                       self.xtra_ws_criteria):
             return False
         begin_time = get_current_epoch_time()
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                  self.xtra_cs_criteria):
+        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria):
             return False
         gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_data = gutils.process_ttff_by_gtw_gpstool(
             self.ad, begin_time, self.pixel_lab_location)
         return gutils.check_ttff_data(self.ad, cs_ttff_data, "Cold Start",
-                                      self.xtra_cs_criteria)
+                                      self.wifi_xtra_cs_criteria)
 
     @test_tracker_info(uuid="1745b8a4-5925-4aa0-809a-1b17e848dc9c")
     def test_xtra_modem_ssr(self):
@@ -967,7 +970,7 @@ class GNSSSanityTest(BaseTestClass):
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
             if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                      self.xtra_cs_criteria):
+                                                      self.wifi_xtra_cs_criteria):
                 return False
             time.sleep(5)
             gutils.start_gnss_by_gtw_gpstool(self.ad, False)
