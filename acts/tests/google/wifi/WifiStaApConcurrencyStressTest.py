@@ -209,7 +209,7 @@ class WifiStaApConcurrencyStressTest(WifiStaApConcurrencyTest):
         self.connect_to_wifi_network_and_verify((self.wpapsk_2g, self.dut))
         for count in range(self.stress_count):
             self.log.info("Iteration %d", count+1)
-            self.verify_softap_full_on_off(self.wpapsk_2g, WIFI_CONFIG_APBAND_2G)
+            self.verify_softap_full_on_off(self.wpapsk_2g, WIFI_CONFIG_APBAND_5G)
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
 
