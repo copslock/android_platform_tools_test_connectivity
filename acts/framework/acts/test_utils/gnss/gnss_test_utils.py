@@ -84,7 +84,7 @@ def enable_gnss_verbose_logging(ad):
         ad: An AndroidDevice object.
     """
     remount_device(ad)
-    ad.log.info("Enable GNSS VERBOSE Logging and logd.")
+    ad.log.info("Enable GNSS VERBOSE Logging and persistent logcat.")
     ad.adb.shell("echo DEBUG_LEVEL = 5 >> /vendor/etc/gps.conf")
     ad.adb.shell("echo log.tag.LocationManagerService=VERBOSE >> /data/local.prop")
     ad.adb.shell("echo log.tag.GnssLocationProvider=VERBOSE >> /data/local.prop")
@@ -246,8 +246,6 @@ def get_gnss_qxdm_log(ad, test_name=""):
         ad: An AndroidDevice object.
     """
     log_path = ad.device_log_path
-    if utils.is_subtest(test_name):
-        log_path = os.path.join(log_path, test_name)
     utils.create_dir(log_path)
     gnss_log_name = "gnssstatus_log_%s_%s" % (ad.model, ad.serial)
     gnss_log_path = os.path.join(log_path, gnss_log_name)
@@ -513,6 +511,7 @@ def process_gnss_by_gtw_gpstool(ad, criteria):
             time.sleep(1)
         if not ad.is_adb_logcat_on:
             ad.start_adb_logcat()
+        check_currrent_focus_app(ad)
         start_gnss_by_gtw_gpstool(ad, False)
     ad.log.error("Test Abort. DUT can't get location fixed within %d attempts."
                  % retries)
@@ -526,14 +525,24 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration):
         ttff_mode: TTFF Test mode for current test item.
         iteration: Iteration of TTFF cycles.
     """
+    begin_time = get_current_epoch_time()
     if ttff_mode == "ws":
         ad.log.info("Wait 5 minutes to start TTFF Warm Start...")
         time.sleep(300)
     if ttff_mode == "cs":
         ad.log.info("Start TTFF Cold Start...")
         time.sleep(3)
-    ad.adb.shell("am broadcast -a com.android.gpstool.ttff_action "
-                 "--es ttff %s --es cycle %d" % (ttff_mode, iteration))
+    for i in range(1, 4):
+        ad.adb.shell("am broadcast -a com.android.gpstool.ttff_action "
+                     "--es ttff %s --es cycle %d" % (ttff_mode, iteration))
+        time.sleep(3)
+        if ad.search_logcat("act=com.android.gpstool.start_test_action",
+                            begin_time):
+            ad.log.info("Send TTFF start_test_action successfully.")
+            break
+        if i == 3:
+            check_currrent_focus_app(ad)
+            raise signals.TestFailure("Fail to send TTFF start_test_action.")
 
 def process_ttff_by_gtw_gpstool(ad, begin_time, true_position):
     """Process and save TTFF results.
@@ -547,51 +556,48 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position):
         ttff_data: A list of saved TTFF seconds.
     """
     ttff_data = {}
-    try:
-        while True:
-            if not ad.is_adb_logcat_on:
-                ad.start_adb_logcat()
-            stop_gps_results = ad.search_logcat("stop gps test", begin_time)
-            if stop_gps_results:
-                ad.send_keycode("HOME")
-                break
-            crash_result = ad.search_logcat("Force finishing activity "
-                                            "com.android.gpstool/.GPSTool",
-                                            begin_time)
-            if crash_result:
-                ad.log.error("GPSTool crashed. Abort test.")
-                break
-            logcat_results = ad.search_logcat("write TTFF log", begin_time)
-            if logcat_results:
-                ttff_log = logcat_results[-1]["log_message"].split()
-                ttff_loop = int(ttff_log[8].split(":")[-1])
-                ttff_sec = float(ttff_log[11])
-                ttff_cn = float(ttff_log[18].strip("]"))
-                if ttff_loop in ttff_data.keys():
-                    continue
-                if ttff_sec == 0.0:
-                    ttff_lat = 0.0
-                    ttff_lon = 0.0
-                else:
-                    location_results = ad.search_logcat("GPSService: Check item",
-                                                        begin_time)
-                    if location_results:
-                        location_log = location_results[-1]["log_message"].split()
-                        ttff_lat = float(location_log[8].split("=")[-1].strip(","))
-                        ttff_lon = float(location_log[9].split("=")[-1].strip(","))
-                ttff_pe = calculate_position_error(ad, ttff_lat, ttff_lon,
-                                                   true_position)
-                ttff_data[ttff_loop] = TTFF_REPORT(ttff_loop=ttff_loop,
-                                                   ttff_sec=ttff_sec,
-                                                   ttff_pe=ttff_pe,
-                                                   ttff_cn=ttff_cn)
-                ad.log.info("Loop %d = %.1f seconds, "
-                            "Position Error = %.1f meters, "
-                            "Average Signal = %.1f dbHz"
-                            % (ttff_loop, ttff_sec, ttff_pe, ttff_cn))
-        return ttff_data
-    except Exception as e:
-        raise signals.TestFailure(e)
+    while True:
+        if not ad.is_adb_logcat_on:
+            ad.start_adb_logcat()
+        stop_gps_results = ad.search_logcat("stop gps test", begin_time)
+        if stop_gps_results:
+            ad.send_keycode("HOME")
+            break
+        crash_result = ad.search_logcat("Force finishing activity "
+                                        "com.android.gpstool/.GPSTool",
+                                        begin_time)
+        if crash_result:
+            ad.log.error("GPSTool crashed. Abort test.")
+            break
+        logcat_results = ad.search_logcat("write TTFF log", begin_time)
+        if logcat_results:
+            ttff_log = logcat_results[-1]["log_message"].split()
+            ttff_loop = int(ttff_log[8].split(":")[-1])
+            ttff_sec = float(ttff_log[11])
+            ttff_cn = float(ttff_log[18].strip("]"))
+            if ttff_loop in ttff_data.keys():
+                continue
+            if ttff_sec == 0.0:
+                ttff_lat = 0.0
+                ttff_lon = 0.0
+            else:
+                location_results = ad.search_logcat("GPSService: Check item",
+                                                    begin_time)
+                if location_results:
+                    location_log = location_results[-1]["log_message"].split()
+                    ttff_lat = float(location_log[8].split("=")[-1].strip(","))
+                    ttff_lon = float(location_log[9].split("=")[-1].strip(","))
+            ttff_pe = calculate_position_error(ad, ttff_lat, ttff_lon,
+                                               true_position)
+            ttff_data[ttff_loop] = TTFF_REPORT(ttff_loop=ttff_loop,
+                                               ttff_sec=ttff_sec,
+                                               ttff_pe=ttff_pe,
+                                               ttff_cn=ttff_cn)
+            ad.log.info("Loop %d = %.1f seconds, "
+                        "Position Error = %.1f meters, "
+                        "Average Signal = %.1f dbHz"
+                        % (ttff_loop, ttff_sec, ttff_pe, ttff_cn))
+    return ttff_data
 
 def check_ttff_data(ad, ttff_data, ttff_mode, criteria):
     """Verify all TTFF results.
