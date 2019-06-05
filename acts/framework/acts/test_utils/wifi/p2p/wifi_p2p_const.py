@@ -39,6 +39,7 @@ ONGOING_PEER_INFO_AVAILABLE_EVENT = "WifiP2pOnOngoingPeerAvailable"
 ONGOING_PEER_SET_SUCCESS_EVENT = "WifiP2psetP2pPeerConfigureOnSuccess"
 CONNECT_SUCCESS_EVENT = "WifiP2pConnectOnSuccess"
 CREATE_GROUP_SUCCESS_EVENT = "WifiP2pCreateGroupOnSuccess"
+SET_CHANNEL_SUCCESS_EVENT = "WifiP2pSetChannelsOnSuccess"
 
 
 ######################################################
