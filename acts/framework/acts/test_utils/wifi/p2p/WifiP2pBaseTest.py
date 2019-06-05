@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import acts.utils
+import re
 import time
 
 from acts import asserts
@@ -30,6 +31,8 @@ class WifiP2pBaseTest(BaseTestClass):
     def setup_class(self):
         self.dut1 = self.android_devices[0]
         self.dut2 = self.android_devices[1]
+        self.dut1_mac = self.get_p2p_mac_address(self.dut1)
+        self.dut2_mac = self.get_p2p_mac_address(self.dut2)
 
         #init location before init p2p
         acts.utils.set_location_service(self.dut1, True)
@@ -98,3 +101,8 @@ class WifiP2pBaseTest(BaseTestClass):
         for ad in self.android_devices:
             ad.take_bug_report(test_name, begin_time)
             ad.cat_adb_log(test_name, begin_time)
+
+    def get_p2p_mac_address(self, dut):
+        """Gets the current MAC address being used for Wi-Fi Direct."""
+        out = dut.adb.shell("ifconfig p2p0")
+        return re.match(".* HWaddr (\S+).*", out, re.S).group(1)
