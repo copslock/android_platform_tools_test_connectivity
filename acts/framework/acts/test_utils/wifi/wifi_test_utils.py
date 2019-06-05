@@ -2080,6 +2080,18 @@ def stop_pcap(pcap, procs, test_status=None):
     if test_status:
         shutil.rmtree(os.path.dirname(fname))
 
+def verify_mac_not_found_in_pcap(mac, packets):
+    """Verify that a mac address is not found in the captured packets.
+
+    Args:
+        mac: string representation of the mac address
+        packets: packets obtained by rdpcap(pcap_fname)
+    """
+    for pkt in packets:
+        logging.debug("Packet Summary = %s", pkt.summary())
+        if mac in pkt.summary():
+            asserts.fail("Caught Factory MAC: %s in packet sniffer."
+                         "Packet = %s" % (mac, pkt.show()))
 
 def start_cnss_diags(ads):
     for ad in ads:
