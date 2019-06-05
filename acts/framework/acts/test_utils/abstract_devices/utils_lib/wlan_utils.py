@@ -14,8 +14,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts import signals
+from acts import asserts
 from acts.controllers.ap_lib import hostapd_ap_preset
+
+def validate_setup_ap_and_associate(*args, **kwargs):
+    """Validates if setup_ap_and_associate was a success or not
+
+       Args: Args match setup_ap_and_associate
+    """
+    asserts.assert_true(setup_ap_and_associate(*args, **kwargs),
+                        'Failed to associate.')
+    asserts.explicit_pass('Successfully associated.')
 
 
 def setup_ap_and_associate(access_point,
@@ -57,6 +66,57 @@ def setup_ap_and_associate(access_point,
         password: Password to connect to WLAN if necessary.
         check_connectivity: Whether to check for internet connectivity.
     """
+    setup_ap(access_point, profile_name, channel, ssid, mode, preamble,
+             beacon_interval, dtim_period, frag_threshold, rts_threshold,
+             force_wmm, hidden, security, additional_ap_parameters, password,
+             check_connectivity, n_capabilities, ac_capabilities,
+             vht_bandwidth)
+
+    return associate(
+            client,
+            ssid,
+            password,
+            check_connectivity=check_connectivity,
+            hidden=hidden)
+
+
+def setup_ap(access_point,
+             profile_name,
+             channel,
+             ssid,
+             mode=None,
+             preamble=None,
+             beacon_interval=None,
+             dtim_period=None,
+             frag_threshold=None,
+             rts_threshold=None,
+             force_wmm=None,
+             hidden=False,
+             security=None,
+             additional_ap_parameters=None,
+             password=None,
+             check_connectivity=False,
+             n_capabilities=None,
+             ac_capabilities=None,
+             vht_bandwidth=None):
+    """Sets up the AP.
+
+    Args:
+        access_point: An ACTS access_point controller
+        profile_name: The profile name of one of the hostapd ap presets.
+        channel: What channel to set the AP to.
+        preamble: Whether to set short or long preamble (True or False)
+        beacon_interval: The beacon interval (int)
+        dtim_period: Length of dtim period (int)
+        frag_threshold: Fragmentation threshold (int)
+        rts_threshold: RTS threshold (int)
+        force_wmm: Enable WMM or not (True or False)
+        hidden: Advertise the SSID or not (True or False)
+        security: What security to enable.
+        additional_ap_parameters: Additional parameters to send the AP.
+        password: Password to connect to WLAN if necessary.
+        check_connectivity: Whether to check for internet connectivity.
+    """
     ap = hostapd_ap_preset.create_ap_preset(
         profile_name=profile_name,
         iface_wlan_2g=access_point.wlan_2g,
@@ -77,13 +137,7 @@ def setup_ap_and_associate(access_point,
         ac_capabilities=ac_capabilities,
         vht_bandwidth=vht_bandwidth)
     access_point.start_ap(
-        hostapd_config=ap,
-        additional_parameters=additional_ap_parameters)
-    associate(client,
-              ssid,
-              password,
-              check_connectivity=check_connectivity,
-              hidden=hidden)
+        hostapd_config=ap, additional_parameters=additional_ap_parameters)
 
 
 def associate(client,
@@ -100,10 +154,5 @@ def associate(client,
         check_connectivity: Whether to check internet connectivity.
         hidden: If the WLAN is hidden or not.
     """
-    if client.associate(ssid,
-                        password,
-                        check_connectivity=check_connectivity,
-                        hidden=hidden):
-        raise signals.TestPass("Successfully associated.")
-    else:
-        raise signals.TestFailure("Failed to associate.")
+    return client.associate(
+        ssid, password, check_connectivity=check_connectivity, hidden=hidden)
