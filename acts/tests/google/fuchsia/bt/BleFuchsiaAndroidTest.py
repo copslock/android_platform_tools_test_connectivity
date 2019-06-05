@@ -47,9 +47,6 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
         self.log.info("There are: {} fuchsia and {} android devices.".format(
             len(self.fuchsia_devices), len(self.android_devices)))
 
-    def teardown_test(self):
-        self.fd.clean_up()
-
     def _start_generic_advertisement_include_device_name(self):
         self.ad.droid.bleSetAdvertiseDataIncludeDeviceName(True)
         self.ad.droid.bleSetAdvertiseSettingsAdvertiseMode(
@@ -57,10 +54,11 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
         advertise_data = self.ad.droid.bleBuildAdvertiseData()
         advertise_settings = self.ad.droid.bleBuildAdvertiseSettings()
         advertise_callback = self.ad.droid.bleGenBleAdvertiseCallback()
-        self.ad.droid.bleStartBleAdvertising(
-            advertise_callback, advertise_data, advertise_settings)
-        self.ad.ed.pop_event(
-            adv_succ.format(advertise_callback), self.default_timeout)
+        self.ad.droid.bleStartBleAdvertising(advertise_callback,
+                                             advertise_data,
+                                             advertise_settings)
+        self.ad.ed.pop_event(adv_succ.format(advertise_callback),
+                             self.default_timeout)
         self.active_adv_callback_list.append(advertise_callback)
         return advertise_callback
 
@@ -97,8 +95,9 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
         droid_name = self.ad.droid.bluetoothGetLocalName()
         self.log.info("Android device name: {}".format(droid_name))
 
-        scan_result = le_scan_for_device_by_name(
-            self.fd, self.log, sample_android_name, self.default_timeout)
+        scan_result = le_scan_for_device_by_name(self.fd, self.log,
+                                                 sample_android_name,
+                                                 self.default_timeout)
         if not scan_result:
             return False
 
