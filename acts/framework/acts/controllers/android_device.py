@@ -1282,13 +1282,18 @@ class AndroidDevice:
 
     def get_my_current_focus_app(self):
         """Get the current focus application"""
-        output = self.adb.shell(
-            'dumpsys window windows | grep -E mFocusedApp', ignore_status=True)
-        if not output or "not found" in output or "Can't find" in output or (
-                "mFocusedApp=null" in output):
-            result = ''
-        else:
-            result = output.split(' ')[-2]
+        dumpsys_cmd = [
+            'dumpsys window | grep -E mFocusedApp',
+            'dumpsys window windows | grep -E mFocusedApp']
+        for cmd in dumpsys_cmd:
+            output = self.adb.shell(
+                cmd, ignore_status=True)
+            if not output or "not found" in output or "Can't find" in output or (
+                    "mFocusedApp=null" in output):
+                result = ''
+            else:
+                result = output.split(' ')[-2]
+                break
         self.log.debug("Current focus app is %s", result)
         return result
 
