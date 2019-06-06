@@ -1610,6 +1610,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         self.log.info(
             "Step6: Disconnect call A-B and verify PhoneA PhoneB end.")
+        calls = ads[0].droid.telecomCallGetCallIds()
         call_to_disconnect = None
         for call in calls:
             if is_uri_equivalent(call_ab_uri, get_call_uri(ads[0], call)):
@@ -1677,6 +1678,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         self.log.info(
             "Step6: Disconnect call A-C and verify PhoneA PhoneC end.")
+        calls = ads[0].droid.telecomCallGetCallIds()
         call_to_disconnect = None
         for call in calls:
             if is_uri_equivalent(call_ac_uri, get_call_uri(ads[0], call)):
