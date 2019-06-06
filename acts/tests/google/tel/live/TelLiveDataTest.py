@@ -1613,7 +1613,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 "Disable Data on Provider, verify no data on Client.")
             self.provider.droid.telephonyToggleDataConnection(False)
             time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if verify_internet_connection(self.log, self.provider):
+            if not verify_internet_connection(self.log, self.provider, expected_state=False):
                 self.provider.log.error("Disable data on provider failed.")
                 return False
             if not self.provider.droid.wifiIsApEnabled():
@@ -1820,7 +1820,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if self.provider.droid.wifiIsApEnabled():
                 self.provider.log.error("Provider WiFi tethering not stopped.")
                 return False
-            if verify_internet_connection(self.log, self.clients[0]):
+            if not verify_internet_connection(self.log, self.clients[0], expected_state=False):
                 self.clients[0].log.error(
                     "Client should not have Internet connection.")
                 return False
