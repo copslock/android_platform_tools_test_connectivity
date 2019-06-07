@@ -417,7 +417,7 @@ class WifiMacRandomizationTest(WifiBaseTest):
         ap2 = self.reference_networks[1]["5g"]
         mac_ap1 = self.connect_to_network_and_verify_mac_randomization(ap1)
         mac_ap2 = self.connect_to_network_and_verify_mac_randomization(ap2)
-        if ap1 == ap2:
+        if mac_ap1 == mac_ap2:
             raise signals.TestFailure("Same MAC address was generated for both "
                                       "APs: %s" % mac_ap1)
 
