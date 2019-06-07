@@ -141,6 +141,10 @@ def create_ap_preset(profile_name='whirlwind',
                 extended_channel = hostapd_constants.N_CAPABILITY_HT40_PLUS
             elif hostapd_config.ht40_minus_allowed(channel):
                 extended_channel = hostapd_constants.N_CAPABILITY_HT40_MINUS
+            # Channel 165 operates in 20MHz with n or ac modes.
+            if channel == 165:
+                mode = hostapd_constants.MODE_11N_MIXED
+                extended_channel = hostapd_constants.N_CAPABILITY_HT20
             # Define the n capability vector for 20 MHz and higher bandwidth
             if not vht_bandwidth:
                 pass
