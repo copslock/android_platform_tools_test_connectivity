@@ -550,6 +550,19 @@ def p2p_create_group_with_config(ad, network_name, passphrase, band):
             p2pconsts.DEFAULT_TIMEOUT)
     time.sleep(p2pconsts.DEFAULT_SLEEPTIME)
 
+def wifi_p2p_set_channels_for_current_group(ad, listening_chan, operating_chan):
+    """Sets the listening channel and operating channel of the current group
+       created with initialize.
+
+    Args:
+        ad: The android device
+        listening_chan: Integer, the listening channel
+        operating_chan: Integer, the operating channel
+    """
+    ad.droid.wifiP2pSetChannelsForCurrentGroup(listening_chan, operating_chan)
+    ad.ed.pop_event(p2pconsts.SET_CHANNEL_SUCCESS_EVENT,
+                    p2pconsts.DEFAULT_TIMEOUT)
+
 class WifiP2PEnums():
 
     class WifiP2pConfig():
