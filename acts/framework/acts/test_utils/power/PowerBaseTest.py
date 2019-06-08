@@ -36,6 +36,7 @@ SCREENON_USB_DISABLE = 'dumpsys battery unplug'
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
 AOD_OFF = 'settings put secure doze_always_on 0'
 MUSIC_IQ_OFF = 'pm disable-user com.google.intelligence.sense'
+DISABLE_THERMAL = 'setprop persist.vendor.disable.thermal.control 1'
 # Command to disable gestures
 LIFT = 'settings put secure doze_pulse_on_pick_up 0'
 DOUBLE_TAP = 'settings put secure doze_pulse_on_double_tap 0'
@@ -285,6 +286,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.dut.adb.shell(AUTO_TIMEZONE_OFF)
         self.dut.adb.shell(FORCE_YOUTUBE_STOP)
         self.dut.adb.shell(FORCE_DIALER_STOP)
+        self.dut.adb.shell(DISABLE_THERMAL)
         self.dut.droid.wifiSetCountryCode('US')
         self.dut.droid.wakeUpNow()
         self.dut.log.info('Device has been set to Rockbottom state')
