@@ -53,6 +53,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         self.simulation = None
         self.anritsu = None
         self.calibration_table = {}
+        self.power_results = {}
 
         # If callbox version was not specified in the config files,
         # set a default value
@@ -171,6 +172,18 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         return True
 
+    def teardown_test(self):
+        """ Executed after every test case, even if it failed or an exception
+        happened.
+
+        Save results to dictionary so they can be displayed after completing
+        the test batch.
+        """
+
+        super().teardown_test()
+
+        self.power_results[self.test_name] = self.power_consumption
+
     def consume_parameter(self, parameter_name, num_values=0):
         """ Parses a parameter from the test name.
 
@@ -208,7 +221,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     def teardown_class(self):
         """Clean up the test class after tests finish running.
 
-        Stop the simulation and then disconnect from the Anritsu Callbox.
+        Stops the simulation and disconnects from the Anritsu Callbox. Then
+        displays the test results.
 
         """
         super().teardown_class()
@@ -216,6 +230,13 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         if self.anritsu:
             self.anritsu.stop_simulation()
             self.anritsu.disconnect()
+
+        results_table_log = 'Results for cellular power tests:'
+
+        for test_name, value in self.power_results.items():
+            results_table_log += '\n{}\t{}'.format(test_name, value)
+
+        self.log.info(results_table_log)
 
     def init_simulation(self, sim_type):
         """ Starts a new simulation only if needed.
