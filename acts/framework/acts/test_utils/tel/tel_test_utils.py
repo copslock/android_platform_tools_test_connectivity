@@ -1451,7 +1451,7 @@ def is_current_data_on_cbrs(ad, cbrs_subid):
         return False
     current_data = ad.droid.telephonyGetPreferredOpportunisticDataSubscription()
     ad.log.info("Current Data subid %s cbrs_subid %s", current_data, cbrs_subid)
-    if current_data == cbrs_sudid:
+    if current_data == cbrs_subid:
         return True
     else:
         return False
