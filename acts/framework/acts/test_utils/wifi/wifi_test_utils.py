@@ -1821,7 +1821,7 @@ def start_pcap(pcap, wifi_band, test_name):
         (pcap Process object, log directory) as the value
     """
     log_dir = os.path.join(
-        context.get_current_context.get_full_output_path(), 'PacketCapture')
+        context.get_current_context().get_full_output_path(), 'PacketCapture')
     utils.create_dir(log_dir)
     if wifi_band == 'dual':
         bands = [BAND_2G, BAND_5G]
