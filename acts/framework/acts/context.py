@@ -34,7 +34,7 @@ class ContextLevel(enum.IntEnum):
     TESTCASE = 2
 
 
-def get_current_context(depth=ContextLevel.TESTCASE):
+def get_current_context(depth=None):
     """Get the current test context at the specified depth.
     Pulls the most recently created context, with a level at or below the given
     depth, from the _contexts stack.
@@ -46,6 +46,8 @@ def get_current_context(depth=ContextLevel.TESTCASE):
 
     Returns: An instance of TestContext.
     """
+    if depth is None:
+        return _contexts[-1]
     return _contexts[min(depth, len(_contexts)-1)]
 
 
@@ -326,7 +328,7 @@ class TestCaseContext(TestContext):
 
     @property
     def test_case_name(self):
-        return self.test_class.test_name
+        return self.test_case
 
     @property
     def test_class_name(self):
