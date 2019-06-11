@@ -2772,7 +2772,6 @@ def set_post_sim_params(anritsu_handle, user_params, sim_card):
         anritsu_handle.send_command("PDNIMS 1,ENABLE")
         anritsu_handle.send_command("PDNVNID 1,1")
         anritsu_handle.send_command("PDNIMS 2,ENABLE")
-        anritsu_handle.send_command("PDNVNID 2,2")
         anritsu_handle.send_command("PDNIMS 3,ENABLE")
         anritsu_handle.send_command("PDNVNID 3,1")
     if sim_card == VzW12349:
