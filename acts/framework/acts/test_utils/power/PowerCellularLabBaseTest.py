@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import time
+import os
 
 import acts.test_utils.power.PowerBaseTest as PBT
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
@@ -41,6 +42,11 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
     # User param keywords
     KEY_CALIBRATION_TABLE = "calibration_table"
+
+    # Name of the files in the logs directory that will contain test results
+    # and other information in csv format.
+    RESULTS_SUMMARY_FILENAME = 'cellular_power_results.csv'
+    CALIBRATION_TABLE_FILENAME = 'calibration_table.csv'
 
     def __init__(self, controllers):
         """ Class initialization.
@@ -231,12 +237,46 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.anritsu.stop_simulation()
             self.anritsu.disconnect()
 
+        # Log a summary of results
         results_table_log = 'Results for cellular power tests:'
 
         for test_name, value in self.power_results.items():
             results_table_log += '\n{}\t{}'.format(test_name, value)
 
+        # Save this summary to a csv file in the logs directory
+        self.save_summary_to_file()
+
         self.log.info(results_table_log)
+
+    def save_summary_to_file(self):
+        """ Creates CSV format files with a summary of results.
+
+        This CSV files can be easily imported in a spreadsheet to analyze the
+        results obtained from the tests.
+        """
+
+        # Save a csv file with the power measurements done in all the tests
+
+        path = os.path.join(self.log_path, self.RESULTS_SUMMARY_FILENAME)
+
+        with open(path, 'w') as csvfile:
+            csvfile.write('test,avg_power')
+            for test_name, value in self.power_results.items():
+                csvfile.write('\n{},{}'.format(test_name, value))
+
+        # Save a csv file with the calibration table for each simulation type
+
+        for sim_type in self.calibration_table:
+
+            path = os.path.join(
+                self.log_path, '{}_{}'.format(sim_type,
+                                              self.CALIBRATION_TABLE_FILENAME))
+
+            with open(path, 'w') as csvfile:
+                csvfile.write('band,dl_pathloss, ul_pathloss')
+                for band, pathloss in self.calibration_table[sim_type].items():
+                    csvfile.write('\n{},{},{}'.format(band, pathloss['dl'],
+                                                      pathloss['ul']))
 
     def init_simulation(self, sim_type):
         """ Starts a new simulation only if needed.
