@@ -143,6 +143,9 @@ WAIT_TIME_ANDROID_STATE_SETTLING = 1
 # has sufficient time to reconfigure based on new network
 WAIT_TIME_BETWEEN_REG_AND_CALL = 5
 
+# Wait time for data pdn to be up on CBRS
+WAIT_TIME_FOR_CBRS_DATA_SWITCH = 30
+
 # Time to wait for 1xrtt voice attach check
 # After DUT voice network type report 1xrtt (from unknown), it need to wait for
 # several seconds before the DUT can receive incoming call.
