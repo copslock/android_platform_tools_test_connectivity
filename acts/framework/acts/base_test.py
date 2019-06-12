@@ -59,7 +59,7 @@ def _logcat_log_test_begin(event):
                                                event.test_case_name))
 
     except error.ActsError as e:
-        test_instance.results.errors.append(e)
+        test_instance.results.error.append(e)
         test_instance.log.error('BaseTest setup_test error: %s' % e.message)
 
     except Exception as e:
@@ -80,7 +80,7 @@ def _logcat_log_test_end(event):
                                              event.test_case_name))
 
     except error.ActsError as e:
-        test_instance.results.errors.append(e)
+        test_instance.results.error.append(e)
         test_instance.log.error('BaseTest teardown_test error: %s' % e.message)
 
     except Exception as e:
@@ -467,9 +467,9 @@ class BaseTestClass(object):
         """
         self.current_test_name = test_name
 
-        # Block the test if the consecutive test case failure limit is reached.
+        # Skip the test if the consecutive test case failure limit is reached.
         if self.consecutive_failures == self.consecutive_failure_limit:
-            raise signals.TestBlocked('Consecutive test failure')
+            raise signals.TestError('Consecutive test failure')
 
         return self.setup_test()
 
@@ -564,26 +564,6 @@ class BaseTestClass(object):
         """A function that is executed upon a test case being skipped.
 
         Implementation is optional.
-
-        Args:
-            test_name: Name of the test that triggered this function.
-            begin_time: Logline format timestamp taken when the test started.
-        """
-
-    def _on_blocked(self, record):
-        """Proxy function to guarantee the base implementation of on_blocked
-        is called.
-
-        Args:
-            record: The records.TestResultRecord object for the blocked test
-                    case.
-        """
-        self.log.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        self.log.info("Reason to block: %s", record.details)
-        self.on_blocked(record.test_name, record.begin_time)
-
-    def on_blocked(self, test_name, begin_time):
-        """A function that is executed upon a test begin skipped.
 
         Args:
             test_name: Name of the test that triggered this function.
@@ -691,11 +671,6 @@ class BaseTestClass(object):
                 self.log.exception(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
-        except signals.TestBlocked as e:
-            # Test blocked.
-            test_signal = e
-            tr_record.test_blocked(e)
-            self._exec_procedure_func(self._on_blocked, tr_record)
         except signals.TestSkip as e:
             # Test skipped.
             test_signal = e
@@ -714,14 +689,14 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_pass, tr_record)
         except error.ActsError as e:
             test_signal = e
-            self.results.errors.append(e)
+            tr_record.test_error(e)
             self.log.error(
                 'BaseTest execute_one_test_case error: %s' % e.message)
         except Exception as e:
             test_signal = e
             self.log.error(traceback.format_exc())
             # Exception happened during test.
-            tr_record.test_unknown(e)
+            tr_record.test_error(e)
             self._exec_procedure_func(self._on_exception, tr_record)
             self._exec_procedure_func(self._on_fail, tr_record)
         else:
@@ -734,6 +709,8 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
             self.results.add_record(tr_record)
+            self.summary_writer.dump(
+                tr_record.to_dict(), records.TestSummaryEntryType.RECORD)
             self.current_test_name = None
             event_bus.post(TestCaseEndEvent(self, self.test_name, test_signal))
 
@@ -932,14 +909,16 @@ class BaseTestClass(object):
                 Default is 'Failed class setup'
         """
         for test_name, test_func in tests:
-            signal = signals.TestBlocked(reason)
+            signal = signals.TestError(reason)
             record = records.TestResultRecord(test_name, self.TAG)
             record.test_begin()
             if hasattr(test_func, 'gather'):
                 signal.extras = test_func.gather()
-            record.test_blocked(signal)
+            record.test_error(signal)
             self.results.add_record(record)
-            self._on_blocked(record)
+            self.summary_writer.dump(
+                record.to_dict(), records.TestSummaryEntryType.RECORD)
+            self._on_skip(record)
 
     def run(self, test_names=None, test_case_iterations=1):
         """Runs test cases within a test class by the order they appear in the
@@ -980,8 +959,10 @@ class BaseTestClass(object):
         else:
             matches = valid_tests
         self.results.requested = matches
+        self.summary_writer.dump(self.results.requested_test_names_dict(),
+                                 records.TestSummaryEntryType.TEST_NAME_LIST)
         tests = self._get_test_funcs(matches)
-        # A TestResultRecord used for when setup_class fails.
+
         # Setup for the class.
         setup_fail = False
         try:
