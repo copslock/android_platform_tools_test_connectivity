@@ -352,7 +352,7 @@ class WifiChaosTest(WifiBaseTest):
         self.get_band_and_chan(ssid)
         self.pcap.configure_monitor_mode(self.band, self.chan)
         self.pcap_procs = wutils.start_pcap(
-                self.pcap, self.band.lower(), self.log_path, self.test_name)
+                self.pcap, self.band.lower(), self.test_name)
         self.run_connect_disconnect(network, hostname, rpm_port, rpm_ip,
                                     release_ap)
 
