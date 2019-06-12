@@ -91,9 +91,6 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # user_params dictionary.
         self.PARAMS_KEY = self.TAG + "_params"
 
-        # Set DUT to rockbottom
-        self.dut_rockbottom()
-
         # Establish connection to Anritsu Callbox
         return self.connect_to_anritsu()
 
@@ -131,6 +128,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         for the simulation config. The setup_test methods in the children
         classes can then consume the remaining values.
         """
+
+        super().setup_test()
 
         # Get list of parameters from the test name
         self.parameters = self.current_test_name.split('_')
