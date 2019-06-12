@@ -1,4 +1,4 @@
-#!/usr/bin python3
+#!/usr/bin/env python3
 #
 #   Copyright 2019 - The Android Open Source Project
 #
@@ -16,7 +16,7 @@
 """Python module for Rohde & Schwarz SMBV100 Vector Signal Generator."""
 
 import numbers
-import acts.controllers.gnssinst_lib.abstract_inst as abstract_inst
+from acts.controllers.gnssinst_lib import abstract_inst
 
 
 class SMBV100Error(abstract_inst.SocketInstrumentError):
