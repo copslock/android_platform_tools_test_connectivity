@@ -25,6 +25,7 @@ from builtins import open
 from builtins import str
 from datetime import datetime
 
+from acts import context
 from acts import logger as acts_logger
 from acts import tracelogger
 from acts import utils
@@ -356,8 +357,6 @@ class AndroidDevice:
         log: A logger adapted from root logger with added token specific to an
              AndroidDevice instance.
         adb_logcat_process: A process that collects the adb logcat.
-        adb_logcat_file_path: A string that's the full path to the adb logcat
-                              file collected, if any.
         adb: An AdbProxy object used for interacting with the device via adb.
         fastboot: A FastbootProxy object used for interacting with the device
                   via fastboot.
@@ -367,7 +366,8 @@ class AndroidDevice:
         self.serial = serial
         # logging.log_path only exists when this is used in an ACTS test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
-        self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
+        self.log_dir = 'AndroidDevice%s' % serial
+        self.log_path = os.path.join(log_path_base, self.log_dir)
         self.log = tracelogger.TraceLogger(
             AndroidDeviceLoggerAdapter(logging.getLogger(), {
                 'serial': serial
@@ -380,8 +380,6 @@ class AndroidDevice:
         self.adb = adb.AdbProxy(serial, ssh_connection=ssh_connection)
         self.fastboot = fastboot.FastbootProxy(
             serial, ssh_connection=ssh_connection)
-        self.adb_logcat_file_path = os.path.join(
-            self.log_path, "adblog_%s_debug.txt" % serial)
         if not self.is_bootloader:
             self.root_adb()
         self._ssh_connection = ssh_connection
@@ -572,9 +570,16 @@ class AndroidDevice:
                 # not restarted there is no droid.
                 if self.droid:
                     self.droid.logI('Logcat died')
-                self.log.info("Logcat to %s died", self.adb_logcat_file_path)
+                self.log.info("Logcat to %s died", self.log_path)
                 return False
         return False
+
+    @property
+    def device_log_path(self):
+        """Returns the directory for all Android device logs for the current
+        test context and serial.
+        """
+        return context.get_current_context().get_full_output_path(self.serial)
 
     def update_sdk_api_level(self):
         self._sdk_api_level = None
@@ -693,10 +698,7 @@ class AndroidDevice:
                                                         target) >= 0
         return low and high
 
-    def cat_adb_log(self,
-                    tag,
-                    begin_time,
-                    end_time=None,
+    def cat_adb_log(self, tag, begin_time, end_time=None,
                     dest_path="AdbLogExcerpts"):
         """Takes an excerpt of the adb logcat log from a certain time point to
         current time.
@@ -707,27 +709,26 @@ class AndroidDevice:
             end_time: Epoch time of the ending of the time period, default None
             dest_path: Destination path of the excerpt file.
         """
-        log_begin_time = acts_logger.epoch_to_log_line_timestamp(begin_time)
+        log_begin_time = acts_logger.normalize_log_line_timestamp(
+            acts_logger.epoch_to_log_line_timestamp(begin_time))
         if end_time is None:
             log_end_time = acts_logger.get_log_line_timestamp()
         else:
             log_end_time = acts_logger.epoch_to_log_line_timestamp(end_time)
         self.log.debug("Extracting adb log from logcat.")
-        if not os.path.exists(self.adb_logcat_file_path):
-            self.log.warn(
-                "Logcat file %s does not exist." % self.adb_logcat_file_path)
+        logcat_path = os.path.join(self.device_log_path,
+                                   'adblog_%s_debug.txt' % self.serial)
+        if not os.path.exists(logcat_path):
+            self.log.warning("Logcat file %s does not exist." % logcat_path)
             return
-        adb_excerpt_path = os.path.join(self.log_path, dest_path)
-        utils.create_dir(adb_excerpt_path)
-        f_name = os.path.basename(self.adb_logcat_file_path)
-        out_name = f_name.replace("adblog,", "").replace(".txt", "")
-        out_name = ",{},{}.txt".format(log_begin_time, out_name)
+        adb_excerpt_dir = os.path.join(self.log_path, dest_path)
+        utils.create_dir(adb_excerpt_dir)
+        out_name = '%s,%s.txt' % (log_begin_time, self.serial)
         tag_len = utils.MAX_FILENAME_LEN - len(out_name)
-        tag = tag[:tag_len]
-        out_name = tag + out_name
-        full_adblog_path = os.path.join(adb_excerpt_path, out_name)
-        with open(full_adblog_path, 'w', encoding='utf-8') as out:
-            in_file = self.adb_logcat_file_path
+        out_name = '%s,%s' % (tag[:tag_len], out_name)
+        adb_excerpt_path = os.path.join(adb_excerpt_dir, out_name)
+        with open(adb_excerpt_path, 'w', encoding='utf-8') as out:
+            in_file = logcat_path
             with open(in_file, 'r', encoding='utf-8', errors='replace') as f:
                 while True:
                     line = None
@@ -745,7 +746,49 @@ class AndroidDevice:
                         if not line.endswith('\n'):
                             line += '\n'
                         out.write(line)
-        return full_adblog_path
+        return adb_excerpt_path
+
+    def search_logcat(self, matching_string, begin_time=None):
+        """Search logcat message with given string.
+
+        Args:
+            matching_string: matching_string to search.
+
+        Returns:
+            A list of dictionaries with full log message, time stamp string
+            and time object. For example:
+            [{"log_message": "05-03 17:39:29.898   968  1001 D"
+                              "ActivityManager: Sending BOOT_COMPLETE user #0",
+              "time_stamp": "2017-05-03 17:39:29.898",
+              "datetime_obj": datetime object}]
+        """
+        logcat_path = os.path.join(self.device_log_path,
+                                   'adblog_%s_debug.txt' % self.serial)
+        if not os.path.exists(logcat_path):
+            self.log.warning("Logcat file %s does not exist." % logcat_path)
+            return
+        output = job.run(
+            "grep '%s' %s" % (matching_string, logcat_path), ignore_status=True)
+        if not output.stdout or output.exit_status != 0:
+            return []
+        if begin_time:
+            log_begin_time = acts_logger.epoch_to_log_line_timestamp(
+                begin_time)
+            begin_time = datetime.strptime(log_begin_time,
+                                           "%Y-%m-%d %H:%M:%S.%f")
+        result = []
+        logs = re.findall(r'(\S+\s\S+)(.*)', output.stdout)
+        for log in logs:
+            time_stamp = log[0]
+            time_obj = datetime.strptime(time_stamp, "%Y-%m-%d %H:%M:%S.%f")
+            if begin_time and time_obj < begin_time:
+                continue
+            result.append({
+                "log_message": "".join(log),
+                "time_stamp": time_stamp,
+                "datetime_obj": time_obj
+            })
+        return result
 
     def start_adb_logcat(self):
         """Starts a standing adb logcat collection in separate subprocesses and
@@ -766,7 +809,7 @@ class AndroidDevice:
             extra_params = "-b all"
 
         self.adb_logcat_process = logcat.create_logcat_keepalive_process(
-            self.serial, self.log_path, extra_params)
+            self.serial, self.log_dir, extra_params)
         self.adb_logcat_process.start()
 
     def stop_adb_logcat(self):
@@ -889,7 +932,7 @@ class AndroidDevice:
                 new_br = False
         except adb.AdbError:
             new_br = False
-        br_path = os.path.join(self.log_path, test_name)
+        br_path = self.device_log_path
         utils.create_dir(br_path)
         time_stamp = acts_logger.normalize_log_line_timestamp(
             acts_logger.epoch_to_log_line_timestamp(begin_time))
@@ -938,7 +981,7 @@ class AndroidDevice:
         return files
 
     def pull_files(self, files, remote_path=None):
-        """Pull files from devies."""
+        """Pull files from devices."""
         if not remote_path:
             remote_path = self.log_path
         for file_name in files:
@@ -981,7 +1024,7 @@ class AndroidDevice:
         qxdm_logs = self.get_file_names(
             log_path, begin_time=begin_time, match_string="*.qmdl")
         if qxdm_logs:
-            qxdm_log_path = os.path.join(self.log_path, test_name,
+            qxdm_log_path = os.path.join(self.device_log_path,
                                          "QXDM_%s" % self.serial)
             utils.create_dir(qxdm_log_path)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
@@ -993,7 +1036,7 @@ class AndroidDevice:
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
-            omadm_log_path = os.path.join(self.log_path, test_name,
+            omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)
             utils.create_dir(omadm_log_path)
             self.log.info("Pull OMADM Log")
@@ -1174,44 +1217,6 @@ class AndroidDevice:
         self.root_adb()
 
         self.start_services()
-
-    def search_logcat(self, matching_string, begin_time=None):
-        """Search logcat message with given string.
-
-        Args:
-            matching_string: matching_string to search.
-
-        Returns:
-            A list of dictionaries with full log message, time stamp string
-            and time object. For example:
-            [{"log_message": "05-03 17:39:29.898   968  1001 D"
-                              "ActivityManager: Sending BOOT_COMPLETE user #0",
-              "time_stamp": "2017-05-03 17:39:29.898",
-              "datetime_obj": datetime object}]
-        """
-        output = job.run(
-            "grep '%s' %s" % (matching_string, self.adb_logcat_file_path),
-            ignore_status=True)
-        if not output.stdout or output.exit_status != 0:
-            return []
-        if begin_time:
-            log_begin_time = acts_logger.epoch_to_log_line_timestamp(
-                begin_time)
-            begin_time = datetime.strptime(log_begin_time,
-                                           "%Y-%m-%d %H:%M:%S.%f")
-        result = []
-        logs = re.findall(r'(\S+\s\S+)(.*)', output.stdout)
-        for log in logs:
-            time_stamp = log[0]
-            time_obj = datetime.strptime(time_stamp, "%Y-%m-%d %H:%M:%S.%f")
-            if begin_time and time_obj < begin_time:
-                continue
-            result.append({
-                "log_message": "".join(log),
-                "time_stamp": time_stamp,
-                "datetime_obj": time_obj
-            })
-        return result
 
     def get_ipv4_address(self, interface='wlan0', timeout=5):
         for timer in range(0, timeout):
