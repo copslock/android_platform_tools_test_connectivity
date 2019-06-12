@@ -2171,12 +2171,15 @@ class DataPathTest(AwareBaseTest):
         loop_len = len(duts)
         ids = []
         macs = []
-        reqs = [[], [], []]
-        ifs = [[], [], []]
-        ipv6s = [[], [], []]
+        reqs = []
+        ifs = []
+        ipv6s = []
 
         for i in range(loop_len):
             duts[i].pretty_name = chr(ord("A") + i)
+            reqs.append([])
+            ifs.append([])
+            ipv6s.append([])
 
         # start-up 3 devices (attach w/ identity)
         for i in range(loop_len):
