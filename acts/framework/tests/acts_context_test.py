@@ -44,12 +44,11 @@ def reset_context():
     context._contexts = [RootContext()]
 
 
-class TestClass:
-    def __init__(self):
-        self.test_name = self.test_case.__name__
+TEST_CASE = 'test_case_name'
 
-    def test_case(self):
-        pass
+
+class TestClass:
+    pass
 
 
 class ModuleTest(TestCase):
@@ -214,39 +213,32 @@ class TestCaseContextTest(TestCase):
     """Unit tests for the TestCaseContext class."""
 
     def test_init_attributes(self):
-        test_case = Mock()
-        test_case.__name__ = 'test_case_name'
         test_class = Mock()
-        test_class.test_name = test_case.__name__
+        test_case = TEST_CASE
         context = TestCaseContext(test_class, test_case)
 
         self.assertEqual(context.test_class, test_class)
         self.assertEqual(context.test_case, test_case)
-        self.assertEqual(context.test_case_name, test_case.__name__)
+        self.assertEqual(context.test_case_name, test_case)
 
     def test_get_class_name(self):
-        class TestClass:
-            pass
         test_class = TestClass()
-        test_case_name = Mock()
-        context = TestCaseContext(test_class, test_case_name)
+        context = TestCaseContext(test_class, TEST_CASE)
 
         self.assertEqual(context.test_class_name, TestClass.__name__)
 
     def test_context_dir_is_class_and_test_case_name(self):
         test_class = TestClass()
-        test_case = TestClass.test_case
-        context = TestCaseContext(test_class, test_case)
+        context = TestCaseContext(test_class, TEST_CASE)
 
-        context_dir = TestClass.__name__ + '/' + test_case.__name__
+        context_dir = TestClass.__name__ + '/' + TEST_CASE
         self.assertEqual(context._get_default_context_dir(), context_dir)
 
     def test_identifier_is_class_and_test_case_name(self):
         test_class = TestClass()
-        test_case = TestClass.test_case
-        context = TestCaseContext(test_class, test_case)
+        context = TestCaseContext(test_class, TEST_CASE)
 
-        identifier = TestClass.__name__ + '.' + test_case.__name__
+        identifier = TestClass.__name__ + '.' + TEST_CASE
         self.assertEqual(context.identifier, identifier)
 
 
