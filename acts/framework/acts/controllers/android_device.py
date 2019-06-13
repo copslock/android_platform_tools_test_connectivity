@@ -709,8 +709,7 @@ class AndroidDevice:
             end_time: Epoch time of the ending of the time period, default None
             dest_path: Destination path of the excerpt file.
         """
-        log_begin_time = acts_logger.normalize_log_line_timestamp(
-            acts_logger.epoch_to_log_line_timestamp(begin_time))
+        log_begin_time = acts_logger.epoch_to_log_line_timestamp(begin_time)
         if end_time is None:
             log_end_time = acts_logger.get_log_line_timestamp()
         else:
