@@ -978,8 +978,9 @@ class ActsBaseClassTest(unittest.TestCase):
         base_cls = base_test.BaseTestClass(self.mock_test_cls_configs)
         base_cls.register_controller(mock_controller)
         registered_name = 'mock_controller'
-        self.assertTrue(mock_controller in base_cls.controller_registry)
-        mock_ctrlrs = base_cls.controller_registry[mock_controller]
+        controller_objects = base_cls._controller_manager._controller_objects
+        self.assertTrue(registered_name in controller_objects)
+        mock_ctrlrs = controller_objects[registered_name]
         self.assertEqual(mock_ctrlrs[0].magic, 'magic1')
         self.assertEqual(mock_ctrlrs[1].magic, 'magic2')
         expected_msg = 'Controller module .* has already been registered.'
@@ -1019,7 +1020,8 @@ class ActsBaseClassTest(unittest.TestCase):
             base_cls = base_test.BaseTestClass(self.mock_test_cls_configs)
             base_cls.register_controller(mock_controller, builtin=True)
             self.assertTrue(hasattr(base_cls, mock_ref_name))
-            self.assertTrue(mock_controller in base_cls.controller_registry)
+            self.assertTrue(mock_controller.__name__ in
+                            base_cls._controller_manager._controller_objects)
             mock_ctrlrs = getattr(base_cls, mock_ctrlr_ref_name)
             self.assertEqual(mock_ctrlrs[0].magic, 'magic1')
             self.assertEqual(mock_ctrlrs[1].magic, 'magic2')
@@ -1056,31 +1058,6 @@ class ActsBaseClassTest(unittest.TestCase):
         magic_devices = base_cls.register_controller(mock_controller)
         self.assertEqual(magic_devices[0].magic, 'magic1')
         self.assertEqual(magic_devices[1].magic, 'magic2')
-
-    def test_verify_controller_module(self):
-        base_test.BaseTestClass.verify_controller_module(mock_controller)
-
-    def test_verify_controller_module_null_attr(self):
-        tmp = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
-        mock_controller.ACTS_CONTROLLER_CONFIG_NAME = None
-        msg = 'Controller interface .* in .* cannot be null.'
-        try:
-            with self.assertRaisesRegexp(signals.ControllerError, msg):
-                base_test.BaseTestClass.verify_controller_module(
-                    mock_controller)
-        finally:
-            mock_controller.ACTS_CONTROLLER_CONFIG_NAME = tmp
-
-    def test_verify_controller_module_missing_attr(self):
-        tmp = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
-        delattr(mock_controller, 'ACTS_CONTROLLER_CONFIG_NAME')
-        msg = 'Module .* missing required controller module attribute'
-        try:
-            with self.assertRaisesRegexp(signals.ControllerError, msg):
-                base_test.BaseTestClass.verify_controller_module(
-                    mock_controller)
-        finally:
-            setattr(mock_controller, 'ACTS_CONTROLLER_CONFIG_NAME', tmp)
 
 
 if __name__ == '__main__':
