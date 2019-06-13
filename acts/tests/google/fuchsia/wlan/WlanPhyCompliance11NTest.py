@@ -116,6 +116,8 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
         Args:
                ap_settings: A dictionary of hostapd constant n_capabilities.
         """
+        security_profile = None
+        password = None
         temp_n_capabilities = list(ap_settings['n_capabilities'])
         n_capabilities = []
         for n_capability in temp_n_capabilities:
@@ -155,8 +157,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
                                         password=rand_ascii_str(20),
                                         wpa_cipher='CCMP',
                                         wpa2_cipher='CCMP')
-        else:
-            security_profile = None
+            password = security_profile.password
 
         validate_setup_ap_and_associate(
             access_point=self.access_point,
@@ -169,7 +170,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             force_wmm=True,
             ssid=utils.rand_ascii_str(20),
             security=security_profile,
-            password=security_profile.password
+            password=password
         )
 
 
