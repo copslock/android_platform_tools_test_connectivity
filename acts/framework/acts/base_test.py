@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import copy
+
 import fnmatch
 import importlib
 import logging
@@ -38,6 +38,7 @@ from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
 
+from mobly import controller_manager
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
@@ -123,8 +124,6 @@ class BaseTestClass(object):
         current_test_name: A string that's the name of the test case currently
                            being executed. If no test is executing, this should
                            be None.
-        controller_registry: A dictionary that holds the controller objects used
-                             in a test run.
     """
 
     TAG = None
@@ -150,7 +149,11 @@ class BaseTestClass(object):
             'consecutive_failure_limit', -1)
         self.size_limit_reached = False
 
-        self.controller_registry = {}
+        # Initialize a controller manager (Mobly)
+        self._controller_manager = controller_manager.ControllerManager(
+            class_name=self.__class__.__name__,
+            controller_configs=self.testbed_configs)
+
         # Import and register the built-in controller modules specified
         # in testbed config.
         for module in self._import_builtin_controllers():
@@ -238,32 +241,6 @@ class BaseTestClass(object):
         return builtin_controllers
 
     @staticmethod
-    def verify_controller_module(module):
-        """Verifies a module object follows the required interface for
-        controllers.
-
-        Args:
-            module: An object that is a controller module. This is usually
-                    imported with import statements or loaded by importlib.
-
-        Raises:
-            ControllerError is raised if the module does not match the ACTS
-            controller interface, or one of the required members is null.
-        """
-        required_attributes = ("create", "destroy",
-                               "ACTS_CONTROLLER_CONFIG_NAME")
-        for attr in required_attributes:
-            if not hasattr(module, attr):
-                raise signals.ControllerError(
-                    ("Module %s missing required "
-                     "controller module attribute %s.") % (module.__name__,
-                                                           attr))
-            if not getattr(module, attr):
-                raise signals.ControllerError(
-                    "Controller interface %s in %s cannot be null." %
-                    (attr, module.__name__))
-
-    @staticmethod
     def get_module_reference_name(a_module):
         """Returns the module's reference name.
 
@@ -285,7 +262,8 @@ class BaseTestClass(object):
                             controller_module,
                             required=True,
                             builtin=False):
-        """Registers an ACTS controller module for a test run.
+        """Registers an ACTS controller module for a test class. Invokes Mobly's
+        implementation of register_controller.
 
         An ACTS controller module is a Python lib that can be used to control
         a device, service, or equipment. To be ACTS compatible, a controller
@@ -353,41 +331,18 @@ class BaseTestClass(object):
             the controller module has already been registered or any other error
             occurred in the registration process.
         """
-        BaseTestClass.verify_controller_module(controller_module)
         module_ref_name = self.get_module_reference_name(controller_module)
 
-        if controller_module in self.controller_registry:
-            raise signals.ControllerError(
-                "Controller module %s has already been registered. It can not "
-                "be registered again." % module_ref_name)
-        # Create controller objects.
+        # Substitute Mobly controller's module config name with the ACTS one
         module_config_name = controller_module.ACTS_CONTROLLER_CONFIG_NAME
-        if module_config_name not in self.testbed_configs:
-            if required:
-                raise signals.ControllerError(
-                    "No corresponding config found for %s" %
-                    module_config_name)
-            else:
-                self.log.warning(
-                    "No corresponding config found for optional controller %s",
-                    module_config_name)
+        controller_module.MOBLY_CONTROLLER_CONFIG_NAME = module_config_name
+
+        # Get controller objects from Mobly's register_controller
+        controllers = self._controller_manager.register_controller(
+            controller_module, required=required)
+        if not controllers:
             return None
-        try:
-            # Make a deep copy of the config to pass to the controller module,
-            # in case the controller module modifies the config internally.
-            original_config = self.testbed_configs[module_config_name]
-            controller_config = copy.deepcopy(original_config)
-            controllers = controller_module.create(controller_config)
-        except:
-            self.log.exception(
-                "Failed to initialize objects for controller %s, abort!",
-                module_config_name)
-            raise
-        if not isinstance(controllers, list):
-            raise signals.ControllerError(
-                "Controller module %s did not return a list of objects, abort."
-                % module_ref_name)
-        self.controller_registry[controller_module] = controllers
+
         # Collect controller information and write to test result.
         # Implementation of "get_info" is optional for a controller module.
         if hasattr(controller_module, "get_info"):
@@ -402,31 +357,33 @@ class BaseTestClass(object):
 
         if builtin:
             setattr(self, module_ref_name, controllers)
-        self.log.debug("Found %d objects for controller %s", len(controllers),
-                       module_config_name)
         return controllers
 
     def unregister_controllers(self):
-        """Destroy controller objects and clear internal registry.
+        """Destroy controller objects and clear internal registry. Invokes
+        Mobly's controller manager's unregister_controllers.
 
-        This will be called at the end of each TestRunner.run call.
+        This will be called upon test class teardown.
         """
-        for controller_module, controllers in self.controller_registry.items():
-            name = self.get_module_reference_name(controller_module)
+        controller_modules = self._controller_manager._controller_modules
+        controller_objects = self._controller_manager._controller_objects
+        # Record post job info for the controller
+        for name, controller_module in controller_modules.items():
             if hasattr(controller_module, 'get_post_job_info'):
                 self.log.debug('Getting post job info for %s', name)
                 try:
                     name, value = controller_module.get_post_job_info(
-                        controllers)
+                        controller_objects[name])
                     self.results.set_extra_data(name, value)
                 except:
                     self.log.error("Fail to get post job info for %s", name)
-            try:
-                self.log.debug('Destroying %s.', name)
-                controller_module.destroy(controllers)
-            except:
-                self.log.exception("Exception occurred destroying %s.", name)
-        self.controller_registry = {}
+        self._controller_manager.unregister_controllers()
+
+    def _record_controller_info(self):
+        """Collect controller information and write to summary file."""
+        for record in self._controller_manager.get_controller_info_records():
+            self.summary_writer.dump(
+                record.to_dict(), records.TestSummaryEntryType.CONTROLLER_INFO)
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
@@ -451,6 +408,7 @@ class BaseTestClass(object):
         is called.
         """
         self.teardown_class()
+        self._record_controller_info()
         self.unregister_controllers()
         event_bus.post(TestClassEndEvent(self, self.results))
 
