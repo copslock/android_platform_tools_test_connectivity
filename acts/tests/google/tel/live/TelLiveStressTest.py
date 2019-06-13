@@ -40,8 +40,6 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_GLOBAL
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_CDMA
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_TDSCDMA_GSM_WCDMA
-from acts.test_utils.tel.tel_defines import RAT_LTE
-from acts.test_utils.tel.tel_defines import RAT_UNKNOWN
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
@@ -52,7 +50,6 @@ from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
-from acts.test_utils.tel.tel_test_utils import check_is_wifi_connected
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation_for_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
 from acts.test_utils.tel.tel_test_utils import extract_test_log
@@ -77,7 +74,7 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
 from acts.test_utils.tel.tel_test_utils import wait_for_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
-from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
+from acts.test_utils.tel.tel_test_utils import check_call_state_idle_by_adb
 from acts.test_utils.tel.tel_test_utils import is_current_data_on_cbrs
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -92,11 +89,6 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.tel_voice_utils import get_current_voice_rat
-from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
-from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
-from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
-from acts.test_utils.tel.tel_subscription_utils import get_incoming_message_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import get_operatorname_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
@@ -698,12 +690,20 @@ class TelLiveStressTest(TelephonyBaseTest):
                             self.result_info["CBRS-Data-Pass"] += 1
                             cbrs_fail = False
                         else:
-                            self.result_info["CBRS-Data-Fail"] += 1
-                            cbrs_fail = True
+                            if not check_call_state_idle_by_adb(ad):
+                                self.result_info["CBRS-InCall-Pass"] += 1
+                                cbrs_fail = False
+                            else:
+                                self.result_info["CBRS-Data-Fail"] += 1
+                                cbrs_fail = True
                     else:
                         if is_current_data_on_cbrs(ad, ad.cbrs):
-                            self.result_info["CBRS-InCall-Fail"] += 1
-                            cbrs_fail = True
+                            if check_call_state_idle_by_adb(ad):
+                                self.result_info["CBRS-Data-Pass"] += 1
+                                cbrs_fail = False
+                            else:
+                                self.result_info["CBRS-InCall-Fail"] += 1
+                                cbrs_fail = True
                         else:
                             self.result_info["CBRS-InCall-Pass"] += 1
                             cbrs_fail = False
