@@ -722,7 +722,9 @@ class AndroidDevice:
             return
         adb_excerpt_dir = os.path.join(self.log_path, dest_path)
         utils.create_dir(adb_excerpt_dir)
-        out_name = '%s,%s.txt' % (log_begin_time, self.serial)
+        out_name = '%s,%s.txt' % (
+            acts_logger.normalize_log_line_timestamp(log_begin_time),
+            self.serial)
         tag_len = utils.MAX_FILENAME_LEN - len(out_name)
         out_name = '%s,%s' % (tag[:tag_len], out_name)
         adb_excerpt_path = os.path.join(adb_excerpt_dir, out_name)
