@@ -375,7 +375,6 @@ class WifiPingTest(base_test.BaseTestClass):
             check_connectivity=False)
         self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
             "wlan0")[0]
-        time.sleep(self.MED_SLEEP)
 
     def setup_ping_test(self, testcase_params):
         """Function that gets devices ready for the test.
