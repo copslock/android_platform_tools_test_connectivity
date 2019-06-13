@@ -443,9 +443,6 @@ class TelephonyBaseTest(BaseTestClass):
     def on_fail(self, test_name, begin_time):
         self._take_bug_report(test_name, begin_time)
 
-    def on_blocked(self, test_name, begin_time):
-        self.on_fail(test_name, begin_time)
-
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
         ad.adb.wait_for_device()
         result = True
@@ -509,7 +506,7 @@ class TelephonyBaseTest(BaseTestClass):
     def _block_all_test_cases(self, tests, reason='Failed class setup'):
         """Over-write _block_all_test_cases in BaseTestClass."""
         for (i, (test_name, test_func)) in enumerate(tests):
-            signal = signals.TestBlocked(reason)
+            signal = signals.TestFailure(reason)
             record = records.TestResultRecord(test_name, self.TAG)
             record.test_begin()
             # mark all test cases as FAIL
