@@ -106,6 +106,8 @@ class TestRunner(object):
         self.log_path: A string representing the path of the dir under which
                        all logs from this test run should be written.
         self.log: The logger object used throughout this test run.
+        self.summary_writer: The TestSummaryWriter object used to stream test
+                             results to a file.
         self.test_classes: A dictionary where we can look up the test classes
                            by name to instantiate. Supports unix shell style
                            wildcards.
@@ -131,6 +133,8 @@ class TestRunner(object):
         self.log_path = os.path.abspath(l_path)
         logger.setup_test_logger(self.log_path, self.testbed_name)
         self.log = logging.getLogger()
+        self.summary_writer = records.TestSummaryWriter(
+            os.path.join(self.log_path, records.OUTPUT_FILE_SUMMARY))
         if self.test_configs.get(keys.Config.key_random.value):
             test_case_iterations = self.test_configs.get(
                 keys.Config.key_test_case_iterations.value, 10)
@@ -214,6 +218,8 @@ class TestRunner(object):
         # Unpack other params.
         self.test_run_info[keys.Config.ikey_logpath.value] = self.log_path
         self.test_run_info[keys.Config.ikey_logger.value] = self.log
+        self.test_run_info[
+            keys.Config.ikey_summary_writer.value] = self.summary_writer
         cli_args = test_configs.get(keys.Config.ikey_cli_args.value)
         self.test_run_info[keys.Config.ikey_cli_args.value] = cli_args
         user_param_pairs = []
@@ -290,7 +296,7 @@ class TestRunner(object):
                     cls_result = test_cls_instance.run(test_cases,
                                                        test_case_iterations)
                     self.results += cls_result
-                    self._write_results_json_str()
+                    self._write_results_to_file()
                 except signals.TestAbortAll as e:
                     self.results += e.results
                     raise e
@@ -350,19 +356,20 @@ class TestRunner(object):
         if self.running:
             msg = "\nSummary for test run %s: %s\n" % (
                 self.id, self.results.summary_str())
-            self._write_results_json_str()
+            self._write_results_to_file()
             self.log.info(msg.strip())
             logger.kill_test_logger(self.log)
             self.running = False
 
-    def _write_results_json_str(self):
-        """Writes out a json file with the test result info for easy parsing.
-
-        TODO(angli): This should be replaced by standard log record mechanism.
-        """
+    def _write_results_to_file(self):
+        """Writes test results to file(s) in a serializable format."""
+        # Old JSON format
         path = os.path.join(self.log_path, "test_run_summary.json")
         with open(path, 'w') as f:
             f.write(self.results.json_str())
+        # New YAML format
+        self.summary_writer.dump(
+            self.results.summary_dict(), records.TestSummaryEntryType.SUMMARY)
 
     def dump_config(self):
         """Writes the test config to a JSON file under self.log_path"""

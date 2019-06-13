@@ -30,6 +30,7 @@ install_requires = [
     'mock<=1.0.1',
     'numpy',
     'pyserial',
+    'pyyaml>=5.1',
     'shellescape>=3.4.1',
     'protobuf',
     'retry',

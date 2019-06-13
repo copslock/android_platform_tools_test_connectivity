@@ -61,6 +61,7 @@ class Config(enum.Enum):
     ikey_testbed_name = 'testbed_name'
     ikey_logger = 'log'
     ikey_logpath = 'log_path'
+    ikey_summary_writer = 'summary_writer'
     ikey_cli_args = 'cli_args'
     # module name of controllers packaged in ACTS.
     m_key_monsoon = 'monsoon'
