@@ -375,6 +375,8 @@ class BaseTestClass(object):
                     name, value = controller_module.get_post_job_info(
                         controller_objects[name])
                     self.results.set_extra_data(name, value)
+                    self.summary_writer.dump(
+                        {name: value}, records.TestSummaryEntryType.USER_DATA)
                 except:
                     self.log.error("Fail to get post job info for %s", name)
         self._controller_manager.unregister_controllers()
