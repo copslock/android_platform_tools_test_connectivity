@@ -101,6 +101,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_2g
 from acts.test_utils.tel.tel_voice_utils import phone_idle_3g
+from acts.test_utils.tel.tel_voice_utils import phone_idle_3g_for_subscription
 from acts.test_utils.tel.tel_voice_utils import phone_idle_2g
 from acts.test_utils.tel.tel_voice_utils import phone_idle_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_idle_iwlan
@@ -386,6 +387,15 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
     def _phone_idle_3g(self):
         return phone_idle_3g(self.log, self.android_devices[0])
 
+    def _phone_idle_3g_slot0(self):
+        sub_id = get_subid_from_slot_index(self.log, self.android_devices[0], 0)
+        return phone_idle_3g_for_subscription(self.log,
+                                              self.android_devices[0], sub_id)
+
+    def _phone_idle_3g_slot1(self):
+        sub_id = get_subid_from_slot_index(self.log, self.android_devices[0], 1)
+        return phone_idle_3g_for_subscription(self.log,
+                                              self.android_devices[0], sub_id)
     def _phone_idle_2g(self):
         return phone_idle_2g(self.log, self.android_devices[0])
 
@@ -840,12 +850,12 @@ class TelLiveDSDSVoiceTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         mt_result_0 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 0, self._phone_setup_3g,
-            self._phone_idle_3g, None, self._is_phone_in_call_3g, None, None,
+            self._phone_idle_3g_slot0, None, self._is_phone_in_call_3g, None, None,
             None, True)
 
         mt_result_1 = self._msim_call_sequence(
             ads, DIRECTION_MOBILE_TERMINATED, 1, self._phone_setup_3g,
-            self._phone_idle_3g, None, self._is_phone_in_call_3g, None, None,
+            self._phone_idle_3g_slot1, None, self._is_phone_in_call_3g, None, None,
             None, True)
 
         self.log.info("MT Slot0: %s, MT Slot1: %s", mt_result_0, mt_result_1)
