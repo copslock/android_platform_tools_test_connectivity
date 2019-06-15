@@ -3157,6 +3157,15 @@ def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
         if mode == 2:
             ad.log.info("Device correctly switched to MSIM mode")
             result = True
+            if "Sprint" in ad.adb.getprop("gsm.sim.operator.alpha"):
+                cmd = ('am instrument -w -e request "WriteEFS" -e item '
+                       '"/google/pixel_dsds_imei_mapping_slot_record" -e data "03"'
+                       ' "com.google.mdstest/com.google.mdstest.instrument.'
+                       'ModemConfigInstrumentation"')
+                ad.log.info("Switch Sprint to IMEI1 slot using %s", cmd)
+                ad.adb.shell(cmd, ignore_status=True)
+                time.sleep(timeout)
+                reboot_device(ad)
             break
         else:
             ad.log.warning("Attempt %d - failed to switch to MSIM", (i + 1))
