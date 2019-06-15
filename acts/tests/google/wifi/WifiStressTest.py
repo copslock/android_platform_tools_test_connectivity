@@ -96,13 +96,13 @@ class WifiStressTest(WifiBaseTest):
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
+        if "AccessPoint" in self.user_params:
+            del self.user_params["reference_networks"]
+            del self.user_params["open_network"]
         if hasattr(self, 'iperf_server'):
             self.iperf_server.stop()
             if(len(self.iperf_servers) > 1):
                 self.iperf_servers[1].stop()
-        if "AccessPoint" in self.user_params:
-            del self.user_params["reference_networks"]
-            del self.user_params["open_network"]
 
     """Helper Functions"""
 
