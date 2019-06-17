@@ -61,6 +61,7 @@ class AudioCapture:
         if self.__input_device is None:
             for i in range(self.audio.get_device_count()):
                 device_info = self.audio.get_device_info_by_index(i)
+                logging.info("Device Information {}".format(device_info))
                 if self.audio_params['input_device'] in device_info['name']:
                     self.__input_device = device_info
                     break
