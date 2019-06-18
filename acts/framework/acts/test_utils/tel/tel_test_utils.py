@@ -379,11 +379,6 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
                 ad.log.info("Index %d Display %s", i, oper)
                 if "Google" in oper:
                     index_to_delete = i
-                elif sub_info_list[i]['simSlotIndex'] != -1:
-                    ad.log.info("Workaround for b/122979645, setting default" \
-                      " Voice Sub ID to %s", sub_info_list[i]['subscriptionId'])
-                    set_subid_for_outgoing_call(ad,
-                                             sub_info_list[i]['subscriptionId'])
             del sub_info_list[index_to_delete]
         ad.log.info("Updated SubInfoList is %s", sub_info_list)
     active_sub_id = get_outgoing_voice_sub_id(ad)
