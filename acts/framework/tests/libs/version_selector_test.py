@@ -21,6 +21,7 @@ import os
 sys.path[0] = os.path.join(sys.path[0], '../')
 import unittest
 import logging
+import mock
 
 from acts import base_test
 from acts.libs import version_selector
@@ -101,6 +102,7 @@ class VersionSelectorIntegrationTest(unittest.TestCase):
         """Tests that VersionedTestClass (above) can be called with
         test_tracker_info."""
         test_class = VersionedTestClass({'log': logging.getLogger(),
+                                         'summary_writer': mock.MagicMock(),
                                          'cli_args': []})
         test_class.run(['test_1', 'test_2'], 1)
 
