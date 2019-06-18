@@ -274,8 +274,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             with open(path, 'w') as csvfile:
                 csvfile.write('band,dl_pathloss, ul_pathloss')
                 for band, pathloss in self.calibration_table[sim_type].items():
-                    csvfile.write('\n{},{},{}'.format(band, pathloss['dl'],
-                                                      pathloss['ul']))
+                    csvfile.write('\n{},{},{}'.format(
+                        band, pathloss.get('dl', 'Error'),
+                        pathloss.get('ul', 'Error')))
 
     def init_simulation(self, sim_type):
         """ Starts a new simulation only if needed.
