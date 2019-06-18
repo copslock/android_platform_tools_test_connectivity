@@ -17,7 +17,3 @@
 """
 
 from mobly.signals import *
-
-
-class TestBlocked(TestSkip):
-    """Raised when a test has been blocked from running."""
