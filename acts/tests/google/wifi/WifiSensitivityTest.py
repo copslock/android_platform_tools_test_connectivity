@@ -26,6 +26,7 @@ from acts import utils
 from acts.controllers import iperf_client
 from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
+from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from WifiRvrTest import WifiRvrTest
@@ -208,17 +209,16 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 (key, value) for key, value in testcase_params.items()
                 if key in id_fields)
             test_id = tuple(test_id.items())
+            if test_id not in testclass_results_dict:
+                testclass_results_dict[test_id] = collections.OrderedDict()
             channel = testcase_params["channel"]
             if channel not in channels_tested:
                 channels_tested.append(channel)
             if result["peak_throughput_pct"] == 100:
-                if test_id in testclass_results_dict:
-                    testclass_results_dict[test_id][channel] = result[
-                        "sensitivity"]
-                else:
-                    testclass_results_dict[test_id] = {
-                        channel: result["sensitivity"]
-                    }
+                testclass_results_dict[test_id][channel] = result[
+                    "sensitivity"]
+            else:
+                testclass_results_dict[test_id][channel] = ''
 
         # write csv
         csv_header = ["Mode", "MCS", "Streams", "Chain", "Rate (Mbps)"]
@@ -347,10 +347,33 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 atten.offset = atten_offsets[0]
             elif 'AP-Chain-1' in atten.path:
                 atten.offset = atten_offsets[1]
-            if testcase_params["attenuated_chain"] in atten.path:
-                atten.offset = atten.instrument.max_atten
         self.log.info("Access Point Configuration: {}".format(
             self.access_point.ap_settings))
+
+    def setup_dut(self, testcase_params):
+        """Sets up the DUT in the configuration required by the test.
+
+        Args:
+            testcase_params: dict containing AP and other test params
+        """
+        band = self.access_point.band_lookup_by_channel(
+            testcase_params["channel"])
+        wutils.reset_wifi(self.client_dut)
+        self.client_dut.droid.wifiSetCountryCode(
+            self.testclass_params["country_code"])
+        self.main_network[band]["channel"] = testcase_params["channel"]
+        wutils.wifi_connect(
+            self.client_dut,
+            self.main_network[band],
+            num_of_tries=5,
+            check_connectivity=False)
+        self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
+            "wlan0")[0]
+        atten_dut_chain_map = wputils.get_atten_dut_chain_map(
+            self.attenuators, self.client_dut, self.ping_server, self.dut_ip)
+        for idx, atten in enumerate(self.attenuators):
+            if atten_dut_chain_map[idx] == testcase_params["attenuated_chain"]:
+                atten.offset = atten.instrument.max_atten
 
     def get_start_atten(self):
         """Gets the starting attenuation for this sensitivity test.
