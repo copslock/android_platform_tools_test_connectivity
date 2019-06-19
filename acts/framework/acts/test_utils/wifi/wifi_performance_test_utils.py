@@ -663,6 +663,37 @@ def atten_by_label(atten_list, path_label, atten_level):
 
 
 # Miscellaneous Utilities
+def get_atten_dut_chain_map(attenuators, dut, ping_server, ping_ip):
+    # Set attenuator to 0 dB
+    for atten in attenuators:
+        atten.set_atten(0, strict=False)
+    # Start ping traffic
+    ping_future = get_ping_stats_nb(ping_server, ping_ip, 11, 0.02, 64)
+    # Measure starting RSSI
+    base_rssi = get_connected_rssi(dut, 4, 0.25, 1)
+    chain0_base_rssi = base_rssi['chain_0_rssi']['mean']
+    chain1_base_rssi = base_rssi['chain_1_rssi']['mean']
+    # Compile chain map by attenuating one path at a time and seeing which
+    # chain's RSSI degrades
+    chain_map = []
+    for test_atten in attenuators:
+        # Set one attenuator to 20 dB down
+        test_atten.set_atten(20, strict=False)
+        # Get new RSSI
+        test_rssi = get_connected_rssi(dut, 4, 0.25, 1)
+        # Assing attenuator to path that has lower RSSI
+        if chain0_base_rssi - test_rssi['chain_0_rssi']['mean'] > 5:
+            chain_map.append("DUT-Chain-0")
+        elif chain1_base_rssi - test_rssi['chain_1_rssi']['mean'] > 5:
+            chain_map.append("DUT-Chain-1")
+        else:
+            chain_map.append(None)
+        for atten in attenuators:
+            atten.set_atten(0, strict=False)
+    ping_future.result()
+    return chain_map
+
+
 def get_server_address(ssh_connection, dut_ip, subnet_mask):
     """Get server address on a specific subnet,
 
