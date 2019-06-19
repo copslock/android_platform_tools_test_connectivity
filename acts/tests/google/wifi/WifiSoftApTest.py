@@ -70,6 +70,9 @@ class WifiSoftApTest(WifiBaseTest):
             "Failed to enable WiFi verbose logging on the client dut.")
         wutils.wifi_toggle_state(self.dut, True)
         wutils.wifi_toggle_state(self.dut_client, True)
+        self.AP_IFACE = 'wlan0'
+        if self.dut.model in self.dbs_supported_models:
+            self.AP_IFACE = 'wlan1'
         if len(self.android_devices) > 2:
             utils.sync_device_time(self.android_devices[2])
             self.android_devices[2].droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
@@ -226,8 +229,8 @@ class WifiSoftApTest(WifiBaseTest):
         """
         wutils.wifi_connect(self.dut_client, config, check_connectivity=False)
 
-        dut_ip = self.dut.droid.connectivityGetIPv4Addresses("wlan0")[0]
-        dut_client_ip = self.dut_client.droid.connectivityGetIPv4Addresses("wlan0")[0]
+        dut_ip = self.dut.droid.connectivityGetIPv4Addresses(self.AP_IFACE)[0]
+        dut_client_ip = self.dut_client.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
         self.dut.log.info("Try to ping %s" % dut_client_ip)
         asserts.assert_true(
