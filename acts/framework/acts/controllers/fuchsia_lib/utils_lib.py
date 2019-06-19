@@ -110,10 +110,12 @@ class SshResults:
         stdin: The file descriptor to the input channel of the SSH connection.
         stdout: The file descriptor to the stdout of the SSH connection.
         stderr: The file descriptor to the stderr of the SSH connection.
+        exit_status: The exit status of the SSH command.
     """
-    def __init__(self, stdin, stdout, stderr):
+    def __init__(self, stdin, stdout, stderr, exit_status):
         self._stdout = stdout.read().decode('utf-8', errors='replace')
         self._stderr = stderr.read().decode('utf-8', errors='replace')
+        self._exit_status = exit_status
 
     @property
     def stdout(self):
@@ -122,3 +124,7 @@ class SshResults:
     @property
     def stderr(self):
         return self._stderr
+
+    @property
+    def exit_status(self):
+        return self._exit_status
