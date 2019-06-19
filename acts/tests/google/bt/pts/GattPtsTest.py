@@ -14,25 +14,18 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """
-GATT PTS tests
+GATT PTS Automation
 """
 
-import ctypes
-import time
-
-from ctypes import *
-from queue import Empty
-from threading import Thread
-
 from acts import signals
-from acts.controllers.bluetooth_pts_device import VERDICT_STRINGS
 from acts.test_utils.abstract_devices.bluetooth_device import AndroidBluetoothDevice
 from acts.test_utils.abstract_devices.bluetooth_device import FuchsiaBluetoothDevice
+from acts.controllers.bluetooth_pts_device import VERDICT_STRINGS
 from acts.test_utils.bt.pts.pts_base_class import PtsBaseClass
 
 import acts.test_utils.bt.gatt_test_database as gatt_test_database
-import acts.test_utils.bt.pts.fuchsia_pts_ics_lib as fs_ics_lib
-import acts.test_utils.bt.pts.fuchsia_pts_ixit_lib as fs_ixit_lib
+import acts.test_utils.bt.pts.fuchsia_pts_ics_lib as f_ics_lib
+import acts.test_utils.bt.pts.fuchsia_pts_ixit_lib as f_ixit_lib
 
 
 class GattPtsTest(PtsBaseClass):
@@ -93,6 +86,7 @@ class GattPtsTest(PtsBaseClass):
 
     def teardown_test(self):
         super(GattPtsTest, self).teardown_test()
+        self.dut.stop_le_advertisement()
         self.dut.close_gatt_server()
 
     def teardown_class(self):
@@ -104,21 +98,27 @@ class GattPtsTest(PtsBaseClass):
     def test_gatt_cl_gad_bv_01_c(self):
         return self.pts.execute_test("GATT/CL/GAD/BV-01-C")
 
+    @PtsBaseClass.pts_test_wrap
     def test_gatt_cl_gad_bv_03_c(self):
         return self.pts.execute_test("GATT/CL/GAD/BV-03-C")
 
+    @PtsBaseClass.pts_test_wrap
     def test_gatt_cl_gad_bv_04_c(self):
         return self.pts.execute_test("GATT/CL/GAD/BV-04-C")
 
+    @PtsBaseClass.pts_test_wrap
     def test_gatt_cl_gad_bv_05_c(self):
         return self.pts.execute_test("GATT/CL/GAD/BV-05-C")
 
+    @PtsBaseClass.pts_test_wrap
     def test_gatt_cl_gad_bv_06_c(self):
         return self.pts.execute_test("GATT/CL/GAD/BV-06-C")
 
+    @PtsBaseClass.pts_test_wrap
     def test_gatt_cl_gad_bv_07_c(self):
         return self.pts.execute_test("GATT/CL/GAD/BV-07-C")
 
+    @PtsBaseClass.pts_test_wrap
     def test_gatt_cl_gad_bv_08_c(self):
         return self.pts.execute_test("GATT/CL/GAD/BV-08-C")
 
@@ -126,68 +126,140 @@ class GattPtsTest(PtsBaseClass):
     def test_gatt_cl_gar_bv_01_c(self):
         return self.pts.execute_test("GATT/CL/GAR/BV-01-C")
 
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bv_01_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BV-01-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bv_03_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BV-03-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bv_05_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BV-05-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bv_08_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BV-08-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bv_09_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BV-09-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bi_02_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BI-02-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bi_03_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BI-03-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bi_05_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BI-05-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bi_06_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BI-06-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bi_07_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BI-07-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bi_08_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BI-08-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bi_09_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BI-09-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gaw_bi_33_c(self):
+        return self.pts.execute_test("GATT/CL/GAW/BI-33-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gar_bv_01_c(self):
+        return self.pts.execute_test("GATT/CL/GAR/BV-01-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gar_bv_03_c(self):
+        return self.pts.execute_test("GATT/CL/GAR/BV-03-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gar_bv_04_c(self):
+        return self.pts.execute_test("GATT/CL/GAR/BV-04-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gar_bv_06_c(self):
+        return self.pts.execute_test("GATT/CL/GAR/BV-06-C")
+
+    @PtsBaseClass.pts_test_wrap
+    def test_gatt_cl_gar_bv_07_c(self):
+        return self.pts.execute_test("GATT/CL/GAR/BV-07-C")
+
     # END GATT CLIENT TESTCASES #
     # BEGIN GATT SERVER TESTCASES #
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gad_bv_01_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAD/BV-01-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAD/BV-01-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gad_bv_02_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAD/BV-02-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAD/BV-02-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gad_bv_03_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAD/BV-03-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAD/BV-03-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gad_bv_04_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAD/BV-04-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAD/BV-04-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gad_bv_05_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAD/BV-05-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAD/BV-05-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gad_bv_06_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAD/BV-06-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAD/BV-06-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gad_bv_07_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAD/BV-07-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAD/BV-07-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gad_bv_08_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAD/BV-08-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAD/BV-08-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bv_01_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BV-01-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BV-01-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_01_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-01-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-01-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_02_c(self):
@@ -195,21 +267,21 @@ class GattPtsTest(PtsBaseClass):
             raise signals.TestSkip(
                 "Required user params missing:\n{}\n{}".format(
                     "characteristic_read_invalid_handle"))
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-02-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-02-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_05_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-05-C",
-            gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        self.dut.setup_gatt_server(
+            gatt_test_database.GATT_SERVER_DB_MAPPING.get('TEST_DB_2'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-05-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bv_03_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BV-03-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BV-03-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_06_c(self):
@@ -219,181 +291,173 @@ class GattPtsTest(PtsBaseClass):
                 "Required user params missing:\n{}\n{}".format(
                     "characteristic_read_not_permitted_uuid",
                     "characteristic_read_not_permitted_handle"))
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-06-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-06-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_07_c(self):
         if self.characteristic_attribute_not_found_uuid is None:
             raise signals.TestSkip("Required user params missing:\n{}".format(
                 "characteristic_attribute_not_found_uuid"))
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-07-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-07-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_08_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-08-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_3'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-08-C")
 
     def test_gatt_sr_gar_bi_11_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-11-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-11-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bv_04_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BV-04-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_3'))
+        return self.pts.execute_test("GATT/SR/GAR/BV-04-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_12_c(self):
         if self.characteristic_read_not_permitted_handle is None:
             raise signals.TestSkip("Required user params missing:\n{}".format(
                 "characteristic_read_not_permitted_handle"))
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-12-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-12-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_13_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-13-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-13-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_14_c(self):
         if self.characteristic_read_invalid_handle is None:
             raise signals.TestSkip("Required user params missing:\n{}".format(
                 "characteristic_read_invalid_handle"))
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-14-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-14-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bi_16_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-16-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('TEST_DB_2'))
-
-    @PtsBaseClass.pts_test_wrap
-    def test_gatt_sr_gar_bi_17_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BI-17-C",
-            gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BI-16-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bv_06_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BV-06-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BV-06-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bv_07_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BV-07-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BV-07-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gar_bv_08_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAR/BV-08-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAR/BV-08-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bv_01_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BV-01-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_3'))
+        return self.pts.execute_test("GATT/SR/GAW/BV-01-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bv_03_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BV-03-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_3'))
+        return self.pts.execute_test("GATT/SR/GAW/BV-03-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bi_03_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BI-03-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAW/BI-03-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bi_07_c(self):
-        if self.characteristic_write_not_permitted_handle is None:
-            raise signals.TestSkip("Required user params missing:\n{}".format(
-                "characteristic_write_not_permitted_handle"))
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BI-07-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_3'))
+        return self.pts.execute_test("GATT/SR/GAW/BI-07-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bi_08_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BI-08-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_3'))
+        return self.pts.execute_test("GATT/SR/GAW/BI-08-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bi_12_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BI-12-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAW/BI-12-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bi_13_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BI-13-C",
+
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_3'))
+        return self.pts.execute_test("GATT/SR/GAW/BI-03-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bv_05_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BV-05-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_3'))
+        return self.pts.execute_test("GATT/SR/GAW/BV-05-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bi_09_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BI-09-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAW/BI-09-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bv_06_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BV-06-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAW/BV-06-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bv_07_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BV-07-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAW/BV-07-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bv_09_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BV-09-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAW/BV-09-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bv_10_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BV-10-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_1'))
+        return self.pts.execute_test("GATT/SR/GAW/BV-10-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bi_32_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BI-32-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('DB_TEST'))
+        return self.pts.execute_test("GATT/SR/GAW/BI-32-C")
 
     @PtsBaseClass.pts_test_wrap
     def test_gatt_sr_gaw_bi_33_c(self):
-        return self._run_test_with_input_gatt_server_db(
-            "GATT/SR/GAW/BI-33-C",
+        self.dut.setup_gatt_server(
             gatt_test_database.GATT_SERVER_DB_MAPPING.get('LARGE_DB_3'))
+        return self.pts.execute_test("GATT/SR/GAW/BI-33-C")
 
     # END GATT SERVER TESTCASES #
