@@ -101,7 +101,7 @@ class LteSimulation(BaseSimulation):
 
     # Transmitted output power for the phone (dBm)
     UPLINK_SIGNAL_LEVEL_DICTIONARY = {
-        'max': 23,
+        'max': 27,
         'high': 13,
         'medium': 3,
         'low': -20
