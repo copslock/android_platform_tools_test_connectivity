@@ -361,7 +361,7 @@ class WifiStressTest(WifiBaseTest):
                   "https://www.youtube.com/watch?v=dVkK36KOcqs",
                   "https://www.youtube.com/watch?v=0wCC3aLXdOw",
                   "https://www.youtube.com/watch?v=rN6nlNC9WQA",
-                  "https://www.youtube.com/watch?v=U--7hxRNPvk"]
+                  "https://www.youtube.com/watch?v=RK1K2bCg4J8"]
         try:
             self.scan_and_connect_by_ssid(self.dut, self.wpa_5g)
             start_time = time.time()
