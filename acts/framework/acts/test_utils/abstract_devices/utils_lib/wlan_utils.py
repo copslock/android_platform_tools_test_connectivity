@@ -14,16 +14,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
+
 from acts import asserts
 from acts.controllers.ap_lib import hostapd_ap_preset
+
 
 def validate_setup_ap_and_associate(*args, **kwargs):
     """Validates if setup_ap_and_associate was a success or not
 
        Args: Args match setup_ap_and_associate
     """
-    asserts.assert_true(setup_ap_and_associate(*args, **kwargs),
-                        'Failed to associate.')
+    asserts.assert_true(
+        setup_ap_and_associate(*args, **kwargs), 'Failed to associate.')
     asserts.explicit_pass('Successfully associated.')
 
 
@@ -73,11 +76,11 @@ def setup_ap_and_associate(access_point,
              vht_bandwidth)
 
     return associate(
-            client,
-            ssid,
-            password,
-            check_connectivity=check_connectivity,
-            hidden=hidden)
+        client,
+        ssid,
+        password,
+        check_connectivity=check_connectivity,
+        hidden=hidden)
 
 
 def setup_ap(access_point,
@@ -156,3 +159,36 @@ def associate(client,
     """
     return client.associate(
         ssid, password, check_connectivity=check_connectivity, hidden=hidden)
+
+
+def status(client):
+    """Requests the state of WLAN network.
+
+    Args:
+        None
+    """
+    status = ''
+    status_response = client.status()
+
+    if status_response.get('error') is None:
+        # No error, so get the result
+        status = status_response['result']
+
+    logging.info('status: %s' % status)
+    return status
+
+
+def is_connected(client):
+    """Gets status to determine if WLAN is connected or not.
+
+    Args:
+        None
+    """
+    connected = False
+    client_status = status(client)
+    if client_status and client_status['state'] == 'ConnectionsEnabled':
+        for index, network in enumerate(client_status['networks']):
+            if network['state'] == 'Connected':
+                connected = True
+
+    return connected

@@ -214,5 +214,7 @@ class FuchsiaWlanDevice(WlanDevice):
             connection_response)
 
     def disconnect(self):
-        """Stub for Fuchsia implementation."""
-        pass
+        return self.device.wlan_lib.wlanDisconnect()
+
+    def status(self):
+        return self.device.wlan_lib.wlanStatus()
