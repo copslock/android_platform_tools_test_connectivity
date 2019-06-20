@@ -2093,6 +2093,18 @@ def verify_mac_not_found_in_pcap(mac, packets):
             asserts.fail("Caught Factory MAC: %s in packet sniffer."
                          "Packet = %s" % (mac, pkt.show()))
 
+def verify_mac_is_found_in_pcap(mac, packets):
+    """Verify that a mac address is found in the captured packets.
+
+    Args:
+        mac: string representation of the mac address
+        packets: packets obtained by rdpcap(pcap_fname)
+    """
+    for pkt in packets:
+        if mac in pkt.summary():
+            return
+    asserts.fail("Did not find MAC = %s in packet sniffer." % mac)
+
 def start_cnss_diags(ads):
     for ad in ads:
         start_cnss_diag(ad)
