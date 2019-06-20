@@ -323,10 +323,13 @@ class FuchsiaDevice:
                     connect_timeout=connect_timeout)
                 cmd_result_stdin, cmd_result_stdout, cmd_result_stderr = (
                     ssh_conn.exec_command(test_cmd, timeout=timeout))
-                cmd_result_stdout.channel.recv_exit_status()
+                cmd_result_exit_status = (
+                    cmd_result_stdout.channel.recv_exit_status()
+                )
                 command_result = SshResults(cmd_result_stdin,
                                             cmd_result_stdout,
-                                            cmd_result_stderr)
+                                            cmd_result_stderr,
+                                            cmd_result_exit_status)
             except Exception as e:
                 self.log.warning("Problem running ssh command: %s"
                                  "\n Exception: %s" % (test_cmd, e))
