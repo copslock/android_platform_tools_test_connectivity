@@ -55,16 +55,22 @@ def http_file_download_by_curl(fd,
         curl_cmd += ' %s' % additional_args
     curl_cmd += ' --url %s > %s' % (url, file_path)
     try:
-        fd.log.debug('Download %s to %s by ssh command %s' % (url,
-                                                             file_path,
-                                                             curl_cmd)
-                    )
-        fd.send_command_ssh(curl_cmd, timeout=timeout)
-        if _check_file_existence(fd, file_path):
-            fd.log.info('%s is downloaded to %s successfully' % (url,
-                                                                 file_path)
-                        )
-            return True
+        fd.log.info(
+            'Download %s to %s by ssh command %s' % (url, file_path, curl_cmd))
+
+        status = fd.send_command_ssh(curl_cmd, timeout=timeout)
+        if isinstance(status, Error):
+            status = status.result
+        if not status.stderr:
+            if int(status.exit_status) != 0:
+                fd.log.warning('Curl command: "%s" failed with error %s' %
+                               (curl_cmd, status.exit_status))
+                return False
+
+            if _check_file_existence(fd, file_path):
+                fd.log.info(
+                    '%s is downloaded to %s successfully' % (url, file_path))
+                return True
         else:
             fd.log.warning('Fail to download %s' % url)
             return False
