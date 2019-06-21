@@ -20,6 +20,7 @@ import fnmatch
 from multiprocessing import Process
 
 from acts import utils
+from acts import asserts
 from acts import signals
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
@@ -28,8 +29,44 @@ from acts.test_utils.tel import tel_test_utils as tutils
 from acts.test_utils.gnss import gnss_test_utils as gutils
 from acts.utils import get_current_epoch_time
 from acts.utils import unzip_maintain_permissions
-from acts.test_utils.tel.tel_test_utils import print_radio_info
+from acts.utils import force_airplane_mode
+from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_test_utils import flash_radio
+from acts.test_utils.tel.tel_test_utils import verify_internet_connection
+from acts.test_utils.tel.tel_test_utils import abort_all_tests
+from acts.test_utils.tel.tel_test_utils import stop_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import check_call_state_connected_by_adb
+from acts.test_utils.tel.tel_test_utils import initiate_call
+from acts.test_utils.tel.tel_test_utils import hangup_call
+from acts.test_utils.tel.tel_test_utils import http_file_download_by_sl4a
+from acts.test_utils.tel.tel_test_utils import start_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import trigger_modem_crash
+from acts.test_utils.gnss.gnss_test_utils import get_baseband_and_gms_version
+from acts.test_utils.gnss.gnss_test_utils import set_attenuator_gnss_signal
+from acts.test_utils.gnss.gnss_test_utils import _init_device
+from acts.test_utils.gnss.gnss_test_utils import check_location_service
+from acts.test_utils.gnss.gnss_test_utils import clear_logd_gnss_qxdm_log
+from acts.test_utils.gnss.gnss_test_utils import set_mobile_data
+from acts.test_utils.gnss.gnss_test_utils import set_wifi_and_bt_scanning
+from acts.test_utils.gnss.gnss_test_utils import get_gnss_qxdm_log
+from acts.test_utils.gnss.gnss_test_utils import remount_device
+from acts.test_utils.gnss.gnss_test_utils import reboot
+from acts.test_utils.gnss.gnss_test_utils import check_network_location
+from acts.test_utils.gnss.gnss_test_utils import launch_google_map
+from acts.test_utils.gnss.gnss_test_utils import check_location_api
+from acts.test_utils.gnss.gnss_test_utils import set_battery_saver_mode
+from acts.test_utils.gnss.gnss_test_utils import kill_xtra_daemon
+from acts.test_utils.gnss.gnss_test_utils import start_gnss_by_gtw_gpstool
+from acts.test_utils.gnss.gnss_test_utils import process_gnss_by_gtw_gpstool
+from acts.test_utils.gnss.gnss_test_utils import start_ttff_by_gtw_gpstool
+from acts.test_utils.gnss.gnss_test_utils import process_ttff_by_gtw_gpstool
+from acts.test_utils.gnss.gnss_test_utils import check_ttff_data
+from acts.test_utils.gnss.gnss_test_utils import start_youtube_video
+from acts.test_utils.gnss.gnss_test_utils import fastboot_factory_reset
+from acts.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr
+from acts.test_utils.gnss.gnss_test_utils import disable_supl_mode
+from acts.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
+from acts.test_utils.gnss.gnss_test_utils import check_xtra_download
 
 
 class GnssSanityTest(BaseTestClass):
@@ -37,9 +74,8 @@ class GnssSanityTest(BaseTestClass):
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
         self.ad = self.android_devices[0]
-        req_params = ["pixel_lab_network",
-                      "standalone_cs_criteria", "supl_cs_criteria",
-                      "xtra_ws_criteria", "xtra_cs_criteria",
+        req_params = ["pixel_lab_network", "standalone_cs_criteria",
+                      "supl_cs_criteria", "xtra_ws_criteria", "xtra_cs_criteria",
                       "weak_signal_supl_cs_criteria",
                       "weak_signal_xtra_ws_criteria",
                       "weak_signal_xtra_cs_criteria",
@@ -47,64 +83,58 @@ class GnssSanityTest(BaseTestClass):
                       "weak_gnss_signal_attenuation",
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
                       "gnss_init_error_whitelist", "pixel_lab_location",
-                      "legacy_wifi_xtra_cs_criteria"]
+                      "legacy_wifi_xtra_cs_criteria", "legacy_projects",
+                      "qdsp6m_path"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
         for network in self.pixel_lab_network:
             SSID = network['SSID']
             self.ssid_map[SSID] = network
-        if self.ad.model == "marlin" or self.ad.model == "walleye":
+        if self.ad.model in self.legacy_projects:
             self.wifi_xtra_cs_criteria = self.legacy_wifi_xtra_cs_criteria
         else:
             self.wifi_xtra_cs_criteria = self.xtra_cs_criteria
         self.flash_new_radio_or_mbn()
 
     def setup_class(self):
-        self.ad.droid.wakeLockAcquireBright()
-        self.ad.droid.wakeUpNow()
-        print_radio_info(self.ad)
-        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                          self.default_gnss_signal_attenuation)
-        gutils.init_gtw_gpstool(self.ad)
-        gutils._init_device(self.ad)
-        if not tutils.verify_internet_connection(self.ad.log, self.ad, retries=3,
-                                                 expected_state=True):
-            tutils.abort_all_tests(self.ad.log, "Fail to connect to LTE network")
-        if not gutils.check_location_service(self.ad):
-            tutils.abort_all_tests(self.ad.log, "Fail to switch Location on")
+        set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                   self.default_gnss_signal_attenuation)
+        _init_device(self.ad)
+        if not verify_internet_connection(self.ad.log, self.ad, retries=3,
+                                          expected_state=True):
+            abort_all_tests(self.ad.log, "Fail to connect to LTE network")
 
     def setup_test(self):
-        gutils.clear_logd_gnss_qxdm_log(self.ad)
-
-    def teardown_class(self):
-        self.ad.droid.wakeLockRelease()
-        self.ad.droid.goToSleepNow()
+        get_baseband_and_gms_version(self.ad)
+        clear_logd_gnss_qxdm_log(self.ad)
+        if int(self.attenuators[0].get_atten()) != self.default_gnss_signal_attenuation:
+            set_attenuator_gnss_signal(self.ad, self.attenuators, self.default_gnss_signal_attenuation)
 
     def teardown_test(self):
-        tutils.stop_qxdm_logger(self.ad)
-        if tutils.check_call_state_connected_by_adb(self.ad):
-            tutils.hangup_call(self.ad.log, self.ad)
-        if not int(self.ad.adb.shell("settings get global airplane_mode_on")) == 0:
+        stop_qxdm_logger(self.ad)
+        if check_call_state_connected_by_adb(self.ad):
+            hangup_call(self.ad.log, self.ad)
+        if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
             self.ad.log.info("Force airplane mode off")
-            utils.force_airplane_mode(self.ad, False)
+            force_airplane_mode(self.ad, False)
         if self.ad.droid.wifiCheckState():
-            wutils.wifi_toggle_state(self.ad, False)
-        if not int(self.ad.adb.shell("settings get global mobile_data")) == 1:
-            gutils.set_mobile_data(self.ad, True)
-        if not int(self.ad.adb.shell(
-            "settings get global wifi_scan_always_enabled")) == 1:
-            gutils.set_wifi_and_bt_scanning(self.ad, True)
-        if not int(self.attenuators[0].get_atten()) == self.default_gnss_signal_attenuation:
-            gutils.set_attenuator_gnss_signal(self.ad, self.attenuators, self.default_gnss_signal_attenuation)
+            wifi_toggle_state(self.ad, False)
+        if int(self.ad.adb.shell("settings get global mobile_data")) != 1:
+            set_mobile_data(self.ad, True)
+        if int(self.ad.adb.shell(
+            "settings get global wifi_scan_always_enabled")) != 1:
+            set_wifi_and_bt_scanning(self.ad, True)
+        if int(self.attenuators[0].get_atten()) != self.default_gnss_signal_attenuation:
+            set_attenuator_gnss_signal(self.ad, self.attenuators, self.default_gnss_signal_attenuation)
 
     def on_pass(self, test_name, begin_time):
         self.ad.take_bug_report(test_name, begin_time)
-        gutils.get_gnss_qxdm_log(self.ad, test_name)
+        get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
 
     def on_fail(self, test_name, begin_time):
         self.ad.take_bug_report(test_name, begin_time)
-        gutils.get_gnss_qxdm_log(self.ad, test_name)
+        get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
 
     def flash_new_radio_or_mbn(self):
         paths = {}
@@ -127,14 +157,15 @@ class GnssSanityTest(BaseTestClass):
                 paths["mbn_path"] = dest_path
                 os.system("chmod -R 777 %s" % paths["mbn_path"])
                 self.ad.log.info("mbn_path = %s" % paths["mbn_path"])
+                self.ad.log.info(os.listdir(paths["mbn_path"]))
         if not paths.get("radio_image"):
             self.ad.log.info("No radio image is provided on X20. "
                              "Skip flashing radio step.")
             return False
         else:
-            print_radio_info(self.ad, "Before flash radio, ")
+            get_baseband_and_gms_version(self.ad, "Before flash radio")
             flash_radio(self.ad, paths["radio_image"])
-            print_radio_info(self.ad, "After flash radio, ")
+            get_baseband_and_gms_version(self.ad, "After flash radio")
         if not paths.get("mbn_path"):
             self.ad.log.info("No need to push mbn files")
             return False
@@ -153,21 +184,18 @@ class GnssSanityTest(BaseTestClass):
                 self.ad.log.info("There is no mcfg.version before push, "
                                  "unmatching device")
                 return False
-            print_radio_info(self.ad, "Before push mcfg, ")
+            get_baseband_and_gms_version(self.ad, "Before push mcfg")
             try:
-                gutils.remount_device(self.ad)
-                cmd = "%s %s" % (paths["mbn_path"] + "/.",
+                remount_device(self.ad)
+                cmd = "%s %s" % (paths["mbn_path"]+"/.",
                                  "/vendor/rfs/msm/mpss/readonly/vendor/mbn/")
-                out = self.ad.adb.push(cmd, timeout=300, ignore_status=True)
+                out = self.ad.adb.push(cmd)
                 self.ad.log.info(out)
-                if "Read-only file system" in out:
-                    gutils.remount_device(self.ad)
-                    self.ad.adb.push(cmd, timeout=300, ignore_status=True)
-                gutils.reboot(self.ad)
+                reboot(self.ad)
             except Exception as e:
                 self.ad.log.error("Push mbn files error %s", e)
                 return False
-            print_radio_info(self.ad, "After push mcfg, ")
+            get_baseband_and_gms_version(self.ad, "After push mcfg")
             try:
                 new_mcfg_ver = self.ad.adb.shell(
                     "cat /vendor/rfs/msm/mpss/readonly/vendor/mbn/mcfg.version")
@@ -198,9 +226,6 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             There should be no GNSS initialization error after reboot.
-
-        Per GTW Location dev team requested, leave this test as raise testsignal
-        error for now. b/129835514
         """
         error_mismatch = True
         for attr in self.gnss_init_error_list:
@@ -209,13 +234,14 @@ class GnssSanityTest(BaseTestClass):
                 for whitelist in self.gnss_init_error_whitelist:
                     if whitelist in error:
                         error = re.sub(".*"+whitelist+".*\n?", "", error)
-                        self.ad.log.info("\"%s\" is removed from error" % whitelist)
+                        self.ad.log.info("\"%s\" is white-listed and removed "
+                                         "from error." % whitelist)
                 if error:
                     error_mismatch = False
                     self.ad.log.error("\n%s" % error)
             else:
                 self.ad.log.info("NO \"%s\" initialization error found." % attr)
-        return error_mismatch
+        asserts.assert_true(error_mismatch, "Error message found after GNSS init")
 
     @test_tracker_info(uuid="ff318483-411c-411a-8b1a-422bd54f4a3f")
     def test_supl_capabilities(self):
@@ -227,16 +253,12 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             CAPABILITIES=0x37 which supports MSA + MSB.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         capabilities_state = str(self.ad.adb.shell("cat vendor/etc/gps.conf | "
                                                    "grep CAPABILITIES"))
         self.ad.log.info("SUPL capabilities - %s" % capabilities_state)
-        if "CAPABILITIES=0x37" in capabilities_state:
-            return True
-        return False
+        asserts.assert_true(capabilities_state == "CAPABILITIES=0x37",
+                            "Wrong default SUPL capabilities is set")
 
     @test_tracker_info(uuid="dcae6979-ddb4-4cad-9d14-fbdd9439cf42")
     def test_sap_valid_modes(self):
@@ -248,16 +270,12 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             SAP=PREMIUM
-
-        Return:
-            True if PASS, False if FAIL.
         """
         sap_state = str(self.ad.adb.shell("cat vendor/etc/izat.conf | grep "
                                           "SAP="))
         self.ad.log.info("SAP Valid Modes - %s" % sap_state)
-        if "SAP=PREMIUM" in sap_state:
-            return True
-        return False
+        asserts.assert_true(sap_state == "SAP=PREMIUM",
+                            "Wrong SAP Valid Modes is set")
 
     @test_tracker_info(uuid="14daaaba-35b4-42d9-8d2c-2a803dd746a6")
     def test_network_location_provider_cell(self):
@@ -271,20 +289,18 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             Test devices could report cell Network Location.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         test_result_all = []
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
-        gutils.set_wifi_and_bt_scanning(self.ad, False)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        set_wifi_and_bt_scanning(self.ad, False)
         for i in range(1, 6):
-            test_result = gutils.check_network_location(
-                self.ad, retries=3, location_type = "networkLocationType=cell")
+            test_result = check_network_location(
+                self.ad, retries=3, location_type="networkLocationType=cell")
             test_result_all.append(test_result)
             self.ad.log.info("Iteraion %d => %s" % (i, test_result))
-        gutils.set_wifi_and_bt_scanning(self.ad, True)
-        return all(test_result_all)
+        set_wifi_and_bt_scanning(self.ad, True)
+        asserts.assert_true(all(test_result_all),
+                            "Fail to get networkLocationType=cell")
 
     @test_tracker_info(uuid="a45bdc7d-29fa-4a1d-ba34-6340b90e308d")
     def test_network_location_provider_wifi(self):
@@ -298,19 +314,17 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             Test devices could report wifi Network Location.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         test_result_all = []
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
-        gutils.set_wifi_and_bt_scanning(self.ad, True)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        set_wifi_and_bt_scanning(self.ad, True)
         for i in range(1, 6):
-            test_result = gutils.check_network_location(
-                self.ad, retries=3, location_type = "networkLocationType=wifi")
+            test_result = check_network_location(
+                self.ad, retries=3, location_type="networkLocationType=wifi")
             test_result_all.append(test_result)
             self.ad.log.info("Iteraion %d => %s" % (i, test_result))
-        return all(test_result_all)
+        asserts.assert_true(all(test_result_all),
+                            "Fail to get networkLocationType=wifi")
 
     @test_tracker_info(uuid="0919d375-baf2-4fe7-b66b-3f72d386f791")
     def test_gmap_location_report_gps_network(self):
@@ -325,19 +339,16 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             Test devices could report location to Google Map.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         test_result_all = []
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_qxdm_logger(self.ad, get_current_epoch_time())
         for i in range(1, 6):
-            gutils.launch_google_map(self.ad)
-            test_result = gutils.check_location_api(self.ad, retries=3)
+            launch_google_map(self.ad)
+            test_result = check_location_api(self.ad, retries=3)
             self.ad.send_keycode("HOME")
             test_result_all.append(test_result)
             self.ad.log.info("Iteraion %d => %s" % (i, test_result))
-        return all(test_result_all)
+        asserts.assert_true(all(test_result_all), "Fail to get location update")
 
     @test_tracker_info(uuid="513361d2-7d72-41b0-a944-fb259c606b81")
     def test_gmap_location_report_gps(self):
@@ -353,27 +364,20 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             Test devices could report location to Google Map.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         test_result_all = []
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
-        self.ad.adb.shell("settings put secure location_providers_allowed "
-                          "-network")
-        out = self.ad.adb.shell("settings get secure location_providers_allowed")
-        self.ad.log.info("Modify current Location Provider to %s" % out)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        self.ad.adb.shell("settings put secure location_mode 1")
+        out = int(self.ad.adb.shell("settings get secure location_mode"))
+        self.ad.log.info("Modify current Location Mode to %d" % out)
         for i in range(1, 6):
-            gutils.launch_google_map(self.ad)
-            test_result = gutils.check_location_api(self.ad, retries=3)
+            launch_google_map(self.ad)
+            test_result = check_location_api(self.ad, retries=3)
             self.ad.send_keycode("HOME")
             test_result_all.append(test_result)
             self.ad.log.info("Iteraion %d => %s" % (i, test_result))
-        self.ad.adb.shell("settings put secure location_providers_allowed "
-                          "+network")
-        out = self.ad.adb.shell("settings get secure location_providers_allowed")
-        self.ad.log.info("Modify current Location Provider to %s" % out)
-        return all(test_result_all)
+        check_location_service(self.ad)
+        asserts.assert_true(all(test_result_all), "Fail to get location update")
 
     @test_tracker_info(uuid="91a65121-b87d-450d-bd0f-387ade450ab7")
     def test_gmap_location_report_battery_saver(self):
@@ -390,21 +394,18 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             Test devices could report location to Google Map.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         test_result_all = []
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
-        gutils.set_battery_saver_mode(self.ad, True)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        set_battery_saver_mode(self.ad, True)
         for i in range(1, 6):
-            gutils.launch_google_map(self.ad)
-            test_result = gutils.check_location_api(self.ad, retries=3)
+            launch_google_map(self.ad)
+            test_result = check_location_api(self.ad, retries=3)
             self.ad.send_keycode("HOME")
             test_result_all.append(test_result)
             self.ad.log.info("Iteraion %d => %s" % (i, test_result))
-        gutils.set_battery_saver_mode(self.ad, False)
-        return all(test_result_all)
+        set_battery_saver_mode(self.ad, False)
+        asserts.assert_true(all(test_result_all), "Fail to get location update")
 
     @test_tracker_info(uuid="60c0aeec-0c8f-4a96-bc6c-05cba1260e73")
     def test_supl_ongoing_call(self):
@@ -417,31 +418,23 @@ class GnssSanityTest(BaseTestClass):
             4. DUT hang up call.
 
         Expected Results:
-            All SUPL TTFF Cold Start results should be less than
-            supl_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
+            All SUPL TTFF Cold Start results should be less than supl_cs_criteria.
         """
         begin_time = get_current_epoch_time()
-        tutils.start_qxdm_logger(self.ad, begin_time)
-        gutils.kill_xtra_daemon(self.ad)
+        start_qxdm_logger(self.ad, begin_time)
+        kill_xtra_daemon(self.ad)
         self.ad.droid.setVoiceCallVolume(25)
-        tutils.initiate_call(self.ad.log, self.ad, "99117")
+        initiate_call(self.ad.log, self.ad, "99117")
         time.sleep(5)
-        if tutils.check_call_state_idle_by_adb(self.ad):
-            self.ad.log.error("Call is not connected.")
-            return False
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                  self.supl_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad,
-                                                       begin_time,
-                                                       self.pixel_lab_location)
-        return gutils.check_ttff_data(self.ad, ttff_data,
-                                      ttff_mode="Cold Start",
-                                      criteria=self.supl_cs_criteria)
+        if not check_call_state_connected_by_adb(self.ad):
+            raise signals.TestFailure("Call is not connected.")
+        process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                self.pixel_lab_location)
+        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
+                                 criteria=self.supl_cs_criteria)
+        asserts.assert_true(result, "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="df605509-328f-43e8-b6d8-00635bf701ef")
     def test_supl_downloading_files(self):
@@ -455,32 +448,24 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         begin_time = get_current_epoch_time()
-        tutils.start_qxdm_logger(self.ad, begin_time)
-        gutils.kill_xtra_daemon(self.ad)
-        download = Process(target=tutils.http_file_download_by_sl4a,
+        start_qxdm_logger(self.ad, begin_time)
+        kill_xtra_daemon(self.ad)
+        download = Process(target=http_file_download_by_sl4a,
                            args=(self.ad, "https://speed.hetzner.de/10GB.bin",
                                  None, None, True, 3600))
         download.start()
         time.sleep(10)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                  self.supl_cs_criteria):
-            download.terminate()
-            time.sleep(3)
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad,
-                                                       begin_time,
-                                                       self.pixel_lab_location)
+        process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                self.pixel_lab_location)
         download.terminate()
         time.sleep(3)
-        return gutils.check_ttff_data(self.ad, ttff_data,
-                                      ttff_mode="Cold Start",
-                                      criteria=self.supl_cs_criteria)
+        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
+                                 criteria=self.supl_cs_criteria)
+        asserts.assert_true(result, "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="66b9f9d4-1397-4da7-9e55-8b89b1732017")
     def test_supl_watching_youtube(self):
@@ -494,27 +479,21 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         begin_time = get_current_epoch_time()
-        tutils.start_qxdm_logger(self.ad, begin_time)
-        gutils.kill_xtra_daemon(self.ad)
+        start_qxdm_logger(self.ad, begin_time)
+        kill_xtra_daemon(self.ad)
         self.ad.droid.setMediaVolume(25)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                  self.supl_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        if not gutils.start_youtube_video(
-            self.ad, url="https://www.youtube.com/watch?v=AbdVsi1VjQY", retries=3):
-            return False
-        ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad,
-                                                       begin_time,
-                                                       self.pixel_lab_location)
-        return gutils.check_ttff_data(self.ad, ttff_data,
-                                      ttff_mode="Cold Start",
-                                      criteria=self.supl_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        start_youtube_video(self.ad,
+                            url="https://www.youtube.com/watch?v=AbdVsi1VjQY",
+                            retries=3)
+        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                self.pixel_lab_location)
+        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
+                                 criteria=self.supl_cs_criteria)
+        asserts.assert_true(result, "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="a748af8b-e1eb-4ec6-bde3-74bcefa1c680")
     def test_supl_modem_ssr(self):
@@ -528,40 +507,28 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         supl_ssr_test_result_all = []
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
-        gutils.kill_xtra_daemon(self.ad)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        kill_xtra_daemon(self.ad)
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
-            before_modem_ssr = gutils.get_modem_ssr_crash_count(self.ad)
-            tutils.trigger_modem_crash(self.ad, timeout=60)
-            after_modem_ssr = gutils.get_modem_ssr_crash_count(self.ad)
-            if not int(self.ad.adb.shell("settings get global mobile_data")) == 1:
-                gutils.set_mobile_data(self.ad, True)
-            if not int(after_modem_ssr) == int(before_modem_ssr) + 1:
-                self.ad.log.error("Simulated Modem SSR Failed.")
-                return False
-            if not tutils.verify_internet_connection(self.ad.log,
-                                                     self.ad,
-                                                     retries=3,
-                                                     expected_state=True):
-                return False
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                      self.supl_cs_criteria):
-                return False
-            gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
-            ttff_data = gutils.process_ttff_by_gtw_gpstool(
-                self.ad, begin_time, self.pixel_lab_location)
-            supl_ssr_test_result = gutils.check_ttff_data(
-                self.ad, ttff_data, "Cold Start", self.supl_cs_criteria)
+            gnss_trigger_modem_ssr(self.ad)
+            if not verify_internet_connection(self.ad.log, self.ad, retries=3,
+                                              expected_state=True):
+                raise signals.TestFailure("Fail to connect to LTE network.")
+            process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
+            ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                    self.pixel_lab_location)
+            supl_ssr_test_result = check_ttff_data(self.ad, ttff_data,
+                                                   ttff_mode="Cold Start",
+                                                   criteria=self.supl_cs_criteria)
             self.ad.log.info("SUPL after Modem SSR test %d times -> %s"
                              % (times, supl_ssr_test_result))
             supl_ssr_test_result_all.append(supl_ssr_test_result)
-        return all(supl_ssr_test_result_all)
+        asserts.assert_true(all(supl_ssr_test_result_all),
+                            "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="01602e65-8ded-4459-8df1-7df70a1bfe8a")
     def test_gnss_airplane_mode_on(self):
@@ -575,24 +542,18 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             All Standalone TTFF Cold Start results should be within
             standalone_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         begin_time = get_current_epoch_time()
-        tutils.start_qxdm_logger(self.ad, begin_time)
+        start_qxdm_logger(self.ad, begin_time)
         self.ad.log.info("Turn airplane mode on")
-        utils.force_airplane_mode(self.ad, True)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                  self.standalone_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad,
-                                                       begin_time,
-                                                       self.pixel_lab_location)
-        return gutils.check_ttff_data(self.ad, ttff_data,
-                                      ttff_mode="Cold Start",
-                                      criteria=self.standalone_cs_criteria)
+        force_airplane_mode(self.ad, True)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                self.pixel_lab_location)
+        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
+                                 criteria=self.standalone_cs_criteria)
+        asserts.assert_true(result, "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="23731b0d-cb80-4c79-a877-cfe7c2faa447")
     def test_gnss_mobile_data_off(self):
@@ -606,24 +567,18 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             All Standalone TTFF Cold Start results should be within
             standalone_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         begin_time = get_current_epoch_time()
-        tutils.start_qxdm_logger(self.ad, begin_time)
-        gutils.kill_xtra_daemon(self.ad)
-        gutils.set_mobile_data(self.ad, False)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                  self.standalone_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad,
-                                                       begin_time,
-                                                       self.pixel_lab_location)
-        return gutils.check_ttff_data(self.ad, ttff_data,
-                                      ttff_mode="Cold Start",
-                                      criteria=self.standalone_cs_criteria)
+        start_qxdm_logger(self.ad, begin_time)
+        kill_xtra_daemon(self.ad)
+        set_mobile_data(self.ad, False)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                self.pixel_lab_location)
+        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
+                                 criteria=self.standalone_cs_criteria)
+        asserts.assert_true(result, "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="085b86a9-0212-4c0f-8ca1-2e467a0a2e6e")
     def test_supl_without_gnss_signal(self):
@@ -632,71 +587,61 @@ class GnssSanityTest(BaseTestClass):
         Steps:
             1. Get location fixed.
             2  Let device do GNSS tracking for 1 minute.
-            3. Set attenuation value to 60 to block GNSS signal.
+            3. Set attenuation value to block GNSS signal.
             4. Let DUT stay in no GNSS signal for 5 minutes.
-            5. Set attenuation value to 23 to regain GNSS signal.
+            5. Set attenuation value to regain GNSS signal.
             6. Try to get location reported again.
             7. Repeat Step 1. to Step 6. for 5 times.
 
         Expected Results:
             After setting attenuation value to 10 (GPS signal regain),
             DUT could get location fixed again.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         supl_no_gnss_signal_all = []
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_qxdm_logger(self.ad, get_current_epoch_time())
         for times in range(1, 6):
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                      self.supl_cs_criteria):
-                return False
+            process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
             self.ad.log.info("Let device do GNSS tracking for 1 minute.")
             time.sleep(60)
-            gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                              self.no_gnss_signal_attenuation)
+            set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                       self.no_gnss_signal_attenuation)
             self.ad.log.info("Let device stay in no GNSS signal for 5 minutes.")
             time.sleep(300)
-            gutils.set_attenuator_gnss_signal(
-                self.ad, self.attenuators, self.default_gnss_signal_attenuation)
-            supl_no_gnss_signal = gutils.check_location_api(self.ad, retries=3)
-            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
+            set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                       self.default_gnss_signal_attenuation)
+            supl_no_gnss_signal = check_location_api(self.ad, retries=3)
+            start_gnss_by_gtw_gpstool(self.ad, False)
             self.ad.log.info("SUPL without GNSS signal test %d times -> %s"
                              % (times, supl_no_gnss_signal))
             supl_no_gnss_signal_all.append(supl_no_gnss_signal)
-        return all(supl_no_gnss_signal_all)
+        asserts.assert_true(all(supl_no_gnss_signal_all),
+                            "Fail to get location update")
 
     @test_tracker_info(uuid="3ff2f2fa-42d8-47fa-91de-060816cca9df")
     def test_supl_weak_gnss_signal(self):
         """Verify SUPL TTFF functionality under weak GNSS signal.
 
         Steps:
-            1. Set attenuation value to 40 to set weak GNSS signal.
+            1. Set attenuation value to weak GNSS signal.
             2. Kill XTRA daemon to support SUPL only case.
             3. SUPL TTFF Cold Start for 10 iteration.
-            4. Set attenuation value to 23 to set default GNSS signal.
 
         Expected Results:
             All SUPL TTFF Cold Start results should be less than
             weak_signal_supl_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
-        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                          self.weak_gnss_signal_attenuation)
+        set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                   self.weak_gnss_signal_attenuation)
         begin_time = get_current_epoch_time()
-        tutils.start_qxdm_logger(self.ad, begin_time)
-        gutils.kill_xtra_daemon(self.ad)
-        if not gutils.process_gnss_by_gtw_gpstool(
-            self.ad, self.weak_signal_supl_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad,
-                                                       begin_time,
-                                                       self.pixel_lab_location)
-        return gutils.check_ttff_data(self.ad, ttff_data, "Cold Start",
-                                      self.weak_signal_supl_cs_criteria)
+        start_qxdm_logger(self.ad, begin_time)
+        kill_xtra_daemon(self.ad)
+        process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_supl_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                self.pixel_lab_location)
+        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
+                                 criteria=self.weak_signal_supl_cs_criteria)
+        asserts.assert_true(result, "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="4ad4a371-949a-42e1-b1f4-628c79fa8ddc")
     def test_supl_factory_reset(self):
@@ -710,34 +655,24 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         for times in range(1, 4):
-            gutils.fastboot_factory_reset(self.ad)
+            fastboot_factory_reset(self.ad)
             self.ad.unlock_screen(password=None)
-            gutils._init_device(self.ad)
-            if not gutils.check_location_service(self.ad):
-                return False
+            _init_device(self.ad)
             begin_time = get_current_epoch_time()
-            tutils.start_qxdm_logger(self.ad, begin_time)
-            gutils.kill_xtra_daemon(self.ad)
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                      self.supl_cs_criteria):
-                return False
-            gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-            ttff_data = gutils.process_ttff_by_gtw_gpstool(
-                self.ad, begin_time, self.pixel_lab_location)
-            if not gutils.check_ttff_data(self.ad, ttff_data,
-                                          ttff_mode="Cold Start",
-                                          criteria=self.supl_cs_criteria):
-                self.ad.log.error("SUPL after Factory Reset test %d times "
-                                  "-> FAIL" % times)
-                return False
+            start_qxdm_logger(self.ad, begin_time)
+            kill_xtra_daemon(self.ad)
+            process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+            ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                    self.pixel_lab_location)
+            if not check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
+                                   criteria=self.supl_cs_criteria):
+                raise signals.TestFailure("SUPL after Factory Reset test %d "
+                                          "times -> FAIL" % times)
             self.ad.log.info("SUPL after Factory Reset test %d times -> "
                              "PASS" % times)
-        return True
 
     @test_tracker_info(uuid="ea3096cf-4f72-4e91-bfb3-0bcbfe865ab4")
     def test_xtra_ttff_mobile_data(self):
@@ -751,74 +686,67 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             XTRA TTFF Warm Start results should be within xtra_ws_criteria.
             XTRA TTFF Cold Start results should be within xtra_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
-        gutils.disable_supl_mode(self.ad)
+        xtra_result = []
+        disable_supl_mode(self.ad)
         begin_time = get_current_epoch_time()
-        tutils.start_qxdm_logger(self.ad, begin_time)
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                  self.xtra_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
-        ws_ttff_data = gutils.process_ttff_by_gtw_gpstool(
-            self.ad, begin_time, self.pixel_lab_location)
-        if not gutils.check_ttff_data(self.ad, ws_ttff_data, "Warm Start",
-                                      self.xtra_ws_criteria):
-            return False
+        start_qxdm_logger(self.ad, begin_time)
+        process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
+        ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                   self.pixel_lab_location)
+        ws_result = check_ttff_data(self.ad, ws_ttff_data, ttff_mode="Warm Start",
+                                    criteria=self.xtra_ws_criteria)
+        xtra_result.append(ws_result)
         begin_time = get_current_epoch_time()
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                  self.xtra_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        cs_ttff_data = gutils.process_ttff_by_gtw_gpstool(
-            self.ad, begin_time, self.pixel_lab_location)
-        return gutils.check_ttff_data(self.ad, cs_ttff_data, "Cold Start",
-                                      self.xtra_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                   self.pixel_lab_location)
+        cs_result = check_ttff_data(self.ad, cs_ttff_data, ttff_mode="Cold Start",
+                                    criteria=self.xtra_cs_criteria)
+        xtra_result.append(cs_result)
+        asserts.assert_true(all(xtra_result),
+                            "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="c91ba740-220e-41de-81e5-43af31f63907")
     def test_xtra_ttff_weak_gnss_signal(self):
         """Verify XTRA TTFF functionality under weak GNSS signal.
 
         Steps:
-            1. Set attenuation value to 40 to set weak GNSS signal.
+            1. Set attenuation value to weak GNSS signal.
             2. TTFF Warm Start for 10 iteration.
             3. TTFF Cold Start for 10 iteration.
-            4. Set attenuation value to 23 to set default GNSS signal.
 
         Expected Results:
             XTRA TTFF Warm Start results should be within
             weak_signal_xtra_ws_criteria.
             XTRA TTFF Cold Start results should be within
             weak_signal_xtra_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
-        gutils.disable_supl_mode(self.ad)
-        gutils.set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                          self.weak_gnss_signal_attenuation)
+        xtra_result = []
+        disable_supl_mode(self.ad)
+        set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                   self.weak_gnss_signal_attenuation)
         begin_time = get_current_epoch_time()
-        tutils.start_qxdm_logger(self.ad, begin_time)
-        if not gutils.process_gnss_by_gtw_gpstool(
-            self.ad, self.weak_signal_xtra_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
-        ws_ttff_data = gutils.process_ttff_by_gtw_gpstool(
-            self.ad, begin_time, self.pixel_lab_location)
-        if not gutils.check_ttff_data(self.ad, ws_ttff_data, "Warm Start",
-                                      self.weak_signal_xtra_ws_criteria):
-            return False
+        start_qxdm_logger(self.ad, begin_time)
+        process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_xtra_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
+        ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                   self.pixel_lab_location)
+        ws_result = check_ttff_data(self.ad, ws_ttff_data, ttff_mode="Warm Start",
+                                    criteria=self.weak_signal_xtra_ws_criteria)
+        xtra_result.append(ws_result)
         begin_time = get_current_epoch_time()
-        if not gutils.process_gnss_by_gtw_gpstool(
-            self.ad, self.weak_signal_xtra_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        cs_ttff_data = gutils.process_ttff_by_gtw_gpstool(
-            self.ad, begin_time, self.pixel_lab_location)
-        return gutils.check_ttff_data(self.ad, cs_ttff_data, "Cold Start",
-                                      self.weak_signal_xtra_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_xtra_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                   self.pixel_lab_location)
+        cs_result = check_ttff_data(self.ad, cs_ttff_data, ttff_mode="Cold Start",
+                                    criteria=self.weak_signal_xtra_cs_criteria)
+        xtra_result.append(cs_result)
+        asserts.assert_true(all(xtra_result),
+                            "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="beeb3454-bcb2-451e-83fb-26289e89b515")
     def test_xtra_ttff_wifi(self):
@@ -833,34 +761,33 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             XTRA TTFF Warm Start results should be within xtra_ws_criteria.
             XTRA TTFF Cold Start results should be within xtra_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
-        gutils.disable_supl_mode(self.ad)
+        xtra_result = []
+        disable_supl_mode(self.ad)
         begin_time = get_current_epoch_time()
-        tutils.start_qxdm_logger(self.ad, begin_time)
+        start_qxdm_logger(self.ad, begin_time)
         self.ad.log.info("Turn airplane mode on")
-        utils.force_airplane_mode(self.ad, True)
-        wutils.wifi_toggle_state(self.ad, True)
-        gutils.connect_to_wifi_network(
-            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
-        ws_ttff_data = gutils.process_ttff_by_gtw_gpstool(
-            self.ad, begin_time, self.pixel_lab_location)
-        if not gutils.check_ttff_data(self.ad, ws_ttff_data, "Warm Start",
-                                      self.xtra_ws_criteria):
-            return False
+        force_airplane_mode(self.ad, True)
+        wifi_toggle_state(self.ad, True)
+        connect_to_wifi_network(self.ad,
+                                self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
+        ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                   self.pixel_lab_location)
+        ws_result = check_ttff_data(self.ad, ws_ttff_data, ttff_mode="Warm Start",
+                                    criteria=self.xtra_ws_criteria)
+        xtra_result.append(ws_result)
         begin_time = get_current_epoch_time()
-        if not gutils.process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria):
-            return False
-        gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        cs_ttff_data = gutils.process_ttff_by_gtw_gpstool(
-            self.ad, begin_time, self.pixel_lab_location)
-        return gutils.check_ttff_data(self.ad, cs_ttff_data, "Cold Start",
-                                      self.wifi_xtra_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                   self.pixel_lab_location)
+        cs_result = check_ttff_data(self.ad, cs_ttff_data, ttff_mode="Cold Start",
+                                    criteria=self.wifi_xtra_cs_criteria)
+        xtra_result.append(cs_result)
+        asserts.assert_true(all(xtra_result),
+                            "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="1745b8a4-5925-4aa0-809a-1b17e848dc9c")
     def test_xtra_modem_ssr(self):
@@ -874,42 +801,28 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             All XTRA TTFF Cold Start results should be within xtra_cs_criteria.
-
-        Return:
-            True if PASS, False if FAIL.
         """
-        gutils.disable_supl_mode(self.ad)
+        disable_supl_mode(self.ad)
         xtra_ssr_test_result_all = []
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_qxdm_logger(self.ad, get_current_epoch_time())
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
-            before_modem_ssr = gutils.get_modem_ssr_crash_count(self.ad)
-            tutils.trigger_modem_crash(self.ad, timeout=60)
-            after_modem_ssr = gutils.get_modem_ssr_crash_count(self.ad)
-            if not int(self.ad.adb.shell("settings get global mobile_data")) == 1:
-                gutils.set_mobile_data(self.ad, True)
-            if not int(after_modem_ssr) == int(before_modem_ssr) + 1:
-                self.ad.log.error("Simulated Modem SSR Failed.")
-                return False
-            if not tutils.verify_internet_connection(self.ad.log,
-                                                     self.ad,
-                                                     retries=3,
-                                                     expected_state=True):
-                return False
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                      self.xtra_cs_criteria):
-                return False
-            gutils.start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
-            ttff_data = gutils.process_ttff_by_gtw_gpstool(
-                self.ad, begin_time, self.pixel_lab_location)
-            xtra_ssr_test_result = gutils.check_ttff_data(self.ad,
-                                                          ttff_data,
-                                                          "Cold Start",
-                                                          self.xtra_cs_criteria)
+            gnss_trigger_modem_ssr(self.ad)
+            if not verify_internet_connection(self.ad.log, self.ad, retries=3,
+                                              expected_state=True):
+                raise signals.TestFailure("Fail to connect to LTE network.")
+            process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
+            start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
+            ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
+                                                    self.pixel_lab_location)
+            xtra_ssr_test_result = check_ttff_data(self.ad, ttff_data,
+                                                   ttff_mode="Cold Start",
+                                                   criteria=self.xtra_cs_criteria)
             self.ad.log.info("XTRA after Modem SSR test %d times -> %s"
                              % (times, xtra_ssr_test_result))
             xtra_ssr_test_result_all.append(xtra_ssr_test_result)
-        return all(xtra_ssr_test_result_all)
+        asserts.assert_true(all(xtra_ssr_test_result_all),
+                            "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="4d6e81e1-3abb-4e03-b732-7b6b497a2258")
     def test_xtra_download_mobile_data(self):
@@ -923,24 +836,20 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             XTRA data is properly downloaded and injected via mobile data.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         mobile_xtra_result_all = []
-        gutils.disable_supl_mode(self.ad)
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
+        disable_supl_mode(self.ad)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                      self.xtra_cs_criteria):
-                return False
+            process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
             time.sleep(5)
-            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
-            mobile_xtra_result = gutils.check_xtra_download(self.ad, begin_time)
+            start_gnss_by_gtw_gpstool(self.ad, False)
+            mobile_xtra_result = check_xtra_download(self.ad, begin_time)
             self.ad.log.info("Iteration %d => %s" % (i, mobile_xtra_result))
             mobile_xtra_result_all.append(mobile_xtra_result)
-        return all(mobile_xtra_result_all)
+        asserts.assert_true(all(mobile_xtra_result_all),
+                            "Fail to Download XTRA file")
 
     @test_tracker_info(uuid="625ac665-1446-4406-a722-e6a19645222c")
     def test_xtra_download_wifi(self):
@@ -955,26 +864,22 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             XTRA data is properly downloaded and injected via WiFi.
-
-        Return:
-            True if PASS, False if FAIL.
         """
         wifi_xtra_result_all = []
-        gutils.disable_supl_mode(self.ad)
-        tutils.start_qxdm_logger(self.ad, get_current_epoch_time())
+        disable_supl_mode(self.ad)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
         self.ad.log.info("Turn airplane mode on")
-        utils.force_airplane_mode(self.ad, True)
-        wutils.wifi_toggle_state(self.ad, True)
-        gutils.connect_to_wifi_network(
-            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        force_airplane_mode(self.ad, True)
+        wifi_toggle_state(self.ad, True)
+        connect_to_wifi_network(self.ad,
+                                self.ssid_map[self.pixel_lab_network[0]["SSID"]])
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
-            if not gutils.process_gnss_by_gtw_gpstool(self.ad,
-                                                      self.wifi_xtra_cs_criteria):
-                return False
+            process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria)
             time.sleep(5)
-            gutils.start_gnss_by_gtw_gpstool(self.ad, False)
-            wifi_xtra_result = gutils.check_xtra_download(self.ad, begin_time)
+            start_gnss_by_gtw_gpstool(self.ad, False)
+            wifi_xtra_result = check_xtra_download(self.ad, begin_time)
             wifi_xtra_result_all.append(wifi_xtra_result)
             self.ad.log.info("Iteraion %d => %s" % (i, wifi_xtra_result))
-        return all(wifi_xtra_result_all)
+        asserts.assert_true(all(wifi_xtra_result_all),
+                            "Fail to Download XTRA file")
