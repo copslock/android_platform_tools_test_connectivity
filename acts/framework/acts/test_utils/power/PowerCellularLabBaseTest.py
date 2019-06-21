@@ -40,8 +40,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     PARAM_SIM_TYPE_UMTS = "umts"
     PARAM_SIM_TYPE_GSM = "gsm"
 
-    # User param keywords
-    KEY_CALIBRATION_TABLE = "calibration_table"
+    # Custom files
+    FILENAME_CALIBRATION_TABLE = "calibration_table.json"
 
     # Name of the files in the logs directory that will contain test results
     # and other information in csv format.
@@ -82,10 +82,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.pkt_sender = self.packet_senders[0]
 
         # Load calibration tables
-        # Load calibration tables
-        if self.KEY_CALIBRATION_TABLE in self.user_params:
-            self.calibration_table = self.unpack_custom_file(
-                self.user_params[self.KEY_CALIBRATION_TABLE], False)
+        for file in self.custom_files:
+            if self.FILENAME_CALIBRATION_TABLE in file:
+                self.calibration_table = self.unpack_custom_file(file, False)
 
         # Store the value of the key to access the test config in the
         # user_params dictionary.
