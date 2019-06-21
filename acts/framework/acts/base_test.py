@@ -39,6 +39,7 @@ from acts.event.event import TestClassEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
 
 from mobly import controller_manager
+from mobly.records import ExceptionRecord
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = "[Test Case]"
@@ -60,7 +61,9 @@ def _logcat_log_test_begin(event):
                                                event.test_case_name))
 
     except error.ActsError as e:
-        test_instance.results.error.append(e)
+        test_instance.results.error.append(
+            ExceptionRecord(
+                e, 'Logcat for test begin: %s' % event.test_case_name))
         test_instance.log.error('BaseTest setup_test error: %s' % e.message)
 
     except Exception as e:
@@ -81,7 +84,9 @@ def _logcat_log_test_end(event):
                                              event.test_case_name))
 
     except error.ActsError as e:
-        test_instance.results.error.append(e)
+        test_instance.results.error.append(
+            ExceptionRecord(
+                e, 'Logcat for test end: %s' % event.test_case_name))
         test_instance.log.error('BaseTest teardown_test error: %s' % e.message)
 
     except Exception as e:
@@ -354,6 +359,7 @@ class BaseTestClass(object):
         else:
             self.log.warning("No controller info obtained for %s",
                              module_config_name)
+        self._record_controller_info()
 
         if builtin:
             setattr(self, module_ref_name, controllers)
@@ -383,9 +389,15 @@ class BaseTestClass(object):
 
     def _record_controller_info(self):
         """Collect controller information and write to summary file."""
-        for record in self._controller_manager.get_controller_info_records():
-            self.summary_writer.dump(
-                record.to_dict(), records.TestSummaryEntryType.CONTROLLER_INFO)
+        try:
+            manager = self._controller_manager
+            for record in manager.get_controller_info_records():
+                self.summary_writer.dump(
+                    record.to_dict(),
+                    records.TestSummaryEntryType.CONTROLLER_INFO)
+        except Exception:
+            self.log.exception('Unable to write controller info records to'
+                               ' summary file')
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
@@ -410,7 +422,6 @@ class BaseTestClass(object):
         is called.
         """
         self.teardown_class()
-        self._record_controller_info()
         self.unregister_controllers()
         event_bus.post(TestClassEndEvent(self, self.results))
 
