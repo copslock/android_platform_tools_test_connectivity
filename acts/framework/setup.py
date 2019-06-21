@@ -25,9 +25,7 @@ import sys
 install_requires = [
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',
-    # mock-1.0.1 is the last version compatible with setuptools <17.1,
-    # which is what comes with Ubuntu 14.04 LTS.
-    'mock<=1.0.1',
+    'mock',
     'numpy',
     'pyserial',
     'pyyaml>=5.1',
@@ -48,7 +46,7 @@ install_requires = [
     'paramiko-ng'
 ]
 
-if sys.version_info < (3,):
+if sys.version_info < (3, ):
     install_requires.append('enum34')
     install_requires.append('statistics')
     # "futures" is needed for py2 compatibility and it only works in 2.7
@@ -97,8 +95,8 @@ class ActsInstallDependencies(cmd.Command):
 
         for package in required_packages:
             self.announce('Installing %s...' % package, log.INFO)
-            subprocess.check_call(
-                install_args + ['-v', '--no-cache-dir', package])
+            subprocess.check_call(install_args +
+                                  ['-v', '--no-cache-dir', package])
 
         self.announce('Dependencies installed.')
 
@@ -164,8 +162,10 @@ class ActsUninstall(cmd.Command):
 
 def main():
     framework_dir = os.path.dirname(os.path.realpath(__file__))
-    scripts = [os.path.join(framework_dir, 'acts', 'bin', 'act.py'),
-               os.path.join(framework_dir, 'acts', 'bin', 'monsoon.py')]
+    scripts = [
+        os.path.join(framework_dir, 'acts', 'bin', 'act.py'),
+        os.path.join(framework_dir, 'acts', 'bin', 'monsoon.py')
+    ]
 
     setuptools.setup(
         name='acts',
@@ -189,10 +189,10 @@ def main():
             '/usr/local/bin/act.py', '/usr/local/bin/monsoon.py'
         ]
         for act_file in installed_scripts:
-          if os.path.islink(act_file):
-              os.unlink(act_file)
-          elif os.path.exists(act_file):
-              os.remove(act_file)
+            if os.path.islink(act_file):
+                os.unlink(act_file)
+            elif os.path.exists(act_file):
+                os.remove(act_file)
 
 
 if __name__ == '__main__':
