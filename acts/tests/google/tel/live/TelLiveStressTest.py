@@ -45,6 +45,7 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_MESSAGE_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_VOICE_SUB_ID
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_CBRS_DATA_SWITCH
 from acts.test_utils.tel.tel_lookup_tables import is_rat_svd_capable
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
@@ -74,7 +75,6 @@ from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_call_id_clearing
 from acts.test_utils.tel.tel_test_utils import wait_for_data_connection
 from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
-from acts.test_utils.tel.tel_test_utils import check_call_state_idle_by_adb
 from acts.test_utils.tel.tel_test_utils import is_current_data_on_cbrs
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -395,6 +395,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.ed.start()
             ad.droid.logI("[BEGIN]%s" % log_msg)
         start_qxdm_loggers(self.log, self.android_devices, begin_time)
+        if self.cbrs_esim:
+            self._cbrs_data_check_test(begin_time, expected_cbrs=True,
+                                       test_time="before")
         failure_reasons = set()
         self.dut_incall = True
         if self.single_phone_test:
@@ -439,6 +442,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             elapsed_time = 0
             check_interval = 5
+            if self.cbrs_esim:
+                time.sleep(WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                self._cbrs_data_check_test(begin_time, expected_cbrs=False,
+                                           test_time="during")
             while (elapsed_time < duration):
                 check_interval = min(check_interval, duration - elapsed_time)
                 time.sleep(check_interval)
@@ -485,6 +492,10 @@ class TelLiveStressTest(TelephonyBaseTest):
                 pass
         self.log.info("%s end", log_msg)
         self.dut_incall = False
+        if self.cbrs_esim:
+            time.sleep(WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+            self._cbrs_data_check_test(begin_time, expected_cbrs=True,
+                                       test_time="after")
         if not result:
             self.log.info("%s failed", log_msg)
             if self.gps_log_file:
@@ -664,67 +675,30 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def cbrs_data_check_test(self):
-        failure = 0
+    def _cbrs_data_check_test(self, begin_time, expected_cbrs=True,
+                              test_time="before"):
+        cbrs_fail_count = 0
+        the_number = self.result_info["CBRS Total"] + 1
+        test_name = "%s_cbrs_%s_call_No_%s" % (self.test_name,
+                                               test_time, the_number)
         for ad in self.android_devices:
-            if not getattr(ad, 'cbrs', {}):
-                setattr(ad, 'cbrs', None)
-            for i in range(0,2):
-                sub_id = get_subid_from_slot_index(ad.log, ad, i)
-                operator = get_operatorname_from_slot_index(ad, i)
-                ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
-                if "Google" in operator:
-                    ad.cbrs = sub_id
-        while time.time() < self.finishing_time:
-            try:
-                self.log.info(dict(self.result_info))
-                self._update_perf_json()
-                begin_time = get_device_epoch_time(self.dut)
-                run_time_in_seconds = (begin_time - self.begin_time) / 1000
-                test_name = "%s_cbrs_%s_seconds_after_start" % (
-                    self.test_name, run_time_in_seconds)
-                time.sleep(self.cbrs_check_interval)
-                for ad in self.android_devices:
-                    if not self.dut_incall:
-                        if is_current_data_on_cbrs(ad, ad.cbrs):
-                            self.result_info["CBRS-Data-Pass"] += 1
-                            cbrs_fail = False
-                        else:
-                            if not check_call_state_idle_by_adb(ad):
-                                self.result_info["CBRS-InCall-Pass"] += 1
-                                cbrs_fail = False
-                            else:
-                                self.result_info["CBRS-Data-Fail"] += 1
-                                cbrs_fail = True
-                    else:
-                        if is_current_data_on_cbrs(ad, ad.cbrs):
-                            if check_call_state_idle_by_adb(ad):
-                                self.result_info["CBRS-Data-Pass"] += 1
-                                cbrs_fail = False
-                            else:
-                                self.result_info["CBRS-InCall-Fail"] += 1
-                                cbrs_fail = True
-                        else:
-                            self.result_info["CBRS-InCall-Pass"] += 1
-                            cbrs_fail = False
-                    if cbrs_fail:
-                        ad.log.error("found cbrs data checks failures")
-                        failure += 1
-                        try:
-                            ad.take_bug_report(test_name, begin_time)
-                        except Exception as e:
-                            self.log.exception(e)
-            except Exception as e:
-                self.log.error("Exception error %s", str(e))
-                self.result_info["Exception Errors"] += 1
-            self.log.info("Crashes found: %s", failure)
-            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
-                self.log.error("Too many exception errors, quit test")
-                return False
-        if failure:
-            return False
-        else:
-            return True
+            current_state = is_current_data_on_cbrs(ad, ad.cbrs)
+            if current_state == expected_cbrs:
+                self.result_info["CBRS-Check-Pass"] += 1
+            else:
+                self.result_info["CBRS-Check-Fail"] += 1
+                cbrs_fail_count += 1
+                try:
+                    self._ad_take_extra_logs(ad, test_name, begin_time)
+                    self._ad_take_bugreport(ad, test_name, begin_time)
+                except Exception as e:
+                    self.log.warning(e)
+        if cbrs_fail_count > 0:
+            ad.log.error("Found %d checks failed, expected cbrs %s",
+                         cbrs_fail_count, expected_cbrs)
+            cbrs_fail_count += 1
+        self.result_info["CBRS Total"] + 1
+        return True
 
     def call_test(self, call_verification_func=None):
         while time.time() < self.finishing_time:
@@ -959,21 +933,29 @@ class TelLiveStressTest(TelephonyBaseTest):
         if not call_verification_func:
             call_verification_func = is_phone_in_call
         self.finishing_time = time.time() + self.max_run_time
+        if self.cbrs_esim:
+            cbrs_sub_count = 0
+            for ad in self.android_devices:
+                if not getattr(ad, 'cbrs', {}):
+                    setattr(ad, 'cbrs', None)
+                for i in range(0, 2):
+                    sub_id = get_subid_from_slot_index(ad.log, ad, i)
+                    operator = get_operatorname_from_slot_index(ad, i)
+                    ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
+                    if operator and "Google" in operator:
+                        ad.cbrs = sub_id
+                        cbrs_sub_count += 1
+            if cbrs_sub_count != 2:
+                self.log.error("Expecting - 2 CBRS subs, found - %d", cbrs_sub_count)
+                raise signals.TestAbortClass("Cannot find all expected CBRS subs")
         if not self.dsds_esim and self.check_incall_data():
             self.log.info(
                 "==== Start parallel voice/message/data stress test ====")
             self.perf_data["testing method"] = "parallel"
-            if not self.cbrs_esim:
-                results = run_multithread_func(
-                    self.log, [(self.call_test, [call_verification_func]),
-                               (self.message_test, []), (self.data_test, []),
-                               (self.crash_check_test, [])])
-            else:
-                results = run_multithread_func(
-                    self.log, [(self.call_test, [call_verification_func]),
-                               (self.message_test, []), (self.data_test, []),
-                               (self.cbrs_data_check_test, []),
-                               (self.crash_check_test, [])])
+            results = run_multithread_func(
+                self.log, [(self.call_test, [call_verification_func]),
+                           (self.message_test, []), (self.data_test, []),
+                           (self.crash_check_test, [])])
         else:
             self.log.info(
                 "==== Start sequential voice/message/data stress test ====")
