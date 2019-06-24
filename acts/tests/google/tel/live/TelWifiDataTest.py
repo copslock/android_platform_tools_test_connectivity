@@ -85,6 +85,7 @@ class TelWifiDataTest(TelephonyBaseTest):
         ad = self.android_devices[0]
         toggle_airplane_mode(self.log, ad, False)
         if not ensure_network_generation(self.log, ad, GEN_4G,
+                                         MAX_WAIT_TIME_NW_SELECTION,
                                          NETWORK_SERVICE_DATA):
             return False
 
