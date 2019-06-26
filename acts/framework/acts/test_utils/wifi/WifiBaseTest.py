@@ -37,9 +37,11 @@ AP_1 = 0
 AP_2 = 1
 MAX_AP_COUNT = 2
 
+
 class WifiBaseTest(BaseTestClass):
     def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+        if not hasattr(self, 'android_devices'):
+            BaseTestClass.__init__(self, controllers)
         if hasattr(self, 'attenuators') and self.attenuators:
             for attenuator in self.attenuators:
                 attenuator.set_atten(0)
