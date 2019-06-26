@@ -27,6 +27,7 @@ from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_CBRS_DATA_SWITCH
+from acts.test_utils.tel.tel_defines import EventActiveDataSubIdChanged
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
@@ -39,6 +40,10 @@ from acts.test_utils.tel.tel_test_utils import test_data_browsing_success_using_
 from acts.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_test_utils import is_current_data_on_cbrs
+from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
+from acts.test_utils.tel.tel_test_utils import STORY_LINE
+from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
+from acts.test_utils.tel.tel_test_utils import start_qxdm_logger
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -57,8 +62,13 @@ from acts.test_utils.tel.tel_voice_utils import phone_idle_not_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import get_operatorname_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import get_cbrs_and_default_sub_id
 from acts.utils import get_current_epoch_time
+from queue import Empty
 
+WAIT_TIME_BETWEEN_ITERATION = 10
+WAIT_TIME_BETWEEN_HANDOVER = 10
+TIME_PERMITTED_FOR_CBRS_SWITCH = 2
 
 class TelLiveCBRSTest(TelephonyBaseTest):
     def __init__(self, controllers):
@@ -68,7 +78,10 @@ class TelLiveCBRSTest(TelephonyBaseTest):
         self.message_lengths = (50, 160, 180)
         self.long_message_lengths = (800, 1600)
         self.cbrs_subid = None
-        self.default_data_subid = None
+        self.default_subid = None
+        self.switch_time_dict = {}
+        self.stress_test_number = int(
+            self.user_params.get("stress_test_number", 5))
 
 
     def on_fail(self, test_name, begin_time):
@@ -112,20 +125,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
             self.log.error("Invalid parameters.")
             return False
 
-        # Fetch CBRS sub_id and default
-        slot_dict = {0: {}, 1: {}}
-        for slot in (0, 1):
-            slot_dict[slot]['sub_id'] = get_subid_from_slot_index(
-                ads[0].log, ads[0], slot)
-            slot_dict[slot]['operator'] = get_operatorname_from_slot_index(
-                ads[0], slot)
-            if "Google" in slot_dict[slot]['operator']:
-                self.cbrs_subid = slot_dict[slot]['sub_id']
-            else:
-                self.default_data_subid = slot_dict[slot]['sub_id']
-            ads[0].log.info("Slot %d - Sub %s - %s", slot,
-                            slot_dict[slot]['sub_id'],
-                            slot_dict[slot]['operator'])
+        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ad)
 
         if mo_mt == DIRECTION_MOBILE_ORIGINATED:
             ad_caller = ads[0]
@@ -295,7 +295,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
     def _phone_setup_volte(self):
         return phone_setup_volte_for_subscription(self.log,
                                                   self.android_devices[0],
-                                                  self.default_data_subid)
+                                                  self.default_subid)
 
     def _phone_setup_1x(self):
         return phone_setup_cdma(self.log, self.android_devices[0])
@@ -319,6 +319,13 @@ class TelLiveCBRSTest(TelephonyBaseTest):
     def _is_current_data_on_default(self):
         return not is_current_data_on_cbrs(self.android_devices[0],
                                            self.cbrs_subid)
+
+    def _get_list_average(self, input_list):
+        total_sum = float(sum(input_list))
+        total_count = float(len(input_list))
+        if input_list == []:
+            return False
+        return float(total_sum / total_count)
 
 
     """ Tests Begin """
@@ -460,19 +467,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         total_iteration = self.stress_test_number
         fail_count = collections.defaultdict(int)
-        slot_dict = {0: {}, 1: {}}
-        for slot in (0, 1):
-            slot_dict[slot]['sub_id'] = get_subid_from_slot_index(
-                ads[0].log, ads[0], slot)
-            slot_dict[slot]['operator'] = get_operatorname_from_slot_index(
-                ads[0], slot)
-            if "Google" in slot_dict[slot]['operator']:
-                self.cbrs_subid = slot_dict[slot]['sub_id']
-            else:
-                self.default_data_subid = slot_dict[slot]['sub_id']
-            ads[0].log.info("Slot %d - Sub %s - %s", slot,
-                            slot_dict[slot]['sub_id'],
-                            slot_dict[slot]['operator'])
+        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ad)
         self.log.info("Total iteration = %d.", total_iteration)
         current_iteration = 1
         for i in range(1, total_iteration + 1):
@@ -538,3 +533,212 @@ class TelLiveCBRSTest(TelephonyBaseTest):
             True if pass; False if fail.
         """
         return self._test_stress_cbrs(DIRECTION_MOBILE_ORIGINATED)
+
+
+    def _cbrs_default_data_switch_timing(self, ad, method, validation=False):
+        result = True
+        if not getattr(ad, "cbrs_droid", None):
+            ad.cbrs_droid, ad.cbrs_ed = ad.get_droid()
+            ad.cbrs_ed.start()
+        else:
+            try:
+                if not ad.cbrs_droid.is_live:
+                    ad.cbrs_droid, ad.cbrs_ed = ad.get_droid()
+                    ad.cbrs_ed.start()
+                else:
+                    ad.cbrs_ed.clear_all_events()
+                ad.cbrs_droid.logI("Start test_stress_cbrsdataswitch test")
+            except Exception:
+                ad.log.info("Create new sl4a session for CBRS")
+                ad.cbrs_droid, ad.cbrs_ed = ad.get_droid()
+                ad.cbrs_ed.start()
+        ad.cbrs_droid.telephonyStartTrackingActiveDataChange()
+        time.sleep(WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+        try:
+            ad.cbrs_ed.clear_events(EventActiveDataSubIdChanged)
+            initiate_time_before = get_device_epoch_time(ad)
+            ad.log.debug("initiate_time_before: %d", initiate_time_before)
+            if method == "api":
+                ad.log.info("Setting DDS to default sub %s", self.default_subid)
+                ad.droid.telephonySetPreferredOpportunisticDataSubscription(
+                    2147483647, validation)
+            else:
+                ad.log.info("Making a Voice Call to %s", STORY_LINE)
+                ad.droid.telecomCallNumber(STORY_LINE, False)
+            try:
+                events = ad.cbrs_ed.pop_events("(%s)" %
+                    (EventActiveDataSubIdChanged), WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                for event in events:
+                    ad.log.info("Got event %s", event["name"])
+                    if event["name"] == EventActiveDataSubIdChanged:
+                        if event.get("data") and \
+                                event["data"] == self.default_subid:
+                            ad.log.info("%s has data switched to: %s sub",
+                                        event["name"], event["data"])
+                            initiate_time_after = event["time"]
+                        break
+            except Empty:
+                ad.log.error("No %s event for DataSwitch received in %d seconds",
+                             EventActiveDataSubIdChanged,
+                             WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                return False
+            time_interval = (initiate_time_after - initiate_time_before) / 1000
+            self.switch_time_dict['cbrs_default_switch'].append(time_interval)
+            if time_interval > TIME_PERMITTED_FOR_CBRS_SWITCH:
+                ad.log.error("Time for CBRS->Default - %.2f secs", time_interval)
+                result = False
+            else:
+                ad.log.info("Time for CBRS->Default - %.2f secs", time_interval)
+            time.sleep(WAIT_TIME_BETWEEN_HANDOVER)
+            ad.cbrs_ed.clear_events(EventActiveDataSubIdChanged)
+            hangup_time_before = get_device_epoch_time(ad)
+            ad.log.debug("hangup_time_before: %d", hangup_time_before)
+            if method == "api":
+                ad.log.info("Setting DDS to cbrs sub %s", self.cbrs_subid)
+                ad.droid.telephonySetPreferredOpportunisticDataSubscription(
+                    self.cbrs_subid, validation)
+            else:
+                ad.log.info("Ending Call")
+                ad.droid.telecomEndCall()
+            try:
+                events = ad.cbrs_ed.pop_events("(%s)" %
+                    (EventActiveDataSubIdChanged), WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                for event in events:
+                    ad.log.info("Got event %s", event["name"])
+                    if event["name"] == EventActiveDataSubIdChanged:
+                        if event.get("data") and \
+                                event["data"] == self.cbrs_subid:
+                            ad.log.info("%s has data switched to: %s sub",
+                                        event["name"], event["data"])
+                            hangup_time_after = event["time"]
+                        break
+            except Empty:
+                ad.log.error("No %s event for DataSwitch received in %d seconds",
+                             EventActiveDataSubIdChanged,
+                             WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                return False
+            time_interval = (hangup_time_after - hangup_time_before) / 1000
+            self.switch_time_dict['default_cbrs_switch'].append(time_interval)
+            if time_interval > TIME_PERMITTED_FOR_CBRS_SWITCH:
+                ad.log.error("Time for Default->CBRS - %.2f secs", time_interval)
+                result = False
+            else:
+                ad.log.info("Time for Default->CBRS - %.2f secs", time_interval)
+        except Exception as e:
+            self.log.error("Exception error %s", e)
+            raise
+        finally:
+            ad.cbrs_droid.telephonyStopTrackingActiveDataChange()
+        return result
+
+
+    def _test_stress_cbrsdataswitch_timing(self, ad, method, validation=False):
+        setattr(self, "number_of_devices", 1)
+        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ad)
+        toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
+        if self._is_current_data_on_cbrs():
+            ad.log.info("Current Data is on CBRS, proceeding with test")
+        else:
+            ad.log.error("Current Data not on CBRS, aborting test..")
+            return False
+        ad.droid.telephonyUpdateAvailableNetworks(self.cbrs_subid)
+        total_iteration = self.stress_test_number
+        fail_count = collections.defaultdict(int)
+        self.switch_time_dict = {'cbrs_default_switch':[],
+                                 'default_cbrs_switch': []}
+        current_iteration = 1
+        for i in range(1, total_iteration + 1):
+            msg = "Stress CBRS Test Iteration: <%s> / <%s>" % (
+                i, total_iteration)
+            begin_time = get_current_epoch_time()
+            self.log.info(msg)
+            start_qxdm_logger(ad, begin_time)
+            iteration_result = self._cbrs_default_data_switch_timing(
+                ad, method, validation)
+            self.log.info("Result: %s", iteration_result)
+            if iteration_result:
+                self.log.info(">----Iteration : %d/%d succeed.----<",
+                    i, total_iteration)
+            else:
+                fail_count["cbrsdataswitch_fail"] += 1
+                self.log.error(">----Iteration : %d/%d failed.----<",
+                    i, total_iteration)
+                self._take_bug_report("%s_IterNo_%s" % (self.test_name, i),
+                                      begin_time)
+            current_iteration += 1
+            time.sleep(WAIT_TIME_BETWEEN_ITERATION)
+        test_result = True
+        for time_task, time_list in self.switch_time_dict.items():
+            ad.log.info("%s %s", time_task, time_list)
+            avg_time = self._get_list_average(time_list)
+            ad.log.info("Average %s for %d iterations = %.2f seconds",
+                                time_task, self.stress_test_number, avg_time)
+        for failure, count in fail_count.items():
+            if count:
+                self.log.error("%s: %s %s failures in %s iterations",
+                               self.test_name, count, failure,
+                               total_iteration)
+                test_result = False
+        return test_result
+
+
+    @test_tracker_info(uuid="c66e307b-8456-4a86-af43-d715597ce802")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_cbrsdataswitch_via_api_without_validation(self):
+        """ Test CBRS to Default Data Switch Stress Test
+
+        By default, data is expected to be on CBRS
+        Using TelephonyManagerAPI, switch data to default
+        Measure time to switch
+        Using TelephonyManagerAPI, switch data to cbrs
+        Measure time to switch
+        Switching to be done with validation set to False
+        Repeat above steps
+        Calculate average time to switch
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        self._test_stress_cbrsdataswitch_timing(ad, "api", validation=False)
+
+
+    @test_tracker_info(uuid="a0ae7691-4890-4e94-8a01-b54ba5b6f489")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_cbrsdataswitch_via_api_with_validation(self):
+        """ Test CBRS to Default Data Switch Stress Test
+
+        By default, data is expected to be on CBRS
+        Using TelephonyManagerAPI, switch data to default
+        Measure time to switch
+        Using TelephonyManagerAPI, switch data to cbrs
+        Measure time to switch
+        Switching to be done with validation set to True
+        Repeat above steps
+        Calculate average time to switch
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        self._test_stress_cbrsdataswitch_timing(ad, "api", validation=True)
+
+
+    @test_tracker_info(uuid="1e69b57a-f2f7-42c6-8389-2194356c599c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_stress_cbrsdataswitch_via_call(self):
+        """ Test CBRS to Default Data Switch Stress Test
+
+        By default, data is expected to be on CBRS
+        Initiate MO Phone, data will switch to default
+        Measure time to switch
+        Hangup MO Phone, data will switch to cbrs
+        Measure time to switch
+        Repeat above steps
+        Calculate average time to switch
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        self._test_stress_cbrsdataswitch_timing(ad, "call")
