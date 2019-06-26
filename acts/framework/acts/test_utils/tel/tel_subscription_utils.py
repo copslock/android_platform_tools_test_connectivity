@@ -338,3 +338,29 @@ def set_slways_allow_mms_data(ad, sub_id, state=True):
     else:
         ad.log.debug("Setting MMS Data Always ON %s sub_id %s", state, sub_id)
         return ad.droid.subscriptionSetAlwaysAllowMmsData(sub_id, state)
+
+
+def get_cbrs_and_default_sub_id(ad):
+    """Gets CBRS and Default SubId
+
+    Args:
+        ad: android device object.
+
+    Returns:
+        cbrs_subId
+        default_subId
+    """
+    slot_dict = {0: {}, 1: {}}
+    for slot in (0, 1):
+        slot_dict[slot]['sub_id'] = get_subid_from_slot_index(
+            ad.log, ad, slot)
+        slot_dict[slot]['operator'] = get_operatorname_from_slot_index(
+            ad, slot)
+        if "Google" in slot_dict[slot]['operator']:
+            cbrs_subid = slot_dict[slot]['sub_id']
+        else:
+            default_subid = slot_dict[slot]['sub_id']
+        ad.log.info("Slot %d - Sub %s - %s", slot,
+                    slot_dict[slot]['sub_id'],
+                    slot_dict[slot]['operator'])
+    return cbrs_subid, default_subid
