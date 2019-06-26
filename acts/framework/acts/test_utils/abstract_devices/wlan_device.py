@@ -32,8 +32,8 @@ def create_wlan_device(hardware_device):
     elif isinstance(hardware_device, AndroidDevice):
         return AndroidWlanDevice(hardware_device)
     else:
-        raise ValueError('Unable to create WlanDevice for type %s' %
-                         type(hardware_device))
+        raise ValueError(
+            'Unable to create WlanDevice for type %s' % type(hardware_device))
 
 
 class WlanDevice(object):
@@ -45,6 +45,7 @@ class WlanDevice(object):
     Attributes:
         device: A generic WLAN device.
     """
+
     def __init__(self, device):
         self.device = device
 
@@ -105,6 +106,7 @@ class AndroidWlanDevice(WlanDevice):
     Attributes:
         android_device: An Android WLAN device.
     """
+
     def __init__(self, android_device):
         super().__init__(android_device)
 
@@ -116,7 +118,6 @@ class AndroidWlanDevice(WlanDevice):
 
     def take_bug_report(self, test_name, begin_time):
         self.device.take_bug_report(test_name, begin_time)
-
 
     def get_log(self, test_name, begin_time):
         self.device.cat_adb_log(test_name, begin_time)
@@ -140,18 +141,19 @@ class AndroidWlanDevice(WlanDevice):
             True if successfully connected to WLAN, False if not.
         """
         if target_pwd:
-            network = {'SSID': target_ssid,
-                       'password': target_pwd,
-                       'hiddenSSID': hidden}
+            network = {
+                'SSID': target_ssid,
+                'password': target_pwd,
+                'hiddenSSID': hidden
+            }
         else:
-            network = {'SSID': target_ssid,
-                       'hiddenSSID': hidden}
+            network = {'SSID': target_ssid, 'hiddenSSID': hidden}
         try:
-            wutils.connect_to_wifi_network(self.device,
-                                           network,
-                                           check_connectivity=
-                                           check_connectivity,
-                                           hidden=hidden)
+            wutils.connect_to_wifi_network(
+                self.device,
+                network,
+                check_connectivity=check_connectivity,
+                hidden=hidden)
             return True
         except Exception as e:
             self.device.log.info('Failed to associated (%s)' % e)
@@ -170,6 +172,7 @@ class FuchsiaWlanDevice(WlanDevice):
     Attributes:
         fuchsia_device: A Fuchsia WLAN device.
     """
+
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
 
@@ -210,11 +213,18 @@ class FuchsiaWlanDevice(WlanDevice):
         """
         connection_response = self.device.wlan_lib.wlanConnectToNetwork(
             target_ssid, target_pwd=target_pwd)
-        return self.device.check_connection_for_response(
-            connection_response)
+        return self.device.check_connection_for_response(connection_response)
 
     def disconnect(self):
         return self.device.wlan_lib.wlanDisconnect()
 
     def status(self):
         return self.device.wlan_lib.wlanStatus()
+
+    def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
+        return self.device.ping(
+            dest_ip,
+            count=count,
+            interval=interval,
+            timeout=timeout,
+            size=size)
