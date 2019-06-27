@@ -24,7 +24,8 @@ from acts.test_utils.wifi.rtt import rtt_test_utils as rutils
 
 class RttBaseTest(BaseTestClass):
     def __init__(self, controllers):
-        super(RttBaseTest, self).__init__(controllers)
+        if not hasattr(self, 'android_devices'):
+            super(RttBaseTest, self).__init__(controllers)
 
     def setup_test(self):
         required_params = ("lci_reference", "lcr_reference",
