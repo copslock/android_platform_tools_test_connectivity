@@ -26,7 +26,8 @@ from acts.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
 
 class WifiP2pBaseTest(BaseTestClass):
     def __init__(self, controllers):
-        super(WifiP2pBaseTest, self).__init__(controllers)
+        if not hasattr(self, 'android_devices'):
+            super(WifiP2pBaseTest, self).__init__(controllers)
 
     def setup_class(self):
         self.dut1 = self.android_devices[0]
