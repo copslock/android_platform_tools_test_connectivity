@@ -17,11 +17,16 @@
 from acts import logger
 from acts.controllers.ap_lib.hostapd_constants import AP_DEFAULT_CHANNEL_2G
 from acts.controllers.ap_lib.hostapd_constants import AP_DEFAULT_CHANNEL_5G
+from acts.controllers.ap_lib.hostapd_constants import CHANNEL_MAP
+from acts.controllers.ap_lib.hostapd_constants import FREQUENCY_MAP
+from acts.controllers.ap_lib.hostapd_constants import CENTER_CHANNEL_MAP
+from acts.controllers.ap_lib.hostapd_constants import VHT_CHANNEL
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import formatter
 from acts.controllers.utils_lib.ssh import settings
 from acts.libs.logging import log_stream
 from acts.libs.proc.process import Process
+from acts import asserts
 
 import logging
 import os
@@ -37,7 +42,7 @@ FREQUENCY = 'frequency'
 LEVEL = 'level'
 MON_2G = 'mon0'
 MON_5G = 'mon1'
-BAND_IFACE = {'2G' : MON_2G, '5G': MON_5G}
+BAND_IFACE = {'2G': MON_2G, '5G': MON_5G}
 SCAN_IFACE = 'wlan2'
 SCAN_TIMEOUT = 60
 SEP = ':'
@@ -188,28 +193,43 @@ class PacketCapture(object):
             for network in found_networks:
                 if network[SSID] == ssid:
                     return True
-            time.sleep(3) # sleep before next scan
+            time.sleep(3)  # sleep before next scan
         return False
 
-    def configure_monitor_mode(self, band, channel):
+    def configure_monitor_mode(self, band, channel, bandwidth=20):
         """Configure monitor mode.
 
         Args:
             band: band to configure monitor mode for.
             channel: channel to set for the interface.
+            bandwidth : bandwidth for VHT channel as 40,80,160
 
         Returns:
             True if configure successful.
             False if not successful.
         """
+
         band = band.upper()
         if band not in BAND_IFACE:
             self.log.error('Invalid band. Must be 2g/2G or 5g/5G')
             return False
 
         iface = BAND_IFACE[band]
-        self.ssh.run('iw dev %s set channel %s' %
-                     (iface, channel), ignore_status=True)
+        if bandwidth == 20:
+            self.ssh.run('iw dev %s set channel %s' %
+                         (iface, channel), ignore_status=True)
+        else:
+            center_freq = None
+            for i, j in CENTER_CHANNEL_MAP[VHT_CHANNEL[bandwidth]]["channels"]:
+                if channel in range(i, j + 1):
+                    center_freq = (FREQUENCY_MAP[i] + FREQUENCY_MAP[j]) / 2
+                    break
+            asserts.assert_true(center_freq,
+                                "No match channel in VHT channel list.")
+            self.ssh.run('iw dev %s set freq %s %s %s' %
+                (iface, FREQUENCY_MAP[channel],
+                bandwidth, center_freq), ignore_status=True)
+
         result = self.ssh.run('iw dev %s info' % iface, ignore_status=True)
         if result.stderr or 'channel %s' % channel not in result.stdout:
             self.log.error("Failed to configure monitor mode for %s" % band)
