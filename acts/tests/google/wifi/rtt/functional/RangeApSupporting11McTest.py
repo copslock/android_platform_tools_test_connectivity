@@ -47,12 +47,14 @@ class RangeApSupporting11McTest(RttBaseTest):
     def __init__(self, controllers):
         RttBaseTest.__init__(self, controllers)
 
-    #############################################################################
-
-    @test_tracker_info(uuid="6705270f-924b-4bef-b50a-0f0a7eb9ce52")
-    def test_rtt_80211mc_supporting_aps(self):
-        """Scan for APs and perform RTT only to those which support 802.11mc"""
-        dut = self.android_devices[0]
+    def run_test_rtt_80211mc_supporting_aps(self, dut, accuracy_evaluation=False):
+        """Scan for APs and perform RTT only to those which support 802.11mc
+        Args:
+            dut: test device
+            accuracy_evaluation: False - only evaluate success rate.
+                                 True - evaluate both success rate and accuracy
+                                 default is False.
+        """
         rtt_supporting_aps = rutils.select_best_scan_results(
             rutils.scan_with_rtt_support_constraint(dut, True, repeat=10),
             select_count=2)
@@ -90,15 +92,30 @@ class RangeApSupporting11McTest(RttBaseTest):
                 stat['num_results'] / 100,
                 "Failure rate is too high",
                 extras=stats)
-            asserts.assert_true(
-                stat['num_range_out_of_margin'] <=
-                self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage *
-                stat['num_success_results'] / 100,
-                "Results exceeding error margin rate is too high",
-                extras=stats)
+            if accuracy_evaluation:
+                asserts.assert_true(
+                    stat['num_range_out_of_margin'] <=
+                    self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage *
+                    stat['num_success_results'] / 100,
+                    "Results exceeding error margin rate is too high",
+                    extras=stats)
         asserts.explicit_pass("RTT test done", extras=stats)
 
-    @test_tracker_info(uuid="")
+    @test_tracker_info(uuid="6705270f-924b-4bef-b50a-0f0a7eb9ce52")
+    def test_rtt_80211mc_supporting_aps(self):
+        """Scan for APs and perform RTT only to those which support 802.11mc,
+        Functionality test: Only evaluate success rate."""
+        dut = self.android_devices[0]
+        self.run_test_rtt_80211mc_supporting_aps(dut)
+
+    @test_tracker_info(uuid="56a8ca4c-b69d-436e-aa80-e86adb6f57d8")
+    def test_rtt_80211mc_supporting_aps_with_accuracy_evaluation(self):
+        """Scan for APs and perform RTT only to those which support 802.11mc,
+        Performance test: evaluate success rate and accuracy."""
+        dut = self.android_devices[0]
+        self.run_test_rtt_80211mc_supporting_aps(dut, accuracy_evaluation=True)
+
+    @test_tracker_info(uuid="eb3fc9f5-ae15-47f5-8468-697bb9aa9ddf")
     def test_rtt_in_and_after_softap_mode(self):
         """Verify behavior when a SoftAP is enabled and then disabled on the
         device:
@@ -203,7 +220,8 @@ class RangeApSupporting11McTest(RttBaseTest):
     @test_tracker_info(uuid="18be9737-2f03-4e35-9a23-f722dea7b82d")
     def test_legacy_rtt_80211mc_supporting_aps(self):
         """Scan for APs and perform RTT only to those which support 802.11mc - using
-    the LEGACY API!"""
+        the LEGACY API!
+        """
         dut = self.android_devices[0]
         rtt_supporting_aps = rutils.select_best_scan_results(
             rutils.scan_with_rtt_support_constraint(dut, True, repeat=10),
@@ -275,7 +293,7 @@ class RangeApSupporting11McTest(RttBaseTest):
 
     def rtt_config_from_scan_result(self, scan_result):
         """Creates an Rtt configuration based on the scan result of a network.
-    """
+        """
         WifiEnums = wutils.WifiEnums
         ScanResult = WifiEnums.ScanResult
         RttParam = WifiEnums.RttParam
