@@ -269,7 +269,8 @@ class WifiChaosTest(WifiBaseTest):
                 self.log.info("Connecting to %s" % ssid)
                 self.scan_and_connect_by_id(network, net_id)
                 self.run_ping(10)
-                self.send_link_probes(network)
+                # TODO(b/133369482): uncomment once bug is resolved
+                # self.send_link_probes(network)
                 wutils.wifi_forget_network(self.dut, ssid)
                 time.sleep(WAIT_BEFORE_CONNECTION)
             except:
