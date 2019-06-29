@@ -289,13 +289,17 @@ class WifiRvrTest(base_test.BaseTestClass):
         if battery_level < 10 and testcase_params["traffic_direction"] == "UL":
             asserts.skip("Battery level too low. Skipping test.")
         self.log.info("Start running RvR")
+        llstats_obj = wputils.LinkLayerStats(self.client_dut)
         zero_counter = 0
         throughput = []
+        llstats = []
         rssi = []
         for atten in testcase_params["atten_range"]:
             # Set Attenuation
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
+            # Refresh link layer stats
+            llstats_obj.update_stats()
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
             rssi_future = wputils.get_connected_rssi_nb(
@@ -323,9 +327,12 @@ class WifiRvrTest(base_test.BaseTestClass):
                     "ValueError: Cannot get iperf result. Setting to 0")
                 curr_throughput = 0
             throughput.append(curr_throughput)
+            llstats_obj.update_stats()
+            curr_llstats = llstats_obj.llstats_incremental.copy()
+            llstats.append(curr_llstats)
             self.log.info(
-                "Throughput at {0:.2f} dB is {1:.2f} Mbps. RSSI = {2:.2f}".
-                format(atten, curr_throughput, current_rssi))
+                ("Throughput at {0:.2f} dB is {1:.2f} Mbps. RSSI = {2:.2f}."
+                 ).format(atten, curr_throughput, current_rssi))
             if curr_throughput == 0:
                 zero_counter = zero_counter + 1
             else:
@@ -348,6 +355,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result["attenuation"] = list(testcase_params["atten_range"])
         rvr_result["rssi"] = rssi
         rvr_result["throughput_receive"] = throughput
+        rvr_result["llstats"] = llstats
         return rvr_result
 
     def setup_ap(self, testcase_params):
