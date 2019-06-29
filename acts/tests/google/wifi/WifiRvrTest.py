@@ -262,10 +262,20 @@ class WifiRvrTest(base_test.BaseTestClass):
             att + rvr_result["fixed_attenuation"]
             for att in rvr_result["attenuation"]
         ]
+        # Generate graph annotatios
+        hover_text = [
+            "TX MCS = {0} ({1:.1f}%). RX MCS = {2} ({3:.1f}%)".format(
+                curr_llstats["summary"]["common_tx_mcs"],
+                curr_llstats["summary"]["common_tx_mcs_freq"] * 100,
+                curr_llstats["summary"]["common_rx_mcs"],
+                curr_llstats["summary"]["common_rx_mcs_freq"] * 100)
+            for curr_llstats in rvr_result["llstats"]
+        ]
         figure.add_line(
             total_attenuation,
             rvr_result["throughput_receive"],
             "Test Results",
+            hover_text=hover_text,
             color="red",
             marker="circle")
 

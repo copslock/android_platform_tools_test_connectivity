@@ -239,11 +239,17 @@ class BokehFigure():
         }
         self.TOOLS = (
             'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
+        self.TOOLTIPS = [
+            ("index", "$index"),
+            ("(x,y)", "($x, $y)"),
+            ("info", "@hover_text"),
+        ]
         self.plot = bokeh.plotting.figure(
             plot_width=width,
             plot_height=height,
             title=title,
             tools=self.TOOLS,
+            tooltips=self.TOOLTIPS,
             output_backend='webgl')
         self.plot.add_tools(
             bokeh.models.tools.WheelZoomTool(dimensions='width'))
@@ -254,6 +260,7 @@ class BokehFigure():
                  x_data,
                  y_data,
                  legend,
+                 hover_text=None,
                  color=None,
                  width=3,
                  style='solid',
@@ -267,6 +274,7 @@ class BokehFigure():
             x_data: list containing x-axis values for line
             y_data: list containing y_axis values for line
             legend: string containing line title
+            hover_text: text to display when hovering over lines
             color: string describing line color
             width: integer line width
             style: string describing line style, e.g, solid or dashed
@@ -281,10 +289,13 @@ class BokehFigure():
                 self.COLORS)]
         if style == 'dashed':
             style = [5, 5]
+        if not hover_text:
+            hover_text = ["y={}".format(y) for y in y_data]
         self.figure_data.append({
             'x_data': x_data,
             'y_data': y_data,
             'legend': legend,
+            'hover_text': hover_text,
             'color': color,
             'width': width,
             'style': style,
@@ -303,15 +314,21 @@ class BokehFigure():
         """
         two_axes = False
         for line in self.figure_data:
+            source = bokeh.models.ColumnDataSource(
+                data=dict(
+                    x=line['x_data'],
+                    y=line['y_data'],
+                    hover_text=line['hover_text']))
             self.plot.line(
-                line['x_data'],
-                line['y_data'],
+                x='x',
+                y='y',
                 legend=line['legend'],
                 line_width=line['width'],
                 color=line['color'],
                 line_dash=line['style'],
                 name=line['y_range_name'],
-                y_range_name=line['y_range_name'])
+                y_range_name=line['y_range_name'],
+                source=source)
             if line['shaded_region']:
                 band_x = line['shaded_region']['x_vector']
                 band_x.extend(line['shaded_region']['x_vector'][::-1])
@@ -326,14 +343,15 @@ class BokehFigure():
             if line['marker'] in self.MARKERS:
                 marker_func = getattr(self.plot, line['marker'])
                 marker_func(
-                    line['x_data'],
-                    line['y_data'],
+                    x='x',
+                    y='y',
                     size=line['marker_size'],
                     legend=line['legend'],
                     line_color=line['color'],
                     fill_color=line['color'],
                     name=line['y_range_name'],
-                    y_range_name=line['y_range_name'])
+                    y_range_name=line['y_range_name'],
+                    source=source)
             if line['y_range_name'] == 'secondary':
                 two_axes = True
 
