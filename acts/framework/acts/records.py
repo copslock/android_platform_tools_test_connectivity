@@ -264,9 +264,14 @@ class TestResult(MoblyTestResult):
     def errors_list(self):
         l = list()
         for record in self.error:
-            record_dict = record.to_dict()
-            l.append({k: record_dict[k] for k in [
-                TestResultEnums.RECORD_NAME,
-                TestResultEnums.RECORD_DETAILS,
-                TestResultEnums.RECORD_EXTRA_ERRORS]})
+            if isinstance(record, TestResultRecord):
+                keys = [TestResultEnums.RECORD_NAME,
+                        TestResultEnums.RECORD_DETAILS,
+                        TestResultEnums.RECORD_EXTRA_ERRORS]
+            elif isinstance(record, ExceptionRecord):
+                keys = [TestResultEnums.RECORD_DETAILS,
+                        TestResultEnums.RECORD_POSITION]
+            else:
+                return []
+            l.append({k: record.to_dict()[k] for k in keys})
         return l
