@@ -53,6 +53,133 @@ def nonblocking(f):
     return wrap
 
 
+# Link layer stats utilities
+class LinkLayerStats():
+
+    LLSTATS_CMD = "cat /d/wlan0/ll_stats"
+    PEER_REGEX = "LL_STATS_PEER_ALL"
+    MCS_REGEX = re.compile(
+        r"preamble: (?P<mode>\S+), nss: (?P<num_streams>\S+), bw: (?P<bw>\S+), "
+        "mcs: (?P<mcs>\S+), bitrate: (?P<rate>\S+), txmpdu: (?P<txmpdu>\S+), "
+        "rxmpdu: (?P<rxmpdu>\S+), mpdu_lost: (?P<mpdu_lost>\S+), "
+        "retries: (?P<retries>\S+), retries_short: (?P<retries_short>\S+), "
+        "retries_long: (?P<retries_long>\S+)")
+    MCS_ID = collections.namedtuple(
+        "mcs_id", ["mode", "num_streams", "bandwidth", "mcs", "rate"])
+    MODE_MAP = {'0': '11a/g', '1': '11b', '2': '11n', '3': '11ac'}
+    BW_MAP = {'0': 20, '1': 40, '2': 80}
+
+    def __init__(self, dut):
+        self.dut = dut
+        self.llstats_cumulative = self._empty_llstats()
+        self.llstats_incremental = self._empty_llstats()
+
+    def update_stats(self):
+        llstats_output = self.dut.adb.shell(self.LLSTATS_CMD)
+        self._update_stats(llstats_output)
+
+    def reset_stats(self):
+        self.llstats_cumulative = self._empty_llstats()
+        self.llstats_incremental = self._empty_llstats()
+
+    def _empty_llstats(self):
+        return collections.OrderedDict(
+            mcs_stats=collections.OrderedDict(),
+            summary=collections.OrderedDict())
+
+    def _empty_mcs_stat(self):
+        return collections.OrderedDict(
+            txmpdu=0,
+            rxmpdu=0,
+            mpdu_lost=0,
+            retries=0,
+            retries_short=0,
+            retries_long=0)
+
+    def _mcs_id_to_string(self, mcs_id):
+        mcs_string = "{} {}MHz Nss{} MCS{} {}Mbps".format(
+            mcs_id.mode, mcs_id.bandwidth, mcs_id.num_streams, mcs_id.mcs,
+            mcs_id.rate)
+        return mcs_string
+
+    def _parse_mcs_stats(self, llstats_output):
+        llstats_dict = {}
+        # Look for per-peer stats
+        match = re.search(self.PEER_REGEX, llstats_output)
+        if not match:
+            self.reset_stats()
+            return collections.OrderedDict()
+        # Find and process all matches for per stream stats
+        match_iter = re.finditer(self.MCS_REGEX, llstats_output)
+        for match in match_iter:
+            current_mcs = self.MCS_ID(self.MODE_MAP[match.group('mode')],
+                                      int(match.group('num_streams')) + 1,
+                                      self.BW_MAP[match.group('bw')],
+                                      int(match.group('mcs')),
+                                      int(match.group('rate'), 16) / 1000)
+            current_stats = collections.OrderedDict(
+                txmpdu=int(match.group('txmpdu')),
+                rxmpdu=int(match.group('rxmpdu')),
+                mpdu_lost=int(match.group('mpdu_lost')),
+                retries=int(match.group('retries')),
+                retries_short=int(match.group('retries_short')),
+                retries_long=int(match.group('retries_long')))
+            llstats_dict[self._mcs_id_to_string(current_mcs)] = current_stats
+        return llstats_dict
+
+    def _diff_mcs_stats(self, new_stats, old_stats):
+        stats_diff = collections.OrderedDict()
+        for stat_key in new_stats.keys():
+            stats_diff[stat_key] = new_stats[stat_key] - old_stats[stat_key]
+        return stats_diff
+
+    def _generate_stats_summary(self, llstats_dict):
+        llstats_summary = collections.OrderedDict(
+            common_tx_mcs=None,
+            common_tx_mcs_count=0,
+            common_tx_mcs_freq=0,
+            common_rx_mcs=None,
+            common_rx_mcs_count=0,
+            common_rx_mcs_freq=0)
+        txmpdu_count = 0
+        rxmpdu_count = 0
+        for mcs_id, mcs_stats in llstats_dict['mcs_stats'].items():
+            if mcs_stats['txmpdu'] > llstats_summary['common_tx_mcs_count']:
+                llstats_summary['common_tx_mcs'] = mcs_id
+                llstats_summary['common_tx_mcs_count'] = mcs_stats['txmpdu']
+            if mcs_stats['rxmpdu'] > llstats_summary['common_rx_mcs_count']:
+                llstats_summary['common_rx_mcs'] = mcs_id
+                llstats_summary['common_rx_mcs_count'] = mcs_stats['rxmpdu']
+            txmpdu_count += mcs_stats['txmpdu']
+            rxmpdu_count += mcs_stats['rxmpdu']
+        if txmpdu_count:
+            llstats_summary['common_tx_mcs_freq'] = (
+                llstats_summary['common_tx_mcs_count'] / txmpdu_count)
+        if rxmpdu_count:
+            llstats_summary['common_rx_mcs_freq'] = (
+                llstats_summary['common_rx_mcs_count'] / rxmpdu_count)
+        return llstats_summary
+
+    def _update_stats(self, llstats_output):
+        # Parse stats
+        new_llstats = self._empty_llstats()
+        new_llstats['mcs_stats'] = self._parse_mcs_stats(llstats_output)
+        # Save old stats and set new cumulative stats
+        old_llstats = self.llstats_cumulative.copy()
+        self.llstats_cumulative = new_llstats.copy()
+        # Compute difference between new and old stats
+        for mcs_id, new_mcs_stats in new_llstats['mcs_stats'].items():
+            old_mcs_stats = old_llstats['mcs_stats'].get(
+                mcs_id, self._empty_mcs_stat())
+            self.llstats_incremental['mcs_stats'][
+                mcs_id] = self._diff_mcs_stats(new_mcs_stats, old_mcs_stats)
+        # Generate llstats summary
+        self.llstats_incremental['summary'] = self._generate_stats_summary(
+            self.llstats_incremental)
+        self.llstats_cumulative['summary'] = self._generate_stats_summary(
+            self.llstats_cumulative)
+
+
 # Plotting Utilities
 class BokehFigure():
     """Class enabling  simplified Bokeh plotting."""
