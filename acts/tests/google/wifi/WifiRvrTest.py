@@ -285,6 +285,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         Returns:
             rvr_result: dict containing rvr_results and meta data
         """
+        battery_level = utils.get_battery_level(self.client_dut)
+        if battery_level < 10 and testcase_params["traffic_direction"] == "UL":
+            asserts.skip("Battery level too low. Skipping test.")
         self.log.info("Start running RvR")
         zero_counter = 0
         throughput = []
@@ -415,6 +418,8 @@ class WifiRvrTest(base_test.BaseTestClass):
         """Function that generates test params based on the test name."""
         test_name_params = test_name.split("_")
         testcase_params = collections.OrderedDict()
+        testcase_params["traffic_type"] = test_name_params[2]
+        testcase_params["traffic_direction"] = test_name_params[3]
         testcase_params["channel"] = int(test_name_params[4][2:])
         testcase_params["mode"] = test_name_params[5]
         num_atten_steps = int((self.testclass_params["atten_stop"] -
@@ -427,14 +432,14 @@ class WifiRvrTest(base_test.BaseTestClass):
         ]
         testcase_params["iperf_args"] = "-i 1 -t {} -J ".format(
             self.testclass_params["iperf_duration"])
-        if test_name_params[2] == "UDP":
+        if testcase_params["traffic_type"] == "UDP":
             testcase_params["iperf_args"] = testcase_params[
                 "iperf_args"] + "-u -b {} -l 1400".format(
                     self.testclass_params["UDP_rates"][
                         testcase_params["mode"]])
-        if (test_name_params[3] == "DL"
+        if (testcase_params["traffic_direction"] == "DL"
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
-            ) or (test_name_params[3] == "UL"
+            ) or (testcase_params["traffic_direction"] == "UL"
                   and isinstance(self.iperf_server, ipf.IPerfServerOverAdb)):
             testcase_params[
                 "iperf_args"] = testcase_params["iperf_args"] + " -R"
