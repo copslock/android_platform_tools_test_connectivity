@@ -640,6 +640,16 @@ def force_airplane_mode(ad, new_state, timeout_value=60):
         return False
     return True
 
+def get_battery_level(ad):
+    """Gets battery level from device
+
+    Returns:
+        battery_level: int indicating battery level
+    """
+    output = ad.adb.shell("dumpsys battery")
+    match = re.search(r"level: (?P<battery_level>\S+)", output)
+    battery_level = int(match.group("battery_level"))
+    return battery_level
 
 def get_device_usb_charging_status(ad):
     """ Returns the usb charging status of the device.
