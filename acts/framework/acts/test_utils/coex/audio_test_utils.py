@@ -14,10 +14,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import functools
 import logging
 import os
-from soundfile import SoundFile
+import wave
 
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
@@ -146,6 +145,19 @@ class SshAudioCapture(AudioCapture):
             block_size=block_size,
             threshold=threshold,
             tolerance=tolerance)
+
+    def get_last_record_duration_millis(self):
+        """Get duration of most recently recorded file.
+
+        Returns:
+            duration (float): duration of recorded file in milliseconds.
+        """
+        latest_file_path = self.record_file_template % self.last_fileno()
+        with wave.open(latest_file_path, 'r') as f:
+            frames = f.getnframes()
+            rate = f.getframerate()
+            duration = (frames / float(rate)) * 1000
+        return duration
 
     def audio_quality_analysis(self, path):
         """Measures audio quality based on the audio file given as input.

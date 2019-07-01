@@ -147,6 +147,14 @@ CAP_MAX_SUBSCRIBE_INTERFACE_ADDRESSES = "maxSubscribeInterfaceAddresses"
 CAP_SUPPORTED_CIPHER_SUITES = "supportedCipherSuites"
 
 ######################################################
+# WifiAwareNetworkCapabilities keys
+######################################################
+
+NET_CAP_IPV6 = "aware_ipv6"
+NET_CAP_PORT = "aware_port"
+NET_CAP_TRANSPORT_PROTOCOL = "aware_transport_protocol"
+
+######################################################
 
 # Aware NDI (NAN data-interface) name prefix
 AWARE_NDI_PREFIX = "aware_data"

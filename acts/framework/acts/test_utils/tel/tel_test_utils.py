@@ -3102,7 +3102,8 @@ def trigger_modem_crash(ad, timeout=120):
 def trigger_modem_crash_by_modem(ad, timeout=120):
     begin_time = get_device_epoch_time(ad)
     ad.adb.shell(
-        "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
+        "setprop persist.vendor.sys.modem.diag.mdlog false",
+        ignore_status=True)
     # Legacy pixels use persist.sys.modem.diag.mdlog.
     ad.adb.shell(
         "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
@@ -7453,4 +7454,3 @@ def toggle_connectivity_monitor_setting(ad, state=True):
     monitor_setting = ad.adb.getprop("persist.radio.enable_tel_mon")
     ad.log.info("radio.enable_tel_mon setting is %s", monitor_setting)
     return monitor_setting == expected_monitor_setting
-

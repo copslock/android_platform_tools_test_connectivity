@@ -106,7 +106,11 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, False)
 
     def teardown_test(self):
-        wutils.stop_wifi_tethering(self.dut)
+        # Prevent the stop wifi tethering failure to block ap close
+        try:
+            wutils.stop_wifi_tethering(self.dut)
+        except signals.TestFailure:
+            pass
         for ad in self.android_devices:
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
