@@ -79,7 +79,8 @@ BLACKLIST = [
     'tests/google/tel/live/TelLiveLockedSimTest.py',
     'tests/google/tel/live/TelLiveEmergencyTest.py',
     'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
-    'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py'
+    'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
+    'tests/google/fuchsia/wlan/RebootStressTest.py',
 ]
 
 BLACKLIST_DIRECTORIES = [
