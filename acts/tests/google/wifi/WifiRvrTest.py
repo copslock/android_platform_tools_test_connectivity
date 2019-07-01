@@ -296,7 +296,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             rvr_result: dict containing rvr_results and meta data
         """
         battery_level = utils.get_battery_level(self.client_dut)
-        if battery_level < 10 and testcase_params["traffic_direction"] == "UL":
+        if battery_level < 20 and testcase_params["traffic_direction"] == "UL":
             asserts.skip("Battery level too low. Skipping test.")
         self.log.info("Start running RvR")
         llstats_obj = wputils.LinkLayerStats(self.client_dut)
@@ -305,6 +305,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         llstats = []
         rssi = []
         for atten in testcase_params["atten_range"]:
+            battery_level = utils.get_battery_level(self.client_dut)
+            if battery_level < 5:
+                asserts.skip("Battery level too low. Skipping test.")
             # Set Attenuation
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
