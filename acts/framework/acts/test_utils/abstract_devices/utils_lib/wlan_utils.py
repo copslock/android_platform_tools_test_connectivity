@@ -192,3 +192,12 @@ def is_connected(client):
                 connected = True
 
     return connected
+
+
+def disconnect(client):
+    """Disconnect client from its WLAN network.
+
+    Args:
+        client: A WlanDevice
+    """
+    client.disconnect()
