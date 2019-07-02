@@ -434,9 +434,14 @@ class BaseSimulation():
         # Stop IP traffic after setting the UL power level
         self.stop_traffic_for_calibration()
 
-    def calibrate(self):
+    def calibrate(self, band):
         """ Calculates UL and DL path loss if it wasn't done before.
 
+        The should be already set to the required band before calling this
+        method.
+
+        Args:
+            band: the band that is currently being calibrated.
         """
 
         if self.dl_path_loss and self.ul_path_loss:
@@ -675,7 +680,7 @@ class BaseSimulation():
                 self.dl_path_loss = self.calibration_table[band]["dl"]
                 self.ul_path_loss = self.calibration_table[band]["ul"]
             except KeyError:
-                self.calibrate()
+                self.calibrate(band)
 
             # Complete the calibration table with the new values to be used in
             # the next tests.
