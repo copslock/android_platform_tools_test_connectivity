@@ -16,6 +16,7 @@
 
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
+from acts import asserts
 from acts.controllers.fuchsia_device import FuchsiaDevice
 from acts.controllers.android_device import AndroidDevice
 
@@ -201,7 +202,7 @@ class FuchsiaWlanDevice(WlanDevice):
                   target_pwd=None,
                   check_connectivity=True,
                   hidden=False):
-        """Function to associate an Android WLAN device.
+        """Function to associate a Fuchsia WLAN device.
 
         Args:
             target_ssid: SSID to associate to.
@@ -213,10 +214,17 @@ class FuchsiaWlanDevice(WlanDevice):
         """
         connection_response = self.device.wlan_lib.wlanConnectToNetwork(
             target_ssid, target_pwd=target_pwd)
-        return self.device.check_connection_for_response(connection_response)
+
+        return self.device.check_connect_response(
+            connection_response)
 
     def disconnect(self):
-        return self.device.wlan_lib.wlanDisconnect()
+        """Function to disconnect from a Fuchsia WLAN device.
+           Asserts if disconnect was not successful.
+        """
+        disconnect_response = self.device.wlan_lib.wlanDisconnect()
+        asserts.assert_true(self.device.check_disconnect_response(
+            disconnect_response), 'Failed to disconnect.')
 
     def status(self):
         return self.device.wlan_lib.wlanStatus()
