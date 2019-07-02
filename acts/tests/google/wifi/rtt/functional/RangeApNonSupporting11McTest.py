@@ -24,7 +24,8 @@ from acts.test_utils.wifi.rtt.RttBaseTest import RttBaseTest
 
 class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
     """Test class for RTT ranging to Access Points which do not support IEEE
-  802.11mc"""
+    802.11mc
+    """
 
     # Number of RTT iterations
     NUM_ITER = 10
@@ -38,13 +39,14 @@ class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
         if "AccessPoint" in self.user_params:
             self.legacy_configure_ap_and_start()
 
-    #############################################################################
-
-    @test_tracker_info(uuid="cde756e9-11f3-43da-b9ae-9edf85764f82")
-    def test_rtt_non_80211mc_supporting_aps(self):
-        """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs"""
-        dut = self.android_devices[0]
-
+    def run_test_rtt_non_80211mc_supporting_aps(self, dut, accuracy_evaluation=False):
+        """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs
+        Args:
+            dut: test device
+            accuracy_evaluation: False - only evaluate success rate.
+                                 True - evaluate both success rate and accuracy
+                                 default is False.
+        """
         asserts.skip_if(
             not dut.rtt_capabilities[rconsts.CAP_RTT_ONE_SIDED_SUPPORTED],
             "Device does not support one-sided RTT")
@@ -79,18 +81,36 @@ class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
                 stat['num_results'] / 100,
                 "Failure rate is too high",
                 extras=stats)
-            asserts.assert_true(
-                stat['num_range_out_of_margin'] <=
-                self.rtt_max_margin_exceeded_rate_one_sided_rtt_percentage *
-                stat['num_success_results'] / 100,
-                "Results exceeding error margin rate is too high",
-                extras=stats)
+            if accuracy_evaluation:
+                asserts.assert_true(
+                    stat['num_range_out_of_margin'] <=
+                    self.rtt_max_margin_exceeded_rate_one_sided_rtt_percentage *
+                    stat['num_success_results'] / 100,
+                    "Results exceeding error margin rate is too high",
+                    extras=stats)
         asserts.explicit_pass("RTT test done", extras=stats)
+
+    @test_tracker_info(uuid="cde756e9-11f3-43da-b9ae-9edf85764f82")
+    def test_rtt_non_80211mc_supporting_aps(self):
+        """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs,
+        Functionality test: Only evaluate success rate.
+        """
+        dut = self.android_devices[0]
+        self.run_test_rtt_non_80211mc_supporting_aps(dut)
+
+    @test_tracker_info(uuid="8fea37f7-0499-4b02-bd33-5ae4d697a4b7")
+    def test_rtt_non_80211mc_supporting_aps_with_accuracy_evaluation(self):
+        """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs,
+        Performance test: evaluate success rate and accuracy.
+        """
+        dut = self.android_devices[0]
+        self.run_test_rtt_non_80211mc_supporting_aps(dut, accuracy_evaluation=True)
 
     @test_tracker_info(uuid="c9e22185-16d4-4fe6-894f-5823587b3288")
     def test_rtt_non_80211mc_supporting_aps_wo_privilege(self):
         """Scan for APs and perform RTT on non-IEEE 802.11mc supporting APs with the
-    device not having privilege access (expect failures)."""
+        device not having privilege access (expect failures).
+        """
         dut = self.android_devices[0]
         rutils.config_privilege_override(dut, True)
         non_rtt_aps = rutils.select_best_scan_results(
@@ -126,9 +146,9 @@ class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
     @test_tracker_info(uuid="e117af56-bd3f-40ae-a2fd-4175f0daa7fa")
     def test_rtt_non_80211mc_supporting_ap_faked_as_supporting(self):
         """Scan for APs which do not support IEEE 802.11mc, maliciously modify the
-    Responder config to indicate support and pass-through to service. Verify
-    that get an error result.
-    """
+        Responder config to indicate support and pass-through to service. Verify
+        that get an error result.
+        """
         dut = self.android_devices[0]
         non_rtt_aps = rutils.select_best_scan_results(
             rutils.scan_with_rtt_support_constraint(dut, False),
