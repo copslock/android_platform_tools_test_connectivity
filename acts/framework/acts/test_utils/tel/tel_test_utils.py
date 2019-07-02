@@ -373,11 +373,11 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
     if cbrs_esim:
         ad.log.info("CBRS testing detected, removing it form SubInfoList")
         if len(sub_info_list) > 1:
-            # Check for Display Name
+            # Check for CarrierId
             index_to_delete = -1
-            for i, oper in enumerate(d['displayName'] for d in sub_info_list):
-                ad.log.info("Index %d Display %s", i, oper)
-                if "Google" in oper:
+            for i, oper in enumerate(d['carrierId'] for d in sub_info_list):
+                ad.log.info("Index %d CarrierId %d", i, oper)
+                if oper == 2340:
                     index_to_delete = i
             del sub_info_list[index_to_delete]
         ad.log.info("Updated SubInfoList is %s", sub_info_list)
@@ -1444,7 +1444,7 @@ def is_current_data_on_cbrs(ad, cbrs_subid):
     """
     if cbrs_subid is None:
         return False
-    current_data = ad.droid.telephonyGetPreferredOpportunisticDataSubscription()
+    current_data = ad.droid.subscriptionGetActiveDataSubscriptionId()
     ad.log.info("Current Data subid %s cbrs_subid %s", current_data, cbrs_subid)
     if current_data == cbrs_subid:
         return True

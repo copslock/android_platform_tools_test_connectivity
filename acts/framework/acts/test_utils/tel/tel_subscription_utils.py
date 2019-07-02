@@ -188,6 +188,23 @@ def get_operatorname_from_slot_index(ad, sim_slot_index):
     return None
 
 
+def get_carrierid_from_slot_index(ad, sim_slot_index):
+    """ Get the carrierId for a SIM at a particular slot
+
+    Args:
+        ad: android_device object.
+        sim_slot_index: slot 0 or slot 1
+
+    Returns:
+        result: CarrierId
+    """
+    subInfo = ad.droid.subscriptionGetAllSubInfoList()
+    for info in subInfo:
+        if info['simSlotIndex'] == sim_slot_index:
+            return info['carrierId']
+    return None
+
+
 def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
     """Set subId for data
 
@@ -354,13 +371,16 @@ def get_cbrs_and_default_sub_id(ad):
     for slot in (0, 1):
         slot_dict[slot]['sub_id'] = get_subid_from_slot_index(
             ad.log, ad, slot)
+        slot_dict[slot]['carrier_id'] = get_carrierid_from_slot_index(
+            ad, slot)
         slot_dict[slot]['operator'] = get_operatorname_from_slot_index(
             ad, slot)
-        if "Google" in slot_dict[slot]['operator']:
+        if slot_dict[slot]['carrier_id'] == 2340:
             cbrs_subid = slot_dict[slot]['sub_id']
         else:
             default_subid = slot_dict[slot]['sub_id']
-        ad.log.info("Slot %d - Sub %s - %s", slot,
+        ad.log.info("Slot %d - Sub %s - Carrier %d - %s", slot,
                     slot_dict[slot]['sub_id'],
+                    slot_dict[slot]['carrier_id'],
                     slot_dict[slot]['operator'])
     return cbrs_subid, default_subid
