@@ -399,21 +399,6 @@ class LteSimulation(BaseSimulation):
 
         super().__init__(anritsu, log, dut, test_config, calibration_table)
 
-        cell_file_name = self.LTE_BASIC_CELL_FILE
-        sim_file_name = self.LTE_BASIC_SIM_FILE
-
-        if self.anritsu._md8475_version == 'B':
-            cell_file_name += '2'
-            sim_file_name += '2'
-
-        self.cell_file_path = ntpath.join(self.callbox_config_path,
-                                          cell_file_name)
-        self.sim_file_path = ntpath.join(self.callbox_config_path,
-                                         sim_file_name)
-
-        anritsu.load_simulation_paramfile(self.sim_file_path)
-        anritsu.load_cell_paramfile(self.cell_file_path)
-
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_LTE_ONLY,
                 dut.droid.subscriptionGetDefaultSubId()):
@@ -462,6 +447,26 @@ class LteSimulation(BaseSimulation):
                 self.ul_64_qam = False
             else:
                 self.bts1.lte_ul_modulation_order = "64QAM"
+
+    def load_config_files(self, anritsu):
+        """ Loads configuration files for the simulation.
+
+            Args:
+                anritsu: the Anritsu callbox controller
+        """
+
+        cell_file_name = self.LTE_BASIC_CELL_FILE
+        sim_file_name = self.LTE_BASIC_SIM_FILE
+
+        if self.anritsu._md8475_version == 'B':
+            cell_file_name += '2'
+            sim_file_name += '2'
+
+        cell_file_path = ntpath.join(self.callbox_config_path, cell_file_name)
+        sim_file_path = ntpath.join(self.callbox_config_path, sim_file_name)
+
+        anritsu.load_simulation_paramfile(sim_file_path)
+        anritsu.load_cell_paramfile(cell_file_path)
 
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation using a list of parameters.
