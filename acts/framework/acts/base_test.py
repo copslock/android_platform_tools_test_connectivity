@@ -39,6 +39,7 @@ from acts.event.event import TestClassEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
 
 from mobly import controller_manager
+from mobly.base_test import BaseTestClass as MoblyBaseTest
 from mobly.records import ExceptionRecord
 
 # Macro strings for test result reporting
@@ -103,8 +104,9 @@ class Error(Exception):
     """Raised for exceptions that occured in BaseTestClass."""
 
 
-class BaseTestClass(object):
-    """Base class for all test classes to inherit from.
+class BaseTestClass(MoblyBaseTest):
+    """Base class for all test classes to inherit from. Inherits some
+    functionality from Mobly's base test class.
 
     This class gets all the controller objects from test_runner and executes
     the test cases requested within itself.
@@ -169,62 +171,6 @@ class BaseTestClass(object):
                     utils.set_location_service(ad, False)
                     utils.sync_device_time(ad)
         self.testbed_name = ''
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        self._exec_func(self.clean_up)
-
-    def unpack_userparams(self,
-                          req_param_names=[],
-                          opt_param_names=[],
-                          **kwargs):
-        """An optional function that unpacks user defined parameters into
-        individual variables.
-
-        After unpacking, the params can be directly accessed with self.xxx.
-
-        If a required param is not provided, an exception is raised. If an
-        optional param is not provided, a warning line will be logged.
-
-        To provide a param, add it in the config file or pass it in as a kwarg.
-        If a param appears in both the config file and kwarg, the value in the
-        config file is used.
-
-        User params from the config file can also be directly accessed in
-        self.user_params.
-
-        Args:
-            req_param_names: A list of names of the required user params.
-            opt_param_names: A list of names of the optional user params.
-            **kwargs: Arguments that provide default values.
-                e.g. unpack_userparams(required_list, opt_list, arg_a="hello")
-                     self.arg_a will be "hello" unless it is specified again in
-                     required_list or opt_list.
-
-        Raises:
-            Error is raised if a required user params is not provided.
-        """
-        for k, v in kwargs.items():
-            if k in self.user_params:
-                v = self.user_params[k]
-            setattr(self, k, v)
-        for name in req_param_names:
-            if hasattr(self, name):
-                continue
-            if name not in self.user_params:
-                raise Error(("Missing required user param '%s' in test "
-                             "configuration.") % name)
-            setattr(self, name, self.user_params[name])
-        for name in opt_param_names:
-            if hasattr(self, name):
-                continue
-            if name in self.user_params:
-                setattr(self, name, self.user_params[name])
-            else:
-                self.log.warning(("Missing optional user param '%s' in "
-                                  "configuration, continue."), name)
 
     def _import_builtin_controllers(self):
         """Import built-in controller modules.
@@ -390,11 +336,7 @@ class BaseTestClass(object):
     def _record_controller_info(self):
         """Collect controller information and write to summary file."""
         try:
-            manager = self._controller_manager
-            for record in manager.get_controller_info_records():
-                self.summary_writer.dump(
-                    record.to_dict(),
-                    records.TestSummaryEntryType.CONTROLLER_INFO)
+            super()._record_controller_info()
         except Exception:
             self.log.exception('Unable to write controller info records to'
                                ' summary file')
@@ -406,17 +348,6 @@ class BaseTestClass(object):
         event_bus.post(TestClassBeginEvent(self))
         return self.setup_class()
 
-    def setup_class(self):
-        """Setup function that will be called before executing any test case in
-        the test class.
-
-        To signal setup failure, return False or raise an exception. If
-        exceptions were raised, the stack trace would appear in log, but the
-        exceptions would not propagate to upper levels.
-
-        Implementation is optional.
-        """
-
     def _teardown_class(self):
         """Proxy function to guarantee the base implementation of teardown_class
         is called.
@@ -424,13 +355,6 @@ class BaseTestClass(object):
         self.teardown_class()
         self.unregister_controllers()
         event_bus.post(TestClassEndEvent(self, self.results))
-
-    def teardown_class(self):
-        """Teardown function that will be called after all the selected test
-        cases in the test class have been executed.
-
-        Implementation is optional.
-        """
 
     def _setup_test(self, test_name):
         """Proxy function to guarantee the base implementation of setup_test is
@@ -462,13 +386,6 @@ class BaseTestClass(object):
         """
         self.log.debug('Tearing down test %s' % test_name)
         self.teardown_test()
-
-    def teardown_test(self):
-        """Teardown function that will be called every time a test case has
-        been executed.
-
-        Implementation is optional.
-        """
 
     def _on_fail(self, record):
         """Proxy function to guarantee the base implementation of on_fail is
@@ -970,14 +887,6 @@ class BaseTestClass(object):
             self._exec_func(self._teardown_class)
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
-
-    def clean_up(self):
-        """A function that is executed upon completion of all tests cases
-        selected in the test class.
-
-        This function should clean up objects initialized in the constructor by
-        user.
-        """
 
     def _ad_take_bugreport(self, ad, test_name, begin_time):
         for i in range(3):
