@@ -26,6 +26,8 @@ from acts import base_test
 from acts import error
 from acts import signals
 
+from mobly import base_test as mobly_base_test
+
 MSG_EXPECTED_EXCEPTION = 'This is an expected exception.'
 MSG_EXPECTED_TEST_FAILURE = 'This is an expected test failure.'
 MSG_UNEXPECTED_EXCEPTION = 'Unexpected exception!'
@@ -877,7 +879,7 @@ class ActsBaseClassTest(unittest.TestCase):
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
         expected_msg = ('Missing required user param "%s" in test '
                         'configuration.') % required[0]
-        with self.assertRaises(base_test.Error, msg=expected_msg):
+        with self.assertRaises(mobly_base_test.Error, msg=expected_msg):
             bc.unpack_userparams(required)
 
     def test_unpack_userparams_optional(self):
