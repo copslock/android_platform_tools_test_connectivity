@@ -31,11 +31,14 @@ install_requires = [
     'pyyaml>=5.1',
     'shellescape>=3.4.1',
     'protobuf',
+    'retry',
     'requests',
     'roman',
     'scapy',
     'pylibftdi',
     'xlsxwriter',
+    # TODO(markdr): b/113719194: Remove this module
+    'colorama',
     'mobly',
     'grpcio',
     # paramiko-ng is needed vs paramiko as currently paramiko does not support

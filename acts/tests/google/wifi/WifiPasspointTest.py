@@ -26,8 +26,8 @@ import acts.test_utils.wifi.wifi_test_utils as wutils
 import WifiManagerTest
 from acts import asserts
 from acts import signals
-from acts.libs.nuwa.nuwa_cli import NuwaCli
-from acts.libs.nuwa.nuwa_cli import NuwaError
+from acts.libs.uicd.uicd_cli import UicdCli
+from acts.libs.uicd.uicd_cli import UicdError
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.utils import force_airplane_mode
@@ -61,7 +61,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["passpoint_networks", "nuwa_workflows", "nuwa_zip"]
+        req_params = ["passpoint_networks", "uicd_workflows", "uicd_zip"]
         opt_param = []
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -71,8 +71,8 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
             "Need at least one Passpoint network.")
         wutils.wifi_toggle_state(self.dut, True)
         self.unknown_fqdn = UNKNOWN_FQDN
-        # Setup NUWA cli object for UI interation.
-        self.ui = NuwaCli(self.nuwa_zip, self.nuwa_workflows)
+        # Setup Uicd cli object for UI interation.
+        self.ui = UicdCli(self.uicd_zip[0], self.uicd_workflows)
 
 
     def setup_test(self):

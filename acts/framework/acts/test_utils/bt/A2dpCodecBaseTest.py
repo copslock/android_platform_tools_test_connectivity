@@ -25,7 +25,7 @@ from acts.test_utils.bt.bt_test_utils import set_bluetooth_codec
 from acts.test_utils.coex.audio_test_utils import SshAudioCapture
 
 ADB_FILE_EXISTS = 'test -e %s && echo True'
-ADB_VOL_UP = "input keyevent 24"
+ADB_VOL_UP = 'input keyevent 24'
 
 
 class A2dpCodecBaseTest(BluetoothBaseTest):
@@ -42,20 +42,20 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
 
     def __init__(self, configs):
         super(A2dpCodecBaseTest, self).__init__(configs)
-        required_params = ["audio_params", "dut"]
+        required_params = ['audio_params', 'dut']
         self.unpack_userparams(required_params)
 
         # Instantiate test devices
         self.android = self.android_devices[0]
-        attr, idx = self.dut.split(":")
-        dut_controller = getattr(self, attr)[int(idx)]
-        self.bt_device = Factory().generate(dut_controller)
+        attr, idx = self.dut.split(':')
+        self.dut_controller = getattr(self, attr)[int(idx)]
+        self.bt_device = Factory().generate(self.dut_controller)
         if 'input_device' in self.audio_params:
             self.audio_output_path = ''
             self.mic = SshAudioCapture(self.audio_params,
                                        logging.log_path)
             self.log.info('Recording device %s initialized.' %
-                          self.mic.input_device['name'])
+                          self.mic.name)
         else:
             raise KeyError('Config audio_params specify input_device.')
         self.phone_music_file = os.path.join(
@@ -64,11 +64,6 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
         self.host_music_file = os.path.join(
             self.user_params['host_music_file_dir'],
             self.user_params['music_file_name'])
-
-        # Key test metrics to determine quality of recorded audio file.
-        self.metrics = {"anomalies": [],
-                        "dut_type": dut_controller.__class__.__name__,
-                        "thdn": None}
 
     def setup_class(self):
         super().setup_class()
@@ -81,6 +76,11 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
     def setup_test(self):
         """Pair and connect headset before test, make sure phone has audio file.
         """
+        # Key test metrics to determine quality of recorded audio file.
+        self.metrics = {'anomalies': [],
+                        'dut_type': self.dut_controller.__class__.__name__,
+                        'thdn': []}
+
         self.log.info('Pairing and connecting to headset...')
         asserts.assert_true(
             connect_phone_to_headset(self.android, self.bt_device, 600),
@@ -91,14 +91,14 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
         # Ensure audio file exists on phone.
         self.ensure_phone_has_music_file()
 
-        if "volume" in self.user_params:
-            pct = self.user_params["volume"]
+        if 'volume' in self.user_params:
+            pct = self.user_params['volume']
             vol = self.android.droid.getMaxMediaVolume() * pct
             self.android.droid.setMediaVolume(int(vol))
         # TODO (aidanhb): this is a weird way to work around the fact that the
         # above SL4A commands don't actually max out the volume. Fix this.
-        if "volume_up" in self.user_params:
-            for i in range(self.user_params["volume_up"]):
+        if 'volume_up' in self.user_params:
+            for i in range(self.user_params['volume_up']):
                 self.android.adb.shell(ADB_VOL_UP)
 
     def ensure_phone_has_music_file(self):
@@ -131,7 +131,7 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
 
         try:
             self.log.info('Capturing audio through %s' %
-                          self.mic.input_device['name'])
+                          self.mic.name)
         except AttributeError as e:
             self.log.error('Mic not initialized correctly. Check your '
                            '"input_device" parameter in config.')
@@ -190,9 +190,10 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
         for ch_no, t in enumerate(thdn):
             self.log.info('THD+N percent for channel %s: %.4f%%' %
                           (ch_no, t * 100))
-            metrics_key = "channel_%s_thdn" % ch_no
+            metrics_key = 'channel_%s_thdn' % ch_no
             self.metrics[metrics_key] = t
-        self.metrics["thdn"] = thdn
+        self.metrics['thdn'] = thdn
+        return thdn
 
     def run_anomaly_detection(self):
         """Detect anomalies in latest recording.
@@ -200,7 +201,7 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
         Store result in self.metrics.
         """
         # Detect Anomalies
-        anom = self.mic.detect_anomalies(**self.audio_params["anomaly_params"])
+        anom = self.mic.detect_anomalies(**self.audio_params['anomaly_params'])
         num_anom = 0
         for ch_no, anomalies in enumerate(anom):
             if anomalies:
@@ -212,8 +213,9 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
                                                      start // 60,
                                                      start % 60,
                                                      end -start))
-            metrics_key = "channel_%s_num_anomalies" % ch_no
+            metrics_key = 'channel_%s_num_anomalies' % ch_no
             self.metrics[metrics_key] = len(anomalies)
         else:
             self.log.info('%i anomalies detected.' % num_anom)
-        self.metrics["anomalies"] = anom
+        self.metrics['anomalies'] = anom
+        return anom

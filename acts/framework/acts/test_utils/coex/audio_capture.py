@@ -49,6 +49,13 @@ class AudioCapture:
         if not self.audio_params["ssh_config"]:
             self.__input_device = self.__get_input_device()
 
+    @property
+    def name(self):
+        try:
+            return self.audio_params["ssh_config"]["host"]
+        except KeyError:
+            return self.__input_device["name"]
+
     def __get_input_device(self):
         """Checks for the audio capture device."""
         if self.__input_device is None:

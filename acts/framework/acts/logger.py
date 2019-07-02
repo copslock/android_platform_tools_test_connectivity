@@ -21,6 +21,8 @@ import logging
 import os
 import re
 
+from copy import copy
+
 from acts import tracelogger
 from acts.libs.logging import log_stream
 from acts.libs.logging.log_stream import LogStyles
@@ -34,6 +36,62 @@ log_line_time_format = "%Y-%m-%d %H:%M:%S"
 log_line_timestamp_len = 23
 
 logline_timestamp_re = re.compile("\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d")
+
+
+# yapf: disable
+class Style:
+    RESET  = '\033[0m'
+    BRIGHT = '\033[1m'
+    DIM    = '\033[2m'
+    NORMAL = '\033[22m'
+
+
+class Fore:
+    BLACK   = '\033[30m'
+    RED     = '\033[31m'
+    GREEN   = '\033[32m'
+    YELLOW  = '\033[33m'
+    BLUE    = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN    = '\033[36m'
+    WHITE   = '\033[37m'
+    RESET   = '\033[39m'
+
+
+class Back:
+    BLACK   = '\033[40m'
+    RED     = '\033[41m'
+    GREEN   = '\033[42m'
+    YELLOW  = '\033[43m'
+    BLUE    = '\033[44m'
+    MAGENTA = '\033[45m'
+    CYAN    = '\033[46m'
+    WHITE   = '\033[47m'
+    RESET   = '\033[49m'
+
+
+LOG_LEVELS = {
+  'DEBUG':     {'level': 10, 'style': Fore.GREEN + Style.BRIGHT},
+  'CASE':      {'level': 11, 'style': Back.BLUE + Fore.WHITE + Style.BRIGHT},
+  'SUITE':     {'level': 12, 'style': Back.MAGENTA + Fore.WHITE + Style.BRIGHT},
+  'INFO':      {'level': 20, 'style': Style.NORMAL},
+  'STEP':      {'level': 15, 'style': Fore.WHITE + Style.BRIGHT},
+  'WARNING':   {'level': 30, 'style': Fore.YELLOW + Style.BRIGHT},
+  'ERROR':     {'level': 40, 'style': Fore.RED + Style.BRIGHT},
+  'EXCEPTION': {'level': 45, 'style': Back.RED + Fore.WHITE + Style.BRIGHT},
+  'DEVICE':    {'level': 51, 'style': Fore.CYAN + Style.BRIGHT},
+}
+# yapf: enable
+
+
+class ColoredLogFormatter(logging.Formatter):
+    def format(self, record):
+        colored_record = copy(record)
+        level_name = colored_record.levelname
+        style = LOG_LEVELS[level_name]['style']
+        formatted_level_name = '%s%s%s' % (style, level_name, Style.RESET)
+        colored_record.levelname = formatted_level_name
+        return super().format(colored_record)
 
 
 def _parse_logline_timestamp(t):
@@ -150,12 +208,20 @@ def _setup_test_logger(log_path, prefix=None):
     terminal_format = log_line_format
     if prefix:
         terminal_format = "[{}] {}".format(prefix, log_line_format)
-    stream_formatter = logging.Formatter(terminal_format, log_line_time_format)
+    stream_formatter = ColoredLogFormatter(terminal_format,
+                                           log_line_time_format)
     file_formatter = logging.Formatter(log_line_format, log_line_time_format)
     log = log_stream.create_logger('test_run', '', log_styles=log_styles,
                                    stream_format=stream_formatter,
                                    file_format=file_formatter)
     log.setLevel(logging.DEBUG)
+    _enable_additional_log_levels()
+
+
+def _enable_additional_log_levels():
+    """Enables logging levels used for tracing tests and debugging devices."""
+    for log_type, log_data in LOG_LEVELS.items():
+        logging.addLevelName(log_data['level'], log_type)
 
 
 def kill_test_logger(logger):
@@ -242,6 +308,8 @@ def create_tagged_trace_logger(tag=''):
 
             <TESTBED> <TIME> <LOG_LEVEL> [tag123] logged message
     """
+
     def logging_lambda(msg):
         return '[%s] %s' % (tag, msg)
+
     return create_logger(logging_lambda)
