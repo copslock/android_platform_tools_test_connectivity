@@ -135,6 +135,38 @@ class BtsBandwidth(Enum):
     LTE_BANDWIDTH_15MHz = "15MHz"
     LTE_BANDWIDTH_20MHz = "20MHz"
 
+    def get_float_value(bts_bandwidth):
+        """ Returns a float representing the bandwidth in MHz.
+
+        Args:
+            bts_bandwidth: a BtsBandwidth enum or a string matching one of the
+            values in the BtsBandwidth enum.
+        """
+
+        if isinstance(bts_bandwidth, BtsBandwidth):
+            bandwidth_str = bts_bandwidth.value
+        elif isinstance(bts_bandwidth, str):
+            bandwidth_str = bts_bandwidth
+        else:
+            raise TypeError('bts_bandwidth should be an instance of string or '
+                            'BtsBandwidth. ')
+
+        if bandwidth_str == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:
+            return 20
+        elif bandwidth_str == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:
+            return 15
+        elif bandwidth_str == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:
+            return 10
+        elif bandwidth_str == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:
+            return 5
+        elif bandwidth_str == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:
+            return 3
+        elif bandwidth_str == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:
+            return 1.4
+        else:
+            raise ValueError(
+                'Could not map {} to a bandwidth value.'.format(bandwidth_str))
+
 
 class LteMimoMode(Enum):
     """ Values for LTE MIMO modes. """
