@@ -70,6 +70,31 @@ class BaseSimulation():
     # the simulations inheriting from this class.
     DOWNLINK_SIGNAL_LEVEL_UNITS = None
 
+    class BtsConfig:
+        """ Base station configuration class. This class is only a container for
+        base station parameters and should not interact with the instrument
+        controller.
+
+        Atributes:
+            output_power: a float indicating the required signal level at the
+                instrument's output.
+            input_level: a float indicating the required signal level at the
+                instrument's input.
+        """
+        def __init__(self):
+            """ Initialize the base station config by setting all its
+            parameters to None. """
+            self.output_power = None
+            self.input_power = None
+
+        def incorporate(self, new_config):
+            """ Incorporates a different configuration by replacing the current
+            values with the new ones for all the parameters different to None.
+            """
+            for attr, value in vars(new_config).items():
+                if value:
+                    setattr(self, attr, value)
+
     def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Initializes the Simulation object.
 
@@ -104,6 +129,9 @@ class BaseSimulation():
 
         # Gets BTS1 since this sim only has 1 BTS
         self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
+
+        # Configuration object for the primary base station
+        self.primary_config = self.BtsConfig()
 
         # Store the current calibrated band
         self.current_calibrated_band = None
@@ -168,9 +196,11 @@ class BaseSimulation():
         time.sleep(2)
 
         # Provide a good signal power for the phone to attach easily
-        self.bts1.input_level = -10
-        time.sleep(2)
-        self.bts1.output_level = -30
+        new_config = self.BtsConfig()
+        new_config.input_power = -10
+        new_config.output_power = -30
+        self.configure_bts(self.bts1, new_config)
+        self.primary_config.incorporate(new_config)
 
         # Try to attach the phone.
         for i in range(self.ATTACH_MAX_RETRIES):
@@ -264,14 +294,13 @@ class BaseSimulation():
             raise RuntimeError('Could not attach to base station.')
 
         # Set signal levels obtained from the test parameters
-        if self.sim_dl_power:
-            self.bts1.output_level = self.calibrated_downlink_rx_power(
-                self.bts1, self.sim_dl_power)
-            time.sleep(2)
-        if self.sim_ul_power:
-            self.bts1.input_level = self.calibrated_uplink_tx_power(
-                self.bts1, self.sim_ul_power)
-            time.sleep(2)
+        new_config = self.BtsConfig()
+        new_config.output_power = self.calibrated_downlink_rx_power(
+            self.primary_config, self.sim_dl_power)
+        new_config.input_power = self.calibrated_uplink_tx_power(
+            self.primary_config, self.sim_ul_power)
+        self.configure_bts(self.bts1, new_config)
+        self.primary_config.incorporate(new_config)
 
     def parse_parameters(self, parameters):
         """ Configures simulation using a list of parameters.
@@ -284,6 +313,22 @@ class BaseSimulation():
         """
 
         raise NotImplementedError()
+
+    def configure_bts(self, bts_handle, config):
+        """ Configures the base station in the Anritsu callbox.
+
+        Parameters set to None in the configuration object are skipped.
+
+        Args:
+            bts_handle: a handle to the Anritsu base station controller.
+            config: a BtsConfig object containing the desired configuration.
+        """
+
+        if config.output_power:
+            bts_handle.output_level = config.output_power
+
+        if config.input_power:
+            bts_handle.input_level = config.input_power
 
     def consume_parameter(self, parameters, parameter_name, num_values=0):
         """ Parses a parameter from a list.
@@ -352,7 +397,7 @@ class BaseSimulation():
                               power, self.DOWNLINK_SIGNAL_LEVEL_UNITS))
             return power
 
-    def calibrated_downlink_rx_power(self, bts, signal_level):
+    def calibrated_downlink_rx_power(self, bts_config, signal_level):
         """ Calculates the power level at the instrument's output in order to
         obtain the required rx power level at the DUT's input.
 
@@ -360,7 +405,9 @@ class BaseSimulation():
         level.
 
         Args:
-            bts: the base station in which to change the signal level
+            bts_config: the current configuration at the base station. derived
+                classes implementations can use this object to indicate power as
+                spectral power density or in other units.
             signal_level: desired downlink received power, can be either a
                 key value pair, an int or a float
         """
@@ -402,7 +449,7 @@ class BaseSimulation():
                           "uncalibrated).".format(round(power)))
             return round(power)
 
-    def calibrated_uplink_tx_power(self, bts, signal_level):
+    def calibrated_uplink_tx_power(self, bts_config, signal_level):
         """ Calculates the power level at the instrument's input in order to
         obtain the required tx power level at the DUT's output.
 
@@ -410,7 +457,9 @@ class BaseSimulation():
         level.
 
         Args:
-            bts: the base station in which to change the signal level
+            bts_config: the current configuration at the base station. derived
+                classes implementations can use this object to indicate power as
+                spectral power density or in other units.
             signal_level: desired uplink transmitted power, can be either a
                 key value pair, an int or a float
         """
@@ -538,11 +587,16 @@ class BaseSimulation():
                 "The parameter 'rat' has to indicate the RAT being used as "
                 "reported by the phone.")
 
+        # Save initial output level to restore it after calibration
+        restoration_config = self.BtsConfig()
+        restoration_config.output_power = self.primary_config.output_power
+
         # Set BTS to a good output level to minimize measurement error
-        init_output_level = self.bts1.output_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        self.bts1.output_level = self.DL_CAL_TARGET_POWER[
+        new_config = self.BtsConfig()
+        new_config.output_power = self.DL_CAL_TARGET_POWER[
             self.anritsu._md8475_version]
+        self.configure_bts(self.bts1, new_config)
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -568,7 +622,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        self.bts1.output_level = init_output_level
+        self.configure_bts(self.bts1, restoration_config)
         time.sleep(2)
 
         # Calculate the mean of the measurements
@@ -577,7 +631,7 @@ class BaseSimulation():
         # Convert from RSRP to signal power
         if power_units_conversion_func:
             avg_down_power = power_units_conversion_func(
-                reported_asu_power, self.bts1)
+                reported_asu_power, self.primary_config)
         else:
             avg_down_power = reported_asu_power
 
@@ -607,12 +661,17 @@ class BaseSimulation():
             Uplink calibration value and measured UL power
         """
 
+        # Save initial input level to restore it after calibration
+        restoration_config = self.BtsConfig()
+        restoration_config.input_power = self.primary_config.input_power
+
         # Set BTS1 to maximum input allowed in order to perform
         # uplink calibration
         target_power = self.MAX_PHONE_OUTPUT_POWER
-        initial_input_level = self.bts1.input_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        self.bts1.input_level = self.MAX_BTS_INPUT_POWER
+        new_config = self.BtsConfig()
+        new_config.input_power = self.MAX_BTS_INPUT_POWER
+        self.configure_bts(self.bts1, new_config)
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -650,7 +709,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        self.bts1.input_level = initial_input_level
+        self.configure_bts(self.bts1, restoration_config)
         time.sleep(2)
 
         # Phone only supports 1x1 Uplink so always chain 0
