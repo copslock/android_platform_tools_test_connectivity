@@ -473,22 +473,6 @@ class LteCaSimulation(LteSimulation):
 
         self.set_band(bts, band, calibrate_if_necessary=calibrate_if_necessary)
 
-    def set_downlink_rx_power(self, bts, rsrp):
-        """ Sets downlink rx power in RSRP using calibration for every cell
-
-        Calls the method in the parent class for each base station.
-
-        Args:
-            bts: this argument is ignored, as all the basestations need to have
-                the same downlink rx power
-            rsrp: desired rsrp, contained in a key value pair
-        """
-
-        for bts_index in range(self.num_carriers):
-            self.log.info("Setting DL power for BTS{}.".format(bts_index + 1))
-            # Use parent method to set signal level
-            super().set_downlink_rx_power(self.bts[bts_index], rsrp)
-
     def start_test_case(self):
         """ Attaches the phone to all the other basestations.
 
@@ -536,3 +520,17 @@ class LteCaSimulation(LteSimulation):
         return sum(
             self.bts_maximum_downlink_throughtput(self.bts[bts_index])
             for bts_index in range(self.num_carriers))
+
+    def start(self):
+        """ Set the signal level for the secondary carriers, as the base class
+        implementation of this method will only set up downlink power for the
+        primary carrier component. """
+
+        super().start()
+
+        for bts_index in range(1, self.num_carriers):
+            self.log.info("Setting DL power for BTS{}.".format(bts_index + 1))
+            if self.sim_dl_power:
+                self.bts[bts_index].output_level = \
+                    self.calibrated_downlink_rx_power(self.bts1,
+                                                      self.sim_dl_power)
