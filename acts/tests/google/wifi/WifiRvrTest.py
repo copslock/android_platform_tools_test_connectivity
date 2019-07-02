@@ -295,10 +295,12 @@ class WifiRvrTest(base_test.BaseTestClass):
         Returns:
             rvr_result: dict containing rvr_results and meta data
         """
+        # Check battery level before test
         battery_level = utils.get_battery_level(self.client_dut)
         if battery_level < 20 and testcase_params["traffic_direction"] == "UL":
             asserts.skip("Battery level too low. Skipping test.")
         self.log.info("Start running RvR")
+        # Refresh link layer stats before test
         llstats_obj = wputils.LinkLayerStats(self.client_dut)
         zero_counter = 0
         throughput = []
@@ -322,7 +324,12 @@ class WifiRvrTest(base_test.BaseTestClass):
                 testcase_params["iperf_args"], str(atten),
                 testcase_params["iperf_duration"] + self.TEST_TIMEOUT)
             server_output_path = self.iperf_server.stop()
-            current_rssi = rssi_future.result()["signal_poll_rssi"]["mean"]
+            rssi_result = rssi_future.result()
+            current_rssi = {
+                "signal_poll_rssi": rssi_result["signal_poll_rssi"]["mean"],
+                "chain_0_rssi": rssi_result["chain_0_rssi"]["mean"],
+                "chain_1_rssi": rssi_result["chain_1_rssi"]["mean"]
+            }
             rssi.append(current_rssi)
             # Parse and log result
             if testcase_params["use_client_output"]:
@@ -344,8 +351,11 @@ class WifiRvrTest(base_test.BaseTestClass):
             curr_llstats = llstats_obj.llstats_incremental.copy()
             llstats.append(curr_llstats)
             self.log.info(
-                ("Throughput at {0:.2f} dB is {1:.2f} Mbps. RSSI = {2:.2f}."
-                 ).format(atten, curr_throughput, current_rssi))
+                ("Throughput at {0:.2f} dB is {1:.2f} Mbps. "
+                 "RSSI = {2:.2f} [{3:.2f}, {4:.2f}].").format(
+                     atten, curr_throughput, current_rssi["signal_poll_rssi"],
+                     current_rssi["chain_0_rssi"],
+                     current_rssi["chain_1_rssi"]))
             if curr_throughput == 0:
                 zero_counter = zero_counter + 1
             else:
