@@ -508,7 +508,10 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         testcase.measurement_LTE = TestMeasurement.MEASUREMENT_DISABLE
 
         for bts_index in range(1, self.num_carriers):
-            self.bts[bts_index].dl_cc_enabled = True
+            new_config = self.BtsConfig()
+            new_config.dl_cc_enabled = True
+            self.configure_bts(self.bts[bts_index], new_config)
+            self.bts_configs[bts_index].incorporate(new_config)
 
         self.anritsu.start_testcase()
 
