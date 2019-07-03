@@ -95,14 +95,14 @@ class BaseSimulation():
                 if value:
                     setattr(self, attr, value)
 
-    def __init__(self, anritsu, log, dut, test_config, calibration_table):
+    def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the Simulation object.
 
         Keeps a reference to the callbox, log and dut handlers and
         initializes the class attributes.
 
         Args:
-            anritsu: the Anritsu callbox controller
+            simulator: a cellular simulator controller
             log: a logger handle
             dut: the android device handler
             test_config: test configuration obtained from the config file
@@ -110,7 +110,8 @@ class BaseSimulation():
                 different bands.
         """
 
-        self.anritsu = anritsu
+        self.simulator = simulator
+        self.anritsu = simulator.anritsu
         self.log = log
         self.dut = dut
         self.calibration_table = calibration_table
