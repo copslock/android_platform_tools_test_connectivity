@@ -15,8 +15,10 @@
 #   limitations under the License.
 
 import ntpath
+import time
 
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
+from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
@@ -113,6 +115,7 @@ class UmtsSimulation(BaseSimulation):
         # super().__init__ because setup_simulator() requires self.anritsu and
         # will be called during the parent class initialization.
         self.anritsu = self.simulator.anritsu
+        self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
 
         super().__init__(simulator, log, dut, test_config, calibration_table)
 
@@ -289,3 +292,14 @@ class UmtsSimulation(BaseSimulation):
 
         # Stop IP traffic after setting the signal level
         self.stop_traffic_for_calibration()
+
+    def set_band(self, bts, band):
+        """ Sets the band used for communication.
+
+        Args:
+            bts: basestation handle
+            band: desired band
+        """
+
+        bts.band = band
+        time.sleep(5)  # It takes some time to propagate the new band

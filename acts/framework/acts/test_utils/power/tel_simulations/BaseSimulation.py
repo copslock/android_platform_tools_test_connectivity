@@ -129,9 +129,6 @@ class BaseSimulation():
         self.calibration_required = test_config.get(self.KEY_CALIBRATION,
                                                     False)
 
-        # Gets BTS1 since this sim only has 1 BTS
-        self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
-
         # Configuration object for the primary base station
         self.primary_config = self.BtsConfig()
 
@@ -189,7 +186,7 @@ class BaseSimulation():
         new_config = self.BtsConfig()
         new_config.input_power = -10
         new_config.output_power = -30
-        self.configure_bts(self.bts1, new_config)
+        self.simulator.configure_bts(new_config)
         self.primary_config.incorporate(new_config)
 
         # Try to attach the phone.
@@ -289,7 +286,7 @@ class BaseSimulation():
             self.primary_config, self.sim_dl_power)
         new_config.input_power = self.calibrated_uplink_tx_power(
             self.primary_config, self.sim_ul_power)
-        self.configure_bts(self.bts1, new_config)
+        self.simulator.configure_bts(new_config)
         self.primary_config.incorporate(new_config)
 
     def parse_parameters(self, parameters):
@@ -303,25 +300,6 @@ class BaseSimulation():
         """
 
         raise NotImplementedError()
-
-    def configure_bts(self, bts_handle, config):
-        """ Configures the base station in the Anritsu callbox.
-
-        Parameters set to None in the configuration object are skipped.
-
-        Args:
-            bts_handle: a handle to the Anritsu base station controller.
-            config: a BtsConfig object containing the desired configuration.
-        """
-
-        if config.output_power:
-            bts_handle.output_level = config.output_power
-
-        if config.input_power:
-            bts_handle.input_level = config.input_power
-
-        if config.band:
-            self.set_band(bts_handle, config.band)
 
     def consume_parameter(self, parameters, parameter_name, num_values=0):
         """ Parses a parameter from a list.
@@ -589,7 +567,7 @@ class BaseSimulation():
         new_config = self.BtsConfig()
         new_config.output_power = self.DL_CAL_TARGET_POWER[
             self.anritsu._md8475_version]
-        self.configure_bts(self.bts1, new_config)
+        self.simulator.configure_bts(new_config)
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -615,7 +593,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        self.configure_bts(self.bts1, restoration_config)
+        self.simulator.configure_bts(restoration_config)
         time.sleep(2)
 
         # Calculate the mean of the measurements
@@ -664,7 +642,7 @@ class BaseSimulation():
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
         new_config = self.BtsConfig()
         new_config.input_power = self.MAX_BTS_INPUT_POWER
-        self.configure_bts(self.bts1, new_config)
+        self.simulator.configure_bts(new_config)
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -702,7 +680,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        self.configure_bts(self.bts1, restoration_config)
+        self.simulator.configure_bts(restoration_config)
         time.sleep(2)
 
         # Phone only supports 1x1 Uplink so always chain 0
@@ -724,17 +702,6 @@ class BaseSimulation():
             "Measured uplink path loss: {} dB".format(up_call_path_loss))
 
         return up_call_path_loss
-
-    def set_band(self, bts, band):
-        """ Sets the band used for communication.
-
-        Args:
-            bts: basestation handle
-            band: desired band
-        """
-
-        bts.band = band
-        time.sleep(5)  # It takes some time to propagate the new band
 
     def load_pathloss_if_required(self):
         """ If calibration is required, try to obtain the pathloss values from
