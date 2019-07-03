@@ -504,13 +504,6 @@ class LteSimulation(BaseSimulation):
 
         super().configure_bts(bts_handle, config)
 
-        if config.band:
-            # Only calibrate for the primary carrier band
-            isPcc = bts_handle == self.bts1
-            self.set_band(bts_handle,
-                          config.band,
-                          calibrate_if_necessary=isPcc)
-
         if config.dlul_config:
             self.set_dlul_configuration(bts_handle, config.dlul_config)
 
@@ -758,6 +751,9 @@ class LteSimulation(BaseSimulation):
         # these parameters in the current configuration object
         self.configure_bts(self.bts1, new_config)
         self.primary_config.incorporate(new_config)
+
+        # Now that the band is set, calibrate the link if necessary
+        self.load_pathloss_if_required()
 
     def calibrated_downlink_rx_power(self, bts_config, rsrp):
         """ LTE simulation overrides this method so that it can convert from
@@ -1365,15 +1361,14 @@ class LteSimulation(BaseSimulation):
         else:
             return self.DuplexMode.FDD
 
-    def set_band(self, bts, band, calibrate_if_necessary=True):
+    def set_band(self, bts, band):
         """ Sets the right duplex mode before switching to a new band.
 
         Args:
             bts: basestation handle
             band: desired band
-            calibrate_if_necessary: if False calibration will be skipped
         """
 
         bts.duplex_mode = self.get_duplex_mode(band).value
 
-        super().set_band(bts, band, calibrate_if_necessary)
+        super().set_band(bts, band)
