@@ -46,13 +46,15 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
 
     def setup_test(self):
         """Manual setup here due to multiple inheritance: explicitly execute the
-    setup method from both parents."""
+        setup method from both parents.
+        """
         AwareBaseTest.setup_test(self)
         RttBaseTest.setup_test(self)
 
     def teardown_test(self):
         """Manual teardown here due to multiple inheritance: explicitly execute the
-    teardown method from both parents."""
+        teardown method from both parents.
+        """
         AwareBaseTest.teardown_test(self)
         RttBaseTest.teardown_test(self)
 
@@ -60,15 +62,15 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
 
     def run_rtt_discovery(self, init_dut, resp_mac=None, resp_peer_id=None):
         """Perform single RTT measurement, using Aware, from the Initiator DUT to
-    a Responder. The RTT Responder can be specified using its MAC address
-    (obtained using out- of-band discovery) or its Peer ID (using Aware
-    discovery).
+        a Responder. The RTT Responder can be specified using its MAC address
+        (obtained using out- of-band discovery) or its Peer ID (using Aware
+        discovery).
 
-    Args:
-      init_dut: RTT Initiator device
-      resp_mac: MAC address of the RTT Responder device
-      resp_peer_id: Peer ID of the RTT Responder device
-    """
+        Args:
+              init_dut: RTT Initiator device
+              resp_mac: MAC address of the RTT Responder device
+              resp_peer_id: Peer ID of the RTT Responder device
+        """
         asserts.assert_true(
             resp_mac is not None or resp_peer_id is not None,
             "One of the Responder specifications (MAC or Peer ID)"
@@ -96,19 +98,19 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                                  time_between_iterations, time_between_roles):
         """Perform a set of RTT measurements, using in-band (Aware) discovery.
 
-    Args:
-      do_both_directions: False - perform all measurements in one direction,
-                          True - perform 2 measurements one in both directions.
-      iter_count: Number of measurements to perform.
-      time_between_iterations: Number of seconds to wait between iterations.
-      time_between_roles: Number of seconds to wait when switching between
-                          Initiator and Responder roles (only matters if
-                          do_both_directions=True).
+        Args:
+              do_both_directions: False - perform all measurements in one direction,
+                                  True - perform 2 measurements one in both directions.
+              iter_count: Number of measurements to perform.
+              time_between_iterations: Number of seconds to wait between iterations.
+              time_between_roles: Number of seconds to wait when switching between
+                                  Initiator and Responder roles (only matters if
+                                  do_both_directions=True).
 
-    Returns: a list of the events containing the RTT results (or None for a
-    failed measurement). If both directions are tested then returns a list of
-    2 elements: one set for each direction.
-    """
+        Returns: a list of the events containing the RTT results (or None for a
+        failed measurement). If both directions are tested then returns a list of
+        2 elements: one set for each direction.
+        """
         p_dut = self.android_devices[0]
         s_dut = self.android_devices[1]
 
@@ -150,20 +152,20 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                                   time_between_iterations, time_between_roles):
         """Perform a set of RTT measurements, using out-of-band discovery.
 
-    Args:
-      do_both_directions: False - perform all measurements in one direction,
-                          True - perform 2 measurements one in both directions.
-      iter_count: Number of measurements to perform.
-      time_between_iterations: Number of seconds to wait between iterations.
-      time_between_roles: Number of seconds to wait when switching between
-                          Initiator and Responder roles (only matters if
-                          do_both_directions=True).
-      enable_ranging: True to enable Ranging, False to disable.
+        Args:
+              do_both_directions: False - perform all measurements in one direction,
+                                  True - perform 2 measurements one in both directions.
+              iter_count: Number of measurements to perform.
+              time_between_iterations: Number of seconds to wait between iterations.
+              time_between_roles: Number of seconds to wait when switching between
+                                  Initiator and Responder roles (only matters if
+                                  do_both_directions=True).
+              enable_ranging: True to enable Ranging, False to disable.
 
-    Returns: a list of the events containing the RTT results (or None for a
-    failed measurement). If both directions are tested then returns a list of
-    2 elements: one set for each direction.
-    """
+        Returns: a list of the events containing the RTT results (or None for a
+        failed measurement). If both directions are tested then returns a list of
+        2 elements: one set for each direction.
+        """
         dut0 = self.android_devices[0]
         dut1 = self.android_devices[1]
 
@@ -204,14 +206,17 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
 
         return results01 if not do_both_directions else [results01, results10]
 
-    def verify_results(self, results, results_reverse_direction=None):
+    def verify_results(self, results, results_reverse_direction=None, accuracy_evaluation=False):
         """Verifies the results of the RTT experiment.
 
-    Args:
-      results: List of RTT results.
-      results_reverse_direction: List of RTT results executed in the
-                                reverse direction. Optional.
-    """
+        Args:
+              results: List of RTT results.
+              results_reverse_direction: List of RTT results executed in the
+                                        reverse direction. Optional.
+              accuracy_evaluation: False - only evaluate success rate.
+                                   True - evaluate both success rate and accuracy
+                                   default is False.
+        """
         stats = rutils.extract_stats(results, self.rtt_reference_distance_mm,
                                      self.rtt_reference_distance_margin_mm,
                                      self.rtt_min_expected_rssi_dbm)
@@ -255,12 +260,13 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
             stats['num_results'] / 100,
             "Failure rate is too high",
             extras=extras)
-        asserts.assert_true(
-            stats['num_range_out_of_margin'] <=
-            self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage *
-            stats['num_success_results'] / 100,
-            "Results exceeding error margin rate is too high",
-            extras=extras)
+        if accuracy_evaluation:
+            asserts.assert_true(
+                stats['num_range_out_of_margin'] <=
+                self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage *
+                stats['num_success_results'] / 100,
+                "Results exceeding error margin rate is too high",
+                extras=extras)
 
         if stats_reverse_direction is not None:
             asserts.assert_true(
@@ -279,12 +285,13 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                 stats['num_results'] / 100,
                 "Failure rate is too high",
                 extras=extras)
-            asserts.assert_true(
-                stats_reverse_direction['num_range_out_of_margin'] <=
-                self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage *
-                stats['num_success_results'] / 100,
-                "Results exceeding error margin rate is too high",
-                extras=extras)
+            if accuracy_evaluation:
+                asserts.assert_true(
+                    stats_reverse_direction['num_range_out_of_margin'] <=
+                    self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage *
+                    stats['num_success_results'] / 100,
+                    "Results exceeding error margin rate is too high",
+                    extras=extras)
 
         asserts.explicit_pass("RTT Aware test done", extras=extras)
 
@@ -293,8 +300,9 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     @test_tracker_info(uuid="9e4e7ab4-2254-498c-9788-21e15ed9a370")
     def test_rtt_oob_discovery_one_way(self):
         """Perform RTT between 2 Wi-Fi Aware devices. Use out-of-band discovery
-    to communicate the MAC addresses to the peer. Test one-direction RTT only.
-    """
+        to communicate the MAC addresses to the peer. Test one-direction RTT only.
+        Functionality test: Only evaluate success rate.
+        """
         rtt_results = self.run_rtt_oob_discovery_set(
             do_both_directions=False,
             iter_count=self.NUM_ITER,
@@ -305,9 +313,10 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     @test_tracker_info(uuid="22edba77-eeb2-43ee-875a-84437550ad84")
     def test_rtt_oob_discovery_both_ways(self):
         """Perform RTT between 2 Wi-Fi Aware devices. Use out-of-band discovery
-    to communicate the MAC addresses to the peer. Test RTT both-ways:
-    switching rapidly between Initiator and Responder.
-    """
+        to communicate the MAC addresses to the peer. Test RTT both-ways:
+        switching rapidly between Initiator and Responder.
+        Functionality test: Only evaluate success rate.
+        """
         rtt_results1, rtt_results2 = self.run_rtt_oob_discovery_set(
             do_both_directions=True,
             iter_count=self.NUM_ITER,
@@ -318,8 +327,9 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     @test_tracker_info(uuid="18cef4be-95b4-4f7d-a140-5165874e7d1c")
     def test_rtt_ib_discovery_one_way(self):
         """Perform RTT between 2 Wi-Fi Aware devices. Use in-band (Aware) discovery
-    to communicate the MAC addresses to the peer. Test one-direction RTT only.
-    """
+        to communicate the MAC addresses to the peer. Test one-direction RTT only.
+        Functionality test: Only evaluate success rate.
+        """
         rtt_results = self.run_rtt_ib_discovery_set(
             do_both_directions=False,
             iter_count=self.NUM_ITER,
@@ -330,9 +340,10 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     @test_tracker_info(uuid="c67c8e70-c417-42d9-9bca-af3a89f1ddd9")
     def test_rtt_ib_discovery_both_ways(self):
         """Perform RTT between 2 Wi-Fi Aware devices. Use in-band (Aware) discovery
-    to communicate the MAC addresses to the peer. Test RTT both-ways:
-    switching rapidly between Initiator and Responder.
-    """
+        to communicate the MAC addresses to the peer. Test RTT both-ways:
+        switching rapidly between Initiator and Responder.
+        Functionality test: Only evaluate success rate.
+        """
         rtt_results1, rtt_results2 = self.run_rtt_ib_discovery_set(
             do_both_directions=True,
             iter_count=self.NUM_ITER,
@@ -340,11 +351,66 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
             time_between_roles=self.TIME_BETWEEN_ROLES)
         self.verify_results(rtt_results1, rtt_results2)
 
+    @test_tracker_info(uuid="3a1d19a2-7241-49e0-aaf2-0a1da4c29783")
+    def test_rtt_oob_discovery_one_way_with_accuracy_evaluation(self):
+        """Perform RTT between 2 Wi-Fi Aware devices. Use out-of-band discovery
+        to communicate the MAC addresses to the peer. Test one-direction RTT only.
+        Performance test: evaluate success rate and accuracy.
+        """
+        rtt_results = self.run_rtt_oob_discovery_set(
+            do_both_directions=False,
+            iter_count=self.NUM_ITER,
+            time_between_iterations=self.TIME_BETWEEN_ITERATIONS,
+            time_between_roles=self.TIME_BETWEEN_ROLES)
+        self.verify_results(rtt_results, accuracy_evaluation=True)
+
+    @test_tracker_info(uuid="82f954a5-c0ec-4bc6-8940-3b72199328ac")
+    def test_rtt_oob_discovery_both_ways_with_accuracy_evaluation(self):
+        """Perform RTT between 2 Wi-Fi Aware devices. Use out-of-band discovery
+        to communicate the MAC addresses to the peer. Test RTT both-ways:
+        switching rapidly between Initiator and Responder.
+        Performance test: evaluate success rate and accuracy.
+        """
+        rtt_results1, rtt_results2 = self.run_rtt_oob_discovery_set(
+            do_both_directions=True,
+            iter_count=self.NUM_ITER,
+            time_between_iterations=self.TIME_BETWEEN_ITERATIONS,
+            time_between_roles=self.TIME_BETWEEN_ROLES)
+        self.verify_results(rtt_results1, rtt_results2, accuracy_evaluation=True)
+
+    @test_tracker_info(uuid="4194e00c-ea49-488e-b67f-ad9360daa5fa")
+    def test_rtt_ib_discovery_one_way_with_accuracy_evaluation(self):
+        """Perform RTT between 2 Wi-Fi Aware devices. Use in-band (Aware) discovery
+        to communicate the MAC addresses to the peer. Test one-direction RTT only.
+        Performance test: evaluate success rate and accuracy.
+        """
+        rtt_results = self.run_rtt_ib_discovery_set(
+            do_both_directions=False,
+            iter_count=self.NUM_ITER,
+            time_between_iterations=self.TIME_BETWEEN_ITERATIONS,
+            time_between_roles=self.TIME_BETWEEN_ROLES)
+        self.verify_results(rtt_results, accuracy_evaluation=True)
+
+    @test_tracker_info(uuid="bea3ac8b-756d-4cd8-8936-b8bfe64676c9")
+    def test_rtt_ib_discovery_both_ways_with_accuracy_evaluation(self):
+        """Perform RTT between 2 Wi-Fi Aware devices. Use in-band (Aware) discovery
+        to communicate the MAC addresses to the peer. Test RTT both-ways:
+        switching rapidly between Initiator and Responder.
+        Performance test: evaluate success rate and accuracy.
+        """
+        rtt_results1, rtt_results2 = self.run_rtt_ib_discovery_set(
+            do_both_directions=True,
+            iter_count=self.NUM_ITER,
+            time_between_iterations=self.TIME_BETWEEN_ITERATIONS,
+            time_between_roles=self.TIME_BETWEEN_ROLES)
+        self.verify_results(rtt_results1, rtt_results2, accuracy_evaluation=True)
+
     @test_tracker_info(uuid="54f9693d-45e5-4979-adbb-1b875d217c0c")
     def test_rtt_without_initiator_aware(self):
         """Try to perform RTT operation when there is no local Aware session (on the
-    Initiator). The Responder is configured normally: Aware on and a Publisher
-    with Ranging enable. Should FAIL."""
+        Initiator). The Responder is configured normally: Aware on and a Publisher
+        with Ranging enable. Should FAIL.
+        """
         init_dut = self.android_devices[0]
         resp_dut = self.android_devices[1]
 
@@ -388,7 +454,7 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     @test_tracker_info(uuid="87a69053-8261-4928-8ec1-c93aac7f3a8d")
     def test_rtt_without_responder_aware(self):
         """Try to perform RTT operation when there is no peer Aware session (on the
-    Responder). Should FAIL."""
+        Responder). Should FAIL."""
         init_dut = self.android_devices[0]
         resp_dut = self.android_devices[1]
 
