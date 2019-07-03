@@ -212,14 +212,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Wait for new params to settle
         time.sleep(5)
 
-        # Start the simulation. This method will raise a RuntimeException if
+        # Start the simulation. This method will raise an exception if
         # the phone is unable to attach.
-        try:
-            self.simulation.start()
-        except RuntimeError:
-            return False
-
-        self.simulation.start_test_case()
+        self.simulation.start()
 
         # Make the device go to sleep
         self.dut.droid.goToSleepNow()
