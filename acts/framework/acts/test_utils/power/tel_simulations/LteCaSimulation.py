@@ -72,19 +72,13 @@ class LteCaSimulation(LteSimulation):
         42: 45590
     }
 
-    # Simulation config files in the callbox computer.
-    # These should be replaced in the future by setting up
-    # the same configuration manually.
-    LTE_BASIC_SIM_FILE = 'SIM_LTE_CA.wnssp'
-    LTE_BASIC_CELL_FILE = 'CELL_LTE_CA_config.wnscp'
-
     # Simulation config keywords contained in the test name
     PARAM_CA = 'ca'
 
     # Test config keywords
     KEY_FREQ_BANDS = "freq_bands"
 
-    def __init__(self, anritsu, log, dut, test_config, calibration_table):
+    def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for LTE simulation with carrier
         aggregation.
 
@@ -100,14 +94,16 @@ class LteCaSimulation(LteSimulation):
 
         """
 
-        super().__init__(anritsu, log, dut, test_config, calibration_table)
+        super().__init__(simulator, log, dut, test_config, calibration_table)
+
+        self.anritsu = simulator.anritsu
 
         self.bts = [self.bts1, self.anritsu.get_BTS(BtsNumber.BTS2)]
 
         if self.anritsu._md8475_version == 'B':
             self.bts.extend([
-                anritsu.get_BTS(BtsNumber.BTS3),
-                anritsu.get_BTS(BtsNumber.BTS4)
+                self.anritsu.get_BTS(BtsNumber.BTS3),
+                self.anritsu.get_BTS(BtsNumber.BTS4)
             ])
 
         # Create a configuration object for each base station and copy initial
@@ -127,6 +123,10 @@ class LteCaSimulation(LteSimulation):
                 self.KEY_FREQ_BANDS))
 
         self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
+
+    def setup_simulator(self):
+        """ Do initial configuration in the simulator. """
+        self.simulator.setup_lte_ca_scenario()
 
     def configure_bts(self, bts_handle, config):
         """ Adds LTE with CA specific procedures. See parent class
