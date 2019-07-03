@@ -158,7 +158,7 @@ class BaseSimulation():
         # Load callbox config files
         self.callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
             self.anritsu._md8475_version)
-        self.load_config_files(self.anritsu)
+        self.load_config_files()
 
         # Make sure airplane mode is on so the phone won't attach right away
         toggle_airplane_mode(self.log, self.dut, True)
@@ -172,11 +172,7 @@ class BaseSimulation():
     def load_config_files(self):
         """ Loads configuration files for the simulation.
 
-        This method needs to be implement by derived simulation classes.
-
-        Args:
-            anritsu: the Anritsu callbox controller
-        """
+        This method needs to be implement by derived simulation classes. """
 
         raise NotImplementedError()
 

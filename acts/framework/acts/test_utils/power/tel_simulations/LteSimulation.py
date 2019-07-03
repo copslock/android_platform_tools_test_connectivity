@@ -574,12 +574,8 @@ class LteSimulation(BaseSimulation):
             else:
                 bts_handle.tbs_pattern = "OFF"
 
-    def load_config_files(self, anritsu):
-        """ Loads configuration files for the simulation.
-
-            Args:
-                anritsu: the Anritsu callbox controller
-        """
+    def load_config_files(self):
+        """ Loads configuration files for the simulation. """
 
         cell_file_name = self.LTE_BASIC_CELL_FILE
         sim_file_name = self.LTE_BASIC_SIM_FILE
@@ -591,8 +587,8 @@ class LteSimulation(BaseSimulation):
         cell_file_path = ntpath.join(self.callbox_config_path, cell_file_name)
         sim_file_path = ntpath.join(self.callbox_config_path, sim_file_name)
 
-        anritsu.load_simulation_paramfile(sim_file_path)
-        anritsu.load_cell_paramfile(cell_file_path)
+        self.anritsu.load_simulation_paramfile(sim_file_path)
+        self.anritsu.load_cell_paramfile(cell_file_path)
 
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation using a list of parameters.

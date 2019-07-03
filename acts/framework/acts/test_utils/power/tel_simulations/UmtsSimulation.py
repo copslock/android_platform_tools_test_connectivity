@@ -124,14 +124,10 @@ class UmtsSimulation(BaseSimulation):
         self.release_version = None
         self.packet_rate = None
 
-    def load_config_files(self, anritsu):
-        """ Loads configuration files for the simulation.
+    def load_config_files(self):
+        """ Loads configuration files for the simulation. """
 
-            Args:
-                anritsu: the Anritsu callbox controller
-        """
-
-        anritsu.load_simulation_paramfile(
+        self.anritsu.load_simulation_paramfile(
             ntpath.join(self.callbox_config_path, self.UMTS_BASIC_SIM_FILE))
 
     def parse_parameters(self, parameters):

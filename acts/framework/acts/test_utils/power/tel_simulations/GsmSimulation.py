@@ -86,16 +86,12 @@ class GsmSimulation(BaseSimulation):
         else:
             log.info("Preferred network type set.")
 
-    def load_config_files(self, anritsu):
-        """ Loads configuration files for the simulation.
+    def load_config_files(self):
+        """ Loads configuration files for the simulation. """
 
-            Args:
-                anritsu: the Anritsu callbox controller
-        """
-
-        anritsu.load_simulation_paramfile(
+        self.anritsu.load_simulation_paramfile(
             ntpath.join(self.callbox_config_path, self.GSM_BASIC_SIM_FILE))
-        anritsu.load_cell_paramfile(
+        self.anritsu.load_cell_paramfile(
             ntpath.join(self.callbox_config_path, self.GSM_CELL_FILE))
 
     def parse_parameters(self, parameters):
