@@ -634,6 +634,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
 
     def _test_stress_cbrsdataswitch_timing(self, ad, method, validation=False):
         setattr(self, "number_of_devices", 1)
+        ad.adb.shell("pm disable com.google.android.apps.scone")
         self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ad)
         toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
         if self._is_current_data_on_cbrs():
@@ -679,6 +680,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
                                self.test_name, count, failure,
                                total_iteration)
                 test_result = False
+        ad.adb.shell("pm enable com.google.android.apps.scone")
         return test_result
 
 

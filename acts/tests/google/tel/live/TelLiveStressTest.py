@@ -443,7 +443,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             elapsed_time = 0
             check_interval = 5
             if self.cbrs_esim:
-                time.sleep(WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                time.sleep(5)
                 self._cbrs_data_check_test(begin_time, expected_cbrs=False,
                                            test_time="during")
             while (elapsed_time < duration):
@@ -493,7 +493,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("%s end", log_msg)
         self.dut_incall = False
         if self.cbrs_esim:
-            time.sleep(WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+            time.sleep(15)
             self._cbrs_data_check_test(begin_time, expected_cbrs=True,
                                        test_time="after")
         if not result:
