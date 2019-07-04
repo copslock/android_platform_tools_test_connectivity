@@ -336,7 +336,11 @@ class BaseTestClass(MoblyBaseTest):
     def _record_controller_info(self):
         """Collect controller information and write to summary file."""
         try:
-            super()._record_controller_info()
+            manager = self._controller_manager
+            for record in manager.get_controller_info_records():
+                self.summary_writer.dump(
+                    record.to_dict(),
+                    records.TestSummaryEntryType.CONTROLLER_INFO)
         except Exception:
             self.log.exception('Unable to write controller info records to'
                                ' summary file')
