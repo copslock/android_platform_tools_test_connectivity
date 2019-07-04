@@ -24,6 +24,7 @@ class FastbootError(error.ActsError):
     """Raised when there is an error in fastboot operations."""
 
     def __init__(self, cmd, stdout, stderr, ret_code):
+        super().__init__()
         self.cmd = cmd
         self.stdout = stdout
         self.stderr = stderr
