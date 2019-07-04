@@ -251,6 +251,7 @@ class BokehFigure():
             tools=self.TOOLS,
             tooltips=self.TOOLTIPS,
             output_backend='webgl')
+        self.plot.hover.tooltips = self.TOOLTIPS
         self.plot.add_tools(
             bokeh.models.tools.WheelZoomTool(dimensions='width'))
         self.plot.add_tools(
