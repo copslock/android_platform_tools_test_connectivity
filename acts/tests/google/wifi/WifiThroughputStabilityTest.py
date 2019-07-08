@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import collections
 import json
 import logging
 import math
@@ -102,7 +103,6 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             test_result_dict: dict containing attenuation, throughput and other
             meta data
         """
-        #TODO(@oelayach): Check throughput vs RvR golden file
         avg_throughput = test_result_dict["iperf_results"]["avg_throughput"]
         min_throughput = test_result_dict["iperf_results"]["min_throughput"]
         std_dev_percent = (
@@ -124,14 +124,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                 "Test Passed. Throughput at {0:.2f}dB attenuation is stable. "
                 "Mean throughput is {1:.2f} Mbps with a standard deviation of "
                 "{2:.2f}% and dips down to {3:.2f} Mbps.".format(
-                    self.atten_level, avg_throughput, std_dev_percent,
-                    min_throughput))
+                    test_result_dict["attenuation"], avg_throughput,
+                    std_dev_percent, min_throughput))
         asserts.fail(
             "Test Failed. Throughput at {0:.2f}dB attenuation is unstable. "
             "Mean throughput is {1:.2f} Mbps with a standard deviation of "
             "{2:.2f}% and dips down to {3:.2f} Mbps.".format(
-                self.atten_level, avg_throughput, std_dev_percent,
-                min_throughput))
+                test_result_dict["attenuation"], avg_throughput,
+                std_dev_percent, min_throughput))
 
     def post_process_results(self, test_result):
         """Extracts results and saves plots and JSON formatted results.
@@ -149,7 +149,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                                          "{}.txt".format(test_name))
         test_result_dict = {}
         test_result_dict["ap_settings"] = test_result["ap_settings"].copy()
-        test_result_dict["attenuation"] = self.atten_level
+        test_result_dict["attenuation"] = test_result["attenuation"]
         if test_result["iperf_result"].instantaneous_rates:
             instantaneous_rates_Mbps = [
                 rate * 8 * (1.024**2) for rate in test_result["iperf_result"].
@@ -186,7 +186,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         figure.generate_figure(output_file_path)
         return test_result_dict
 
-    def throughput_stability_test_func(self, channel, mode):
+    def run_throughput_stability_test(self, testcase_params):
         """Main function to test throughput stability.
 
         The function sets up the AP in the correct channel and mode
@@ -198,30 +198,38 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         Returns:
             test_result: dict containing test result and meta data
         """
+        # Check battery level before test
+        battery_level = utils.get_battery_level(self.dut)
+        if battery_level < 10 and testcase_params["traffic_direction"] == "UL":
+            asserts.skip("Battery level too low. Skipping test.")
         #Initialize RvR test parameters
         test_result = {}
         # Configure AP
-        band = self.access_point.band_lookup_by_channel(channel)
+        band = self.access_point.band_lookup_by_channel(
+            testcase_params["channel"])
         if "2G" in band:
-            frequency = wutils.WifiEnums.channel_2G_to_freq[channel]
+            frequency = wutils.WifiEnums.channel_2G_to_freq[
+                testcase_params["channel"]]
         else:
-            frequency = wutils.WifiEnums.channel_5G_to_freq[channel]
+            frequency = wutils.WifiEnums.channel_5G_to_freq[
+                testcase_params["channel"]]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
             self.access_point.set_region(self.testbed_params["DFS_region"])
         else:
             self.access_point.set_region(self.testbed_params["default_region"])
-        self.access_point.set_channel(band, channel)
-        self.access_point.set_bandwidth(band, mode)
+        self.access_point.set_channel(band, testcase_params["channel"])
+        self.access_point.set_bandwidth(band, testcase_params["mode"])
         self.log.info("Access Point Configuration: {}".format(
             self.access_point.ap_settings))
         # Set attenuator to test level
-        self.log.info("Setting attenuation to {} dB".format(self.atten_level))
+        self.log.info("Setting attenuation to {} dB".format(
+            testcase_params["atten_level"]))
         for attenuator in self.attenuators:
-            attenuator.set_atten(self.atten_level)
+            attenuator.set_atten(testcase_params["atten_level"])
         # Connect DUT to Network
         wutils.wifi_toggle_state(self.dut, True)
         wutils.reset_wifi(self.dut)
-        self.main_network[band]["channel"] = channel
+        self.main_network[band]["channel"] = testcase_params["channel"]
         self.dut.droid.wifiSetCountryCode(self.test_params["country_code"])
         wutils.wifi_connect(
             self.dut,
@@ -239,9 +247,10 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         # Run test and log result
         # Start iperf session
         self.log.info("Starting iperf test.")
-        self.iperf_server.start(tag=str(self.atten_level))
+        self.iperf_server.start(tag=str(testcase_params["atten_level"]))
         client_output_path = self.iperf_client.start(
-            iperf_server_address, self.iperf_args, str(self.atten_level),
+            iperf_server_address, self.iperf_args,
+            str(testcase_params["atten_level"]),
             self.test_params["iperf_duration"] + TEST_TIMEOUT)
         server_output_path = self.iperf_server.stop()
         # Set attenuator to 0 dB
@@ -257,7 +266,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         except:
             asserts.fail("Cannot get iperf result.")
         test_result["ap_settings"] = self.access_point.ap_settings.copy()
-        test_result["attenuation"] = self.atten_level
+        test_result["attenuation"] = testcase_params["atten_level"]
         test_result["iperf_result"] = iperf_result
         return test_result
 
@@ -286,7 +295,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_target = {}
         rssi_high_low = test_name.split("_")[3]
         if rssi_high_low == "low":
-            # Get last test point where throughput is above self.test_params["low_rssi_backoff_from_range"]
+            # Get last test point where throughput is above
+            # self.test_params["low_rssi_backoff_from_range"]
             throughput_below_target = [
                 x < self.test_params["low_rssi_backoff_from_range"]
                 for x in golden_results["throughput_receive"]
@@ -304,31 +314,41 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                 "throughput_receive"][0]
         return test_target
 
+    def parse_test_params(self, test_name):
+        """Function that generates test params based on the test name."""
+        test_name_params = test_name.split("_")
+        testcase_params = collections.OrderedDict()
+        testcase_params["channel"] = int(test_name_params[6][2:])
+        testcase_params["mode"] = test_name_params[7]
+        testcase_params["traffic_type"] = test_name_params[4]
+        testcase_params["traffic_direction"] = test_name_params[5]
+        return testcase_params
+
     def _test_throughput_stability(self):
         """ Function that gets called for each test case
 
         The function gets called in each test case. The function customizes
         the test based on the test name of the test that called it
         """
-        test_params = self.current_test_name.split("_")
-        channel = int(test_params[6][2:])
-        mode = test_params[7]
-        test_target = self.get_target_atten_tput()
-        self.atten_level = test_target["target_attenuation"]
+        testcase_params = self.parse_test_params(self.current_test_name)
+        testcase_params["test_target"] = self.get_target_atten_tput()
+        testcase_params["atten_level"] = testcase_params["test_target"][
+            "target_attenuation"]
+        self.atten_level = testcase_params["atten_level"]
         self.iperf_args = '-i 1 -t {} -J'.format(
             self.test_params["iperf_duration"])
-        if test_params[4] == "UDP":
+        if testcase_params["traffic_type"] == "UDP":
             self.iperf_args = self.iperf_args + " -u -b {} -l 1400".format(
-                self.test_params["UDP_rates"][mode])
-        if (test_params[5] == "DL"
+                self.test_params["UDP_rates"][testcase_params["mode"]])
+        if (testcase_params["traffic_direction"] == "DL"
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
-            ) or (test_params[5] == "UL"
+            ) or (testcase_params["traffic_direction"] == "UL"
                   and isinstance(self.iperf_server, ipf.IPerfServerOverAdb)):
             self.iperf_args = self.iperf_args + ' -R'
             self.use_client_output = True
         else:
             self.use_client_output = False
-        test_result = self.throughput_stability_test_func(channel, mode)
+        test_result = self.run_throughput_stability_test(testcase_params)
         test_result_postprocessed = self.post_process_results(test_result)
         self.pass_fail_check(test_result_postprocessed)
 
@@ -338,8 +358,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         for mode in modes:
             for traffic_type in traffic_types:
                 for signal_level in signal_levels:
-                    testcase_name = "test_tput_stability_{}_{}_{}_ch{}_{}".format(
-                        signal_level, traffic_type[0], traffic_type[1],
-                        mode[0], mode[1])
+                    testcase_name = ("test_tput_stability"
+                                     "_{}_{}_{}_ch{}_{}".format(
+                                         signal_level, traffic_type[0],
+                                         traffic_type[1], mode[0], mode[1]))
                     setattr(self, testcase_name, testcase_wrapper)
                     self.tests.append(testcase_name)
