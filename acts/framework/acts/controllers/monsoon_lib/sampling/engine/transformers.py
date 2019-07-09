@@ -115,7 +115,7 @@ class DownSampler(SequentialTransformer):
         """
         super().__init__()
 
-        self._mean_width = downsample_factor
+        self._mean_width = int(downsample_factor)
         self._leftovers = []
 
     def _transform_buffer(self, buffer):
@@ -153,7 +153,8 @@ class DownSampler(SequentialTransformer):
                   ╚════════════════╝           ╚════════════════╝
                    output buffer n             output buffer n + 1
         """
-        tail_length = (len(buffer) + len(self._leftovers)) % self._mean_width
+        tail_length = int(
+            (len(buffer) + len(self._leftovers)) % self._mean_width)
 
         tailless_buffer = np.array(buffer[:len(buffer) - tail_length])
 
