@@ -82,10 +82,12 @@ class ProcessAssemblyLine(AssemblyLine):
             # 0 nodes, which raises a ValueError.
             return
 
-        with multiprocessing.Pool(processes=len(self.nodes)) as process_pool:
-            for node in self.nodes:
-                process_pool.apply_async(node.transformer.transform,
-                                         [node.input_stream])
+        process_pool = multiprocessing.Pool(processes=len(self.nodes))
+        for node in self.nodes:
+            process_pool.apply_async(node.transformer.transform,
+                                     [node.input_stream])
+        process_pool.close()
+        process_pool.join()
 
 
 class ThreadAssemblyLine(AssemblyLine):
