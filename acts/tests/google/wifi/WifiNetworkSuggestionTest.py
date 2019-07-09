@@ -127,6 +127,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         # Enable suggestions by the app.
         self.dut.log.debug("Enabling suggestions from test");
         self.set_approved(True)
+        wutils.start_wifi_connection_scan_and_return_status(self.dut)
         wutils.wait_for_connect(self.dut, expected_ssid)
 
         if expect_post_connection_broadcast is None:
