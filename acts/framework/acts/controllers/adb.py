@@ -87,7 +87,7 @@ class AdbProxy(object):
         self.serial = serial
         self._server_local_port = None
         adb_path = job.run("which adb").stdout
-        adb_cmd = [adb_path]
+        adb_cmd = [shellescape.quote(adb_path)]
         if serial:
             adb_cmd.append("-s %s" % serial)
         if ssh_connection is not None:
