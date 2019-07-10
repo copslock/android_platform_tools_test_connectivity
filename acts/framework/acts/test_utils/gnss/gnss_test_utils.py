@@ -20,6 +20,8 @@ import os
 import math
 import collections
 import shutil
+import fnmatch
+import posixpath
 
 from acts import utils
 from acts import signals
@@ -33,10 +35,13 @@ from acts.utils import get_current_epoch_time
 
 WifiEnums = wutils.WifiEnums
 PULL_TIMEOUT = 300
-GNSSSTATUS_LOG_PATH = "/storage/emulated/0/Android/data/com.android.gpstool/files/."
+GNSSSTATUS_LOG_PATH = \
+    "/storage/emulated/0/Android/data/com.android.gpstool/files/"
 QXDM_MASKS = ["GPS.cfg", "GPS-general.cfg", "default.cfg"]
-TTFF_REPORT = collections.namedtuple("TTFF_REPORT",
-                                     "ttff_loop ttff_sec ttff_pe ttff_cn")
+TTFF_REPORT = collections.namedtuple(
+    "TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
+TRACK_REPORT = collections.namedtuple(
+    "TRACK_REPORT", "track_l5flag track_pe track_top4cn track_cn")
 
 
 class GnssTestUtilsError(Exception):
@@ -199,10 +204,7 @@ def connect_to_wifi_network(ad, network):
         network: Dictionary with network info.
     """
     SSID = network[WifiEnums.SSID_KEY]
-    ad.ed.clear_all_events()
-    wutils.start_wifi_connection_scan(ad)
-    scan_results = ad.droid.wifiGetScanResults()
-    wutils.assert_network_in_list({WifiEnums.SSID_KEY: SSID}, scan_results)
+    wutils.start_wifi_connection_scan_and_return_status(ad)
     wutils.wifi_connect(ad, network, num_of_tries=5)
 
 def set_wifi_and_bt_scanning(ad, state=True):
@@ -267,7 +269,7 @@ def get_gnss_qxdm_log(ad, qdb_path):
     gnss_log_path = os.path.join(log_path, gnss_log_name)
     utils.create_dir(gnss_log_path)
     ad.log.info("Pull GnssStatus Log to %s" % gnss_log_path)
-    ad.adb.pull("%s %s" % (GNSSSTATUS_LOG_PATH, gnss_log_path),
+    ad.adb.pull("%s %s" % (GNSSSTATUS_LOG_PATH+".", gnss_log_path),
                 timeout=PULL_TIMEOUT, ignore_status=True)
     shutil.make_archive(gnss_log_path, "zip", gnss_log_path)
     shutil.rmtree(gnss_log_path)
@@ -570,6 +572,101 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration):
             check_currrent_focus_app(ad)
             raise signals.TestFailure("Fail to send TTFF start_test_action.")
 
+def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
+    """Identify which TTFF mode for different test items.
+
+    Args:
+        ad: An AndroidDevice object.
+        criteria: Criteria for current TTFF.
+        type: Different API for location fix. Use gnss/flp/nmea
+        testtime: Tracking test time for minutes. Default set to 60 minutes.
+    """
+    process_gnss_by_gtw_gpstool(ad, criteria, type)
+    ad.log.info("Start %s tracking test for %d minutes" % (type.upper(),
+                                                           testtime))
+    begin_time = get_current_epoch_time()
+    while get_current_epoch_time() - begin_time < testtime * 60 * 1000 :
+        if not ad.is_adb_logcat_on:
+            ad.start_adb_logcat()
+        crash_result = ad.search_logcat("Force finishing activity "
+                                        "com.android.gpstool/.GPSTool",
+                                        begin_time)
+        if crash_result:
+            raise signals.TestFailure("GPSTool crashed. Abort test.")
+    ad.log.info("Successfully tested for %d minutes" % testtime)
+    start_gnss_by_gtw_gpstool(ad, False, type)
+
+def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
+    """Process GNSS/FLP API logs from GTW GPSTool and output track_data to
+    test_run_info for ACTS plugin to parse and display on MobileHarness as
+    Property.
+
+    Args:
+        ad: An AndroidDevice object.
+        true_position: Coordinate as [latitude, longitude] to calculate
+        position error.
+        type: Different API for location fix. Use gnss/flp/nmea
+    """
+    test_logfile = {}
+    track_data = {}
+    history_top4_cn = 0
+    history_cn = 0
+    file_count = int(ad.adb.shell("find %s -type f -iname *.txt | wc -l"
+                                  % GNSSSTATUS_LOG_PATH))
+    if file_count != 1:
+        ad.log.error("%d API logs exist." % file_count)
+    dir = ad.adb.shell("ls %s" % GNSSSTATUS_LOG_PATH).split()
+    for path_key in dir:
+        if fnmatch.fnmatch(path_key, "*.txt"):
+            logpath = posixpath.join(GNSSSTATUS_LOG_PATH, path_key)
+            out = ad.adb.shell("wc -c %s" % logpath)
+            file_size = int(out.split(" ")[0])
+            if file_size < 2000:
+                ad.log.info("Skip log %s due to log size %d bytes" %
+                            (path_key, file_size))
+                continue
+            test_logfile = logpath
+    if not test_logfile:
+        raise signals.TestFailure("Failed to get test log file in device.")
+    lines = ad.adb.shell("cat %s" % test_logfile).split("\n")
+    for line in lines:
+        if "History Avg Top4" in line:
+            history_top4_cn = float(line.split(":")[-1].strip())
+        if "History Avg" in line:
+            history_cn = float(line.split(":")[-1].strip())
+        if "L5 used in fix" in line:
+            l5flag = line.split(":")[-1].strip()
+        if "Latitude" in line:
+            track_lat = float(line.split(":")[-1].strip())
+        if "Longitude" in line:
+            track_long = float(line.split(":")[-1].strip())
+        if "Time" in line:
+            track_utc = line.split("Time:")[-1].strip()
+            if track_utc in track_data.keys():
+                continue
+            track_pe = calculate_position_error(ad, track_lat, track_long,
+                                                true_position)
+            track_data[track_utc] = TRACK_REPORT(track_l5flag=l5flag,
+                                                 track_pe=track_pe,
+                                                 track_top4cn=history_top4_cn,
+                                                 track_cn=history_cn)
+    ad.log.debug(track_data)
+    prop_basename = "TestResult %s_tracking_" % type.upper()
+    time_list = sorted(track_data.keys())
+    l5flag_list = [track_data[key].track_l5flag for key in time_list]
+    pe_list = [float(track_data[key].track_pe) for key in time_list]
+    top4cn_list = [float(track_data[key].track_top4cn) for key in time_list]
+    cn_list = [float(track_data[key].track_cn) for key in time_list]
+    ad.log.info(prop_basename+"StartTime %s" % time_list[0].replace(" ", "-"))
+    ad.log.info(prop_basename+"EndTime %s" % time_list[-1].replace(" ", "-"))
+    ad.log.info(prop_basename+"TotalFixPoints %d" % len(time_list))
+    ad.log.info(prop_basename+"L5FixRate "+'{percent:.2%}'.format(
+        percent=l5flag_list.count("true")/len(l5flag_list)))
+    ad.log.info(prop_basename+"AvgDis %.1f" % (sum(pe_list)/len(pe_list)))
+    ad.log.info(prop_basename+"MaxDis %.1f" % max(pe_list))
+    ad.log.info(prop_basename+"AvgTop4Signal %.1f" % top4cn_list[-1])
+    ad.log.info(prop_basename+"AvgSignal %.1f" % cn_list[-1])
+
 def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
     """Process TTFF and record results in ttff_data.
 
@@ -651,7 +748,7 @@ def check_ttff_data(ad, ttff_data, ttff_mode, criteria):
                 % (len(ttff_data.keys()), ttff_mode))
     ad.log.info("%s PASS criteria is %d seconds" % (ttff_mode, criteria))
     ad.log.debug("%s TTFF data: %s" % (ttff_mode, ttff_data))
-    property_key_and_value(ad, ttff_data, ttff_mode)
+    ttff_property_key_and_value(ad, ttff_data, ttff_mode)
     if len(ttff_data.keys()) == 0:
         ad.log.error("GTW_GPSTool didn't process TTFF properly.")
         return False
@@ -666,7 +763,7 @@ def check_ttff_data(ad, ttff_data, ttff_mode, criteria):
                 % (ttff_mode, criteria))
     return True
 
-def property_key_and_value(ad, ttff_data, ttff_mode):
+def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     """Output ttff_data to test_run_info for ACTS plugin to parse and display
     on MobileHarness as Property.
 
@@ -682,7 +779,7 @@ def property_key_and_value(ad, ttff_data, ttff_mode):
     timeoutcount = sec_list.count(0.0)
     avgttff = sum(sec_list)/(len(sec_list) - timeoutcount)
     if timeoutcount != 0:
-        maxttff = 0.0
+        maxttff = 9527
     else:
         maxttff = max(sec_list)
     avgdis = sum(pe_list)/len(pe_list)
@@ -816,13 +913,7 @@ def set_attenuator_gnss_signal(ad, attenuator, atten_value):
         ad.log.info("Set attenuation value to \"%d\" for GNSS signal." % atten_value)
         attenuator[0].set_atten(atten_value)
     except Exception as e:
-        raise signals.TestFailure(e)
-    time.sleep(1)
-    try:
-        atten_val = int(attenuator[0].get_atten())
-        ad.log.info("Current attenuation value is \"%d\"" % atten_val)
-    except Exception as e:
-        raise signals.TestFailure(e)
+        ad.log.error(e)
 
 def set_battery_saver_mode(ad, state):
     """Enable or diable battery saver mode via adb.
