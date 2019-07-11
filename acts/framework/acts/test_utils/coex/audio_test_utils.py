@@ -73,8 +73,7 @@ class SshAudioCapture(AudioCapture):
             logging.debug("Job Result {}".format(job_result.stdout))
             self.ssh_session.pull_file(
                 self.remote_path, os.path.join(
-                    self.audio_params["dest_path"], "*.wav"),
-                    ignore_status=True)
+                    self.audio_params["dest_path"], "*.wav"))
             return bool(not job_result.exit_status)
         else:
             return self.capture_and_store_audio(trim_beginning, trim_end)
