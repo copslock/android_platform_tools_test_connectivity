@@ -28,8 +28,8 @@ class LteCaSimulation(LteSimulation):
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
     # the same configuration manually.
-    LTE_BASIC_SIM_FILE = 'SIM_LTE_CA'
-    LTE_BASIC_CELL_FILE = 'CELL_LTE_CA_config'
+    LTE_BASIC_SIM_FILE = 'SIM_LTE_CA.wnssp'
+    LTE_BASIC_CELL_FILE = 'CELL_LTE_CA_config.wnscp'
 
     # Simulation config keywords contained in the test name
     PARAM_CA = 'ca'
