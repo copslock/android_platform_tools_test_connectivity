@@ -260,9 +260,13 @@ class WifiPingTest(base_test.BaseTestClass):
             file_name for file_name in self.golden_files_list
             if rvr_golden_file_name in file_name
         ]
+        if len(golden_path) == 0:
+            rvr_range = float("nan")
+            return rvr_range
+
+        # Get 0 Mbps attenuation and backoff by low_rssi_backoff_from_range
         with open(golden_path[0], "r") as golden_file:
             golden_results = json.load(golden_file)
-        # Get 0 Mbps attenuation and backoff by low_rssi_backoff_from_range
         try:
             atten_idx = golden_results["throughput_receive"].index(0)
             rvr_range = (golden_results["attenuation"][atten_idx - 1] +
