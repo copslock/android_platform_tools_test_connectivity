@@ -67,6 +67,8 @@ from acts.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr
 from acts.test_utils.gnss.gnss_test_utils import disable_supl_mode
 from acts.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
 from acts.test_utils.gnss.gnss_test_utils import check_xtra_download
+from acts.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
+from acts.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 
 
 class GnssSanityTest(BaseTestClass):
@@ -213,6 +215,23 @@ class GnssSanityTest(BaseTestClass):
                 return False
 
     """ Test Cases """
+
+    @test_tracker_info(uuid="ab859f2a-2c95-4d15-bb7f-bd0e3278340f")
+    def test_gnss_one_hour_tracking(self):
+        """Verify GNSS tracking performance of signal strength and position
+        error.
+
+        Steps:
+            1. Launch GTW_GPSTool.
+            2. GNSS tracking for 60 minutes.
+
+        Expected Results:
+            DUT could finish 60 minutes test and output track data.
+        """
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
+                                      type="gnss", testtime=60)
+        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
 
     @test_tracker_info(uuid="499d2091-640a-4735-9c58-de67370e4421")
     def test_gnss_init_error(self):
@@ -428,7 +447,7 @@ class GnssSanityTest(BaseTestClass):
         time.sleep(5)
         if not check_call_state_connected_by_adb(self.ad):
             raise signals.TestFailure("Call is not connected.")
-        process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                 self.pixel_lab_location)
@@ -457,7 +476,7 @@ class GnssSanityTest(BaseTestClass):
                                  None, None, True, 3600))
         download.start()
         time.sleep(10)
-        process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                 self.pixel_lab_location)
@@ -484,7 +503,7 @@ class GnssSanityTest(BaseTestClass):
         start_qxdm_logger(self.ad, begin_time)
         kill_xtra_daemon(self.ad)
         self.ad.droid.setMediaVolume(25)
-        process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         start_youtube_video(self.ad,
                             url="https://www.youtube.com/watch?v=AbdVsi1VjQY",
@@ -517,7 +536,7 @@ class GnssSanityTest(BaseTestClass):
             if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                               expected_state=True):
                 raise signals.TestFailure("Fail to connect to LTE network.")
-            process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
             ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                     self.pixel_lab_location)
@@ -600,7 +619,7 @@ class GnssSanityTest(BaseTestClass):
         supl_no_gnss_signal_all = []
         start_qxdm_logger(self.ad, get_current_epoch_time())
         for times in range(1, 6):
-            process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             self.ad.log.info("Let device do GNSS tracking for 1 minute.")
             time.sleep(60)
             set_attenuator_gnss_signal(self.ad, self.attenuators,
@@ -635,7 +654,7 @@ class GnssSanityTest(BaseTestClass):
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
         kill_xtra_daemon(self.ad)
-        process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_supl_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                 self.pixel_lab_location)
@@ -663,7 +682,7 @@ class GnssSanityTest(BaseTestClass):
             begin_time = get_current_epoch_time()
             start_qxdm_logger(self.ad, begin_time)
             kill_xtra_daemon(self.ad)
-            process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
             ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                     self.pixel_lab_location)
@@ -691,7 +710,7 @@ class GnssSanityTest(BaseTestClass):
         disable_supl_mode(self.ad)
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
-        process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
@@ -699,7 +718,7 @@ class GnssSanityTest(BaseTestClass):
                                     criteria=self.xtra_ws_criteria)
         xtra_result.append(ws_result)
         begin_time = get_current_epoch_time()
-        process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
@@ -730,7 +749,7 @@ class GnssSanityTest(BaseTestClass):
                                    self.weak_gnss_signal_attenuation)
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
-        process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_xtra_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
@@ -738,7 +757,7 @@ class GnssSanityTest(BaseTestClass):
                                     criteria=self.weak_signal_xtra_ws_criteria)
         xtra_result.append(ws_result)
         begin_time = get_current_epoch_time()
-        process_gnss_by_gtw_gpstool(self.ad, self.weak_signal_xtra_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
@@ -771,7 +790,7 @@ class GnssSanityTest(BaseTestClass):
         wifi_toggle_state(self.ad, True)
         connect_to_wifi_network(self.ad,
                                 self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
@@ -779,7 +798,7 @@ class GnssSanityTest(BaseTestClass):
                                     criteria=self.xtra_ws_criteria)
         xtra_result.append(ws_result)
         begin_time = get_current_epoch_time()
-        process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria)
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
@@ -811,7 +830,7 @@ class GnssSanityTest(BaseTestClass):
             if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                               expected_state=True):
                 raise signals.TestFailure("Fail to connect to LTE network.")
-            process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
+            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
             ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                     self.pixel_lab_location)
@@ -842,7 +861,7 @@ class GnssSanityTest(BaseTestClass):
         start_qxdm_logger(self.ad, get_current_epoch_time())
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
-            process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
+            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             time.sleep(5)
             start_gnss_by_gtw_gpstool(self.ad, False)
             mobile_xtra_result = check_xtra_download(self.ad, begin_time)
@@ -875,7 +894,7 @@ class GnssSanityTest(BaseTestClass):
                                 self.ssid_map[self.pixel_lab_network[0]["SSID"]])
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
-            process_gnss_by_gtw_gpstool(self.ad, self.wifi_xtra_cs_criteria)
+            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             time.sleep(5)
             start_gnss_by_gtw_gpstool(self.ad, False)
             wifi_xtra_result = check_xtra_download(self.ad, begin_time)

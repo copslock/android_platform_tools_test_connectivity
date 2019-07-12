@@ -37,6 +37,8 @@ from acts.test_utils.gnss.gnss_test_utils import process_ttff_by_gtw_gpstool
 from acts.test_utils.gnss.gnss_test_utils import check_ttff_data
 from acts.test_utils.gnss.gnss_test_utils import set_attenuator_gnss_signal
 from acts.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
+from acts.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
+from acts.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 
 
 class FlpTtffTest(BaseTestClass):
@@ -44,7 +46,8 @@ class FlpTtffTest(BaseTestClass):
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
         self.ad = self.android_devices[0]
-        req_params = ["pixel_lab_network", "qdsp6m_path", "flp_ttff_max_threshold",
+        req_params = ["pixel_lab_network", "standalone_cs_criteria",
+                      "qdsp6m_path", "flp_ttff_max_threshold",
                       "pixel_lab_location", "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation"]
         self.unpack_userparams(req_param_names=req_params)
@@ -54,15 +57,11 @@ class FlpTtffTest(BaseTestClass):
             self.ssid_map[SSID] = network
 
     def setup_class(self):
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.default_gnss_signal_attenuation)
         if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
             self.ad.log.info("Force airplane mode off")
             force_airplane_mode(self.ad, False)
-        if self.ad.droid.wifiCheckState():
-            wifi_toggle_state(self.ad, False)
-        if int(self.ad.adb.shell("settings get global mobile_data")) != 1:
-            set_mobile_data(self.ad, True)
+        set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                   self.default_gnss_signal_attenuation)
         _init_device(self.ad)
         if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                           expected_state=True):
@@ -101,7 +100,8 @@ class FlpTtffTest(BaseTestClass):
         ttff = {"hs": "Hot Start", "cs": "Cold Start"}
         for mode in ttff.keys():
             begin_time = get_current_epoch_time()
-            process_gnss_by_gtw_gpstool(self.ad, criteria, type="flp")
+            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria,
+                                        type="flp")
             start_ttff_by_gtw_gpstool(self.ad, ttff_mode=mode, iteration=50)
             ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                     location, type="flp")
@@ -111,6 +111,22 @@ class FlpTtffTest(BaseTestClass):
                             "FLP TTFF fails to reach designated criteria")
 
     """ Test Cases """
+
+    @test_tracker_info(uuid="c11ada6a-d7ad-4dc8-9d4a-0ae3cb9dfa8e")
+    def test_flp_one_hour_tracking(self):
+        """Verify FLP tracking performance of position error.
+
+        Steps:
+            1. Launch GTW_GPSTool.
+            2. FLP tracking for 60 minutes.
+
+        Expected Results:
+            DUT could finish 60 minutes test and output track data.
+        """
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
+                                      type="flp", testtime=60)
+        parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="flp")
 
     @test_tracker_info(uuid="8bc4e82d-fdce-4ee8-af8c-5e4a925b5360")
     def test_flp_ttff_strong_signal_wifiscan_on_wifi_connect(self):
