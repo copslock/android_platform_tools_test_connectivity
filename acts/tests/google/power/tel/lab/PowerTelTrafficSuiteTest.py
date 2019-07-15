@@ -237,14 +237,14 @@ class PowerTelTraffic_UMTS_Test(PowerTelTrafficTest):
     def test_umts_traffic_r_7_band_4_pul_edge_direction_dl_pattern_100_0_13(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_99_band_4_pul_edge_direction_dl_pattern_100_0_14(self):
-        self.power_tel_traffic_test()
+    #def test_umts_traffic_r_99_band_4_pul_edge_direction_dl_pattern_100_0_14(self):
+    #    self.power_tel_traffic_test()
 
     def test_umts_traffic_r_7_band_4_pul_edge_direction_ul_pattern_0_100_15(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_99_band_4_pul_edge_direction_ul_pattern_0_100_16(self):
-        self.power_tel_traffic_test()
+    #def test_umts_traffic_r_99_band_4_pul_edge_direction_ul_pattern_0_100_16(self):
+    #    self.power_tel_traffic_test()
 
 
 class PowerTelTraffic_GSM_Test(PowerTelTrafficTest):
