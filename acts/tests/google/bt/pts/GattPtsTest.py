@@ -43,14 +43,14 @@ class GattPtsTest(PtsBaseClass):
         ics = None
         ixit = None
         if isinstance(self.dut, FuchsiaBluetoothDevice):
-            fuchsia_ixit = fs_ixit_lib.GATT_IXIT
+            fuchsia_ixit = f_ixit_lib.GATT_IXIT
             fuchsia_ixit[b'TSPX_bd_addr_iut'] = (b'OCTETSTRING',
                                                  local_dut_mac_address.replace(
                                                      ':', '').encode())
             fuchsia_ixit[
                 b'TSPX_iut_device_name_in_adv_packet_for_random_address'] = (
                     b'IA5STRING', self.dut_bluetooth_local_name.encode())
-            ics = fs_ics_lib.GATT_ICS
+            ics = f_ics_lib.GATT_ICS
             ixit = fuchsia_ixit
         elif isinstance(self.dut, AndroidBluetoothDevice):
             # TODO: Add ICS and IXIT values for Android. For now just default
@@ -58,14 +58,14 @@ class GattPtsTest(PtsBaseClass):
             self.log.warn(
                 "ICS/IXIT values not set for Android, using Fuchsia as default."
             )
-            fuchsia_ixit = fs_ixit_lib.GATT_IXIT
+            fuchsia_ixit = f_ixit_lib.GATT_IXIT
             fuchsia_ixit[b'TSPX_bd_addr_iut'] = (b'OCTETSTRING',
                                                  local_dut_mac_address.replace(
                                                      ':', '').encode())
             fuchsia_ixit[
                 b'TSPX_iut_device_name_in_adv_packet_for_random_address'] = (
                     b'IA5STRING', self.dut_bluetooth_local_name.encode())
-            ics = fs_ics_lib.GATT_ICS
+            ics = f_ics_lib.GATT_ICS
             ixit = fuchsia_ixit
         else:
             raise ValueError(
