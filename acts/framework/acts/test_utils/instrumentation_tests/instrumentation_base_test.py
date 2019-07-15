@@ -103,3 +103,14 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                 else:
                     config[key] = self.user_params[key]
         return success
+
+    def setup_class(self):
+        """Class setup"""
+        self.ad_dut = self.android_devices[0]
+
+    def adb_run(self, cmds):
+        """Run the specified command, or list of commands, with the ADB shell"""
+        if isinstance(cmds, str):
+            cmds = [cmds]
+        for cmd in cmds:
+            self.ad_dut.adb.shell(cmd)
