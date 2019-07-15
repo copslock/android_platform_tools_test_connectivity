@@ -623,7 +623,13 @@ class BluetoothPtsDevice:
             self.current_implicit_send_description))
         self.log.info("\t\tstyle = {0:#X}".format(ctypes.c_int(style).value))
         self.log.info("")
-        self.next_action = int(implicit_send_info_id)
+        try:
+            self.next_action = int(implicit_send_info_id)
+        except Exception as err:
+            self.log.error(
+                "Setting verdict to RESULT_FAIL, exception found: {}".format(
+                    err))
+            self.pts_test_result = VERDICT_STRINGS['RESULT_FAIL']
         res = b'OK'
         if len(self.extra_answers) > 0:
             res = self.extra_answers.pop(0).encode()
