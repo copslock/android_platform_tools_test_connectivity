@@ -125,7 +125,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
             self.log.error("Invalid parameters.")
             return False
 
-        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ad)
+        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ads[0])
 
         if mo_mt == DIRECTION_MOBILE_ORIGINATED:
             ad_caller = ads[0]
