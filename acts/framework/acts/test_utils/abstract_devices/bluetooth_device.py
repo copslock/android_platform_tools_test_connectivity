@@ -563,8 +563,9 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         Returns:
             Discovered device id or None
         """
+        partial_match = True
         return le_scan_for_device_by_name(self.device, self.device.log, name,
-                                          timeout)
+                                          timeout, partial_match)
 
     def log_info(self, log):
         """ Log directly onto the device.
