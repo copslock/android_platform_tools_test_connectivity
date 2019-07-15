@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import acts.test_utils.power.PowerBaseTest as PBT
+from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
 IPERF_DURATION = 'iperf_duration'
@@ -80,6 +81,31 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
         if hasattr(self, 'access_points'):
             for ap in self.access_points:
                 ap.close()
+
+    def setup_ap_connection(self, network, bandwidth=80, connect=True,
+                            ap=None):
+        """Setup AP and connect DUT to it.
+
+        Args:
+            network: the network config for the AP to be setup
+            bandwidth: bandwidth of the WiFi network to be setup
+            connect: indicator of if connect dut to the network after setup
+            ap: access point object, default is None to find the main AP
+        Returns:
+            self.brconfigs: dict for bridge interface configs
+        """
+        wutils.wifi_toggle_state(self.dut, True)
+        if not ap:
+            if hasattr(self, 'access_points'):
+                self.brconfigs = wputils.ap_setup(
+                    self.access_point, network, bandwidth=bandwidth)
+        else:
+            self.brconfigs = wputils.ap_setup(ap, network, bandwidth=bandwidth)
+        if connect:
+            wutils.wifi_connect(self.dut, network, num_of_tries=3)
+
+        if ap or (not ap and hasattr(self, 'access_points')):
+            return self.brconfigs
 
     def collect_power_data(self):
         """Measure power, plot and check pass/fail.
