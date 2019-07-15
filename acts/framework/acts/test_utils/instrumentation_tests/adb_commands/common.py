@@ -29,7 +29,7 @@ SECURE = 'secure'
 
 """Common device settings for power testing."""
 
-#TODO: add descriptions to each setting
+# TODO: add descriptions to each setting
 
 airplane_mode = DeviceBinaryCommandSeries(
     [
