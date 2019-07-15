@@ -1963,6 +1963,29 @@ def set_attns(attenuator, attn_val_name):
                        attn_val_name)
         raise
 
+def set_attns_steps(attenuators, atten_val_name, steps=10, wait_time=12):
+    """Set attenuation values on attenuators used in this test. It will change
+    the attenuation values linearly from current value to target value step by
+    step.
+
+    Args:
+        attenuators: The list of attenuator objects that you want to change
+                     their attenuation value.
+        atten_val_name: Name of the attenuation value pair to use.
+        steps: Number of attenuator changes to reach the target value.
+        wait_time: Sleep time for each change of attenuator.
+    """
+    logging.info("Set attenuation values to %s in %d step(s)",
+            roaming_attn[atten_val_name], steps)
+    start_atten = [attenuator.get_atten() for attenuator in attenuators]
+    target_atten = roaming_attn[atten_val_name]
+    for current_step in range(steps):
+        progress = (current_step + 1) / steps
+        for i, attenuator in enumerate(attenuators):
+            amount_since_start = (target_atten[i] - start_atten[i]) * progress
+            attenuator.set_atten(round(start_atten[i] + amount_since_start))
+        time.sleep(wait_time)
+
 
 def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
     """Sets attenuators to trigger roaming and validate the DUT connected
