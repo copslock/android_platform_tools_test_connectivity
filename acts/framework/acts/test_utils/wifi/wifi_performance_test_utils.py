@@ -610,10 +610,12 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     if isinstance(src_device, AndroidDevice):
         ping_cmd = '{} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.adb.shell(
-            ping_cmd, timeout=ping_duration + TEST_TIMEOUT, ignore_status=True)
+            ping_cmd, timeout=ping_duration + SHORT_SLEEP, ignore_status=True)
     elif isinstance(src_device, ssh.connection.SshConnection):
         ping_cmd = 'sudo {} {}'.format(ping_cmd, dest_address)
-        ping_output = src_device.run(ping_cmd, ignore_status=True).stdout
+        ping_output = src_device.run(
+            ping_cmd, timeout=ping_duration + SHORT_SLEEP,
+            ignore_status=True).stdout
     else:
         raise TypeError(
             'Unable to ping using src_device of type %s.' % type(src_device))
