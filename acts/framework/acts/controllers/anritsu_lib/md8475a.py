@@ -798,6 +798,46 @@ class MD8475A(object):
         cmd = "SIMMODEL?"
         return self.send_query(cmd)
 
+    def get_lte_rrc_status_change(self):
+        """ Gets the LTE RRC status change function state
+
+        Returns:
+            Boolean: True is Enabled / False is Disabled
+        """
+        cmd = "L_RRCSTAT?"
+        return self.send_query(cmd) == "ENABLE"
+
+    def set_lte_rrc_status_change(self, status_change):
+        """ Enables or Disables the LTE RRC status change function
+
+        Returns:
+            None
+        """
+        cmd = "L_RRCSTAT "
+        if status_change:
+            cmd += "ENABLE"
+        else:
+            cmd += "DISABLE"
+        self.send_command(cmd)
+
+    def get_lte_rrc_status_change_timer(self):
+        """ Gets the LTE RRC Status Change Timer
+
+        Returns:
+            returns a status change timer integer value
+        """
+        cmd = "L_STATTMR?"
+        return self.send_query(cmd)
+
+    def set_lte_rrc_status_change_timer(self, time):
+        """ Sets the LTE RRC Status Change Timer parameter
+
+        Returns:
+            None
+        """
+        cmd = "L_STATTMR %s" % time
+        self.send_command(cmd)
+
     def set_simulation_state_to_poweroff(self):
         """ Sets the simulation state to POWER OFF
 
