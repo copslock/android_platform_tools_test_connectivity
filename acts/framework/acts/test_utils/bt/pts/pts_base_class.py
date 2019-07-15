@@ -75,6 +75,11 @@ class PtsBaseClass(BaseTestClass):
         # MMI functions commented out until implemented. Added for tracking
         # purposes.
         self.pts_action_mapping = {
+            "A2DP": {
+                1: self.a2dp_mmi_iut_connectable,
+                1002: self.a2dp_mmi_iut_accept_connect,
+                1020: self.a2dp_mmi_initiate_open_stream,
+            },
             "GATT": {
                 1: self.mmi_make_iut_connectable,
                 2: self.mmi_iut_initiate_connection,
@@ -167,6 +172,21 @@ class PtsBaseClass(BaseTestClass):
             self.pts.pts_profile_mmi_request).get(action, "Nothing")
         if func is not 'Nothing':
             func()
+
+    ### BEGIN A2DP MMI Actions ###
+
+    def a2dp_mmi_iut_connectable(self):
+        self.dut.start_profile_a2dp_sink()
+        self.dut.set_discoverable(True)
+
+    def a2dp_mmi_iut_accept_connect(self):
+        self.dut.start_profile_a2dp_sink()
+        self.dut.set_discoverable(True)
+
+    def a2dp_mmi_initiate_open_stream(self):
+        self.dut.a2dp_initiate_open_stream()
+
+    ### END A2DP MMI Actions ###
 
     ### BEGIN GATT MMI Actions ###
 
