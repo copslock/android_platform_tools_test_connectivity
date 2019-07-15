@@ -657,7 +657,7 @@ class BluetoothPtsDevice:
             raise BluetoothPtsSnifferError(
                 "Sniffer not ready after 60 seconds.")
 
-    def execute_test(self, test_name, test_timeout=120):
+    def execute_test(self, test_name, test_timeout=60):
         """Execute the input test name.
 
         Preps PTS to run the test and waits up to 2 minutes for all steps
@@ -700,9 +700,9 @@ class BluetoothPtsDevice:
 
         # Wait till verdict is received
         self.log.info("Begin Test Execution... waiting for verdict.")
+        end_time = time.time() + test_timeout
         while self.pts_test_result == VERDICT_STRINGS[
-                'RESULT_INCOMP'] and time.time() < (time.time() +
-                                                    test_timeout):
+                'RESULT_INCOMP'] and time.time() < end_time:
             time.sleep(1)
         self.log.info("End Test Execution... Verdict {}".format(
             self.pts_test_result))
