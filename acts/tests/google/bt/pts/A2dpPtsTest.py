@@ -33,7 +33,6 @@ class A2dpPtsTest(PtsBaseClass):
         self.dut.initialize_bluetooth_controller()
         # self.dut.set_bluetooth_local_name(self.dut_bluetooth_local_name)
         local_dut_mac_address = self.dut.get_local_bluetooth_address()
-        print(local_dut_mac_address)
         self.pts.set_profile_under_test("A2DP")
 
         ics = None
@@ -75,7 +74,6 @@ class A2dpPtsTest(PtsBaseClass):
     def teardown_class(self):
         super(A2dpPtsTest, self).teardown_class()
         self.dut.stop_profile_a2dp_sink()
-        # self.dut.unbond_device(self.peer_identifier)
 
     # BEGIN A2DP SINK TESTCASES #
     @PtsBaseClass.pts_test_wrap
