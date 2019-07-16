@@ -35,8 +35,8 @@ from acts.utils import get_current_epoch_time
 
 WifiEnums = wutils.WifiEnums
 PULL_TIMEOUT = 300
-GNSSSTATUS_LOG_PATH = \
-    "/storage/emulated/0/Android/data/com.android.gpstool/files/"
+GNSSSTATUS_LOG_PATH = (
+    "/storage/emulated/0/Android/data/com.android.gpstool/files/")
 QXDM_MASKS = ["GPS.cfg", "GPS-general.cfg", "default.cfg"]
 TTFF_REPORT = collections.namedtuple(
     "TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
@@ -573,7 +573,7 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration):
             raise signals.TestFailure("Fail to send TTFF start_test_action.")
 
 def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
-    """Identify which TTFF mode for different test items.
+    """Start GNSS/FLP tracking tests for input testtime on GTW_GPSTool.
 
     Args:
         ad: An AndroidDevice object.
