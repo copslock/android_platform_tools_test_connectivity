@@ -1007,26 +1007,21 @@ class MD8475A(object):
         """
         return self.send_query("TESTSTAT?")
 
-    def start_ip_traffic(self, pdn):
+    def start_ip_traffic(self, pdn='1'):
         """ Starts IP data traffic with the selected PDN.
 
         Args:
-            pdn: the pdn to be used for data traffic. Defaults to 1.
+            pdn: the pdn to be used for data traffic. Defaults to '1'.
         """
-        if not pdn:
-            pdn = '1'
-        self.anritsu.send_command('OPERATEIPTRAFFIC START,' + pdn)
+        self.send_command('OPERATEIPTRAFFIC START,' + pdn)
 
-    def stop_ip_traffic(self, pdn):
+    def stop_ip_traffic(self, pdn='1'):
         """ Stops IP data traffic with the selected PDN.
 
          Args:
-            pdn: pdn for which data traffic has to be stopped. Defaults to 1.
-
+            pdn: pdn for which data traffic has to be stopped. Defaults to '1'.
         """
-        if not pdn:
-            pdn = '1'
-        self.anritsu.send_command('OPERATEIPTRAFFIC STOP,' + pdn)
+        self.send_command('OPERATEIPTRAFFIC STOP,' + pdn)
 
     # Common Default Gateway:
     @property
