@@ -198,52 +198,52 @@ class PowerTelTraffic_LTECA_Test(PowerTelTrafficTest):
         self.power_tel_traffic_test()
 
 class PowerTelTraffic_UMTS_Test(PowerTelTrafficTest):
-    def test_umts_traffic_r_8_band_1_pul_edge_direction_ul_pattern_0_100_1(self):
+    def test_umts_traffic_r_8_band_1_pul_max_direction_ul_pattern_0_100_1(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_8_band_1_pul_weak_direction_ul_pattern_0_100_2(self):
+    def test_umts_traffic_r_8_band_1_pul_high_direction_ul_pattern_0_100_2(self):
         self.power_tel_traffic_test()
 
     def test_umts_traffic_r_8_band_1_pul_medium_direction_ul_pattern_0_100_3(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_8_band_1_pul_excellent_direction_ul_pattern_0_100_4(self):
+    def test_umts_traffic_r_8_band_1_pul_low_direction_ul_pattern_0_100_4(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_7_band_1_pul_excellent_direction_ul_pattern_0_100_5(self):
+    def test_umts_traffic_r_7_band_1_pul_low_direction_ul_pattern_0_100_5(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_99_band_1_pul_excellent_direction_ul_pattern_0_100_6(self):
+    def test_umts_traffic_r_99_band_1_pul_low_direction_ul_pattern_0_100_6(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_8_band_4_pul_excellent_direction_ul_pattern_0_100_7(self):
+    def test_umts_traffic_r_8_band_4_pul_low_direction_ul_pattern_0_100_7(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_8_band_5_pul_excellent_direction_ul_pattern_0_100_8(self):
+    def test_umts_traffic_r_8_band_5_pul_low_direction_ul_pattern_0_100_8(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_8_band_5_pul_excellent_direction_dl_pattern_100_0_9(self):
+    def test_umts_traffic_r_8_band_5_pul_low_direction_dl_pattern_100_0_9(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_8_band_5_pul_excellent_direction_dlul_pattern_90_10_10(self):
+    def test_umts_traffic_r_8_band_5_pul_low_direction_dlul_pattern_90_10_10(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_8_band_5_pul_excellent_direction_dlul_pattern_75_25_11(self):
+    def test_umts_traffic_r_8_band_5_pul_low_direction_dlul_pattern_75_25_11(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_8_band_5_pul_excellent_direction_dlul_pattern_50_50_12(self):
+    def test_umts_traffic_r_8_band_5_pul_low_direction_dlul_pattern_50_50_12(self):
         self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_7_band_4_pul_edge_direction_dl_pattern_100_0_13(self):
+    def test_umts_traffic_r_7_band_4_pul_max_direction_dl_pattern_100_0_13(self):
         self.power_tel_traffic_test()
 
-    #def test_umts_traffic_r_99_band_4_pul_edge_direction_dl_pattern_100_0_14(self):
+    #def test_umts_traffic_r_99_band_4_pul_max_direction_dl_pattern_100_0_14(self):
     #    self.power_tel_traffic_test()
 
-    def test_umts_traffic_r_7_band_4_pul_edge_direction_ul_pattern_0_100_15(self):
+    def test_umts_traffic_r_7_band_4_pul_max_direction_ul_pattern_0_100_15(self):
         self.power_tel_traffic_test()
 
-    #def test_umts_traffic_r_99_band_4_pul_edge_direction_ul_pattern_0_100_16(self):
+    #def test_umts_traffic_r_99_band_4_pul_max_direction_ul_pattern_0_100_16(self):
     #    self.power_tel_traffic_test()
 
 
