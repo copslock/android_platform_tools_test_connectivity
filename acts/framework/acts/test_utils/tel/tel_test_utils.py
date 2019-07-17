@@ -128,6 +128,7 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import TYPE_MOBILE
 from acts.test_utils.tel.tel_defines import TYPE_WIFI
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
+from acts.test_utils.tel.tel_defines import EventActiveDataSubIdChanged
 from acts.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts.test_utils.tel.tel_defines import EventDataSmsReceived
@@ -372,17 +373,12 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
     if cbrs_esim:
         ad.log.info("CBRS testing detected, removing it form SubInfoList")
         if len(sub_info_list) > 1:
-            # Check for Display Name
+            # Check for CarrierId
             index_to_delete = -1
-            for i, oper in enumerate(d['displayName'] for d in sub_info_list):
-                ad.log.info("Index %d Display %s", i, oper)
-                if "Google" in oper:
+            for i, oper in enumerate(d['carrierId'] for d in sub_info_list):
+                ad.log.info("Index %d CarrierId %d", i, oper)
+                if oper == 2340:
                     index_to_delete = i
-                elif sub_info_list[i]['simSlotIndex'] != -1:
-                    ad.log.info("Workaround for b/122979645, setting default" \
-                      " Voice Sub ID to %s", sub_info_list[i]['subscriptionId'])
-                    set_subid_for_outgoing_call(ad,
-                                             sub_info_list[i]['subscriptionId'])
             del sub_info_list[index_to_delete]
         ad.log.info("Updated SubInfoList is %s", sub_info_list)
     active_sub_id = get_outgoing_voice_sub_id(ad)
@@ -1400,6 +1396,60 @@ def hangup_call(log, ad, is_emergency=False):
         ad.log.error("Telecom is in call, hangup call failed.")
         return False
     return True
+
+
+def wait_for_cbrs_data_active_sub_change_event(
+        ad,
+        event_tracking_started=False,
+        timeout=120):
+    """Wait for an data change event on specified subscription.
+
+    Args:
+        ad: android device object.
+        event_tracking_started: True if event tracking already state outside
+        timeout: time to wait for event
+
+    Returns:
+        True: if data change event is received.
+        False: if data change event is not received.
+    """
+    if not event_tracking_started:
+        ad.ed.clear_events(EventActiveDataSubIdChanged)
+        ad.droid.telephonyStartTrackingActiveDataChange()
+    try:
+        ad.ed.wait_for_event(
+            EventActiveDataSubIdChanged,
+            is_event_match,
+            timeout=timeout)
+        ad.log.info("Got event activedatasubidchanged")
+    except Empty:
+        ad.log.info("No event for data subid change")
+        return False
+    finally:
+        if not event_tracking_started:
+            ad.droid.telephonyStopTrackingActiveDataChange()
+    return True
+
+
+def is_current_data_on_cbrs(ad, cbrs_subid):
+    """Verifies if current data sub is on CBRS
+
+    Args:
+        ad: android device object.
+        cbrs_subid: sub_id against which we need to check
+
+    Returns:
+        True: if data is on cbrs
+        False: if data is not on cbrs
+    """
+    if cbrs_subid is None:
+        return False
+    current_data = ad.droid.subscriptionGetActiveDataSubscriptionId()
+    ad.log.info("Current Data subid %s cbrs_subid %s", current_data, cbrs_subid)
+    if current_data == cbrs_subid:
+        return True
+    else:
+        return False
 
 
 def disconnect_call_by_id(log, ad, call_id):
@@ -3101,6 +3151,15 @@ def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
         if mode == 2:
             ad.log.info("Device correctly switched to MSIM mode")
             result = True
+            if "Sprint" in ad.adb.getprop("gsm.sim.operator.alpha"):
+                cmd = ('am instrument -w -e request "WriteEFS" -e item '
+                       '"/google/pixel_dsds_imei_mapping_slot_record" -e data "03"'
+                       ' "com.google.mdstest/com.google.mdstest.instrument.'
+                       'ModemConfigInstrumentation"')
+                ad.log.info("Switch Sprint to IMEI1 slot using %s", cmd)
+                ad.adb.shell(cmd, ignore_status=True)
+                time.sleep(timeout)
+                reboot_device(ad)
             break
         else:
             ad.log.warning("Attempt %d - failed to switch to MSIM", (i + 1))
@@ -5777,6 +5836,7 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     ad.droid.setAlarmVolume(0)
     ad.adb.ensure_root()
     ad.adb.shell("setprop ro.audio.silent 1", ignore_status=True)
+    ad.adb.shell("cmd notification set_dnd on", ignore_status=True)
     return silent_mode == ad.droid.checkRingerSilentMode()
 
 

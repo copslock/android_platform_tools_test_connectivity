@@ -53,6 +53,133 @@ def nonblocking(f):
     return wrap
 
 
+# Link layer stats utilities
+class LinkLayerStats():
+
+    LLSTATS_CMD = "cat /d/wlan0/ll_stats"
+    PEER_REGEX = "LL_STATS_PEER_ALL"
+    MCS_REGEX = re.compile(
+        r"preamble: (?P<mode>\S+), nss: (?P<num_streams>\S+), bw: (?P<bw>\S+), "
+        "mcs: (?P<mcs>\S+), bitrate: (?P<rate>\S+), txmpdu: (?P<txmpdu>\S+), "
+        "rxmpdu: (?P<rxmpdu>\S+), mpdu_lost: (?P<mpdu_lost>\S+), "
+        "retries: (?P<retries>\S+), retries_short: (?P<retries_short>\S+), "
+        "retries_long: (?P<retries_long>\S+)")
+    MCS_ID = collections.namedtuple(
+        "mcs_id", ["mode", "num_streams", "bandwidth", "mcs", "rate"])
+    MODE_MAP = {'0': '11a/g', '1': '11b', '2': '11n', '3': '11ac'}
+    BW_MAP = {'0': 20, '1': 40, '2': 80}
+
+    def __init__(self, dut):
+        self.dut = dut
+        self.llstats_cumulative = self._empty_llstats()
+        self.llstats_incremental = self._empty_llstats()
+
+    def update_stats(self):
+        llstats_output = self.dut.adb.shell(self.LLSTATS_CMD)
+        self._update_stats(llstats_output)
+
+    def reset_stats(self):
+        self.llstats_cumulative = self._empty_llstats()
+        self.llstats_incremental = self._empty_llstats()
+
+    def _empty_llstats(self):
+        return collections.OrderedDict(
+            mcs_stats=collections.OrderedDict(),
+            summary=collections.OrderedDict())
+
+    def _empty_mcs_stat(self):
+        return collections.OrderedDict(
+            txmpdu=0,
+            rxmpdu=0,
+            mpdu_lost=0,
+            retries=0,
+            retries_short=0,
+            retries_long=0)
+
+    def _mcs_id_to_string(self, mcs_id):
+        mcs_string = "{} {}MHz Nss{} MCS{} {}Mbps".format(
+            mcs_id.mode, mcs_id.bandwidth, mcs_id.num_streams, mcs_id.mcs,
+            mcs_id.rate)
+        return mcs_string
+
+    def _parse_mcs_stats(self, llstats_output):
+        llstats_dict = {}
+        # Look for per-peer stats
+        match = re.search(self.PEER_REGEX, llstats_output)
+        if not match:
+            self.reset_stats()
+            return collections.OrderedDict()
+        # Find and process all matches for per stream stats
+        match_iter = re.finditer(self.MCS_REGEX, llstats_output)
+        for match in match_iter:
+            current_mcs = self.MCS_ID(self.MODE_MAP[match.group('mode')],
+                                      int(match.group('num_streams')) + 1,
+                                      self.BW_MAP[match.group('bw')],
+                                      int(match.group('mcs')),
+                                      int(match.group('rate'), 16) / 1000)
+            current_stats = collections.OrderedDict(
+                txmpdu=int(match.group('txmpdu')),
+                rxmpdu=int(match.group('rxmpdu')),
+                mpdu_lost=int(match.group('mpdu_lost')),
+                retries=int(match.group('retries')),
+                retries_short=int(match.group('retries_short')),
+                retries_long=int(match.group('retries_long')))
+            llstats_dict[self._mcs_id_to_string(current_mcs)] = current_stats
+        return llstats_dict
+
+    def _diff_mcs_stats(self, new_stats, old_stats):
+        stats_diff = collections.OrderedDict()
+        for stat_key in new_stats.keys():
+            stats_diff[stat_key] = new_stats[stat_key] - old_stats[stat_key]
+        return stats_diff
+
+    def _generate_stats_summary(self, llstats_dict):
+        llstats_summary = collections.OrderedDict(
+            common_tx_mcs=None,
+            common_tx_mcs_count=0,
+            common_tx_mcs_freq=0,
+            common_rx_mcs=None,
+            common_rx_mcs_count=0,
+            common_rx_mcs_freq=0)
+        txmpdu_count = 0
+        rxmpdu_count = 0
+        for mcs_id, mcs_stats in llstats_dict['mcs_stats'].items():
+            if mcs_stats['txmpdu'] > llstats_summary['common_tx_mcs_count']:
+                llstats_summary['common_tx_mcs'] = mcs_id
+                llstats_summary['common_tx_mcs_count'] = mcs_stats['txmpdu']
+            if mcs_stats['rxmpdu'] > llstats_summary['common_rx_mcs_count']:
+                llstats_summary['common_rx_mcs'] = mcs_id
+                llstats_summary['common_rx_mcs_count'] = mcs_stats['rxmpdu']
+            txmpdu_count += mcs_stats['txmpdu']
+            rxmpdu_count += mcs_stats['rxmpdu']
+        if txmpdu_count:
+            llstats_summary['common_tx_mcs_freq'] = (
+                llstats_summary['common_tx_mcs_count'] / txmpdu_count)
+        if rxmpdu_count:
+            llstats_summary['common_rx_mcs_freq'] = (
+                llstats_summary['common_rx_mcs_count'] / rxmpdu_count)
+        return llstats_summary
+
+    def _update_stats(self, llstats_output):
+        # Parse stats
+        new_llstats = self._empty_llstats()
+        new_llstats['mcs_stats'] = self._parse_mcs_stats(llstats_output)
+        # Save old stats and set new cumulative stats
+        old_llstats = self.llstats_cumulative.copy()
+        self.llstats_cumulative = new_llstats.copy()
+        # Compute difference between new and old stats
+        for mcs_id, new_mcs_stats in new_llstats['mcs_stats'].items():
+            old_mcs_stats = old_llstats['mcs_stats'].get(
+                mcs_id, self._empty_mcs_stat())
+            self.llstats_incremental['mcs_stats'][
+                mcs_id] = self._diff_mcs_stats(new_mcs_stats, old_mcs_stats)
+        # Generate llstats summary
+        self.llstats_incremental['summary'] = self._generate_stats_summary(
+            self.llstats_incremental)
+        self.llstats_cumulative['summary'] = self._generate_stats_summary(
+            self.llstats_cumulative)
+
+
 # Plotting Utilities
 class BokehFigure():
     """Class enabling  simplified Bokeh plotting."""
@@ -112,12 +239,18 @@ class BokehFigure():
         }
         self.TOOLS = (
             'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
+        self.TOOLTIPS = [
+            ("index", "$index"),
+            ("(x,y)", "($x, $y)"),
+            ("info", "@hover_text"),
+        ]
         self.plot = bokeh.plotting.figure(
             plot_width=width,
             plot_height=height,
             title=title,
             tools=self.TOOLS,
             output_backend='webgl')
+        self.plot.hover.tooltips = self.TOOLTIPS
         self.plot.add_tools(
             bokeh.models.tools.WheelZoomTool(dimensions='width'))
         self.plot.add_tools(
@@ -127,6 +260,7 @@ class BokehFigure():
                  x_data,
                  y_data,
                  legend,
+                 hover_text=None,
                  color=None,
                  width=3,
                  style='solid',
@@ -140,6 +274,7 @@ class BokehFigure():
             x_data: list containing x-axis values for line
             y_data: list containing y_axis values for line
             legend: string containing line title
+            hover_text: text to display when hovering over lines
             color: string describing line color
             width: integer line width
             style: string describing line style, e.g, solid or dashed
@@ -154,10 +289,13 @@ class BokehFigure():
                 self.COLORS)]
         if style == 'dashed':
             style = [5, 5]
+        if not hover_text:
+            hover_text = ["y={}".format(y) for y in y_data]
         self.figure_data.append({
             'x_data': x_data,
             'y_data': y_data,
             'legend': legend,
+            'hover_text': hover_text,
             'color': color,
             'width': width,
             'style': style,
@@ -176,15 +314,21 @@ class BokehFigure():
         """
         two_axes = False
         for line in self.figure_data:
+            source = bokeh.models.ColumnDataSource(
+                data=dict(
+                    x=line['x_data'],
+                    y=line['y_data'],
+                    hover_text=line['hover_text']))
             self.plot.line(
-                line['x_data'],
-                line['y_data'],
+                x='x',
+                y='y',
                 legend=line['legend'],
                 line_width=line['width'],
                 color=line['color'],
                 line_dash=line['style'],
                 name=line['y_range_name'],
-                y_range_name=line['y_range_name'])
+                y_range_name=line['y_range_name'],
+                source=source)
             if line['shaded_region']:
                 band_x = line['shaded_region']['x_vector']
                 band_x.extend(line['shaded_region']['x_vector'][::-1])
@@ -199,14 +343,15 @@ class BokehFigure():
             if line['marker'] in self.MARKERS:
                 marker_func = getattr(self.plot, line['marker'])
                 marker_func(
-                    line['x_data'],
-                    line['y_data'],
+                    x='x',
+                    y='y',
                     size=line['marker_size'],
                     legend=line['legend'],
                     line_color=line['color'],
                     fill_color=line['color'],
                     name=line['y_range_name'],
-                    y_range_name=line['y_range_name'])
+                    y_range_name=line['y_range_name'],
+                    source=source)
             if line['y_range_name'] == 'secondary':
                 two_axes = True
 
@@ -465,10 +610,12 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     if isinstance(src_device, AndroidDevice):
         ping_cmd = '{} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.adb.shell(
-            ping_cmd, timeout=ping_duration + TEST_TIMEOUT, ignore_status=True)
+            ping_cmd, timeout=ping_duration + SHORT_SLEEP, ignore_status=True)
     elif isinstance(src_device, ssh.connection.SshConnection):
         ping_cmd = 'sudo {} {}'.format(ping_cmd, dest_address)
-        ping_output = src_device.run(ping_cmd, ignore_status=True).stdout
+        ping_output = src_device.run(
+            ping_cmd, timeout=ping_duration + SHORT_SLEEP,
+            ignore_status=True).stdout
     else:
         raise TypeError(
             'Unable to ping using src_device of type %s.' % type(src_device))
@@ -663,6 +810,37 @@ def atten_by_label(atten_list, path_label, atten_level):
 
 
 # Miscellaneous Utilities
+def get_atten_dut_chain_map(attenuators, dut, ping_server, ping_ip):
+    # Set attenuator to 0 dB
+    for atten in attenuators:
+        atten.set_atten(0, strict=False)
+    # Start ping traffic
+    ping_future = get_ping_stats_nb(ping_server, ping_ip, 11, 0.02, 64)
+    # Measure starting RSSI
+    base_rssi = get_connected_rssi(dut, 4, 0.25, 1)
+    chain0_base_rssi = base_rssi['chain_0_rssi']['mean']
+    chain1_base_rssi = base_rssi['chain_1_rssi']['mean']
+    # Compile chain map by attenuating one path at a time and seeing which
+    # chain's RSSI degrades
+    chain_map = []
+    for test_atten in attenuators:
+        # Set one attenuator to 20 dB down
+        test_atten.set_atten(20, strict=False)
+        # Get new RSSI
+        test_rssi = get_connected_rssi(dut, 4, 0.25, 1)
+        # Assing attenuator to path that has lower RSSI
+        if chain0_base_rssi - test_rssi['chain_0_rssi']['mean'] > 5:
+            chain_map.append("DUT-Chain-0")
+        elif chain1_base_rssi - test_rssi['chain_1_rssi']['mean'] > 5:
+            chain_map.append("DUT-Chain-1")
+        else:
+            chain_map.append(None)
+        for atten in attenuators:
+            atten.set_atten(0, strict=False)
+    ping_future.result()
+    return chain_map
+
+
 def get_server_address(ssh_connection, dut_ip, subnet_mask):
     """Get server address on a specific subnet,
 

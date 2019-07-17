@@ -121,6 +121,8 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         """
 
+        super().teardown_test()
+
         for ips in self.iperf_servers:
             ips.stop()
 

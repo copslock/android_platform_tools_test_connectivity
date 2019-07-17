@@ -51,6 +51,7 @@ BLACKLIST = [
     'acts/controllers/native.py',
     'acts/controllers/native_android_device.py',
     'acts/controllers/packet_sender.py',
+    'acts/test_utils/wifi/ota_chamber.py',
     'acts/test_utils/wifi/wifi_performance_test_utils.py',
     'acts/test_utils/wifi/wifi_power_test_utils.py',
     'acts/test_utils/wifi/wifi_retail_ap.py',
@@ -79,7 +80,8 @@ BLACKLIST = [
     'tests/google/tel/live/TelLiveLockedSimTest.py',
     'tests/google/tel/live/TelLiveEmergencyTest.py',
     'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
-    'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py'
+    'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
+    'tests/google/fuchsia/wlan/RebootStressTest.py',
 ]
 
 BLACKLIST_DIRECTORIES = [

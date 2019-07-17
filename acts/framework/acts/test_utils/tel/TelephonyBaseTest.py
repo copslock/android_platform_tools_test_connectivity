@@ -228,10 +228,12 @@ class TelephonyBaseTest(BaseTestClass):
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
         if "sdm" in ad.model or "msm" in ad.model:
-            if ad.adb.getprop("persist.radio.multisim.config") != \
-                              self.sim_config["config"]:
+            phone_mode = "ssss"
+            if hasattr(ad, "mtp_dsds"):
+                phone_mode = "dsds"
+            if ad.adb.getprop("persist.radio.multisim.config") != phone_mode:
                 ad.adb.shell("setprop persist.radio.multisim.config %s" \
-                             % self.sim_config["config"])
+                             % phone_mode)
                 reboot_device(ad)
 
         stop_qxdm_logger(ad)
@@ -441,9 +443,6 @@ class TelephonyBaseTest(BaseTestClass):
     def on_fail(self, test_name, begin_time):
         self._take_bug_report(test_name, begin_time)
 
-    def on_blocked(self, test_name, begin_time):
-        self.on_fail(test_name, begin_time)
-
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
         ad.adb.wait_for_device()
         result = True
@@ -507,7 +506,7 @@ class TelephonyBaseTest(BaseTestClass):
     def _block_all_test_cases(self, tests, reason='Failed class setup'):
         """Over-write _block_all_test_cases in BaseTestClass."""
         for (i, (test_name, test_func)) in enumerate(tests):
-            signal = signals.TestBlocked(reason)
+            signal = signals.TestFailure(reason)
             record = records.TestResultRecord(test_name, self.TAG)
             record.test_begin()
             # mark all test cases as FAIL

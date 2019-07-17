@@ -17,11 +17,11 @@
 Tests.
 """
 
-
 import ctypes
 import pprint
 import random
 import time
+import traceback
 
 from ctypes import *
 from datetime import datetime

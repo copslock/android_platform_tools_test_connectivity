@@ -36,6 +36,7 @@ SCREENON_USB_DISABLE = 'dumpsys battery unplug'
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
 AOD_OFF = 'settings put secure doze_always_on 0'
 MUSIC_IQ_OFF = 'pm disable-user com.google.intelligence.sense'
+DISABLE_THERMAL = 'setprop persist.vendor.disable.thermal.control 1'
 # Command to disable gestures
 LIFT = 'settings put secure doze_pulse_on_pick_up 0'
 DOUBLE_TAP = 'settings put secure doze_pulse_on_double_tap 0'
@@ -285,6 +286,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.dut.adb.shell(AUTO_TIMEZONE_OFF)
         self.dut.adb.shell(FORCE_YOUTUBE_STOP)
         self.dut.adb.shell(FORCE_DIALER_STOP)
+        self.dut.adb.shell(DISABLE_THERMAL)
         self.dut.droid.wifiSetCountryCode('US')
         self.dut.droid.wakeUpNow()
         self.dut.log.info('Device has been set to Rockbottom state')
@@ -470,31 +472,6 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         if retry_measure > MEASUREMENT_RETRY_COUNT:
             self.log.error('Test failed after maximum measurement retry')
-
-    def setup_ap_connection(self, network, bandwidth=80, connect=True,
-                            ap=None):
-        """Setup AP and connect DUT to it.
-
-        Args:
-            network: the network config for the AP to be setup
-            bandwidth: bandwidth of the WiFi network to be setup
-            connect: indicator of if connect dut to the network after setup
-            ap: access point object, default is None to find the main AP
-        Returns:
-            self.brconfigs: dict for bridge interface configs
-        """
-        wutils.wifi_toggle_state(self.dut, True)
-        if not ap:
-            if hasattr(self, 'access_points'):
-                self.brconfigs = wputils.ap_setup(
-                    self.access_point, network, bandwidth=bandwidth)
-        else:
-            self.brconfigs = wputils.ap_setup(ap, network, bandwidth=bandwidth)
-        if connect:
-            wutils.wifi_connect(self.dut, network, num_of_tries=3)
-
-        if ap or (not ap and hasattr(self, 'access_points')):
-            return self.brconfigs
 
     def process_iperf_results(self):
         """Get the iperf results and process.

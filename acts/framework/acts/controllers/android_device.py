@@ -709,8 +709,7 @@ class AndroidDevice:
             end_time: Epoch time of the ending of the time period, default None
             dest_path: Destination path of the excerpt file.
         """
-        log_begin_time = acts_logger.normalize_log_line_timestamp(
-            acts_logger.epoch_to_log_line_timestamp(begin_time))
+        log_begin_time = acts_logger.epoch_to_log_line_timestamp(begin_time)
         if end_time is None:
             log_end_time = acts_logger.get_log_line_timestamp()
         else:
@@ -723,7 +722,9 @@ class AndroidDevice:
             return
         adb_excerpt_dir = os.path.join(self.log_path, dest_path)
         utils.create_dir(adb_excerpt_dir)
-        out_name = '%s,%s.txt' % (log_begin_time, self.serial)
+        out_name = '%s,%s.txt' % (
+            acts_logger.normalize_log_line_timestamp(log_begin_time),
+            self.serial)
         tag_len = utils.MAX_FILENAME_LEN - len(out_name)
         out_name = '%s,%s' % (tag[:tag_len], out_name)
         adb_excerpt_path = os.path.join(adb_excerpt_dir, out_name)
@@ -1282,13 +1283,18 @@ class AndroidDevice:
 
     def get_my_current_focus_app(self):
         """Get the current focus application"""
-        output = self.adb.shell(
-            'dumpsys window windows | grep -E mFocusedApp', ignore_status=True)
-        if not output or "not found" in output or "Can't find" in output or (
-                "mFocusedApp=null" in output):
-            result = ''
-        else:
-            result = output.split(' ')[-2]
+        dumpsys_cmd = [
+            'dumpsys window | grep -E mFocusedApp',
+            'dumpsys window windows | grep -E mFocusedApp']
+        for cmd in dumpsys_cmd:
+            output = self.adb.shell(
+                cmd, ignore_status=True)
+            if not output or "not found" in output or "Can't find" in output or (
+                    "mFocusedApp=null" in output):
+                result = ''
+            else:
+                result = output.split(' ')[-2]
+                break
         self.log.debug("Current focus app is %s", result)
         return result
 
