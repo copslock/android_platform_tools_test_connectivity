@@ -2392,6 +2392,10 @@ def phone_number_formatter(input_string, formatter=None):
         ".", "").lstrip("0")
     if not formatter:
         return input_string
+    # Remove +81 and add 0 for Japan Carriers only.
+    if (len(input_string) == 13 and input_string[0:3] == "+81"):
+        input_string = "0" + input_string[3:]
+        return input_string
     # Remove "1"  or "+1"from front
     if (len(input_string) == PHONE_NUMBER_STRING_FORMAT_11_DIGIT
             and input_string[0] == "1"):
