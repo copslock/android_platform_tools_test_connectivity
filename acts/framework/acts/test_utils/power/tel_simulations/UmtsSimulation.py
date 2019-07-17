@@ -66,11 +66,10 @@ class UmtsSimulation(BaseSimulation):
     # Units are dBm
 
     UPLINK_SIGNAL_LEVEL_DICTIONARY = {
-        'excellent': -20,
-        'high': 2,
+        'low': -20,
         'medium': 8,
-        'weak': 15,
-        'edge': 23
+        'high': 15,
+        'max': 23
     }
 
     # Converts packet rate to the throughput that can be actually obtained in
