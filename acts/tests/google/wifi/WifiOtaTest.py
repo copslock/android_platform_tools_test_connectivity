@@ -23,8 +23,10 @@ from acts import context
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
+from functools import partial
 from WifiPingTest import WifiPingTest
 from WifiRvrTest import WifiRvrTest
+from WifiRssiTest import WifiRssiTest
 from WifiSensitivityTest import WifiSensitivityTest
 
 
@@ -43,13 +45,12 @@ class WifiOtaRvrTest(WifiRvrTest):
 
     def setup_class(self):
         WifiRvrTest.setup_class(self)
-        req_params = ['OTAChamber']
-        self.unpack_userparams(req_params)
-        self.ota_chamber = ota_chamber.create(self.OTAChamber)[0]
+        self.ota_chamber = ota_chamber.create(
+            self.user_params['OTAChamber'])[0]
 
     def teardown_class(self):
         WifiRvrTest.teardown_class(self)
-        self.ota_chamber.set_orientation(0)
+        self.ota_chamber.reset_chamber()
 
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
@@ -137,13 +138,12 @@ class WifiOtaPingTest(WifiPingTest):
 
     def setup_class(self):
         WifiPingTest.setup_class(self)
-        req_params = ['OTAChamber']
-        self.unpack_userparams(req_params)
-        self.ota_chamber = ota_chamber.create(self.OTAChamber)[0]
+        self.ota_chamber = ota_chamber.create(
+            self.user_params['OTAChamber'])[0]
 
     def teardown_class(self):
         self.process_testclass_results()
-        self.ota_chamber.set_orientation(0)
+        self.ota_chamber.reset_chamber()
 
     def process_testclass_results(self):
         """Saves all test results to enable comparison."""
@@ -253,13 +253,12 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
 
     def setup_class(self):
         WifiSensitivityTest.setup_class(self)
-        req_params = ['OTAChamber']
-        self.unpack_userparams(req_params)
-        self.ota_chamber = ota_chamber.create(self.OTAChamber)[0]
+        self.ota_chamber = ota_chamber.create(
+            self.user_params['OTAChamber'])[0]
 
     def teardown_class(self):
         WifiSensitivityTest.teardown_class(self)
-        self.ota_chamber.set_orientation(0)
+        self.ota_chamber.reset_chamber()
 
     def process_testclass_results(self):
         """Saves and plots test results from all executed test cases."""
@@ -435,3 +434,80 @@ class WifiOtaSensitivity_45Degree_Test(WifiOtaSensitivityTest):
         self.tests = self.generate_test_cases(
             [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], requested_rates,
             ['2x2'], list(range(0, 360, 45)))
+
+
+# Sensitivity Test
+class WifiOtaRssiTest(WifiRssiTest):
+    """Class to test over-the-air senstivity.
+
+    This class implements measures WiFi sensitivity tests in an OTA chamber.
+    It allows setting orientation and other chamber parameters to study
+    performance in varying channel conditions
+    """
+
+    def setup_class(self):
+        WifiRssiTest.setup_class(self)
+        self.ota_chamber = ota_chamber.create(
+            self.user_params['OTAChamber'])[0]
+
+    def teardown_class(self):
+        WifiRssiTest.teardown_class(self)
+        self.ota_chamber.reset_chamber()
+
+    def teardown_test(self):
+        self.ota_chamber.reset_chamber()
+
+    def setup_rssi_test(self, testcase_params):
+        # Test setup
+        WifiRssiTest.setup_rssi_test(self, testcase_params)
+        if testcase_params['chamber_mode'] == 'StirrersOn':
+            self.ota_chamber.start_continuous_stirrers()
+        else:
+            self.ota_chamber.set_orientation(testcase_params['orientation'])
+
+    def _test_rssi_variation(self, testcase_params):
+        self._test_rssi_stability(testcase_params)
+
+    def generate_test_cases(self, test_types, channels, modes, traffic_modes,
+                            chamber_modes, orientations):
+        """Function that auto-generates test cases for a test class."""
+        test_cases = []
+        allowed_configs = {
+            'VHT20': [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 149, 153,
+                157, 161
+            ],
+            'VHT40': [36, 44, 149, 157],
+            'VHT80': [36, 149]
+        }
+
+        for (channel, mode, traffic, chamber_mode,
+             orientation, test_type) in itertools.product(
+                 channels, modes, traffic_modes, chamber_modes, orientations,
+                 test_types):
+            if channel not in allowed_configs[mode]:
+                continue
+            test_name = test_type + '_ch{}_{}_{}_{}_{}deg'.format(
+                channel, mode, traffic, chamber_mode, orientation)
+            test_params = collections.OrderedDict(
+                channel=channel,
+                mode=mode,
+                active_traffic=(traffic == 'ActiveTraffic'),
+                traffic_type=self.user_params['rssi_test_params']
+                ['traffic_type'],
+                polling_frequency=self.user_params['rssi_test_params']
+                ['polling_frequency'],
+                chamber_mode=chamber_mode,
+                orientation=orientation)
+            test_function = getattr(self, '_{}'.format(test_type))
+            setattr(self, test_name, partial(test_function, test_params))
+            test_cases.append(test_name)
+        return test_cases
+
+
+class WifiOtaRssiVariationTest(WifiOtaRssiTest):
+    def __init__(self, controllers):
+        WifiRssiTest.__init__(self, controllers)
+        self.tests = self.generate_test_cases(
+            ['test_rssi_variation'], [6, 36, 149], ['VHT20'],
+            ['ActiveTraffic'], ['StirrersOn'], [0])
