@@ -168,6 +168,7 @@ class LinkLayerStats():
         old_llstats = self.llstats_cumulative.copy()
         self.llstats_cumulative = new_llstats.copy()
         # Compute difference between new and old stats
+        self.llstats_incremental = self._empty_llstats()
         for mcs_id, new_mcs_stats in new_llstats['mcs_stats'].items():
             old_mcs_stats = old_llstats['mcs_stats'].get(
                 mcs_id, self._empty_mcs_stat())
