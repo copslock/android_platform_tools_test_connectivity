@@ -48,6 +48,7 @@ class LteSimulation(BaseSimulation):
     PARAM_DL_PW = 'pdl'
     PARAM_BAND = "band"
     PARAM_MIMO = "mimo"
+    PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
     # Test config keywords
     KEY_TBS_PATTERN = "tbs_pattern_on"
@@ -996,6 +997,20 @@ class LteSimulation(BaseSimulation):
 
             self.set_scheduling_mode(self.bts1,
                                      LteSimulation.SchedulingMode.DYNAMIC)
+
+        # Setup LTE RRC status change function and timer for LTE idle test case
+
+        values = self.consume_parameter(parameters,
+                                        self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
+        if not values:
+            self.log.info(
+                "The test name does not include the '{}' parameter. Disabled "
+                "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
+            self.anritsu.set_lte_rrc_status_change(False)
+        else:
+            self.rrc_sc_timer = int(values[1])
+            self.anritsu.set_lte_rrc_status_change(True)
+            self.anritsu.set_lte_rrc_status_change_timer(self.rrc_sc_timer)
 
         # Get uplink power
 
