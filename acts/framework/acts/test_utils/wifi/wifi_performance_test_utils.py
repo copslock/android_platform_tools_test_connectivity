@@ -307,6 +307,51 @@ class BokehFigure():
         })
         self.fig_property['num_lines'] += 1
 
+    def add_scatter(self,
+                 x_data,
+                 y_data,
+                 legend,
+                 hover_text=None,
+                 color=None,
+                 marker=None,
+                 marker_size=10,
+                 y_axis='default'):
+        """Function to add line to existing BokehFigure.
+
+        Args:
+            x_data: list containing x-axis values for line
+            y_data: list containing y_axis values for line
+            legend: string containing line title
+            hover_text: text to display when hovering over lines
+            color: string describing line color
+            marker: string specifying marker, e.g., cross
+            y_axis: identifier for y-axis to plot line against
+        """
+        if y_axis not in ['default', 'secondary']:
+            raise ValueError('y_axis must be default or secondary')
+        if color == None:
+            color = self.COLORS[self.fig_property['num_lines'] % len(
+                self.COLORS)]
+        if marker == None:
+            marker = self.MARKERS[self.fig_property['num_lines'] % len(
+                self.MARKERS)]
+        if not hover_text:
+            hover_text = ["y={}".format(y) for y in y_data]
+        self.figure_data.append({
+            'x_data': x_data,
+            'y_data': y_data,
+            'legend': legend,
+            'hover_text': hover_text,
+            'color': color,
+            'width': 0,
+            'style': "solid",
+            'marker': marker,
+            'marker_size': marker_size,
+            'shaded_region': None,
+            'y_range_name': y_axis
+        })
+        self.fig_property['num_lines'] += 1
+
     def generate_figure(self, output_file=None):
         """Function to generate and save BokehFigure.
 
@@ -320,16 +365,17 @@ class BokehFigure():
                     x=line['x_data'],
                     y=line['y_data'],
                     hover_text=line['hover_text']))
-            self.plot.line(
-                x='x',
-                y='y',
-                legend=line['legend'],
-                line_width=line['width'],
-                color=line['color'],
-                line_dash=line['style'],
-                name=line['y_range_name'],
-                y_range_name=line['y_range_name'],
-                source=source)
+            if line['width'] > 0:
+                self.plot.line(
+                    x='x',
+                    y='y',
+                    legend=line['legend'],
+                    line_width=line['width'],
+                    color=line['color'],
+                    line_dash=line['style'],
+                    name=line['y_range_name'],
+                    y_range_name=line['y_range_name'],
+                    source=source)
             if line['shaded_region']:
                 band_x = line['shaded_region']['x_vector']
                 band_x.extend(line['shaded_region']['x_vector'][::-1])
@@ -407,78 +453,6 @@ class BokehFigure():
         all_plots = bokeh.layouts.column(children=plot_array)
         bokeh.plotting.output_file(output_file_path)
         bokeh.plotting.save(all_plots)
-
-
-def bokeh_plot(data_sets,
-               legends,
-               fig_property,
-               shaded_region=None,
-               output_file_path=None):
-    """Plot bokeh figs.
-        Args:
-            data_sets: data sets including lists of x_data and lists of y_data
-                       ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
-            legends: list of legend for each curve
-            fig_property: dict containing the plot property, including title,
-                      lables, linewidth, circle size, etc.
-            shaded_region: optional dict containing data for plot shading
-            output_file_path: optional path at which to save figure
-        Returns:
-            plot: bokeh plot figure object
-    """
-    TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
-    plot = bokeh.plotting.figure(
-        plot_width=1300,
-        plot_height=700,
-        title=fig_property['title'],
-        tools=TOOLS,
-        output_backend='webgl')
-    plot.add_tools(bokeh.models.tools.WheelZoomTool(dimensions='width'))
-    plot.add_tools(bokeh.models.tools.WheelZoomTool(dimensions='height'))
-    colors = [
-        'red', 'green', 'blue', 'olive', 'orange', 'salmon', 'black', 'navy',
-        'yellow', 'darkred', 'goldenrod'
-    ]
-    if shaded_region:
-        band_x = shaded_region['x_vector']
-        band_x.extend(shaded_region['x_vector'][::-1])
-        band_y = shaded_region['lower_limit']
-        band_y.extend(shaded_region['upper_limit'][::-1])
-        plot.patch(
-            band_x, band_y, color='#7570B3', line_alpha=0.1, fill_alpha=0.1)
-
-    for x_data, y_data, legend in zip(data_sets[0], data_sets[1], legends):
-        index_now = legends.index(legend)
-        color = colors[index_now % len(colors)]
-        plot.line(
-            x_data,
-            y_data,
-            legend=str(legend),
-            line_width=fig_property['linewidth'],
-            color=color)
-        plot.circle(
-            x_data,
-            y_data,
-            size=fig_property['markersize'],
-            legend=str(legend),
-            fill_color=color)
-
-    # Plot properties
-    plot.xaxis.axis_label = fig_property['x_label']
-    plot.yaxis.axis_label = fig_property['y_label']
-    plot.legend.location = 'top_right'
-    plot.legend.click_policy = 'hide'
-    plot.title.text_font_size = {'value': '15pt'}
-    if output_file_path is not None:
-        bokeh.plotting.output_file(output_file_path)
-        bokeh.plotting.save(plot)
-    return plot
-
-
-def save_bokeh_plots(plot_array, output_file_path):
-    all_plots = bokeh.layouts.column(children=plot_array)
-    bokeh.plotting.output_file(output_file_path)
-    bokeh.plotting.save(all_plots)
 
 
 class PingResult(object):
