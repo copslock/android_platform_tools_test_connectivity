@@ -43,7 +43,7 @@ install_requires = [
     'grpcio',
     # paramiko-ng is needed vs paramiko as currently paramiko does not support
     # ed25519 ssh keys, which is what Fuchsia uses.
-    'paramiko-ng'
+    'paramiko-ng',
 ]
 
 if sys.version_info < (3, ):
