@@ -73,11 +73,13 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
         self.unknown_fqdn = UNKNOWN_FQDN
         # Setup Uicd cli object for UI interation.
         self.ui = UicdCli(self.uicd_zip[0], self.uicd_workflows)
+        self.passpoint_workflow = "passpoint-login_%s" % self.dut.model
 
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
+        self.dut.unlock_screen()
 
 
     def teardown_test(self):
@@ -180,7 +182,7 @@ class WifiPasspointTest(acts.base_test.BaseTestClass):
                     "Passpoint Provisioning status %s" % dut_event['data'][
                         'status'])
                 if int(dut_event['data']['status']) == 7:
-                    self.ui.run(self.dut.serial, "passpoint-login")
+                    self.ui.run(self.dut.serial, self.passpoint_workflow)
         # Clear all previous events.
         self.dut.ed.clear_all_events()
 
