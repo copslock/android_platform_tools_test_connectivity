@@ -330,12 +330,15 @@ class PowerBaseTest(base_test.BaseTestClass):
             asserts.assert_true(
                 abs(self.test_result - current_threshold) / current_threshold <
                 THRESHOLD_TOLERANCE,
-                ('Measured average current in [{}]: {}, which is '
-                 'more than {} percent off than acceptable threshold {:.2f}mA'
-                 ).format(self.test_name, self.test_result,
-                          self.pass_fail_tolerance * 100, current_threshold))
-            asserts.explicit_pass('Measurement finished for {}.'.format(
-                self.test_name))
+                'Measured average current in [{}]: {:.2f}mA, which is '
+                'out of the acceptable range {:.2f}±{:.2f}mA'.format(
+                    self.test_name, self.test_result, current_threshold,
+                    self.pass_fail_tolerance * current_threshold))
+            asserts.explicit_pass(
+                'Measurement finished for [{}]: {:.2f}mA, which is '
+                'within the acceptable range {:.2f}±{:.2f}'.format(
+                    self.test_name, self.test_result, current_threshold,
+                    self.pass_fail_tolerance * current_threshold))
         else:
             asserts.fail(
                 'Something happened, measurement is not complete, test failed')
