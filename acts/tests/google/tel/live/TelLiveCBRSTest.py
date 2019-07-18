@@ -44,6 +44,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import start_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -467,7 +468,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         total_iteration = self.stress_test_number
         fail_count = collections.defaultdict(int)
-        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ad)
+        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ads[0])
         self.log.info("Total iteration = %d.", total_iteration)
         current_iteration = 1
         for i in range(1, total_iteration + 1):
@@ -635,6 +636,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
     def _test_stress_cbrsdataswitch_timing(self, ad, method, validation=False):
         setattr(self, "number_of_devices", 1)
         ad.adb.shell("pm disable com.google.android.apps.scone")
+        wifi_toggle_state(self.log, ad, True)
         self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ad)
         toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
         if self._is_current_data_on_cbrs():
