@@ -45,6 +45,7 @@ ANRITSU_SOCKET_BUFFER_SIZE = 8192
 COMMAND_COMPLETE_WAIT_TIME = 180  # was 90
 SETTLING_TIME = 1
 WAIT_TIME_IDENTITY_RESPONSE = 5
+IDLE_STATE_WAIT_TIME = 240
 
 IMSI_READ_USERDATA_WCDMA = "081501"
 IMEI_READ_USERDATA_WCDMA = "081502"
@@ -838,6 +839,37 @@ class MD8475A(object):
         cmd = "L_STATTMR %s" % time
         self.send_command(cmd)
 
+    def set_umts_rrc_status_change(self, status_change):
+        """ Enables or Disables the UMTS RRC status change function
+
+        Returns:
+            None
+        """
+        cmd = "W_RRCSTAT "
+        if status_change:
+            cmd += "ENABLE"
+        else:
+            cmd += "DISABLE"
+        self.send_command(cmd)
+
+    def get_umts_rrc_status_change(self):
+        """ Gets the UMTS RRC Status Change
+
+        Returns:
+            Boolean: True is Enabled / False is Disabled
+        """
+        cmd = "W_RRCSTAT?"
+        return self.send_query(cmd)
+
+    def set_umts_dch_stat_timer(self, time):
+        """ Sets the UMTS RRC DCH timer
+
+        Returns:
+            None
+        """
+        cmd = "W_STATTMRDCH %s" % time
+        self.send_command(cmd)
+
     def set_simulation_state_to_poweroff(self):
         """ Sets the simulation state to POWER OFF
 
@@ -944,6 +976,29 @@ class MD8475A(object):
                 callstat = self.send_query("CALLSTAT? BTS1").split(",")
             else:
                 raise AnritsuError("UE failed to register on network")
+
+    def wait_for_idle_state(self, time_to_wait=IDLE_STATE_WAIT_TIME):
+        """ Waits for UE idle state on Anritsu
+
+        Args:
+          time_to_wait: time to wait for the phone to get to idle state
+
+        Returns:
+            None
+        """
+        self.log.info("wait for IDLE state on anritsu.")
+
+        sleep_interval = 1
+        waiting_time = 0
+
+        callstat = self.send_query("CALLSTAT? BTS1").split(",")
+        while callstat[0] != "IDLE":
+            time.sleep(sleep_interval)
+            waiting_time += sleep_interval
+            if waiting_time <= time_to_wait:
+                callstat = self.send_query("CALLSTAT? BTS1").split(",")
+            else:
+                raise AnritsuError("UE failed to go on idle state")
 
     def get_camping_cell(self):
         """ Gets the current camping cell information
