@@ -839,6 +839,37 @@ class MD8475A(object):
         cmd = "L_STATTMR %s" % time
         self.send_command(cmd)
 
+    def set_umts_rrc_status_change(self, status_change):
+        """ Enables or Disables the UMTS RRC status change function
+
+        Returns:
+            None
+        """
+        cmd = "W_RRCSTAT "
+        if status_change:
+            cmd += "ENABLE"
+        else:
+            cmd += "DISABLE"
+        self.send_command(cmd)
+
+    def get_umts_rrc_status_change(self):
+        """ Gets the UMTS RRC Status Change
+
+        Returns:
+            Boolean: True is Enabled / False is Disabled
+        """
+        cmd = "W_RRCSTAT?"
+        return self.send_query(cmd)
+
+    def set_umts_dch_stat_timer(self, time):
+        """ Sets the UMTS RRC DCH timer
+
+        Returns:
+            None
+        """
+        cmd = "W_STATTMRDCH %s" % time
+        self.send_command(cmd)
+
     def set_simulation_state_to_poweroff(self):
         """ Sets the simulation state to POWER OFF
 

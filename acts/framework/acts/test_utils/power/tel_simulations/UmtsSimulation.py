@@ -46,6 +46,7 @@ class UmtsSimulation(BaseSimulation):
     PARAM_UL_PW = 'pul'
     PARAM_DL_PW = 'pdl'
     PARAM_BAND = "band"
+    PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
     # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSCP"
@@ -154,6 +155,20 @@ class UmtsSimulation(BaseSimulation):
                 "valid release version.".format(self.PARAM_RELEASE_VERSION))
 
         self.set_release_version(self.bts1, values[1])
+
+        # Setup W-CDMA RRC status change and CELL_DCH timer for idle test case
+
+        values = self.consume_parameter(parameters,
+                                        self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
+        if not values:
+            self.log.info(
+                "The test name does not include the '{}' parameter. Disabled "
+                "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
+            self.anritsu.set_umts_rrc_status_change(False)
+        else:
+            self.rrc_sc_timer = int(values[1])
+            self.anritsu.set_umts_rrc_status_change(True)
+            self.anritsu.set_umts_dch_stat_timer(self.rrc_sc_timer)
 
         # Setup uplink power
 

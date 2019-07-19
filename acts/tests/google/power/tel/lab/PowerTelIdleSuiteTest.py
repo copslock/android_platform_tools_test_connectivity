@@ -23,3 +23,11 @@ class PowerTelIdle_LTE_Test(PowerTelIdleTest):
 
     def test_lte_idle_band_41_pul_low_bw_10_tm_1_mimo_1x1_rrcstatuschangetimer_10_tddconfig_2_2(self):
         self.power_tel_idle_test()
+
+
+class PowerTelIdle_UMTS_Test(PowerTelIdleTest):
+    def test_umts_idle_r_8_band_1_pul_low_rrcstatuschangetimer_10_1(self):
+        self.power_tel_idle_test()
+
+    def test_umts_idle_r_7_band_4_pul_low_rrcstatuschangetimer_20_2(self):
+        self.power_tel_idle_test()
