@@ -116,6 +116,9 @@ class PtsBaseClass(BaseTestClass):
                 119: self.mmi_iut_enter_uuid_attribute_not_found,
                 120: self.mmi_iut_enter_handle_write_not_permitted,
                 2000: self.mmi_verify_secure_id,  # Enter pairing pin from DUT.
+            },
+            "SDP" {
+                # TODO: Implement MMIs as necessary
             }
         }
 
