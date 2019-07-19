@@ -116,6 +116,9 @@ class BaseSimulation():
         self.sim_dl_power = None
         self.sim_ul_power = None
 
+        # Stores RRC status change timer
+        self.rrc_sc_timer = None
+
         # Set to default APN
         log.info("Setting preferred APN to anritsu1.com.")
         dut.droid.telephonySetAPN("anritsu1.com", "anritsu1.com")
@@ -700,3 +703,11 @@ class BaseSimulation():
         """
 
         pass
+
+    def wait_for_rrc_idle_state(self, wait_time):
+        """ Waits for UE RRC state change to idle mode.
+
+        Raises exception when UE fails to move to idle state
+        """
+
+        self.anritsu.wait_for_idle_state(wait_time)
