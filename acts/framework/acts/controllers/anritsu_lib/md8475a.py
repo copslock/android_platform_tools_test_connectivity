@@ -1131,6 +1131,15 @@ class MD8475A(object):
         """
         self.send_command('OPERATEIPTRAFFIC STOP,' + pdn)
 
+    def set_carrier_aggregation_enabled(self, enabled=True):
+        """ Enables or disables de carrier aggregation option.
+
+        Args:
+            enabled: enables CA if True and disables CA if False.
+        """
+        cmd = 'CA ' + 'ENABLE' if enabled else 'DISABLE'
+        self.send_command(cmd)
+
     # Common Default Gateway:
     @property
     def gateway_ipv4addr(self):
