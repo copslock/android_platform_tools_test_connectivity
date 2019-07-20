@@ -89,6 +89,13 @@ class BluetoothDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
+    def set_discoverable(self, is_discoverable):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
     def bluetooth_toggle_state(self, state):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
@@ -261,6 +268,17 @@ class AndroidBluetoothDevice(BluetoothDevice):
     def bluetooth_toggle_state(self, state):
         self.device.droid.bluetoothToggleState(state)
 
+    def set_discoverable(self, is_discoverable):
+        """ Sets the device's discoverability.
+
+        Args:
+            is_discoverable: True if discoverable, false if not discoverable
+        """
+        if is_discoverable:
+            self.device.droid.bluetoothMakeDiscoverable()
+        else:
+            self.device.droid.bluetoothMakeUndiscoverable()
+
     def initialize_bluetooth(self):
         pass
 
@@ -431,6 +449,14 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
     def bluetooth_toggle_state(self, state):
         """Stub for Fuchsia implementation."""
         pass
+
+    def set_discoverable(self, is_discoverable):
+        """ Sets the device's discoverability.
+
+        Args:
+            is_discoverable: True if discoverable, false if not discoverable
+        """
+        self.device.btc_lib.setDiscoverable(is_discoverable)
 
     def get_pairing_pin(self):
         """ Get the pairing pin from the active pairing delegate.

@@ -27,7 +27,7 @@ A2DP_IXIT = {
     b'TSPX_time_guard': (b'INTEGER', b'300000'),
     b'TSPX_use_implicit_send': (b'BOOLEAN', b'TRUE'),
     b'TSPX_media_directory':
-    (b'IA5STRING', b'C:\Program Files\Bluetooth SIG\Bluetooth PTS\bin\audio'),
+    (b'IA5STRING', b'C:\Program Files\Bluetooth SIG\Bluetooth PTS\\bin\\audio'),
     b'TSPX_auth_password': (b'IA5STRING', b'0000'),
     b'TSPX_auth_user_id': (b'IA5STRING', b'PTS'),
     b'TSPX_rfcomm_channel': (b'INTEGER', b'8'),
