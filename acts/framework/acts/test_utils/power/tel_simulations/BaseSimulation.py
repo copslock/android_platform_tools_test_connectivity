@@ -389,6 +389,13 @@ class BaseSimulation():
         else:
             power = signal_level
 
+        # Starts IP traffic while changing this setting to force the UE to be
+        # in Communication state, as UL power cannot be set in Idle state
+        self.start_traffic_for_calibration()
+
+        # Wait until it goes to communication state
+        self.anritsu.wait_for_communication_state()
+
         # Try to use measured path loss value. If this was not set, it will
         # throw an TypeError exception
         try:
@@ -417,6 +424,9 @@ class BaseSimulation():
             bts.input_level = round(power)
             self.log.info("Phone uplink transmitted power set to {} (link is "
                           "uncalibrated).".format(round(power)))
+
+        # Stop IP traffic after setting the UL power level
+        self.stop_traffic_for_calibration()
 
     def calibrate(self):
         """ Calculates UL and DL path loss if it wasn't done before.
