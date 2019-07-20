@@ -737,12 +737,13 @@ class MD8475A(object):
         if status != NO_ERROR:
             raise AnritsuError(status, cmd)
 
-    def _set_simulation_model(self, sim_model):
+    def _set_simulation_model(self, sim_model, reset=True):
         """ Set simulation model and valid the configuration
 
         Args:
             sim_model: simulation model
-
+            reset: if True, reset the simulation after setting the new
+            simulation model
         Returns:
             True/False
         """
@@ -762,9 +763,10 @@ class MD8475A(object):
                                 COMMAND_COMPLETE_WAIT_TIME))
             if error:
                 return False
-        # Reset every time after SIMMODEL is set because SIMMODEL will load
-        # some of the contents from previous parameter files.
-        self.reset()
+        if reset:
+            # Reset might be necessary because SIMMODEL will load
+            # some of the contents from previous parameter files.
+            self.reset()
         return True
 
     def set_simulation_model(self, bts1, bts2=None, bts3=None, bts4=None):
