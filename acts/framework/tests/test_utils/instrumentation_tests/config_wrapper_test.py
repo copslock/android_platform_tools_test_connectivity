@@ -30,6 +30,9 @@ MOCK_CONFIG = {
     'real_and_fake_paths': [
         'realpath/1', 'fakepath/0'
     ],
+    'inner_config': {
+        'inner_val': 16
+    }
 }
 
 
@@ -91,6 +94,15 @@ class ConfigWrapperTest(unittest.TestCase):
                          MOCK_CONFIG['real_paths_only'])
         with self.assertRaisesRegex(InvalidParamError, 'Cannot resolve'):
             self.mock_config.get_files('real_and_fake_paths')
+
+    def test_config_wrapper_wraps_recursively(self):
+        """Test that dict values within the input config get transformed into
+        ConfigWrapper objects themselves.
+        """
+        self.assertTrue(
+            isinstance(self.mock_config.get('inner_config'), ConfigWrapper))
+        self.assertEqual(
+            self.mock_config.get('inner_config').get_int('inner_val'), 16)
 
 
 if __name__ == '__main__':
