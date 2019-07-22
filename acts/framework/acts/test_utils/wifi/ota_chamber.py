@@ -74,6 +74,10 @@ class OtaChamber(object):
         """Stops turntables and stirrers in OTA chamber."""
         raise NotImplementedError
 
+    def step_stirrers(self, steps):
+        """Move stepped stirrers in OTA chamber to next step."""
+        raise NotImplementedError
+
 
 class MockChamber(OtaChamber):
     """Class that implements mock chamber for test development and debug."""
@@ -87,7 +91,7 @@ class MockChamber(OtaChamber):
     def set_orientation(self, orientation):
         self.log.info('Setting orientation to {} degrees.'.format(orientation))
 
-    def reset_chamber(self, orientation):
+    def reset_chamber(self):
         self.log.info('Resetting chamber to home state')
 
     def set_stirrer_pos(self, stirrer_id, position):
@@ -101,6 +105,14 @@ class MockChamber(OtaChamber):
     def stop_continuous_stirrers(self):
         """Stops turntables and stirrers in OTA chamber."""
         self.log.info('Stopping continuous stirrer motion')
+
+    def configure_stepped_stirrers(self, steps):
+        """Programs parameters for stepped stirrers in OTA chamber."""
+        self.log.info('Configuring stepped stirrers')
+
+    def step_stirrers(self, steps):
+        """Move stepped stirrers in OTA chamber to next step."""
+        self.log.info('Moving stirrers to the next step')
 
 
 class OctoboxChamber(OtaChamber):
@@ -165,6 +177,11 @@ class BluetestChamber(OtaChamber):
         self.current_mode = 'continuous'
         self.chamber.chamber_stirring_continous_init()
 
+    def _init_stepped_mode(self, steps):
+        self.current_mode = 'stepped'
+        self.current_stepped_pos = 0
+        self.chamber.chamber_stirring_stepped_init(steps, False)
+
     def set_stirrer_pos(self, stirrer_id, position):
         if self.current_mode != 'manual':
             self._init_manual_mode()
@@ -182,8 +199,17 @@ class BluetestChamber(OtaChamber):
     def stop_continuous_stirrers(self):
         self.chamber.chamber_stirring_continous_stop()
 
+    def step_stirrers(self, steps):
+        if self.current_mode != 'stepped':
+            self._init_stepped_mode(steps)
+        if self.current_stepped_pos == 0:
+            self.current_stepped_pos += 1
+            return
+        self.current_stepped_pos += 1
+        self.chamber.chamber_stirring_stepped_next_pos()
+
     def reset_chamber(self):
         if self.current_mode == 'continuous':
             self._init_continuous_mode()
-        elif self.current_mode == 'manual':
+        else:
             self._init_manual_mode()
