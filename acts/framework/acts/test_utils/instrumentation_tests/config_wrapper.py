@@ -14,7 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import copy
 import os
 
 
@@ -26,12 +25,14 @@ class ConfigWrapper(object):
     """Class representing a test or preparer config."""
 
     def __init__(self, config):
-        """Initialize a InstrumentationTestConfig
+        """Initialize a ConfigWrapper
 
         Args:
             config: A dict representing the preparer/test parameters
         """
-        self._config = copy.deepcopy(config)
+        self._config = {
+            key: (ConfigWrapper(value) if isinstance(value, dict) else value)
+            for key, value in config.items()}
 
     def __getitem__(self, item):
         """Wrapper around self._config. In contrast to self.get, this method
