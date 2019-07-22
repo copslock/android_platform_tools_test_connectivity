@@ -79,7 +79,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                   mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
-        return config_wrapper.InstrumentationConfigWrapper(config_dict)
+        return config_wrapper.ConfigWrapper(config_dict)
 
     def _resolve_file_paths(self, config):
         """Recursively resolve all 'FILE' markers found in the power config to
@@ -104,13 +104,31 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                     config[key] = self.user_params[key]
         return success
 
+    def _prepare_device(self, preparer_config):
+        """Prepares the device for testing.
+
+        Args:
+            preparer_config: Device preparer configuration"""
+        pass
+
     def setup_class(self):
         """Class setup"""
         self.ad_dut = self.android_devices[0]
+        if self._power_config:
+            if 'preparers' in self._power_config:
+                self._prepare_device(self._power_config['preparers'])
 
-    def adb_run(self, cmds):
-        """Run the specified command, or list of commands, with the ADB shell"""
+    def adb_run(self, cmds, non_blocking=False):
+        """Run the specified command, or list of commands, with the ADB shell.
+
+        Args:
+            cmds: A string or list of strings representing ADB shell command(s)
+            non_blocking: Run asynchronously
+        """
         if isinstance(cmds, str):
             cmds = [cmds]
+        adb = self.ad_dut.adb
+        adb_shell = adb.shell_nb if non_blocking else adb.shell
         for cmd in cmds:
-            self.ad_dut.adb.shell(cmd)
+            adb_shell(cmd)
+
