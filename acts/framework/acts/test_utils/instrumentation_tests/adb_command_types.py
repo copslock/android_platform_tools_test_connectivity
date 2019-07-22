@@ -31,13 +31,15 @@ class DeviceState(object):
         self._on_val = on_val
         self._off_val = off_val
 
-    def set_value(self, value):
-        """Returns the adb command with the given argument/value.
+    def set_value(self, *values):
+        """Returns the adb command with the given arguments/values.
 
         Args:
-            value: The value to run the command with
+            values: The value(s) to run the command with
         """
-        return str.strip('%s %s' % (self._base_cmd, str(value)))
+
+        return str.strip(' '.join(
+            [self._base_cmd] + [str(value) for value in values]))
 
     def toggle(self, enabled):
         """Returns the command corresponding to the desired state.

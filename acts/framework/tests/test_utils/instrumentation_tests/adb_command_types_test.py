@@ -31,10 +31,12 @@ class AbdCommandTest(unittest.TestCase):
         """Tests that DeviceState returns the correct ADB command with
         set_value.
         """
-        base_cmd = 'run command with val'
-        val = 15
+        base_cmd = 'run command with vals'
+        val1 = 15
+        val2 = 24
         device_state = DeviceState(base_cmd)
-        self.assertEqual(device_state.set_value(val), '%s %s' % (base_cmd, val))
+        self.assertEqual(device_state.set_value(val1, val2),
+                         'run command with vals 15 24')
 
     def test_device_binary_state(self):
         """Tests that DeviceState returns the correct ADB commands with toggle.
@@ -53,7 +55,7 @@ class AbdCommandTest(unittest.TestCase):
         val = 3
         device_setprop = DeviceSetprop(prop)
         self.assertEqual(device_setprop.set_value(val),
-                         'setprop %s %s' % (prop, val))
+                         'setprop some.property 3')
 
     def test_device_binary_setprop(self):
         """Tests that DeviceSetprop returns the correct ADB commands with
@@ -64,9 +66,9 @@ class AbdCommandTest(unittest.TestCase):
         off_val = False
         device_binary_setprop = DeviceSetprop(prop, on_val, off_val)
         self.assertEqual(device_binary_setprop.toggle(True),
-                         'setprop %s %s' % (prop, on_val))
+                         'setprop some.other.property True')
         self.assertEqual(device_binary_setprop.toggle(False),
-                         'setprop %s %s' % (prop, off_val))
+                         'setprop some.other.property False')
 
     def test_device_setting(self):
         """Tests that DeviceSetting returns the correct ADB command with
@@ -77,7 +79,7 @@ class AbdCommandTest(unittest.TestCase):
         val = 10
         device_setting = DeviceSetting(namespace, setting)
         self.assertEqual(device_setting.set_value(val),
-                         'settings put %s %s %s' % (namespace, setting, val))
+                         'settings put global some_new_setting 10')
 
     def test_device_binary_setting(self):
         """Tests that DeviceSetting returns the correct ADB commands with
@@ -91,10 +93,10 @@ class AbdCommandTest(unittest.TestCase):
             namespace, setting, on_val, off_val)
         self.assertEqual(
             device_binary_setting.toggle(True),
-            'settings put %s %s %s' % (namespace, setting, on_val))
+            'settings put system some_other_setting on')
         self.assertEqual(
             device_binary_setting.toggle(False),
-            'settings put %s %s %s' % (namespace, setting, off_val))
+            'settings put system some_other_setting off')
 
     def test_device_binary_command_series(self):
         """Tests that DeviceBinaryCommandSuite returns the correct ADB
