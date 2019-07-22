@@ -69,7 +69,7 @@ from acts.test_utils.tel.tel_subscription_utils import get_cbrs_and_default_sub_
 from acts.utils import get_current_epoch_time
 from queue import Empty
 
-WAIT_TIME_BETWEEN_ITERATION = 10
+WAIT_TIME_BETWEEN_ITERATION = 5
 WAIT_TIME_BETWEEN_HANDOVER = 10
 TIME_PERMITTED_FOR_CBRS_SWITCH = 2
 
@@ -685,8 +685,9 @@ class TelLiveCBRSTest(TelephonyBaseTest):
         if self._is_current_data_on_cbrs():
             ad.log.info("Current Data is on CBRS, proceeding with test")
         else:
-            ad.log.error("Current Data not on CBRS, aborting test..")
-            return False
+            ad.log.error("Current Data not on CBRS, forcing it now..")
+            ad.droid.telephonySetPreferredOpportunisticDataSubscription(
+                self.cbrs_subid, False)
         ad.droid.telephonyUpdateAvailableNetworks(self.cbrs_subid)
         total_iteration = self.stress_test_number
         fail_count = collections.defaultdict(int)
