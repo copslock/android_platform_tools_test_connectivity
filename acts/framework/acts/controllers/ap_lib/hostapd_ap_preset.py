@@ -12,6 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import acts.controllers.ap_lib.third_party_ap_profiles.actiontec as actiontec
+
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
 
@@ -243,7 +245,11 @@ def create_ap_preset(profile_name='whirlwind',
                                   n_capabilities=[],
                                   ac_capabilities=[],
                                   vht_bandwidth=None)
-
+    elif profile_name == 'actiontec_pk5000':
+        config = actiontec.actiontec_pk5000(iface_wlan_2g=iface_wlan_2g,
+                                            channel=channel,
+                                            ssid=ssid,
+                                            security=security)
     else:
         raise ValueError('Invalid ap model specified (%s)' % profile_name)
 
