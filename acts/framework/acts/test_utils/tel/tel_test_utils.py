@@ -34,6 +34,7 @@ from acts.controllers.adb import AdbError
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
+from acts.controllers.android_device import DEFAULT_SDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.libs.proc import job
 from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
@@ -6209,6 +6210,34 @@ def set_qxdm_logger_command(ad, mask=None):
         return True
 
 
+def start_sdm_logger(ad):
+    """Start SDM logger."""
+    if not getattr(ad, "sdm_log", True): return
+    # Delete existing SDM logs which were created 15 mins prior
+    ad.sdm_log_path = DEFAULT_SDM_LOG_PATH
+    file_count = ad.adb.shell(
+        "find %s -type f -iname *.sdm | wc -l" % ad.sdm_log_path)
+    if int(file_count) > 3:
+        seconds = 15 * 60
+        # Remove sdm logs modified more than specified seconds ago
+        ad.adb.shell(
+            "find %s -type f -iname *.sdm -not -mtime -%ss -delete" %
+            (ad.sdm_log_path, seconds))
+    # start logging
+    cmd = "setprop vendor.sys.modem.logging.enable true"
+    ad.log.debug("start sdm logging")
+    ad.adb.shell(cmd, ignore_status=True)
+    time.sleep(5)
+
+
+def stop_sdm_logger(ad):
+    """Stop SDM logger."""
+    cmd = "setprop vendor.sys.modem.logging.enable false"
+    ad.log.debug("stop sdm logging")
+    ad.adb.shell(cmd, ignore_status=True)
+    time.sleep(5)
+
+
 def stop_qxdm_logger(ad):
     """Stop QXDM logger."""
     for cmd in ("diag_mdlog -k", "killall diag_mdlog"):
@@ -6315,6 +6344,17 @@ def start_qxdm_loggers(log, ads, begin_time=None):
 
 def stop_qxdm_loggers(log, ads):
     tasks = [(stop_qxdm_logger, [ad]) for ad in ads]
+    run_multithread_func(log, tasks)
+
+
+def start_sdm_loggers(log, ads):
+    tasks = [(start_sdm_logger, [ad]) for ad in ads
+             if getattr(ad, "sdm_log", True)]
+    if tasks: run_multithread_func(log, tasks)
+
+
+def stop_sdm_loggers(log, ads):
+    tasks = [(stop_sdm_logger, [ad]) for ad in ads]
     run_multithread_func(log, tasks)
 
 
