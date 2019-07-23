@@ -213,15 +213,13 @@ class WifiChaosTest(WifiBaseTest):
 
         Steps:
         1. Send a few link probes.
-        2. Verify that at least one link probe succeeded.
-        3. Ensure that the device and AP did not crash (by checking that the
+        2. Ensure that the device and AP did not crash (by checking that the
            device remains connected to the expected network).
         """
         results = wutils.send_link_probes(
             self.dut, NUM_LINK_PROBES, PROBE_DELAY_SEC)
 
-        asserts.assert_true(any(result.is_success for result in results),
-                            "Expect at least 1 probe success: " + str(results))
+        self.log.info("Link Probe results: " + results)
 
         wifi_info = self.dut.droid.wifiGetConnectionInfo()
         expected = network[WifiEnums.SSID_KEY]
