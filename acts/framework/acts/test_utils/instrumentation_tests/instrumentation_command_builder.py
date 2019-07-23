@@ -16,8 +16,7 @@
 
 
 class InstrumentationCommandBuilder(object):
-    """Helper class to build instrumentation test commands.
-    """
+    """Helper class to build instrumentation commands."""
 
     def __init__(self):
         self._manifest_package_name = None
@@ -82,9 +81,7 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
            https://developer.android.com/studio/test/command-line#AMSyntax
 
         The default test runner is androidx.test.runner.AndroidJUnitRunner.
-
         """
-
         builder = InstrumentationTestCommandBuilder()
         builder.add_flag('-w')
         builder.add_flag('-r')
@@ -95,7 +92,7 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
     CONFLICTING_PARAMS_MESSAGE = ('only a list of classes and test methods or '
                                   'a list of test packages are allowed.')
 
-    def add_tests_package(self, package):
+    def add_test_package(self, package):
         if len(self._classes) != 0:
             raise Exception(self.CONFLICTING_PARAMS_MESSAGE)
         self._packages.append(package)
@@ -105,7 +102,7 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
             raise Exception(self.CONFLICTING_PARAMS_MESSAGE)
         self._classes.append('{}#{}'.format(class_name, test_method))
 
-    def add_tests_class(self, class_name):
+    def add_test_class(self, class_name):
         if len(self._packages) != 0:
             raise Exception(self.CONFLICTING_PARAMS_MESSAGE)
         self._classes.append(class_name)
