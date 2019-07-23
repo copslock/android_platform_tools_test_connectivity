@@ -119,7 +119,7 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         keyword_time_dict = {}
 
         text_search_mapping = {
-            'boot_complete': "processing action (sys.boot_completed=1)",
+            'boot_complete': "ModemService: Received: android.intent.action.BOOT_COMPLETED",
             'Voice_Reg': "< VOICE_REGISTRATION_STATE {.regState = REG_HOME",
             'Data_Reg': "< DATA_REGISTRATION_STATE {.regState = REG_HOME",
             'Data_Call_Up': "onSetupConnectionCompleted result=SUCCESS",
@@ -232,7 +232,7 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         keyword_time_dict = {}
 
         text_search_mapping = {
-            'boot_complete': "Finished processing BOOT_COMPLETED",
+            'boot_complete': "ModemService: Received: android.intent.action.BOOT_COMPLETED",
             'cbrs_active': "notifyPreferredDataSubIdChanged to %s" % cbrs_subid,
         }
 
