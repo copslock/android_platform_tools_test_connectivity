@@ -245,6 +245,7 @@ class TriggerMessageIDs(Enum):
     IDENTITY_REQUEST_LTE = 141155
     IDENTITY_REQUEST_WCDMA = 241115
     IDENTITY_REQUEST_GSM = 641115
+    UE_CAPABILITY_ENQUIRY = 111167
 
 
 class TriggerMessageReply(Enum):
@@ -1510,6 +1511,20 @@ class MD8475A(object):
                 return None
             seqlog = self.send_query("SEQLOG? %d" % index).split(",")
         return (seqlog[-1])
+
+    def trigger_ue_capability_enquiry(self, requested_bands):
+        """ Triggers LTE RRC UE capability enquiry from callbox.
+
+        Args:
+            requested_bands: User data in hex format
+        """
+        self.set_trigger_message_mode(TriggerMessageIDs.UE_CAPABILITY_ENQUIRY)
+        time.sleep(SETTLING_TIME)
+        self.set_data_of_trigger_message(
+            TriggerMessageIDs.UE_CAPABILITY_ENQUIRY, requested_bands)
+        time.sleep(SETTLING_TIME)
+        self.send_trigger_message(TriggerMessageIDs.UE_CAPABILITY_ENQUIRY)
+        time.sleep(SETTLING_TIME)
 
     def select_usim(self, usim):
         """ Select pre-defined Anritsu USIM models
