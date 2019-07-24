@@ -130,6 +130,7 @@ class FuchsiaSyslogProcess(object):
         finally:
             self._join_threads()
             self._started = False
+            return None
 
     def _join_threads(self):
         """Waits for the threads associated with the process to terminate."""

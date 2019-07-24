@@ -96,8 +96,44 @@ def _logcat_log_test_end(event):
         test_instance.log.warning('Error: %s' % e)
 
 
+@subscribe_static(TestCaseBeginEvent)
+def _syslog_log_test_begin(event):
+    """This adds a BEGIN log message with the test name to the syslog of any
+    Fuchsia device"""
+    test_instance = event.test_class
+    try:
+        for fd in getattr(test_instance, 'fuchsia_devices', []):
+            if not fd.skip_sl4f:
+                fd.logging_lib.logI("%s BEGIN %s" % (TEST_CASE_TOKEN,
+                                                     event.test_case_name))
+
+    except Exception as e:
+        test_instance.log.warning(
+            'Unable to send BEGIN log command to all devices.')
+        test_instance.log.warning('Error: %s' % e)
+
+
+@subscribe_static(TestCaseEndEvent)
+def _syslog_log_test_end(event):
+    """This adds a END log message with the test name to the syslog of any
+    Fuchsia device"""
+    test_instance = event.test_class
+    try:
+        for fd in getattr(test_instance, 'fuchsia_devices', []):
+            if not fd.skip_sl4f:
+                fd.logging_lib.logI("%s END %s" % (TEST_CASE_TOKEN,
+                                                   event.test_case_name))
+
+    except Exception as e:
+        test_instance.log.warning(
+            'Unable to send END log command to all devices.')
+        test_instance.log.warning('Error: %s' % e)
+
+
 event_bus.register_subscription(_logcat_log_test_begin.subscription)
 event_bus.register_subscription(_logcat_log_test_end.subscription)
+event_bus.register_subscription(_syslog_log_test_begin.subscription)
+event_bus.register_subscription(_syslog_log_test_end.subscription)
 
 
 class Error(Exception):
