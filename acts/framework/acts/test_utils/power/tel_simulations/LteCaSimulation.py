@@ -34,6 +34,9 @@ class LteCaSimulation(LteSimulation):
     # Simulation config keywords contained in the test name
     PARAM_CA = 'ca'
 
+    # Test config keywords
+    KEY_FREQ_BANDS = "freq_bands"
+
     def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for LTE simulation with carrier
         aggregation.
@@ -60,6 +63,14 @@ class LteCaSimulation(LteSimulation):
                 anritsu.get_BTS(BtsNumber.BTS4),
                 anritsu.get_BTS(BtsNumber.BTS5)
             ])
+
+        # Get LTE CA frequency bands setting from the test configuration
+        if self.KEY_FREQ_BANDS not in test_config:
+            self.log.warning("The key '{}' is not set in the config file. "
+                             "Setting to null by default.".format(
+                                 self.KEY_FREQ_BANDS))
+
+        self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
 
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation with CA using a list of parameters.
@@ -401,6 +412,11 @@ class LteCaSimulation(LteSimulation):
         basestation 1 first.
 
         """
+
+        # Trigger UE capability enquiry from network to get
+        # UE supported CA band combinations. Here freq_bands is a hex string.
+
+        self.anritsu.trigger_ue_capability_enquiry(self.freq_bands)
 
         testcase = self.anritsu.get_AnritsuTestCases()
         testcase.procedure = TestProcedure.PROCEDURE_MULTICELL
