@@ -75,23 +75,23 @@ class InstrumentationTestCommandBuilderTest(unittest.TestCase):
 
     def test__test_packages_can_not_be_added_if_classes_were_added_first(self):
         builder = InstrumentationTestCommandBuilder()
-        builder.add_tests_class('some.tests.Class')
+        builder.add_test_class('some.tests.Class')
 
         with self.assertRaisesRegex(Exception, '.*only a list of classes.*'):
-            builder.add_tests_package('some.tests.package')
+            builder.add_test_package('some.tests.package')
 
     def test__test_classes_can_not_be_added_if_packages_were_added_first(self):
         builder = InstrumentationTestCommandBuilder()
-        builder.add_tests_package('some.tests.package')
+        builder.add_test_package('some.tests.package')
 
         with self.assertRaisesRegex(Exception, '.*only a list of classes.*'):
-            builder.add_tests_class('some.tests.Class')
+            builder.add_test_class('some.tests.Class')
 
     def test__test_classes_and_test_methods_can_be_combined(self):
         builder = InstrumentationTestCommandBuilder()
         builder.set_runner('runner')
         builder.set_manifest_package('some.manifest.package')
-        builder.add_tests_class('some.tests.Class1')
+        builder.add_test_class('some.tests.Class1')
         builder.add_test_method('some.tests.Class2', 'favoriteTestMethod')
 
         call = builder.build()
