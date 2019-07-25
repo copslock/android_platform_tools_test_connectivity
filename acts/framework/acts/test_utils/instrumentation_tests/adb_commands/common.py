@@ -14,14 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation_tests.adb_command_types import DeviceState
-from acts.test_utils.instrumentation_tests.adb_command_types \
-    import DeviceSetprop
-from acts.test_utils.instrumentation_tests.adb_command_types \
-    import DeviceSetting
 from acts.test_utils.instrumentation_tests.adb_command_types \
     import DeviceBinaryCommandSeries
-
+from acts.test_utils.instrumentation_tests.adb_command_types \
+    import DeviceSetting
+from acts.test_utils.instrumentation_tests.adb_command_types import DeviceState
 
 GLOBAL = 'global'
 SYSTEM = 'system'
@@ -70,3 +67,9 @@ screen_brightness = DeviceSetting(SYSTEM, 'screen_brightness')
 auto_time = DeviceSetting(GLOBAL, 'auto_time')
 
 auto_timezone = DeviceSetting(GLOBAL, 'auto_time_zone')
+
+location_gps = DeviceSetting(SECURE, 'location_providers_allowed',
+                             '+gps', '-gps')
+
+location_network = DeviceSetting(SECURE, 'location_providers_allowed',
+                                 '+network', '-network')
