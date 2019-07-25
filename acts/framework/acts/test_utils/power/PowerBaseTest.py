@@ -162,6 +162,10 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         self.log.info('Tearing down the test case')
         self.mon.usb('on')
+        # Take Bugreport
+        if self.bug_report:
+            begin_time = utils.get_current_epoch_time()
+            self.dut.take_bug_report(self.test_name, begin_time)
 
     def teardown_class(self):
         """Clean up the test class after tests finish running
@@ -305,13 +309,9 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         tag = ''
         # Collecting current measurement data and plot
-        begin_time = utils.get_current_epoch_time()
         self.file_path, self.test_result = self.monsoon_data_collect_save()
         self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
         wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
-        # Take Bugreport
-        if self.bug_report:
-            self.dut.take_bug_report(self.test_name, begin_time)
 
     def pass_fail_check(self):
         """Check the test result and decide if it passed or failed.
