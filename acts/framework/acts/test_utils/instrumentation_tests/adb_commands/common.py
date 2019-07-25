@@ -17,6 +17,8 @@
 from acts.test_utils.instrumentation_tests.adb_command_types \
     import DeviceBinaryCommandSeries
 from acts.test_utils.instrumentation_tests.adb_command_types \
+    import DeviceSetprop
+from acts.test_utils.instrumentation_tests.adb_command_types \
     import DeviceSetting
 from acts.test_utils.instrumentation_tests.adb_command_types import DeviceState
 
@@ -27,6 +29,8 @@ SECURE = 'secure'
 """Common device settings for power testing."""
 
 # TODO: add descriptions to each setting
+
+# Network/Connectivity
 
 airplane_mode = DeviceBinaryCommandSeries(
     [
@@ -59,17 +63,52 @@ bluetooth = DeviceState('service call bluetooth_manager', '6', '8')
 
 nfc = DeviceState('svc nfc', 'enable', 'disable')
 
+# Screen
+
 screen_adaptive_brightness = DeviceSetting(
     SYSTEM, 'screen_brightness_mode')
 
 screen_brightness = DeviceSetting(SYSTEM, 'screen_brightness')
 
+screen_always_on = DeviceState('svc power stayon', 'true', 'false')
+
+screen_timeout_ms = DeviceSetting(SYSTEM, 'screen_off_timeout')
+
+doze_mode = DeviceSetting(SECURE, 'doze_enabled')
+
+wake_gesture = DeviceSetting(SECURE, 'wake_gesture_enabled')
+
+screensaver = DeviceSetting(SECURE, 'screensaver_enabled')
+
+notification_led = DeviceSetting(SYSTEM, 'notification_light_pulse')
+
+# Accelerometer
+
+auto_rotate = DeviceSetting(SYSTEM, 'accelerometer_rotation')
+
+# Time
+
 auto_time = DeviceSetting(GLOBAL, 'auto_time')
 
 auto_timezone = DeviceSetting(GLOBAL, 'auto_time_zone')
+
+timezone = DeviceSetprop('persist.sys.timezone')
+
+# Location
 
 location_gps = DeviceSetting(SECURE, 'location_providers_allowed',
                              '+gps', '-gps')
 
 location_network = DeviceSetting(SECURE, 'location_providers_allowed',
                                  '+network', '-network')
+
+# Power
+
+battery_saver_mode = DeviceSetting(GLOBAL, 'low_power')
+
+battery_saver_trigger = DeviceSetting(GLOBAL, 'low_power_trigger_level')
+
+enable_full_batterystats_history = 'dumpsys batterystats --enable full-history'
+
+disable_doze = 'dumpsys deviceidle disable'
+
