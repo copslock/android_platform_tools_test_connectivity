@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import datetime
+
 from acts.controllers.fuchsia_lib.base_lib import BaseLib
 
 
@@ -34,7 +36,7 @@ class FuchsiaLoggingLib(BaseLib):
         """
         test_cmd = "logging_facade.LogErr"
         test_args = {
-            "message": message,
+            "message": '[%s] %s' % (datetime.datetime.now(), message),
         }
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -52,7 +54,7 @@ class FuchsiaLoggingLib(BaseLib):
         """
         test_cmd = "logging_facade.LogInfo"
         test_args = {
-            "message": message,
+            "message": '[%s] %s' % (datetime.datetime.now(), message)
         }
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -70,7 +72,7 @@ class FuchsiaLoggingLib(BaseLib):
         """
         test_cmd = "logging_facade.LogWarn"
         test_args = {
-            "message": message,
+            "message": '[%s] %s' % (datetime.datetime.now(), message)
         }
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
