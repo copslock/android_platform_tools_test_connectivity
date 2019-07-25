@@ -213,8 +213,9 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
                                        self.client_id)
+        self.skip_sl4f = False
         # Start sl4f on device
-        self.start_services()
+        self.start_services(skip_sl4f=self.skip_sl4f)
         # Init server
         self.init_server_connection()
 
@@ -585,7 +586,7 @@ class FuchsiaDevice:
                 self.control_daemon("sl4f.cmx", "start")
 
     def stop_services(self):
-        """Stops long running services on the android device.
+        """Stops long running services on the fuchsia device.
 
         Terminate sl4f sessions if exist.
         """
