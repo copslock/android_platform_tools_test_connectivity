@@ -77,7 +77,6 @@ TEST_SDP_RECORD = {
 
 
 class SdpSetupTest(BaseTestClass):
-
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
         if 'dut' in self.user_params:
@@ -144,8 +143,25 @@ class SdpSetupTest(BaseTestClass):
         profile_id = int(sig_uuid_constants['AudioSource'], 16)
         result = self.dut.sdp_add_search(attributes, profile_id)
         if result.get("error") is not None:
+            raise signals.TestFailure("Failed to add SDP search: {}".format(
+                result.get("error")))
+        else:
+            raise signals.TestPass("Success")
+
+    def test_include_additional_attributes(self):
+        self.dut.sdp_init()
+        additional_attributes = [{
+            'id': 0x0201,
+            'element': {
+                'data': int(sig_uuid_constants['AVDTP'], 16)
+            }
+        }]
+
+        TEST_SDP_RECORD['additional_attributes'] = additional_attributes
+        result = self.dut.sdp_add_service(TEST_SDP_RECORD)
+        if result.get("error") is not None:
             raise signals.TestFailure(
-                "Failed to add SDP search: {}".format(
+                "Failed to add SDP service record: {}".format(
                     result.get("error")))
         else:
             raise signals.TestPass("Success")
