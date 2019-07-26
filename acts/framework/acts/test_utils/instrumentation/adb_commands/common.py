@@ -14,13 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation_tests.adb_command_types \
+from acts.test_utils.instrumentation.adb_command_types \
     import DeviceBinaryCommandSeries
-from acts.test_utils.instrumentation_tests.adb_command_types \
-    import DeviceSetprop
-from acts.test_utils.instrumentation_tests.adb_command_types \
-    import DeviceSetting
-from acts.test_utils.instrumentation_tests.adb_command_types import DeviceState
+from acts.test_utils.instrumentation.adb_command_types import DeviceSetprop
+from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
+from acts.test_utils.instrumentation.adb_command_types import DeviceState
 
 GLOBAL = 'global'
 SYSTEM = 'system'
