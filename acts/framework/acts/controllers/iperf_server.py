@@ -18,7 +18,10 @@ import json
 import logging
 import math
 import os
+import shlex
+import subprocess
 import threading
+import time
 
 from acts import context
 from acts import utils
@@ -209,7 +212,10 @@ class IPerfServerBase(object):
 
     def __init__(self, port):
         self._port = port
-        # TODO(markdr): Remove this after migration to the new iperf APIs.
+        # TODO(markdr): We shouldn't be storing the log files in an array like
+        # this. Nobody should be reading this property either. Instead, the
+        # IPerfResult should be returned in stop() with all the necessary info.
+        # See aosp/1012824 for a WIP implementation.
         self.log_files = []
 
     @property
@@ -272,14 +278,27 @@ class IPerfServerBase(object):
         return full_out_dir
 
 
+def _get_port_from_ss_output(ss_output, pid):
+    pid = str(pid)
+    lines = ss_output.split('\n')
+    for line in lines:
+        if pid in line:
+            # Expected format:
+            # tcp LISTEN  0 5 *:<PORT>  *:* users:(("cmd",pid=<PID>,fd=3))
+            return line.split()[4].split(':')[1]
+    else:
+        raise ProcessLookupError('Could not find started iperf3 process.')
+
+
 class IPerfServer(IPerfServerBase):
     """Class that handles iperf server commands on localhost."""
 
-    def __init__(self, port):
+    def __init__(self, port=5201):
         super().__init__(port)
-        self._iperf_command = 'iperf3 -s -J -p {}'.format(self.port)
+        self._hinted_port = port
         self._current_log_file = None
         self._iperf_process = None
+        self._last_opened_file = None
 
     @property
     def port(self):
@@ -303,12 +322,28 @@ class IPerfServer(IPerfServerBase):
 
         self._current_log_file = self._get_full_file_path(tag)
 
-        cmd = '{cmd} {extra_flags} > {log_file}'.format(
-            cmd=self._iperf_command,
-            extra_flags=extra_args,
-            log_file=self._current_log_file)
+        # Run an iperf3 server on the hinted port with JSON output.
+        command = ['iperf3', '-s', '-p', str(self._hinted_port), '-J']
 
-        self._iperf_process = utils.start_standing_subprocess(cmd)
+        command.extend(shlex.split(extra_args))
+
+        if self._last_opened_file:
+            self._last_opened_file.close()
+        self._last_opened_file = open(self._current_log_file, 'w')
+        self._iperf_process = subprocess.Popen(
+            command, stdout=self._last_opened_file, stderr=subprocess.DEVNULL)
+        for attempts_left in reversed(range(3)):
+            try:
+                self._port = int(
+                    _get_port_from_ss_output(
+                        job.run('ss -l -p -n | grep iperf').stdout,
+                        self._iperf_process.pid))
+                break
+            except ProcessLookupError:
+                if attempts_left == 0:
+                    raise
+                logging.debug('iperf3 process not started yet.')
+                time.sleep(.01)
 
     def stop(self):
         """Stops the iperf server.
@@ -319,10 +354,17 @@ class IPerfServer(IPerfServerBase):
         if self._iperf_process is None:
             return
 
-        utils.stop_standing_subprocess(self._iperf_process)
+        if self._last_opened_file:
+            self._last_opened_file.close()
+            self._last_opened_file = None
 
+        self._iperf_process.terminate()
         self._iperf_process = None
+
         return self._current_log_file
+
+    def __del__(self):
+        self.stop()
 
 
 class IPerfServerOverSsh(IPerfServerBase):
@@ -492,7 +534,7 @@ class IPerfServerOverAdb(IPerfServerBase):
 
         job.run('kill -9 {}'.format(self._iperf_process.pid))
 
-        #TODO(markdr): update with definitive kill method
+        # TODO(markdr): update with definitive kill method
         while True:
             iperf_process_list = self._android_device.adb.shell('pgrep iperf3')
             if iperf_process_list.find(self._iperf_process_adb_pid) == -1:
