@@ -55,6 +55,7 @@ CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
 DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
+DEFAULT_SDM_LOG_PATH = "/data/vendor/slog/"
 BUG_REPORT_TIMEOUT = 1800
 PULL_TIMEOUT = 300
 PORT_RETRY_COUNT = 3
@@ -1036,6 +1037,32 @@ class AndroidDevice:
                 ignore_status=True)
         else:
             self.log.error("Didn't find QXDM logs in %s." % log_path)
+        if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
+            omadm_log_path = os.path.join(self.device_log_path,
+                                          "OMADM_%s" % self.serial)
+            utils.create_dir(omadm_log_path)
+            self.log.info("Pull OMADM Log")
+            self.adb.pull(
+                "/data/data/com.android.omadm.service/files/dm/log/ %s" %
+                omadm_log_path,
+                timeout=PULL_TIMEOUT,
+                ignore_status=True)
+
+    def get_sdm_logs(self, test_name="", begin_time=None):
+        """Get sdm logs."""
+        # Sleep 10 seconds for the buffered log to be written in sdm log file
+        time.sleep(10)
+        log_path = getattr(self, "sdm_log_path", DEFAULT_SDM_LOG_PATH)
+        sdm_logs = self.get_file_names(
+            log_path, begin_time=begin_time, match_string="*.sdm")
+        if sdm_logs:
+            sdm_log_path = os.path.join(self.device_log_path,
+                                         "SDM_%s" % self.serial)
+            utils.create_dir(sdm_log_path)
+            self.log.info("Pull SDM Log %s to %s", sdm_logs, sdm_log_path)
+            self.pull_files(sdm_logs, sdm_log_path)
+        else:
+            self.log.error("Didn't find SDM logs in %s." % log_path)
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)
