@@ -28,6 +28,7 @@ from acts import logger as acts_logger
 from acts import signals
 from acts.base_test import BaseTestClass
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
+from acts.controllers.android_device import DEFAULT_SDM_LOG_PATH
 from acts.keys import Config
 from acts import records
 from acts import utils
@@ -59,8 +60,12 @@ from acts.test_utils.tel.tel_test_utils import set_phone_silent_mode
 from acts.test_utils.tel.tel_test_utils import set_qxdm_logger_command
 from acts.test_utils.tel.tel_test_utils import start_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import start_sdm_loggers
+from acts.test_utils.tel.tel_test_utils import start_sdm_logger
 from acts.test_utils.tel.tel_test_utils import start_tcpdumps
 from acts.test_utils.tel.tel_test_utils import stop_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import stop_sdm_loggers
+from acts.test_utils.tel.tel_test_utils import stop_sdm_logger
 from acts.test_utils.tel.tel_test_utils import stop_tcpdumps
 from acts.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts.test_utils.tel.tel_test_utils import unlock_sim
@@ -99,6 +104,7 @@ class TelephonyBaseTest(BaseTestClass):
 
         self.log_path = getattr(logging, "log_path", None)
         self.qxdm_log = self.user_params.get("qxdm_log", True)
+        self.sdm_log = self.user_params.get("sdm_log", False)
         self.enable_radio_log_on = self.user_params.get(
             "enable_radio_log_on", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
@@ -215,6 +221,7 @@ class TelephonyBaseTest(BaseTestClass):
 
     def _setup_device(self, ad, sim_conf_file, qxdm_log_mask_cfg=None):
         ad.qxdm_log = getattr(ad, "qxdm_log", self.qxdm_log)
+        ad.sdm_log = getattr(ad, "sdm_log", self.sdm_log)
         if self.user_params.get("enable_connectivity_metrics", False):
             enable_connectivity_metrics(ad)
         if self.user_params.get("build_id_override", False):
@@ -249,6 +256,8 @@ class TelephonyBaseTest(BaseTestClass):
                 qxdm_log_mask = os.path.join(qxdm_mask_path, mask_file_name)
             set_qxdm_logger_command(ad, mask=qxdm_log_mask)
             start_qxdm_logger(ad, utils.get_current_epoch_time())
+        elif ad.sdm_log:
+            start_sdm_logger(ad)
         else:
             disable_qxdm_logger(ad)
         if not unlock_sim(ad):
@@ -366,6 +375,7 @@ class TelephonyBaseTest(BaseTestClass):
     def _teardown_device(self, ad):
         try:
             stop_qxdm_logger(ad)
+            stop_sdm_logger(ad)
         except Exception as e:
             self.log.error("Failure with %s", e)
         try:
@@ -414,6 +424,8 @@ class TelephonyBaseTest(BaseTestClass):
                                     ad, "qxdm_logger_command", "")):
                             set_qxdm_logger_command(ad, None)
             start_qxdm_loggers(self.log, self.android_devices, self.begin_time)
+        if getattr(self, "sdm_log", False):
+            start_sdm_loggers(self.log, self.android_devices)
         if getattr(self, "tcpdump_log", False) or "wfc" in self.test_name:
             mask = getattr(self, "tcpdump_mask", "all")
             interface = getattr(self, "tcpdump_interface", "wlan0")
@@ -475,6 +487,19 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.get_qxdm_logs(test_name, qxdm_begin_time)
             except Exception as e:
                 ad.log.error("Failed to get QXDM log for %s with error %s",
+                             test_name, e)
+                result = False
+        if getattr(ad, "sdm_log", False):
+            # Gather sdm log modified 3 minutes earlier than test start time
+            if begin_time:
+                sdm_begin_time = begin_time - 1000 * extra_qxdm_logs_in_seconds
+            else:
+                sdm_begin_time = None
+            try:
+                time.sleep(10)
+                ad.get_sdm_logs(test_name, sdm_begin_time)
+            except Exception as e:
+                ad.log.error("Failed to get SDM log for %s with error %s",
                              test_name, e)
                 result = False
 
