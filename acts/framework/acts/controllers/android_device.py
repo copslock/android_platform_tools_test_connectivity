@@ -982,13 +982,22 @@ class AndroidDevice:
         self.log.debug("Find files in directory %s: %s", directory, files)
         return files
 
-    def pull_files(self, files, remote_path=None):
-        """Pull files from devices."""
-        if not remote_path:
-            remote_path = self.log_path
-        for file_name in files:
+    def pull_files(self, device_paths, host_path=None):
+        """Pull files from devices.
+
+        Args:
+            device_paths: List of paths on the device to pull from.
+            host_path: Destination path
+        """
+        if isinstance(device_paths, str):
+            device_paths = [device_paths]
+        if not host_path:
+            host_path = self.log_path
+        for device_path in device_paths:
+            self.log.info('Pull from device: %s -> %s' %
+                          (device_path, host_path))
             self.adb.pull(
-                "%s %s" % (file_name, remote_path), timeout=PULL_TIMEOUT)
+                "%s %s" % (device_path, host_path), timeout=PULL_TIMEOUT)
 
     def check_crash_report(self,
                            test_name=None,
