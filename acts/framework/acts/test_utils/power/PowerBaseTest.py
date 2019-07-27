@@ -486,8 +486,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         RESULTS_DESTINATION = os.path.join(self.iperf_server.log_path,
                                            'iperf_client_output_{}.log'.format(
                                                self.current_test_name))
-        PULL_FILE = '{} {}'.format(TEMP_FILE, RESULTS_DESTINATION)
-        self.dut.adb.pull(PULL_FILE)
+        self.dut.pull_files(TEMP_FILE, RESULTS_DESTINATION)
         # Calculate the average throughput
         if self.use_client_output:
             iperf_file = RESULTS_DESTINATION
