@@ -50,9 +50,7 @@ class UsbTetheringFunctionsTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        req_params = [
-            'wifi_network', 'receiver_number', 'ping_count', 'rndis_interface'
-        ]
+        req_params = ['wifi_network', 'receiver_number', 'ping_count']
         self.unpack_userparams(req_param_names=req_params)
 
         self.ssid_map = {}
@@ -138,7 +136,7 @@ class UsbTetheringFunctionsTest(base_test.BaseTestClass):
                                     wutils.WifiEnums.WIFI_CONFIG_APBAND_2G)
 
     def get_rndis_interface(self):
-        """Check rndis interface after usb tethering.
+        """Check rndis interface after usb tethering enable.
 
         Returns:
             Usb tethering interface from Android device.
@@ -147,14 +145,17 @@ class UsbTetheringFunctionsTest(base_test.BaseTestClass):
             TestFailure when unable to find correct usb tethering interface.
         """
         time.sleep(DEFAULT_SETTLE_TIME)
-        interface = job.run('ifconfig', ignore_status=True).stdout
-        matches = re.findall(self.rndis_interface, interface)
-        if not matches:
-            raise signals.TestFailure(
-                'Unable to find correct tethering interface.'
-                'The device may not be tethered.')
+        check_usb_tethering = job.run('ifconfig').stdout
+        # A regex that stores the tethering interface in group 1.
+        tethered_interface_regex = r'^(enp.*?):.*?broadcast 192.168.42.255'
+        match = re.search(tethered_interface_regex, check_usb_tethering,
+                          re.DOTALL + re.MULTILINE)
+        if match:
+            return match.group(1)
         else:
-            return matches[0]
+            raise signals.TestFailure(
+                'Unable to find tethering interface. The device may not be tethered.'
+            )
 
     def can_ping(self, ip, extra_params='', count=10):
         """Run ping test and check and check ping lost rate.
