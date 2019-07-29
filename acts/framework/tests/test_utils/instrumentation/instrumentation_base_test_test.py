@@ -17,7 +17,8 @@
 import copy
 import unittest
 
-from acts.test_utils.instrumentation_tests.instrumentation_base_test import InstrumentationBaseTest
+from acts.test_utils.instrumentation.instrumentation_base_test import \
+    InstrumentationBaseTest
 
 MOCK_POWER_CONFIG = {
     'not_file': 'NOT_FILE',

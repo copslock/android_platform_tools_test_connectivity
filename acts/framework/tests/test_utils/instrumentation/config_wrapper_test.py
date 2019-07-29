@@ -17,8 +17,8 @@
 import mock
 import unittest
 
-from acts.test_utils.instrumentation_tests.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation_tests.config_wrapper import InvalidParamError
+from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.config_wrapper import InvalidParamError
 
 
 REAL_PATHS = ['realpath/1', 'realpath/2']
