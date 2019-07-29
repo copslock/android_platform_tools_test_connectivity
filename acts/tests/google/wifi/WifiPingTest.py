@@ -2,32 +2,35 @@
 #
 #   Copyright 2017 - The Android Open Source Project
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
+#   Licensed under the Apache License, Version 2.0 (the 'License');
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
 #
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
+#   distributed under the License is distributed on an 'AS IS' BASIS,
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
 import collections
+import itertools
 import json
 import logging
 import os
 import statistics
-import time
 from acts import asserts
+from acts import context
 from acts import base_test
 from acts import utils
 from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
+from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from functools import partial
 
 
 class WifiPingTest(base_test.BaseTestClass):
@@ -45,62 +48,48 @@ class WifiPingTest(base_test.BaseTestClass):
     MED_SLEEP = 5
     MAX_CONSECUTIVE_ZEROS = 5
     DISCONNECTED_PING_RESULT = {
-        "connected": 0,
-        "rtt": [],
-        "time_stamp": [],
-        "ping_interarrivals": [],
-        "packet_loss_percentage": 100
+        'connected': 0,
+        'rtt': [],
+        'time_stamp': [],
+        'ping_interarrivals': [],
+        'packet_loss_percentage': 100
     }
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.ping_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name="ping_range")
+            metric_name='ping_range')
         self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
-            metric_name="ping_rtt")
-        self.tests = (
-            "test_ping_range_ch1_VHT20", "test_fast_ping_rtt_ch1_VHT20",
-            "test_slow_ping_rtt_ch1_VHT20", "test_ping_range_ch6_VHT20",
-            "test_fast_ping_rtt_ch6_VHT20", "test_slow_ping_rtt_ch6_VHT20",
-            "test_ping_range_ch11_VHT20", "test_fast_ping_rtt_ch11_VHT20",
-            "test_slow_ping_rtt_ch11_VHT20", "test_ping_range_ch36_VHT20",
-            "test_fast_ping_rtt_ch36_VHT20", "test_slow_ping_rtt_ch36_VHT20",
-            "test_ping_range_ch36_VHT40", "test_fast_ping_rtt_ch36_VHT40",
-            "test_slow_ping_rtt_ch36_VHT40", "test_ping_range_ch36_VHT80",
-            "test_fast_ping_rtt_ch36_VHT80", "test_slow_ping_rtt_ch36_VHT80",
-            "test_ping_range_ch40_VHT20", "test_ping_range_ch44_VHT20",
-            "test_ping_range_ch44_VHT40", "test_ping_range_ch48_VHT20",
-            "test_ping_range_ch149_VHT20", "test_fast_ping_rtt_ch149_VHT20",
-            "test_slow_ping_rtt_ch149_VHT20", "test_ping_range_ch149_VHT40",
-            "test_fast_ping_rtt_ch149_VHT40", "test_slow_ping_rtt_ch149_VHT40",
-            "test_ping_range_ch149_VHT80", "test_fast_ping_rtt_ch149_VHT80",
-            "test_slow_ping_rtt_ch149_VHT80", "test_ping_range_ch153_VHT20",
-            "test_ping_range_ch157_VHT20", "test_ping_range_ch157_VHT40",
-            "test_ping_range_ch161_VHT20")
+            metric_name='ping_rtt')
+        self.tests = self.generate_test_cases(
+            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
+            modes=['VHT20', 'VHT40', 'VHT80'],
+            test_types=[
+                'test_ping_range', 'test_fast_ping_rtt', 'test_slow_ping_rtt'
+            ])
 
     def setup_class(self):
         self.client_dut = self.android_devices[-1]
         req_params = [
-            "ping_test_params", "testbed_params", "main_network",
-            "RetailAccessPoints", "RemoteServer"
+            'ping_test_params', 'testbed_params', 'main_network',
+            'RetailAccessPoints', 'RemoteServer'
         ]
-        opt_params = ["golden_files_list"]
+        opt_params = ['golden_files_list']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.ping_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.ping_server = ssh.connection.SshConnection(
-            ssh.settings.from_config(self.RemoteServer[0]["ssh_config"]))
-        self.access_points = retail_ap.create(self.RetailAccessPoints)
-        self.access_point = self.access_points[0]
-        self.log.info("Access Point Configuration: {}".format(
+            ssh.settings.from_config(self.RemoteServer[0]['ssh_config']))
+        self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
+        self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
-        self.log_path = os.path.join(logging.log_path, "results")
+        self.log_path = os.path.join(logging.log_path, 'results')
         utils.create_dir(self.log_path)
-        if not hasattr(self, "golden_files_list"):
+        if not hasattr(self, 'golden_files_list'):
             self.golden_files_list = [
-                os.path.join(self.testbed_params["golden_results_path"], file)
+                os.path.join(self.testbed_params['golden_results_path'], file)
                 for file in os.listdir(
-                    self.testbed_params["golden_results_path"])
+                    self.testbed_params['golden_results_path'])
             ]
         self.testclass_results = []
 
@@ -118,15 +107,15 @@ class WifiPingTest(base_test.BaseTestClass):
         """Saves all test results to enable comparison."""
         testclass_summary = {}
         for test in self.testclass_results:
-            if "range" in test["test_name"]:
-                testclass_summary[test["test_name"]] = test["range"]
+            if 'range' in test['test_name']:
+                testclass_summary[test['test_name']] = test['range']
         # Save results
         results_file_path = os.path.join(self.log_path,
-                                         "testclass_summary.json")
-        with open(results_file_path, "w") as results_file:
+                                         'testclass_summary.json')
+        with open(results_file_path, 'w') as results_file:
             json.dump(testclass_summary, results_file, indent=4)
 
-    def pass_fail_check_ping_rtt(self, ping_range_result):
+    def pass_fail_check_ping_rtt(self, result):
         """Check the test result and decide if it passed or failed.
 
         The function computes RTT statistics and fails any tests in which the
@@ -134,18 +123,18 @@ class WifiPingTest(base_test.BaseTestClass):
         configuration file.
 
         Args:
-            ping_range_result: dict containing ping results and other meta data
+            result: dict containing ping results and other meta data
         """
-        ignored_fraction = (self.testclass_params["rtt_ignored_interval"] /
-                            self.testclass_params["rtt_ping_duration"])
+        ignored_fraction = (self.testclass_params['rtt_ignored_interval'] /
+                            self.testclass_params['rtt_ping_duration'])
         sorted_rtt = [
-            sorted(x["rtt"][round(ignored_fraction * len(x["rtt"])):])
-            for x in ping_range_result["ping_results"]
+            sorted(x['rtt'][round(ignored_fraction * len(x['rtt'])):])
+            for x in result['ping_results']
         ]
         mean_rtt = [statistics.mean(x) for x in sorted_rtt]
         std_rtt = [statistics.stdev(x) for x in sorted_rtt]
         rtt_at_test_percentile = [
-            x[int((1 - self.testclass_params["rtt_test_percentile"] / 100) *
+            x[int((1 - self.testclass_params['rtt_test_percentile'] / 100) *
                   len(x))] for x in sorted_rtt
         ]
         # Set blackbox metric
@@ -153,19 +142,19 @@ class WifiPingTest(base_test.BaseTestClass):
         # Evaluate test pass/fail
         test_failed = False
         for idx, rtt in enumerate(rtt_at_test_percentile):
-            if rtt > self.testclass_params["rtt_threshold"] * 1000:
+            if rtt > self.testclass_params['rtt_threshold'] * 1000:
                 test_failed = True
                 self.log.info(
-                    "RTT Failed. Test %ile RTT = {}ms. Mean = {}ms. Stdev = {}"
+                    'RTT Failed. Test %ile RTT = {}ms. Mean = {}ms. Stdev = {}'
                     .format(rtt, mean_rtt[idx], std_rtt[idx]))
         if test_failed:
-            asserts.fail("RTT above threshold")
+            asserts.fail('RTT above threshold')
         else:
             asserts.explicit_pass(
-                "Test Passed. RTTs at test percentile = {}".format(
+                'Test Passed. RTTs at test percentile = {}'.format(
                     rtt_at_test_percentile))
 
-    def pass_fail_check_ping_range(self, ping_range_result):
+    def pass_fail_check_ping_range(self, result):
         """Check the test result and decide if it passed or failed.
 
         Checks whether the attenuation at which ping packet losses begin to
@@ -174,22 +163,28 @@ class WifiPingTest(base_test.BaseTestClass):
         range_gap_threshold worse than RvR range.
 
         Args:
-            ping_range_result: dict containing ping results and meta data
+            result: dict containing ping results and meta data
         """
         # Get target range
         rvr_range = self.get_range_from_rvr()
         # Set Blackbox metric
-        self.ping_range_metric.metric_value = ping_range_result["range"]
+        self.ping_range_metric.metric_value = result['range']
         # Evaluate test pass/fail
-        if ping_range_result["range"] - rvr_range < -self.testclass_params[
-                "range_gap_threshold"]:
+        if result['range'] - rvr_range < -self.testclass_params[
+                'range_gap_threshold']:
             asserts.fail(
-                "Attenuation at range is {}dB. Golden range is {}dB".format(
-                    ping_range_result["range"], rvr_range))
+                'Attenuation at range is {}dB. Golden range is {}dB'.format(
+                    result['range'], rvr_range))
         else:
             asserts.explicit_pass(
-                "Attenuation at range is {}dB. Golden range is {}dB".format(
-                    ping_range_result["range"], rvr_range))
+                'Attenuation at range is {}dB. Golden range is {}dB'.format(
+                    result['range'], rvr_range))
+
+    def pass_fail_check(self, result):
+        if 'range' in result['testcase_params']['test_type']:
+            self.pass_fail_check_ping_range(result)
+        else:
+            self.pass_fail_check_ping_rtt(result)
 
     def process_ping_results(self, testcase_params, ping_range_result):
         """Saves and plots ping results.
@@ -199,11 +194,11 @@ class WifiPingTest(base_test.BaseTestClass):
         """
         # Compute range
         ping_loss_over_att = [
-            x["packet_loss_percentage"]
-            for x in ping_range_result["ping_results"]
+            x['packet_loss_percentage']
+            for x in ping_range_result['ping_results']
         ]
         ping_loss_above_threshold = [
-            x > testcase_params["range_ping_loss_threshold"]
+            x > self.testclass_params['range_ping_loss_threshold']
             for x in ping_loss_over_att
         ]
         for idx in range(len(ping_loss_above_threshold)):
@@ -212,35 +207,35 @@ class WifiPingTest(base_test.BaseTestClass):
                 break
         else:
             range_index = -1
-        ping_range_result["atten_at_range"] = testcase_params["atten_range"][
+        ping_range_result['atten_at_range'] = testcase_params['atten_range'][
             range_index]
-        ping_range_result["peak_throughput_pct"] = 100 - min(
+        ping_range_result['peak_throughput_pct'] = 100 - min(
             ping_loss_over_att)
-        ping_range_result["range"] = (ping_range_result["atten_at_range"] +
-                                      ping_range_result["fixed_attenuation"])
+        ping_range_result['range'] = (ping_range_result['atten_at_range'] +
+                                      ping_range_result['fixed_attenuation'])
 
         # Save results
         results_file_path = os.path.join(
-            self.log_path, "{}.json".format(self.current_test_name))
-        with open(results_file_path, "w") as results_file:
+            self.log_path, '{}.json'.format(self.current_test_name))
+        with open(results_file_path, 'w') as results_file:
             json.dump(ping_range_result, results_file, indent=4)
 
         # Plot results
         figure = wputils.BokehFigure(
             self.current_test_name,
-            x_label="Timestamp (s)",
-            primary_y="Round Trip Time (ms)")
-        for idx, result in enumerate(ping_range_result["ping_results"]):
-            if len(result["rtt"]) > 1:
+            x_label='Timestamp (s)',
+            primary_y='Round Trip Time (ms)')
+        for idx, result in enumerate(ping_range_result['ping_results']):
+            if len(result['rtt']) > 1:
                 x_data = [
-                    t - result["time_stamp"][0] for t in result["time_stamp"]
+                    t - result['time_stamp'][0] for t in result['time_stamp']
                 ]
                 figure.add_line(
-                    x_data, result["rtt"],
-                    "RTT @ {}dB".format(ping_range_result["attenuation"][idx]))
+                    x_data, result['rtt'],
+                    'RTT @ {}dB'.format(ping_range_result['attenuation'][idx]))
 
         output_file_path = os.path.join(
-            self.log_path, "{}.html".format(self.current_test_name))
+            self.log_path, '{}.html'.format(self.current_test_name))
         figure.generate_figure(output_file_path)
 
     def get_range_from_rvr(self):
@@ -250,29 +245,29 @@ class WifiPingTest(base_test.BaseTestClass):
         to zero.
 
         Returns:
-            range: range derived from looking at rvr curves
+            rvr_range: range derived from looking at rvr curves
         """
         # Fetch the golden RvR results
         test_name = self.current_test_name
-        rvr_golden_file_name = "test_rvr_TCP_DL_" + "_".join(
-            test_name.split("_")[3:])
+        rvr_golden_file_name = 'test_rvr_TCP_DL_' + '_'.join(
+            test_name.split('_')[3:])
         golden_path = [
             file_name for file_name in self.golden_files_list
             if rvr_golden_file_name in file_name
         ]
         if len(golden_path) == 0:
-            rvr_range = float("nan")
+            rvr_range = float('nan')
             return rvr_range
 
         # Get 0 Mbps attenuation and backoff by low_rssi_backoff_from_range
-        with open(golden_path[0], "r") as golden_file:
+        with open(golden_path[0], 'r') as golden_file:
             golden_results = json.load(golden_file)
         try:
-            atten_idx = golden_results["throughput_receive"].index(0)
-            rvr_range = (golden_results["attenuation"][atten_idx - 1] +
-                         golden_results["fixed_attenuation"])
+            atten_idx = golden_results['throughput_receive'].index(0)
+            rvr_range = (golden_results['attenuation'][atten_idx - 1] +
+                         golden_results['fixed_attenuation'])
         except ValueError:
-            rvr_range = float("nan")
+            rvr_range = float('nan')
         return rvr_range
 
     def run_ping_test(self, testcase_params):
@@ -288,51 +283,52 @@ class WifiPingTest(base_test.BaseTestClass):
         """
         # Prepare results dict
         test_result = collections.OrderedDict()
-        test_result["test_name"] = self.current_test_name
-        test_result["ap_config"] = self.access_point.ap_settings.copy()
-        test_result["attenuation"] = testcase_params["atten_range"]
-        test_result["fixed_attenuation"] = self.testbed_params[
-            "fixed_attenuation"][str(testcase_params["channel"])]
-        test_result["rssi_results"] = []
-        test_result["ping_results"] = []
+        test_result['testcase_params'] = testcase_params.copy()
+        test_result['test_name'] = self.current_test_name
+        test_result['ap_config'] = self.access_point.ap_settings.copy()
+        test_result['attenuation'] = testcase_params['atten_range']
+        test_result['fixed_attenuation'] = self.testbed_params[
+            'fixed_attenuation'][str(testcase_params['channel'])]
+        test_result['rssi_results'] = []
+        test_result['ping_results'] = []
         # Run ping and sweep attenuation as needed
         zero_counter = 0
-        for atten in testcase_params["atten_range"]:
+        for atten in testcase_params['atten_range']:
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
             rssi_future = wputils.get_connected_rssi_nb(
                 self.client_dut,
-                int(testcase_params["ping_duration"] / 2 /
+                int(testcase_params['ping_duration'] / 2 /
                     self.RSSI_POLL_INTERVAL), self.RSSI_POLL_INTERVAL,
-                testcase_params["ping_duration"] / 2)
+                testcase_params['ping_duration'] / 2)
             current_ping_stats = wputils.get_ping_stats(
                 self.ping_server, self.dut_ip,
-                testcase_params["ping_duration"],
-                testcase_params["ping_interval"], testcase_params["ping_size"])
-            current_rssi = rssi_future.result()["signal_poll_rssi"]["mean"]
-            test_result["rssi_results"].append(current_rssi)
-            if current_ping_stats["connected"]:
-                self.log.info("Attenuation = {0}dB\tPacket Loss = {1}%\t"
-                              "Avg RTT = {2:.2f}ms\tRSSI = {3}\t".format(
+                testcase_params['ping_duration'],
+                testcase_params['ping_interval'], testcase_params['ping_size'])
+            current_rssi = rssi_future.result()['signal_poll_rssi']['mean']
+            test_result['rssi_results'].append(current_rssi)
+            if current_ping_stats['connected']:
+                self.log.info('Attenuation = {0}dB\tPacket Loss = {1}%\t'
+                              'Avg RTT = {2:.2f}ms\tRSSI = {3}\t'.format(
                                   atten,
-                                  current_ping_stats["packet_loss_percentage"],
-                                  statistics.mean(current_ping_stats["rtt"]),
+                                  current_ping_stats['packet_loss_percentage'],
+                                  statistics.mean(current_ping_stats['rtt']),
                                   current_rssi))
-                if current_ping_stats["packet_loss_percentage"] == 100:
+                if current_ping_stats['packet_loss_percentage'] == 100:
                     zero_counter = zero_counter + 1
                 else:
                     zero_counter = 0
             else:
                 self.log.info(
-                    "Attenuation = {}dB. Disconnected.".format(atten))
+                    'Attenuation = {}dB. Disconnected.'.format(atten))
                 zero_counter = zero_counter + 1
-            test_result["ping_results"].append(current_ping_stats.as_dict())
+            test_result['ping_results'].append(current_ping_stats.as_dict())
             if zero_counter == self.MAX_CONSECUTIVE_ZEROS:
-                self.log.info("Ping loss stable at 100%. Stopping test now.")
+                self.log.info('Ping loss stable at 100%. Stopping test now.')
                 for idx in range(
-                        len(testcase_params["atten_range"]) -
-                        len(test_result["ping_results"])):
-                    test_result["ping_results"].append(
+                        len(testcase_params['atten_range']) -
+                        len(test_result['ping_results'])):
+                    test_result['ping_results'].append(
                         self.DISCONNECTED_PING_RESULT)
                 break
         return test_result
@@ -344,20 +340,20 @@ class WifiPingTest(base_test.BaseTestClass):
             testcase_params: dict containing AP and other test params
         """
         band = self.access_point.band_lookup_by_channel(
-            testcase_params["channel"])
-        if "2G" in band:
+            testcase_params['channel'])
+        if '2G' in band:
             frequency = wutils.WifiEnums.channel_2G_to_freq[
-                testcase_params["channel"]]
+                testcase_params['channel']]
         else:
             frequency = wutils.WifiEnums.channel_5G_to_freq[
-                testcase_params["channel"]]
+                testcase_params['channel']]
         if frequency in wutils.WifiEnums.DFS_5G_FREQUENCIES:
-            self.access_point.set_region(self.testbed_params["DFS_region"])
+            self.access_point.set_region(self.testbed_params['DFS_region'])
         else:
-            self.access_point.set_region(self.testbed_params["default_region"])
-        self.access_point.set_channel(band, testcase_params["channel"])
-        self.access_point.set_bandwidth(band, testcase_params["mode"])
-        self.log.info("Access Point Configuration: {}".format(
+            self.access_point.set_region(self.testbed_params['default_region'])
+        self.access_point.set_channel(band, testcase_params['channel'])
+        self.access_point.set_bandwidth(band, testcase_params['mode'])
+        self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
 
     def setup_dut(self, testcase_params):
@@ -367,18 +363,18 @@ class WifiPingTest(base_test.BaseTestClass):
             testcase_params: dict containing AP and other test params
         """
         band = self.access_point.band_lookup_by_channel(
-            testcase_params["channel"])
+            testcase_params['channel'])
         wutils.reset_wifi(self.client_dut)
         self.client_dut.droid.wifiSetCountryCode(
-            self.testclass_params["country_code"])
-        self.main_network[band]["channel"] = testcase_params["channel"]
+            self.testclass_params['country_code'])
+        self.main_network[band]['channel'] = testcase_params['channel']
         wutils.wifi_connect(
             self.client_dut,
             self.main_network[band],
             num_of_tries=5,
             check_connectivity=False)
         self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
-            "wlan0")[0]
+            'wlan0')[0]
 
     def setup_ping_test(self, testcase_params):
         """Function that gets devices ready for the test.
@@ -394,171 +390,212 @@ class WifiPingTest(base_test.BaseTestClass):
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
 
-    def parse_test_params(self, test_name):
-        test_name_params = test_name.split("_")
-        testcase_params = collections.OrderedDict()
-        if "range" in test_name:
-            testcase_params["channel"] = int(test_name_params[3][2:])
-            testcase_params["mode"] = test_name_params[4]
-            num_atten_steps = int((self.testclass_params["range_atten_stop"] -
-                                   self.testclass_params["range_atten_start"])
-                                  / self.testclass_params["range_atten_step"])
-            testcase_params["atten_range"] = [
-                self.testclass_params["range_atten_start"] +
-                x * self.testclass_params["range_atten_step"]
+    def compile_test_params(self, testcase_params):
+        if testcase_params['test_type'] == 'test_ping_range':
+            testcase_params.update(
+                ping_interval=self.testclass_params['range_ping_interval'],
+                ping_duration=self.testclass_params['range_ping_duration'],
+                ping_size=self.testclass_params['ping_size'],
+            )
+        elif testcase_params['test_type'] == 'test_fast_ping_rtt':
+            testcase_params.update(
+                ping_interval=self.testclass_params['rtt_ping_interval']
+                ['fast'],
+                ping_duration=self.testclass_params['rtt_ping_duration'],
+                ping_size=self.testclass_params['ping_size'],
+            )
+        elif testcase_params['test_type'] == 'test_slow_ping_rtt':
+            testcase_params.update(
+                ping_interval=self.testclass_params['rtt_ping_interval']
+                ['slow'],
+                ping_duration=self.testclass_params['rtt_ping_duration'],
+                ping_size=self.testclass_params['ping_size'])
+
+        if testcase_params['test_type'] == 'test_ping_range':
+            num_atten_steps = int((self.testclass_params['range_atten_stop'] -
+                                   self.testclass_params['range_atten_start'])
+                                  / self.testclass_params['range_atten_step'])
+            testcase_params['atten_range'] = [
+                self.testclass_params['range_atten_start'] +
+                x * self.testclass_params['range_atten_step']
                 for x in range(0, num_atten_steps)
             ]
-            testcase_params["ping_duration"] = self.testclass_params[
-                "range_ping_duration"]
-            testcase_params["ping_interval"] = self.testclass_params[
-                "range_ping_interval"]
-            testcase_params["ping_size"] = self.testclass_params["ping_size"]
         else:
-            testcase_params["channel"] = int(test_name_params[4][2:])
-            testcase_params["mode"] = test_name_params[5]
-            testcase_params["atten_range"] = self.testclass_params[
-                "rtt_test_attenuation"]
-            testcase_params["ping_duration"] = self.testclass_params[
-                "rtt_ping_duration"]
-            testcase_params["ping_interval"] = self.testclass_params[
-                "rtt_ping_interval"][test_name_params[1]]
-            testcase_params["ping_size"] = self.testclass_params["ping_size"]
+            testcase_params['atten_range'] = self.testclass_params[
+                'rtt_test_attenuation']
         return testcase_params
 
-    def _test_ping_rtt(self):
-        """ Function that gets called for each RTT test case
-
-        The function gets called in each RTT test case. The function customizes
-        the RTT test based on the test name of the test that called it
-        """
-        # Compile test parameters from config and test name
-        testcase_params = self.parse_test_params(self.current_test_name)
-        testcase_params.update(self.testclass_params)
-        # Run ping test
-        self.setup_ping_test(testcase_params)
-        ping_result = self.run_ping_test(testcase_params)
-        # Postprocess results
-        self.process_ping_results(testcase_params, ping_result)
-        self.pass_fail_check_ping_rtt(ping_result)
-
-    def _test_ping_range(self):
+    def _test_ping(self, testcase_params):
         """ Function that gets called for each range test case
 
         The function gets called in each range test case. It customizes the
         range test based on the test name of the test that called it
+
+        Args:
+            testcase_params: dict containing preliminary set of parameters
         """
         # Compile test parameters from config and test name
-        testcase_params = self.parse_test_params(self.current_test_name)
-        testcase_params.update(self.testclass_params)
+        testcase_params = self.compile_test_params(testcase_params)
         # Run ping test
         self.setup_ping_test(testcase_params)
         ping_result = self.run_ping_test(testcase_params)
         # Postprocess results
         self.testclass_results.append(ping_result)
         self.process_ping_results(testcase_params, ping_result)
-        self.pass_fail_check_ping_range(ping_result)
+        self.pass_fail_check(ping_result)
 
-    def test_ping_range_ch1_VHT20(self):
-        self._test_ping_range()
+    def generate_test_cases(self, channels, modes, test_types):
+        test_cases = []
+        allowed_configs = {
+            'VHT20': [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 149, 153,
+                157, 161
+            ],
+            'VHT40': [36, 44, 149, 157],
+            'VHT80': [36, 149]
+        }
+        for channel, mode, test_type in itertools.product(
+                channels, modes, test_types):
+            if channel not in allowed_configs[mode]:
+                continue
+            testcase_name = '{}_ch{}_{}'.format(test_type, channel, mode)
+            testcase_params = collections.OrderedDict(
+                test_type=test_type,
+                channel=channel,
+                mode=mode,
+            )
+            setattr(self, testcase_name,
+                    partial(self._test_ping, testcase_params))
+            test_cases.append(testcase_name)
+        return test_cases
 
-    def test_ping_range_ch6_VHT20(self):
-        self._test_ping_range()
 
-    def test_ping_range_ch11_VHT20(self):
-        self._test_ping_range()
+# Over-the air version of ping tests
+class WifiOtaPingTest(WifiPingTest):
+    """Class to test over-the-air ping
 
-    def test_ping_range_ch36_VHT20(self):
-        self._test_ping_range()
+    This class tests WiFi ping performance in an OTA chamber. It enables
+    setting turntable orientation and other chamber parameters to study
+    performance in varying channel conditions
+    """
 
-    def test_ping_range_ch36_VHT40(self):
-        self._test_ping_range()
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.ping_range_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='ping_range')
+        self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='ping_rtt')
 
-    def test_ping_range_ch36_VHT80(self):
-        self._test_ping_range()
+    def setup_class(self):
+        WifiPingTest.setup_class(self)
+        self.ota_chamber = ota_chamber.create(
+            self.user_params['OTAChamber'])[0]
 
-    def test_ping_range_ch40_VHT20(self):
-        self._test_ping_range()
+    def teardown_class(self):
+        self.process_testclass_results()
+        self.ota_chamber.reset_chamber()
 
-    def test_ping_range_ch44_VHT20(self):
-        self._test_ping_range()
+    def process_testclass_results(self):
+        """Saves all test results to enable comparison."""
+        WifiPingTest.process_testclass_results(self)
 
-    def test_ping_range_ch44_VHT40(self):
-        self._test_ping_range()
+        range_vs_angle = collections.OrderedDict()
+        for test in self.testclass_results:
+            curr_params = test['testcase_params']
+            curr_config = curr_params['channel']
+            if curr_config in range_vs_angle:
+                range_vs_angle[curr_config]['position'].append(
+                    curr_params['position'])
+                range_vs_angle[curr_config]['range'].append(test['range'])
+            else:
+                range_vs_angle[curr_config] = {
+                    'position': [curr_params['position']],
+                    'range': [test['range']]
+                }
+        chamber_mode = self.testclass_results[0]['testcase_params'][
+            'chamber_mode']
+        if chamber_mode == 'orientation':
+            x_label = 'Angle (deg)'
+        elif chamber_mode == 'stepped stirrers':
+            x_label = 'Position Index'
+        figure = wputils.BokehFigure(
+            title='Range vs. Position',
+            x_label=x_label,
+            primary_y='Range (dB)',
+        )
+        for config, config_data in range_vs_angle.items():
+            figure.add_line(config_data['position'], config_data['range'],
+                            'Channel {}'.format(config))
+            average_range = sum(config_data['range']) / len(
+                config_data['range'])
+            print('Average range for Channel {} is: {}dB'.format(
+                config, average_range))
+        current_context = context.get_current_context().get_full_output_path()
+        plot_file_path = os.path.join(current_context, 'results.html')
+        figure.generate_figure(plot_file_path)
 
-    def test_ping_range_ch48_VHT20(self):
-        self._test_ping_range()
+        # Save results
+        results_file_path = os.path.join(current_context,
+                                         'testclass_summary.json')
+        with open(results_file_path, 'w') as results_file:
+            json.dump(range_vs_angle, results_file, indent=4)
 
-    def test_ping_range_ch149_VHT20(self):
-        self._test_ping_range()
+    def setup_ping_test(self, testcase_params):
+        WifiPingTest.setup_ping_test(self, testcase_params)
+        # Setup turntable
+        if testcase_params['chamber_mode'] == 'orientation':
+            self.ota_chamber.set_orientation(testcase_params['position'])
+        elif testcase_params['chamber_mode'] == 'stepped stirrers':
+            self.ota_chamber.step_stirrers(testcase_params['total_positions'])
 
-    def test_ping_range_ch149_VHT40(self):
-        self._test_ping_range()
+    def generate_test_cases(self, channels, modes, chamber_mode, positions):
+        test_cases = []
+        allowed_configs = {
+            'VHT20': [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 36, 40, 44, 48, 149, 153,
+                157, 161
+            ],
+            'VHT40': [36, 44, 149, 157],
+            'VHT80': [36, 149]
+        }
+        for channel, mode, position in itertools.product(
+                channels, modes, positions):
+            if channel not in allowed_configs[mode]:
+                continue
+            testcase_name = 'test_ping_range_ch{}_{}_pos{}'.format(
+                channel, mode, position)
+            testcase_params = collections.OrderedDict(
+                test_type='test_ping_range',
+                channel=channel,
+                mode=mode,
+                chamber_mode=chamber_mode,
+                total_positions=len(positions),
+                position=position)
+            setattr(self, testcase_name,
+                    partial(self._test_ping, testcase_params))
+            test_cases.append(testcase_name)
+        return test_cases
 
-    def test_ping_range_ch149_VHT80(self):
-        self._test_ping_range()
 
-    def test_ping_range_ch153_VHT20(self):
-        self._test_ping_range()
+class WifiOtaPing_TenDegree_Test(WifiOtaPingTest):
+    def __init__(self, controllers):
+        WifiOtaPingTest.__init__(self, controllers)
+        self.tests = self.generate_test_cases(
+            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], ['VHT20'],
+            'orientation', list(range(0, 360, 10)))
 
-    def test_ping_range_ch157_VHT20(self):
-        self._test_ping_range()
 
-    def test_ping_range_ch157_VHT40(self):
-        self._test_ping_range()
+class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
+    def __init__(self, controllers):
+        WifiOtaPingTest.__init__(self, controllers)
+        self.tests = self.generate_test_cases(
+            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], ['VHT20'],
+            'orientation', list(range(0, 360, 45)))
 
-    def test_ping_range_ch161_VHT20(self):
-        self._test_ping_range()
 
-    def test_fast_ping_rtt_ch1_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_slow_ping_rtt_ch1_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_fast_ping_rtt_ch6_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_slow_ping_rtt_ch6_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_fast_ping_rtt_ch11_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_slow_ping_rtt_ch11_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_fast_ping_rtt_ch36_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_slow_ping_rtt_ch36_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_fast_ping_rtt_ch36_VHT40(self):
-        self._test_ping_rtt()
-
-    def test_slow_ping_rtt_ch36_VHT40(self):
-        self._test_ping_rtt()
-
-    def test_fast_ping_rtt_ch36_VHT80(self):
-        self._test_ping_rtt()
-
-    def test_slow_ping_rtt_ch36_VHT80(self):
-        self._test_ping_rtt()
-
-    def test_fast_ping_rtt_ch149_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_slow_ping_rtt_ch149_VHT20(self):
-        self._test_ping_rtt()
-
-    def test_fast_ping_rtt_ch149_VHT40(self):
-        self._test_ping_rtt()
-
-    def test_slow_ping_rtt_ch149_VHT40(self):
-        self._test_ping_rtt()
-
-    def test_fast_ping_rtt_ch149_VHT80(self):
-        self._test_ping_rtt()
-
-    def test_slow_ping_rtt_ch149_VHT80(self):
-        self._test_ping_rtt()
+class WifiOtaPing_SteppedStirrers_Test(WifiOtaPingTest):
+    def __init__(self, controllers):
+        WifiOtaPingTest.__init__(self, controllers)
+        self.tests = self.generate_test_cases([6, 36, 149], ['VHT20'],
+                                              'stepped stirrers',
+                                              list(range(100)))
