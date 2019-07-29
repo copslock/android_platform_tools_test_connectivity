@@ -165,3 +165,33 @@ class SdpSetupTest(BaseTestClass):
                     result.get("error")))
         else:
             raise signals.TestPass("Success")
+
+
+    def test_include_additional_attributes(self):
+        self.dut.sdp_init()
+        additional_attributes = [{
+            'id': 0x0201,
+            'element': {
+                'data': int(sig_uuid_constants['AVDTP'], 16)
+            }
+        }]
+
+        TEST_SDP_RECORD['additional_attributes'] = additional_attributes
+        result = self.dut.sdp_add_service(TEST_SDP_RECORD)
+        if result.get("error") is not None:
+            raise signals.TestFailure(
+                "Failed to add SDP service record: {}".format(
+                    result.get("error")))
+        else:
+            raise signals.TestPass("Success")
+
+    def test_add_multiple_services(self):
+        self.dut.sdp_init()
+        number_of_records = 10
+        for _ in range(number_of_records):
+            result = self.dut.sdp_add_service(TEST_SDP_RECORD)
+            if result.get("error") is not None:
+                raise signals.TestFailure(
+                    "Failed to add SDP service record: {}".format(
+                        result.get("error")))
+        raise signals.TestPass("Success")
