@@ -20,7 +20,7 @@ import unittest
 
 def main():
     suite = unittest.TestLoader().discover(
-        start_dir='./acts/framework/tests/test_utils/instrumentation_tests',
+        start_dir='./acts/framework/tests/test_utils/instrumentation',
         pattern='*_test.py')
     return suite
 
