@@ -2,14 +2,14 @@
 #
 #   Copyright 2019 - The Android Open Source Project
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
+#   Licensed under the Apache License, Version 2.0 (the 'License');
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
 #
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
+#   distributed under the License is distributed on an 'AS IS' BASIS,
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
@@ -56,16 +56,16 @@ def nonblocking(f):
 # Link layer stats utilities
 class LinkLayerStats():
 
-    LLSTATS_CMD = "cat /d/wlan0/ll_stats"
-    PEER_REGEX = "LL_STATS_PEER_ALL"
+    LLSTATS_CMD = 'cat /d/wlan0/ll_stats'
+    PEER_REGEX = 'LL_STATS_PEER_ALL'
     MCS_REGEX = re.compile(
-        r"preamble: (?P<mode>\S+), nss: (?P<num_streams>\S+), bw: (?P<bw>\S+), "
-        "mcs: (?P<mcs>\S+), bitrate: (?P<rate>\S+), txmpdu: (?P<txmpdu>\S+), "
-        "rxmpdu: (?P<rxmpdu>\S+), mpdu_lost: (?P<mpdu_lost>\S+), "
-        "retries: (?P<retries>\S+), retries_short: (?P<retries_short>\S+), "
-        "retries_long: (?P<retries_long>\S+)")
+        r'preamble: (?P<mode>\S+), nss: (?P<num_streams>\S+), bw: (?P<bw>\S+), '
+        'mcs: (?P<mcs>\S+), bitrate: (?P<rate>\S+), txmpdu: (?P<txmpdu>\S+), '
+        'rxmpdu: (?P<rxmpdu>\S+), mpdu_lost: (?P<mpdu_lost>\S+), '
+        'retries: (?P<retries>\S+), retries_short: (?P<retries_short>\S+), '
+        'retries_long: (?P<retries_long>\S+)')
     MCS_ID = collections.namedtuple(
-        "mcs_id", ["mode", "num_streams", "bandwidth", "mcs", "rate"])
+        'mcs_id', ['mode', 'num_streams', 'bandwidth', 'mcs', 'rate'])
     MODE_MAP = {'0': '11a/g', '1': '11b', '2': '11n', '3': '11ac'}
     BW_MAP = {'0': 20, '1': 40, '2': 80}
 
@@ -97,7 +97,7 @@ class LinkLayerStats():
             retries_long=0)
 
     def _mcs_id_to_string(self, mcs_id):
-        mcs_string = "{} {}MHz Nss{} MCS{} {}Mbps".format(
+        mcs_string = '{} {}MHz Nss{} MCS{} {}Mbps'.format(
             mcs_id.mode, mcs_id.bandwidth, mcs_id.num_streams, mcs_id.mcs,
             mcs_id.rate)
         return mcs_string
@@ -235,20 +235,24 @@ class BokehFigure():
             'primary_y_label': primary_y,
             'secondary_y_label': secondary_y,
             'num_lines': 0,
+            'height': height,
+            'width': width,
             'title_size': '{}pt'.format(title_size),
             'axis_label_size': '{}pt'.format(axis_label_size)
         }
         self.TOOLS = (
             'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
         self.TOOLTIPS = [
-            ("index", "$index"),
-            ("(x,y)", "($x, $y)"),
-            ("info", "@hover_text"),
+            ('index', '$index'),
+            ('(x,y)', '($x, $y)'),
+            ('info', '@hover_text'),
         ]
+
+    def init_plot(self):
         self.plot = bokeh.plotting.figure(
-            plot_width=width,
-            plot_height=height,
-            title=title,
+            plot_width=self.fig_property['width'],
+            plot_height=self.fig_property['height'],
+            title=self.fig_property['title'],
             tools=self.TOOLS,
             output_backend='webgl')
         self.plot.hover.tooltips = self.TOOLTIPS
@@ -291,7 +295,7 @@ class BokehFigure():
         if style == 'dashed':
             style = [5, 5]
         if not hover_text:
-            hover_text = ["y={}".format(y) for y in y_data]
+            hover_text = ['y={}'.format(y) for y in y_data]
         self.figure_data.append({
             'x_data': x_data,
             'y_data': y_data,
@@ -308,14 +312,14 @@ class BokehFigure():
         self.fig_property['num_lines'] += 1
 
     def add_scatter(self,
-                 x_data,
-                 y_data,
-                 legend,
-                 hover_text=None,
-                 color=None,
-                 marker=None,
-                 marker_size=10,
-                 y_axis='default'):
+                    x_data,
+                    y_data,
+                    legend,
+                    hover_text=None,
+                    color=None,
+                    marker=None,
+                    marker_size=10,
+                    y_axis='default'):
         """Function to add line to existing BokehFigure.
 
         Args:
@@ -336,7 +340,7 @@ class BokehFigure():
             marker = self.MARKERS[self.fig_property['num_lines'] % len(
                 self.MARKERS)]
         if not hover_text:
-            hover_text = ["y={}".format(y) for y in y_data]
+            hover_text = ['y={}'.format(y) for y in y_data]
         self.figure_data.append({
             'x_data': x_data,
             'y_data': y_data,
@@ -344,7 +348,7 @@ class BokehFigure():
             'hover_text': hover_text,
             'color': color,
             'width': 0,
-            'style': "solid",
+            'style': 'solid',
             'marker': marker,
             'marker_size': marker_size,
             'shaded_region': None,
@@ -358,6 +362,7 @@ class BokehFigure():
         Args:
             output_file: string specifying output file path
         """
+        self.init_plot()
         two_axes = False
         for line in self.figure_data:
             source = bokeh.models.ColumnDataSource(
@@ -449,6 +454,8 @@ class BokehFigure():
             figure_array: list of BokehFigure object to be plotted
             output_file: string specifying output file path
         """
+        for figure in figure_array:
+            figure.generate_figure()
         plot_array = [figure.plot for figure in figure_array]
         all_plots = bokeh.layouts.column(children=plot_array)
         bokeh.plotting.output_file(output_file_path)
@@ -805,9 +812,9 @@ def get_atten_dut_chain_map(attenuators, dut, ping_server, ping_ip):
         test_rssi = get_connected_rssi(dut, 4, 0.25, 1)
         # Assing attenuator to path that has lower RSSI
         if chain0_base_rssi - test_rssi['chain_0_rssi']['mean'] > 5:
-            chain_map.append("DUT-Chain-0")
+            chain_map.append('DUT-Chain-0')
         elif chain1_base_rssi - test_rssi['chain_1_rssi']['mean'] > 5:
-            chain_map.append("DUT-Chain-1")
+            chain_map.append('DUT-Chain-1')
         else:
             chain_map.append(None)
         for atten in attenuators:
@@ -828,18 +835,53 @@ def get_server_address(ssh_connection, dut_ip, subnet_mask):
         the DUT LAN IP we wish to connect to
         subnet_mask: string representing subnet mask
     """
-    subnet_mask = subnet_mask.split(".")
+    subnet_mask = subnet_mask.split('.')
     dut_subnet = [
         int(dut) & int(subnet)
-        for dut, subnet in zip(dut_ip.split("."), subnet_mask)
+        for dut, subnet in zip(dut_ip.split('.'), subnet_mask)
     ]
-    ifconfig_out = ssh_connection.run("ifconfig").stdout
-    ip_list = re.findall("inet (?:addr:)?(\d+.\d+.\d+.\d+)", ifconfig_out)
+    ifconfig_out = ssh_connection.run('ifconfig').stdout
+    ip_list = re.findall('inet (?:addr:)?(\d+.\d+.\d+.\d+)', ifconfig_out)
     for current_ip in ip_list:
         current_subnet = [
             int(ip) & int(subnet)
-            for ip, subnet in zip(current_ip.split("."), subnet_mask)
+            for ip, subnet in zip(current_ip.split('.'), subnet_mask)
         ]
         if current_subnet == dut_subnet:
             return current_ip
-    logging.error("No IP address found in requested subnet")
+    logging.error('No IP address found in requested subnet')
+
+
+def get_iperf_arg_string(duration,
+                         reverse_direction,
+                         interval=1,
+                         traffic_type='TCP',
+                         tcp_window=None,
+                         tcp_processes=1,
+                         udp_throughput='1000M'):
+    """Function to format iperf client arguments.
+
+    This function takes in iperf client parameters and returns a properly
+    formatter iperf arg string to be used in throughput tests.
+
+    Args:
+        duration: iperf duration in seconds
+        reverse_direction: boolean controlling the -R flag for iperf clients
+        interval: iperf print interval
+        traffic_type: string specifying TCP or UDP traffic
+        tcp_window: string specifying TCP window, e.g., 2M
+        tcp_processes: int specifying number of tcp processes
+        udp_throughput: string specifying TX throughput in UDP tests, e.g. 100M
+    Returns:
+        iperf_args: string of formatted iperf args
+    """
+    iperf_args = '-i {} -t {} -J '.format(interval, duration)
+    if traffic_type == 'UDP':
+        iperf_args = iperf_args + '-u -b {} -l 1400'.format(udp_throughput)
+    elif traffic_type == 'TCP':
+        iperf_args = iperf_args + '-P {}'.format(tcp_processes)
+        if tcp_window:
+            iperf_args = iperf_args + '-w {}'.format(tcp_window)
+    if reverse_direction:
+        iperf_args = iperf_args + ' -R'
+    return iperf_args
