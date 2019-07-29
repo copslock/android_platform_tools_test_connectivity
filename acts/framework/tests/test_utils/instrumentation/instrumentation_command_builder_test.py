@@ -16,9 +16,9 @@
 
 import unittest
 
-from acts.test_utils.instrumentation_tests.instrumentation_command_builder \
+from acts.test_utils.instrumentation.instrumentation_command_builder \
     import InstrumentationCommandBuilder
-from acts.test_utils.instrumentation_tests.instrumentation_command_builder \
+from acts.test_utils.instrumentation.instrumentation_command_builder \
     import InstrumentationTestCommandBuilder
 
 
@@ -70,7 +70,7 @@ class InstrumentationCommandBuilderTest(unittest.TestCase):
 
 class InstrumentationTestCommandBuilderTest(unittest.TestCase):
     """Test class for
-    acts/test_utils/instrumentation_tests/instrumentation_call_builder.py
+    acts/test_utils/instrumentation/instrumentation_call_builder.py
     """
 
     def test__test_packages_can_not_be_added_if_classes_were_added_first(self):

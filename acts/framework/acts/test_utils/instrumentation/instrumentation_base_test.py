@@ -18,11 +18,11 @@ import os
 
 import yaml
 from acts.keys import Config
-from acts.test_utils.instrumentation_tests import app_installer
-from acts.test_utils.instrumentation_tests import config_wrapper
-from acts.test_utils.instrumentation_tests.instrumentation_command_builder import \
+from acts.test_utils.instrumentation import app_installer
+from acts.test_utils.instrumentation import config_wrapper
+from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationCommandBuilder
-from acts.test_utils.instrumentation_tests.adb_commands import common
+from acts.test_utils.instrumentation.adb_commands import common
 
 from acts import base_test
 
