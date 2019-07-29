@@ -1060,6 +1060,19 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.result_detail = result_message
         return all(results)
 
+    def connect_to_wifi(self):
+        for ad in self.android_devices:
+            if not ensure_wifi_connected(
+                    self.log,
+                    ad,
+                    self.wifi_network_ssid,
+                    self.wifi_network_pass,
+                    retries=3):
+                ad.log.error("Bringing up Wifi connection fails.")
+                return False
+        ad.log.info("Phone WIFI is connected successfully.")
+        return True
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="d035e5b9-476a-4e3d-b4e9-6fd86c51a68d")
@@ -1067,6 +1080,13 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_default_parallel_stress(self):
         """ Default state stress test"""
         return self.parallel_tests()
+
+    @test_tracker_info(uuid="798a3c34-db75-4bcf-b8ef-e1116414a7fe")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_parallel_stress_with_wifi(self):
+        """ Default state stress test with Wifi enabled."""
+        if self.connect_to_wifi():
+            return self.parallel_tests()
 
     @test_tracker_info(uuid="c21e1f17-3282-4f0b-b527-19f048798098")
     @TelephonyBaseTest.tel_test_wrap
