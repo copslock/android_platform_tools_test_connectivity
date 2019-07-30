@@ -294,8 +294,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             test_result: dict containing test result and meta data
         """
         # Check battery level before test
-        battery_level = utils.get_battery_level(self.dut)
-        if battery_level < 10 and testcase_params['traffic_direction'] == 'UL':
+        if not wputils.health_check(self.dut, 10):
             asserts.skip('Battery level too low. Skipping test.')
         # Run test and log result
         # Start iperf session

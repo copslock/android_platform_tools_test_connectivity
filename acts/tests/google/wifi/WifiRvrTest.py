@@ -59,7 +59,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         This function initializes hardwares and compiles parameters that are
         common to all tests in this class.
         """
-        self.client_dut = self.android_devices[-1]
+        self.dut = self.android_devices[-1]
         req_params = [
             'RetailAccessPoints', 'rvr_test_params', 'testbed_params',
             'RemoteServer'
@@ -301,19 +301,18 @@ class WifiRvrTest(base_test.BaseTestClass):
             rvr_result: dict containing rvr_results and meta data
         """
         # Check battery level before test
-        battery_level = utils.get_battery_level(self.client_dut)
-        if battery_level < 20 and testcase_params['traffic_direction'] == 'UL':
+        if not wputils.health_check(
+                self.dut, 20) and testcase_params['traffic_direction'] == 'UL':
             asserts.skip('Battery level too low. Skipping test.')
         self.log.info('Start running RvR')
         # Refresh link layer stats before test
-        llstats_obj = wputils.LinkLayerStats(self.client_dut)
+        llstats_obj = wputils.LinkLayerStats(self.dut)
         zero_counter = 0
         throughput = []
         llstats = []
         rssi = []
         for atten in testcase_params['atten_range']:
-            battery_level = utils.get_battery_level(self.client_dut)
-            if battery_level < 5:
+            if not wputils.health_check(self.dut, 5):
                 asserts.skip('Battery level too low. Skipping test.')
             # Set Attenuation
             for attenuator in self.attenuators:
@@ -323,8 +322,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
             rssi_future = wputils.get_connected_rssi_nb(
-                self.client_dut, self.testclass_params['iperf_duration'] - 1,
-                1, 1)
+                self.dut, self.testclass_params['iperf_duration'] - 1, 1, 1)
             client_output_path = self.iperf_client.start(
                 testcase_params['iperf_server_address'],
                 testcase_params['iperf_args'], str(atten),
@@ -419,17 +417,16 @@ class WifiRvrTest(base_test.BaseTestClass):
         """
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
-        wutils.reset_wifi(self.client_dut)
-        self.client_dut.droid.wifiSetCountryCode(
+        wutils.reset_wifi(self.dut)
+        self.dut.droid.wifiSetCountryCode(
             self.testclass_params['country_code'])
         self.main_network[band]['channel'] = testcase_params['channel']
         wutils.wifi_connect(
-            self.client_dut,
+            self.dut,
             self.main_network[band],
             num_of_tries=5,
             check_connectivity=False)
-        self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
-            'wlan0')[0]
+        self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def setup_rvr_test(self, testcase_params):
         """Function that gets devices ready for the test.
