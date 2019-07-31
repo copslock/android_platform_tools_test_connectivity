@@ -437,8 +437,11 @@ class WifiRssiTest(base_test.BaseTestClass):
         Returns:
             rssi_result: dict containing rssi_result and meta data
         """
-        rssi_result = collections.OrderedDict()
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('Battery level too low. Skipping test.')
         # Run test and log result
+        rssi_result = collections.OrderedDict()
         rssi_result['test_name'] = self.current_test_name
         rssi_result['ap_settings'] = self.access_point.ap_settings.copy()
         rssi_result['attenuation'] = list(testcase_params['rssi_atten_range'])
