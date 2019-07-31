@@ -246,6 +246,11 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('Battery level too low. Skipping test.')
+        # Turn screen off to preserve battery
+        self.dut.go_to_sleep()
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         wutils.wifi_toggle_state(self.dut, True)
@@ -293,9 +298,6 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         Returns:
             test_result: dict containing test result and meta data
         """
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
         # Run test and log result
         # Start iperf session
         self.log.info('Starting iperf test.')
