@@ -76,6 +76,8 @@ FUCHSIA_RECONNECT_AFTER_REBOOT_TIME = 5
 
 ENABLE_LOG_LISTENER = True
 
+CHANNEL_OPEN_TIMEOUT = 5
+
 
 class FuchsiaDeviceError(signals.ControllerError):
     pass
@@ -325,8 +327,7 @@ class FuchsiaDevice:
                 cmd_result_stdin, cmd_result_stdout, cmd_result_stderr = (
                     ssh_conn.exec_command(test_cmd, timeout=timeout))
                 cmd_result_exit_status = (
-                    cmd_result_stdout.channel.recv_exit_status()
-                )
+                    cmd_result_stdout.channel.recv_exit_status())
                 command_result = SshResults(cmd_result_stdin,
                                             cmd_result_stdout,
                                             cmd_result_stderr,
@@ -421,12 +422,14 @@ class FuchsiaDevice:
             "params": cleanup_args
         })
 
-        r = requests.get(url=self.cleanup_address, data=data).json()
-        self.test_counter += 1
-
-        self.log.debug("Cleaned up with status: {}".format(r))
-        self.stop_services()
-        return r
+        try:
+            response = requests.get(url=self.cleanup_address, data=data).json()
+            self.log.debug(response)
+        except Exception as err:
+            self.log.exception("Cleanup request failed with %s:" % err)
+        finally:
+            self.test_counter += 1
+            self.stop_services()
 
     def check_process_state(self, process_name):
         """Checks the state of a process on the Fuchsia device
@@ -470,12 +473,10 @@ class FuchsiaDevice:
         process_state = False
         try:
             if not self._persistent_ssh_conn:
-                self._persistent_ssh_conn = (
-                    create_ssh_connection(self.ip,
-                                          self.ssh_username,
-                                          self.ssh_config))
-            self._persistent_ssh_conn.exec_command("killall %s"
-                                                      % process_name)
+                self._persistent_ssh_conn = (create_ssh_connection(
+                    self.ip, self.ssh_username, self.ssh_config))
+            self._persistent_ssh_conn.exec_command(
+                "killall %s" % process_name, timeout=CHANNEL_OPEN_TIMEOUT)
             # This command will effectively stop the process but should
             # be used as a cleanup before starting a process.  It is a bit
             # confusing to have the msg saying "attempting to stop
@@ -486,29 +487,28 @@ class FuchsiaDevice:
                 self.log.debug("Attempting to start Fuchsia "
                                "devices services.")
                 self._persistent_ssh_conn.exec_command(
-                    "run fuchsia-pkg://fuchsia.com/%s#meta/%s &"
-                    % (process_name[:-4], process_name))
+                    "run fuchsia-pkg://fuchsia.com/%s#meta/%s &" %
+                    (process_name[:-4], process_name))
                 process_initial_msg = (
-                        "%s has not started yet. Waiting %i second and "
-                        "checking again." % (process_name,
-                                             DAEMON_INIT_TIMEOUT_SEC))
-                process_timeout_msg = ("Timed out waiting for %s to start."
-                                       % process_name)
+                    "%s has not started yet. Waiting %i second and "
+                    "checking again." %
+                    (process_name, DAEMON_INIT_TIMEOUT_SEC))
+                process_timeout_msg = ("Timed out waiting for %s to start." %
+                                       process_name)
                 unable_to_connect_msg = ("Unable to start %s no Fuchsia "
                                          "device via SSH. %s may not "
-                                         "be started." % (process_name,
-                                                          process_name))
+                                         "be started." %
+                                         (process_name, process_name))
             elif action in DAEMON_DEACTIVATED_STATES:
                 process_initial_msg = ("%s is running. Waiting %i second and "
-                                       "checking again."
-                                       % (process_name,
-                                          DAEMON_INIT_TIMEOUT_SEC))
-                process_timeout_msg = ("Timed out waiting trying to kill %s."
-                                       % process_name)
+                                       "checking again." %
+                                       (process_name, DAEMON_INIT_TIMEOUT_SEC))
+                process_timeout_msg = ("Timed out waiting trying to kill %s." %
+                                       process_name)
                 unable_to_connect_msg = ("Unable to stop %s on Fuchsia "
                                          "device via SSH. %s may "
-                                         "still be running." % (process_name,
-                                                                process_name))
+                                         "still be running." %
+                                         (process_name, process_name))
             else:
                 raise FuchsiaDeviceError(FUCHSIA_INVALID_CONTROL_STATE %
                                          action)
@@ -517,9 +517,8 @@ class FuchsiaDevice:
                 self.log.info(process_initial_msg)
                 time.sleep(DAEMON_INIT_TIMEOUT_SEC)
                 timeout_counter += 1
-                process_state = (
-                    self.check_process_with_expectation(process_name,
-                                                        expectation=action))
+                process_state = (self.check_process_with_expectation(
+                    process_name, expectation=action))
                 if timeout_counter == (DAEMON_INIT_TIMEOUT_SEC * 3):
                     self.log.info(process_timeout_msg)
                     break
@@ -574,10 +573,8 @@ class FuchsiaDevice:
         self.log.debug("Attempting to start Fuchsia device services on %s." %
                        self.ip)
         if self.ssh_config:
-            self.log_process = start_syslog(self.serial,
-                                            self.log_path,
-                                            self.ip,
-                                            self.ssh_username,
+            self.log_process = start_syslog(self.serial, self.log_path,
+                                            self.ip, self.ssh_username,
                                             self.ssh_config)
             if ENABLE_LOG_LISTENER:
                 self.log_process.start()
@@ -593,7 +590,10 @@ class FuchsiaDevice:
         self.log.debug("Attempting to stop Fuchsia device services on %s." %
                        self.ip)
         if self.ssh_config:
-            self.control_daemon("sl4f.cmx", "stop")
+            try:
+                self.control_daemon("sl4f.cmx", "stop")
+            except Exception as err:
+                self.log.exception("Failed to stop sl4f.cmx with: %s" % err)
             if self.log_process:
                 if ENABLE_LOG_LISTENER:
                     self.log_process.stop()
