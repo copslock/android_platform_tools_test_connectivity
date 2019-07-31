@@ -411,6 +411,9 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('Battery level too low. Skipping test.')
         wutils.reset_wifi(self.dut)
         self.dut.droid.wifiSetCountryCode(
             self.testclass_params['country_code'])
@@ -443,9 +446,6 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         Returns:
             dict containing all test results and meta data
         """
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
         self.log.info('Starting ping test.')
         ping_future = wputils.get_ping_stats_nb(
             self.remote_server, self.dut_ip,
@@ -472,9 +472,6 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         Returns:
             result: dict containing all test results and meta data
         """
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
         self.log.info('Starting iperf test.')
         self.iperf_server.start(extra_args='-i {}'.format(IPERF_INTERVAL))
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):

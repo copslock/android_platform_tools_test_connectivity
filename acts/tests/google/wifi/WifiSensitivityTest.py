@@ -134,7 +134,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         This function initializes hardwares and compiles parameters that are
         common to all tests in this class.
         """
-        self.client_dut = self.android_devices[-1]
+        self.dut = self.android_devices[-1]
         req_params = [
             'RetailAccessPoints', 'sensitivity_test_params', 'testbed_params',
             'RemoteServer'
@@ -357,21 +357,26 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         Args:
             testcase_params: dict containing AP and other test params
         """
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('Battery level too low. Skipping test.')
+        # Turn screen off to preserve battery
+        self.dut.go_to_sleep()
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
-        wutils.reset_wifi(self.client_dut)
-        self.client_dut.droid.wifiSetCountryCode(
+        wutils.reset_wifi(self.dut)
+        self.dut.droid.wifiSetCountryCode(
             self.testclass_params['country_code'])
         self.main_network[band]['channel'] = testcase_params['channel']
         wutils.wifi_connect(
-            self.client_dut,
+            self.dut,
             self.main_network[band],
             num_of_tries=5,
             check_connectivity=False)
-        self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
+        self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses(
             'wlan0')[0]
         atten_dut_chain_map = wputils.get_atten_dut_chain_map(
-            self.attenuators, self.client_dut, self.ping_server, self.dut_ip)
+            self.attenuators, self.dut, self.ping_server, self.dut_ip)
         for idx, atten in enumerate(self.attenuators):
             if atten_dut_chain_map[idx] == testcase_params['attenuated_chain']:
                 atten.offset = atten.instrument.max_atten
