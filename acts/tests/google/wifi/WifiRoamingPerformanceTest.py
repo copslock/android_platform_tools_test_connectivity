@@ -51,7 +51,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         This function initializes hardwares and compiles parameters that are
         common to all tests in this class.
         """
-        self.client_dut = self.android_devices[-1]
+        self.dut = self.android_devices[-1]
         req_params = [
             'RetailAccessPoints', 'roaming_test_params', 'testbed_params'
         ]
@@ -411,23 +411,22 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
-        wutils.reset_wifi(self.client_dut)
-        self.client_dut.droid.wifiSetCountryCode(
+        wutils.reset_wifi(self.dut)
+        self.dut.droid.wifiSetCountryCode(
             self.testclass_params['country_code'])
         (primary_net_id,
          primary_net_config) = next(net for net in self.main_network.items()
                                     if net[1]['roaming_label'] == 'primary')
         network = primary_net_config.copy()
         network.pop('BSSID', None)
-        self.client_dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
+        self.dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
         wutils.wifi_connect(
-            self.client_dut, network, num_of_tries=5, check_connectivity=False)
-        self.client_dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
-        self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
-            'wlan0')[0]
+            self.dut, network, num_of_tries=5, check_connectivity=False)
+        self.dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
+        self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         if testcase_params['screen_on']:
-            self.client_dut.wakeup_screen()
-            self.client_dut.droid.wakeLockAcquireBright()
+            self.dut.wakeup_screen()
+            self.dut.droid.wakeLockAcquireBright()
         time.sleep(MED_SLEEP)
 
     def setup_roaming_test(self, testcase_params):
@@ -444,13 +443,16 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         Returns:
             dict containing all test results and meta data
         """
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('Battery level too low. Skipping test.')
         self.log.info('Starting ping test.')
         ping_future = wputils.get_ping_stats_nb(
             self.remote_server, self.dut_ip,
             testcase_params['atten_waveforms']['length'],
             testcase_params['ping_interval'], 64)
         rssi_future = wputils.get_connected_rssi_nb(
-            self.client_dut,
+            self.dut,
             int(testcase_params['atten_waveforms']['length'] /
                 testcase_params['rssi_polling_frequency']),
             testcase_params['rssi_polling_frequency'])
@@ -470,11 +472,14 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         Returns:
             result: dict containing all test results and meta data
         """
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('Battery level too low. Skipping test.')
         self.log.info('Starting iperf test.')
         self.iperf_server.start(extra_args='-i {}'.format(IPERF_INTERVAL))
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
             iperf_server_address = (
-                self.client_dut.droid.connectivityGetIPv4Addresses('wlan0')[0])
+                self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0])
             self.iperf_client._ssh_session.setup_master_ssh()
         else:
             iperf_server_address = self.testbed_params['iperf_server_address']
@@ -486,7 +491,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             self.iperf_client, iperf_server_address, iperf_args, 0,
             testcase_params['atten_waveforms']['length'] + MED_SLEEP)
         rssi_future = wputils.get_connected_rssi_nb(
-            self.client_dut,
+            self.dut,
             int(testcase_params['atten_waveforms']['length'] /
                 testcase_params['rssi_polling_frequency']),
             testcase_params['rssi_polling_frequency'])

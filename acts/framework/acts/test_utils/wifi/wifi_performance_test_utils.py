@@ -23,6 +23,7 @@ import statistics
 import time
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.utils_lib import ssh
+from acts import utils
 from concurrent.futures import ThreadPoolExecutor
 
 SHORT_SLEEP = 1
@@ -885,3 +886,10 @@ def get_iperf_arg_string(duration,
     if reverse_direction:
         iperf_args = iperf_args + ' -R'
     return iperf_args
+
+
+def health_check(dut, batt_thresh=5):
+    battery_level = utils.get_battery_level(dut)
+    if battery_level < batt_thresh:
+        return 0
+    return 1
