@@ -437,9 +437,6 @@ class WifiRssiTest(base_test.BaseTestClass):
         Returns:
             rssi_result: dict containing rssi_result and meta data
         """
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
         # Run test and log result
         rssi_result = collections.OrderedDict()
         rssi_result['test_name'] = self.current_test_name
@@ -542,6 +539,11 @@ class WifiRssiTest(base_test.BaseTestClass):
 
     def setup_dut(self, testcase_params):
         """Sets up the DUT in the configuration required by the test."""
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('Battery level too low. Skipping test.')
+        # Turn screen off to preserve battery
+        self.dut.go_to_sleep()
         wutils.wifi_toggle_state(self.dut, True)
         wutils.reset_wifi(self.dut)
         self.main_network[
