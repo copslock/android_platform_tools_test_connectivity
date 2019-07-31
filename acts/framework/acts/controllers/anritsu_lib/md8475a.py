@@ -770,25 +770,24 @@ class MD8475A(object):
             self.reset()
         return True
 
-    def set_simulation_model(self, bts1, bts2=None, bts3=None, bts4=None):
-        """ Sets the simulation model
+    def set_simulation_model(self, *bts_rats, reset=True):
+        """ Stops the simulation and then sets the simulation model.
 
         Args:
-            bts1 - BTS1 RAT
-            bts1 - BTS2 RAT
-            bts3 - Not used now
-            bts4 - Not used now
-
+            *bts_rats: base station rats for BTS 1 to 5.
+            reset: if True, reset the simulation after setting the new
+            simulation model
         Returns:
             True or False
         """
         self.stop_simulation()
-        simmodel = bts1.value
-        if bts2 is not None:
-            simmodel = simmodel + "," + bts2.value
+        if len(bts_rats) not in range(1, 6):
+            raise ValueError(
+                "set_simulation_model requires 1 to 5 BTS values.")
+        simmodel = ",".join(bts_rat.value for bts_rat in bts_rats)
         if self._wlan:
             simmodel = simmodel + "," + "WLAN"
-        return self._set_simulation_model(simmodel)
+        return self._set_simulation_model(simmodel, reset)
 
     def get_simulation_model(self):
         """ Gets the simulation model
@@ -1131,6 +1130,15 @@ class MD8475A(object):
             pdn: pdn for which data traffic has to be stopped. Defaults to '1'.
         """
         self.send_command('OPERATEIPTRAFFIC STOP,' + pdn)
+
+    def set_carrier_aggregation_enabled(self, enabled=True):
+        """ Enables or disables de carrier aggregation option.
+
+        Args:
+            enabled: enables CA if True and disables CA if False.
+        """
+        cmd = 'CA ' + 'ENABLE' if enabled else 'DISABLE'
+        self.send_command(cmd)
 
     # Common Default Gateway:
     @property
