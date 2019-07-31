@@ -335,6 +335,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self._test_connect_to_wifi_network_reboot_config_store(
             [self.wpa_psk_5g], self.wpa_psk_5g)
 
+    @test_tracker_info(uuid="61649a2b-0f00-4272-9b9b-40ad5944da31")
     def test_connect_to_wpa_ent_config_aka_reboot_config_store(self):
         """
         Adds a network suggestion and ensure that the device connects to it
@@ -351,6 +352,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self._test_connect_to_wifi_network_reboot_config_store(
             [self.config_aka], self.ent_network_2g)
 
+    @test_tracker_info(uuid="98b2d40a-acb4-4a2f-aba1-b069e2a1d09d")
     def test_connect_to_wpa_ent_config_ttls_pap_reboot_config_store(self):
         """
         Adds a network suggestion and ensure that the device connects to it
