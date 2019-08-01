@@ -23,7 +23,7 @@ from acts.test_utils.instrumentation.adb_command_types import \
     DeviceBinaryCommandSeries
 
 
-class AbdCommandTest(unittest.TestCase):
+class AdbCommandTypesTest(unittest.TestCase):
 
     def test_device_state(self):
         """Tests that DeviceState returns the correct ADB command with
