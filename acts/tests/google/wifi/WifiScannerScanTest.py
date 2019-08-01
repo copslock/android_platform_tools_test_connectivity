@@ -71,7 +71,6 @@ class WifiScannerScanTest(WifiBaseTest):
             "test_single_scan_report_full_scan_for_band_with_enumerated_params",
             "test_batch_scan_report_full_scan_for_channels_with_enumerated_params",
             "test_batch_scan_report_full_scan_for_band_with_enumerated_params",
-            "test_wifi_connection_while_single_scan",
             "test_single_scan_while_pno",
             "test_wifi_connection_and_pno_while_batch_scan",
             "test_wifi_scanner_single_scan_in_isolated",
