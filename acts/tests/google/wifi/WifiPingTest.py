@@ -281,9 +281,6 @@ class WifiPingTest(base_test.BaseTestClass):
         Returns:
             test_result: dict containing ping results and other meta data
         """
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
         # Prepare results dict
         test_result = collections.OrderedDict()
         test_result['testcase_params'] = testcase_params.copy()
@@ -365,6 +362,11 @@ class WifiPingTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('Battery level too low. Skipping test.')
+        # Turn screen off to preserve battery
+        self.dut.go_to_sleep()
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         wutils.reset_wifi(self.dut)
