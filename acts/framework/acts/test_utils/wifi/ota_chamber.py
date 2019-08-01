@@ -14,7 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import flow
 import time
 from acts import logger
 from acts import utils
@@ -156,6 +155,7 @@ class BluetestChamber(OtaChamber):
     """Class that implements Octobox chamber."""
 
     def __init__(self, config):
+        import flow
         self.config = config.copy()
         self.log = logger.create_tagged_trace_logger('OtaChamber|{}'.format(
             self.config['ip_address']))
