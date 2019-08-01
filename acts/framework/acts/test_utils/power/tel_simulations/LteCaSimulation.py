@@ -121,7 +121,7 @@ class LteCaSimulation(LteSimulation):
 
         for ca in ca_configs:
 
-            band = int(ca[:-1])
+            band = ca[:-1]
             ca_class = ca[-1]
 
             if ca_class.upper() == 'B':
