@@ -317,8 +317,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
-    @mock.patch('acts.controllers.android_device.AndroidDevice.device_log_path',
-                new_callable=mock.PropertyMock)
+    @mock.patch(
+        'acts.controllers.android_device.AndroidDevice.device_log_path',
+        new_callable=mock.PropertyMock)
     def test_AndroidDevice_take_bug_report(self, mock_log_path, exe_mock,
                                            create_dir_mock, FastbootProxy,
                                            MockAdbProxy):
@@ -339,11 +340,12 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
-    @mock.patch('acts.controllers.android_device.AndroidDevice.device_log_path',
-                new_callable=mock.PropertyMock)
-    def test_AndroidDevice_take_bug_report_fail(
-            self, mock_log_path, exe_mock, create_dir_mock, FastbootProxy,
-            MockAdbProxy):
+    @mock.patch(
+        'acts.controllers.android_device.AndroidDevice.device_log_path',
+        new_callable=mock.PropertyMock)
+    def test_AndroidDevice_take_bug_report_fail(self, mock_log_path, exe_mock,
+                                                create_dir_mock, FastbootProxy,
+                                                MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report writes out the correct message
         when taking bugreport fails.
         """
@@ -351,8 +353,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         mock_log_path.return_value = os.path.join(
             logging.log_path, "AndroidDevice%s" % ad.serial)
         expected_msg = "Failed to take bugreport on 1: OMG I died!"
-        with self.assertRaisesRegex(errors.AndroidDeviceError,
-                                    expected_msg):
+        with self.assertRaisesRegex(errors.AndroidDeviceError, expected_msg):
             ad.take_bug_report("test_something", 4346343.23)
 
     @mock.patch(
@@ -363,8 +364,9 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.utils.create_dir')
     @mock.patch('acts.utils.exe_cmd')
-    @mock.patch('acts.controllers.android_device.AndroidDevice.device_log_path',
-                new_callable=mock.PropertyMock)
+    @mock.patch(
+        'acts.controllers.android_device.AndroidDevice.device_log_path',
+        new_callable=mock.PropertyMock)
     def test_AndroidDevice_take_bug_report_fallback(
             self, mock_log_path, exe_mock, create_dir_mock, FastbootProxy,
             MockAdbProxy):
@@ -390,17 +392,15 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         underlying logcat process is started properly and correct warning msgs
         are generated.
         """
-        with mock.patch(
-                ('acts.controllers.android_lib.logcat.'
-                 'create_logcat_keepalive_process'),
-                return_value=proc_mock) as create_proc_mock:
+        with mock.patch(('acts.controllers.android_lib.logcat.'
+                         'create_logcat_keepalive_process'),
+                        return_value=proc_mock) as create_proc_mock:
             ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
             ad.start_adb_logcat()
             # Verify start did the correct operations.
             self.assertTrue(ad.adb_logcat_process)
             log_dir = "AndroidDevice%s" % ad.serial
-            create_proc_mock.assert_called_with(
-                ad.serial, log_dir, '-b all')
+            create_proc_mock.assert_called_with(ad.serial, log_dir, '-b all')
             proc_mock.start.assert_called_with()
             # Expect warning msg if start is called back to back.
             expected_msg = "Android device .* already has a running adb logcat"
@@ -428,8 +428,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         # Verify that create_logcat_keepalive_process is called with the
         # correct command.
         log_dir = "AndroidDevice%s" % ad.serial
-        create_proc_mock.assert_called_with(
-            ad.serial, log_dir, '-b radio')
+        create_proc_mock.assert_called_with(ad.serial, log_dir, '-b radio')
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
@@ -439,7 +438,7 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         return_value=MockFastbootProxy(MOCK_SERIAL))
     @mock.patch('acts.libs.proc.process.Process')
     def test_AndroidDevice_stop_adb_logcat(self, proc_mock, FastbootProxy,
-                                       MockAdbProxy):
+                                           MockAdbProxy):
         """Verifies the AndroidDevice method stop_adb_logcat. Checks that the
         underlying logcat process is stopped properly and correct warning msgs
         are generated.
@@ -491,6 +490,156 @@ class ActsAndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.adb.return_value = "bad return value error"
         self.assertEqual(None, ad.get_package_pid("some_package"))
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_ensure_verity_enabled_only_system_enabled(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        root_user_id = '0'
+
+        ad.adb.get_user_id = mock.MagicMock()
+        ad.adb.get_user_id.return_value = root_user_id
+
+        ad.adb.getprop = mock.MagicMock(side_effect=[
+            '',  # system.verified
+            '2'
+        ])  # vendor.verified
+        ad.adb.ensure_user = mock.MagicMock()
+        ad.reboot = mock.MagicMock()
+        ad.ensure_verity_enabled()
+        ad.reboot.assert_called_once()
+
+        ad.adb.ensure_user.assert_called_with(root_user_id)
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_ensure_verity_enabled_only_vendor_enabled(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        root_user_id = '0'
+
+        ad.adb.get_user_id = mock.MagicMock()
+        ad.adb.get_user_id.return_value = root_user_id
+
+        ad.adb.getprop = mock.MagicMock(side_effect=[
+            '2',  # system.verified
+            ''
+        ])  # vendor.verified
+        ad.adb.ensure_user = mock.MagicMock()
+        ad.reboot = mock.MagicMock()
+
+        ad.ensure_verity_enabled()
+
+        ad.reboot.assert_called_once()
+        ad.adb.ensure_user.assert_called_with(root_user_id)
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_ensure_verity_enabled_both_enabled_at_start(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        root_user_id = '0'
+
+        ad.adb.get_user_id = mock.MagicMock()
+        ad.adb.get_user_id.return_value = root_user_id
+
+        ad.adb.getprop = mock.MagicMock(side_effect=[
+            '2',  # system.verified
+            '2'
+        ])  # vendor.verified
+        ad.adb.ensure_user = mock.MagicMock()
+        ad.reboot = mock.MagicMock()
+        ad.ensure_verity_enabled()
+
+        assert not ad.reboot.called
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_ensure_verity_disabled_system_already_disabled(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        root_user_id = '0'
+
+        ad.adb.get_user_id = mock.MagicMock()
+        ad.adb.get_user_id.return_value = root_user_id
+
+        ad.adb.getprop = mock.MagicMock(side_effect=[
+            '2',  # system.verified
+            ''
+        ])  # vendor.verified
+        ad.adb.ensure_user = mock.MagicMock()
+        ad.reboot = mock.MagicMock()
+        ad.ensure_verity_disabled()
+
+        ad.reboot.assert_called_once()
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_ensure_verity_disabled_vendor_already_disabled(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        root_user_id = '0'
+
+        ad.adb.get_user_id = mock.MagicMock()
+        ad.adb.get_user_id.return_value = root_user_id
+
+        ad.adb.getprop = mock.MagicMock(side_effect=[
+            '',  # system.verified
+            '2'
+        ])  # vendor.verified
+        ad.adb.ensure_user = mock.MagicMock()
+        ad.reboot = mock.MagicMock()
+
+        ad.ensure_verity_disabled()
+
+        ad.reboot.assert_called_once()
+        ad.adb.ensure_user.assert_called_with(root_user_id)
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_ensure_verity_disabled_disabled_at_start(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        root_user_id = '0'
+
+        ad.adb.get_user_id = mock.MagicMock()
+        ad.adb.get_user_id.return_value = root_user_id
+
+        ad.adb.getprop = mock.MagicMock(side_effect=[
+            '',  # system.verified
+            ''
+        ])  # vendor.verified
+        ad.adb.ensure_user = mock.MagicMock()
+        ad.reboot = mock.MagicMock()
+
+        ad.ensure_verity_disabled()
+
+        assert not ad.reboot.called
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_push_system_file(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.ensure_verity_disabled = mock.MagicMock()
+        ad.adb.remount = mock.MagicMock()
+        ad.adb.push = mock.MagicMock()
+
+        ret = ad.push_system_file('asdf', 'jkl')
+        self.assertTrue(ret)
+
+    @mock.patch(
+        'acts.controllers.adb.AdbProxy',
+        return_value=MockAdbProxy(MOCK_SERIAL))
+    def test_push_system_file_returns_false_on_error(self, adb_proxy):
+        ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.ensure_verity_disabled = mock.MagicMock()
+        ad.adb.remount = mock.MagicMock()
+        ad.adb.push = mock.MagicMock(return_value='error')
+
+        ret = ad.push_system_file('asdf', 'jkl')
+        self.assertFalse(ret)
 
 
 if __name__ == "__main__":
