@@ -189,6 +189,41 @@ class BluetoothDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
+    def sdp_add_search(self, attribute_list, profile_id):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def sdp_add_service(self, sdp_record):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def sdp_clean_up(self):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def sdp_init(self):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def sdp_remove_service(self, service_id):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
     def start_le_advertisement(self, adv_data, adv_interval):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
@@ -401,6 +436,45 @@ class AndroidBluetoothDevice(BluetoothDevice):
         """
         bt_test_utils.reset_bluetooth([self.device])
 
+    def sdp_add_search(self, attribute_list, profile_id):
+        """Adds an SDP search record.
+        Args:
+            attribute_list: The list of attributes to set
+            profile_id: The profile ID to set.
+        """
+        # Android devices currently have no hooks to modify the SDP record.
+        pass
+
+    def sdp_add_service(self, sdp_record):
+        """Adds an SDP service record.
+        Args:
+            sdp_record: The dictionary representing the search record to add.
+        Returns:
+            service_id: The service id to track the service record published.
+                None if failed.
+        """
+        # Android devices currently have no hooks to modify the SDP record.
+        pass
+
+    def sdp_clean_up(self):
+        """Cleans up all objects related to SDP.
+        """
+        self.device.sdp_lib.cleanUp()
+
+    def sdp_init(self):
+        """Initializes SDP on the device.
+        """
+        # Android devices currently have no hooks to modify the SDP record.
+        pass
+
+    def sdp_remove_service(self, service_id):
+        """Removes a service based on an input id.
+        Args:
+            service_id: The service ID to remove.
+        """
+        # Android devices currently have no hooks to modify the SDP record.
+        pass
+
     def unbond_all_known_devices(self):
         """ Unbond all known remote devices.
         """
@@ -552,6 +626,38 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
     def reset_bluetooth(self):
         """Stub for Fuchsia implementation."""
         pass
+
+    def sdp_add_search(self, attribute_list, profile_id):
+        """Adds an SDP search record.
+        Args:
+            attribute_list: The list of attributes to set
+            profile_id: The profile ID to set.
+        """
+        return self.device.sdp_lib.addSearch(attribute_list, profile_id)
+
+    def sdp_add_service(self, sdp_record):
+        """Adds an SDP service record.
+        Args:
+            sdp_record: The dictionary representing the search record to add.
+        """
+        return self.device.sdp_lib.addService(sdp_record)
+
+    def sdp_clean_up(self):
+        """Cleans up all objects related to SDP.
+        """
+        return self.device.sdp_lib.cleanUp()
+
+    def sdp_init(self):
+        """Initializes SDP on the device.
+        """
+        return self.device.sdp_lib.init()
+
+    def sdp_remove_service(self, service_id):
+        """Removes a service based on an input id.
+        Args:
+            service_id: The service ID to remove.
+        """
+        return self.device.sdp_lib.init()
 
     def start_le_advertisement(self, adv_data, adv_interval):
         """ Starts an LE advertisement
