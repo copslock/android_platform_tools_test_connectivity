@@ -893,3 +893,33 @@ def health_check(dut, batt_thresh=5):
     if battery_level < batt_thresh:
         return 0
     return 1
+
+
+def push_bdf(dut, bdf_file):
+    """Function to push Wifi BDF files
+
+    This function checks for existing wifi bdf files and over writes them all,
+    for simplicity, with the bdf file provided in the arguments. The dut is
+    rebooted for the bdf file to take effect
+
+    Args:
+        dut: dut to push bdf file to
+        bdf_file: path to bdf_file to push
+    """
+    bdf_files_list = dut.adb.shell('ls /vendor/firmware/bdwlan*').splitlines()
+    for dst_file in bdf_files_list:
+        dut.push_system_file(bdf_file, dst_file)
+    dut.reboot()
+
+
+def push_firmware(dut, wlanmdsp_file, datamsc_file):
+    """Function to push Wifi firmware files
+
+    Args:
+        dut: dut to push bdf file to
+        wlanmdsp_file: path to wlanmdsp.mbn file
+        datamsc_file: path to Data.msc file
+    """
+    dut.push_system_file(wlanmdsp_file, '/vendor/firmware/wlanmdsp.mbn')
+    dut.push_system_file(datamsc_file, '/vendor/firmware/Data.msc')
+    dut.reboot()
