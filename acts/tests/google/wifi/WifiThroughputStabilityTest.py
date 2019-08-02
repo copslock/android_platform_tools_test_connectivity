@@ -475,7 +475,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             x_label = 'Angle (deg)'
         elif chamber_mode == 'stepped stirrers':
             x_label = 'Position Index'
-        print(testclass_data)
+
         plots = []
         for channel, channel_data in testclass_data.items():
             current_plot = wputils.BokehFigure(

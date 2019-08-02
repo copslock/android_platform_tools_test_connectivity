@@ -370,9 +370,8 @@ class AndroidDevice:
         self.log_dir = 'AndroidDevice%s' % serial
         self.log_path = os.path.join(log_path_base, self.log_dir)
         self.log = tracelogger.TraceLogger(
-            AndroidDeviceLoggerAdapter(logging.getLogger(), {
-                'serial': serial
-            }))
+            AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                       {'serial': serial}))
         self._event_dispatchers = {}
         self._services = []
         self.register_service(services.AdbLogcatService(self))
@@ -672,8 +671,9 @@ class AndroidDevice:
                 except (IndexError, ValueError) as e:
                     # Possible ValueError from string to int cast.
                     # Possible IndexError from split.
-                    self.log.warn('Command \"%s\" returned output line: '
-                                  '\"%s\".\nError: %s', cmd, out, e)
+                    self.log.warn(
+                        'Command \"%s\" returned output line: '
+                        '\"%s\".\nError: %s', cmd, out, e)
             except Exception as e:
                 self.log.warn(
                     'Device fails to check if %s running with \"%s\"\n'
@@ -699,7 +699,10 @@ class AndroidDevice:
                                                         target) >= 0
         return low and high
 
-    def cat_adb_log(self, tag, begin_time, end_time=None,
+    def cat_adb_log(self,
+                    tag,
+                    begin_time,
+                    end_time=None,
                     dest_path="AdbLogExcerpts"):
         """Takes an excerpt of the adb logcat log from a certain time point to
         current time.
@@ -723,9 +726,8 @@ class AndroidDevice:
             return
         adb_excerpt_dir = os.path.join(self.log_path, dest_path)
         utils.create_dir(adb_excerpt_dir)
-        out_name = '%s,%s.txt' % (
-            acts_logger.normalize_log_line_timestamp(log_begin_time),
-            self.serial)
+        out_name = '%s,%s.txt' % (acts_logger.normalize_log_line_timestamp(
+            log_begin_time), self.serial)
         tag_len = utils.MAX_FILENAME_LEN - len(out_name)
         out_name = '%s,%s' % (tag[:tag_len], out_name)
         adb_excerpt_path = os.path.join(adb_excerpt_dir, out_name)
@@ -770,7 +772,8 @@ class AndroidDevice:
             self.log.warning("Logcat file %s does not exist." % logcat_path)
             return
         output = job.run(
-            "grep '%s' %s" % (matching_string, logcat_path), ignore_status=True)
+            "grep '%s' %s" % (matching_string, logcat_path),
+            ignore_status=True)
         if not output.stdout or output.exit_status != 0:
             return []
         if begin_time:
@@ -861,8 +864,9 @@ class AndroidDevice:
                     'pm list packages | grep -w "package:%s"' % package_name))
 
         except Exception as err:
-            self.log.error('Could not determine if %s is installed. '
-                           'Received error:\n%s', package_name, err)
+            self.log.error(
+                'Could not determine if %s is installed. '
+                'Received error:\n%s', package_name, err)
             return False
 
     def is_sl4a_installed(self):
@@ -886,8 +890,9 @@ class AndroidDevice:
                     self.log.info("apk %s is running", package_name)
                     return True
             except Exception as e:
-                self.log.warn("Device fails to check is %s running by %s "
-                              "Exception %s", package_name, cmd, e)
+                self.log.warn(
+                    "Device fails to check is %s running by %s "
+                    "Exception %s", package_name, cmd, e)
                 continue
         self.log.debug("apk %s is not running", package_name)
         return False
@@ -994,8 +999,8 @@ class AndroidDevice:
         if not host_path:
             host_path = self.log_path
         for device_path in device_paths:
-            self.log.info('Pull from device: %s -> %s' %
-                          (device_path, host_path))
+            self.log.info(
+                'Pull from device: %s -> %s' % (device_path, host_path))
             self.adb.pull(
                 "%s %s" % (device_path, host_path), timeout=PULL_TIMEOUT)
 
@@ -1066,7 +1071,7 @@ class AndroidDevice:
             log_path, begin_time=begin_time, match_string="*.sdm")
         if sdm_logs:
             sdm_log_path = os.path.join(self.device_log_path,
-                                         "SDM_%s" % self.serial)
+                                        "SDM_%s" % self.serial)
             utils.create_dir(sdm_log_path)
             self.log.info("Pull SDM Log %s to %s", sdm_logs, sdm_log_path)
             self.pull_files(sdm_logs, sdm_log_path)
@@ -1321,10 +1326,10 @@ class AndroidDevice:
         """Get the current focus application"""
         dumpsys_cmd = [
             'dumpsys window | grep -E mFocusedApp',
-            'dumpsys window windows | grep -E mFocusedApp']
+            'dumpsys window windows | grep -E mFocusedApp'
+        ]
         for cmd in dumpsys_cmd:
-            output = self.adb.shell(
-                cmd, ignore_status=True)
+            output = self.adb.shell(cmd, ignore_status=True)
             if not output or "not found" in output or "Can't find" in output or (
                     "mFocusedApp=null" in output):
                 result = ''
@@ -1479,6 +1484,66 @@ class AndroidDevice:
         activity = package.split('=')[0].split('/')[-2]
         self.log.info("%s/.%sActivity" % (wizard_package, activity))
         return "%s/.%sActivity" % (wizard_package, activity)
+
+    def push_system_file(self, src_file_path, dst_file_path, push_timeout=300):
+        """Pushes a file onto the read-only file system.
+
+        For speed, the device is left in root mode after this call, and leaves
+        verity disabled. To re-enable verity, call ensure_verity_enabled().
+
+        Args:
+            src_file_path: The path to the system app to install.
+            dst_file_path: The destination of the file.
+            push_timeout: How long to wait for the push to finish.
+        Returns:
+            Whether or not the install was successful.
+        """
+        self.adb.ensure_root()
+        try:
+            self.ensure_verity_disabled()
+            self.adb.remount()
+            out = self.adb.push(
+                '%s %s' % (src_file_path, dst_file_path), timeout=push_timeout)
+            if 'error' in out:
+                self.log.error('Unable to push system file %s to %s due to %s',
+                               src_file_path, dst_file_path, out)
+                return False
+            return True
+        except Exception as e:
+            self.log.error('Unable to push system file %s to %s due to %s',
+                           src_file_path, dst_file_path, e)
+            return False
+
+    def ensure_verity_enabled(self):
+        """Ensures that verity is enabled.
+
+        If verity is not enabled, this call will reboot the phone. Note that
+        this only works on debuggable builds.
+        """
+        user = self.adb.get_user_id()
+        # The below properties will only exist if verity has been enabled.
+        system_verity = self.adb.getprop('partition.system.verified')
+        vendor_verity = self.adb.getprop('partition.vendor.verified')
+        if not system_verity or not vendor_verity:
+            self.adb.ensure_root()
+            self.adb.enable_verity()
+            self.reboot()
+            self.adb.ensure_user(user)
+
+    def ensure_verity_disabled(self):
+        """Ensures that verity is disabled.
+
+        If verity is enabled, this call will reboot the phone.
+        """
+        user = self.adb.get_user_id()
+        # The below properties will only exist if verity has been enabled.
+        system_verity = self.adb.getprop('partition.system.verified')
+        vendor_verity = self.adb.getprop('partition.vendor.verified')
+        if system_verity or vendor_verity:
+            self.adb.ensure_root()
+            self.adb.disable_verity()
+            self.reboot()
+            self.adb.ensure_user(user)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
