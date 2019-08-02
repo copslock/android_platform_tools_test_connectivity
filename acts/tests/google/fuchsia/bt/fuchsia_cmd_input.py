@@ -43,6 +43,9 @@ This is all to say this documentation pattern is expected.
 
 """
 
+from acts.test_utils.bt.bt_constants import bt_attribute_values
+from acts.test_utils.bt.bt_constants import sig_uuid_constants
+
 import acts.test_utils.bt.gatt_test_database as gatt_test_database
 
 import cmd
@@ -67,6 +70,7 @@ class CmdInput(cmd.Cmd):
     def setup_vars(self, fuchsia_devices, target_device_name, log):
         self.pri_dut = fuchsia_devices[0]
         self.pri_dut.btc_lib.initBluetoothControl()
+        self.pri_dut.sdp_lib.init()
         if len(fuchsia_devices) > 1:
             self.sec_dut = fuchsia_devices[1]
         self.target_device_name = target_device_name
@@ -132,7 +136,6 @@ class CmdInput(cmd.Cmd):
                             .format(name, did, address))
                         break
         self.pri_dut.btc_lib.requestDiscovery(False)
-
 
     def do_tool_take_bt_snoop_log(self, custom_name):
         """
@@ -1332,3 +1335,139 @@ class CmdInput(cmd.Cmd):
             self.log.error(FAILURE.format(cmd, err))
 
     """End Bluetooth Control wrappers"""
+    """Begin Profile Server wrappers"""
+
+    def do_sdp_pts_example(self, num_of_records):
+        """
+        Description: An example of how to setup a generic SDP record
+            and SDP search capabilities. This example will pass a few
+            SDP tests.
+
+        Input(s):
+            num_of_records: The number of records to add.
+
+        Usage:
+          Examples:
+            sdp_pts_example 1
+            sdp pts_example 10
+        """
+        cmd = "Setup SDP for PTS testing."
+        record = {
+            'service_class_uuids': ["0001"],
+            'protocol_descriptors': [
+                {
+                    'protocol':
+                    int(sig_uuid_constants['AVDTP'], 16),
+                    'params': [
+                        {
+                            'data': 0x0103  # to indicate 1.3
+                        },
+                        {
+                            'data': 0x0105  # to indicate 1.5
+                        }
+                    ]
+                },
+                {
+                    'protocol': int(sig_uuid_constants['SDP'], 16),
+                    'params': [{
+                        'data': int(sig_uuid_constants['AVDTP'], 16),
+                    }]
+                }
+            ],
+            'profile_descriptors': [{
+                'profile_id':
+                int(sig_uuid_constants['AdvancedAudioDistribution'], 16),
+                'major_version':
+                1,
+                'minor_version':
+                3,
+            }],
+            'additional_protocol_descriptors': [{
+                'protocol':
+                int(sig_uuid_constants['L2CAP'], 16),
+                'params': [
+                    {
+                        'data': int(sig_uuid_constants['AVDTP'], 16),
+                    },
+                    {
+                        'data': int(sig_uuid_constants['AVCTP'], 16),
+                    },
+                    {
+                        'data': int(sig_uuid_constants['GenericAudio'], 16),
+                    },
+                ]
+            }],
+            'information': [{
+                'language': "en",
+                'name': "A2DP",
+                'description': "Advanced Audio Distribution Profile",
+                'provider': "Fuchsia"
+            }],
+            'additional_attributes': [
+                {
+                    'id': 0x0200,
+                    'element': {
+                        'data': int(sig_uuid_constants['AVDTP'], 16)
+                    }
+                },
+                {
+                    'id': 0x0201,
+                    'element': {
+                        'data': int(sig_uuid_constants['AVDTP'], 16)
+                    }
+                },
+            ]
+        }
+
+        attributes = [
+            bt_attribute_values['ATTR_PROTOCOL_DESCRIPTOR_LIST'],
+            bt_attribute_values['ATTR_SERVICE_CLASS_ID_LIST'],
+            bt_attribute_values['ATTR_BLUETOOTH_PROFILE_DESCRIPTOR_LIST'],
+            bt_attribute_values['ATTR_A2DP_SUPPORTED_FEATURES'],
+            bt_attribute_values['ATTR_ADDITIONAL_PROTOCOL_DESCRIPTOR_LIST'],
+            bt_attribute_values['ATTR_SERVICE_RECORD_HANDLE'],
+        ]
+
+        try:
+            self.pri_dut.sdp_lib.addSearch(
+                attributes, int(sig_uuid_constants['AudioSource'], 16))
+            self.pri_dut.sdp_lib.addSearch(
+                attributes,
+                int(sig_uuid_constants['AdvancedAudioDistribution'], 16))
+            for _ in range(int(num_of_records)):
+                result = self.pri_dut.sdp_lib.addService(record)
+                self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_sdp_cleanup(self, line):
+        """
+        Description: Cleanup any existing SDP records
+
+        Usage:
+          Examples:
+            sdp_cleanup
+        """
+        cmd = "Cleanup SDP objects."
+        try:
+            result = self.pri_dut.sdp_lib.cleanUp()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_sdp_init(self, line):
+        """
+        Description: Init the profile proxy for setting up SDP records
+
+        Usage:
+          Examples:
+            sdp_init
+        """
+        cmd = "Initialize profile proxy objects for adding SDP records"
+        try:
+            result = self.pri_dut.sdp_lib.init()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End Profile Server wrappers"""
