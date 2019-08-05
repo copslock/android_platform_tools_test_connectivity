@@ -36,6 +36,15 @@ class AdbCommandTypesTest(unittest.TestCase):
         self.assertEqual(device_state.set_value(val1, val2),
                          'run command with vals 15 24')
 
+    def test_device_state_with_base_cmd_as_format_string(self):
+        """Tests that DeviceState returns the correct ADB command if the base
+        command is given as a format string.
+        """
+        base_cmd = 'echo %s > /test/data'
+        val = 23
+        device_state = DeviceState(base_cmd)
+        self.assertEqual(device_state.set_value(val), 'echo 23 > /test/data')
+
     def test_device_binary_state(self):
         """Tests that DeviceState returns the correct ADB commands with toggle.
         """
