@@ -111,10 +111,14 @@ def enable_compact_and_particle_fusion_log(ad):
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
                  "GSERVICES_OVERRIDE -e location:compact_log_enabled true")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
+                 "GSERVICES_OVERRIDE -e location:proks_config 28")
+    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
                  "GSERVICES_OVERRIDE -e flp_use_particle_fusion true")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
                  "GSERVICES_OVERRIDE -e flp_particle_fusion_extended_bug_report"
                  " true")
+    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
+                 "GSERVICES_OVERRIDE -e flp_event_log_size 54000")
     ad.adb.shell("am force-stop com.google.android.gms")
     ad.adb.shell("am broadcast -a com.google.android.gms.INITIALIZE")
     ad.adb.shell("sqlite3 /data/data/com.google.android.gsf/databases/"
