@@ -37,6 +37,7 @@ from acts.test_utils.tel.tel_subscription_utils import \
     initial_set_up_for_subid_infomation
 from acts.test_utils.tel.tel_subscription_utils import \
     set_default_sub_for_all_services
+from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_test_utils import build_id_override
 from acts.test_utils.tel.tel_test_utils import disable_qxdm_logger
 from acts.test_utils.tel.tel_test_utils import enable_connectivity_metrics
@@ -87,6 +88,7 @@ from acts.test_utils.tel.tel_defines import SIM_STATE_ABSENT
 from acts.test_utils.tel.tel_defines import SIM_STATE_UNKNOWN
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_ENABLED
 from acts.test_utils.tel.tel_defines import WIFI_VERBOSE_LOGGING_DISABLED
+from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 
 
 class TelephonyBaseTest(BaseTestClass):
@@ -123,6 +125,14 @@ class TelephonyBaseTest(BaseTestClass):
                             "config":SINGLE_SIM_CONFIG,
                             "number_of_sims":1
                         }
+
+        for ad in self.android_devices:
+            if hasattr(ad, "dsds"):
+                self.sim_config = {
+                                    "config":MULTI_SIM_CONFIG,
+                                    "number_of_sims":2
+                                }
+                break
 
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
@@ -286,7 +296,6 @@ class TelephonyBaseTest(BaseTestClass):
                     return False
             elif sim_mode == 2:
                 ad.log.info("Phone already in Dual SIM Mode")
-            set_default_sub_for_all_services(ad)
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
             ad.log.info("Device has no or unknown SIM in it")
             ensure_phone_idle(self.log, ad)
@@ -298,6 +307,15 @@ class TelephonyBaseTest(BaseTestClass):
             self.wait_for_sim_ready(ad)
             ensure_phone_default_state(self.log, ad)
             setup_droid_properties(self.log, ad, sim_conf_file, self.cbrs_esim)
+
+        default_slot = getattr(ad, "default_slot", 0)
+        if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
+            ad.log.info("Slot %s is the default slot.", default_slot)
+            set_default_sub_for_all_services(ad, default_slot)
+        else:
+            ad.log.warning("Slot %s is NOT a valid slot. Slot %s will be used by default.",
+                default_slot, 1-default_slot)
+            set_default_sub_for_all_services(ad, 1-default_slot)
 
         # Activate WFC on Verizon, AT&T and Canada operators as per # b/33187374 &
         # b/122327716
