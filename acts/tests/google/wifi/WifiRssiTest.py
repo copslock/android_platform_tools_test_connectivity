@@ -544,16 +544,22 @@ class WifiRssiTest(base_test.BaseTestClass):
             asserts.skip('Battery level too low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
-        wutils.wifi_toggle_state(self.dut, True)
-        wutils.reset_wifi(self.dut)
-        self.main_network[
-            testcase_params['band']]['channel'] = testcase_params['channel']
-        self.dut.droid.wifiSetCountryCode(
-            self.testclass_params['country_code'])
-        wutils.wifi_connect(
-            self.dut,
-            self.main_network[testcase_params['band']],
-            num_of_tries=5)
+        current_network = self.dut.droid.wifiGetConnectionInfo()
+        valid_connection = wutils.validate_connection(self.dut)
+        if valid_connection and current_network['SSID'] == self.main_network[
+                testcase_params['band']]['SSID']:
+            self.log.info('Already connected to desired network')
+        else:
+            wutils.wifi_toggle_state(self.dut, True)
+            wutils.reset_wifi(self.dut)
+            self.main_network[testcase_params['band']][
+                'channel'] = testcase_params['channel']
+            self.dut.droid.wifiSetCountryCode(
+                self.testclass_params['country_code'])
+            wutils.wifi_connect(
+                self.dut,
+                self.main_network[testcase_params['band']],
+                num_of_tries=5)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def setup_rssi_test(self, testcase_params):
