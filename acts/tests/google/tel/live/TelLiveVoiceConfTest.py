@@ -45,6 +45,7 @@ from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts.test_utils.tel.tel_test_utils import get_capability_for_subscription
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -74,6 +75,9 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                 "Conference call is not supported, abort test.")
             raise signals.TestAbortClass(
                 "Conference call is not supported, abort test.")
+
+    def teardown_test(self):
+        ensure_phones_idle(self.log, self.android_devices)
 
     # Note: Currently Conference Call do not verify voice.
     # So even if test cases passed, does not necessarily means
