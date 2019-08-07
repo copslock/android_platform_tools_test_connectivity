@@ -5379,11 +5379,13 @@ def ensure_phones_idle(log, ads, max_time=MAX_WAIT_TIME_CALL_DROP):
     return result
 
 
-def ensure_phone_idle(log, ad, max_time=MAX_WAIT_TIME_CALL_DROP):
+def ensure_phone_idle(log, ad, max_time=MAX_WAIT_TIME_CALL_DROP, retry=2):
     """Ensure ad idle (not in call).
     """
-    if ad.droid.telecomIsInCall():
+    while ad.droid.telecomIsInCall() and retry > 0:
         ad.droid.telecomEndCall()
+        time.sleep(3)
+        retry -= 1
     if not wait_for_droid_not_in_call(log, ad, max_time=max_time):
         ad.log.error("Failed to end call")
         return False
@@ -5445,7 +5447,7 @@ def ensure_phone_subscription(log, ad):
         return False
 
 
-def ensure_phone_default_state(log, ad, check_subscription=True):
+def ensure_phone_default_state(log, ad, check_subscription=True, retry=2):
     """Ensure ad in default state.
     Phone not in call.
     Phone have no stored WiFi network and WiFi disconnected.
@@ -5457,10 +5459,12 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
         result = False
     try:
         set_wifi_to_default(log, ad)
-        if ad.droid.telecomIsInCall():
+        while ad.droid.telecomIsInCall() and retry > 0:
             ad.droid.telecomEndCall()
-            if not wait_for_droid_not_in_call(log, ad):
-                ad.log.error("Failed to end call")
+            time.sleep(3)
+            retry -= 1
+        if not wait_for_droid_not_in_call(log, ad):
+            ad.log.error("Failed to end call")
         ad.droid.telephonyFactoryReset()
         ad.droid.imsFactoryReset()
         data_roaming = getattr(ad, 'roaming', False)
