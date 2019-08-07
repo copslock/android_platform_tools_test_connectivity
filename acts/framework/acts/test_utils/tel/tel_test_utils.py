@@ -3033,7 +3033,7 @@ def http_file_download_by_sl4a(ad,
 
 def get_mobile_data_usage(ad, sid=None, apk=None):
     if not sid:
-        sid = ad.droid.subscriptionGetDefaultSubId()
+        sid = ad.droid.subscriptionGetDefaultDataSubId()
     current_time = int(time.time() * 1000)
     begin_time = current_time - 10 * 24 * 60 * 60 * 1000
     end_time = current_time + 10 * 24 * 60 * 60 * 1000
