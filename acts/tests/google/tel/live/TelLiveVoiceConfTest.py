@@ -10796,7 +10796,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_general, (self.log, ads[2]))]
@@ -10805,7 +10805,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         if not self._three_phone_call_mo_add_mt_reject(
-            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], True):
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_iwlan, None], True):
             return False
         return True
 
@@ -10815,7 +10815,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_general, (self.log, ads[2]))]
@@ -10824,7 +10824,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         if not self._three_phone_call_mo_add_mt_reject(
-            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], False):
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_iwlan, None], False):
             return False
         return True
 
