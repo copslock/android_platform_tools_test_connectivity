@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from PowerVoiceCallTest import PowerVoiceCallTest
+from PowerTelVoiceCallTest import PowerTelVoiceCallTest
 
 
-class PowerTelVoiceCall_UMTS_Test(PowerVoiceCallTest):
+class PowerTelVoiceCall_UMTS_Test(PowerTelVoiceCallTest):
     def test_umts_voice_r_8_band_1_pul_low_1(self):
         self.power_voice_call_test()
 
