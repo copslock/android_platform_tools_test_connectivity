@@ -22,7 +22,7 @@ from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
 from acts.test_utils.tel.tel_test_utils import initiate_call, hangup_call, set_phone_silent_mode
 
 
-class PowerVoiceCallTest(PWCEL.PowerCellularLabBaseTest):
+class PowerTelVoiceCallTest(PWCEL.PowerCellularLabBaseTest):
     """ Voice call power test.
 
     Inherits from PowerCellularLabBaseTest. Contains methods to initiate
