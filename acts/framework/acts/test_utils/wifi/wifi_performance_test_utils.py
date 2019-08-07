@@ -24,6 +24,7 @@ import time
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.utils_lib import ssh
 from acts import utils
+from acts.test_utils.wifi import wifi_test_utils as wutils
 from concurrent.futures import ThreadPoolExecutor
 
 SHORT_SLEEP = 1
@@ -180,6 +181,27 @@ class LinkLayerStats():
             self.llstats_incremental)
         self.llstats_cumulative['summary'] = self._generate_stats_summary(
             self.llstats_cumulative)
+
+
+# JSON serializer
+def serialize_dict(input_dict):
+    """Function to serialize dicts to enable JSON output"""
+    output_dict = collections.OrderedDict()
+    for key, value in input_dict.items():
+        output_dict[_serialize_value(key)] = _serialize_value(value)
+    return output_dict
+
+
+def _serialize_value(value):
+    """Function to recursively serialize dict entries to enable JSON output"""
+    if isinstance(value, tuple):
+        return str(value)
+    if isinstance(value, list):
+        return [_serialize_value(x) for x in value]
+    elif isinstance(value, dict):
+        return serialize_dict(value)
+    else:
+        return value
 
 
 # Plotting Utilities
@@ -463,6 +485,7 @@ class BokehFigure():
         bokeh.plotting.save(all_plots)
 
 
+# Ping utilities
 class PingResult(object):
     """An object that contains the results of running ping command.
 
@@ -488,15 +511,18 @@ class PingResult(object):
             self.transmission_times, lambda entry: entry.timestamp)
         self.ping_interarrivals = _PingInterarrivals(self.transmission_times)
 
+        self.start_time = 0
         for line in ping_output:
             if 'loss' in line:
                 match = re.search(LOSS_REGEX, line)
                 self.packet_loss_percentage = float(match.group('loss'))
             if 'time=' in line:
                 match = re.search(RTT_REGEX, line)
+                if self.start_time == 0:
+                    self.start_time = float(match.group('timestamp'))
                 self.transmission_times.append(
                     PingTransmissionTimes(
-                        float(match.group('timestamp')),
+                        float(match.group('timestamp')) - self.start_time,
                         float(match.group('rtt'))))
         self.connected = len(
             ping_output) > 1 and self.packet_loss_percentage < 100
@@ -792,13 +818,31 @@ def atten_by_label(atten_list, path_label, atten_level):
             atten.set_atten(atten_level)
 
 
-# Miscellaneous Utilities
-def get_atten_dut_chain_map(attenuators, dut, ping_server, ping_ip):
+# Miscellaneous Wifi Utilities
+def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
+    """Function to detect mapping between attenuator ports and DUT chains.
+
+    This function detects the mapping between attenuator ports and DUT chains
+    in cases where DUT chains are connected to only one attenuator port. The
+    function assumes the DUT is already connected to a wifi network. The
+    function starts by measuring per chain RSSI at 0 attenuation, then
+    attenuates one port at a time looking for the chain that reports a lower
+    RSSI.
+
+    Args:
+        attenuators: list of attenuator ports
+        dut: android device object assumed connected to a wifi network.
+        ping_server: ssh connection object to ping server
+        ping_ip: ip to ping to keep connection alive and RSSI updated
+    Returns:
+        chain_map: list of dut chains, one entry per attenuator port
+    """
     # Set attenuator to 0 dB
     for atten in attenuators:
         atten.set_atten(0, strict=False)
     # Start ping traffic
-    ping_future = get_ping_stats_nb(ping_server, ping_ip, 11, 0.02, 64)
+    dut_ip = dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
+    ping_future = get_ping_stats_nb(ping_server, dut_ip, 11, 0.02, 64)
     # Measure starting RSSI
     base_rssi = get_connected_rssi(dut, 4, 0.25, 1)
     chain0_base_rssi = base_rssi['chain_0_rssi']['mean']
@@ -808,20 +852,65 @@ def get_atten_dut_chain_map(attenuators, dut, ping_server, ping_ip):
     chain_map = []
     for test_atten in attenuators:
         # Set one attenuator to 20 dB down
-        test_atten.set_atten(20, strict=False)
+        test_atten.set_atten(30, strict=False)
         # Get new RSSI
         test_rssi = get_connected_rssi(dut, 4, 0.25, 1)
-        # Assing attenuator to path that has lower RSSI
-        if chain0_base_rssi - test_rssi['chain_0_rssi']['mean'] > 5:
+        # Assign attenuator to path that has lower RSSI
+        if chain0_base_rssi > -40 and chain0_base_rssi - test_rssi[
+                'chain_0_rssi']['mean'] > 15:
             chain_map.append('DUT-Chain-0')
-        elif chain1_base_rssi - test_rssi['chain_1_rssi']['mean'] > 5:
+        elif chain1_base_rssi > -40 and chain1_base_rssi - test_rssi[
+                'chain_1_rssi']['mean'] > 15:
             chain_map.append('DUT-Chain-1')
         else:
             chain_map.append(None)
-        for atten in attenuators:
-            atten.set_atten(0, strict=False)
+        # Reset attenuator to 0
+        test_atten.set_atten(0, strict=False)
     ping_future.result()
     return chain_map
+
+
+def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
+    """Function to detect per-network connections between attenuator and DUT.
+
+    This function detects the mapping between attenuator ports and DUT chains
+    on all networks in its arguments. The function connects the DUT to each
+    network then calls get_current_atten_dut_chain_map to get the connection
+    map on the current network. The function outputs the results in two formats
+    to enable easy access when users are interested in indexing by network or
+    attenuator port.
+
+    Args:
+        attenuators: list of attenuator ports
+        dut: android device object assumed connected to a wifi network.
+        ping_server: ssh connection object to ping server
+        networks: dict of network IDs and configs
+    Returns:
+        rf_map_by_network: dict of RF connections indexed by network.
+        rf_map_by_atten: list of RF connections indexed by attenuator
+    """
+    for atten in attenuators:
+        atten.set_atten(0, strict=False)
+
+    rf_map_by_network = collections.OrderedDict()
+    rf_map_by_atten = [[] for atten in attenuators]
+    for net_id, net_config in networks.items():
+        wutils.reset_wifi(dut)
+        wutils.wifi_connect(
+            dut,
+            net_config,
+            num_of_tries=1,
+            assert_on_fail=False,
+            check_connectivity=False)
+        rf_map_by_network[net_id] = get_current_atten_dut_chain_map(
+            attenuators, dut, ping_server)
+        for idx, chain in enumerate(rf_map_by_network[net_id]):
+            if chain:
+                rf_map_by_atten[idx].append({
+                    "network": net_id,
+                    "dut_chain": chain
+                })
+    return rf_map_by_network, rf_map_by_atten
 
 
 def get_server_address(ssh_connection, dut_ip, subnet_mask):
