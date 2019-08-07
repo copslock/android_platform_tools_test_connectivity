@@ -39,6 +39,7 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import dumpsys_carrier_config
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
@@ -79,8 +80,10 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         self.dut = self.android_devices[0]
         self.number_of_devices = 1
         self.skip_reset_between_cases = False
-        self.carrier_configs = dumpsys_carrier_config(self.dut)
-        self.dut_capabilities = self.dut.telephony.get("capabilities", [])
+        subid = get_outgoing_voice_sub_id(self.dut)
+        self.carrier_configs = dumpsys_carrier_config(self.dut)[subid]
+        self.dut_capabilities = self.dut.telephony["subscription"][
+            subid].get("capabilities", [])
         self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         if CAPABILITY_VOLTE not in self.dut_capabilities:
             raise signals.TestSkipClass("VoLTE is not supported")
@@ -96,7 +99,8 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
             self.carrier_configs[CarrierConfigs.DEFAULT_WFC_IMS_ENABLED_BOOL])
         self.default_wfc_mode = self.carrier_configs.get(
             CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT, None)
-        self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
+        self.dut_wfc_modes = self.dut.telephony[
+            "subscription"][subid].get("wfc_modes", [])
 
     def check_call_in_wfc(self):
         result = True

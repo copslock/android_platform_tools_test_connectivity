@@ -1589,7 +1589,13 @@ def dial_phone_number(ad, callee_number):
 
 
 def get_call_state_by_adb(ad):
-    return ad.adb.shell("dumpsys telephony.registry | grep mCallState")
+    slot_index_of_default_voice_subid = get_slot_index_from_subid(ad.log, ad,
+        get_incoming_voice_sub_id(ad))
+    output = ad.adb.shell("dumpsys telephony.registry | grep mCallState")
+    if "mCallState" in output:
+        call_state_list = re.findall("mCallState=(\d)", output)
+        if call_state_list:
+            return call_state_list[slot_index_of_default_voice_subid]
 
 
 def check_call_state_connected_by_adb(ad):
@@ -1749,74 +1755,150 @@ def dumpsys_new_call_info(ad, last_tc_number, retries=3, interval=5):
 
 
 def dumpsys_carrier_config(ad):
-    output = ad.adb.shell("dumpsys carrier_config")
+    output = ad.adb.shell("dumpsys carrier_config").split("\n")
+    output_phone_id_0 = []
+    output_phone_id_1 = []
+    current_output = []
+    for line in output:
+        if "Phone Id = 0" in line:
+            current_output = output_phone_id_0
+        elif "Phone Id = 1" in line:
+            current_output = output_phone_id_1
+        current_output.append(line.strip())
+
     configs = {}
+    phone_count = ad.droid.telephonyGetPhoneCount()
+    slot_0_subid = get_subid_from_slot_index(ad.log, ad, 0)
+    if slot_0_subid != INVALID_SUB_ID:
+        configs[slot_0_subid] = {}
+
+    if phone_count == 2:
+        slot_1_subid = get_subid_from_slot_index(ad.log, ad, 1)
+        if slot_1_subid != INVALID_SUB_ID:
+            configs[slot_1_subid] = {}
+
     attrs = [attr for attr in dir(CarrierConfigs) if not attr.startswith("__")]
     for attr in attrs:
         attr_string = getattr(CarrierConfigs, attr)
-        values = re.findall(r"%s = (\S+)" % attr_string, output)
-        if values:
-            value = values[-1]
-            if value == "true":
-                configs[attr_string] = True
-            elif value == "false":
-                configs[attr_string] = False
-            elif attr_string == CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT:
-                if value == "0":
-                    configs[attr_string] = WFC_MODE_WIFI_ONLY
-                elif value == "1":
-                    configs[attr_string] = WFC_MODE_CELLULAR_PREFERRED
-                elif value == "2":
-                    configs[attr_string] = WFC_MODE_WIFI_PREFERRED
+        values = re.findall(
+            r"%s = (\S+)" % attr_string, "\n".join(output_phone_id_0))
+
+        if slot_0_subid != INVALID_SUB_ID:
+            if values:
+                value = values[-1]
+                if value == "true":
+                    configs[slot_0_subid][attr_string] = True
+                elif value == "false":
+                    configs[slot_0_subid][attr_string] = False
+                elif attr_string == CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT:
+                    if value == "0":
+                        configs[slot_0_subid][attr_string] = WFC_MODE_WIFI_ONLY
+                    elif value == "1":
+                        configs[slot_0_subid][attr_string] = \
+                            WFC_MODE_CELLULAR_PREFERRED
+                    elif value == "2":
+                        configs[slot_0_subid][attr_string] = \
+                            WFC_MODE_WIFI_PREFERRED
+                else:
+                    try:
+                        configs[slot_0_subid][attr_string] = int(value)
+                    except Exception:
+                        configs[slot_0_subid][attr_string] = value
             else:
-                try:
-                    configs[attr_string] = int(value)
-                except Exception:
-                    configs[attr_string] = value
-        else:
-            configs[attr_string] = None
+                configs[slot_0_subid][attr_string] = None
+
+        if phone_count == 2:
+            if slot_1_subid != INVALID_SUB_ID:
+                values = re.findall(
+                    r"%s = (\S+)" % attr_string, "\n".join(output_phone_id_1))
+                if values:
+                    value = values[-1]
+                    if value == "true":
+                        configs[slot_1_subid][attr_string] = True
+                    elif value == "false":
+                        configs[slot_1_subid][attr_string] = False
+                    elif attr_string == CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT:
+                        if value == "0":
+                            configs[slot_1_subid][attr_string] = \
+                                WFC_MODE_WIFI_ONLY
+                        elif value == "1":
+                            configs[slot_1_subid][attr_string] = \
+                                WFC_MODE_CELLULAR_PREFERRED
+                        elif value == "2":
+                            configs[slot_1_subid][attr_string] = \
+                                WFC_MODE_WIFI_PREFERRED
+                    else:
+                        try:
+                            configs[slot_1_subid][attr_string] = int(value)
+                        except Exception:
+                            configs[slot_1_subid][attr_string] = value
+                else:
+                    configs[slot_1_subid][attr_string] = None
     return configs
 
 
 def get_phone_capability(ad):
-    # TODO: add sub_id based carrier_config:
     carrier_configs = dumpsys_carrier_config(ad)
-    capabilities = []
-    if carrier_configs[CarrierConfigs.VOLTE_AVAILABLE_BOOL]:
-        capabilities.append(CAPABILITY_VOLTE)
-    if carrier_configs[CarrierConfigs.WFC_IMS_AVAILABLE_BOOL]:
-        capabilities.append(CAPABILITY_WFC)
-    if carrier_configs[CarrierConfigs.EDITABLE_WFC_MODE_BOOL]:
-        capabilities.append(CAPABILITY_WFC_MODE_CHANGE)
-    if carrier_configs[CarrierConfigs.SUPPORT_CONFERENCE_CALL_BOOL]:
-        capabilities.append(CAPABILITY_CONFERENCE)
-    if carrier_configs[CarrierConfigs.VT_AVAILABLE_BOOL]:
-        capabilities.append(CAPABILITY_VT)
-    if carrier_configs[CarrierConfigs.VOLTE_PROVISIONED_BOOL]:
-        capabilities.append(CAPABILITY_VOLTE_PROVISIONING)
-    if carrier_configs[CarrierConfigs.VOLTE_OVERRIDE_WFC_BOOL]:
-        capabilities.append(CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING)
-    ad.log.info("Capabilities: %s", capabilities)
-    if not getattr(ad, 'telephony', {}):
-        setattr(ad, 'telephony', {"capabilities": capabilities})
-    else:
-        ad.telephony["capabilities"] = capabilities
-    if CAPABILITY_WFC not in capabilities:
-        wfc_modes = []
-    else:
-        if carrier_configs.get(CarrierConfigs.EDITABLE_WFC_MODE_BOOL, False):
-            wfc_modes = [WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED]
+    for sub_id in carrier_configs:
+        capabilities = []
+        if carrier_configs[sub_id][CarrierConfigs.VOLTE_AVAILABLE_BOOL]:
+            capabilities.append(CAPABILITY_VOLTE)
+        if carrier_configs[sub_id][CarrierConfigs.WFC_IMS_AVAILABLE_BOOL]:
+            capabilities.append(CAPABILITY_WFC)
+        if carrier_configs[sub_id][CarrierConfigs.EDITABLE_WFC_MODE_BOOL]:
+            capabilities.append(CAPABILITY_WFC_MODE_CHANGE)
+        if carrier_configs[sub_id][CarrierConfigs.SUPPORT_CONFERENCE_CALL_BOOL]:
+            capabilities.append(CAPABILITY_CONFERENCE)
+        if carrier_configs[sub_id][CarrierConfigs.VT_AVAILABLE_BOOL]:
+            capabilities.append(CAPABILITY_VT)
+        if carrier_configs[sub_id][CarrierConfigs.VOLTE_PROVISIONED_BOOL]:
+            capabilities.append(CAPABILITY_VOLTE_PROVISIONING)
+        if carrier_configs[sub_id][CarrierConfigs.VOLTE_OVERRIDE_WFC_BOOL]:
+            capabilities.append(CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING)
+        ad.log.info("Capabilities of sub ID %s: %s", sub_id, capabilities)
+        if not getattr(ad, 'telephony', {}):
+            ad.telephony["subscription"] = {}
+            ad.telephony["subscription"][sub_id] = {}
+            setattr(
+                ad.telephony["subscription"][sub_id],
+                'capabilities', capabilities)
+
         else:
-            wfc_modes = [
-                carrier_configs.get(CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT,
-                                    WFC_MODE_CELLULAR_PREFERRED)
-            ]
-    if carrier_configs.get(CarrierConfigs.WFC_SUPPORTS_WIFI_ONLY_BOOL,
-                           False) and WFC_MODE_WIFI_ONLY not in wfc_modes:
-        wfc_modes.append(WFC_MODE_WIFI_ONLY)
-    ad.telephony["wfc_modes"] = wfc_modes
-    if wfc_modes:
-        ad.log.info("Supported WFC modes: %s", wfc_modes)
+            ad.telephony["subscription"][sub_id]["capabilities"] = capabilities
+        if CAPABILITY_WFC not in capabilities:
+            wfc_modes = []
+        else:
+            if carrier_configs[sub_id].get(
+                CarrierConfigs.EDITABLE_WFC_MODE_BOOL, False):
+                wfc_modes = [
+                    WFC_MODE_CELLULAR_PREFERRED,
+                    WFC_MODE_WIFI_PREFERRED]
+            else:
+                wfc_modes = [
+                    carrier_configs[sub_id].get(
+                        CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT,
+                        WFC_MODE_CELLULAR_PREFERRED)
+                ]
+        if carrier_configs[sub_id].get(
+            CarrierConfigs.WFC_SUPPORTS_WIFI_ONLY_BOOL,
+            False) and WFC_MODE_WIFI_ONLY not in wfc_modes:
+            wfc_modes.append(WFC_MODE_WIFI_ONLY)
+        ad.telephony["subscription"][sub_id]["wfc_modes"] = wfc_modes
+        if wfc_modes:
+            ad.log.info("Supported WFC modes for sub ID %s: %s", sub_id,
+                wfc_modes)
+
+
+def get_capability_for_subscription(ad, capability, subid):
+    if capability in ad.telephony["subscription"][subid].get(
+        "capabilities", []):
+        ad.log.info('Capability "%s" is available for sub ID %s.',
+            capability, subid)
+        return True
+    else:
+        ad.log.info('Capability "%s" is NOT available for sub ID %s.',
+            capability, subid)
+        return False
 
 
 def call_reject(log, ad_caller, ad_callee, reject=True):
@@ -3716,8 +3798,8 @@ def set_wfc_mode(log, ad, wfc_mode):
     Returns:
         True if success. False if ad does not support WFC or error happened.
     """
-    if wfc_mode != WFC_MODE_DISABLED and wfc_mode not in ad.telephony.get(
-            "wfc_modes", []):
+    if wfc_mode != WFC_MODE_DISABLED and wfc_mode not in ad.telephony[
+        "subscription"][get_outgoing_voice_sub_id(ad)].get("wfc_modes", []):
         ad.log.error("WFC mode %s is not supported", wfc_mode)
         raise signals.TestSkip("WFC mode %s is not supported" % wfc_mode)
     try:
