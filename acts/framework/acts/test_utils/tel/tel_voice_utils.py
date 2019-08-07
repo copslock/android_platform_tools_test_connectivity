@@ -94,6 +94,7 @@ from acts.test_utils.tel.tel_test_utils import \
     wait_for_voice_attach_for_subscription
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_enabled
 from acts.test_utils.tel.tel_test_utils import wait_for_wfc_disabled
+from acts.test_utils.tel.tel_test_utils import get_capability_for_subscription
 
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
@@ -391,8 +392,8 @@ def phone_setup_iwlan(log,
     Returns:
         True if success. False if fail.
     """
-    #TODO: get per sub_id carrier_config for multi-sim purpose
-    if CAPABILITY_WFC not in ad.telephony.get("capabilities", []):
+    if not get_capability_for_subscription(ad, CAPABILITY_WFC,
+        get_outgoing_voice_sub_id(ad)):
         ad.log.error("WFC is not supported, abort test.")
         raise signals.TestSkip("WFC is not supported, abort test.")
     return phone_setup_iwlan_for_subscription(log, ad,
@@ -675,8 +676,8 @@ def phone_setup_volte(log, ad):
         True: if VoLTE is enabled successfully.
         False: for errors
     """
-    #TODO: get per sub_id carrier_config for multi-sim purpose
-    if CAPABILITY_VOLTE not in ad.telephony.get("capabilities", []):
+    if not get_capability_for_subscription(ad, CAPABILITY_VOLTE,
+        get_outgoing_voice_sub_id(ad)):
         ad.log.error("VoLTE is not supported, abort test.")
         raise signals.TestSkip("VoLTE is not supported, abort test.")
     return phone_setup_volte_for_subscription(log, ad,
