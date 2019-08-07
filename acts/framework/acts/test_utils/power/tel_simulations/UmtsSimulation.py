@@ -253,3 +253,20 @@ class UmtsSimulation(BaseSimulation):
             raise NotImplementedError("Packet rate not contained in the "
                                       "throughput dictionary.")
         return self.packet_rate_to_ul_throughput[self.packet_rate]
+
+    def set_downlink_rx_power(self, bts, signal_level):
+        """ Starts IP data traffic while setting downlink power.
+
+        This is only necessary for UMTS for unclear reasons. b/139026916 """
+
+        # Starts IP traffic while changing this setting to force the UE to be
+        # in Communication state, as UL power cannot be set in Idle state
+        self.start_traffic_for_calibration()
+
+        # Wait until it goes to communication state
+        self.anritsu.wait_for_communication_state()
+
+        super().set_downlink_rx_power(bts, signal_level)
+
+        # Stop IP traffic after setting the signal level
+        self.stop_traffic_for_calibration()
