@@ -4807,11 +4807,13 @@ def mms_send_receive_verify_for_subscription(
 
     phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
+    toggle_enforce = False
 
     for ad in (ad_tx, ad_rx):
         ad.send_keycode("BACK")
         if "Permissive" not in ad.adb.shell("su root getenforce"):
             ad.adb.shell("su root setenforce 0")
+            toggle_enforce = True
         if not getattr(ad, "messaging_droid", None):
             ad.messaging_droid, ad.messaging_ed = ad.get_droid()
             ad.messaging_ed.start()
@@ -4867,8 +4869,9 @@ def mms_send_receive_verify_for_subscription(
         finally:
             ad_rx.droid.smsStopTrackingIncomingMmsMessage()
             for ad in (ad_tx, ad_rx):
-                ad.send_keycode("BACK")
-                ad.adb.shell("su root setenforce 1")
+                if toggle_enforce:
+                    ad.send_keycode("BACK")
+                    ad.adb.shell("su root setenforce 1")
     return True
 
 
