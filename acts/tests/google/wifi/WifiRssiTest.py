@@ -888,8 +888,8 @@ class WifiOtaRssiTest(WifiRssiTest):
                  test_types):
             if channel not in allowed_configs[mode]:
                 continue
-            test_name = test_type + '_ch{}_{}_{}_{}_{}deg'.format(
-                channel, mode, traffic, chamber_mode, orientation)
+            test_name = test_type + '_ch{}_{}_{}_{}deg'.format(
+                channel, mode, traffic, orientation)
             testcase_params = collections.OrderedDict(
                 channel=channel,
                 mode=mode,
@@ -904,7 +904,15 @@ class WifiOtaRssiTest(WifiRssiTest):
         return test_cases
 
 
-class WifiOtaRssiVariationTest(WifiOtaRssiTest):
+class WifiOtaRssi_Accuracy_Test(WifiOtaRssiTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = self.generate_test_cases(
+            ['test_rssi_vs_atten'], [6, 36, 149], ['VHT20'], ['ActiveTraffic'],
+            ['orientation'], list(range(0, 360, 45)))
+
+
+class WifiOtaRssi_Variation_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
