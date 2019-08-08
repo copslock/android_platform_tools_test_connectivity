@@ -44,7 +44,6 @@ DEFAULT_TIMEOUT = 10
 SHORT_TIMEOUT = 30
 ROAMING_TIMEOUT = 30
 WIFI_CONNECTION_TIMEOUT_DEFAULT = 30
-WIFI_ABNORMAL_CONNECTION_TIME = 10
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
 
@@ -1166,9 +1165,7 @@ def _wait_for_connect_event(ad, ssid=None, id=None, tries=1):
     if id is None and ssid is None:
         for i in range(tries):
             try:
-                start = time.time()
                 conn_result = ad.ed.pop_event(wifi_constants.WIFI_CONNECTED, 30)
-                _assert_connection_time(start)
                 break
             except Empty:
                 pass
@@ -1176,25 +1173,16 @@ def _wait_for_connect_event(ad, ssid=None, id=None, tries=1):
     # If ssid or network id is specified, wait for specific connect event.
         for i in range(tries):
             try:
-                start = time.time()
                 conn_result = ad.ed.pop_event(wifi_constants.WIFI_CONNECTED, 30)
                 if id and conn_result['data'][WifiEnums.NETID_KEY] == id:
-                    _assert_connection_time(start)
                     break
                 elif ssid and conn_result['data'][WifiEnums.SSID_KEY] == ssid:
-                    _assert_connection_time(start)
                     break
             except Empty:
                 pass
 
     return conn_result
 
-def _assert_connection_time(start):
-    duration = time.time() - start
-    asserts.assert_true(
-        duration < WIFI_ABNORMAL_CONNECTION_TIME,
-        "Took " + str(duration) + "s to connect to network, " +
-        " expected " + str(WIFI_ABNORMAL_CONNECTION_TIME))
 
 def wait_for_disconnect(ad, timeout=10):
     """Wait for a disconnect event within the specified timeout.
@@ -1434,6 +1422,7 @@ def _wifi_connect_by_id(ad, network_id, num_of_tries=1):
                                   " id %d" % network_id)
     finally:
         ad.droid.wifiStopTrackingStateChange()
+
 
 def wifi_connect_using_network_request(ad, network, network_specifier,
                                        num_of_tries=3, assert_on_fail=True):
