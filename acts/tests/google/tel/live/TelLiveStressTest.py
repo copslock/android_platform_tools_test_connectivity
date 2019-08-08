@@ -400,6 +400,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.ed.start()
             ad.droid.logI("[BEGIN]%s" % log_msg)
         if self.sdm_log:
+            for ad in ads:
+                ad.adb.shell("i2cset -fy 3 64 6 1 b", ignore_status=True)
+                ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
             start_sdm_loggers(self.log, self.android_devices)
         else:
             start_qxdm_loggers(self.log, self.android_devices)
@@ -450,6 +453,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             elapsed_time = 0
             check_interval = 5
+            if self.sdm_log:
+                for ad in ads:
+                    ad.adb.shell("i2cset -fy 3 64 6 1 b", ignore_status=True)
+                    ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
             if self.cbrs_esim:
                 time.sleep(5)
                 self._cbrs_data_check_test(begin_time, expected_cbrs=False,
