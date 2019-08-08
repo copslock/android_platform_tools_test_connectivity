@@ -594,9 +594,9 @@ class WifiOtaPingTest(WifiPingTest):
 class WifiOtaPing_TenDegree_Test(WifiOtaPingTest):
     def __init__(self, controllers):
         WifiOtaPingTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases(
-            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], ['VHT20'],
-            'orientation', list(range(0, 360, 10)))
+        self.tests = self.generate_test_cases([6, 36, 149], ['VHT20'],
+                                              'orientation',
+                                              list(range(0, 360, 10)))
 
 
 class WifiOtaPing_45Degree_Test(WifiOtaPingTest):
