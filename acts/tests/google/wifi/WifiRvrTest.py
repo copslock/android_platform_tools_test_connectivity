@@ -694,7 +694,6 @@ class WifiOtaRvr_SampleChannel_Test(WifiOtaRvrTest):
         self.tests.extend(
             self.generate_test_cases([36, 149], ['VHT80'],
                                      list(range(0, 360, 45)), ['TCP'], ['DL']))
-        self.log.info(self.tests)
 
 
 class WifiOtaRvr_SingleOrientation_Test(WifiOtaRvrTest):
