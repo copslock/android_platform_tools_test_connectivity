@@ -23,6 +23,7 @@ class InstrumentationCommandBuilder(object):
         self._flags = []
         self._key_value_params = {}
         self._runner = None
+        self._proto_path = None
 
     def set_manifest_package(self, test_package):
         self._manifest_package_name = test_package
@@ -35,6 +36,9 @@ class InstrumentationCommandBuilder(object):
 
     def add_key_value_param(self, key, value):
         self._key_value_params[key] = value
+
+    def set_proto_path(self, path):
+        self._proto_path = path
 
     def build(self):
         call = self._instrument_call_with_arguments()
@@ -53,6 +57,9 @@ class InstrumentationCommandBuilder(object):
         call = ['am instrument']
         for flag in self._flags:
             call.append(flag)
+        call.append('-f')
+        if self._proto_path:
+            call.append(self._proto_path)
         for key, value in self._key_value_params.items():
             call.append('-e')
             call.append(key)

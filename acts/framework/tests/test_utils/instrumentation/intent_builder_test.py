@@ -77,7 +77,7 @@ class IntentBuilderTest(unittest.TestCase):
         builder.add_key_value_param('float_param', 12.1)
         self.assertEqual(
             builder.build(),
-            'am start --ez bool_param False --es string_param enabled '
+            'am start --ez bool_param false --es string_param enabled '
             '--ei int_param 5 --ef float_param 12.1')
 
     def test_full_intent_command(self):
@@ -94,7 +94,7 @@ class IntentBuilderTest(unittest.TestCase):
             builder.build(),
             'am broadcast -a android.intent.action.TEST_ACTION '
             '-n package.name/.ComponentName -d file://path/to/file --unit-test '
-            '--esn empty --ef numeric_param 11.6 --ez bool_param True')
+            '--esn empty --ef numeric_param 11.6 --ez bool_param true')
 
 
 if __name__ == '__main__':
