@@ -50,10 +50,7 @@ class BaseMonsoon(object):
 
     @classmethod
     def get_closest_valid_voltage(cls, voltage):
-        """Returns the nearest valid voltage value.
-
-        Valid voltage values are {x | x ∈ {0} ∪ [MIN_VOLTAGE, MAX_VOLTAGE]}.
-        """
+        """Returns the nearest valid voltage value."""
         if voltage < cls.MIN_VOLTAGE / 2:
             return 0
         else:
@@ -61,7 +58,10 @@ class BaseMonsoon(object):
 
     @classmethod
     def is_voltage_valid(cls, voltage):
-        """Returns True iff the given voltage cannot be set on the device."""
+        """Returns True iff the given voltage can be set on the device.
+
+        Valid voltage values are {x | x ∈ {0} ∪ [MIN_VOLTAGE, MAX_VOLTAGE]}.
+        """
         return cls.get_closest_valid_voltage(voltage) == voltage
 
     @classmethod
