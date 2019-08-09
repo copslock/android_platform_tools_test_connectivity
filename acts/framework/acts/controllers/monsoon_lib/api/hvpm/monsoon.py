@@ -49,6 +49,8 @@ class Monsoon(BaseMonsoon):
         self.serial = serial
         self._mon = HVPM.Monsoon()
         self._mon.setup_usb(serial)
+        if self._mon.Protocol is None:
+            raise ValueError('HVPM Monsoon %s could not be found.' % serial)
 
     def set_voltage(self, voltage):
         """Sets the output voltage of monsoon.
@@ -117,7 +119,6 @@ class Monsoon(BaseMonsoon):
 
         aggregator = SampleAggregator(measure_after_seconds)
         manager = multiprocessing.Manager()
-        manager.start()
 
         assembly_line_builder = AssemblyLineBuilder(manager.Queue,
                                                     ThreadAssemblyLine)
