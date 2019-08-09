@@ -291,15 +291,15 @@ class TestRunner(object):
                 test_case_iterations = self.test_configs.get(
                     keys.Config.key_test_case_iterations.value, 1)
 
-            with test_cls(self.test_run_info) as test_cls_instance:
-                try:
-                    cls_result = test_cls_instance.run(test_cases,
-                                                       test_case_iterations)
-                    self.results += cls_result
-                    self._write_results_to_file()
-                except signals.TestAbortAll as e:
-                    self.results += e.results
-                    raise e
+            test_cls_instance = test_cls(self.test_run_info)
+            try:
+                cls_result = test_cls_instance.run(test_cases,
+                                                   test_case_iterations)
+                self.results += cls_result
+                self._write_results_to_file()
+            except signals.TestAbortAll as e:
+                self.results += e.results
+                raise e
 
     def run(self, test_class=None):
         """Executes test cases.
