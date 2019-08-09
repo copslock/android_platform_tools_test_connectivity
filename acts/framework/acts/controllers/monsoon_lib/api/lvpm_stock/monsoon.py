@@ -26,6 +26,7 @@ from acts.controllers.monsoon_lib.sampling.engine.transformers import SampleAggr
 from acts.controllers.monsoon_lib.sampling.engine.transformers import Tee
 from acts.controllers.monsoon_lib.sampling.lvpm_stock.stock_transformers import StockLvpmSampler
 
+
 class Monsoon(BaseMonsoon):
     """The controller class for interacting with the LVPM Monsoon."""
 
@@ -100,7 +101,6 @@ class Monsoon(BaseMonsoon):
 
         aggregator = SampleAggregator(measure_after_seconds)
         manager = multiprocessing.Manager()
-        manager.start()
 
         assembly_line_builder = AssemblyLineBuilder(manager.Queue,
                                                     ThreadAssemblyLine)
