@@ -49,7 +49,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         # try to find the power config in the same directory as the ACTS config
         power_config_path = ''
         if 'power_config' in self.user_params:
-            power_config_path = self.user_params['power_config']
+            power_config_path = self.user_params['power_config'][0]
         elif Config.key_config_path.value in self.user_params:
             power_config_path = os.path.join(
                 self.user_params[Config.key_config_path.value],
@@ -125,13 +125,17 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         Args:
             cmds: A string or list of strings representing ADB shell command(s)
             non_blocking: Run asynchronously
+
+        Returns: dict mapping command to resulting stdout
         """
         if isinstance(cmds, str):
             cmds = [cmds]
         adb = self.ad_dut.adb
         adb_shell = adb.shell_nb if non_blocking else adb.shell
+        out = {}
         for cmd in cmds:
-            adb_shell(cmd)
+            out[cmd] = adb_shell(cmd)
+        return out
 
     # Basic preparer methods
 

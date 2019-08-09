@@ -82,5 +82,9 @@ class IntentBuilder(object):
             if value is None:
                 cmd.append('--esn %s' % key)
             else:
-                cmd.append('%s %s %s' % (TYPE_TO_FLAG[type(value)], key, value))
+                str_value = str(value)
+                if isinstance(value, bool):
+                    str_value = str_value.lower()
+                cmd.append(
+                    ' '.join((TYPE_TO_FLAG[type(value)], key, str_value)))
         return ' '.join(cmd).strip()
