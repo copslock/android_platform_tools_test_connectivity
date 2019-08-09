@@ -640,6 +640,7 @@ def force_airplane_mode(ad, new_state, timeout_value=60):
         return False
     return True
 
+
 def get_battery_level(ad):
     """Gets battery level from device
 
@@ -650,6 +651,7 @@ def get_battery_level(ad):
     match = re.search(r"level: (?P<battery_level>\S+)", output)
     battery_level = int(match.group("battery_level"))
     return battery_level
+
 
 def get_device_usb_charging_status(ad):
     """ Returns the usb charging status of the device.
@@ -1012,6 +1014,20 @@ def get_directory_size(path):
     return total
 
 
+def get_command_uptime(command_regex):
+    """Returns the uptime for a given command.
+
+    Args:
+        command_regex: A regex that matches the command line given. Must be
+            pgrep compatible.
+    """
+    pid = job.run('pgrep -f %s' % command_regex).stdout
+    runtime = ''
+    if pid:
+        runtime = job.run('ps -o etime= -p "%s"' % pid).stdout
+    return runtime
+
+
 def get_process_uptime(process):
     """Returns the runtime in [[dd-]hh:]mm:ss, or '' if not running."""
     pid = job.run('pidof %s' % process, ignore_status=True).stdout
@@ -1226,7 +1242,7 @@ def run_concurrent_actions(*calls):
     return results
 
 
-def test_concurrent_actions(*calls, failure_exceptions=(Exception,)):
+def test_concurrent_actions(*calls, failure_exceptions=(Exception, )):
     """Concurrently runs all passed in calls using multithreading.
 
     If any callable raises an Exception found within failure_exceptions, the
@@ -1284,9 +1300,10 @@ class SuppressLogOutput(object):
         """
 
         self._logger = logger
-        self._log_levels = log_levels or [logging.DEBUG, logging.INFO,
-                                          logging.WARNING, logging.ERROR,
-                                          logging.CRITICAL]
+        self._log_levels = log_levels or [
+            logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR,
+            logging.CRITICAL
+        ]
         if isinstance(self._log_levels, int):
             self._log_levels = [self._log_levels]
         self._handlers = copy.copy(self._logger.handlers)
