@@ -60,7 +60,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "radius_conf_2g", "radius_conf_5g", "ca_cert",
-            "eap_identity", "eap_password"
+            "eap_identity", "eap_password", "hidden_networks"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -95,6 +95,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                 Ent.PHASE2: int(EapPhase2.MSCHAPV2),
                 WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
             }
+        if hasattr(self, "hidden_networks"):
+            self.hidden_network = self.hidden_networks[0]
         self.dut.droid.wifiRemoveNetworkSuggestions([])
 
     def setup_test(self):
@@ -434,3 +436,24 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                                     self.wpa_psk_2g[WifiEnums.SSID_KEY],
                                     assert_on_fail=False),
             "Device should not connect back")
+
+    @test_tracker_info(uuid="93c86b05-fa56-4d79-ad27-009a16f691b1")
+    def test_connect_to_hidden_network(self):
+        """
+        Adds a network suggestion with hidden SSID config, ensure device can scan
+        and connect to this network.
+
+        Steps:
+        1. Send a hidden network suggestion to the device.
+        2. Wait for the device to connect to it.
+        3. Ensure that we did not receive the post connection broadcast
+           (isAppInteractionRequired = False).
+        4. Remove the suggestions and ensure the device does not connect back.
+        """
+        asserts.skip_if(not hasattr(self, "hidden_networks"), "No hidden networks, skip this test")
+
+        network_suggestion = self.hidden_network
+        self.add_suggestions_and_ensure_connection(
+            [network_suggestion], network_suggestion[WifiEnums.SSID_KEY], False)
+        self.remove_suggestions_disconnect_and_ensure_no_connection_back(
+            [network_suggestion], network_suggestion[WifiEnums.SSID_KEY])
