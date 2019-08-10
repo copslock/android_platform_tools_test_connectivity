@@ -57,10 +57,10 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
     def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ["radius_conf_2g", "radius_conf_5g", "ca_cert",
-                      "eap_identity", "eap_password",]
+        req_params = []
         opt_param = [
-            "open_network", "reference_networks"
+            "open_network", "reference_networks", "radius_conf_2g", "radius_conf_5g", "ca_cert",
+            "eap_identity", "eap_password", "hidden_networks"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -74,24 +74,29 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         asserts.assert_true(
             len(self.reference_networks) > 0,
             "Need at least one reference network with psk.")
-        self.wpa_psk_2g = self.reference_networks[0]["2g"]
-        self.wpa_psk_5g = self.reference_networks[0]["5g"]
-        self.open_2g = self.open_network[0]["2g"]
-        self.open_5g = self.open_network[0]["5g"]
-        self.ent_network_2g = self.ent_networks[0]["2g"]
-        self.ent_network_5g = self.ent_networks[0]["5g"]
-        self.config_aka = {
-            Ent.EAP: int(EAP.AKA),
-            WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
-        }
-        self.config_ttls = {
-            Ent.EAP: int(EAP.TTLS),
-            Ent.CA_CERT: self.ca_cert,
-            Ent.IDENTITY: self.eap_identity,
-            Ent.PASSWORD: self.eap_password,
-            Ent.PHASE2: int(EapPhase2.MSCHAPV2),
-            WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
-        }
+        if hasattr(self, "reference_networks"):
+            self.wpa_psk_2g = self.reference_networks[0]["2g"]
+            self.wpa_psk_5g = self.reference_networks[0]["5g"]
+        if hasattr(self, "open_network"):
+            self.open_2g = self.open_network[0]["2g"]
+            self.open_5g = self.open_network[0]["5g"]
+        if hasattr(self, "ent_networks"):
+            self.ent_network_2g = self.ent_networks[0]["2g"]
+            self.ent_network_5g = self.ent_networks[0]["5g"]
+            self.config_aka = {
+                Ent.EAP: int(EAP.AKA),
+                WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+            }
+            self.config_ttls = {
+                Ent.EAP: int(EAP.TTLS),
+                Ent.CA_CERT: self.ca_cert,
+                Ent.IDENTITY: self.eap_identity,
+                Ent.PASSWORD: self.eap_password,
+                Ent.PHASE2: int(EapPhase2.MSCHAPV2),
+                WifiEnums.SSID_KEY: self.ent_network_2g[WifiEnums.SSID_KEY],
+            }
+        if hasattr(self, "hidden_networks"):
+            self.hidden_network = self.hidden_networks[0]
         self.dut.droid.wifiRemoveNetworkSuggestions([])
 
     def setup_test(self):
@@ -173,6 +178,26 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.dut.droid.wifiStopTrackingNetworkSuggestionStateChange()
         self.dut.ed.clear_all_events()
 
+    def remove_suggestions_disconnect_and_ensure_no_connection_back(self,
+                                                                    network_suggestions,
+                                                                    expected_ssid):
+        self.dut.log.info("Removing network suggestions")
+        asserts.assert_true(
+            self.dut.droid.wifiRemoveNetworkSuggestions(network_suggestions),
+            "Failed to remove suggestions")
+        # Ensure we did not disconnect
+        wutils.ensure_no_disconnect(self.dut)
+
+        # Trigger a disconnect and wait for the disconnect.
+        self.dut.droid.wifiDisconnect()
+        wutils.wait_for_disconnect(self.dut)
+        self.dut.ed.clear_all_events()
+
+        # Now ensure that we didn't connect back.
+        asserts.assert_false(
+            wutils.wait_for_connect(self.dut, expected_ssid, assert_on_fail=False),
+            "Device should not connect back")
+
     def _test_connect_to_wifi_network_reboot_config_store(self,
                                                           network_suggestions,
                                                           wifi_network):
@@ -192,20 +217,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
 
         wutils.wait_for_connect(self.dut, wifi_network[WifiEnums.SSID_KEY])
 
-        # Remove suggestion trigger disconnect and wait for the disconnect.
-        self.dut.log.info("Removing network suggestions")
-        asserts.assert_true(
-            self.dut.droid.wifiRemoveNetworkSuggestions(network_suggestions),
-            "Failed to remove suggestions")
-        wutils.wait_for_disconnect(self.dut)
-        self.dut.ed.clear_all_events()
-
-        # Now ensure that we didn't connect back.
-        asserts.assert_false(
-            wutils.wait_for_connect(self.dut,
-                                    wifi_network[WifiEnums.SSID_KEY],
-                                    assert_on_fail=False),
-            "Device should not connect back")
+        self.remove_suggestions_disconnect_and_ensure_no_connection_back(
+            network_suggestions, wifi_network[WifiEnums.SSID_KEY])
 
     @test_tracker_info(uuid="bda8ed20-4382-4380-831a-64cf77eca108")
     def test_connect_to_wpa_psk_2g(self):
@@ -222,20 +235,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY],
             False)
 
-        # Remove suggestion trigger disconnect and wait for the disconnect.
-        self.dut.log.info("Removing network suggestions");
-        asserts.assert_true(
-            self.dut.droid.wifiRemoveNetworkSuggestions([self.wpa_psk_2g]),
-            "Failed to remove suggestions")
-        wutils.wait_for_disconnect(self.dut)
-        self.dut.ed.clear_all_events()
-
-        # Now ensure that we didn't connect back.
-        asserts.assert_false(
-            wutils.wait_for_connect(self.dut,
-                                    self.wpa_psk_2g[WifiEnums.SSID_KEY],
-                                    assert_on_fail=False),
-            "Device should not connect back")
+        self.remove_suggestions_disconnect_and_ensure_no_connection_back(
+            [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
     @test_tracker_info(uuid="f54bc250-d9e9-4f00-8b5b-b866e8550b43")
     def test_connect_to_highest_priority(self):
@@ -262,13 +263,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             self.wpa_psk_2g[WifiEnums.SSID_KEY],
             None)
 
-        # Remove all suggestions trigger disconnect and wait for the disconnect.
-        self.dut.log.info("Removing network suggestions")
-        asserts.assert_true(
-            self.dut.droid.wifiRemoveNetworkSuggestions([]),
-            "Failed to remove suggestions")
-        wutils.wait_for_disconnect(self.dut)
-        self.dut.ed.clear_all_events()
+        self.remove_suggestions_disconnect_and_ensure_no_connection_back(
+            [], self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
         # Reverse the priority.
         # Add suggestions & wait for the connection event.
@@ -296,21 +292,8 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
         self.add_suggestions_and_ensure_connection(
             [network_suggestion], self.wpa_psk_2g[WifiEnums.SSID_KEY],
             True)
-
-        # Remove suggestion trigger disconnect and wait for the disconnect.
-        self.dut.log.info("Removing network suggestions");
-        asserts.assert_true(
-            self.dut.droid.wifiRemoveNetworkSuggestions([network_suggestion]),
-            "Failed to remove suggestions")
-        wutils.wait_for_disconnect(self.dut)
-        self.dut.ed.clear_all_events()
-
-        # Now ensure that we didn't connect back.
-        asserts.assert_false(
-            wutils.wait_for_connect(self.dut,
-                                    self.wpa_psk_2g[WifiEnums.SSID_KEY],
-                                    assert_on_fail=False),
-            "Device should not connect back")
+        self.remove_suggestions_disconnect_and_ensure_no_connection_back(
+            [self.wpa_psk_2g], self.wpa_psk_2g[WifiEnums.SSID_KEY])
 
     @test_tracker_info(uuid="a036a24d-29c0-456d-ae6a-afdde34da710")
     def test_connect_to_wpa_psk_5g_reboot_config_store(self):
@@ -439,7 +422,7 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
             [network_suggestion], self.wpa_psk_2g[WifiEnums.SSID_KEY],
             True)
 
-        # Simulate user forgeting the ephemeral network.
+        # Simulate user forgetting the ephemeral network.
         self.dut.droid.wifiDisableEphemeralNetwork(
             self.wpa_psk_2g[WifiEnums.SSID_KEY])
         wutils.wait_for_disconnect(self.dut)
@@ -453,3 +436,24 @@ class WifiNetworkSuggestionTest(WifiBaseTest):
                                     self.wpa_psk_2g[WifiEnums.SSID_KEY],
                                     assert_on_fail=False),
             "Device should not connect back")
+
+    @test_tracker_info(uuid="93c86b05-fa56-4d79-ad27-009a16f691b1")
+    def test_connect_to_hidden_network(self):
+        """
+        Adds a network suggestion with hidden SSID config, ensure device can scan
+        and connect to this network.
+
+        Steps:
+        1. Send a hidden network suggestion to the device.
+        2. Wait for the device to connect to it.
+        3. Ensure that we did not receive the post connection broadcast
+           (isAppInteractionRequired = False).
+        4. Remove the suggestions and ensure the device does not connect back.
+        """
+        asserts.skip_if(not hasattr(self, "hidden_networks"), "No hidden networks, skip this test")
+
+        network_suggestion = self.hidden_network
+        self.add_suggestions_and_ensure_connection(
+            [network_suggestion], network_suggestion[WifiEnums.SSID_KEY], False)
+        self.remove_suggestions_disconnect_and_ensure_no_connection_back(
+            [network_suggestion], network_suggestion[WifiEnums.SSID_KEY])
