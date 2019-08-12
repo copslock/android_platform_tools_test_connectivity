@@ -37,9 +37,11 @@ class DeviceState(object):
         Args:
             values: The value(s) to run the command with
         """
-
-        return str.strip(' '.join(
-            [self._base_cmd] + [str(value) for value in values]))
+        try:
+            return self._base_cmd % values
+        except TypeError:
+            return str.strip(' '.join(
+                [self._base_cmd] + [str(value) for value in values]))
 
     def toggle(self, enabled):
         """Returns the command corresponding to the desired state.
