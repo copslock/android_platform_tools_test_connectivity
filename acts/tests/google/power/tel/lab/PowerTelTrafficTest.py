@@ -62,13 +62,13 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         self.bandwidth_limit_ul = None
 
         # Throughput obtained from iPerf
-        self.iperf_results = None
+        self.iperf_results = {}
 
         # Blackbox metrics loggers
 
-        self.dl_throughput_logger = BlackboxMetricLogger.for_test_case(
+        self.dl_tput_logger = BlackboxMetricLogger.for_test_case(
             metric_name='avg_dl_tput')
-        self.ul_throughput_logger = BlackboxMetricLogger.for_test_case(
+        self.ul_tput_logger = BlackboxMetricLogger.for_test_case(
             metric_name='avg_ul_tput')
 
     def setup_test(self):
@@ -123,12 +123,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         super().teardown_test()
 
-        if self.iperf_results:
-            # Log the throughput values to Blackbox
-            self.dl_throughput_logger.metric_value = self.iperf_results.get(
-                'DL', 0)
-            self.ul_throughput_logger.metric_value = self.iperf_results.get(
-                'UL', 0)
+        # Log the throughput values to Blackbox
+        self.dl_tput_logger.metric_value = self.iperf_results.get('DL', 0)
+        self.ul_tput_logger.metric_value = self.iperf_results.get('UL', 0)
 
         for ips in self.iperf_servers:
             ips.stop()
