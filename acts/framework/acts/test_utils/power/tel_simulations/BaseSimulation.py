@@ -229,8 +229,14 @@ class BaseSimulation():
         # Wait for APM to propagate
         time.sleep(2)
 
-        # Power off basestation
-        self.anritsu.set_simulation_state_to_poweroff()
+        # Try to power off the basestation. An exception will be raised if the
+        # simulation is not running, which is ok because it means the phone is
+        # not attached.
+        try:
+            self.anritsu.set_simulation_state_to_poweroff()
+        except AnritsuError:
+            self.log.warning('Could not power off the basestation. The '
+                             'simulation might be stopped.')
 
     def stop(self):
         """  Detach phone from the basestation by stopping the simulation.
