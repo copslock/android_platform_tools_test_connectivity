@@ -28,6 +28,8 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_CBRS_DATA_SWITCH
 from acts.test_utils.tel.tel_defines import EventActiveDataSubIdChanged
+from acts.test_utils.tel.tel_defines import NetworkCallbackAvailable
+from acts.test_utils.tel.tel_defines import EventNetworkCallback
 from acts.test_utils.tel.tel_test_utils import get_phone_number
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import hangup_call_by_adb
@@ -44,6 +46,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import start_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import wifi_toggle_state
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
@@ -66,7 +69,7 @@ from acts.test_utils.tel.tel_subscription_utils import get_cbrs_and_default_sub_
 from acts.utils import get_current_epoch_time
 from queue import Empty
 
-WAIT_TIME_BETWEEN_ITERATION = 10
+WAIT_TIME_BETWEEN_ITERATION = 5
 WAIT_TIME_BETWEEN_HANDOVER = 10
 TIME_PERMITTED_FOR_CBRS_SWITCH = 2
 
@@ -467,7 +470,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
         ads = [self.android_devices[0], self.android_devices[1]]
         total_iteration = self.stress_test_number
         fail_count = collections.defaultdict(int)
-        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ad)
+        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ads[0])
         self.log.info("Total iteration = %d.", total_iteration)
         current_iteration = 1
         for i in range(1, total_iteration + 1):
@@ -537,6 +540,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
 
     def _cbrs_default_data_switch_timing(self, ad, method, validation=False):
         result = True
+        callback_key = None
         if not getattr(ad, "cbrs_droid", None):
             ad.cbrs_droid, ad.cbrs_ed = ad.get_droid()
             ad.cbrs_ed.start()
@@ -552,10 +556,16 @@ class TelLiveCBRSTest(TelephonyBaseTest):
                 ad.log.info("Create new sl4a session for CBRS")
                 ad.cbrs_droid, ad.cbrs_ed = ad.get_droid()
                 ad.cbrs_ed.start()
-        ad.cbrs_droid.telephonyStartTrackingActiveDataChange()
+        if validation:
+            ad.cbrs_droid.telephonyStartTrackingActiveDataChange()
+        else:
+            callback_key = ad.cbrs_droid.connectivityRegisterDefaultNetworkCallback()
+            ad.cbrs_droid.connectivityNetworkCallbackStartListeningForEvent(
+                callback_key, NetworkCallbackAvailable)
         time.sleep(WAIT_TIME_FOR_CBRS_DATA_SWITCH)
         try:
             ad.cbrs_ed.clear_events(EventActiveDataSubIdChanged)
+            ad.cbrs_ed.clear_events(EventNetworkCallback)
             initiate_time_before = get_device_epoch_time(ad)
             ad.log.debug("initiate_time_before: %d", initiate_time_before)
             if method == "api":
@@ -566,20 +576,35 @@ class TelLiveCBRSTest(TelephonyBaseTest):
                 ad.log.info("Making a Voice Call to %s", STORY_LINE)
                 ad.droid.telecomCallNumber(STORY_LINE, False)
             try:
-                events = ad.cbrs_ed.pop_events("(%s)" %
-                    (EventActiveDataSubIdChanged), WAIT_TIME_FOR_CBRS_DATA_SWITCH)
-                for event in events:
-                    ad.log.info("Got event %s", event["name"])
-                    if event["name"] == EventActiveDataSubIdChanged:
-                        if event.get("data") and \
-                                event["data"] == self.default_subid:
-                            ad.log.info("%s has data switched to: %s sub",
-                                        event["name"], event["data"])
-                            initiate_time_after = event["time"]
-                        break
+                if validation:
+                    events = ad.cbrs_ed.pop_events("(%s)" %
+                        (EventActiveDataSubIdChanged),
+                        WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                    for event in events:
+                        ad.log.info("Got event %s", event["name"])
+                        if event["name"] == EventActiveDataSubIdChanged:
+                            if event.get("data") and \
+                                    event["data"] == self.default_subid:
+                                ad.log.info("%s has data switched to: %s sub",
+                                            event["name"], event["data"])
+                                initiate_time_after = event["time"]
+                            break
+                else:
+                    events = ad.cbrs_ed.pop_events("(%s)" %
+                       (EventNetworkCallback), WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                    for event in events:
+                        ad.log.info("Got event %s", event["name"])
+                        if event["name"] == EventNetworkCallback:
+                            if event.get("data") and event["data"].get("networkCallbackEvent"):
+                                ad.log.info("%s %s has data switched to: %s sub",
+                                            event["name"],
+                                            event["data"]["networkCallbackEvent"],
+                                            self.default_subid)
+                                initiate_time_after = event["time"]
+                            break
             except Empty:
-                ad.log.error("No %s event for DataSwitch received in %d seconds",
-                             EventActiveDataSubIdChanged,
+                ad.log.error("No %s or %s event for DataSwitch received in %d seconds",
+                             EventActiveDataSubIdChanged, EventNetworkCallback,
                              WAIT_TIME_FOR_CBRS_DATA_SWITCH)
                 return False
             time_interval = (initiate_time_after - initiate_time_before) / 1000
@@ -591,6 +616,7 @@ class TelLiveCBRSTest(TelephonyBaseTest):
                 ad.log.info("Time for CBRS->Default - %.2f secs", time_interval)
             time.sleep(WAIT_TIME_BETWEEN_HANDOVER)
             ad.cbrs_ed.clear_events(EventActiveDataSubIdChanged)
+            ad.cbrs_ed.clear_events(EventNetworkCallback)
             hangup_time_before = get_device_epoch_time(ad)
             ad.log.debug("hangup_time_before: %d", hangup_time_before)
             if method == "api":
@@ -601,17 +627,31 @@ class TelLiveCBRSTest(TelephonyBaseTest):
                 ad.log.info("Ending Call")
                 ad.droid.telecomEndCall()
             try:
-                events = ad.cbrs_ed.pop_events("(%s)" %
-                    (EventActiveDataSubIdChanged), WAIT_TIME_FOR_CBRS_DATA_SWITCH)
-                for event in events:
-                    ad.log.info("Got event %s", event["name"])
-                    if event["name"] == EventActiveDataSubIdChanged:
-                        if event.get("data") and \
-                                event["data"] == self.cbrs_subid:
-                            ad.log.info("%s has data switched to: %s sub",
-                                        event["name"], event["data"])
-                            hangup_time_after = event["time"]
-                        break
+                if validation:
+                    events = ad.cbrs_ed.pop_events("(%s)" %
+                        (EventActiveDataSubIdChanged), WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                    for event in events:
+                        ad.log.info("Got event %s", event["name"])
+                        if event["name"] == EventActiveDataSubIdChanged:
+                            if event.get("data") and \
+                                    event["data"] == self.cbrs_subid:
+                                ad.log.info("%s has data switched to: %s sub",
+                                            event["name"], event["data"])
+                                hangup_time_after = event["time"]
+                            break
+                else:
+                    events = ad.cbrs_ed.pop_events("(%s)" %
+                        (EventNetworkCallback), WAIT_TIME_FOR_CBRS_DATA_SWITCH)
+                    for event in events:
+                        ad.log.info("Got event %s", event["name"])
+                        if event["name"] == EventNetworkCallback:
+                            if event.get("data") and event["data"].get("networkCallbackEvent"):
+                                ad.log.info("%s %s has data switched to: %s sub",
+                                            event["name"],
+                                            event["data"]["networkCallbackEvent"],
+                                            self.cbrs_subid)
+                                hangup_time_after = event["time"]
+                            break
             except Empty:
                 ad.log.error("No %s event for DataSwitch received in %d seconds",
                              EventActiveDataSubIdChanged,
@@ -628,20 +668,26 @@ class TelLiveCBRSTest(TelephonyBaseTest):
             self.log.error("Exception error %s", e)
             raise
         finally:
-            ad.cbrs_droid.telephonyStopTrackingActiveDataChange()
+            if validation:
+                ad.cbrs_droid.telephonyStopTrackingActiveDataChange()
+            elif callback_key:
+                ad.cbrs_droid.connectivityNetworkCallbackStopListeningForEvent(
+                    callback_key, NetworkCallbackAvailable)
         return result
 
 
     def _test_stress_cbrsdataswitch_timing(self, ad, method, validation=False):
         setattr(self, "number_of_devices", 1)
         ad.adb.shell("pm disable com.google.android.apps.scone")
+        wifi_toggle_state(self.log, ad, True)
         self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ad)
         toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
         if self._is_current_data_on_cbrs():
             ad.log.info("Current Data is on CBRS, proceeding with test")
         else:
-            ad.log.error("Current Data not on CBRS, aborting test..")
-            return False
+            ad.log.error("Current Data not on CBRS, forcing it now..")
+            ad.droid.telephonySetPreferredOpportunisticDataSubscription(
+                self.cbrs_subid, False)
         ad.droid.telephonyUpdateAvailableNetworks(self.cbrs_subid)
         total_iteration = self.stress_test_number
         fail_count = collections.defaultdict(int)

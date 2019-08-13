@@ -18,7 +18,11 @@ import os
 
 import yaml
 from acts.keys import Config
-from acts.test_utils.instrumentation_tests import config_wrapper
+from acts.test_utils.instrumentation import app_installer
+from acts.test_utils.instrumentation import config_wrapper
+from acts.test_utils.instrumentation.instrumentation_command_builder import \
+    InstrumentationCommandBuilder
+from acts.test_utils.instrumentation.adb_commands import common
 
 from acts import base_test
 
@@ -43,9 +47,10 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         super().__init__(configs)
         # Take power config path directly from ACTS config if found, otherwise
         # try to find the power config in the same directory as the ACTS config
+        power_config_path = ''
         if 'power_config' in self.user_params:
-            power_config_path = self.user_params['power_config']
-        else:
+            power_config_path = self.user_params['power_config'][0]
+        elif Config.key_config_path.value in self.user_params:
             power_config_path = os.path.join(
                 self.user_params[Config.key_config_path.value],
                 DEFAULT_POWER_CONFIG_FILE)
@@ -79,7 +84,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                   mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
-        return config_wrapper.InstrumentationConfigWrapper(config_dict)
+        return config_wrapper.ConfigWrapper(config_dict)
 
     def _resolve_file_paths(self, config):
         """Recursively resolve all 'FILE' markers found in the power config to
@@ -104,13 +109,71 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                     config[key] = self.user_params[key]
         return success
 
+    def _prepare_device(self):
+        """Prepares the device for testing."""
+        pass
+
     def setup_class(self):
         """Class setup"""
         self.ad_dut = self.android_devices[0]
+        self.ad_apps = app_installer.AppInstaller(self.ad_dut)
+        self._prepare_device()
 
-    def adb_run(self, cmds):
-        """Run the specified command, or list of commands, with the ADB shell"""
+    def adb_run(self, cmds, non_blocking=False):
+        """Run the specified command, or list of commands, with the ADB shell.
+
+        Args:
+            cmds: A string or list of strings representing ADB shell command(s)
+            non_blocking: Run asynchronously
+
+        Returns: dict mapping command to resulting stdout
+        """
         if isinstance(cmds, str):
             cmds = [cmds]
+        adb = self.ad_dut.adb
+        adb_shell = adb.shell_nb if non_blocking else adb.shell
+        out = {}
         for cmd in cmds:
-            self.ad_dut.adb.shell(cmd)
+            out[cmd] = adb_shell(cmd)
+        return out
+
+    # Basic preparer methods
+
+    def enable_airplane_mode(self):
+        """Run the set of commands to properly enable airplane mode."""
+        self.adb_run(common.airplane_mode.toggle(True))
+        self.adb_run(common.auto_time.toggle(False))
+        self.adb_run(common.auto_timezone.toggle(False))
+        self.adb_run(common.location_gps.toggle(False))
+        self.adb_run(common.location_network.toggle(False))
+        self.adb_run(common.wifi.toggle(False))
+        self.adb_run(common.bluetooth.toggle(False))
+
+    def grant_permissions(self, permissions_apk_path):
+        """Grant all runtime permissions with PermissionUtils.
+
+        Args:
+            permissions_apk_path: Path to PermissionUtils.apk
+        """
+        self.log.info('Granting all revoked runtime permissions.')
+
+        # Install PermissionUtils.apk
+        self.ad_apps.install(permissions_apk_path)
+        if not self.ad_apps.is_installed(permissions_apk_path):
+            raise InstrumentationTestError(
+                'Failed to install PermissionUtils.apk, abort!')
+        package_name = self.ad_apps.get_package_name(permissions_apk_path)
+
+        # Run the instrumentation command
+        cmd_builder = InstrumentationCommandBuilder()
+        cmd_builder.set_manifest_package(package_name)
+        cmd_builder.set_runner('.PermissionInstrumentation')
+        cmd_builder.add_flag('-w')
+        cmd_builder.add_flag('-r')
+        cmd_builder.add_key_value_param('command', 'grant-all')
+        cmd = cmd_builder.build()
+        self.log.debug('Instrumentation call: %s' % cmd)
+        self.adb_run(cmd)
+
+        # Uninstall PermissionUtils.apk
+        self.ad_apps.uninstall(permissions_apk_path)

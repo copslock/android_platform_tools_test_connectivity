@@ -35,8 +35,8 @@ from acts.utils import get_current_epoch_time
 
 WifiEnums = wutils.WifiEnums
 PULL_TIMEOUT = 300
-GNSSSTATUS_LOG_PATH = \
-    "/storage/emulated/0/Android/data/com.android.gpstool/files/"
+GNSSSTATUS_LOG_PATH = (
+    "/storage/emulated/0/Android/data/com.android.gpstool/files/")
 QXDM_MASKS = ["GPS.cfg", "GPS-general.cfg", "default.cfg"]
 TTFF_REPORT = collections.namedtuple(
     "TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
@@ -111,10 +111,14 @@ def enable_compact_and_particle_fusion_log(ad):
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
                  "GSERVICES_OVERRIDE -e location:compact_log_enabled true")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
+                 "GSERVICES_OVERRIDE -e location:proks_config 28")
+    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
                  "GSERVICES_OVERRIDE -e flp_use_particle_fusion true")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
                  "GSERVICES_OVERRIDE -e flp_particle_fusion_extended_bug_report"
                  " true")
+    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
+                 "GSERVICES_OVERRIDE -e flp_event_log_size 54000")
     ad.adb.shell("am force-stop com.google.android.gms")
     ad.adb.shell("am broadcast -a com.google.android.gms.INITIALIZE")
     ad.adb.shell("sqlite3 /data/data/com.google.android.gsf/databases/"
@@ -573,7 +577,7 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration):
             raise signals.TestFailure("Fail to send TTFF start_test_action.")
 
 def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
-    """Identify which TTFF mode for different test items.
+    """Start GNSS/FLP tracking tests for input testtime on GTW_GPSTool.
 
     Args:
         ad: An AndroidDevice object.

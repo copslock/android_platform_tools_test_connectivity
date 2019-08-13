@@ -65,6 +65,7 @@ from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import start_sdm_loggers
 from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import synchronize_device_time
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
@@ -148,6 +149,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut_incall = False
         self.dsds_esim = self.user_params.get("dsds_esim", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
+        self.sdm_log = self.user_params.get("sdm_log", False)
         telephony_info = getattr(self.dut, "telephony", {})
         self.dut_capabilities = telephony_info.get("capabilities", [])
         self.dut_wfc_modes = telephony_info.get("wfc_modes", [])
@@ -286,7 +288,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         the_number = self.result_info["%s Total" % message_type] + 1
         begin_time = get_device_epoch_time(self.dut)
         test_name = "%s_No_%s_%s" % (self.test_name, the_number, message_type)
-        start_qxdm_loggers(self.log, self.android_devices)
+        if self.sdm_log:
+            start_sdm_loggers(self.log, self.android_devices)
+        else:
+            start_qxdm_loggers(self.log, self.android_devices)
         log_msg = "[Test Case] %s" % test_name
         self.log.info("%s begin", log_msg)
         for ad in self.android_devices:
@@ -394,7 +399,13 @@ class TelLiveStressTest(TelephonyBaseTest):
                     ad.droid, ad.ed = ad.get_droid()
                     ad.ed.start()
             ad.droid.logI("[BEGIN]%s" % log_msg)
-        start_qxdm_loggers(self.log, self.android_devices, begin_time)
+        if self.sdm_log:
+            for ad in ads:
+                ad.adb.shell("i2cset -fy 3 64 6 1 b", ignore_status=True)
+                ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
+            start_sdm_loggers(self.log, self.android_devices)
+        else:
+            start_qxdm_loggers(self.log, self.android_devices)
         if self.cbrs_esim:
             self._cbrs_data_check_test(begin_time, expected_cbrs=True,
                                        test_time="before")
@@ -442,6 +453,10 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             elapsed_time = 0
             check_interval = 5
+            if self.sdm_log:
+                for ad in ads:
+                    ad.adb.shell("i2cset -fy 3 64 6 1 b", ignore_status=True)
+                    ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
             if self.cbrs_esim:
                 time.sleep(5)
                 self._cbrs_data_check_test(begin_time, expected_cbrs=False,
@@ -544,7 +559,10 @@ class TelLiveStressTest(TelephonyBaseTest):
     def _prefnetwork_mode_change(self, sub_id):
         # ModePref change to non-LTE
         begin_time = get_device_epoch_time(self.dut)
-        start_qxdm_loggers(self.log, self.android_devices)
+        if self.sdm_log:
+            start_sdm_loggers(self.log, self.android_devices)
+        else:
+            start_qxdm_loggers(self.log, self.android_devices)
         self.result_info["Network Change Request Total"] += 1
         test_name = "%s_network_change_iter_%s" % (
             self.test_name, self.result_info["Network Change Request Total"])
@@ -581,7 +599,10 @@ class TelLiveStressTest(TelephonyBaseTest):
     def _mobile_data_toggling(self, setup="volte"):
         # ModePref change to non-LTE
         begin_time = get_device_epoch_time(self.dut)
-        start_qxdm_loggers(self.log, self.android_devices)
+        if self.sdm_log:
+            start_sdm_loggers(self.log, self.android_devices)
+        else:
+            start_qxdm_loggers(self.log, self.android_devices)
         result = True
         self.result_info["Data Toggling Request Total"] += 1
         test_name = "%s_data_toggling_iter_%s" % (
@@ -750,7 +771,10 @@ class TelLiveStressTest(TelephonyBaseTest):
             self.dut.log.info("Data - slot_Id %d", slot_id)
             set_subid_for_data(self.dut, sub_id)
             self.dut.droid.telephonyToggleDataConnection(True)
-        start_qxdm_loggers(self.log, self.android_devices)
+        if self.sdm_log:
+            start_sdm_loggers(self.log, self.android_devices)
+        else:
+            start_qxdm_loggers(self.log, self.android_devices)
         self.dut.log.info(dict(self.result_info))
         selection = random.randrange(0, len(file_names))
         file_name = file_names[selection]
@@ -835,7 +859,10 @@ class TelLiveStressTest(TelephonyBaseTest):
     def _data_call_test(self, sub_id, generation):
         self.dut.log.info(dict(self.result_info))
         begin_time = get_device_epoch_time(self.dut)
-        start_qxdm_loggers(self.log, self.android_devices)
+        if self.sdm_log:
+            start_sdm_loggers(self.log, self.android_devices)
+        else:
+            start_qxdm_loggers(self.log, self.android_devices)
         self.result_info["Network Change Request Total"] += 1
         test_name = "%s_network_change_test_iter_%s" % (
             self.test_name, self.result_info["Network Change Request Total"])
@@ -1040,6 +1067,19 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.result_detail = result_message
         return all(results)
 
+    def connect_to_wifi(self):
+        for ad in self.android_devices:
+            if not ensure_wifi_connected(
+                    self.log,
+                    ad,
+                    self.wifi_network_ssid,
+                    self.wifi_network_pass,
+                    retries=3):
+                ad.log.error("Bringing up Wifi connection fails.")
+                return False
+        ad.log.info("Phone WIFI is connected successfully.")
+        return True
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="d035e5b9-476a-4e3d-b4e9-6fd86c51a68d")
@@ -1047,6 +1087,13 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_default_parallel_stress(self):
         """ Default state stress test"""
         return self.parallel_tests()
+
+    @test_tracker_info(uuid="798a3c34-db75-4bcf-b8ef-e1116414a7fe")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_default_parallel_stress_with_wifi(self):
+        """ Default state stress test with Wifi enabled."""
+        if self.connect_to_wifi():
+            return self.parallel_tests()
 
     @test_tracker_info(uuid="c21e1f17-3282-4f0b-b527-19f048798098")
     @TelephonyBaseTest.tel_test_wrap

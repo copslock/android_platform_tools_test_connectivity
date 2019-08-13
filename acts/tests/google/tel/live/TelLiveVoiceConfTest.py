@@ -33,6 +33,7 @@ from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_test_utils import call_reject
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import get_call_uri
@@ -43,6 +44,8 @@ from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
+from acts.test_utils.tel.tel_test_utils import get_capability_for_subscription
+from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -64,12 +67,17 @@ from acts.test_utils.tel.tel_voice_utils import swap_calls
 class TelLiveVoiceConfTest(TelephonyBaseTest):
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
-        if CAPABILITY_CONFERENCE not in self.android_devices[0].telephony.get(
-                "capabilities", []):
+        if not get_capability_for_subscription(
+            self.android_devices[0],
+            CAPABILITY_CONFERENCE,
+            get_outgoing_voice_sub_id(self.android_devices[0])):
             self.android_devices[0].log.error(
                 "Conference call is not supported, abort test.")
             raise signals.TestAbortClass(
                 "Conference call is not supported, abort test.")
+
+    def teardown_test(self):
+        ensure_phones_idle(self.log, self.android_devices)
 
     # Note: Currently Conference Call do not verify voice.
     # So even if test cases passed, does not necessarily means
@@ -10796,7 +10804,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_general, (self.log, ads[2]))]
@@ -10805,7 +10813,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         if not self._three_phone_call_mo_add_mt_reject(
-            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], True):
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_iwlan, None], True):
             return False
         return True
 
@@ -10815,7 +10823,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_general, (self.log, ads[2]))]
@@ -10824,7 +10832,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         if not self._three_phone_call_mo_add_mt_reject(
-            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], False):
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_iwlan, None], False):
             return False
         return True
 

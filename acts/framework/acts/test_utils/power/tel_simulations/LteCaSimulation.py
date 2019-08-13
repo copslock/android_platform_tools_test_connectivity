@@ -16,6 +16,7 @@
 import re
 import time
 
+from acts.controllers.anritsu_lib.md8475a import BtsTechnology
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.controllers.anritsu_lib.md8475a import TestProcedure
@@ -33,6 +34,9 @@ class LteCaSimulation(LteSimulation):
 
     # Simulation config keywords contained in the test name
     PARAM_CA = 'ca'
+
+    # Test config keywords
+    KEY_FREQ_BANDS = "freq_bands"
 
     def __init__(self, anritsu, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for LTE simulation with carrier
@@ -61,6 +65,14 @@ class LteCaSimulation(LteSimulation):
                 anritsu.get_BTS(BtsNumber.BTS5)
             ])
 
+        # Get LTE CA frequency bands setting from the test configuration
+        if self.KEY_FREQ_BANDS not in test_config:
+            self.log.warning("The key '{}' is not set in the config file. "
+                             "Setting to null by default.".format(
+                                 self.KEY_FREQ_BANDS))
+
+        self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
+
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation with CA using a list of parameters.
 
@@ -71,6 +83,15 @@ class LteCaSimulation(LteSimulation):
         """
 
         super(LteSimulation, self).parse_parameters(parameters)
+
+        # Enable all base stations initially. The ones that are not needed after
+        # parsing the CA combo string can be removed.
+        self.anritsu.set_simulation_model(
+            BtsTechnology.LTE,
+            BtsTechnology.LTE,
+            BtsTechnology.LTE,
+            BtsTechnology.LTE,
+            reset=False)
 
         # Get the CA band configuration
 
@@ -100,7 +121,7 @@ class LteCaSimulation(LteSimulation):
 
         for ca in ca_configs:
 
-            band = int(ca[:-1])
+            band = ca[:-1]
             ca_class = ca[-1]
 
             if ca_class.upper() == 'B':
@@ -117,13 +138,8 @@ class LteCaSimulation(LteSimulation):
                 if bts_index >= len(self.bts):
                     raise ValueError("This callbox model doesn't allow the "
                                      "requested CA configuration")
-
-                self.set_band_with_defaults(
-                    self.bts[bts_index],
-                    band,
-                    calibrate_if_necessary=bts_index == 0)
-
                 bts_index += 1
+                carriers.append(band)
 
             elif ca_class.upper() == 'C':
 
@@ -131,14 +147,10 @@ class LteCaSimulation(LteSimulation):
                     raise ValueError("This callbox model doesn't allow the "
                                      "requested CA configuration")
 
-                self.set_band_with_defaults(
-                    self.bts[bts_index],
-                    band,
-                    calibrate_if_necessary=bts_index == 0)
-                self.set_band(
-                    self.bts[bts_index + 1],
-                    band,
-                    calibrate_if_necessary=False)
+                # Append this band two times as it will be used for two
+                # different carriers.
+                carriers.append(band)
+                carriers.append(band)
 
                 bts_index += 2
 
@@ -146,13 +158,31 @@ class LteCaSimulation(LteSimulation):
                 raise ValueError("Invalid carrier aggregation configuration: "
                                  "{}{}.".format(band, ca_class))
 
-            carriers.append(band)
-
         # Ensure there are at least two carriers being used
         self.num_carriers = bts_index
         if self.num_carriers < 2:
             raise ValueError("At least two carriers need to be indicated for "
                              "the carrier aggregation sim.")
+
+        # Set the simulation model to use only the base stations that are
+        # needed for this CA combination.
+
+        self.anritsu.set_simulation_model(
+            *[BtsTechnology.LTE for _ in range(self.num_carriers)],
+            reset=False)
+
+        # Enable carrier aggregation
+        self.anritsu.set_carrier_aggregation_enabled()
+
+        # Restart the simulation as changing the simulation model will stop it.
+        self.anritsu.start_simulation()
+
+        # Setup the bands in the base stations
+        for bts_index in range(self.num_carriers):
+            self.set_band_with_defaults(
+                self.bts[bts_index],
+                carriers[bts_index],
+                calibrate_if_necessary=bts_index == 0)
 
         # Get the bw for each carrier
         # This is an optional parameter, by default the maximum bandwidth for
@@ -402,13 +432,18 @@ class LteCaSimulation(LteSimulation):
 
         """
 
+        # Trigger UE capability enquiry from network to get
+        # UE supported CA band combinations. Here freq_bands is a hex string.
+
+        self.anritsu.trigger_ue_capability_enquiry(self.freq_bands)
+
         testcase = self.anritsu.get_AnritsuTestCases()
         testcase.procedure = TestProcedure.PROCEDURE_MULTICELL
         testcase.power_control = TestPowerControl.POWER_CONTROL_DISABLE
         testcase.measurement_LTE = TestMeasurement.MEASUREMENT_DISABLE
 
-        for bts_index in range(1, len(self.bts)):
-            self.bts[bts_index].dl_cc_enabled = bts_index < self.num_carriers
+        for bts_index in range(1, self.num_carriers):
+            self.bts[bts_index].dl_cc_enabled = True
 
         self.anritsu.start_testcase()
 

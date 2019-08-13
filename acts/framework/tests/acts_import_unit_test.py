@@ -48,6 +48,7 @@ else:
 PY_FILE_REGEX = re.compile('.+\.py$')
 
 BLACKLIST = [
+    'acts/controllers/gnssinst_lib/rohdeschwarz/contest.py',
     'acts/controllers/native.py',
     'acts/controllers/native_android_device.py',
     'acts/controllers/packet_sender.py',
@@ -85,6 +86,9 @@ BLACKLIST = [
 ]
 
 BLACKLIST_DIRECTORIES = [
+    # TODO: remove monsoon_lib after HVPM and LVPM sampling libraries are merged
+    'acts/controllers/monsoon_lib',
+    'tests/google/gnss/',
     'acts/test_utils/audio_analysis_lib/',
     'acts/test_utils/coex/',
     'acts/test_utils/power/',
@@ -135,9 +139,10 @@ class ActsImportUnitTest(unittest.TestCase):
         self.longMessage = False
 
         for banned_import in BANNED_IMPORTS:
-            self.assertNotIn(banned_import, sys.modules,
-                             'Attempted to import the banned package/module '
-                             '%s.' % banned_import)
+            self.assertNotIn(
+                banned_import, sys.modules,
+                'Attempted to import the banned package/module '
+                '%s.' % banned_import)
 
 
 if __name__ == '__main__':

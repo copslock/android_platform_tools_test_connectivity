@@ -92,7 +92,8 @@ class DhcpServer(object):
 
     def stop(self):
         """Kills the daemon if it is running."""
-        self._shell.kill(self._identifier)
+        if self.is_alive():
+            self._shell.kill(self._identifier)
 
     def is_alive(self):
         """

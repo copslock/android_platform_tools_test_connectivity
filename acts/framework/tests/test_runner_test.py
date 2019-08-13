@@ -14,14 +14,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from mock import Mock
-import unittest
+import shutil
 import tempfile
+import unittest
 
-from acts import keys
+from mock import Mock
+from mock import patch
+
 from acts import test_runner
-
-import mock_controller
 
 
 class TestRunnerTest(unittest.TestCase):
@@ -38,19 +38,16 @@ class TestRunnerTest(unittest.TestCase):
             "extra_param": "haha"
         }
 
-    def create_mock_context(self):
-        context = Mock()
-        context.__exit__ = Mock()
-        context.__enter__ = Mock()
-        return context
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
 
-    def create_test_classes(self, class_names):
-        return {
-            class_name: Mock(return_value=self.create_mock_context())
-            for class_name in class_names
-        }
+    @staticmethod
+    def create_test_classes(class_names):
+        return {class_name: Mock() for class_name in class_names}
 
-    def test_class_name_pattern_single(self):
+    @patch('acts.records.TestResult')
+    @patch.object(test_runner.TestRunner, '_write_results_to_file')
+    def test_class_name_pattern_single(self, *_):
         class_names = ['test_class_1', 'test_class_2']
         pattern = 'test*1'
         tr = test_runner.TestRunner(self.base_mock_test_config, [(pattern,
@@ -62,7 +59,9 @@ class TestRunnerTest(unittest.TestCase):
         self.assertTrue(test_classes[class_names[0]].called)
         self.assertFalse(test_classes[class_names[1]].called)
 
-    def test_class_name_pattern_multi(self):
+    @patch('acts.records.TestResult')
+    @patch.object(test_runner.TestRunner, '_write_results_to_file')
+    def test_class_name_pattern_multi(self, *_):
         class_names = ['test_class_1', 'test_class_2', 'other_name']
         pattern = 'test_class*'
         tr = test_runner.TestRunner(self.base_mock_test_config, [(pattern,
@@ -75,7 +74,9 @@ class TestRunnerTest(unittest.TestCase):
         self.assertTrue(test_classes[class_names[1]].called)
         self.assertFalse(test_classes[class_names[2]].called)
 
-    def test_class_name_pattern_question_mark(self):
+    @patch('acts.records.TestResult')
+    @patch.object(test_runner.TestRunner, '_write_results_to_file')
+    def test_class_name_pattern_question_mark(self, *_):
         class_names = ['test_class_1', 'test_class_12']
         pattern = 'test_class_?'
         tr = test_runner.TestRunner(self.base_mock_test_config, [(pattern,
@@ -87,7 +88,9 @@ class TestRunnerTest(unittest.TestCase):
         self.assertTrue(test_classes[class_names[0]].called)
         self.assertFalse(test_classes[class_names[1]].called)
 
-    def test_class_name_pattern_char_seq(self):
+    @patch('acts.records.TestResult')
+    @patch.object(test_runner.TestRunner, '_write_results_to_file')
+    def test_class_name_pattern_char_seq(self, *_):
         class_names = ['test_class_1', 'test_class_2', 'test_class_3']
         pattern = 'test_class_[1357]'
         tr = test_runner.TestRunner(self.base_mock_test_config, [(pattern,

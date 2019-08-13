@@ -162,6 +162,10 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         self.log.info('Tearing down the test case')
         self.mon.usb('on')
+        # Take Bugreport
+        if self.bug_report:
+            begin_time = utils.get_current_epoch_time()
+            self.dut.take_bug_report(self.test_name, begin_time)
 
     def teardown_class(self):
         """Clean up the test class after tests finish running
@@ -305,13 +309,9 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         tag = ''
         # Collecting current measurement data and plot
-        begin_time = utils.get_current_epoch_time()
         self.file_path, self.test_result = self.monsoon_data_collect_save()
         self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
         wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
-        # Take Bugreport
-        if self.bug_report:
-            self.dut.take_bug_report(self.test_name, begin_time)
 
     def pass_fail_check(self):
         """Check the test result and decide if it passed or failed.
@@ -330,12 +330,15 @@ class PowerBaseTest(base_test.BaseTestClass):
             asserts.assert_true(
                 abs(self.test_result - current_threshold) / current_threshold <
                 THRESHOLD_TOLERANCE,
-                ('Measured average current in [{}]: {}, which is '
-                 'more than {} percent off than acceptable threshold {:.2f}mA'
-                 ).format(self.test_name, self.test_result,
-                          self.pass_fail_tolerance * 100, current_threshold))
-            asserts.explicit_pass('Measurement finished for {}.'.format(
-                self.test_name))
+                'Measured average current in [{}]: {:.2f}mA, which is '
+                'out of the acceptable range {:.2f}±{:.2f}mA'.format(
+                    self.test_name, self.test_result, current_threshold,
+                    self.pass_fail_tolerance * current_threshold))
+            asserts.explicit_pass(
+                'Measurement finished for [{}]: {:.2f}mA, which is '
+                'within the acceptable range {:.2f}±{:.2f}'.format(
+                    self.test_name, self.test_result, current_threshold,
+                    self.pass_fail_tolerance * current_threshold))
         else:
             asserts.fail(
                 'Something happened, measurement is not complete, test failed')
@@ -483,8 +486,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         RESULTS_DESTINATION = os.path.join(self.iperf_server.log_path,
                                            'iperf_client_output_{}.log'.format(
                                                self.current_test_name))
-        PULL_FILE = '{} {}'.format(TEMP_FILE, RESULTS_DESTINATION)
-        self.dut.adb.pull(PULL_FILE)
+        self.dut.pull_files(TEMP_FILE, RESULTS_DESTINATION)
         # Calculate the average throughput
         if self.use_client_output:
             iperf_file = RESULTS_DESTINATION

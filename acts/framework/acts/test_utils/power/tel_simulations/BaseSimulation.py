@@ -116,6 +116,9 @@ class BaseSimulation():
         self.sim_dl_power = None
         self.sim_ul_power = None
 
+        # Stores RRC status change timer
+        self.rrc_sc_timer = None
+
         # Set to default APN
         log.info("Setting preferred APN to anritsu1.com.")
         dut.droid.telephonySetAPN("anritsu1.com", "anritsu1.com")
@@ -226,8 +229,14 @@ class BaseSimulation():
         # Wait for APM to propagate
         time.sleep(2)
 
-        # Power off basestation
-        self.anritsu.set_simulation_state_to_poweroff()
+        # Try to power off the basestation. An exception will be raised if the
+        # simulation is not running, which is ok because it means the phone is
+        # not attached.
+        try:
+            self.anritsu.set_simulation_state_to_poweroff()
+        except AnritsuError:
+            self.log.warning('Could not power off the basestation. The '
+                             'simulation might be stopped.')
 
     def stop(self):
         """  Detach phone from the basestation by stopping the simulation.
@@ -386,6 +395,13 @@ class BaseSimulation():
         else:
             power = signal_level
 
+        # Starts IP traffic while changing this setting to force the UE to be
+        # in Communication state, as UL power cannot be set in Idle state
+        self.start_traffic_for_calibration()
+
+        # Wait until it goes to communication state
+        self.anritsu.wait_for_communication_state()
+
         # Try to use measured path loss value. If this was not set, it will
         # throw an TypeError exception
         try:
@@ -414,6 +430,9 @@ class BaseSimulation():
             bts.input_level = round(power)
             self.log.info("Phone uplink transmitted power set to {} (link is "
                           "uncalibrated).".format(round(power)))
+
+        # Stop IP traffic after setting the UL power level
+        self.stop_traffic_for_calibration()
 
     def calibrate(self):
         """ Calculates UL and DL path loss if it wasn't done before.
@@ -700,3 +719,11 @@ class BaseSimulation():
         """
 
         pass
+
+    def wait_for_rrc_idle_state(self, wait_time):
+        """ Waits for UE RRC state change to idle mode.
+
+        Raises exception when UE fails to move to idle state
+        """
+
+        self.anritsu.wait_for_idle_state(wait_time)

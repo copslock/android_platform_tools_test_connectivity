@@ -110,8 +110,8 @@ class GnssSanityTest(BaseTestClass):
     def setup_test(self):
         get_baseband_and_gms_version(self.ad)
         clear_logd_gnss_qxdm_log(self.ad)
-        if int(self.attenuators[0].get_atten()) != self.default_gnss_signal_attenuation:
-            set_attenuator_gnss_signal(self.ad, self.attenuators, self.default_gnss_signal_attenuation)
+        set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                   self.default_gnss_signal_attenuation)
 
     def teardown_test(self):
         stop_qxdm_logger(self.ad)
@@ -127,8 +127,8 @@ class GnssSanityTest(BaseTestClass):
         if int(self.ad.adb.shell(
             "settings get global wifi_scan_always_enabled")) != 1:
             set_wifi_and_bt_scanning(self.ad, True)
-        if int(self.attenuators[0].get_atten()) != self.default_gnss_signal_attenuation:
-            set_attenuator_gnss_signal(self.ad, self.attenuators, self.default_gnss_signal_attenuation)
+        set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                   self.default_gnss_signal_attenuation)
 
     def on_pass(self, test_name, begin_time):
         self.ad.take_bug_report(test_name, begin_time)

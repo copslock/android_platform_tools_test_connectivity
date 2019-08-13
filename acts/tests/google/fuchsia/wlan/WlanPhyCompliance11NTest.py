@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import itertools
+import re
 
 from acts import utils
 from acts.controllers.ap_lib.hostapd_security import Security
@@ -84,6 +85,23 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             self.dut = create_wlan_device(self.android_devices[0])
 
         self.access_point = self.access_points[0]
+        self.tests = [
+            'test_11n_capabilities_24_HT20',
+            'test_11n_capabilities_24_HT40_lower',
+            'test_11n_capabilities_24_HT40_upper',
+            'test_11n_capabilities_5_HT20',
+            'test_11n_capabilities_5_HT40_lower',
+            'test_11n_capabilities_5_HT40_upper',
+            'test_11n_capabilities_24_HT20_wpa2',
+            'test_11n_capabilities_24_HT40_lower_wpa2',
+            'test_11n_capabilities_24_HT40_upper_wpa2',
+            'test_11n_capabilities_5_HT20_wpa2',
+            'test_11n_capabilities_5_HT40_lower_wpa2',
+            'test_11n_capabilities_5_HT40_upper_wpa2'
+
+        ]
+        if 'debug_11n_tests' in self.user_params:
+            self.tests.append('test_11n_capabilities_debug')
 
     def setup_class(self):
         self.access_point.stop_all_aps()
@@ -457,3 +475,67 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             self.setup_and_connect,
             settings=test_list,
             name_func=generate_test_name)
+
+    def test_11n_capabilities_debug(self):
+        allowed_frequencies = FREQUENCY_5 + FREQUENCY_24
+        allowed_chbw = (CHANNEL_BANDWIDTH_20 + CHANNEL_BANDWIDTH_40_LOWER +
+                        CHANNEL_BANDWIDTH_40_UPPER)
+        allowed_security = [SECURITY_WPA2, SECURITY_OPEN]
+        freq_chbw_sec = re.compile(r'(.*)_(.*)_(.*)_(\[.*\])?$')
+        for test_title in self.user_params['debug_11n_tests']:
+            test_list = []
+            test_to_run = re.match(freq_chbw_sec, test_title)
+            if test_to_run:
+                test_frequency = test_to_run.group(1)
+                test_chbw = test_to_run.group(2)
+                security = test_to_run.group(3)
+                if (test_frequency in allowed_frequencies and
+                        test_chbw in allowed_chbw and
+                        security in allowed_security):
+                    if test_to_run.group(4):
+                        n_capabilities_str = test_to_run.group(4)
+                    else:
+                        n_capabilities_str = ''
+                    n_capabilities_list = []
+                    if '[LDPC]' in n_capabilities_str:
+                        n_capabilities_list.append(
+                            hostapd_constants.N_CAPABILITY_LDPC)
+                    if '[TX-STBC]' in n_capabilities_str:
+                        n_capabilities_list.append(
+                            hostapd_constants.N_CAPABILITY_TX_STBC)
+                    if '[RX-STBC1]' in n_capabilities_str:
+                        n_capabilities_list.append(
+                            hostapd_constants.N_CAPABILITY_RX_STBC1)
+                    if '[SHORT-GI-20]' in n_capabilities_str:
+                        n_capabilities_list.append(
+                            hostapd_constants.N_CAPABILITY_SGI20)
+                    if '[SHORT-GI-40]' in n_capabilities_str:
+                        n_capabilities_list.append(
+                            hostapd_constants.N_CAPABILITY_SGI40)
+                    if '[DSSS_CCK-40]' in n_capabilities_str:
+                        n_capabilities_list.append(
+                            hostapd_constants.N_CAPABILITY_DSSS_CCK_40)
+                    if '[40-INTOLERANT]' in n_capabilities_str:
+                        n_capabilities_list.append(
+                            hostapd_constants.N_CAPABILITY_40_INTOLERANT)
+                    if '[MAX-AMSDU-7935]' in n_capabilities_str:
+                        n_capabilities_list.append(
+                            hostapd_constants.N_CAPABILITY_MAX_AMSDU_7935)
+                    if '[SMPS-STATIC]' in n_capabilities_str:
+                        n_capabilities_list.append(
+                            hostapd_constants.N_CAPABILITY_SMPS_STATIC)
+                    n_capabilities = tuple(n_capabilities_list)
+                    test_list.append({'frequency': test_frequency,
+                                      'chbw': test_chbw,
+                                      'security': security,
+                                      'n_capabilities': n_capabilities})
+                    self.run_generated_testcases(
+                        self.setup_and_connect,
+                        settings=test_list,
+                        name_func=generate_test_name)
+                else:
+                    self.log.error('Invalid test (%s). Trying the next one.'
+                                   % test_title)
+            else:
+                self.log.error('Invalid test (%s). Trying the next one.'
+                               % test_title)
