@@ -89,8 +89,6 @@ BLACKLIST = [
 
 BLACKLIST_DIRECTORIES = [
     'acts/controllers/buds_lib',
-    # TODO: remove monsoon_lib after HVPM and LVPM sampling libraries are merged
-    'acts/controllers/monsoon_lib',
     'acts/test_utils/audio_analysis_lib/',
     'acts/test_utils/coex/',
     'acts/test_utils/power/',
