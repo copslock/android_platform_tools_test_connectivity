@@ -41,7 +41,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     PARAM_SIM_TYPE_GSM = "gsm"
 
     # Custom files
-    FILENAME_CALIBRATION_TABLE = "calibration_table.json"
+    FILENAME_CALIBRATION_TABLE_UNFORMATTED = 'calibration_table_{}.json'
 
     # Name of the files in the logs directory that will contain test results
     # and other information in csv format.
@@ -82,8 +82,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.pkt_sender = self.packet_senders[0]
 
         # Load calibration tables
+        filename_calibration_table = (
+            self.FILENAME_CALIBRATION_TABLE_UNFORMATTED.format(
+                self.testbed_name))
+
         for file in self.custom_files:
-            if self.FILENAME_CALIBRATION_TABLE in file:
+            if filename_calibration_table in file:
                 self.calibration_table = self.unpack_custom_file(file, False)
 
         # Store the value of the key to access the test config in the
