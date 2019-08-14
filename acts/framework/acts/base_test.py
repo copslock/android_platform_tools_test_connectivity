@@ -182,6 +182,7 @@ class BaseTestClass(MoblyBaseTest):
         # Set all the controller objects and params.
         self.user_params = {}
         self.testbed_configs = {}
+        self.testbed_name = ''
         for name, value in configs.items():
             setattr(self, name, value)
         self.results = records.TestResult()
@@ -206,7 +207,6 @@ class BaseTestClass(MoblyBaseTest):
                 if ad.droid:
                     utils.set_location_service(ad, False)
                     utils.sync_device_time(ad)
-        self.testbed_name = ''
 
     def _import_builtin_controllers(self):
         """Import built-in controller modules.
