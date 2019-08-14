@@ -17,6 +17,7 @@ import re
 import time
 
 from acts.controllers.anritsu_lib.md8475a import BtsTechnology
+from acts.controllers.anritsu_lib.md8475a import LteMimoMode
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.controllers.anritsu_lib.md8475a import TestProcedure
@@ -170,6 +171,24 @@ class LteCaSimulation(LteSimulation):
         self.anritsu.set_simulation_model(
             *[BtsTechnology.LTE for _ in range(self.num_carriers)],
             reset=False)
+
+        # If base stations use different bands, make sure that the RF cards are
+        # not being shared by setting the right maximum MIMO modes
+        if self.num_carriers == 2:
+            # RF cards are never shared when doing 2CA so 4X4 can be done in
+            # both base stations.
+            self.bts[0].mimo_support = LteMimoMode.MIMO_4X4
+            self.bts[1].mimo_support = LteMimoMode.MIMO_4X4
+        if self.num_carriers == 3:
+            # 4X4 can only be done in the second base station if it is shared
+            # with the primary. If the RF cards cannot be shared, then at most
+            # 2X2 can be done.
+            self.bts[0].mimo_support = LteMimoMode.MIMO_4X4
+            if carriers[0] == carriers[1]:
+                self.bts[1].mimo_support = LteMimoMode.MIMO_4X4
+            else:
+                self.bts[1].mimo_support = LteMimoMode.MIMO_2X2
+            self.bts[2].mimo_support = LteMimoMode.MIMO_2X2
 
         # Enable carrier aggregation
         self.anritsu.set_carrier_aggregation_enabled()
