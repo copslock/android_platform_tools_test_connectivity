@@ -89,6 +89,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         for file in self.custom_files:
             if filename_calibration_table in file:
                 self.calibration_table = self.unpack_custom_file(file, False)
+                self.log.info('Loading calibration table from ' + file)
+                self.log.debug(self.calibration_table)
+                break
 
         # Store the value of the key to access the test config in the
         # user_params dictionary.
