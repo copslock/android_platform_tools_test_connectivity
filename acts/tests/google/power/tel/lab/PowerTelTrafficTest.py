@@ -82,6 +82,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         if not super().setup_test():
             return False
 
+        # Reset results at the start of the test
+        self.iperf_results = {}
+
         # Traffic direction
 
         values = self.consume_parameter(self.PARAM_DIRECTION, 1)
