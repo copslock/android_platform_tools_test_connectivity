@@ -30,7 +30,7 @@ from acts.test_utils.bt.bt_test_utils import generate_id_by_size
 
 
 class FuchsiaBtScanTest(BaseTestClass):
-    scan_timeout_seconds = 10
+    scan_timeout_seconds = 30
 
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
@@ -99,17 +99,19 @@ class FuchsiaBtScanTest(BaseTestClass):
         Priority: 1
         """
         local_name = generate_id_by_size(10)
+        self.log.info("Setting local peer name to: {}".format(local_name))
         self.sec_dut.btc_lib.setName(local_name)
         self.sec_dut.btc_lib.setDiscoverable(True)
 
         self.pri_dut.btc_lib.requestDiscovery(True)
         end_time = time.time() + self.scan_timeout_seconds
-        poll_timeout = 1
+        poll_timeout = 10
         while time.time() < end_time:
             discovered_devices = self.pri_dut.btc_lib.getKnownRemoteDevices()
             for device in discovered_devices.get("result").values():
+                self.log.info(device)
                 discoverd_name = device.get("name")
-                if discoverd_name is not None and discoverd_name is local_name:
+                if discoverd_name is not None and discoverd_name in local_name:
                     self.pri_dut.btc_lib.requestDiscovery(False)
                     raise signals.TestPass("Successfully found peer device.")
             time.sleep(poll_timeout)
