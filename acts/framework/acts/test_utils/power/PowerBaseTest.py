@@ -28,8 +28,6 @@ from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
-SETTINGS_PAGE = 'am start -n com.android.settings/.Settings'
-SCROLL_BOTTOM = 'input swipe 0 2000 0 0'
 UNLOCK_SCREEN = 'input keyevent 82'
 SET_BATTERY_LEVEL = 'dumpsys battery set level 100'
 SCREENON_USB_DISABLE = 'dumpsys battery unplug'
@@ -283,8 +281,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.dut.adb.shell(SET_BATTERY_LEVEL)
         self.dut.adb.shell(SCREENON_USB_DISABLE)
         self.dut.adb.shell(UNLOCK_SCREEN)
-        self.dut.adb.shell(SETTINGS_PAGE)
-        self.dut.adb.shell(SCROLL_BOTTOM)
+        #Dupe UNLOCK_SCREEN to make sure it's on home screen
+        self.dut.adb.shell(UNLOCK_SCREEN)
         self.dut.adb.shell(MUSIC_IQ_OFF)
         self.dut.adb.shell(AUTO_TIME_OFF)
         self.dut.adb.shell(AUTO_TIMEZONE_OFF)
@@ -483,9 +481,9 @@ class PowerBaseTest(base_test.BaseTestClass):
              throughput: the average throughput during tests.
         """
         # Get IPERF results and add this to the plot title
-        RESULTS_DESTINATION = os.path.join(self.iperf_server.log_path,
-                                           'iperf_client_output_{}.log'.format(
-                                               self.current_test_name))
+        RESULTS_DESTINATION = os.path.join(
+            self.iperf_server.log_path,
+            'iperf_client_output_{}.log'.format(self.current_test_name))
         self.dut.pull_files(TEMP_FILE, RESULTS_DESTINATION)
         # Calculate the average throughput
         if self.use_client_output:
