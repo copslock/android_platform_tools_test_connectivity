@@ -136,6 +136,13 @@ class BtsBandwidth(Enum):
     LTE_BANDWIDTH_20MHz = "20MHz"
 
 
+class LteMimoMode(Enum):
+    """ Values for LTE MIMO modes. """
+    NONE = "MIMONOT"
+    MIMO_2X2 = "MIMO2X2"
+    MIMO_4X4 = "MIMO4X4"
+
+
 class BtsGprsMode(Enum):
     ''' Values for Gprs Modes '''
     NO_GPRS = "NO_GPRS"
@@ -3102,6 +3109,30 @@ class _BaseTransceiverStation(object):
             None
         """
         cmd = "ULNRB {},{}".format(blocks, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def mimo_support(self):
+        """ Gets the maximum supported MIMO mode for the LTE bases tation.
+
+        Returns:
+            the MIMO mode as a string
+        """
+        cmd = "LTEMIMO? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @mimo_support.setter
+    def mimo_support(self, mode):
+        """ Sets the maximum supported MIMO mode for the LTE base station.
+
+        Args:
+            mode: a string or an object of the LteMimoMode class.
+        """
+
+        if isinstance(mode, LteMimoMode):
+            mode = mode.value
+
+        cmd = "LTEMIMO {},{}".format(self._bts_number, mode)
         self._anritsu.send_command(cmd)
 
     @property
