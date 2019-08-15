@@ -88,11 +88,11 @@ class WifiStressTest(WifiBaseTest):
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
-        if hasattr(self, 'iperf_server'):
-            self.iperf_server.stop()
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
+        if hasattr(self, 'iperf_server'):
+            self.iperf_server.stop()
 
     """Helper Functions"""
 
@@ -264,7 +264,7 @@ class WifiStressTest(WifiBaseTest):
                   "https://www.youtube.com/watch?v=dVkK36KOcqs",
                   "https://www.youtube.com/watch?v=0wCC3aLXdOw",
                   "https://www.youtube.com/watch?v=rN6nlNC9WQA",
-                  "https://www.youtube.com/watch?v=U--7hxRNPvk"]
+                  "https://www.youtube.com/watch?v=RK1K2bCg4J8"]
         try:
             self.scan_and_connect_by_ssid(self.wpa_5g)
             start_time = time.time()

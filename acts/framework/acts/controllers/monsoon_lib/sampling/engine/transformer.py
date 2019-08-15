@@ -56,13 +56,14 @@ class Transformer(object):
             self.on_begin()
             logging.debug('%s transformation started.', class_name)
             self._transform(input_stream)
+        except Exception:
+            # TODO(markdr): Get multi-process error reporting to play nicer.
+            logging.exception('%s ran into an exception.', class_name)
+            raise
+        finally:
             logging.debug('%s transformation ended.', class_name)
             self.on_end()
             logging.debug('%s finished.', class_name)
-        except Exception as e:
-            # TODO(markdr): Get multi-process error reporting to play nicer.
-            logging.exception('%s ran into an exception.', class_name)
-            raise e
 
     def _transform_buffer(self, buffer):
         """Transforms a given buffer.

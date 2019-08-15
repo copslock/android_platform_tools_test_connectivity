@@ -16,6 +16,12 @@
 """
 This is a stress test for Fuchsia GATT connections.
 
+Custom Params:
+gatt_connect_stress_test_iterations
+
+    Example:
+    "gatt_connect_stress_test_iterations": 10
+
 Setup:
 This test only requires two fuchsia devices as the purpose is to test
 the robusntess of GATT connections.
@@ -34,11 +40,14 @@ class GattConnectionStressTest(BaseTestClass):
     gatt_disconnect_err_message = "Gatt disconnection failed with: {}"
     ble_advertise_interval = 50
     scan_timeout_seconds = 10
+    default_iterations = 1000
 
     def __init__(self, controllers):
         BaseTestClass.__init__(self, controllers)
         self.fuchsia_client_dut = self.fuchsia_devices[0]
         self.fuchsia_server_dut = self.fuchsia_devices[1]
+        self.default_iterations = self.user_params.get(
+            "gatt_connect_stress_test_iterations", self.default_iterations)
 
     def _orchestrate_single_connect_disconnect(self):
         adv_name = generate_id_by_size(10)
@@ -67,11 +76,11 @@ class GattConnectionStressTest(BaseTestClass):
         self.fuchsia_server_dut.ble_lib.bleStopBleAdvertising()
 
     # TODO: add @test_tracker_info(uuid='')
-    def test_connect_reconnect_1000_iterations_over_le(self):
-        """Test GATT reconnection 1000 times.
+    def test_connect_reconnect_n_iterations_over_le(self):
+        """Test GATT reconnection n times.
 
         Verify that the GATT client device can discover and connect to
-        a perpheral 1000 times.
+        a perpheral n times. Default value is 1000.
 
         Steps:
         1. Setup Ble advertisement on peripheral with unique advertisement
@@ -90,8 +99,7 @@ class GattConnectionStressTest(BaseTestClass):
         TAGS: GATT
         Priority: 1
         """
-        iterations = 1000
-        for i in range(iterations):
+        for i in range(self.default_iterations):
             self.log.info("Starting iteration {}".format(i + 1))
             self._orchestrate_single_connect_disconnect()
             self.log.info("Iteration {} successful".format(i + 1))

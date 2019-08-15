@@ -18,49 +18,47 @@ import inspect
 import os
 
 
-class TraceLogger():
+class TraceLogger(object):
     def __init__(self, logger):
         self._logger = logger
 
     @staticmethod
-    def _get_trace_info(level=1):
+    def _get_trace_info(level=1, offset=2):
         # We want the stack frame above this and above the error/warning/info
         inspect_stack = inspect.stack()
-        trace_info = ""
+        trace_info = ''
         for i in range(level):
             try:
-                stack_frames = inspect_stack[2 + i]
+                stack_frames = inspect_stack[offset + i]
                 info = inspect.getframeinfo(stack_frames[0])
-                trace_info = "%s[%s:%s:%s]" % (trace_info,
+                trace_info = '%s[%s:%s:%s]' % (trace_info,
                                                os.path.basename(info.filename),
                                                info.function, info.lineno)
             except IndexError:
                 break
         return trace_info
 
+    def _log_with(self, logging_lambda, trace_level, msg, *args, **kwargs):
+        trace_info = TraceLogger._get_trace_info(level=trace_level, offset=3)
+        logging_lambda('%s %s' % (msg, trace_info), *args, **kwargs)
+
     def exception(self, msg, *args, **kwargs):
-        trace_info = TraceLogger._get_trace_info(level=5)
-        self._logger.exception("%s %s" % (msg, trace_info), *args, **kwargs)
+        self._log_with(self._logger.exception, 5, msg, *args, **kwargs)
 
     def debug(self, msg, *args, **kwargs):
-        trace_info = TraceLogger._get_trace_info(level=3)
-        self._logger.debug("%s %s" % (msg, trace_info), *args, **kwargs)
+        self._log_with(self._logger.debug, 3, msg, *args, **kwargs)
 
     def error(self, msg, *args, **kwargs):
-        trace_info = TraceLogger._get_trace_info(level=3)
-        self._logger.error("%s %s" % (msg, trace_info), *args, **kwargs)
+        self._log_with(self._logger.error, 3, msg, *args, **kwargs)
 
     def warn(self, msg, *args, **kwargs):
-        trace_info = TraceLogger._get_trace_info(level=1)
-        self._logger.warn("%s %s" % (msg, trace_info), *args, **kwargs)
+        self._log_with(self._logger.warn, 1, msg, *args, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
-        trace_info = TraceLogger._get_trace_info(level=1)
-        self._logger.warning("%s %s" % (msg, trace_info), *args, **kwargs)
+        self._log_with(self._logger.warning, 1, msg, *args, **kwargs)
 
     def info(self, msg, *args, **kwargs):
-        trace_info = TraceLogger._get_trace_info(level=1)
-        self._logger.info("%s %s" % (msg, trace_info), *args, **kwargs)
+        self._log_with(self._logger.info, 1, msg, *args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(self._logger, name)

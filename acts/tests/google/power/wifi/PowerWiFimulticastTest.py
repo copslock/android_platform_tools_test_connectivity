@@ -79,7 +79,7 @@ class PowerWiFimulticastTest(PWBT.PowerWiFiBaseTest):
         self.set_connection()
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.ArpGenerator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv4_dst_fake)
+        packet = pkt_gen.generate(ip_dst=self.ipv4_dst_fake)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='dd3ff80d-97ce-4408-92f8-f2c72ce8d79c')
@@ -138,7 +138,7 @@ class PowerWiFimulticastTest(PWBT.PowerWiFiBaseTest):
         self.set_connection()
         self.pkt_gen_config = wputils.create_pkt_config(self)
         pkt_gen = pkt_utils.NsGenerator(**self.pkt_gen_config)
-        packet = pkt_gen.generate(self.ipv6_dst_fake)
+        packet = pkt_gen.generate(ip_dst=self.ipv6_dst_fake)
         self.sendPacketAndMeasure(packet)
 
     @test_tracker_info(uuid='5eed3174-8e94-428e-8527-19a9b5a90322')

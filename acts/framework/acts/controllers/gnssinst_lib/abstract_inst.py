@@ -1,21 +1,22 @@
-#!/usr/bin python3
+#!/usr/bin/env python3
 #
-#       Copyright 2019 - The Android Open Source Project
+#   Copyright 2019 - The Android Open Source Project
 #
-#       Licensed under the Apache License, Version 2.0 (the "License");
-#       you may not use this file except in compliance with the License.
-#       You may obtain a copy of the License at
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
 #
-#               http://www.apache.org/licenses/LICENSE-2.0
+#           http://www.apache.org/licenses/LICENSE-2.0
 #
-#       Unless required by applicable law or agreed to in writing, software
-#       distributed under the License is distributed on an "AS IS" BASIS,
-#       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#       See the License for the specific language governing permissions and
-#       limitations under the License.
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 """Python module for GNSS Abstract Instrument Library."""
 
 import socket
+import requests
 from acts import logger
 
 
@@ -197,4 +198,46 @@ class SocketInstrument(object):
         """
         self._send(cmd + ';*OPC?')
         resp = self._recv()
+        return resp
+
+
+class RequestInstrument(object):
+    """Abstract Instrument Class, via Request."""
+
+    def __init__(self, ip_addr):
+        """Init method for request instrument.
+
+        Args:
+            ip_addr: IP Address.
+                Type, Str.
+        """
+        self._request_timeout = 120
+        self._request_protocol = 'http'
+        self._ip_addr = ip_addr
+        self._escseq = '\r\n'
+
+        self._logger = logger.create_tagged_trace_logger(self._ip_addr)
+
+    def _query(self, cmd):
+        """query instrument via request.
+
+        Args:
+            cmd: Command to send,
+                Type, Str.
+
+        Returns:
+            resp: Response from Instrument via request,
+                Type, Str.
+        """
+        request_cmd = '{}://{}/{}'.format(self._request_protocol,
+                                          self._ip_addr, cmd)
+        resp_raw = requests.get(request_cmd, timeout=self._request_timeout)
+
+        resp = resp_raw.text
+        for char_del in self._escseq:
+            resp = resp.replace(char_del, '')
+
+        self._logger.debug('Sent %r to %r, and get %r.', cmd, self._ip_addr,
+                           resp)
+
         return resp

@@ -20,6 +20,33 @@ import paramiko
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
+
+def get_private_key(ip_address, ssh_config):
+    """Tries to load various ssh key types.
+
+    Args:
+        ip_address: IP address of ssh server.
+        ssh_config: ssh_config location for the ssh server.
+    Returns:
+        The ssh private key
+    """
+    try:
+        logging.debug('Trying to load SSH key type: ed25519')
+        return paramiko.ed25519key.Ed25519Key(
+            filename=get_ssh_key_for_host(ip_address, ssh_config))
+    except paramiko.SSHException:
+        logging.debug('Failed loading SSH key type: ed25519')
+
+    try:
+        logging.debug('Trying to load SSH key type: rsa')
+        return paramiko.RSAKey.from_private_key_file(
+            filename=get_ssh_key_for_host(ip_address, ssh_config))
+    except paramiko.SSHException:
+        logging.debug('Failed loading SSH key type: rsa')
+
+    raise paramiko.SSHException('No valid ssh key type found')
+
+
 def create_ssh_connection(ip_address,
                           ssh_username,
                           ssh_config,
@@ -35,8 +62,7 @@ def create_ssh_connection(ip_address,
     Returns:
         A paramiko ssh object
     """
-    ssh_key = paramiko.ed25519key.Ed25519Key(
-        filename=get_ssh_key_for_host(ip_address, ssh_config))
+    ssh_key = get_private_key(ip_address=ip_address, ssh_config=ssh_config)
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh_client.connect(hostname=ip_address,
@@ -84,10 +110,12 @@ class SshResults:
         stdin: The file descriptor to the input channel of the SSH connection.
         stdout: The file descriptor to the stdout of the SSH connection.
         stderr: The file descriptor to the stderr of the SSH connection.
+        exit_status: The exit status of the SSH command.
     """
-    def __init__(self, stdin, stdout, stderr):
+    def __init__(self, stdin, stdout, stderr, exit_status):
         self._stdout = stdout.read().decode('utf-8', errors='replace')
         self._stderr = stderr.read().decode('utf-8', errors='replace')
+        self._exit_status = exit_status
 
     @property
     def stdout(self):
@@ -96,3 +124,7 @@ class SshResults:
     @property
     def stderr(self):
         return self._stderr
+
+    @property
+    def exit_status(self):
+        return self._exit_status

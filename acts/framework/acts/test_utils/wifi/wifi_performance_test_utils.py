@@ -2,14 +2,14 @@
 #
 #   Copyright 2019 - The Android Open Source Project
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
+#   Licensed under the Apache License, Version 2.0 (the 'License');
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
 #
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
+#   distributed under the License is distributed on an 'AS IS' BASIS,
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
@@ -23,6 +23,8 @@ import statistics
 import time
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.utils_lib import ssh
+from acts import utils
+from acts.test_utils.wifi import wifi_test_utils as wutils
 from concurrent.futures import ThreadPoolExecutor
 
 SHORT_SLEEP = 1
@@ -51,6 +53,155 @@ def nonblocking(f):
         return thread_future
 
     return wrap
+
+
+# Link layer stats utilities
+class LinkLayerStats():
+
+    LLSTATS_CMD = 'cat /d/wlan0/ll_stats'
+    PEER_REGEX = 'LL_STATS_PEER_ALL'
+    MCS_REGEX = re.compile(
+        r'preamble: (?P<mode>\S+), nss: (?P<num_streams>\S+), bw: (?P<bw>\S+), '
+        'mcs: (?P<mcs>\S+), bitrate: (?P<rate>\S+), txmpdu: (?P<txmpdu>\S+), '
+        'rxmpdu: (?P<rxmpdu>\S+), mpdu_lost: (?P<mpdu_lost>\S+), '
+        'retries: (?P<retries>\S+), retries_short: (?P<retries_short>\S+), '
+        'retries_long: (?P<retries_long>\S+)')
+    MCS_ID = collections.namedtuple(
+        'mcs_id', ['mode', 'num_streams', 'bandwidth', 'mcs', 'rate'])
+    MODE_MAP = {'0': '11a/g', '1': '11b', '2': '11n', '3': '11ac'}
+    BW_MAP = {'0': 20, '1': 40, '2': 80}
+
+    def __init__(self, dut):
+        self.dut = dut
+        self.llstats_cumulative = self._empty_llstats()
+        self.llstats_incremental = self._empty_llstats()
+
+    def update_stats(self):
+        llstats_output = self.dut.adb.shell(self.LLSTATS_CMD)
+        self._update_stats(llstats_output)
+
+    def reset_stats(self):
+        self.llstats_cumulative = self._empty_llstats()
+        self.llstats_incremental = self._empty_llstats()
+
+    def _empty_llstats(self):
+        return collections.OrderedDict(
+            mcs_stats=collections.OrderedDict(),
+            summary=collections.OrderedDict())
+
+    def _empty_mcs_stat(self):
+        return collections.OrderedDict(
+            txmpdu=0,
+            rxmpdu=0,
+            mpdu_lost=0,
+            retries=0,
+            retries_short=0,
+            retries_long=0)
+
+    def _mcs_id_to_string(self, mcs_id):
+        mcs_string = '{} {}MHz Nss{} MCS{} {}Mbps'.format(
+            mcs_id.mode, mcs_id.bandwidth, mcs_id.num_streams, mcs_id.mcs,
+            mcs_id.rate)
+        return mcs_string
+
+    def _parse_mcs_stats(self, llstats_output):
+        llstats_dict = {}
+        # Look for per-peer stats
+        match = re.search(self.PEER_REGEX, llstats_output)
+        if not match:
+            self.reset_stats()
+            return collections.OrderedDict()
+        # Find and process all matches for per stream stats
+        match_iter = re.finditer(self.MCS_REGEX, llstats_output)
+        for match in match_iter:
+            current_mcs = self.MCS_ID(self.MODE_MAP[match.group('mode')],
+                                      int(match.group('num_streams')) + 1,
+                                      self.BW_MAP[match.group('bw')],
+                                      int(match.group('mcs')),
+                                      int(match.group('rate'), 16) / 1000)
+            current_stats = collections.OrderedDict(
+                txmpdu=int(match.group('txmpdu')),
+                rxmpdu=int(match.group('rxmpdu')),
+                mpdu_lost=int(match.group('mpdu_lost')),
+                retries=int(match.group('retries')),
+                retries_short=int(match.group('retries_short')),
+                retries_long=int(match.group('retries_long')))
+            llstats_dict[self._mcs_id_to_string(current_mcs)] = current_stats
+        return llstats_dict
+
+    def _diff_mcs_stats(self, new_stats, old_stats):
+        stats_diff = collections.OrderedDict()
+        for stat_key in new_stats.keys():
+            stats_diff[stat_key] = new_stats[stat_key] - old_stats[stat_key]
+        return stats_diff
+
+    def _generate_stats_summary(self, llstats_dict):
+        llstats_summary = collections.OrderedDict(
+            common_tx_mcs=None,
+            common_tx_mcs_count=0,
+            common_tx_mcs_freq=0,
+            common_rx_mcs=None,
+            common_rx_mcs_count=0,
+            common_rx_mcs_freq=0)
+        txmpdu_count = 0
+        rxmpdu_count = 0
+        for mcs_id, mcs_stats in llstats_dict['mcs_stats'].items():
+            if mcs_stats['txmpdu'] > llstats_summary['common_tx_mcs_count']:
+                llstats_summary['common_tx_mcs'] = mcs_id
+                llstats_summary['common_tx_mcs_count'] = mcs_stats['txmpdu']
+            if mcs_stats['rxmpdu'] > llstats_summary['common_rx_mcs_count']:
+                llstats_summary['common_rx_mcs'] = mcs_id
+                llstats_summary['common_rx_mcs_count'] = mcs_stats['rxmpdu']
+            txmpdu_count += mcs_stats['txmpdu']
+            rxmpdu_count += mcs_stats['rxmpdu']
+        if txmpdu_count:
+            llstats_summary['common_tx_mcs_freq'] = (
+                llstats_summary['common_tx_mcs_count'] / txmpdu_count)
+        if rxmpdu_count:
+            llstats_summary['common_rx_mcs_freq'] = (
+                llstats_summary['common_rx_mcs_count'] / rxmpdu_count)
+        return llstats_summary
+
+    def _update_stats(self, llstats_output):
+        # Parse stats
+        new_llstats = self._empty_llstats()
+        new_llstats['mcs_stats'] = self._parse_mcs_stats(llstats_output)
+        # Save old stats and set new cumulative stats
+        old_llstats = self.llstats_cumulative.copy()
+        self.llstats_cumulative = new_llstats.copy()
+        # Compute difference between new and old stats
+        self.llstats_incremental = self._empty_llstats()
+        for mcs_id, new_mcs_stats in new_llstats['mcs_stats'].items():
+            old_mcs_stats = old_llstats['mcs_stats'].get(
+                mcs_id, self._empty_mcs_stat())
+            self.llstats_incremental['mcs_stats'][
+                mcs_id] = self._diff_mcs_stats(new_mcs_stats, old_mcs_stats)
+        # Generate llstats summary
+        self.llstats_incremental['summary'] = self._generate_stats_summary(
+            self.llstats_incremental)
+        self.llstats_cumulative['summary'] = self._generate_stats_summary(
+            self.llstats_cumulative)
+
+
+# JSON serializer
+def serialize_dict(input_dict):
+    """Function to serialize dicts to enable JSON output"""
+    output_dict = collections.OrderedDict()
+    for key, value in input_dict.items():
+        output_dict[_serialize_value(key)] = _serialize_value(value)
+    return output_dict
+
+
+def _serialize_value(value):
+    """Function to recursively serialize dict entries to enable JSON output"""
+    if isinstance(value, tuple):
+        return str(value)
+    if isinstance(value, list):
+        return [_serialize_value(x) for x in value]
+    elif isinstance(value, dict):
+        return serialize_dict(value)
+    else:
+        return value
 
 
 # Plotting Utilities
@@ -107,17 +258,27 @@ class BokehFigure():
             'primary_y_label': primary_y,
             'secondary_y_label': secondary_y,
             'num_lines': 0,
+            'height': height,
+            'width': width,
             'title_size': '{}pt'.format(title_size),
             'axis_label_size': '{}pt'.format(axis_label_size)
         }
         self.TOOLS = (
             'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
+        self.TOOLTIPS = [
+            ('index', '$index'),
+            ('(x,y)', '($x, $y)'),
+            ('info', '@hover_text'),
+        ]
+
+    def init_plot(self):
         self.plot = bokeh.plotting.figure(
-            plot_width=width,
-            plot_height=height,
-            title=title,
+            plot_width=self.fig_property['width'],
+            plot_height=self.fig_property['height'],
+            title=self.fig_property['title'],
             tools=self.TOOLS,
             output_backend='webgl')
+        self.plot.hover.tooltips = self.TOOLTIPS
         self.plot.add_tools(
             bokeh.models.tools.WheelZoomTool(dimensions='width'))
         self.plot.add_tools(
@@ -127,6 +288,7 @@ class BokehFigure():
                  x_data,
                  y_data,
                  legend,
+                 hover_text=None,
                  color=None,
                  width=3,
                  style='solid',
@@ -140,6 +302,7 @@ class BokehFigure():
             x_data: list containing x-axis values for line
             y_data: list containing y_axis values for line
             legend: string containing line title
+            hover_text: text to display when hovering over lines
             color: string describing line color
             width: integer line width
             style: string describing line style, e.g, solid or dashed
@@ -154,10 +317,13 @@ class BokehFigure():
                 self.COLORS)]
         if style == 'dashed':
             style = [5, 5]
+        if not hover_text:
+            hover_text = ['y={}'.format(y) for y in y_data]
         self.figure_data.append({
             'x_data': x_data,
             'y_data': y_data,
             'legend': legend,
+            'hover_text': hover_text,
             'color': color,
             'width': width,
             'style': style,
@@ -168,23 +334,76 @@ class BokehFigure():
         })
         self.fig_property['num_lines'] += 1
 
+    def add_scatter(self,
+                    x_data,
+                    y_data,
+                    legend,
+                    hover_text=None,
+                    color=None,
+                    marker=None,
+                    marker_size=10,
+                    y_axis='default'):
+        """Function to add line to existing BokehFigure.
+
+        Args:
+            x_data: list containing x-axis values for line
+            y_data: list containing y_axis values for line
+            legend: string containing line title
+            hover_text: text to display when hovering over lines
+            color: string describing line color
+            marker: string specifying marker, e.g., cross
+            y_axis: identifier for y-axis to plot line against
+        """
+        if y_axis not in ['default', 'secondary']:
+            raise ValueError('y_axis must be default or secondary')
+        if color == None:
+            color = self.COLORS[self.fig_property['num_lines'] % len(
+                self.COLORS)]
+        if marker == None:
+            marker = self.MARKERS[self.fig_property['num_lines'] % len(
+                self.MARKERS)]
+        if not hover_text:
+            hover_text = ['y={}'.format(y) for y in y_data]
+        self.figure_data.append({
+            'x_data': x_data,
+            'y_data': y_data,
+            'legend': legend,
+            'hover_text': hover_text,
+            'color': color,
+            'width': 0,
+            'style': 'solid',
+            'marker': marker,
+            'marker_size': marker_size,
+            'shaded_region': None,
+            'y_range_name': y_axis
+        })
+        self.fig_property['num_lines'] += 1
+
     def generate_figure(self, output_file=None):
         """Function to generate and save BokehFigure.
 
         Args:
             output_file: string specifying output file path
         """
+        self.init_plot()
         two_axes = False
         for line in self.figure_data:
-            self.plot.line(
-                line['x_data'],
-                line['y_data'],
-                legend=line['legend'],
-                line_width=line['width'],
-                color=line['color'],
-                line_dash=line['style'],
-                name=line['y_range_name'],
-                y_range_name=line['y_range_name'])
+            source = bokeh.models.ColumnDataSource(
+                data=dict(
+                    x=line['x_data'],
+                    y=line['y_data'],
+                    hover_text=line['hover_text']))
+            if line['width'] > 0:
+                self.plot.line(
+                    x='x',
+                    y='y',
+                    legend=line['legend'],
+                    line_width=line['width'],
+                    color=line['color'],
+                    line_dash=line['style'],
+                    name=line['y_range_name'],
+                    y_range_name=line['y_range_name'],
+                    source=source)
             if line['shaded_region']:
                 band_x = line['shaded_region']['x_vector']
                 band_x.extend(line['shaded_region']['x_vector'][::-1])
@@ -199,14 +418,15 @@ class BokehFigure():
             if line['marker'] in self.MARKERS:
                 marker_func = getattr(self.plot, line['marker'])
                 marker_func(
-                    line['x_data'],
-                    line['y_data'],
+                    x='x',
+                    y='y',
                     size=line['marker_size'],
                     legend=line['legend'],
                     line_color=line['color'],
                     fill_color=line['color'],
                     name=line['y_range_name'],
-                    y_range_name=line['y_range_name'])
+                    y_range_name=line['y_range_name'],
+                    source=source)
             if line['y_range_name'] == 'secondary':
                 two_axes = True
 
@@ -257,84 +477,15 @@ class BokehFigure():
             figure_array: list of BokehFigure object to be plotted
             output_file: string specifying output file path
         """
+        for figure in figure_array:
+            figure.generate_figure()
         plot_array = [figure.plot for figure in figure_array]
         all_plots = bokeh.layouts.column(children=plot_array)
         bokeh.plotting.output_file(output_file_path)
         bokeh.plotting.save(all_plots)
 
 
-def bokeh_plot(data_sets,
-               legends,
-               fig_property,
-               shaded_region=None,
-               output_file_path=None):
-    """Plot bokeh figs.
-        Args:
-            data_sets: data sets including lists of x_data and lists of y_data
-                       ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
-            legends: list of legend for each curve
-            fig_property: dict containing the plot property, including title,
-                      lables, linewidth, circle size, etc.
-            shaded_region: optional dict containing data for plot shading
-            output_file_path: optional path at which to save figure
-        Returns:
-            plot: bokeh plot figure object
-    """
-    TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
-    plot = bokeh.plotting.figure(
-        plot_width=1300,
-        plot_height=700,
-        title=fig_property['title'],
-        tools=TOOLS,
-        output_backend='webgl')
-    plot.add_tools(bokeh.models.tools.WheelZoomTool(dimensions='width'))
-    plot.add_tools(bokeh.models.tools.WheelZoomTool(dimensions='height'))
-    colors = [
-        'red', 'green', 'blue', 'olive', 'orange', 'salmon', 'black', 'navy',
-        'yellow', 'darkred', 'goldenrod'
-    ]
-    if shaded_region:
-        band_x = shaded_region['x_vector']
-        band_x.extend(shaded_region['x_vector'][::-1])
-        band_y = shaded_region['lower_limit']
-        band_y.extend(shaded_region['upper_limit'][::-1])
-        plot.patch(
-            band_x, band_y, color='#7570B3', line_alpha=0.1, fill_alpha=0.1)
-
-    for x_data, y_data, legend in zip(data_sets[0], data_sets[1], legends):
-        index_now = legends.index(legend)
-        color = colors[index_now % len(colors)]
-        plot.line(
-            x_data,
-            y_data,
-            legend=str(legend),
-            line_width=fig_property['linewidth'],
-            color=color)
-        plot.circle(
-            x_data,
-            y_data,
-            size=fig_property['markersize'],
-            legend=str(legend),
-            fill_color=color)
-
-    # Plot properties
-    plot.xaxis.axis_label = fig_property['x_label']
-    plot.yaxis.axis_label = fig_property['y_label']
-    plot.legend.location = 'top_right'
-    plot.legend.click_policy = 'hide'
-    plot.title.text_font_size = {'value': '15pt'}
-    if output_file_path is not None:
-        bokeh.plotting.output_file(output_file_path)
-        bokeh.plotting.save(plot)
-    return plot
-
-
-def save_bokeh_plots(plot_array, output_file_path):
-    all_plots = bokeh.layouts.column(children=plot_array)
-    bokeh.plotting.output_file(output_file_path)
-    bokeh.plotting.save(all_plots)
-
-
+# Ping utilities
 class PingResult(object):
     """An object that contains the results of running ping command.
 
@@ -360,15 +511,18 @@ class PingResult(object):
             self.transmission_times, lambda entry: entry.timestamp)
         self.ping_interarrivals = _PingInterarrivals(self.transmission_times)
 
+        self.start_time = 0
         for line in ping_output:
             if 'loss' in line:
                 match = re.search(LOSS_REGEX, line)
                 self.packet_loss_percentage = float(match.group('loss'))
             if 'time=' in line:
                 match = re.search(RTT_REGEX, line)
+                if self.start_time == 0:
+                    self.start_time = float(match.group('timestamp'))
                 self.transmission_times.append(
                     PingTransmissionTimes(
-                        float(match.group('timestamp')),
+                        float(match.group('timestamp')) - self.start_time,
                         float(match.group('rtt'))))
         self.connected = len(
             ping_output) > 1 and self.packet_loss_percentage < 100
@@ -465,10 +619,12 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     if isinstance(src_device, AndroidDevice):
         ping_cmd = '{} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.adb.shell(
-            ping_cmd, timeout=ping_duration + TEST_TIMEOUT, ignore_status=True)
+            ping_cmd, timeout=ping_duration + SHORT_SLEEP, ignore_status=True)
     elif isinstance(src_device, ssh.connection.SshConnection):
         ping_cmd = 'sudo {} {}'.format(ping_cmd, dest_address)
-        ping_output = src_device.run(ping_cmd, ignore_status=True).stdout
+        ping_output = src_device.run(
+            ping_cmd, timeout=ping_duration + SHORT_SLEEP,
+            ignore_status=True).stdout
     else:
         raise TypeError(
             'Unable to ping using src_device of type %s.' % type(src_device))
@@ -662,7 +818,101 @@ def atten_by_label(atten_list, path_label, atten_level):
             atten.set_atten(atten_level)
 
 
-# Miscellaneous Utilities
+# Miscellaneous Wifi Utilities
+def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
+    """Function to detect mapping between attenuator ports and DUT chains.
+
+    This function detects the mapping between attenuator ports and DUT chains
+    in cases where DUT chains are connected to only one attenuator port. The
+    function assumes the DUT is already connected to a wifi network. The
+    function starts by measuring per chain RSSI at 0 attenuation, then
+    attenuates one port at a time looking for the chain that reports a lower
+    RSSI.
+
+    Args:
+        attenuators: list of attenuator ports
+        dut: android device object assumed connected to a wifi network.
+        ping_server: ssh connection object to ping server
+        ping_ip: ip to ping to keep connection alive and RSSI updated
+    Returns:
+        chain_map: list of dut chains, one entry per attenuator port
+    """
+    # Set attenuator to 0 dB
+    for atten in attenuators:
+        atten.set_atten(0, strict=False)
+    # Start ping traffic
+    dut_ip = dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
+    ping_future = get_ping_stats_nb(ping_server, dut_ip, 11, 0.02, 64)
+    # Measure starting RSSI
+    base_rssi = get_connected_rssi(dut, 4, 0.25, 1)
+    chain0_base_rssi = base_rssi['chain_0_rssi']['mean']
+    chain1_base_rssi = base_rssi['chain_1_rssi']['mean']
+    # Compile chain map by attenuating one path at a time and seeing which
+    # chain's RSSI degrades
+    chain_map = []
+    for test_atten in attenuators:
+        # Set one attenuator to 20 dB down
+        test_atten.set_atten(30, strict=False)
+        # Get new RSSI
+        test_rssi = get_connected_rssi(dut, 4, 0.25, 1)
+        # Assign attenuator to path that has lower RSSI
+        if chain0_base_rssi > -40 and chain0_base_rssi - test_rssi[
+                'chain_0_rssi']['mean'] > 15:
+            chain_map.append('DUT-Chain-0')
+        elif chain1_base_rssi > -40 and chain1_base_rssi - test_rssi[
+                'chain_1_rssi']['mean'] > 15:
+            chain_map.append('DUT-Chain-1')
+        else:
+            chain_map.append(None)
+        # Reset attenuator to 0
+        test_atten.set_atten(0, strict=False)
+    ping_future.result()
+    return chain_map
+
+
+def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
+    """Function to detect per-network connections between attenuator and DUT.
+
+    This function detects the mapping between attenuator ports and DUT chains
+    on all networks in its arguments. The function connects the DUT to each
+    network then calls get_current_atten_dut_chain_map to get the connection
+    map on the current network. The function outputs the results in two formats
+    to enable easy access when users are interested in indexing by network or
+    attenuator port.
+
+    Args:
+        attenuators: list of attenuator ports
+        dut: android device object assumed connected to a wifi network.
+        ping_server: ssh connection object to ping server
+        networks: dict of network IDs and configs
+    Returns:
+        rf_map_by_network: dict of RF connections indexed by network.
+        rf_map_by_atten: list of RF connections indexed by attenuator
+    """
+    for atten in attenuators:
+        atten.set_atten(0, strict=False)
+
+    rf_map_by_network = collections.OrderedDict()
+    rf_map_by_atten = [[] for atten in attenuators]
+    for net_id, net_config in networks.items():
+        wutils.reset_wifi(dut)
+        wutils.wifi_connect(
+            dut,
+            net_config,
+            num_of_tries=1,
+            assert_on_fail=False,
+            check_connectivity=False)
+        rf_map_by_network[net_id] = get_current_atten_dut_chain_map(
+            attenuators, dut, ping_server)
+        for idx, chain in enumerate(rf_map_by_network[net_id]):
+            if chain:
+                rf_map_by_atten[idx].append({
+                    "network": net_id,
+                    "dut_chain": chain
+                })
+    return rf_map_by_network, rf_map_by_atten
+
+
 def get_server_address(ssh_connection, dut_ip, subnet_mask):
     """Get server address on a specific subnet,
 
@@ -675,18 +925,90 @@ def get_server_address(ssh_connection, dut_ip, subnet_mask):
         the DUT LAN IP we wish to connect to
         subnet_mask: string representing subnet mask
     """
-    subnet_mask = subnet_mask.split(".")
+    subnet_mask = subnet_mask.split('.')
     dut_subnet = [
         int(dut) & int(subnet)
-        for dut, subnet in zip(dut_ip.split("."), subnet_mask)
+        for dut, subnet in zip(dut_ip.split('.'), subnet_mask)
     ]
-    ifconfig_out = ssh_connection.run("ifconfig").stdout
-    ip_list = re.findall("inet (?:addr:)?(\d+.\d+.\d+.\d+)", ifconfig_out)
+    ifconfig_out = ssh_connection.run('ifconfig').stdout
+    ip_list = re.findall('inet (?:addr:)?(\d+.\d+.\d+.\d+)', ifconfig_out)
     for current_ip in ip_list:
         current_subnet = [
             int(ip) & int(subnet)
-            for ip, subnet in zip(current_ip.split("."), subnet_mask)
+            for ip, subnet in zip(current_ip.split('.'), subnet_mask)
         ]
         if current_subnet == dut_subnet:
             return current_ip
-    logging.error("No IP address found in requested subnet")
+    logging.error('No IP address found in requested subnet')
+
+
+def get_iperf_arg_string(duration,
+                         reverse_direction,
+                         interval=1,
+                         traffic_type='TCP',
+                         tcp_window=None,
+                         tcp_processes=1,
+                         udp_throughput='1000M'):
+    """Function to format iperf client arguments.
+
+    This function takes in iperf client parameters and returns a properly
+    formatter iperf arg string to be used in throughput tests.
+
+    Args:
+        duration: iperf duration in seconds
+        reverse_direction: boolean controlling the -R flag for iperf clients
+        interval: iperf print interval
+        traffic_type: string specifying TCP or UDP traffic
+        tcp_window: string specifying TCP window, e.g., 2M
+        tcp_processes: int specifying number of tcp processes
+        udp_throughput: string specifying TX throughput in UDP tests, e.g. 100M
+    Returns:
+        iperf_args: string of formatted iperf args
+    """
+    iperf_args = '-i {} -t {} -J '.format(interval, duration)
+    if traffic_type == 'UDP':
+        iperf_args = iperf_args + '-u -b {} -l 1400'.format(udp_throughput)
+    elif traffic_type == 'TCP':
+        iperf_args = iperf_args + '-P {}'.format(tcp_processes)
+        if tcp_window:
+            iperf_args = iperf_args + '-w {}'.format(tcp_window)
+    if reverse_direction:
+        iperf_args = iperf_args + ' -R'
+    return iperf_args
+
+
+def health_check(dut, batt_thresh=5):
+    battery_level = utils.get_battery_level(dut)
+    if battery_level < batt_thresh:
+        return 0
+    return 1
+
+
+def push_bdf(dut, bdf_file):
+    """Function to push Wifi BDF files
+
+    This function checks for existing wifi bdf files and over writes them all,
+    for simplicity, with the bdf file provided in the arguments. The dut is
+    rebooted for the bdf file to take effect
+
+    Args:
+        dut: dut to push bdf file to
+        bdf_file: path to bdf_file to push
+    """
+    bdf_files_list = dut.adb.shell('ls /vendor/firmware/bdwlan*').splitlines()
+    for dst_file in bdf_files_list:
+        dut.push_system_file(bdf_file, dst_file)
+    dut.reboot()
+
+
+def push_firmware(dut, wlanmdsp_file, datamsc_file):
+    """Function to push Wifi firmware files
+
+    Args:
+        dut: dut to push bdf file to
+        wlanmdsp_file: path to wlanmdsp.mbn file
+        datamsc_file: path to Data.msc file
+    """
+    dut.push_system_file(wlanmdsp_file, '/vendor/firmware/wlanmdsp.mbn')
+    dut.push_system_file(datamsc_file, '/vendor/firmware/Data.msc')
+    dut.reboot()

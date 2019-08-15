@@ -14,11 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts import signals
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_constants
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
+from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
@@ -100,7 +99,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         self.dut.get_log(test_name, begin_time)
 
     def test_associate_11b_only_long_preamble(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -109,7 +108,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             preamble=False)
 
     def test_associate_11b_only_short_preamble(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -118,7 +117,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             preamble=True)
 
     def test_associate_11b_only_minimal_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -128,7 +127,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_maximum_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -138,7 +137,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_frag_threshold_430(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -148,7 +147,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_rts_threshold_256(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -158,7 +157,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_rts_256_frag_430(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -169,7 +168,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_high_dtim_low_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -180,7 +179,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_low_dtim_high_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -191,7 +190,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_with_WMM_with_default_values(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -202,7 +201,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_with_WMM_with_non_default_values(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -216,7 +215,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -230,7 +229,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -244,7 +243,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VI)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -258,7 +257,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -274,7 +273,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BK,
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -290,7 +289,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BK,
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -306,7 +305,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BK,
             hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -322,7 +321,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -339,7 +338,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             #   hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['UNITED_STATES']
         )
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -355,7 +354,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             #   hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['NON_COUNTRY']
         )
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -365,7 +364,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_with_hidden_ssid(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -375,7 +374,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11b_only_with_vendor_ie_in_beacon_correct_length(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -385,7 +384,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.VENDOR_IE['correct_length_beacon'])
 
     def test_associate_11b_only_with_vendor_ie_in_beacon_zero_length(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -397,7 +396,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     # TODO: Enable when updated to version 2.7 of hostapd
     # Not implemented in our version of hostapd
     #def test_associate_11b_only_with_vendor_ie_in_assoc_correct_length(self):
-    #    setup_ap_and_associate(
+    #    validate_setup_ap_and_associate(
     #        access_point=self.access_point,
     #        client=self.dut,
     #        profile_name='whirlwind_11ab_legacy',
@@ -407,7 +406,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     #        hostapd_constants.VENDOR_IE['correct_length_association_response'])
     #
     #def test_associate_11b_only_with_vendor_ie_in_assoc_zero_length(self):
-    #    setup_ap_and_associate(
+    #    validate_setup_ap_and_associate(
     #        access_point=self.access_point,
     #        client=self.dut,
     #        profile_name='whirlwind_11ab_legacy',
@@ -418,7 +417,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     #                                    'response_without_data'])
 
     def test_associate_11a_only_long_preamble(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -427,7 +426,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             preamble=False)
 
     def test_associate_11a_only_short_preamble(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -436,7 +435,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             preamble=True)
 
     def test_associate_11a_only_minimal_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -446,7 +445,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_maximum_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -456,7 +455,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_frag_threshold_430(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -466,7 +465,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_rts_threshold_256(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -476,7 +475,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_rts_256_frag_430(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -487,7 +486,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_high_dtim_low_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -498,7 +497,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_low_dtim_high_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -509,7 +508,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_with_WMM_with_default_values(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -521,7 +520,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_with_WMM_with_non_default_values(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -535,7 +534,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -549,7 +548,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -563,7 +562,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VI)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -577,7 +576,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -593,7 +592,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BK,
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -609,7 +608,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BK,
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -625,7 +624,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BK,
             hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -641,7 +640,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -658,7 +657,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             #   hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['UNITED_STATES']
         )
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -674,7 +673,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             #   hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['NON_COUNTRY']
         )
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -684,7 +683,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_with_hidden_ssid(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -694,7 +693,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11a_only_with_vendor_ie_in_beacon_correct_length(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -704,7 +703,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.VENDOR_IE['correct_length_beacon'])
 
     def test_associate_11a_only_with_vendor_ie_in_beacon_zero_length(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -716,7 +715,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     # TODO: Enable when updated to version 2.7 of hostapd
     # Not implemented in our version of hostapd
     #def test_associate_11a_only_with_vendor_ie_in_assoc_correct_length(self):
-    #    setup_ap_and_associate(
+    #    validate_setup_ap_and_associate(
     #        access_point=self.access_point,
     #        client=self.dut,
     #        profile_name='whirlwind_11ab_legacy',
@@ -726,7 +725,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     #        hostapd_constants.VENDOR_IE['correct_length_association_response'])
     #
     #def test_associate_11a_only_with_vendor_ie_in_assoc_zero_length(self):
-    #    setup_ap_and_associate(
+    #    validate_setup_ap_and_associate(
     #        access_point=self.access_point,
     #        client=self.dut,
     #        profile_name='whirlwind_11ab_legacy',
@@ -739,7 +738,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_long_preamble(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -751,7 +750,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_short_preamble(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -763,7 +762,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_minimal_beacon_interval(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -776,7 +775,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_maximum_beacon_interval(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -789,7 +788,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_frag_threshold_430(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -802,7 +801,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_rts_threshold_256(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -815,7 +814,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_rts_256_frag_430(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -829,7 +828,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_high_dtim_low_beacon_interval(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -843,7 +842,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_low_dtim_high_beacon_interval(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -859,7 +858,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -873,7 +872,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES,
                                   hostapd_constants.WMM_NON_DEFAULT_PARAMS)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -890,7 +889,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK,
             data_rates)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -907,7 +906,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE,
             data_rates)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -924,7 +923,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VI,
             data_rates)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -941,7 +940,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VO,
             data_rates)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -960,7 +959,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI,
             data_rates)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -979,7 +978,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VO,
             data_rates)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -998,7 +997,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO,
             data_rates)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1017,7 +1016,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO,
             data_rates)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1037,7 +1036,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.COUNTRY_CODE['UNITED_STATES'],
             data_rates
         )
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1056,7 +1055,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.COUNTRY_CODE['NON_COUNTRY'],
             data_rates
         )
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1068,7 +1067,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     def test_associate_11g_only_with_hidden_ssid(self):
         data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
                                   hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1083,7 +1082,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.VENDOR_IE['correct_length_beacon'])
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1096,7 +1095,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'])
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1112,7 +1111,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     #         hostapd_constants.OFDM_DATA_RATES,
     #         hostapd_constants.OFDM_ONLY_BASIC_RATES,
     #         hostapd_constants.VENDOR_IE['correct_length_association_response'])
-    #    setup_ap_and_associate(
+    #    validate_setup_ap_and_associate(
     #        access_point=self.access_point,
     #        client=self.dut,
     #        profile_name='whirlwind_11ag_legacy',
@@ -1127,7 +1126,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     #        hostapd_constants.VENDOR_IE['correct_length_association_response'],
     #        hostapd_constants.VENDOR_IE['zero_length_association_'
     #                                    'response_without_data'])
-    #    setup_ap_and_associate(
+    #    validate_setup_ap_and_associate(
     #        access_point=self.access_point,
     #        client=self.dut,
     #        profile_name='whirlwind_11ag_legacy',
@@ -1137,7 +1136,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     #        )
 
     def test_associate_11bg_only_long_preamble(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1146,7 +1145,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             preamble=False)
 
     def test_associate_11bg_short_preamble(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1155,7 +1154,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             preamble=True)
 
     def test_associate_11bg_minimal_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1165,7 +1164,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_maximum_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1175,7 +1174,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_frag_threshold_430(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1185,7 +1184,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_rts_threshold_256(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1195,7 +1194,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_rts_256_frag_430(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1206,7 +1205,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_high_dtim_low_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1217,7 +1216,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_low_dtim_high_beacon_interval(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1228,7 +1227,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_with_WMM_with_default_values(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1240,7 +1239,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_with_WMM_with_non_default_values(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1254,7 +1253,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1268,7 +1267,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1282,7 +1281,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VI)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1296,7 +1295,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         wmm_acm_bits_enabled = _merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1312,7 +1311,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BK,
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1328,7 +1327,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BK,
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1344,7 +1343,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BK,
             hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1360,7 +1359,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1376,7 +1375,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             # TODO: Use this when using hostapd 2.7 or above
             #   hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['UNITED_STATES'])
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1391,7 +1390,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             # TODO: Use this when using hostapd 2.7 or above
             #   hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['NON_COUNTRY'])
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1401,7 +1400,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_only_with_hidden_ssid(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1411,7 +1410,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_with_vendor_ie_in_beacon_correct_length(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1422,7 +1421,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         )
 
     def test_associate_11bg_with_vendor_ie_in_beacon_zero_length(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ag_legacy',
@@ -1439,7 +1438,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     #         hostapd_constants.OFDM_DATA_RATES,
     #         hostapd_constants.OFDM_ONLY_BASIC_RATES,
     #         hostapd_constants.VENDOR_IE['correct_length_association_response'])
-    #    setup_ap_and_associate(
+    #    validate_setup_ap_and_associate(
     #        access_point=self.access_point,
     #        client=self.dut,
     #        profile_name='whirlwind_11ag_legacy',
@@ -1454,7 +1453,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     #        hostapd_constants.VENDOR_IE['correct_length_association_response'],
     #        hostapd_constants.VENDOR_IE['zero_length_association_'
     #                                    'response_without_data'])
-    #    setup_ap_and_associate(
+    #    validate_setup_ap_and_associate(
     #        access_point=self.access_point,
     #        client=self.dut,
     #        profile_name='whirlwind_11ag_legacy',
@@ -1464,7 +1463,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     #        )
 
     def test_minimum_ssid_length_2g_11n_20mhz(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -1472,7 +1471,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             ssid=self.open_network_min_len_2g['SSID'])
 
     def test_minimum_ssid_length_5g_11ac_80mhz(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -1480,7 +1479,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             ssid=self.open_network_min_len_5g['SSID'])
 
     def test_maximum_ssid_length_2g_11n_20mhz(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -1488,7 +1487,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             ssid=self.open_network_max_len_2g['SSID'])
 
     def test_maximum_ssid_length_5g_11ac_80mhz(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -1496,7 +1495,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             ssid=self.open_network_max_len_5g['SSID'])
 
     def test_ssid_with_UTF8_characters_2g_11n_20mhz(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',
@@ -1504,7 +1503,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             ssid=self.utf8_ssid_2g)
 
     def test_ssid_with_UTF8_characters_5g_11ac_80mhz(self):
-        setup_ap_and_associate(
+        validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name='whirlwind_11ab_legacy',

@@ -28,14 +28,13 @@ from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
-SETTINGS_PAGE = 'am start -n com.android.settings/.Settings'
-SCROLL_BOTTOM = 'input swipe 0 2000 0 0'
 UNLOCK_SCREEN = 'input keyevent 82'
 SET_BATTERY_LEVEL = 'dumpsys battery set level 100'
 SCREENON_USB_DISABLE = 'dumpsys battery unplug'
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
 AOD_OFF = 'settings put secure doze_always_on 0'
 MUSIC_IQ_OFF = 'pm disable-user com.google.intelligence.sense'
+DISABLE_THERMAL = 'setprop persist.vendor.disable.thermal.control 1'
 # Command to disable gestures
 LIFT = 'settings put secure doze_pulse_on_pick_up 0'
 DOUBLE_TAP = 'settings put secure doze_pulse_on_double_tap 0'
@@ -161,6 +160,10 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         self.log.info('Tearing down the test case')
         self.mon.usb('on')
+        # Take Bugreport
+        if self.bug_report:
+            begin_time = utils.get_current_epoch_time()
+            self.dut.take_bug_report(self.test_name, begin_time)
 
     def teardown_class(self):
         """Clean up the test class after tests finish running
@@ -278,13 +281,14 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.dut.adb.shell(SET_BATTERY_LEVEL)
         self.dut.adb.shell(SCREENON_USB_DISABLE)
         self.dut.adb.shell(UNLOCK_SCREEN)
-        self.dut.adb.shell(SETTINGS_PAGE)
-        self.dut.adb.shell(SCROLL_BOTTOM)
+        #Dupe UNLOCK_SCREEN to make sure it's on home screen
+        self.dut.adb.shell(UNLOCK_SCREEN)
         self.dut.adb.shell(MUSIC_IQ_OFF)
         self.dut.adb.shell(AUTO_TIME_OFF)
         self.dut.adb.shell(AUTO_TIMEZONE_OFF)
         self.dut.adb.shell(FORCE_YOUTUBE_STOP)
         self.dut.adb.shell(FORCE_DIALER_STOP)
+        self.dut.adb.shell(DISABLE_THERMAL)
         self.dut.droid.wifiSetCountryCode('US')
         self.dut.droid.wakeUpNow()
         self.dut.log.info('Device has been set to Rockbottom state')
@@ -303,13 +307,9 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         tag = ''
         # Collecting current measurement data and plot
-        begin_time = utils.get_current_epoch_time()
         self.file_path, self.test_result = self.monsoon_data_collect_save()
         self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
         wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
-        # Take Bugreport
-        if self.bug_report:
-            self.dut.take_bug_report(self.test_name, begin_time)
 
     def pass_fail_check(self):
         """Check the test result and decide if it passed or failed.
@@ -328,12 +328,15 @@ class PowerBaseTest(base_test.BaseTestClass):
             asserts.assert_true(
                 abs(self.test_result - current_threshold) / current_threshold <
                 THRESHOLD_TOLERANCE,
-                ('Measured average current in [{}]: {}, which is '
-                 'more than {} percent off than acceptable threshold {:.2f}mA'
-                 ).format(self.test_name, self.test_result,
-                          self.pass_fail_tolerance * 100, current_threshold))
-            asserts.explicit_pass('Measurement finished for {}.'.format(
-                self.test_name))
+                'Measured average current in [{}]: {:.2f}mA, which is '
+                'out of the acceptable range {:.2f}±{:.2f}mA'.format(
+                    self.test_name, self.test_result, current_threshold,
+                    self.pass_fail_tolerance * current_threshold))
+            asserts.explicit_pass(
+                'Measurement finished for [{}]: {:.2f}mA, which is '
+                'within the acceptable range {:.2f}±{:.2f}'.format(
+                    self.test_name, self.test_result, current_threshold,
+                    self.pass_fail_tolerance * current_threshold))
         else:
             asserts.fail(
                 'Something happened, measurement is not complete, test failed')
@@ -471,31 +474,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         if retry_measure > MEASUREMENT_RETRY_COUNT:
             self.log.error('Test failed after maximum measurement retry')
 
-    def setup_ap_connection(self, network, bandwidth=80, connect=True,
-                            ap=None):
-        """Setup AP and connect DUT to it.
-
-        Args:
-            network: the network config for the AP to be setup
-            bandwidth: bandwidth of the WiFi network to be setup
-            connect: indicator of if connect dut to the network after setup
-            ap: access point object, default is None to find the main AP
-        Returns:
-            self.brconfigs: dict for bridge interface configs
-        """
-        wutils.wifi_toggle_state(self.dut, True)
-        if not ap:
-            if hasattr(self, 'access_points'):
-                self.brconfigs = wputils.ap_setup(
-                    self.access_point, network, bandwidth=bandwidth)
-        else:
-            self.brconfigs = wputils.ap_setup(ap, network, bandwidth=bandwidth)
-        if connect:
-            wutils.wifi_connect(self.dut, network, num_of_tries=3)
-
-        if ap or (not ap and hasattr(self, 'access_points')):
-            return self.brconfigs
-
     def process_iperf_results(self):
         """Get the iperf results and process.
 
@@ -503,11 +481,10 @@ class PowerBaseTest(base_test.BaseTestClass):
              throughput: the average throughput during tests.
         """
         # Get IPERF results and add this to the plot title
-        RESULTS_DESTINATION = os.path.join(self.iperf_server.log_path,
-                                           'iperf_client_output_{}.log'.format(
-                                               self.current_test_name))
-        PULL_FILE = '{} {}'.format(TEMP_FILE, RESULTS_DESTINATION)
-        self.dut.adb.pull(PULL_FILE)
+        RESULTS_DESTINATION = os.path.join(
+            self.iperf_server.log_path,
+            'iperf_client_output_{}.log'.format(self.current_test_name))
+        self.dut.pull_files(TEMP_FILE, RESULTS_DESTINATION)
         # Calculate the average throughput
         if self.use_client_output:
             iperf_file = RESULTS_DESTINATION

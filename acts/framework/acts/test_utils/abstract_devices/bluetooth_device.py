@@ -14,7 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
 import inspect
 import logging
 
@@ -62,15 +61,43 @@ class BluetoothDevice(object):
         self.device = device
         self.log = logging
 
+    def a2dp_initiate_open_stream(self):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def start_profile_a2dp_sink(self):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def stop_profile_a2dp_sink(self):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
     def start_pairing_helper(self):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def set_discoverable(self, is_discoverable):
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def bluetooth_toggle_state(self, state):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
@@ -78,42 +105,42 @@ class BluetoothDevice(object):
 
     def gatt_client_discover_characteristic_by_uuid(self, peer_identifier,
                                                     uuid):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def initialize_bluetooth_controller(self):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def get_pairing_pin(self):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def input_pairing_pin(self, pin):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def get_bluetooth_local_address(self):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def gatt_connect(self, peer_identifier, transport, autoconnect):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
@@ -121,91 +148,126 @@ class BluetoothDevice(object):
 
     def gatt_client_ready_characteristic_by_handle(self, peer_identifier,
                                                    handle):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def gatt_disconnect(self, peer_identifier):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def gatt_client_refresh(self, peer_identifier):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def le_scan_with_name_filter(self, name, timeout):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def log_info(self, log):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def reset_bluetooth(self):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def sdp_add_search(self, attribute_list, profile_id):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def sdp_add_service(self, sdp_record):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def sdp_clean_up(self):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def sdp_init(self):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def sdp_remove_service(self, service_id):
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def start_le_advertisement(self, adv_data, adv_interval):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def stop_le_advertisement(self):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def set_bluetooth_local_name(self, name):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def setup_gatt_server(self, database):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def close_gatt_server(self):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def unbond_device(self, peer_identifier):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
     def unbond_all_known_devices(self):
-        """Base generic Bluetooth interface.  Only called if not overridden by
+        """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
         raise NotImplementedError("{} must be defined.".format(
@@ -226,8 +288,31 @@ class AndroidBluetoothDevice(BluetoothDevice):
         super().__init__(android_device)
         self.peer_mapping = {}
 
+    def a2dp_initiate_open_stream(self):
+        raise NotImplementedError("{} not yet implemented.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def start_profile_a2dp_sink(self):
+        raise NotImplementedError("{} not yet implemented.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def stop_profile_a2dp_sink(self):
+        raise NotImplementedError("{} not yet implemented.".format(
+            inspect.currentframe().f_code.co_name))
+
     def bluetooth_toggle_state(self, state):
         self.device.droid.bluetoothToggleState(state)
+
+    def set_discoverable(self, is_discoverable):
+        """ Sets the device's discoverability.
+
+        Args:
+            is_discoverable: True if discoverable, false if not discoverable
+        """
+        if is_discoverable:
+            self.device.droid.bluetoothMakeDiscoverable()
+        else:
+            self.device.droid.bluetoothMakeUndiscoverable()
 
     def initialize_bluetooth(self):
         pass
@@ -351,6 +436,45 @@ class AndroidBluetoothDevice(BluetoothDevice):
         """
         bt_test_utils.reset_bluetooth([self.device])
 
+    def sdp_add_search(self, attribute_list, profile_id):
+        """Adds an SDP search record.
+        Args:
+            attribute_list: The list of attributes to set
+            profile_id: The profile ID to set.
+        """
+        # Android devices currently have no hooks to modify the SDP record.
+        pass
+
+    def sdp_add_service(self, sdp_record):
+        """Adds an SDP service record.
+        Args:
+            sdp_record: The dictionary representing the search record to add.
+        Returns:
+            service_id: The service id to track the service record published.
+                None if failed.
+        """
+        # Android devices currently have no hooks to modify the SDP record.
+        pass
+
+    def sdp_clean_up(self):
+        """Cleans up all objects related to SDP.
+        """
+        self.device.sdp_lib.cleanUp()
+
+    def sdp_init(self):
+        """Initializes SDP on the device.
+        """
+        # Android devices currently have no hooks to modify the SDP record.
+        pass
+
+    def sdp_remove_service(self, service_id):
+        """Removes a service based on an input id.
+        Args:
+            service_id: The service ID to remove.
+        """
+        # Android devices currently have no hooks to modify the SDP record.
+        pass
+
     def unbond_all_known_devices(self):
         """ Unbond all known remote devices.
         """
@@ -379,12 +503,34 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
 
+    def a2dp_initiate_open_stream(self):
+        raise NotImplementedError("{} not yet implemented.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def start_profile_a2dp_sink(self):
+        """ Starts the A2DP sink profile.
+        """
+        self.device.control_daemon("bt-a2dp-sink.cmx", "start")
+
+    def stop_profile_a2dp_sink(self):
+        """ Stops the A2DP sink profile.
+        """
+        self.device.control_daemon("bt-a2dp-sink.cmx", "stop")
+
     def start_pairing_helper(self):
         self.device.btc_lib.acceptPairing()
 
     def bluetooth_toggle_state(self, state):
         """Stub for Fuchsia implementation."""
         pass
+
+    def set_discoverable(self, is_discoverable):
+        """ Sets the device's discoverability.
+
+        Args:
+            is_discoverable: True if discoverable, false if not discoverable
+        """
+        self.device.btc_lib.setDiscoverable(is_discoverable)
 
     def get_pairing_pin(self):
         """ Get the pairing pin from the active pairing delegate.
@@ -481,6 +627,38 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """Stub for Fuchsia implementation."""
         pass
 
+    def sdp_add_search(self, attribute_list, profile_id):
+        """Adds an SDP search record.
+        Args:
+            attribute_list: The list of attributes to set
+            profile_id: The profile ID to set.
+        """
+        return self.device.sdp_lib.addSearch(attribute_list, profile_id)
+
+    def sdp_add_service(self, sdp_record):
+        """Adds an SDP service record.
+        Args:
+            sdp_record: The dictionary representing the search record to add.
+        """
+        return self.device.sdp_lib.addService(sdp_record)
+
+    def sdp_clean_up(self):
+        """Cleans up all objects related to SDP.
+        """
+        return self.device.sdp_lib.cleanUp()
+
+    def sdp_init(self):
+        """Initializes SDP on the device.
+        """
+        return self.device.sdp_lib.init()
+
+    def sdp_remove_service(self, service_id):
+        """Removes a service based on an input id.
+        Args:
+            service_id: The service ID to remove.
+        """
+        return self.device.sdp_lib.init()
+
     def start_le_advertisement(self, adv_data, adv_interval):
         """ Starts an LE advertisement
 
@@ -517,8 +695,9 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         Returns:
             Discovered device id or None
         """
+        partial_match = True
         return le_scan_for_device_by_name(self.device, self.device.log, name,
-                                          timeout)
+                                          timeout, partial_match)
 
     def log_info(self, log):
         """ Log directly onto the device.

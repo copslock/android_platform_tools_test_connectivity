@@ -34,6 +34,7 @@ from acts.controllers.adb import AdbError
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
+from acts.controllers.android_device import DEFAULT_SDM_LOG_PATH
 from acts.controllers.android_device import SL4A_APK_NAME
 from acts.libs.proc import job
 from acts.test_utils.tel.loggers.protos.telephony_metric_pb2 import TelephonyVoiceTestResult
@@ -128,6 +129,7 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import TYPE_MOBILE
 from acts.test_utils.tel.tel_defines import TYPE_WIFI
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
+from acts.test_utils.tel.tel_defines import EventActiveDataSubIdChanged
 from acts.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts.test_utils.tel.tel_defines import EventDataSmsReceived
@@ -372,17 +374,12 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
     if cbrs_esim:
         ad.log.info("CBRS testing detected, removing it form SubInfoList")
         if len(sub_info_list) > 1:
-            # Check for Display Name
+            # Check for CarrierId
             index_to_delete = -1
-            for i, oper in enumerate(d['displayName'] for d in sub_info_list):
-                ad.log.info("Index %d Display %s", i, oper)
-                if "Google" in oper:
+            for i, oper in enumerate(d['carrierId'] for d in sub_info_list):
+                ad.log.info("Index %d CarrierId %d", i, oper)
+                if oper == 2340:
                     index_to_delete = i
-                elif sub_info_list[i]['simSlotIndex'] != -1:
-                    ad.log.info("Workaround for b/122979645, setting default" \
-                      " Voice Sub ID to %s", sub_info_list[i]['subscriptionId'])
-                    set_subid_for_outgoing_call(ad,
-                                             sub_info_list[i]['subscriptionId'])
             del sub_info_list[index_to_delete]
         ad.log.info("Updated SubInfoList is %s", sub_info_list)
     active_sub_id = get_outgoing_voice_sub_id(ad)
@@ -1402,6 +1399,60 @@ def hangup_call(log, ad, is_emergency=False):
     return True
 
 
+def wait_for_cbrs_data_active_sub_change_event(
+        ad,
+        event_tracking_started=False,
+        timeout=120):
+    """Wait for an data change event on specified subscription.
+
+    Args:
+        ad: android device object.
+        event_tracking_started: True if event tracking already state outside
+        timeout: time to wait for event
+
+    Returns:
+        True: if data change event is received.
+        False: if data change event is not received.
+    """
+    if not event_tracking_started:
+        ad.ed.clear_events(EventActiveDataSubIdChanged)
+        ad.droid.telephonyStartTrackingActiveDataChange()
+    try:
+        ad.ed.wait_for_event(
+            EventActiveDataSubIdChanged,
+            is_event_match,
+            timeout=timeout)
+        ad.log.info("Got event activedatasubidchanged")
+    except Empty:
+        ad.log.info("No event for data subid change")
+        return False
+    finally:
+        if not event_tracking_started:
+            ad.droid.telephonyStopTrackingActiveDataChange()
+    return True
+
+
+def is_current_data_on_cbrs(ad, cbrs_subid):
+    """Verifies if current data sub is on CBRS
+
+    Args:
+        ad: android device object.
+        cbrs_subid: sub_id against which we need to check
+
+    Returns:
+        True: if data is on cbrs
+        False: if data is not on cbrs
+    """
+    if cbrs_subid is None:
+        return False
+    current_data = ad.droid.subscriptionGetActiveDataSubscriptionId()
+    ad.log.info("Current Data subid %s cbrs_subid %s", current_data, cbrs_subid)
+    if current_data == cbrs_subid:
+        return True
+    else:
+        return False
+
+
 def disconnect_call_by_id(log, ad, call_id):
     """Disconnect call by call id.
     """
@@ -1538,7 +1589,13 @@ def dial_phone_number(ad, callee_number):
 
 
 def get_call_state_by_adb(ad):
-    return ad.adb.shell("dumpsys telephony.registry | grep mCallState")
+    slot_index_of_default_voice_subid = get_slot_index_from_subid(ad.log, ad,
+        get_incoming_voice_sub_id(ad))
+    output = ad.adb.shell("dumpsys telephony.registry | grep mCallState")
+    if "mCallState" in output:
+        call_state_list = re.findall("mCallState=(\d)", output)
+        if call_state_list:
+            return call_state_list[slot_index_of_default_voice_subid]
 
 
 def check_call_state_connected_by_adb(ad):
@@ -1698,74 +1755,150 @@ def dumpsys_new_call_info(ad, last_tc_number, retries=3, interval=5):
 
 
 def dumpsys_carrier_config(ad):
-    output = ad.adb.shell("dumpsys carrier_config")
+    output = ad.adb.shell("dumpsys carrier_config").split("\n")
+    output_phone_id_0 = []
+    output_phone_id_1 = []
+    current_output = []
+    for line in output:
+        if "Phone Id = 0" in line:
+            current_output = output_phone_id_0
+        elif "Phone Id = 1" in line:
+            current_output = output_phone_id_1
+        current_output.append(line.strip())
+
     configs = {}
+    phone_count = ad.droid.telephonyGetPhoneCount()
+    slot_0_subid = get_subid_from_slot_index(ad.log, ad, 0)
+    if slot_0_subid != INVALID_SUB_ID:
+        configs[slot_0_subid] = {}
+
+    if phone_count == 2:
+        slot_1_subid = get_subid_from_slot_index(ad.log, ad, 1)
+        if slot_1_subid != INVALID_SUB_ID:
+            configs[slot_1_subid] = {}
+
     attrs = [attr for attr in dir(CarrierConfigs) if not attr.startswith("__")]
     for attr in attrs:
         attr_string = getattr(CarrierConfigs, attr)
-        values = re.findall(r"%s = (\S+)" % attr_string, output)
-        if values:
-            value = values[-1]
-            if value == "true":
-                configs[attr_string] = True
-            elif value == "false":
-                configs[attr_string] = False
-            elif attr_string == CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT:
-                if value == "0":
-                    configs[attr_string] = WFC_MODE_WIFI_ONLY
-                elif value == "1":
-                    configs[attr_string] = WFC_MODE_CELLULAR_PREFERRED
-                elif value == "2":
-                    configs[attr_string] = WFC_MODE_WIFI_PREFERRED
+        values = re.findall(
+            r"%s = (\S+)" % attr_string, "\n".join(output_phone_id_0))
+
+        if slot_0_subid != INVALID_SUB_ID:
+            if values:
+                value = values[-1]
+                if value == "true":
+                    configs[slot_0_subid][attr_string] = True
+                elif value == "false":
+                    configs[slot_0_subid][attr_string] = False
+                elif attr_string == CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT:
+                    if value == "0":
+                        configs[slot_0_subid][attr_string] = WFC_MODE_WIFI_ONLY
+                    elif value == "1":
+                        configs[slot_0_subid][attr_string] = \
+                            WFC_MODE_CELLULAR_PREFERRED
+                    elif value == "2":
+                        configs[slot_0_subid][attr_string] = \
+                            WFC_MODE_WIFI_PREFERRED
+                else:
+                    try:
+                        configs[slot_0_subid][attr_string] = int(value)
+                    except Exception:
+                        configs[slot_0_subid][attr_string] = value
             else:
-                try:
-                    configs[attr_string] = int(value)
-                except Exception:
-                    configs[attr_string] = value
-        else:
-            configs[attr_string] = None
+                configs[slot_0_subid][attr_string] = None
+
+        if phone_count == 2:
+            if slot_1_subid != INVALID_SUB_ID:
+                values = re.findall(
+                    r"%s = (\S+)" % attr_string, "\n".join(output_phone_id_1))
+                if values:
+                    value = values[-1]
+                    if value == "true":
+                        configs[slot_1_subid][attr_string] = True
+                    elif value == "false":
+                        configs[slot_1_subid][attr_string] = False
+                    elif attr_string == CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT:
+                        if value == "0":
+                            configs[slot_1_subid][attr_string] = \
+                                WFC_MODE_WIFI_ONLY
+                        elif value == "1":
+                            configs[slot_1_subid][attr_string] = \
+                                WFC_MODE_CELLULAR_PREFERRED
+                        elif value == "2":
+                            configs[slot_1_subid][attr_string] = \
+                                WFC_MODE_WIFI_PREFERRED
+                    else:
+                        try:
+                            configs[slot_1_subid][attr_string] = int(value)
+                        except Exception:
+                            configs[slot_1_subid][attr_string] = value
+                else:
+                    configs[slot_1_subid][attr_string] = None
     return configs
 
 
 def get_phone_capability(ad):
-    # TODO: add sub_id based carrier_config:
     carrier_configs = dumpsys_carrier_config(ad)
-    capabilities = []
-    if carrier_configs[CarrierConfigs.VOLTE_AVAILABLE_BOOL]:
-        capabilities.append(CAPABILITY_VOLTE)
-    if carrier_configs[CarrierConfigs.WFC_IMS_AVAILABLE_BOOL]:
-        capabilities.append(CAPABILITY_WFC)
-    if carrier_configs[CarrierConfigs.EDITABLE_WFC_MODE_BOOL]:
-        capabilities.append(CAPABILITY_WFC_MODE_CHANGE)
-    if carrier_configs[CarrierConfigs.SUPPORT_CONFERENCE_CALL_BOOL]:
-        capabilities.append(CAPABILITY_CONFERENCE)
-    if carrier_configs[CarrierConfigs.VT_AVAILABLE_BOOL]:
-        capabilities.append(CAPABILITY_VT)
-    if carrier_configs[CarrierConfigs.VOLTE_PROVISIONED_BOOL]:
-        capabilities.append(CAPABILITY_VOLTE_PROVISIONING)
-    if carrier_configs[CarrierConfigs.VOLTE_OVERRIDE_WFC_BOOL]:
-        capabilities.append(CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING)
-    ad.log.info("Capabilities: %s", capabilities)
-    if not getattr(ad, 'telephony', {}):
-        setattr(ad, 'telephony', {"capabilities": capabilities})
-    else:
-        ad.telephony["capabilities"] = capabilities
-    if CAPABILITY_WFC not in capabilities:
-        wfc_modes = []
-    else:
-        if carrier_configs.get(CarrierConfigs.EDITABLE_WFC_MODE_BOOL, False):
-            wfc_modes = [WFC_MODE_CELLULAR_PREFERRED, WFC_MODE_WIFI_PREFERRED]
+    for sub_id in carrier_configs:
+        capabilities = []
+        if carrier_configs[sub_id][CarrierConfigs.VOLTE_AVAILABLE_BOOL]:
+            capabilities.append(CAPABILITY_VOLTE)
+        if carrier_configs[sub_id][CarrierConfigs.WFC_IMS_AVAILABLE_BOOL]:
+            capabilities.append(CAPABILITY_WFC)
+        if carrier_configs[sub_id][CarrierConfigs.EDITABLE_WFC_MODE_BOOL]:
+            capabilities.append(CAPABILITY_WFC_MODE_CHANGE)
+        if carrier_configs[sub_id][CarrierConfigs.SUPPORT_CONFERENCE_CALL_BOOL]:
+            capabilities.append(CAPABILITY_CONFERENCE)
+        if carrier_configs[sub_id][CarrierConfigs.VT_AVAILABLE_BOOL]:
+            capabilities.append(CAPABILITY_VT)
+        if carrier_configs[sub_id][CarrierConfigs.VOLTE_PROVISIONED_BOOL]:
+            capabilities.append(CAPABILITY_VOLTE_PROVISIONING)
+        if carrier_configs[sub_id][CarrierConfigs.VOLTE_OVERRIDE_WFC_BOOL]:
+            capabilities.append(CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING)
+        ad.log.info("Capabilities of sub ID %s: %s", sub_id, capabilities)
+        if not getattr(ad, 'telephony', {}):
+            ad.telephony["subscription"] = {}
+            ad.telephony["subscription"][sub_id] = {}
+            setattr(
+                ad.telephony["subscription"][sub_id],
+                'capabilities', capabilities)
+
         else:
-            wfc_modes = [
-                carrier_configs.get(CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT,
-                                    WFC_MODE_CELLULAR_PREFERRED)
-            ]
-    if carrier_configs.get(CarrierConfigs.WFC_SUPPORTS_WIFI_ONLY_BOOL,
-                           False) and WFC_MODE_WIFI_ONLY not in wfc_modes:
-        wfc_modes.append(WFC_MODE_WIFI_ONLY)
-    ad.telephony["wfc_modes"] = wfc_modes
-    if wfc_modes:
-        ad.log.info("Supported WFC modes: %s", wfc_modes)
+            ad.telephony["subscription"][sub_id]["capabilities"] = capabilities
+        if CAPABILITY_WFC not in capabilities:
+            wfc_modes = []
+        else:
+            if carrier_configs[sub_id].get(
+                CarrierConfigs.EDITABLE_WFC_MODE_BOOL, False):
+                wfc_modes = [
+                    WFC_MODE_CELLULAR_PREFERRED,
+                    WFC_MODE_WIFI_PREFERRED]
+            else:
+                wfc_modes = [
+                    carrier_configs[sub_id].get(
+                        CarrierConfigs.DEFAULT_WFC_IMS_MODE_INT,
+                        WFC_MODE_CELLULAR_PREFERRED)
+                ]
+        if carrier_configs[sub_id].get(
+            CarrierConfigs.WFC_SUPPORTS_WIFI_ONLY_BOOL,
+            False) and WFC_MODE_WIFI_ONLY not in wfc_modes:
+            wfc_modes.append(WFC_MODE_WIFI_ONLY)
+        ad.telephony["subscription"][sub_id]["wfc_modes"] = wfc_modes
+        if wfc_modes:
+            ad.log.info("Supported WFC modes for sub ID %s: %s", sub_id,
+                wfc_modes)
+
+
+def get_capability_for_subscription(ad, capability, subid):
+    if capability in ad.telephony["subscription"][subid].get(
+        "capabilities", []):
+        ad.log.info('Capability "%s" is available for sub ID %s.',
+            capability, subid)
+        return True
+    else:
+        ad.log.info('Capability "%s" is NOT available for sub ID %s.',
+            capability, subid)
+        return False
 
 
 def call_reject(log, ad_caller, ad_callee, reject=True):
@@ -2341,6 +2474,10 @@ def phone_number_formatter(input_string, formatter=None):
     input_string = input_string.replace(" ", "").replace("-", "").replace(
         ".", "").lstrip("0")
     if not formatter:
+        return input_string
+    # Remove +81 and add 0 for Japan Carriers only.
+    if (len(input_string) == 13 and input_string[0:3] == "+81"):
+        input_string = "0" + input_string[3:]
         return input_string
     # Remove "1"  or "+1"from front
     if (len(input_string) == PHONE_NUMBER_STRING_FORMAT_11_DIGIT
@@ -2978,7 +3115,7 @@ def http_file_download_by_sl4a(ad,
 
 def get_mobile_data_usage(ad, sid=None, apk=None):
     if not sid:
-        sid = ad.droid.subscriptionGetDefaultSubId()
+        sid = ad.droid.subscriptionGetDefaultDataSubId()
     current_time = int(time.time() * 1000)
     begin_time = current_time - 10 * 24 * 60 * 60 * 1000
     end_time = current_time + 10 * 24 * 60 * 60 * 1000
@@ -3052,7 +3189,8 @@ def trigger_modem_crash(ad, timeout=120):
 def trigger_modem_crash_by_modem(ad, timeout=120):
     begin_time = get_device_epoch_time(ad)
     ad.adb.shell(
-        "setprop persist.vendor.sys.modem.diag.mdlog false", ignore_status=True)
+        "setprop persist.vendor.sys.modem.diag.mdlog false",
+        ignore_status=True)
     # Legacy pixels use persist.sys.modem.diag.mdlog.
     ad.adb.shell(
         "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
@@ -3101,6 +3239,15 @@ def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
         if mode == 2:
             ad.log.info("Device correctly switched to MSIM mode")
             result = True
+            if "Sprint" in ad.adb.getprop("gsm.sim.operator.alpha"):
+                cmd = ('am instrument -w -e request "WriteEFS" -e item '
+                       '"/google/pixel_dsds_imei_mapping_slot_record" -e data "03"'
+                       ' "com.google.mdstest/com.google.mdstest.instrument.'
+                       'ModemConfigInstrumentation"')
+                ad.log.info("Switch Sprint to IMEI1 slot using %s", cmd)
+                ad.adb.shell(cmd, ignore_status=True)
+                time.sleep(timeout)
+                reboot_device(ad)
             break
         else:
             ad.log.warning("Attempt %d - failed to switch to MSIM", (i + 1))
@@ -3651,8 +3798,8 @@ def set_wfc_mode(log, ad, wfc_mode):
     Returns:
         True if success. False if ad does not support WFC or error happened.
     """
-    if wfc_mode != WFC_MODE_DISABLED and wfc_mode not in ad.telephony.get(
-            "wfc_modes", []):
+    if wfc_mode != WFC_MODE_DISABLED and wfc_mode not in ad.telephony[
+        "subscription"][get_outgoing_voice_sub_id(ad)].get("wfc_modes", []):
         ad.log.error("WFC mode %s is not supported", wfc_mode)
         raise signals.TestSkip("WFC mode %s is not supported" % wfc_mode)
     try:
@@ -4660,11 +4807,13 @@ def mms_send_receive_verify_for_subscription(
 
     phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
     phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
+    toggle_enforce = False
 
     for ad in (ad_tx, ad_rx):
         ad.send_keycode("BACK")
         if "Permissive" not in ad.adb.shell("su root getenforce"):
             ad.adb.shell("su root setenforce 0")
+            toggle_enforce = True
         if not getattr(ad, "messaging_droid", None):
             ad.messaging_droid, ad.messaging_ed = ad.get_droid()
             ad.messaging_ed.start()
@@ -4720,8 +4869,9 @@ def mms_send_receive_verify_for_subscription(
         finally:
             ad_rx.droid.smsStopTrackingIncomingMmsMessage()
             for ad in (ad_tx, ad_rx):
-                ad.send_keycode("BACK")
-                ad.adb.shell("su root setenforce 1")
+                if toggle_enforce:
+                    ad.send_keycode("BACK")
+                    ad.adb.shell("su root setenforce 1")
     return True
 
 
@@ -5314,11 +5464,13 @@ def ensure_phones_idle(log, ads, max_time=MAX_WAIT_TIME_CALL_DROP):
     return result
 
 
-def ensure_phone_idle(log, ad, max_time=MAX_WAIT_TIME_CALL_DROP):
+def ensure_phone_idle(log, ad, max_time=MAX_WAIT_TIME_CALL_DROP, retry=2):
     """Ensure ad idle (not in call).
     """
-    if ad.droid.telecomIsInCall():
+    while ad.droid.telecomIsInCall() and retry > 0:
         ad.droid.telecomEndCall()
+        time.sleep(3)
+        retry -= 1
     if not wait_for_droid_not_in_call(log, ad, max_time=max_time):
         ad.log.error("Failed to end call")
         return False
@@ -5380,7 +5532,7 @@ def ensure_phone_subscription(log, ad):
         return False
 
 
-def ensure_phone_default_state(log, ad, check_subscription=True):
+def ensure_phone_default_state(log, ad, check_subscription=True, retry=2):
     """Ensure ad in default state.
     Phone not in call.
     Phone have no stored WiFi network and WiFi disconnected.
@@ -5392,10 +5544,12 @@ def ensure_phone_default_state(log, ad, check_subscription=True):
         result = False
     try:
         set_wifi_to_default(log, ad)
-        if ad.droid.telecomIsInCall():
+        while ad.droid.telecomIsInCall() and retry > 0:
             ad.droid.telecomEndCall()
-            if not wait_for_droid_not_in_call(log, ad):
-                ad.log.error("Failed to end call")
+            time.sleep(3)
+            retry -= 1
+        if not wait_for_droid_not_in_call(log, ad):
+            ad.log.error("Failed to end call")
         ad.droid.telephonyFactoryReset()
         ad.droid.imsFactoryReset()
         data_roaming = getattr(ad, 'roaming', False)
@@ -5777,6 +5931,7 @@ def set_phone_silent_mode(log, ad, silent_mode=True):
     ad.droid.setAlarmVolume(0)
     ad.adb.ensure_root()
     ad.adb.shell("setprop ro.audio.silent 1", ignore_status=True)
+    ad.adb.shell("cmd notification set_dnd on", ignore_status=True)
     return silent_mode == ad.droid.checkRingerSilentMode()
 
 
@@ -6144,6 +6299,34 @@ def set_qxdm_logger_command(ad, mask=None):
         return True
 
 
+def start_sdm_logger(ad):
+    """Start SDM logger."""
+    if not getattr(ad, "sdm_log", True): return
+    # Delete existing SDM logs which were created 15 mins prior
+    ad.sdm_log_path = DEFAULT_SDM_LOG_PATH
+    file_count = ad.adb.shell(
+        "find %s -type f -iname *.sdm* | wc -l" % ad.sdm_log_path)
+    if int(file_count) > 3:
+        seconds = 15 * 60
+        # Remove sdm logs modified more than specified seconds ago
+        ad.adb.shell(
+            "find %s -type f -iname *.sdm* -not -mtime -%ss -delete" %
+            (ad.sdm_log_path, seconds))
+    # start logging
+    cmd = "setprop vendor.sys.modem.logging.enable true"
+    ad.log.debug("start sdm logging")
+    ad.adb.shell(cmd, ignore_status=True)
+    time.sleep(5)
+
+
+def stop_sdm_logger(ad):
+    """Stop SDM logger."""
+    cmd = "setprop vendor.sys.modem.logging.enable false"
+    ad.log.debug("stop sdm logging")
+    ad.adb.shell(cmd, ignore_status=True)
+    time.sleep(5)
+
+
 def stop_qxdm_logger(ad):
     """Stop QXDM logger."""
     for cmd in ("diag_mdlog -k", "killall diag_mdlog"):
@@ -6250,6 +6433,17 @@ def start_qxdm_loggers(log, ads, begin_time=None):
 
 def stop_qxdm_loggers(log, ads):
     tasks = [(stop_qxdm_logger, [ad]) for ad in ads]
+    run_multithread_func(log, tasks)
+
+
+def start_sdm_loggers(log, ads):
+    tasks = [(start_sdm_logger, [ad]) for ad in ads
+             if getattr(ad, "sdm_log", True)]
+    if tasks: run_multithread_func(log, tasks)
+
+
+def stop_sdm_loggers(log, ads):
+    tasks = [(stop_sdm_logger, [ad]) for ad in ads]
     run_multithread_func(log, tasks)
 
 

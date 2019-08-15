@@ -46,6 +46,7 @@ class UmtsSimulation(BaseSimulation):
     PARAM_UL_PW = 'pul'
     PARAM_DL_PW = 'pdl'
     PARAM_BAND = "band"
+    PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
     # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSCP"
@@ -66,11 +67,10 @@ class UmtsSimulation(BaseSimulation):
     # Units are dBm
 
     UPLINK_SIGNAL_LEVEL_DICTIONARY = {
-        'excellent': -20,
-        'high': 2,
+        'low': -20,
         'medium': 8,
-        'weak': 15,
-        'edge': 23
+        'high': 15,
+        'max': 23
     }
 
     # Converts packet rate to the throughput that can be actually obtained in
@@ -156,6 +156,20 @@ class UmtsSimulation(BaseSimulation):
 
         self.set_release_version(self.bts1, values[1])
 
+        # Setup W-CDMA RRC status change and CELL_DCH timer for idle test case
+
+        values = self.consume_parameter(parameters,
+                                        self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
+        if not values:
+            self.log.info(
+                "The test name does not include the '{}' parameter. Disabled "
+                "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
+            self.anritsu.set_umts_rrc_status_change(False)
+        else:
+            self.rrc_sc_timer = int(values[1])
+            self.anritsu.set_umts_rrc_status_change(True)
+            self.anritsu.set_umts_dch_stat_timer(self.rrc_sc_timer)
+
         # Setup uplink power
 
         ul_power = self.get_uplink_power_from_parameters(parameters)
@@ -239,3 +253,20 @@ class UmtsSimulation(BaseSimulation):
             raise NotImplementedError("Packet rate not contained in the "
                                       "throughput dictionary.")
         return self.packet_rate_to_ul_throughput[self.packet_rate]
+
+    def set_downlink_rx_power(self, bts, signal_level):
+        """ Starts IP data traffic while setting downlink power.
+
+        This is only necessary for UMTS for unclear reasons. b/139026916 """
+
+        # Starts IP traffic while changing this setting to force the UE to be
+        # in Communication state, as UL power cannot be set in Idle state
+        self.start_traffic_for_calibration()
+
+        # Wait until it goes to communication state
+        self.anritsu.wait_for_communication_state()
+
+        super().set_downlink_rx_power(bts, signal_level)
+
+        # Stop IP traffic after setting the signal level
+        self.stop_traffic_for_calibration()

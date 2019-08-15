@@ -65,7 +65,8 @@ class WifiRoamingTest(WifiBaseTest):
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
-        self.iperf_server.stop()
+        if hasattr(self, 'iperf_server'):
+            self.iperf_server.stop()
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()

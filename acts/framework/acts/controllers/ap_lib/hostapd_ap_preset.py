@@ -12,6 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import acts.controllers.ap_lib.third_party_ap_profiles.actiontec as actiontec
+
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
 
@@ -141,6 +143,10 @@ def create_ap_preset(profile_name='whirlwind',
                 extended_channel = hostapd_constants.N_CAPABILITY_HT40_PLUS
             elif hostapd_config.ht40_minus_allowed(channel):
                 extended_channel = hostapd_constants.N_CAPABILITY_HT40_MINUS
+            # Channel 165 operates in 20MHz with n or ac modes.
+            if channel == 165:
+                mode = hostapd_constants.MODE_11N_MIXED
+                extended_channel = hostapd_constants.N_CAPABILITY_HT20
             # Define the n capability vector for 20 MHz and higher bandwidth
             if not vht_bandwidth:
                 pass
@@ -239,7 +245,11 @@ def create_ap_preset(profile_name='whirlwind',
                                   n_capabilities=[],
                                   ac_capabilities=[],
                                   vht_bandwidth=None)
-
+    elif profile_name == 'actiontec_pk5000':
+        config = actiontec.actiontec_pk5000(iface_wlan_2g=iface_wlan_2g,
+                                            channel=channel,
+                                            ssid=ssid,
+                                            security=security)
     else:
         raise ValueError('Invalid ap model specified (%s)' % profile_name)
 

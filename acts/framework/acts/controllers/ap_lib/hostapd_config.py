@@ -325,6 +325,7 @@ class HostapdConfig(object):
                  scenario_name=None,
                  min_streams=None,
                  bss_settings=[],
+                 additional_parameters={},
                  set_ap_defaults_model=None):
         """Construct a HostapdConfig.
 
@@ -366,6 +367,8 @@ class HostapdConfig(object):
             min_streams: int, number of spatial streams required.
             control_interface: The file name to use as the control interface.
             bss_settings: The settings for all bss.
+            additional_parameters: A dictionary of additional parameters to add
+                to the hostapd config.
         """
         self._interface = interface
         if channel is not None and frequency is not None:
@@ -424,7 +427,10 @@ class HostapdConfig(object):
         self._security = security
         self._bssid = bssid
         if force_wmm is not None:
-            self._wmm_enabled = force_wmm
+            if force_wmm:
+                self._wmm_enabled = 1
+            else:
+                self._wmm_enabled = 0
         if pmf_support not in hostapd_constants.PMF_SUPPORT_VALUES:
             raise ValueError('Invalid value for pmf_support: %r' % pmf_support)
 
@@ -457,6 +463,7 @@ class HostapdConfig(object):
         self._spectrum_mgmt_required = spectrum_mgmt_required
         self._scenario_name = scenario_name
         self._min_streams = min_streams
+        self._additional_parameters = additional_parameters
 
         self._bss_lookup = collections.OrderedDict()
         for bss in bss_settings:
@@ -564,8 +571,8 @@ class HostapdConfig(object):
             conf['vht_oper_centr_freq_seg0_idx'] = \
                     self._vht_oper_centr_freq_seg0_idx
             conf['vht_capab'] = self._hostapd_vht_capabilities
-        if self._wmm_enabled:
-            conf['wmm_enabled'] = 1
+        if self._wmm_enabled is not None:
+            conf['wmm_enabled'] = self._wmm_enabled
         if self._require_ht:
             conf['require_ht'] = 1
         if self._require_vht:
@@ -605,5 +612,8 @@ class HostapdConfig(object):
             for k, v in (bss.generate_dict()).items():
                 bss_conf[k] = v
             all_conf.append(bss_conf)
+
+        if self._additional_parameters:
+            all_conf.append(self._additional_parameters)
 
         return all_conf

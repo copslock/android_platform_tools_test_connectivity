@@ -729,7 +729,7 @@ def get_phone_ip(ad):
 
 
 def pair_dev_to_headset(pri_ad, dev_to_pair):
-    """Pairs pri droid to secondary droid.
+    """Pairs primary android device with headset.
 
     Args:
         pri_ad: Android device initiating connection
@@ -742,12 +742,13 @@ def pair_dev_to_headset(pri_ad, dev_to_pair):
     bonded_devices = pri_ad.droid.bluetoothGetBondedDevices()
     for d in bonded_devices:
         if d['address'] == dev_to_pair:
-            pri_ad.log.info("Successfully bonded to device".format(dev_to_pair))
+            pri_ad.log.info("Successfully bonded to device {}".format(
+                dev_to_pair))
             return True
     pri_ad.droid.bluetoothStartDiscovery()
-    time.sleep(10)  #Wait until device gets discovered
+    time.sleep(10)  # Wait until device gets discovered
     pri_ad.droid.bluetoothCancelDiscovery()
-    pri_ad.log.debug("discovered devices = {}".format(
+    pri_ad.log.debug("Discovered bluetooth devices: {}".format(
         pri_ad.droid.bluetoothGetDiscoveredDevices()))
     for device in pri_ad.droid.bluetoothGetDiscoveredDevices():
         if device['address'] == dev_to_pair:
@@ -755,17 +756,18 @@ def pair_dev_to_headset(pri_ad, dev_to_pair):
             result = pri_ad.droid.bluetoothDiscoverAndBond(dev_to_pair)
             pri_ad.log.info(result)
             end_time = time.time() + bt_default_timeout
-            pri_ad.log.info("Verifying devices are bonded")
-            time.sleep(5)  #Wait time until device gets paired.
+            pri_ad.log.info("Verifying if device bonded with {}".format(
+                dev_to_pair))
+            time.sleep(5)  # Wait time until device gets paired.
             while time.time() < end_time:
                 bonded_devices = pri_ad.droid.bluetoothGetBondedDevices()
-                bonded = False
                 for d in bonded_devices:
                     if d['address'] == dev_to_pair:
                         pri_ad.log.info(
-                            "Successfully bonded to device".format(dev_to_pair))
+                            "Successfully bonded to device {}".format(
+                                dev_to_pair))
                         return True
-    pri_ad.log.info("Failed to bond devices.")
+    pri_ad.log.error("Failed to bond with {}".format(dev_to_pair))
     return False
 
 
@@ -779,28 +781,30 @@ def pair_and_connect_headset(pri_ad, headset_mac_address, profile_to_connect, re
         retry: Number of times pair and connection should happen.
 
     Returns:
-        True if pair and connect to headset successful, False otherwise.
+        True if pair and connect to headset successful, or raises exception
+        on failure.
     """
 
     paired = False
-    for _ in range(retry):
+    for i in range(1, retry):
         if pair_dev_to_headset(pri_ad, headset_mac_address):
             paired = True
             break
         else:
-            pri_ad.log.error("Could not pair to headset. Retrying.")
-
-    time.sleep(2)  # Wait until pairing gets over.
+            pri_ad.log.error("Attempt {} out of {}, Failed to pair, "
+                             "Retrying.".format(i, retry))
 
     if paired:
-        for _ in range(retry):
+        for i in range(1, retry):
             if connect_dev_to_headset(pri_ad, headset_mac_address,
                                       profile_to_connect):
                 return True
             else:
-                pri_ad.log.error("Could not connect to headset. Retrying.")
+                pri_ad.log.error("Attempt {} out of {}, Failed to connect, "
+                                 "Retrying.".format(i, retry))
     else:
-        asserts.fail("Failed to pair and connect to headset")
+        asserts.fail("Failed to pair and connect with {}".format(
+            headset_mac_address))
 
 
 def perform_classic_discovery(pri_ad, duration, file_name, dev_list=None):

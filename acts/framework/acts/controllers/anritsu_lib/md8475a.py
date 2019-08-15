@@ -45,6 +45,7 @@ ANRITSU_SOCKET_BUFFER_SIZE = 8192
 COMMAND_COMPLETE_WAIT_TIME = 180  # was 90
 SETTLING_TIME = 1
 WAIT_TIME_IDENTITY_RESPONSE = 5
+IDLE_STATE_WAIT_TIME = 240
 
 IMSI_READ_USERDATA_WCDMA = "081501"
 IMEI_READ_USERDATA_WCDMA = "081502"
@@ -133,6 +134,13 @@ class BtsBandwidth(Enum):
     LTE_BANDWIDTH_10MHz = "10MHz"
     LTE_BANDWIDTH_15MHz = "15MHz"
     LTE_BANDWIDTH_20MHz = "20MHz"
+
+
+class LteMimoMode(Enum):
+    """ Values for LTE MIMO modes. """
+    NONE = "MIMONOT"
+    MIMO_2X2 = "MIMO2X2"
+    MIMO_4X4 = "MIMO4X4"
 
 
 class BtsGprsMode(Enum):
@@ -244,6 +252,7 @@ class TriggerMessageIDs(Enum):
     IDENTITY_REQUEST_LTE = 141155
     IDENTITY_REQUEST_WCDMA = 241115
     IDENTITY_REQUEST_GSM = 641115
+    UE_CAPABILITY_ENQUIRY = 111167
 
 
 class TriggerMessageReply(Enum):
@@ -736,12 +745,13 @@ class MD8475A(object):
         if status != NO_ERROR:
             raise AnritsuError(status, cmd)
 
-    def _set_simulation_model(self, sim_model):
+    def _set_simulation_model(self, sim_model, reset=True):
         """ Set simulation model and valid the configuration
 
         Args:
             sim_model: simulation model
-
+            reset: if True, reset the simulation after setting the new
+            simulation model
         Returns:
             True/False
         """
@@ -761,30 +771,30 @@ class MD8475A(object):
                                 COMMAND_COMPLETE_WAIT_TIME))
             if error:
                 return False
-        # Reset every time after SIMMODEL is set because SIMMODEL will load
-        # some of the contents from previous parameter files.
-        self.reset()
+        if reset:
+            # Reset might be necessary because SIMMODEL will load
+            # some of the contents from previous parameter files.
+            self.reset()
         return True
 
-    def set_simulation_model(self, bts1, bts2=None, bts3=None, bts4=None):
-        """ Sets the simulation model
+    def set_simulation_model(self, *bts_rats, reset=True):
+        """ Stops the simulation and then sets the simulation model.
 
         Args:
-            bts1 - BTS1 RAT
-            bts1 - BTS2 RAT
-            bts3 - Not used now
-            bts4 - Not used now
-
+            *bts_rats: base station rats for BTS 1 to 5.
+            reset: if True, reset the simulation after setting the new
+            simulation model
         Returns:
             True or False
         """
         self.stop_simulation()
-        simmodel = bts1.value
-        if bts2 is not None:
-            simmodel = simmodel + "," + bts2.value
+        if len(bts_rats) not in range(1, 6):
+            raise ValueError(
+                "set_simulation_model requires 1 to 5 BTS values.")
+        simmodel = ",".join(bts_rat.value for bts_rat in bts_rats)
         if self._wlan:
             simmodel = simmodel + "," + "WLAN"
-        return self._set_simulation_model(simmodel)
+        return self._set_simulation_model(simmodel, reset)
 
     def get_simulation_model(self):
         """ Gets the simulation model
@@ -797,6 +807,77 @@ class MD8475A(object):
         """
         cmd = "SIMMODEL?"
         return self.send_query(cmd)
+
+    def get_lte_rrc_status_change(self):
+        """ Gets the LTE RRC status change function state
+
+        Returns:
+            Boolean: True is Enabled / False is Disabled
+        """
+        cmd = "L_RRCSTAT?"
+        return self.send_query(cmd) == "ENABLE"
+
+    def set_lte_rrc_status_change(self, status_change):
+        """ Enables or Disables the LTE RRC status change function
+
+        Returns:
+            None
+        """
+        cmd = "L_RRCSTAT "
+        if status_change:
+            cmd += "ENABLE"
+        else:
+            cmd += "DISABLE"
+        self.send_command(cmd)
+
+    def get_lte_rrc_status_change_timer(self):
+        """ Gets the LTE RRC Status Change Timer
+
+        Returns:
+            returns a status change timer integer value
+        """
+        cmd = "L_STATTMR?"
+        return self.send_query(cmd)
+
+    def set_lte_rrc_status_change_timer(self, time):
+        """ Sets the LTE RRC Status Change Timer parameter
+
+        Returns:
+            None
+        """
+        cmd = "L_STATTMR %s" % time
+        self.send_command(cmd)
+
+    def set_umts_rrc_status_change(self, status_change):
+        """ Enables or Disables the UMTS RRC status change function
+
+        Returns:
+            None
+        """
+        cmd = "W_RRCSTAT "
+        if status_change:
+            cmd += "ENABLE"
+        else:
+            cmd += "DISABLE"
+        self.send_command(cmd)
+
+    def get_umts_rrc_status_change(self):
+        """ Gets the UMTS RRC Status Change
+
+        Returns:
+            Boolean: True is Enabled / False is Disabled
+        """
+        cmd = "W_RRCSTAT?"
+        return self.send_query(cmd)
+
+    def set_umts_dch_stat_timer(self, timer_seconds):
+        """ Sets the UMTS RRC DCH timer
+
+        Returns:
+            None
+        """
+        cmd = "W_STATTMRDCH %s" % timer_seconds
+        self.send_command(cmd)
 
     def set_simulation_state_to_poweroff(self):
         """ Sets the simulation state to POWER OFF
@@ -848,6 +929,57 @@ class MD8475A(object):
                 callstat = self.send_query("CALLSTAT?").split(",")
             else:
                 break
+
+    def set_trigger_message_mode(self, msg_id):
+        """ Sets the Message Mode of the trigger
+
+        Args:
+            msg_id: The hex value of the identity of an RRC/NAS message.
+
+        Returns:
+            None
+        """
+
+        if isinstance(msg_id, TriggerMessageIDs):
+            msg_id = msg_id.value
+
+        cmd = "TMMESSAGEMODE {},USERDATA".format(msg_id)
+        self.send_command(cmd)
+
+    def set_data_of_trigger_message(self, msg_id, user_data):
+        """ Sets the User Data of the trigger message
+
+        Args:
+            msg_id: The hex value of the identity of an RRC/NAS message.
+            user_data: Hex data
+
+        Returns:
+            None
+        """
+
+        if isinstance(msg_id, TriggerMessageIDs):
+            msg_id = msg_id.value
+
+        data_len = len(user_data) * 4
+
+        cmd = "TMUSERDATA {}, {}, {}".format(msg_id, user_data, data_len)
+        self.send_command(cmd)
+
+    def send_trigger_message(self, msg_id):
+        """ Sends the User Data of the trigger information
+
+        Args:
+            msg_id: The hex value of the identity of an RRC/NAS message.
+
+        Returns:
+            None
+        """
+
+        if isinstance(msg_id, TriggerMessageIDs):
+            msg_id = msg_id.value
+
+        cmd = "TMSENDUSERMSG {}".format(msg_id)
+        self.send_command(cmd)
 
     def wait_for_registration_state(self,
                                     bts=1,
@@ -904,6 +1036,29 @@ class MD8475A(object):
                 callstat = self.send_query("CALLSTAT? BTS1").split(",")
             else:
                 raise AnritsuError("UE failed to register on network")
+
+    def wait_for_idle_state(self, time_to_wait=IDLE_STATE_WAIT_TIME):
+        """ Waits for UE idle state on Anritsu
+
+        Args:
+          time_to_wait: time to wait for the phone to get to idle state
+
+        Returns:
+            None
+        """
+        self.log.info("wait for IDLE state on anritsu.")
+
+        sleep_interval = 1
+        waiting_time = 0
+
+        callstat = self.send_query("CALLSTAT? BTS1").split(",")
+        while callstat[0] != "IDLE":
+            time.sleep(sleep_interval)
+            waiting_time += sleep_interval
+            if waiting_time <= time_to_wait:
+                callstat = self.send_query("CALLSTAT? BTS1").split(",")
+            else:
+                raise AnritsuError("UE failed to go on idle state")
 
     def get_camping_cell(self):
         """ Gets the current camping cell information
@@ -967,26 +1122,30 @@ class MD8475A(object):
         """
         return self.send_query("TESTSTAT?")
 
-    def start_ip_traffic(self, pdn):
+    def start_ip_traffic(self, pdn='1'):
         """ Starts IP data traffic with the selected PDN.
 
         Args:
-            pdn: the pdn to be used for data traffic. Defaults to 1.
+            pdn: the pdn to be used for data traffic. Defaults to '1'.
         """
-        if not pdn:
-            pdn = '1'
-        self.anritsu.send_command('OPERATEIPTRAFFIC START,' + pdn)
+        self.send_command('OPERATEIPTRAFFIC START,' + pdn)
 
-    def stop_ip_traffic(self, pdn):
+    def stop_ip_traffic(self, pdn='1'):
         """ Stops IP data traffic with the selected PDN.
 
          Args:
-            pdn: pdn for which data traffic has to be stopped. Defaults to 1.
-
+            pdn: pdn for which data traffic has to be stopped. Defaults to '1'.
         """
-        if not pdn:
-            pdn = '1'
-        self.anritsu.send_command('OPERATEIPTRAFFIC STOP,' + pdn)
+        self.send_command('OPERATEIPTRAFFIC STOP,' + pdn)
+
+    def set_carrier_aggregation_enabled(self, enabled=True):
+        """ Enables or disables de carrier aggregation option.
+
+        Args:
+            enabled: enables CA if True and disables CA if False.
+        """
+        cmd = 'CA ' + 'ENABLE' if enabled else 'DISABLE'
+        self.send_command(cmd)
 
     # Common Default Gateway:
     @property
@@ -1367,6 +1526,20 @@ class MD8475A(object):
                 return None
             seqlog = self.send_query("SEQLOG? %d" % index).split(",")
         return (seqlog[-1])
+
+    def trigger_ue_capability_enquiry(self, requested_bands):
+        """ Triggers LTE RRC UE capability enquiry from callbox.
+
+        Args:
+            requested_bands: User data in hex format
+        """
+        self.set_trigger_message_mode(TriggerMessageIDs.UE_CAPABILITY_ENQUIRY)
+        time.sleep(SETTLING_TIME)
+        self.set_data_of_trigger_message(
+            TriggerMessageIDs.UE_CAPABILITY_ENQUIRY, requested_bands)
+        time.sleep(SETTLING_TIME)
+        self.send_trigger_message(TriggerMessageIDs.UE_CAPABILITY_ENQUIRY)
+        time.sleep(SETTLING_TIME)
 
     def select_usim(self, usim):
         """ Select pre-defined Anritsu USIM models
@@ -2936,6 +3109,30 @@ class _BaseTransceiverStation(object):
             None
         """
         cmd = "ULNRB {},{}".format(blocks, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def mimo_support(self):
+        """ Gets the maximum supported MIMO mode for the LTE bases tation.
+
+        Returns:
+            the MIMO mode as a string
+        """
+        cmd = "LTEMIMO? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @mimo_support.setter
+    def mimo_support(self, mode):
+        """ Sets the maximum supported MIMO mode for the LTE base station.
+
+        Args:
+            mode: a string or an object of the LteMimoMode class.
+        """
+
+        if isinstance(mode, LteMimoMode):
+            mode = mode.value
+
+        cmd = "LTEMIMO {},{}".format(self._bts_number, mode)
         self._anritsu.send_command(cmd)
 
     @property

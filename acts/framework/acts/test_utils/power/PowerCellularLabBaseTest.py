@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import time
+import os
 
 import acts.test_utils.power.PowerBaseTest as PBT
 from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
@@ -39,8 +40,13 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     PARAM_SIM_TYPE_UMTS = "umts"
     PARAM_SIM_TYPE_GSM = "gsm"
 
-    # User param keywords
-    KEY_CALIBRATION_TABLE = "calibration_table"
+    # Custom files
+    FILENAME_CALIBRATION_TABLE_UNFORMATTED = 'calibration_table_{}.json'
+
+    # Name of the files in the logs directory that will contain test results
+    # and other information in csv format.
+    RESULTS_SUMMARY_FILENAME = 'cellular_power_results.csv'
+    CALIBRATION_TABLE_FILENAME = 'calibration_table.csv'
 
     def __init__(self, controllers):
         """ Class initialization.
@@ -53,6 +59,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         self.simulation = None
         self.anritsu = None
         self.calibration_table = {}
+        self.power_results = {}
 
         # If callbox version was not specified in the config files,
         # set a default value
@@ -75,17 +82,20 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.pkt_sender = self.packet_senders[0]
 
         # Load calibration tables
-        # Load calibration tables
-        if self.KEY_CALIBRATION_TABLE in self.user_params:
-            self.calibration_table = self.unpack_custom_file(
-                self.user_params[self.KEY_CALIBRATION_TABLE], False)
+        filename_calibration_table = (
+            self.FILENAME_CALIBRATION_TABLE_UNFORMATTED.format(
+                self.testbed_name))
+
+        for file in self.custom_files:
+            if filename_calibration_table in file:
+                self.calibration_table = self.unpack_custom_file(file, False)
+                self.log.info('Loading calibration table from ' + file)
+                self.log.debug(self.calibration_table)
+                break
 
         # Store the value of the key to access the test config in the
         # user_params dictionary.
         self.PARAMS_KEY = self.TAG + "_params"
-
-        # Set DUT to rockbottom
-        self.dut_rockbottom()
 
         # Establish connection to Anritsu Callbox
         return self.connect_to_anritsu()
@@ -124,6 +134,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         for the simulation config. The setup_test methods in the children
         classes can then consume the remaining values.
         """
+
+        super().setup_test()
 
         # Get list of parameters from the test name
         self.parameters = self.current_test_name.split('_')
@@ -171,6 +183,18 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         return True
 
+    def teardown_test(self):
+        """ Executed after every test case, even if it failed or an exception
+        happened.
+
+        Save results to dictionary so they can be displayed after completing
+        the test batch.
+        """
+
+        super().teardown_test()
+
+        self.power_results[self.test_name] = self.power_consumption
+
     def consume_parameter(self, parameter_name, num_values=0):
         """ Parses a parameter from the test name.
 
@@ -208,7 +232,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
     def teardown_class(self):
         """Clean up the test class after tests finish running.
 
-        Stop the simulation and then disconnect from the Anritsu Callbox.
+        Stops the simulation and disconnects from the Anritsu Callbox. Then
+        displays the test results.
 
         """
         super().teardown_class()
@@ -216,6 +241,48 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         if self.anritsu:
             self.anritsu.stop_simulation()
             self.anritsu.disconnect()
+
+        # Log a summary of results
+        results_table_log = 'Results for cellular power tests:'
+
+        for test_name, value in self.power_results.items():
+            results_table_log += '\n{}\t{}'.format(test_name, value)
+
+        # Save this summary to a csv file in the logs directory
+        self.save_summary_to_file()
+
+        self.log.info(results_table_log)
+
+    def save_summary_to_file(self):
+        """ Creates CSV format files with a summary of results.
+
+        This CSV files can be easily imported in a spreadsheet to analyze the
+        results obtained from the tests.
+        """
+
+        # Save a csv file with the power measurements done in all the tests
+
+        path = os.path.join(self.log_path, self.RESULTS_SUMMARY_FILENAME)
+
+        with open(path, 'w') as csvfile:
+            csvfile.write('test,avg_power')
+            for test_name, value in self.power_results.items():
+                csvfile.write('\n{},{}'.format(test_name, value))
+
+        # Save a csv file with the calibration table for each simulation type
+
+        for sim_type in self.calibration_table:
+
+            path = os.path.join(
+                self.log_path, '{}_{}'.format(sim_type,
+                                              self.CALIBRATION_TABLE_FILENAME))
+
+            with open(path, 'w') as csvfile:
+                csvfile.write('band,dl_pathloss, ul_pathloss')
+                for band, pathloss in self.calibration_table[sim_type].items():
+                    csvfile.write('\n{},{},{}'.format(
+                        band, pathloss.get('dl', 'Error'),
+                        pathloss.get('ul', 'Error')))
 
     def init_simulation(self, sim_type):
         """ Starts a new simulation only if needed.
