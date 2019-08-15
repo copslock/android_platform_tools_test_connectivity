@@ -75,6 +75,7 @@ class ContestTest(base_test.BaseTestClass):
         protocol.send_ok = mock.Mock()
         protocol.data_received(b'DUT_SWITCH_ON')
         asserts.assert_true(dut_on_func.called, 'Function was not called.')
+        asserts.assert_true(protocol.send_ok.called, 'OK response not sent.')
 
     def test_automation_protocol_calls_dut_on_func_for_off_command(self):
         """ Tests the Automation server's ability to turn the DUT on
@@ -86,6 +87,47 @@ class ContestTest(base_test.BaseTestClass):
         protocol.send_ok = mock.Mock()
         protocol.data_received(b'DUT_SWITCH_OFF')
         asserts.assert_true(dut_off_func.called, 'Function was not called.')
+        asserts.assert_true(protocol.send_ok.called, 'OK response not sent.')
+
+    def test_automation_protocol_handles_testcase_start_command(self):
+        """ Tests the Automation server's ability to handle a testcase start
+        command."""
+
+        protocol = contest.AutomationServer.AutomationProtocol(
+            mock.Mock(), mock.Mock(), None)
+        protocol.send_ok = mock.Mock()
+        protocol.data_received(b'AtTestcaseStart name_of_the_testcase')
+        asserts.assert_true(protocol.send_ok.called, 'OK response not sent.')
+
+    def test_automation_protocol_handles_testplan_start_command(self):
+        """ Tests the Automation server's ability to handle a testplan start
+        command."""
+
+        protocol = contest.AutomationServer.AutomationProtocol(
+            mock.Mock(), mock.Mock(), None)
+        protocol.send_ok = mock.Mock()
+        protocol.data_received(b'AtTestplanStart')
+        asserts.assert_true(protocol.send_ok.called, 'OK response not sent.')
+
+    def test_automation_protocol_handles_testcase_end_command(self):
+        """ Tests the Automation server's ability to handle a testcase end
+        command."""
+
+        protocol = contest.AutomationServer.AutomationProtocol(
+            mock.Mock(), mock.Mock(), None)
+        protocol.send_ok = mock.Mock()
+        protocol.data_received(b'AfterTestcase')
+        asserts.assert_true(protocol.send_ok.called, 'OK response not sent.')
+
+    def test_automation_protocol_handles_testplan_end_command(self):
+        """ Tests the Automation server's ability to handle a testplan start
+        command."""
+
+        protocol = contest.AutomationServer.AutomationProtocol(
+            mock.Mock(), mock.Mock(), None)
+        protocol.send_ok = mock.Mock()
+        protocol.data_received(b'AfterTestplan')
+        asserts.assert_true(protocol.send_ok.called, 'OK response not sent.')
 
     # Makes all time.sleep commands call a mock function that returns
     # immediately, rather than sleeping.
