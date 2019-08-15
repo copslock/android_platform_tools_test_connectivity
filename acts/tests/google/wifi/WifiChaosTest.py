@@ -213,15 +213,13 @@ class WifiChaosTest(WifiBaseTest):
 
         Steps:
         1. Send a few link probes.
-        2. Verify that at least one link probe succeeded.
-        3. Ensure that the device and AP did not crash (by checking that the
+        2. Ensure that the device and AP did not crash (by checking that the
            device remains connected to the expected network).
         """
         results = wutils.send_link_probes(
             self.dut, NUM_LINK_PROBES, PROBE_DELAY_SEC)
 
-        asserts.assert_true(any(result.is_success for result in results),
-                            "Expect at least 1 probe success: " + str(results))
+        self.log.info("Link Probe results: %s" % (results,))
 
         wifi_info = self.dut.droid.wifiGetConnectionInfo()
         expected = network[WifiEnums.SSID_KEY]
@@ -272,9 +270,9 @@ class WifiChaosTest(WifiBaseTest):
                 self.send_link_probes(network)
                 wutils.wifi_forget_network(self.dut, ssid)
                 time.sleep(WAIT_BEFORE_CONNECTION)
-            except:
+            except Exception as e:
                 self.log.error("Connection to %s network failed on the %d "
-                               "attempt." % (ssid, attempt))
+                               "attempt with exception %s." % (ssid, attempt, e))
                 # TODO:(bmahadev) Uncomment after scan issue is fixed.
                 # self.dut.take_bug_report(ssid, begin_time)
                 # self.dut.cat_adb_log(ssid, begin_time)
