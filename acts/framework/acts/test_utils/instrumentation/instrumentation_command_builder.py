@@ -38,6 +38,9 @@ class InstrumentationCommandBuilder(object):
         self._key_value_params[key] = value
 
     def set_proto_path(self, path):
+        """Sets a custom path to store result proto. Note that this path will
+        be relative to $EXTERNAL_STORAGE on device.
+        """
         self._proto_path = path
 
     def build(self):
