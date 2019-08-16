@@ -16,11 +16,10 @@
 
 import os
 import tempfile
-import time
 
 from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
 
-DEFAULT_INST_PROTO_DIR = '/sdcard/instrument-logs'
+DEFAULT_INST_LOG_DIR = 'instrument-logs'
 
 
 def pull_proto(ad, dest_dir, source_path=None):
@@ -37,19 +36,21 @@ def pull_proto(ad, dest_dir, source_path=None):
     if source_path:
         filename = os.path.basename(source_path)
     else:
-        filename = ad.adb.shell('ls %s -t | head -n1' % DEFAULT_INST_PROTO_DIR)
+        default_full_proto_dir = os.path.join(
+            ad.adb.shell('echo $EXTERNAL_STORAGE'), DEFAULT_INST_LOG_DIR)
+        filename = ad.adb.shell('ls %s -t | head -n1' % default_full_proto_dir)
         if not filename:
             ad.log.warning('No instrumentation result protos found at default '
                            'location.')
             return ''
-        source_path = os.path.join(DEFAULT_INST_PROTO_DIR, filename)
+        source_path = os.path.join(default_full_proto_dir, filename)
     ad.pull_files(source_path, dest_dir)
     dest_path = os.path.join(dest_dir, filename)
     if not os.path.exists(dest_path):
         ad.log.warning('Failed to pull instrumentation result proto: %s -> %s'
                        % (source_path, dest_path))
         return ''
-    return os.path.join(dest_dir, filename)
+    return dest_path
 
 
 def get_session_from_local_file(proto_file):
