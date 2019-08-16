@@ -77,10 +77,9 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
-        if self.dut.model not in self.dbs_supported_models:
-            asserts.skip(
-                ("Device %s does not support dual interfaces.")
-                % self.dut.model)
+        asserts.abort_class_if(
+            self.dut.model not in self.dbs_supported_models,
+            "Device %s does not support dual interfaces." % self.dut.model)
 
         if "iperf_server_address" in self.user_params:
             self.iperf_server = self.iperf_servers[0]
@@ -106,7 +105,11 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, False)
 
     def teardown_test(self):
-        wutils.stop_wifi_tethering(self.dut)
+        # Prevent the stop wifi tethering failure to block ap close
+        try:
+            wutils.stop_wifi_tethering(self.dut)
+        except signals.TestFailure:
+            pass
         for ad in self.android_devices:
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
