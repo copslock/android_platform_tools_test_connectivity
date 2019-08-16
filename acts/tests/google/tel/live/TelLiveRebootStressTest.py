@@ -925,6 +925,24 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         return self._crash_recovery_test("netmgrd",
                                          *self.default_testing_func_names)
 
+    @test_tracker_info(uuid="6d6908b7-7eca-42e3-b165-2621714f1822")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_crash_recovery_qtidataservice(self):
+        """Crash Recovery Test
+
+        Steps:
+            1. Crash qtidataservice
+            2. Post crash recovery, verify Voice, Data, SMS, VoLTE, VT
+
+        Expected Results:
+            No crash happens in functional test, features work fine.
+
+        Returns:
+            True is pass, False if fail.
+        """
+        return self._crash_recovery_test("qtidataservice",
+                                         *self.default_testing_func_names)
+
     @test_tracker_info(uuid="fa34f994-bc49-4444-9187-87691c94b4f4")
     @TelephonyBaseTest.tel_test_wrap
     def test_crash_recovery_phone(self):
