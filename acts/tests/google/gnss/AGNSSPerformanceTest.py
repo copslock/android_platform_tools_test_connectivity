@@ -31,6 +31,8 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
     AUTOMATION_PORT_KEY = 'automation_port'
     CUSTOM_FILES_KEY = 'custom_files'
     AUTOMATION_LISTEN_IP = 'automation_listen_ip'
+    FTP_USER_KEY = 'ftp_user'
+    FTP_PASSWORD_KEY = 'ftp_password'
 
     def __init__(self, controllers):
         """ Initializes class attributes. """
@@ -50,7 +52,8 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
 
         req_params = [
             self.CONTEST_IP_KEY, self.REMOTE_SERVER_PORT_KEY,
-            self.AUTOMATION_PORT_KEY, self.AUTOMATION_LISTEN_IP
+            self.AUTOMATION_PORT_KEY, self.AUTOMATION_LISTEN_IP,
+            self.FTP_USER_KEY, self.FTP_PASSWORD_KEY
         ]
 
         for param in req_params:
@@ -63,6 +66,8 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
         remote_port = self.user_params[self.REMOTE_SERVER_PORT_KEY]
         automation_port = self.user_params[self.AUTOMATION_PORT_KEY]
         listen_ip = self.user_params[self.AUTOMATION_LISTEN_IP]
+        ftp_user = self.user_params[self.FTP_USER_KEY]
+        ftp_password = self.user_params[self.FTP_PASSWORD_KEY]
 
         self.dut = self.android_devices[0]
 
@@ -72,7 +77,9 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
                                        automation_listen_ip=listen_ip,
                                        automation_port=automation_port,
                                        dut_on_func=self.set_apm_off,
-                                       dut_off_func=self.set_apm_on)
+                                       dut_off_func=self.set_apm_on,
+                                       ftp_usr=ftp_user,
+                                       ftp_pwd=ftp_password)
 
     def teardown_class(self):
         """ Executed after completing all selected test cases."""
