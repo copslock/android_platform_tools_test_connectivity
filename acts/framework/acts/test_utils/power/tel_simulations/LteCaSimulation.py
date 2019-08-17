@@ -457,6 +457,9 @@ class LteCaSimulation(LteSimulation):
         self.anritsu.trigger_ue_capability_enquiry(self.freq_bands)
 
         testcase = self.anritsu.get_AnritsuTestCases()
+        # Setting the procedure to selection is needed because of a bug in the
+        # instrument's software (b/139547391).
+        testcase.procedure = TestProcedure.PROCEDURE_SELECTION
         testcase.procedure = TestProcedure.PROCEDURE_MULTICELL
         testcase.power_control = TestPowerControl.POWER_CONTROL_DISABLE
         testcase.measurement_LTE = TestMeasurement.MEASUREMENT_DISABLE
