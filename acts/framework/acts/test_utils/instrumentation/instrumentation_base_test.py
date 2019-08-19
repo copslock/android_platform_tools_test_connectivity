@@ -19,10 +19,10 @@ import os
 import yaml
 from acts.keys import Config
 from acts.test_utils.instrumentation import app_installer
-from acts.test_utils.instrumentation import config_wrapper
+from acts.test_utils.instrumentation.adb_commands import common
+from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationCommandBuilder
-from acts.test_utils.instrumentation.adb_commands import common
 
 from acts import base_test
 
@@ -84,7 +84,7 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                   mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
-        return config_wrapper.ConfigWrapper(config_dict)
+        return ConfigWrapper(config_dict)
 
     def _resolve_file_paths(self, config):
         """Recursively resolve all 'FILE' markers found in the power config to
@@ -112,6 +112,26 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
     def _prepare_device(self):
         """Prepares the device for testing."""
         pass
+
+    def _get_controller_config(self, controller_name):
+        """Get the controller config from the power config, at the level of the
+        current test class or test case.
+
+        Args:
+            controller_name: Name of the controller config to fetch
+        Returns: The controller config, as a ConfigWrapper
+        """
+        class_config = self._power_config.get_config(self.__class__.__name__)
+        if self.current_test_name:
+            # Return the testcase level config, used for setting up test
+            case_config = class_config.get_config(self.current_test_name)
+            return case_config.get_config(controller_name)
+        else:
+            # Merge the base and testclass level configs, used for setting up
+            # class.
+            merged_config = self._power_config.get_config(controller_name)
+            merged_config.update(class_config.get_config(controller_name))
+            return merged_config
 
     def setup_class(self):
         """Class setup"""
