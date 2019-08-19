@@ -67,6 +67,14 @@ class ConfigWrapperTest(unittest.TestCase):
             self.mock_config.get('small_int', verify_fn=verifier,
                                  failure_msg=msg)
 
+    def test_get_config(self):
+        """Test that get_config() returns an empty ConfigWrapper if no
+        sub-config exists with the given name.
+        """
+        ret = self.mock_config.get_config('missing')
+        self.assertIsInstance(ret, ConfigWrapper)
+        self.assertFalse(ret)
+
     def test_get_int(self):
         """Test that get_int() returns the value if it is an int, and raises
         an exception if it isn't.
