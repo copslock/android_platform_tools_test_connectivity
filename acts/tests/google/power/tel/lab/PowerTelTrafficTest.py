@@ -78,12 +78,12 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         the simulation for measurement.
         """
 
+        # Reset results at the start of the test
+        self.iperf_results = {}
+
         # Call parent method first to setup simulation
         if not super().setup_test():
             return False
-
-        # Reset results at the start of the test
-        self.iperf_results = {}
 
         # Traffic direction
 
