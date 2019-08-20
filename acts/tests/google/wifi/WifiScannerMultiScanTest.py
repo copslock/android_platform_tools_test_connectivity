@@ -256,7 +256,7 @@ class WifiScannerMultiScanTest(WifiBaseTest):
         """ Setup the required dependencies and fetch the user params from
         config file.
         """
-        req_params = ("bssid_2g", "bssid_5g", "bssid_dfs", "max_bugreports")
+        req_params = ["max_bugreports"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
