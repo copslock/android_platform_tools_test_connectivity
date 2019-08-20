@@ -28,7 +28,6 @@ from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
-SET_BATTERY_LEVEL = 'dumpsys battery set level 100'
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
 IPERF_TIMEOUT = 180
 THRESHOLD_TOLERANCE = 0.2
@@ -120,12 +119,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         utils.require_sl4a((self.dut,))
         utils.sync_device_time(self.dut)
         self.dut.droid.wifiSetCountryCode('US')
-
-        # Onetime task for each test class
-        # Temporary fix for b/77873679
-        self.adb_disable_verity()
-        self.dut.adb.shell('mv /vendor/bin/chre /vendor/bin/chre_renamed')
-        self.dut.adb.shell('pkill chre')
 
     def setup_test(self):
         """Set up test specific parameters or configs.
@@ -439,15 +432,3 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.log.warning('Cannot get iperf result. Setting to 0')
             throughput = 0
         return throughput
-
-    # TODO(@qijiang)Merge with tel_test_utils.py
-    def adb_disable_verity(self):
-        """Disable verity on the device.
-
-        """
-        if self.dut.adb.getprop("ro.boot.veritymode") == "enforcing":
-            self.dut.adb.disable_verity()
-            self.dut.reboot()
-            self.dut.adb.root()
-            self.dut.adb.remount()
-            self.dut.adb.shell(SET_BATTERY_LEVEL)
