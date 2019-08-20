@@ -94,8 +94,8 @@ class PowerBaseTest(base_test.BaseTestClass):
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
-        BlackboxMetricLogger.for_test_case(
-            metric_name='avg_power', result_attr='power_consumption')
+        self.power_result = BlackboxMetricLogger.for_test_case(
+            metric_name='avg_power')
         self.start_meas_time = 0
         self.rockbottom_script = None
 
@@ -147,7 +147,7 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         """
         # Reset the power consumption to 0 before each tests
-        self.power_consumption = 0
+        self.power_result.metric_value = 0
         # Set the device into rockbottom state
         self.dut_rockbottom()
         # Wait for extra time if needed for the first test
@@ -308,7 +308,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         tag = ''
         # Collecting current measurement data and plot
         self.file_path, self.test_result = self.monsoon_data_collect_save()
-        self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
+        self.power_result.metric_value = (
+            self.test_result * PHONE_BATTERY_VOLTAGE)
         wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
 
     def pass_fail_check(self):
