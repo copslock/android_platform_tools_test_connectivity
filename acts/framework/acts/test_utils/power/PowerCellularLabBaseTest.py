@@ -190,10 +190,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         Save results to dictionary so they can be displayed after completing
         the test batch.
         """
-
         super().teardown_test()
 
-        self.power_results[self.test_name] = self.power_consumption
+        self.power_results[self.test_name] = self.power_result.metric_value
 
     def consume_parameter(self, parameter_name, num_values=0):
         """ Parses a parameter from the test name.
