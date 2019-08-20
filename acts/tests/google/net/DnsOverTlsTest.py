@@ -316,6 +316,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
                                     cconst.PRIVATE_DNS_MODE_OPPORTUNISTIC,
                                     False)
 
+    @test_tracker_info(uuid="41c3f2c4-11b7-4bb8-a3c9-fac63f6822f6")
     def test_private_dns_mode_opportunistic_tmo_carrier(self):
         """ Verify private dns mode opportunistic on TMO network
 
@@ -333,6 +334,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
                                     cconst.PRIVATE_DNS_MODE_OPPORTUNISTIC,
                                     True)
 
+    @test_tracker_info(uuid="65fd2052-f0c0-4446-b353-7ed2273e6c95")
     def test_private_dns_mode_strict_vzw_carrier(self):
         """ Verify private dns mode strict on VZW network
 
@@ -352,6 +354,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
                                         True,
                                         dns)
 
+    @test_tracker_info(uuid="bca141f7-06c9-4e44-854e-4bdb9443b2da")
     def test_private_dns_mode_strict_tmo_carrier(self):
         """ Verify private dns mode strict on TMO network
 
@@ -371,6 +374,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
                                         True,
                                         dns)
 
+    @test_tracker_info(uuid="7d977987-d9e3-4be1-b8fc-e5a84050ed48")
     def test_private_dns_mode_opportunistic_connectivity_toggle_networks(self):
         """ Verify private DNS opportunistic mode connectivity by toggling networks
 
@@ -408,6 +412,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
                 self._test_private_dns_mode(
                     self.dut, None, None, use_tls, dns)
 
+    @test_tracker_info(uuid="bc2f228f-e288-4539-a4b9-c02968209985")
     def test_private_dns_mode_strict_connectivity_toggle_networks(self):
         """ Verify private DNS strict mode connectivity by toggling networks
 
