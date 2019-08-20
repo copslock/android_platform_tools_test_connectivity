@@ -158,7 +158,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         iperf_helpers = self.start_tel_traffic(self.dut)
 
         # Measure power
-        self.collect_power_data()
+        result = self.collect_power_data()
 
         # Wait for iPerf to finish
         time.sleep(self.IPERF_MARGIN + 2)
@@ -167,9 +167,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         self.iperf_results = self.get_iperf_results(self.dut, iperf_helpers)
 
         # Check if power measurement is below the required value
-        self.pass_fail_check()
+        self.pass_fail_check(result.average_current)
 
-        return self.test_result, self.iperf_results
+        return result.average_current, self.iperf_results
 
     def get_iperf_results(self, device, iperf_helpers):
         """ Pulls iperf results from the device.
@@ -196,7 +196,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         return throughput
 
-    def pass_fail_check(self):
+    def pass_fail_check(self, average_current=None):
         """ Checks power consumption and throughput.
 
         Uses the base class method to check power consumption. Also, compares
@@ -230,7 +230,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                         direction, round(throughput, 3), round(expected_t, 3),
                         round(throughput / expected_t, 3)))
 
-        super().pass_fail_check()
+        super().pass_fail_check(average_current)
 
     def start_tel_traffic(self, client_host):
         """ Starts iPerf in the indicated device and initiates traffic.

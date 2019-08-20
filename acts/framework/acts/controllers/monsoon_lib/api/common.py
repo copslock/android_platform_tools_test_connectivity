@@ -40,7 +40,37 @@ PASSTHROUGH_STATES = {
 }
 
 
-class MonsoonData(object):
+class MonsoonDataRecord(object):
+    """A data class for Monsoon data points."""
+    def __init__(self, time, current):
+        """Creates a new MonsoonDataRecord.
+
+        Args:
+            time: the string '{time}s', where time is measured in seconds since
+                the beginning of the data collection.
+            current: The current in Amperes as a string.
+        """
+        self._time = float(time[:-1])
+        self._current = float(current)
+
+    @property
+    def time(self):
+        """The time the record was fetched."""
+        return self._time
+
+    @property
+    def current(self):
+        """The amount of current in Amperes measured for the given record."""
+        return self._current
+
+    @classmethod
+    def create_from_record_line(cls, line):
+        """Creates a data record from the line passed in from the output file.
+        """
+        return cls(*line.split(' '))
+
+
+class MonsoonResult(object):
     """An object that contains aggregated data collected during sampling.
 
     Attributes:
@@ -53,19 +83,48 @@ class MonsoonData(object):
     # The number of decimal places to round a value to.
     ROUND_TO = 6
 
-    def __init__(self, num_samples, sum_currents, hz, voltage, tag=None):
+    def __init__(self, num_samples, sum_currents, hz, voltage, datafile_path):
+        """Creates a new MonsoonResult.
+
+        Args:
+            num_samples: the number of samples collected.
+            sum_currents: the total summation of every current measurement.
+            hz: the number of samples per second.
+            voltage: the voltage used during the test.
+            datafile_path: the path to the monsoon data file.
+        """
         self._num_samples = num_samples
         self._sum_currents = sum_currents
         self._hz = hz
         self._voltage = voltage
-        self.tag = tag
+        self.tag = datafile_path
+
+    def get_data_points(self):
+        """Returns an iterator of MonsoonDataRecords."""
+        class MonsoonDataIterator:
+            def __init__(self, file):
+                self.file = file
+
+            def __iter__(self):
+                with open(self.file, 'r') as f:
+                    for line in f:
+                        # Remove the newline character.
+                        line.strip()
+                        yield MonsoonDataRecord.create_from_record_line(line)
+
+        return MonsoonDataIterator(self.tag)
+
+    @property
+    def num_samples(self):
+        """The number of samples recorded during the test."""
+        return self._num_samples
 
     @property
     def average_current(self):
         """Average current in mA."""
-        if self._num_samples == 0:
+        if self.num_samples == 0:
             return 0
-        return round(self._sum_currents * 1000 / self._num_samples,
+        return round(self._sum_currents * 1000 / self.num_samples,
                      self.ROUND_TO)
 
     @property
@@ -79,8 +138,14 @@ class MonsoonData(object):
         """Total power used."""
         return round(self.average_current * self._voltage, self.ROUND_TO)
 
+    @property
+    def voltage(self):
+        """The voltage during the measurement (in Volts)."""
+        return self._voltage
+
     def __str__(self):
         return ('avg current: %s\n'
                 'total charge: %s\n'
-                'total power: %s' % (self.average_current, self.total_charge,
-                                     self.total_power))
+                'total power: %s\n'
+                'total samples: %s' % (self.average_current, self.total_charge,
+                                      self.total_power, self._num_samples))

@@ -115,10 +115,11 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
 
         If IPERF is run, need to pull iperf results and attach it to the plot.
         """
-        super().collect_power_data()
+        result = super().collect_power_data()
         tag = ''
         if self.iperf_duration:
             throughput = self.process_iperf_results()
             tag = '_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(
                 self.RSSI, throughput)
-            wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
+            wputils.monsoon_data_plot(self.mon_info, result, tag=tag)
+        return result
