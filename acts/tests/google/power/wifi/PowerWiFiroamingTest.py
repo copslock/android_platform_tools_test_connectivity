@@ -26,6 +26,7 @@ from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
 PHONE_BATTERY_VOLTAGE = 4.2
 
+
 class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
     def teardown_test(self):
         # Delete the brconfigs attributes as this is duplicated with one of the
@@ -89,7 +90,8 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             file_path, avg_current = self.monsoon_data_collect_save()
         [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
         self.test_result = dt.source.data['y0'][0]
-        self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
+        self.power_result.metric_value = (
+            self.test_result * PHONE_BATTERY_VOLTAGE)
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)
@@ -126,7 +128,8 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             file_path, avg_current = self.monsoon_data_collect_save()
         [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
         self.test_result = dt.source.data['y0'][0]
-        self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
+        self.power_result.metric_value = (
+            self.test_result * PHONE_BATTERY_VOLTAGE)
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)

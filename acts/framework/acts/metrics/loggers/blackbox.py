@@ -33,27 +33,18 @@ class BlackboxMetricLogger(MetricLogger):
     Attributes:
         proto_module: The proto module for ActsBlackboxMetricResult.
         metric_name: The name of the metric, used to determine output filename.
-        result_attr: The name of the attribute of the test class where the
-                     result is stored.
         metric_key: The metric key to use. If unset, the logger will use the
                     context's identifier.
-        metric_value: The metric value. If this value is set, result_attr is
-                      ignored.
+        metric_value: The metric value.
     """
 
     PROTO_FILE = 'protos/acts_blackbox.proto'
 
-    def __init__(self,
-                 metric_name,
-                 result_attr='result',
-                 metric_key=None,
-                 event=None):
+    def __init__(self, metric_name, metric_key=None, event=None):
         """Initializes a logger for Blackbox metrics.
 
         Args:
             metric_name: The name of the metric.
-            result_attr: The name of the attribute of the test class where the
-                         result is stored.
             metric_key: The metric key to use. If unset, the logger will use
                         the context's identifier.
             event: The event triggering the creation of this logger.
@@ -63,13 +54,8 @@ class BlackboxMetricLogger(MetricLogger):
         if not metric_name:
             raise ValueError("metric_name must be supplied.")
         self.metric_name = metric_name
-        self.result_attr = result_attr
         self.metric_key = metric_key
         self.metric_value = None
-
-    def _get_metric_value(self):
-        """Extracts the metric value from the current context."""
-        return getattr(self.context.test_class, self.result_attr)
 
     def _get_metric_key(self):
         """Gets the metric key to use.
@@ -108,12 +94,8 @@ class BlackboxMetricLogger(MetricLogger):
         result = self.proto_module.ActsBlackboxMetricResult()
         result.test_identifier = self._get_blackbox_identifier()
         result.metric_key = self._get_metric_key()
-        if self.result_attr is None or self.metric_value is not None:
+        if self.metric_value is not None:
             result.metric_value = self.metric_value
-        else:
-            result.metric_value = self._get_metric_value()
 
-        metric = ProtoMetric(
-            name=self._get_file_name(),
-            data=result)
+        metric = ProtoMetric(name=self._get_file_name(), data=result)
         return self.publisher.publish(metric)
