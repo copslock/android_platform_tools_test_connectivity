@@ -171,6 +171,7 @@ class ApfCountersTest(WifiBaseTest):
           4. Verify internet connectivity
         """
         pkt_num = 400
+        rtt_list = random.sample(range(10, 10000), pkt_num)
 
         # get mac address of the dut
         ap = self.access_points[0]
@@ -183,8 +184,7 @@ class ApfCountersTest(WifiBaseTest):
         ra_count = self._get_icmp6intype134()
 
         # send RA with differnt re-trans time
-        for _ in range(pkt_num):
-            rtt=random.randint(10, 10000)
+        for rtt in rtt_list:
             ap.send_ra('wlan1', mac_addr, 0, 1, rtt=rtt)
 
         # get the new RA count
