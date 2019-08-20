@@ -28,28 +28,8 @@ from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
-UNLOCK_SCREEN = 'input keyevent 82'
 SET_BATTERY_LEVEL = 'dumpsys battery set level 100'
-SCREENON_USB_DISABLE = 'dumpsys battery unplug'
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
-AOD_OFF = 'settings put secure doze_always_on 0'
-MUSIC_IQ_OFF = 'pm disable-user com.google.intelligence.sense'
-DISABLE_THERMAL = 'setprop persist.vendor.disable.thermal.control 1'
-# Command to disable gestures
-LIFT = 'settings put secure doze_pulse_on_pick_up 0'
-DOUBLE_TAP = 'settings put secure doze_pulse_on_double_tap 0'
-JUMP_TO_CAMERA = 'settings put secure camera_double_tap_power_gesture_disabled 1'
-RAISE_TO_CAMERA = 'settings put secure camera_lift_trigger_enabled 0'
-FLIP_CAMERA = 'settings put secure camera_double_twist_to_flip_enabled 0'
-ASSIST_GESTURE = 'settings put secure assist_gesture_enabled 0'
-ASSIST_GESTURE_ALERT = 'settings put secure assist_gesture_silence_alerts_enabled 0'
-ASSIST_GESTURE_WAKE = 'settings put secure assist_gesture_wake_enabled 0'
-SYSTEM_NAVI = 'settings put secure system_navigation_keys_enabled 0'
-# End of command to disable gestures
-AUTO_TIME_OFF = 'settings put global auto_time 0'
-AUTO_TIMEZONE_OFF = 'settings put global auto_time_zone 0'
-FORCE_YOUTUBE_STOP = 'am force-stop com.google.android.youtube'
-FORCE_DIALER_STOP = 'am force-stop com.google.android.dialer'
 IPERF_TIMEOUT = 180
 THRESHOLD_TOLERANCE = 0.2
 GET_FROM_PHONE = 'get_from_dut'
@@ -136,6 +116,11 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.threshold = self.unpack_custom_file(self.threshold_file)
         self.mon_info = self.create_monsoon_info()
 
+        # Sync device time, timezone and country code
+        utils.require_sl4a((self.dut,))
+        utils.sync_device_time(self.dut)
+        self.dut.droid.wifiSetCountryCode('US')
+
         # Onetime task for each test class
         # Temporary fix for b/77873679
         self.adb_disable_verity()
@@ -149,7 +134,21 @@ class PowerBaseTest(base_test.BaseTestClass):
         # Reset the power consumption to 0 before each tests
         self.power_result.metric_value = 0
         # Set the device into rockbottom state
-        self.dut_rockbottom()
+        if self.rockbottom_script:
+            # The rockbottom script might include a device reboot, so it is
+            # necessary to stop SL4A during its execution.
+            self.dut.stop_services()
+            self.log.info('Executing rockbottom script for ' + self.dut.model)
+            os.chmod(self.rockbottom_script, 0o777)
+            os.system('{} {}'.format(self.rockbottom_script, self.dut.serial))
+            # Make sure the DUT is in root mode after coming back
+            self.dut.root_adb()
+            # Restart SL4A
+            self.dut.start_services()
+
+        wutils.reset_wifi(self.dut)
+        wutils.wifi_toggle_state(self.dut, False)
+
         # Wait for extra time if needed for the first test
         if hasattr(self, 'extra_wait'):
             self.more_wait_first_test()
@@ -228,71 +227,6 @@ class PowerBaseTest(base_test.BaseTestClass):
             raise Exception('List given does not have the correct length')
         for i in range(self.num_atten):
             self.attenuators[i].set_atten(atten_list[i])
-
-    def dut_rockbottom(self):
-        """Set the phone into Rock-bottom state.
-
-        """
-        self.dut.log.info('Now set the device to Rockbottom State')
-
-        if self.rockbottom_script:
-            # The rockbottom script might include a device reboot, so it is
-            # necessary to stop SL4A during its execution.
-            self.dut.stop_services()
-            self.log.info('Executing rockbottom script for ' + self.dut.model)
-            os.chmod(self.rockbottom_script, 0o777)
-            os.system('{} {}'.format(self.rockbottom_script, self.dut.serial))
-            # Make sure the DUT is in root mode after coming back
-            self.dut.root_adb()
-            # Restart SL4A
-            self.dut.start_services()
-
-        utils.require_sl4a((self.dut, ))
-        self.dut.droid.connectivityToggleAirplaneMode(False)
-        time.sleep(2)
-        self.dut.droid.connectivityToggleAirplaneMode(True)
-        time.sleep(2)
-        utils.set_ambient_display(self.dut, False)
-        utils.set_auto_rotate(self.dut, False)
-        utils.set_adaptive_brightness(self.dut, False)
-        utils.sync_device_time(self.dut)
-        utils.set_location_service(self.dut, False)
-        utils.set_mobile_data_always_on(self.dut, False)
-        utils.disable_doze_light(self.dut)
-        utils.disable_doze(self.dut)
-        wutils.reset_wifi(self.dut)
-        wutils.wifi_toggle_state(self.dut, False)
-        try:
-            self.dut.droid.nfcDisable()
-        except acts.controllers.sl4a_lib.rpc_client.Sl4aApiError:
-            self.dut.log.info('NFC is not available')
-        self.dut.droid.setScreenBrightness(0)
-        self.dut.adb.shell(AOD_OFF)
-        self.dut.droid.setScreenTimeout(2200)
-        self.dut.droid.wakeUpNow()
-        self.dut.adb.shell(LIFT)
-        self.dut.adb.shell(DOUBLE_TAP)
-        self.dut.adb.shell(JUMP_TO_CAMERA)
-        self.dut.adb.shell(RAISE_TO_CAMERA)
-        self.dut.adb.shell(FLIP_CAMERA)
-        self.dut.adb.shell(ASSIST_GESTURE)
-        self.dut.adb.shell(ASSIST_GESTURE_ALERT)
-        self.dut.adb.shell(ASSIST_GESTURE_WAKE)
-        self.dut.adb.shell(SET_BATTERY_LEVEL)
-        self.dut.adb.shell(SCREENON_USB_DISABLE)
-        self.dut.adb.shell(UNLOCK_SCREEN)
-        #Dupe UNLOCK_SCREEN to make sure it's on home screen
-        self.dut.adb.shell(UNLOCK_SCREEN)
-        self.dut.adb.shell(MUSIC_IQ_OFF)
-        self.dut.adb.shell(AUTO_TIME_OFF)
-        self.dut.adb.shell(AUTO_TIMEZONE_OFF)
-        self.dut.adb.shell(FORCE_YOUTUBE_STOP)
-        self.dut.adb.shell(FORCE_DIALER_STOP)
-        self.dut.adb.shell(DISABLE_THERMAL)
-        self.dut.droid.wifiSetCountryCode('US')
-        self.dut.droid.wakeUpNow()
-        self.dut.log.info('Device has been set to Rockbottom state')
-        self.dut.log.info('Screen is ON')
 
     def measure_power_and_validate(self):
         """The actual test flow and result processing and validate.
