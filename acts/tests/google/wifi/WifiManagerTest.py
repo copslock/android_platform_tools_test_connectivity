@@ -58,7 +58,7 @@ class WifiManagerTest(WifiBaseTest):
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
-            "wpa_networks", "wep_networks"
+            "wpa_networks", "wep_networks", "iperf_server_port"
         ]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
@@ -71,14 +71,10 @@ class WifiManagerTest(WifiBaseTest):
             "Need at least one reference network with psk.")
         wutils.wifi_toggle_state(self.dut, True)
         wutils.wifi_toggle_state(self.dut_client, True)
-        if "iperf_server_address" in self.user_params:
-            self.iperf_server = self.iperf_servers[0]
         self.wpapsk_2g = self.reference_networks[0]["2g"]
         self.wpapsk_5g = self.reference_networks[0]["5g"]
         self.open_network_2g = self.open_network[0]["2g"]
         self.open_network_5g = self.open_network[0]["5g"]
-        if hasattr(self, 'iperf_server'):
-            self.iperf_server.start()
 
     def setup_test(self):
         for ad in self.android_devices:
@@ -93,10 +89,6 @@ class WifiManagerTest(WifiBaseTest):
         self.turn_location_off_and_scan_toggle_off()
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
-
-    def teardown_class(self):
-        if hasattr(self, 'iperf_server'):
-            self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
@@ -248,7 +240,7 @@ class WifiManagerTest(WifiBaseTest):
             SSID = network[WifiEnums.SSID_KEY]
             self.log.info("Starting iperf traffic through {}".format(SSID))
             time.sleep(wait_time)
-            port_arg = "-p {}".format(self.iperf_server.port)
+            port_arg = "-p {}".format(self.iperf_server_port)
             success, data = ad.run_iperf_client(self.iperf_server_address,
                                                 port_arg)
             self.log.debug(pprint.pformat(data))
@@ -285,10 +277,10 @@ class WifiManagerTest(WifiBaseTest):
             self.log.debug(data)
 
     def run_iperf_rx_tx(self, time, omit=10):
-        args = "-p {} -t {} -O 10".format(self.iperf_server.port, time, omit)
+        args = "-p {} -t {} -O 10".format(self.iperf_server_port, time, omit)
         self.log.info("Running iperf client {}".format(args))
         self.run_iperf(args)
-        args = "-p {} -t {} -O 10 -R".format(self.iperf_server.port, time,
+        args = "-p {} -t {} -O 10 -R".format(self.iperf_server_port, time,
                                              omit)
         self.log.info("Running iperf client {}".format(args))
         self.run_iperf(args)
