@@ -17,8 +17,10 @@
 import time
 
 from acts import base_test
+from acts import asserts
 from acts.controllers.gnssinst_lib.rohdeschwarz import contest
 from acts.test_utils.tel import tel_test_utils
+import json
 
 
 class AGNSSPerformanceTest(base_test.BaseTestClass):
@@ -41,10 +43,8 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
 
         self.dut = None
         self.contest = None
-        self.contest_ip = None
-        self.remote_port = None
-        self.automation_port = None
         self.testplan = None
+        self.thresholds_file = None
 
     def setup_class(self):
         """ Executed before any test case is started. Initializes the Contest
@@ -68,6 +68,7 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
         listen_ip = self.user_params[self.AUTOMATION_LISTEN_IP]
         ftp_user = self.user_params[self.FTP_USER_KEY]
         ftp_password = self.user_params[self.FTP_PASSWORD_KEY]
+        custom_files = self.user_params.get(self.CUSTOM_FILES_KEY, [])
 
         self.dut = self.android_devices[0]
 
@@ -81,9 +82,19 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
                                        ftp_usr=ftp_user,
                                        ftp_pwd=ftp_password)
 
+        # Look for the threshold files
+        for file in custom_files:
+            if 'pass_fail_threshold_' + self.dut.model in file:
+                self.thresholds_file = file
+                self.log.debug('Threshold file loaded: ' + file)
+                break
+        else:
+            self.log.warning('No threshold files found in custom files.')
+
     def teardown_class(self):
         """ Executed after completing all selected test cases."""
-        self.contest.destroy()
+        if self.contest:
+            self.contest.destroy()
 
     def setup_test(self):
         """ Executed before every test case.
@@ -103,9 +114,54 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
         self.testplan = self.user_params[testplan_formatted_key]
 
     def agnss_performance_test(self):
-        """ Executes the aGNSS performance test. """
+        """ Executes the aGNSS performance test and verifies that the results
+        are within the expected values if a thresholds file is available.
 
-        self.contest.execute_testplan(self.testplan)
+        The thresholds file is in json format and contains the metrics keys
+        defined in the Contest object with 'min' and 'max' values. """
+
+        results = self.contest.execute_testplan(self.testplan)
+
+        asserts.assert_true(
+            results, 'No results were obtained from the test execution.')
+
+        if not self.thresholds_file:
+            self.log.info('Skipping pass / fail check because no thresholds '
+                          'file was provided.')
+            return
+
+        passed = True
+
+        with open(self.thresholds_file, 'r') as file:
+
+            thresholds = json.load(file)
+
+            for key, val in results.items():
+
+                asserts.assert_true(
+                    key in thresholds, 'Key {} is missing in '
+                    'the thresholds file.'.format(key))
+
+                # If the result is provided as a dictionary, obtain the value
+                # from the 'avg' key.
+                if isinstance(val, dict):
+                    metric = val['avg']
+                else:
+                    metric = val
+
+                if thresholds[key]['min'] < metric < thresholds[key]['max']:
+                    self.log.info('Metric {} = {} is within the expected '
+                                  'values.'.format(key, metric))
+                else:
+                    self.log.error('Metric {} = {} is not within ({}, '
+                                   '{}).'.format(key, metric,
+                                                 thresholds[key]['min'],
+                                                 thresholds[key]['max']))
+                    passed = False
+
+        asserts.assert_true(
+            passed, 'At least one of the metrics was not '
+            'within the expected values.')
 
     def set_apm_on(self):
         """ Wrapper method to turn airplane mode on.
