@@ -37,6 +37,8 @@ from acts import signals
 from acts import utils
 from acts import error
 
+from mobly.records import ExceptionRecord
+
 
 def _find_test_class():
     """Finds the test class in a test script.
@@ -340,7 +342,7 @@ class TestRunner(object):
             try:
                 self.run_test_class(test_cls_name, test_case_names)
             except error.ActsError as e:
-                self.results.errors.append(e)
+                self.results.error.append(ExceptionRecord(e))
                 self.log.error("Test Runner Error: %s" % e.message)
             except signals.TestAbortAll as e:
                 self.log.warning(

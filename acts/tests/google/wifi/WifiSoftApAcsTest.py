@@ -66,13 +66,10 @@ class WifiSoftApAcsTest(WifiBaseTest):
         asserts.assert_equal(self.dut_client.droid.wifiGetVerboseLoggingLevel(), 1,
             "Failed to enable WiFi verbose logging on the client dut.")
         req_params = []
-        opt_param = ["iperf_server_address", "reference_networks"]
+        opt_param = ["iperf_server_address", "reference_networks",
+                     "iperf_server_port"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
-        if "iperf_server_address" in self.user_params:
-            self.iperf_server = self.iperf_servers[0]
-        if hasattr(self, 'iperf_server'):
-            self.iperf_server.start()
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()
@@ -92,10 +89,6 @@ class WifiSoftApAcsTest(WifiBaseTest):
             pass
         self.access_points[0].close()
 
-    def teardown_class(self):
-        if hasattr(self, 'iperf_server'):
-            self.iperf_server.stop()
-
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
@@ -113,7 +106,7 @@ class WifiSoftApAcsTest(WifiBaseTest):
             network, ad = params
             SSID = network[WifiEnums.SSID_KEY]
             self.log.info("Starting iperf traffic through {}".format(SSID))
-            port_arg = "-p {} -t {}".format(self.iperf_server.port, 3)
+            port_arg = "-p {} -t {}".format(self.iperf_server_port, 3)
             success, data = ad.run_iperf_client(self.iperf_server_address,
                                                 port_arg)
             self.log.debug(pprint.pformat(data))

@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import collections
 import os
 
 
@@ -21,24 +22,23 @@ class InvalidParamError(Exception):
     pass
 
 
-class ConfigWrapper(object):
+class ConfigWrapper(collections.UserDict):
     """Class representing a test or preparer config."""
 
-    def __init__(self, config):
+    def __init__(self, config=None):
         """Initialize a ConfigWrapper
 
         Args:
             config: A dict representing the preparer/test parameters
         """
-        self._config = {
-            key: (ConfigWrapper(value) if isinstance(value, dict) else value)
-            for key, value in config.items()}
-
-    def __getitem__(self, item):
-        """Wrapper around self._config. In contrast to self.get, this method
-        will raise a KeyError if the key is not found.
-        """
-        return self._config[item]
+        if config is None:
+            config = {}
+        super().__init__(
+            {
+                key: (ConfigWrapper(val) if isinstance(val, dict) else val)
+                for key, val in config.items()
+            }
+        )
 
     def get(self, param_name, default=None, verify_fn=lambda _: True,
             failure_msg=''):
@@ -52,11 +52,17 @@ class ConfigWrapper(object):
                 an exception will be raised.
             failure_msg: Exception message upon verify_fn failure.
         """
-        result = self._config.get(param_name, default)
+        result = self.data.get(param_name, default)
         if not verify_fn(result):
             raise InvalidParamError('Invalid value %s for param %s. %s'
                                     % (result, param_name, failure_msg))
         return result
+
+    def get_config(self, param_name):
+        """Get a sub-config from config. Returns an empty ConfigWrapper if no
+        such sub-config is found.
+        """
+        return self.get(param_name, default=ConfigWrapper())
 
     def get_int(self, param_name, default=None):
         """Get integer parameter from config. Will raise an exception
