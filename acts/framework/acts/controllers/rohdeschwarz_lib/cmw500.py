@@ -88,13 +88,22 @@ class Cmw500(abstract_inst.SocketInstrument):
         cmd = 'CONFigure:LTE:SIGN:RFSettings:PCC:CHANnel:DL {}'.format(channel)
         self._send(cmd)
 
-    def bandwidth(self, bandwidth):
-        """Sets the channel bandwidth of the cell.
+    def dl_bandwidth(self, bandwidth):
+        """Sets the downlink bandwidth of the cell.
 
         Args:
-            bandwidth: channel bandwidth of cell.
+            bandwidth: downlink bandwidth of cell.
         """
         cmd = 'CONFigure:LTE:SIGN:CELL:BANDwidth:PCC:DL {}'.format(bandwidth)
+        self._send(cmd)
+
+    def ul_bandwidth(self, bandwidth):
+        """Sets the uplink bandwidth if the cell.
+
+        Args:
+            bandwidth: uplink bandwidth of cell
+        """
+        cmd = 'CONFigure:LTE:SIGN:CELL:BANDwidth:PCC:UL {}'.format(bandwidth)
         self._send(cmd)
 
     def transmode(self, tm_mode):
@@ -113,13 +122,13 @@ class Cmw500(abstract_inst.SocketInstrument):
         self._send('ROUTe:LTE:SIGN:SCENario:SCELl:FLEXible SUW1,RF1C,'
                    'RX1,RF1C,TX1')
 
-    def attach(self, wait_time=120):
+    def wait_for_connected_state(self, timeout=120):
         """Attach the controller with device.
 
         Args:
-            wait_time: wait time for phone to get attached.
+            timeout: timeout for phone to get attached.
         """
-        end_time = time.time() + wait_time
+        end_time = time.time() + timeout
         while time.time() <= end_time:
             state = self._send_and_recv('FETCh:LTE:SIGN:PSWitched:STATe?')
 
@@ -136,7 +145,7 @@ class Cmw500(abstract_inst.SocketInstrument):
         else:
             raise CmwError('Call box could not be connected with device')
 
-    def set_power_level(self, pwlevel):
+    def set_downlink_power_level(self, pwlevel):
         """Modifies RSPRE level
 
         Args:
