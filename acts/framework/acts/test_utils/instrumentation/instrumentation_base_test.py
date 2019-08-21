@@ -29,7 +29,7 @@ from acts import base_test
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
-DEFAULT_POWER_CONFIG_FILE = 'power_config.yaml'
+DEFAULT_INSTRUMENTATION_CONFIG_FILE = 'instrumentation_config.yaml'
 
 
 class InstrumentationTestError(Exception):
@@ -37,7 +37,7 @@ class InstrumentationTestError(Exception):
 
 
 class InstrumentationBaseTest(base_test.BaseTestClass):
-    """Base class for power tests based on am instrument."""
+    """Base class for tests based on am instrument."""
 
     def __init__(self, configs):
         """Initialize an InstrumentationBaseTest
@@ -46,53 +46,61 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             configs: Dict representing the test configuration
         """
         super().__init__(configs)
-        # Take power config path directly from ACTS config if found, otherwise
-        # try to find the power config in the same directory as the ACTS config
-        power_config_path = ''
-        if 'power_config' in self.user_params:
-            power_config_path = self.user_params['power_config'][0]
+        # Take instrumentation config path directly from ACTS config if found,
+        # otherwise try to find the instrumentation config in the same directory
+        # as the ACTS config
+        instrumentation_config_path = ''
+        if 'instrumentation_config' in self.user_params:
+            instrumentation_config_path = (
+                self.user_params['instrumentation_config'][0])
         elif Config.key_config_path.value in self.user_params:
-            power_config_path = os.path.join(
+            instrumentation_config_path = os.path.join(
                 self.user_params[Config.key_config_path.value],
-                DEFAULT_POWER_CONFIG_FILE)
-        self._power_config = None
-        if os.path.exists(power_config_path):
-            self._power_config = self._load_power_config(power_config_path)
+                DEFAULT_INSTRUMENTATION_CONFIG_FILE)
+        self._instrumentation_config = None
+        if os.path.exists(instrumentation_config_path):
+            self._instrumentation_config = self._load_instrumentation_config(
+                instrumentation_config_path)
         else:
             self.log.warning(
-                'Power config file %s does not exist' % power_config_path)
+                'Instrumentation config file %s does not exist' %
+                instrumentation_config_path)
 
-    def _load_power_config(self, path):
-        """Load the power config file into a InstrumentationConfigWrapper
-        object.
+    def _load_instrumentation_config(self, path):
+        """Load the instrumentation config file into an
+        InstrumentationConfigWrapper object.
 
         Args:
-            path: Path to the power config file.
+            path: Path to the instrumentation config file.
 
-        Returns: The loaded power config as an InstrumentationConfigWrapper
+        Returns: The loaded instrumentation config as an
+        InstrumentationConfigWrapper
         """
         try:
             with open(path, mode='r', encoding='utf-8') as f:
                 config_dict = yaml.safe_load(f)
         except Exception as e:
             raise InstrumentationTestError(
-                'Cannot open or parse power config file %s' % path) from e
+                'Cannot open or parse instrumentation config file %s'
+                % path) from e
         if not self._resolve_file_paths(config_dict):
-            self.log.warning('File paths missing from power config.')
+            self.log.warning('File paths missing from instrumentation config.')
 
-        # Write out a copy of the resolved power config
-        with open(os.path.join(self.log_path, 'resolved_power_config.yaml'),
+        # Write out a copy of the resolved instrumentation config
+        with open(os.path.join(
+                self.log_path, 'resolved_instrumentation_config.yaml'),
                   mode='w', encoding='utf-8') as f:
             yaml.safe_dump(config_dict, f)
 
         return ConfigWrapper(config_dict)
 
     def _resolve_file_paths(self, config):
-        """Recursively resolve all 'FILE' markers found in the power config to
-        their corresponding paths in the ACTS config, i.e. in self.user_params.
+        """Recursively resolve all 'FILE' markers found in the instrumentation
+        config to their corresponding paths in the ACTS config, i.e. in
+        self.user_params.
 
         Args:
-            config: The power config to update
+            config: The instrumentation config to update
 
         Returns: True if all 'FILE' markers are resolved.
         """
@@ -110,19 +118,26 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
                     config[key] = self.user_params[key]
         return success
 
+    def setup_class(self):
+        """Class setup"""
+        self.ad_dut = self.android_devices[0]
+        self.ad_apps = app_installer.AppInstaller(self.ad_dut)
+        self._prepare_device()
+
     def _prepare_device(self):
         """Prepares the device for testing."""
         pass
 
     def _get_controller_config(self, controller_name):
-        """Get the controller config from the power config, at the level of the
-        current test class or test case.
+        """Get the controller config from the instrumentation config, at the
+        level of the current test class or test case.
 
         Args:
             controller_name: Name of the controller config to fetch
         Returns: The controller config, as a ConfigWrapper
         """
-        class_config = self._power_config.get_config(self.__class__.__name__)
+        class_config = self._instrumentation_config.get_config(
+            self.__class__.__name__)
         if self.current_test_name:
             # Return the testcase level config, used for setting up test
             case_config = class_config.get_config(self.current_test_name)
@@ -130,15 +145,10 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         else:
             # Merge the base and testclass level configs, used for setting up
             # class.
-            merged_config = self._power_config.get_config(controller_name)
+            merged_config = self._instrumentation_config.get_config(
+                controller_name)
             merged_config.update(class_config.get_config(controller_name))
             return merged_config
-
-    def setup_class(self):
-        """Class setup"""
-        self.ad_dut = self.android_devices[0]
-        self.ad_apps = app_installer.AppInstaller(self.ad_dut)
-        self._prepare_device()
 
     def adb_run(self, cmds):
         """Run the specified command, or list of commands, with the ADB shell.
