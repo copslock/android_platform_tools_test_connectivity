@@ -111,14 +111,21 @@ class Cmw500(abstract_inst.SocketInstrument):
         """Sets the scenario for the test."""
         # TODO:(ganeshganesh) Create a common function to set mimo modes.
         self._send('ROUTe:LTE:SIGN:SCENario:SCELl:FLEXible SUW1,RF1C,'
-                            'RX1,RF1C,TX1')
+                   'RX1,RF1C,TX1')
 
-    def attach(self):
-        """Attach the controller with device."""
-        state = self._send_and_recv('FETCh:LTE:SIGN:PSWitched:STATe?')
+    def attach(self, wait_time=120):
+        """Attach the controller with device.
 
-        if state == 'ATT':
-            self._logger.debug('Call box attached with device')
+        Args:
+            wait_time: wait time for phone to get attached.
+        """
+        end_time = time.time() + wait_time
+        while time.time() <= end_time:
+            state = self._send_and_recv('FETCh:LTE:SIGN:PSWitched:STATe?')
+
+            if state == 'ATT':
+                self._logger.debug('Call box attached with device')
+                break
         else:
             raise CmwError('Device could not be attached')
 
@@ -128,6 +135,19 @@ class Cmw500(abstract_inst.SocketInstrument):
             self._logger.debug('Call box connected with device')
         else:
             raise CmwError('Call box could not be connected with device')
+
+    def set_power_level(self, pwlevel):
+        """Modifies RSPRE level
+
+        Args:
+            pwlevel: power level in dBm
+        """
+        cmd = 'CONFigure:LTE:SIGN:DL:PCC:RSEPre:LEVel {}'.format(pwlevel)
+        self._send(cmd)
+
+    def reset(self):
+        """System level reset"""
+        self._send('*RST; *OPC')
 
     def _send_and_recv(self, cmd):
         """Send and recv the status of the command.
