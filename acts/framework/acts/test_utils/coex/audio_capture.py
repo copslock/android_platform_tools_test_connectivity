@@ -148,7 +148,7 @@ if __name__ == '__main__':
         '--test_params',
         type=json.loads,
         help="Contains sample rate, channels,"
-        " chunk and device index for recording.")
+             " chunk and device index for recording.")
     args = parser.parse_args()
     audio = AudioCapture(args.test_params, args.path)
     audio.capture_and_store_audio(args.test_params['trim_beginning'],
