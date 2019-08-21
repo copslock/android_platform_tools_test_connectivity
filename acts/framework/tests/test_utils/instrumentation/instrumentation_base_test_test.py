@@ -17,6 +17,7 @@
 import copy
 import unittest
 
+from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.instrumentation_base_test import \
     InstrumentationBaseTest
 
@@ -26,6 +27,19 @@ MOCK_POWER_CONFIG = {
     'lvl1': {
         'file2': 'FILE',
         'lvl2': {'file1': 'FILE'}
+    },
+    'MockController': {
+        'param1': 1
+    },
+    'MockInstrumentationBaseTest': {
+        'MockController': {
+            'param2': 2
+        },
+        'test_case': {
+            'MockController': {
+                'param3': 3
+            }
+        }
     }
 }
 
@@ -39,6 +53,8 @@ class MockInstrumentationBaseTest(InstrumentationBaseTest):
     """Mock test class to initialize required attributes."""
     def __init__(self):
         self.user_params = MOCK_ACTS_USERPARAMS
+        self.current_test_name = None
+        self._power_config = ConfigWrapper(MOCK_POWER_CONFIG)
 
 
 class InstrumentationBaseTestTest(unittest.TestCase):
@@ -57,6 +73,27 @@ class InstrumentationBaseTestTest(unittest.TestCase):
                          MOCK_ACTS_USERPARAMS['file2'])
         self.assertEqual(mock_config['lvl1']['lvl2']['file1'],
                          MOCK_ACTS_USERPARAMS['file1'])
+
+    def test_get_controller_config_for_test_case(self):
+        """Test that _get_controller_config returns the corresponding
+        controller config for the current test case.
+        """
+        self.instrumentation_test.current_test_name = 'test_case'
+        config = self.instrumentation_test._get_controller_config(
+            'MockController')
+        self.assertNotIn('param1', config)
+        self.assertNotIn('param2', config)
+        self.assertIn('param3', config)
+
+    def test_get_controller_config_for_test_class(self):
+        """Test that _get_controller_config returns the controller config for
+        the current test class (while no test case is running).
+        """
+        config = self.instrumentation_test._get_controller_config(
+            'MockController')
+        self.assertIn('param1', config)
+        self.assertIn('param2', config)
+        self.assertNotIn('param3', config)
 
 
 if __name__ == '__main__':
