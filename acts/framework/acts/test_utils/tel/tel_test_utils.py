@@ -283,12 +283,12 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
     setattr(ad, 'telephony', device_props)
 
 
-def setup_droid_properties(log, ad, sim_filename=None, cbrs_esim=False):
+def setup_droid_properties(log, ad, sim_filename=None):
 
     if ad.skip_sl4a:
         return setup_droid_properties_by_adb(
             log, ad, sim_filename=sim_filename)
-    refresh_droid_config(log, ad, cbrs_esim)
+    refresh_droid_config(log, ad)
     device_props = {}
     device_props['subscription'] = {}
 
@@ -355,13 +355,12 @@ def setup_droid_properties(log, ad, sim_filename=None, cbrs_esim=False):
     ad.log.debug("telephony = %s", ad.telephony)
 
 
-def refresh_droid_config(log, ad, cbrs_esim=False):
+def refresh_droid_config(log, ad):
     """ Update Android Device telephony records for each sub_id.
 
     Args:
         log: log object
         ad: android device object
-        cbrs_esim: special case for cbrs feature
 
     Returns:
         None
@@ -371,21 +370,11 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
     droid = ad.droid
     sub_info_list = droid.subscriptionGetAllSubInfoList()
     ad.log.info("SubInfoList is %s", sub_info_list)
-    if cbrs_esim:
-        ad.log.info("CBRS testing detected, removing it form SubInfoList")
-        if len(sub_info_list) > 1:
-            # Check for CarrierId
-            index_to_delete = -1
-            for i, oper in enumerate(d['carrierId'] for d in sub_info_list):
-                ad.log.info("Index %d CarrierId %d", i, oper)
-                if oper == 2340:
-                    index_to_delete = i
-            del sub_info_list[index_to_delete]
-        ad.log.info("Updated SubInfoList is %s", sub_info_list)
     active_sub_id = get_outgoing_voice_sub_id(ad)
     for sub_info in sub_info_list:
         sub_id = sub_info["subscriptionId"]
         sim_slot = sub_info["simSlotIndex"]
+        carrier_id = sub_info["carrierId"]
 
         if sim_slot != INVALID_SIM_SLOT_INDEX:
             if sub_id not in ad.telephony["subscription"]:
@@ -435,6 +424,10 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
                         )
                 except:
                     ad.log.info("Carrier ID is not supported")
+            if carrier_id == 2340:
+                ad.log.info("SubId %s info: %s", sub_id, sorted(
+                    sub_record.items()))
+                return
             if not sub_info.get("number"):
                 sub_info[
                     "number"] = droid.telephonyGetLine1NumberForSubscription(
