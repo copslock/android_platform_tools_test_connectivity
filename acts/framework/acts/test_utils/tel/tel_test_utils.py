@@ -1767,7 +1767,13 @@ def dumpsys_carrier_config(ad):
         current_output.append(line.strip())
 
     configs = {}
-    phone_count = ad.droid.telephonyGetPhoneCount()
+    if ad.adb.getprop("ro.build.version.release")[0] in ("9", "P"):
+        phone_count = 1
+        if "," in ad.adb.getprop("gsm.network.type"):
+            phone_count = 2
+    else:
+        phone_count = ad.droid.telephonyGetPhoneCount()
+
     slot_0_subid = get_subid_from_slot_index(ad.log, ad, 0)
     if slot_0_subid != INVALID_SUB_ID:
         configs[slot_0_subid] = {}

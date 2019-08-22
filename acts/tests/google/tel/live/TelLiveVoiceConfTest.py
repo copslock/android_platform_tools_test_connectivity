@@ -2425,21 +2425,53 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             True if succeed;
             False if failed.
         """
-
         ads = self.android_devices
-
         self.log.info("Step4: Merge to Conf Call and verify Conf Call.")
         ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         ads[0].log.info("Calls in PhoneA %s", calls)
-        if num_active_calls(self.log, ads[0]) != 1:
-            ads[0].log.error("Total number of call ids is not 1.")
-            return False
+
         call_conf_id = None
-        for call_id in calls:
-            if call_id != call_ab_id and call_id != call_ac_id:
-                call_conf_id = call_id
+        if num_active_calls(self.log, ads[0]) != 1:
+            ads[0].log.info("Total number of call ids is not 1.")
+            call_conf_id = get_cep_conference_call_id(ads[0])
+            if call_conf_id is not None:
+                self.log.info("New conference call id is found. CEP enabled.")
+
+                calls.remove(call_conf_id)
+                if (set(ads[0].droid.telecomCallGetCallChildren(
+                    call_conf_id)) != set(calls)):
+                    ads[0].log.error(
+                        "Children list %s for conference call is not correct.",
+                        ads[0].droid.telecomCallGetCallChildren(call_conf_id))
+                    return False
+
+                if (CALL_PROPERTY_CONFERENCE not in ads[0]
+                        .droid.telecomCallGetProperties(call_conf_id)):
+                    ads[0].log.error(
+                        "Conf call id % properties wrong: %s", call_conf_id,
+                        ads[0].droid.telecomCallGetProperties(call_conf_id))
+                    return False
+
+                if (CALL_CAPABILITY_MANAGE_CONFERENCE not in ads[0]
+                        .droid.telecomCallGetCapabilities(call_conf_id)):
+                    ads[0].log.error(
+                        "Conf call id %s capabilities wrong: %s", call_conf_id,
+                        ads[0].droid.telecomCallGetCapabilities(call_conf_id))
+                    return False
+
+                if (call_ab_id in calls) or (call_ac_id in calls):
+                    self.log.error(
+                        "Previous call ids should not in new call list after "
+                        "merge.")
+                    return False
+        else:
+            for call_id in calls:
+                if call_id != call_ab_id and call_id != call_ac_id:
+                    call_conf_id = call_id
+                    self.log.info("CEP not enabled.")
+
         if not call_conf_id:
             self.log.error("Merge call fail, no new conference call id.")
             return False

@@ -49,6 +49,13 @@ class AudioCapture:
         if not self.audio_params["ssh_config"]:
             self.__input_device = self.__get_input_device()
 
+    @property
+    def name(self):
+        try:
+            return self.audio_params["ssh_config"]["host"]
+        except KeyError:
+            return self.__input_device["name"]
+
     def __get_input_device(self):
         """Checks for the audio capture device."""
         if self.__input_device is None:
@@ -141,7 +148,7 @@ if __name__ == '__main__':
         '--test_params',
         type=json.loads,
         help="Contains sample rate, channels,"
-        " chunk and device index for recording.")
+             " chunk and device index for recording.")
     args = parser.parse_args()
     audio = AudioCapture(args.test_params, args.path)
     audio.capture_and_store_audio(args.test_params['trim_beginning'],

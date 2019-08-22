@@ -268,8 +268,10 @@ class BaseMonsoon(object):
             TimeoutError upon failure to reconnect over USB.
         """
         self._log.info('Reconnecting dut.')
-        # Attempt to reconnect. If reconnect times out, reset the passthrough
+        # Wait for one second to ensure that the relay is ready, then
+        # attempt to reconnect. If reconnect times out, reset the passthrough
         # state and try again.
+        time.sleep(1)
         try:
             self.on_reconnect()
         except TimeoutError as err:

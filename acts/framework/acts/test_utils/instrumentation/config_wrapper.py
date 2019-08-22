@@ -54,7 +54,7 @@ class ConfigWrapper(collections.UserDict):
         """
         result = self.data.get(param_name, default)
         if not verify_fn(result):
-            raise InvalidParamError('Invalid value %s for param %s. %s'
+            raise InvalidParamError('Invalid value "%s" for param %s. %s'
                                     % (result, param_name, failure_msg))
         return result
 
@@ -72,13 +72,13 @@ class ConfigWrapper(collections.UserDict):
                         verify_fn=lambda val: type(val) is int,
                         failure_msg='Param must be of type int.')
 
-    def get_float(self, param_name, default=None):
-        """Get float parameter from config. Will raise an exception if
-        result is not of type float.
+    def get_numeric(self, param_name, default=None):
+        """Get int or float parameter from config. Will raise an exception if
+        result is not of type int or float.
         """
         return self.get(param_name, default=default,
-                        verify_fn=lambda val: type(val) is float,
-                        failure_msg='Param must be of type float.')
+                        verify_fn=lambda val: type(val) in (int, float),
+                        failure_msg='Param must be of type int or float.')
 
     def get_files(self, param_name):
         """Get list of file paths from config. Will raise an exception if any
