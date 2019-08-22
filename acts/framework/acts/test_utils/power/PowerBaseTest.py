@@ -74,6 +74,7 @@ class PowerBaseTest(base_test.BaseTestClass):
             metric_name='avg_power')
         self.start_meas_time = 0
         self.rockbottom_script = None
+        self.img_name = ''
 
     def setup_class(self):
 
@@ -124,6 +125,14 @@ class PowerBaseTest(base_test.BaseTestClass):
         utils.sync_device_time(self.dut)
         self.dut.droid.wifiSetCountryCode('US')
 
+        screen_on_img = self.user_params.get('screen_on_img', [])
+        if screen_on_img:
+            img_src = screen_on_img[0]
+            img_dest = '/sdcard/Pictures/'
+            success = self.dut.push_system_file(img_src, img_dest)
+            if success:
+                self.img_name = os.path.basename(img_src)
+
     def setup_test(self):
         """Set up test specific parameters or configs.
 
@@ -166,7 +175,9 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.dut.stop_services()
         self.log.info('Executing rockbottom script for ' + self.dut.model)
         os.chmod(self.rockbottom_script, 0o777)
-        os.system('{} {}'.format(self.rockbottom_script, self.dut.serial))
+        os.system('{} {} {}'.format(self.rockbottom_script,
+                                    self.dut.serial,
+                                    self.img_name))
         # Make sure the DUT is in root mode after coming back
         self.dut.root_adb()
         # Restart SL4A
