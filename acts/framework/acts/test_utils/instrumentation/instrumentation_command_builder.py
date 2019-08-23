@@ -14,6 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
+
+DEFAULT_NOHUP_LOG = 'nohup.log'
+
 
 class InstrumentationCommandBuilder(object):
     """Helper class to build instrumentation commands."""
@@ -23,7 +27,9 @@ class InstrumentationCommandBuilder(object):
         self._flags = []
         self._key_value_params = {}
         self._runner = None
+        self._nohup = False
         self._proto_path = None
+        self._nohup_log_path = None
 
     def set_manifest_package(self, test_package):
         self._manifest_package_name = test_package
@@ -43,9 +49,25 @@ class InstrumentationCommandBuilder(object):
         """
         self._proto_path = path
 
+    def set_nohup(self, log_path=DEFAULT_NOHUP_LOG):
+        """Enables nohup mode. This enables the instrumentation command to
+        continue running after a USB disconnect.
+
+        Args:
+            log_path: Path to store stdout of the process. Relative to
+                $EXTERNAL_STORAGE
+        """
+        self._nohup = True
+        self._nohup_log_path = log_path
+
     def build(self):
         call = self._instrument_call_with_arguments()
         call.append('{}/{}'.format(self._manifest_package_name, self._runner))
+        if self._nohup:
+            call = ['nohup'] + call
+            call.append('>>')
+            call.append(os.path.join('$EXTERNAL_STORAGE', self._nohup_log_path))
+            call.append('2>&1')
         return " ".join(call)
 
     def _instrument_call_with_arguments(self):
@@ -139,4 +161,9 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
             call.append(','.join(self._classes))
 
         call.append('{}/{}'.format(self._manifest_package_name, self._runner))
+        if self._nohup:
+            call = ['nohup'] + call
+            call.append('>>')
+            call.append(os.path.join('$EXTERNAL_STORAGE', self._nohup_log_path))
+            call.append('2>&1')
         return ' '.join(call)
