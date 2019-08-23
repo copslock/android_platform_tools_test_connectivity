@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import acts
 import json
 import logging
 import math
@@ -50,7 +49,6 @@ class ObjNew():
     """Create a random obj with unknown attributes and value.
 
     """
-
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -69,7 +67,6 @@ class PowerBaseTest(base_test.BaseTestClass):
     """Base class for all wireless power related tests.
 
     """
-
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
@@ -105,6 +102,13 @@ class PowerBaseTest(base_test.BaseTestClass):
                 self.network_file = file
             elif 'rockbottom_' + self.dut.model in file:
                 self.rockbottom_script = file
+        #Abort the class if threshold and rockbottom file is missing
+        asserts.abort_class_if(
+            not self.threshold_file,
+            'Required test pass/fail threshold file is missing')
+        asserts.abort_class_if(
+            not self.rockbottom_script,
+            'Required rockbottom setting script is missing')
 
         # Unpack test specific configs
         self.unpack_testparams(getattr(self, TEST_PARAMS))
@@ -116,7 +120,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon_info = self.create_monsoon_info()
 
         # Sync device time, timezone and country code
-        utils.require_sl4a((self.dut,))
+        utils.require_sl4a((self.dut, ))
         utils.sync_device_time(self.dut)
         self.dut.droid.wifiSetCountryCode('US')
 
@@ -127,18 +131,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         # Reset the power consumption to 0 before each tests
         self.power_result.metric_value = 0
         # Set the device into rockbottom state
-        if self.rockbottom_script:
-            # The rockbottom script might include a device reboot, so it is
-            # necessary to stop SL4A during its execution.
-            self.dut.stop_services()
-            self.log.info('Executing rockbottom script for ' + self.dut.model)
-            os.chmod(self.rockbottom_script, 0o777)
-            os.system('{} {}'.format(self.rockbottom_script, self.dut.serial))
-            # Make sure the DUT is in root mode after coming back
-            self.dut.root_adb()
-            # Restart SL4A
-            self.dut.start_services()
-
+        self.dut_rockbottom()
         wutils.reset_wifi(self.dut)
         wutils.wifi_toggle_state(self.dut, False)
 
@@ -163,6 +156,21 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         self.log.info('Tearing down the test class')
         self.mon.usb('on')
+
+    def dut_rockbottom(self):
+        """Set the dut to rockbottom state
+
+        """
+        # The rockbottom script might include a device reboot, so it is
+        # necessary to stop SL4A during its execution.
+        self.dut.stop_services()
+        self.log.info('Executing rockbottom script for ' + self.dut.model)
+        os.chmod(self.rockbottom_script, 0o777)
+        os.system('{} {}'.format(self.rockbottom_script, self.dut.serial))
+        # Make sure the DUT is in root mode after coming back
+        self.dut.root_adb()
+        # Restart SL4A
+        self.dut.start_services()
 
     def unpack_testparams(self, bulk_params):
         """Unpack all the test specific parameters.
@@ -235,8 +243,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         tag = ''
         # Collecting current measurement data and plot
         self.file_path, self.test_result = self.monsoon_data_collect_save()
-        self.power_result.metric_value = (
-            self.test_result * PHONE_BATTERY_VOLTAGE)
+        self.power_result.metric_value = (self.test_result *
+                                          PHONE_BATTERY_VOLTAGE)
         wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
 
     def pass_fail_check(self):
@@ -277,12 +285,11 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         if hasattr(self, IPERF_DURATION):
             self.mon_duration = self.iperf_duration - 10
-        mon_info = ObjNew(
-            dut=self.mon,
-            freq=self.mon_freq,
-            duration=self.mon_duration,
-            offset=self.mon_offset,
-            data_path=self.mon_data_path)
+        mon_info = ObjNew(dut=self.mon,
+                          freq=self.mon_freq,
+                          duration=self.mon_duration,
+                          offset=self.mon_offset,
+                          data_path=self.mon_data_path)
         return mon_info
 
     def monsoon_recover(self):
@@ -321,8 +328,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         tag = '{}_{}_{}'.format(self.test_name, self.dut.model,
                                 self.dut.build_info['build_id'])
         data_path = os.path.join(self.mon_info.data_path, '{}.txt'.format(tag))
-        total_expected_samples = self.mon_info.freq * (
-            self.mon_info.duration + self.mon_info.offset)
+        total_expected_samples = self.mon_info.freq * (self.mon_info.duration +
+                                                       self.mon_info.offset)
         min_required_samples = total_expected_samples * MIN_PERCENT_SAMPLE / 100
         # Retry counter for monsoon data aquisition
         retry_measure = 1
@@ -390,8 +397,8 @@ class PowerBaseTest(base_test.BaseTestClass):
                         self.log.warning('No data taken, need to remeasure')
                     elif len(result._data_points) <= min_required_samples:
                         self.log.warning(
-                            'More than {} percent of samples are missing due to monsoon error. Need to remeasure'.
-                            format(100 - MIN_PERCENT_SAMPLE))
+                            'More than {} percent of samples are missing due to monsoon error. Need to remeasure'
+                            .format(100 - MIN_PERCENT_SAMPLE))
                     else:
                         need_collect_data = 0
                         self.log.warning(
