@@ -61,6 +61,12 @@ class Cmw500(abstract_inst.SocketInstrument):
         state = self._send_and_recv('FETCh:LTE:SIGN:PSWitched:STATe?')
         return state
 
+    @property
+    def duplex_mode(self):
+        """Gets current duplex of cell."""
+        return self._send_and_recv('CONFigure:LTE:SIGN:DMODe?')
+
+    @duplex_mode.setter
     def duplex_mode(self, mode):
         """Sets the Duplex mode of cell.
 
@@ -70,6 +76,12 @@ class Cmw500(abstract_inst.SocketInstrument):
         cmd = 'CONFigure:LTE:SIGN:DMODe {}'.format(mode)
         self._send(cmd)
 
+    @property
+    def band(self):
+        """Gets the current band of cell."""
+        return self._send_and_recv('CONFigure:LTE:SIGN:PCC:BAND?')
+
+    @band.setter
     def band(self, band):
         """Sets the Band of cell.
 
@@ -79,6 +91,13 @@ class Cmw500(abstract_inst.SocketInstrument):
         cmd = 'CONFigure:LTE:SIGN:PCC:BAND {}'.format(band)
         self._send(cmd)
 
+    @property
+    def dl_channel(self):
+        """Gets the downlink channel of cell."""
+        return self._send_and_recv('CONFigure:LTE:SIGN:RFSettings:PCC:CHANnel'
+                                   ':DL?')
+
+    @dl_channel.setter
     def dl_channel(self, channel):
         """Sets the downlink channel number of cell.
 
@@ -88,22 +107,69 @@ class Cmw500(abstract_inst.SocketInstrument):
         cmd = 'CONFigure:LTE:SIGN:RFSettings:PCC:CHANnel:DL {}'.format(channel)
         self._send(cmd)
 
-    def dl_bandwidth(self, bandwidth):
-        """Sets the downlink bandwidth of the cell.
+    @property
+    def ul_channel(self):
+        """Gets the uplink channel of cell."""
+        return self._send_and_recv('CONFigure:LTE:SIGN:RFSettings:PCC:CHANnel'
+                                   ':UL?')
+
+    @ul_channel.setter
+    def ul_channel(self, channel):
+        """Sets the up link channel number of cell.
 
         Args:
-            bandwidth: downlink bandwidth of cell.
+            channel: up link channel number of cell.
+        """
+        cmd = 'CONFigure:LTE:SIGN:RFSettings:PCC:CHANnel:UL {}'.format(channel)
+        self._send(cmd)
+
+    @property
+    def bandwidth(self):
+        """Get the channel bandwidth of the cell."""
+        return self._send_and_recv('CONFigure:LTE:SIGN:CELL:BANDwidth:PCC:DL?')
+
+    @bandwidth.setter
+    def bandwidth(self, bandwidth):
+        """Sets the channel bandwidth of the cell.
+
+        Args:
+            bandwidth: channel bandwidth of cell.
         """
         cmd = 'CONFigure:LTE:SIGN:CELL:BANDwidth:PCC:DL {}'.format(bandwidth)
         self._send(cmd)
 
-    def ul_bandwidth(self, bandwidth):
-        """Sets the uplink bandwidth if the cell.
+    @property
+    def ul_frequency(self):
+        """Get the uplink frequency of the cell."""
+        return self._send_and_recv('CONFigure:LTE:SIGN:RFSettings:PCC:CHANnel'
+                                   ':UL? MHZ')
+
+    @ul_frequency.setter
+    def ul_frequency(self, freq):
+        """Get the uplink frequency of the cell.
 
         Args:
-            bandwidth: uplink bandwidth of cell
+            freq: uplink frequency of the cell.
         """
-        cmd = 'CONFigure:LTE:SIGN:CELL:BANDwidth:PCC:UL {}'.format(bandwidth)
+        cmd = 'CONFigure:LTE:SIGN:RFSettings:PCC:CHANnel:UL {} MHZ'.format(
+            freq)
+        self._send(cmd)
+
+    @property
+    def dl_frequency(self):
+        """Get the downlink frequency of the cell"""
+        return self._send_and_recv('CONFigure:LTE:SIGN:RFSettings:PCC:CHANnel'
+                                   ':DL? MHZ')
+
+    @dl_frequency.setter
+    def dl_frequency(self, freq):
+        """Get the downlink frequency of the cell.
+
+        Args:
+            freq: downlink frequency of the cell.
+        """
+        cmd = 'CONFigure:LTE:SIGN:RFSettings:PCC:CHANnel:DL {} MHZ'.format(
+            freq)
         self._send(cmd)
 
     def transmode(self, tm_mode):
@@ -146,10 +212,10 @@ class Cmw500(abstract_inst.SocketInstrument):
             raise CmwError('Call box could not be connected with device')
 
     def set_downlink_power_level(self, pwlevel):
-        """Modifies RSPRE level
+        """Modifies RSPRE level.
 
         Args:
-            pwlevel: power level in dBm
+            pwlevel: power level in dBm.
         """
         cmd = 'CONFigure:LTE:SIGN:DL:PCC:RSEPre:LEVel {}'.format(pwlevel)
         self._send(cmd)
@@ -180,4 +246,4 @@ class Cmw500(abstract_inst.SocketInstrument):
 
 
 class CmwError(Exception):
-    """Class to raise exceptions related to cmw"""
+    """Class to raise exceptions related to cmw."""
