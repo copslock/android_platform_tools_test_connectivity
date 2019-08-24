@@ -92,6 +92,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import get_operatorname_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import get_carrierid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
@@ -968,8 +969,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 for i in range(0, 2):
                     sub_id = get_subid_from_slot_index(ad.log, ad, i)
                     operator = get_operatorname_from_slot_index(ad, i)
-                    ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
-                    if operator and "Google" in operator:
+                    carrier_id = get_carrierid_from_slot_index(ad, i)
+                    ad.log.info("Slot %d - Sub %s - %s - %d", i, sub_id, operator, carrier_id)
+                    if carrier_id == 2340:
                         ad.cbrs = sub_id
                         cbrs_sub_count += 1
             if cbrs_sub_count != 2:
