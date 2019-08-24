@@ -28,6 +28,7 @@ from acts import utils
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
 from acts.controllers import android_device
+from acts.controllers.access_point import AccessPoint
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_bss_settings
 from acts.controllers.ap_lib import hostapd_constants
@@ -437,6 +438,11 @@ class WifiBaseTest(BaseTestClass):
             orig_network_list_5g = copy.copy(network_list_5g)
             orig_network_list_2g = copy.copy(network_list_2g)
 
+            # kill hostapd & dhcpd if the cleanup was not successful
+            for i in range(len(self.access_points)):
+                self.log.debug("Check ap state and cleanup")
+                self._cleanup_hostapd_and_dhcpd(i)
+
             if len(network_list_5g) > 1:
                 self.config_5g = self._generate_legacy_ap_config(network_list_5g)
             if len(network_list_2g) > 1:
@@ -453,6 +459,58 @@ class WifiBaseTest(BaseTestClass):
             self.access_points[AP_2].start_ap(self.config_5g)
             self.populate_bssid(AP_2, self.access_points[AP_2],
                 orig_network_list_5g, orig_network_list_2g)
+
+    def _kill_processes(self, ap, daemon):
+        """ Kill hostapd and dhcpd daemons
+
+        Args:
+            ap: AP to cleanup
+            daemon: process to kill
+
+        Returns: True/False if killing process is successful
+        """
+        self.log.info("Killing %s" % daemon)
+        pids = ap.ssh.run('pidof %s' % daemon, ignore_status=True)
+        if pids.stdout:
+            ap.ssh.run('kill %s' % pids.stdout, ignore_status=True)
+        time.sleep(3)
+        pids = ap.ssh.run('pidof %s' % daemon, ignore_status=True)
+        if pids.stdout:
+            return False
+        return True
+
+    def _cleanup_hostapd_and_dhcpd(self, count):
+        """ Check if AP was cleaned up properly
+
+        Kill hostapd and dhcpd processes if cleanup was not successful in the
+        last run
+
+        Args:
+            count: AP to check
+
+        Returns:
+            New AccessPoint object if AP required cleanup
+
+        Raises:
+            Error: if the AccessPoint timed out to setup
+        """
+        ap = self.access_points[count]
+        phy_ifaces = ap.interfaces.get_physical_interface()
+        kill_hostapd = False
+        for iface in phy_ifaces:
+            if '2g_' in iface or '5g_' in iface or 'xg_' in iface:
+                kill_hostapd = True
+                break
+
+        if not kill_hostapd:
+            return
+
+        self.log.debug("Cleanup AP")
+        if not self._kill_processes(ap, 'hostapd') or \
+            not self._kill_processes(ap, 'dhcpd'):
+              raise("Failed to cleanup AP")
+
+        ap.__init__(self.user_params['AccessPoint'][count])
 
     def _generate_legacy_ap_config(self, network_list):
         bss_settings = []
