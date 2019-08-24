@@ -60,6 +60,17 @@ class InstrumentationCommandBuilderTest(unittest.TestCase):
         call = builder.build()
         self.assertIn('-f /some/proto/path', call)
 
+    def test_set_nohup(self):
+        builder = InstrumentationCommandBuilder()
+        builder.set_runner('runner')
+        builder.set_manifest_package('some.manifest.package')
+        builder.set_nohup()
+
+        call = builder.build()
+        self.assertEqual(
+            call, 'nohup am instrument -f some.manifest.package/runner >> '
+                  '$EXTERNAL_STORAGE/nohup.log 2>&1')
+
     def test__key_value_param_definition(self):
         builder = InstrumentationCommandBuilder()
         builder.set_runner('runner')
