@@ -16,6 +16,7 @@
 """Stream music through connected device from phone test implementation."""
 import logging
 import os
+import time
 
 from acts import asserts
 from acts.test_utils.abstract_devices.bluetooth_handsfree_abstract_device import BluetoothHandsfreeAbstractDeviceFactory as Factory
@@ -26,6 +27,7 @@ from acts.test_utils.coex.audio_test_utils import SshAudioCapture
 
 ADB_FILE_EXISTS = 'test -e %s && echo True'
 ADB_VOL_UP = 'input keyevent 24'
+HEADSET_CONTROL_SLEEP_TIME = 10
 
 
 class A2dpCodecBaseTest(BluetoothBaseTest):
@@ -82,8 +84,12 @@ class A2dpCodecBaseTest(BluetoothBaseTest):
                         'thdn': []}
 
         self.log.info('Pairing and connecting to headset...')
+        self.bt_device.power_off()
+        time.sleep(HEADSET_CONTROL_SLEEP_TIME)
+        self.bt_device.power_on()
+        time.sleep(HEADSET_CONTROL_SLEEP_TIME)
         asserts.assert_true(
-            connect_phone_to_headset(self.android, self.bt_device, 600),
+            connect_phone_to_headset(self.android, self.bt_device, 60),
             'Could not connect to device at address %s'
             % self.bt_device.mac_address,
             extras=self.metrics)
