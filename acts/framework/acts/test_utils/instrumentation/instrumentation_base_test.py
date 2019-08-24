@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import os
+import threading
 
 import yaml
 from acts.keys import Config
@@ -139,28 +140,48 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.ad_apps = app_installer.AppInstaller(self.ad_dut)
         self._prepare_device()
 
-    def adb_run(self, cmds, non_blocking=False):
+    def adb_run(self, cmds):
         """Run the specified command, or list of commands, with the ADB shell.
 
         Args:
             cmds: A string or list of strings representing ADB shell command(s)
-            non_blocking: Run asynchronously
 
         Returns: dict mapping command to resulting stdout
         """
         if isinstance(cmds, str):
             cmds = [cmds]
-        adb = self.ad_dut.adb
-        adb_shell = adb.shell_nb if non_blocking else adb.shell
         out = {}
         for cmd in cmds:
-            out[cmd] = adb_shell(cmd)
+            out[cmd] = self.ad_dut.adb.shell(cmd)
         return out
 
-    # Basic preparer methods
+    def adb_run_async(self, cmds, wait_secs=0):
+        """Run the specified command, or list of commands, with the ADB shell.
+        (async)
 
-    def enable_airplane_mode(self):
-        """Run the set of commands to properly enable airplane mode."""
+        Args:
+            cmds: A string or list of strings representing ADB shell command(s)
+            wait_secs: Creates a timer thread that terminates after the
+                specified number of seconds.
+
+        Returns: Tuple (procs, timer)
+            procs: dict mapping command to resulting subprocess.Popen object
+            timer: timer thread. Call join() to wait on the thread.
+        """
+        if isinstance(cmds, str):
+            cmds = [cmds]
+        procs = {}
+        timer = threading.Timer(wait_secs, lambda: None)
+        timer.start()
+        for cmd in cmds:
+            procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
+        return procs, timer
+
+    # Basic setup methods
+
+    def mode_airplane(self):
+        """Mode for turning on airplane mode only."""
+        self.log.info('Enabling airplane mode.')
         self.adb_run(common.airplane_mode.toggle(True))
         self.adb_run(common.auto_time.toggle(False))
         self.adb_run(common.auto_timezone.toggle(False))
@@ -168,6 +189,26 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.adb_run(common.location_network.toggle(False))
         self.adb_run(common.wifi.toggle(False))
         self.adb_run(common.bluetooth.toggle(False))
+
+    def mode_wifi(self):
+        """Mode for turning on airplane mode and wifi."""
+        self.log.info('Enabling airplane mode and wifi.')
+        self.adb_run(common.airplane_mode.toggle(True))
+        self.adb_run(common.location_gps.toggle(False))
+        self.adb_run(common.location_network.toggle(False))
+        self.adb_run(common.wifi.toggle(True))
+        self.adb_run(common.bluetooth.toggle(False))
+
+    def mode_bluetooth(self):
+        """Mode for turning on airplane mode and bluetooth."""
+        self.log.info('Enabling airplane mode and bluetooth.')
+        self.adb_run(common.airplane_mode.toggle(True))
+        self.adb_run(common.auto_time.toggle(False))
+        self.adb_run(common.auto_timezone.toggle(False))
+        self.adb_run(common.location_gps.toggle(False))
+        self.adb_run(common.location_network.toggle(False))
+        self.adb_run(common.wifi.toggle(False))
+        self.adb_run(common.bluetooth.toggle(True))
 
     def grant_permissions(self, permissions_apk_path):
         """Grant all runtime permissions with PermissionUtils.
