@@ -302,11 +302,11 @@ class TelephonyBaseTest(BaseTestClass):
         elif self.user_params.get("Attenuator"):
             ad.log.info("Device in chamber room")
             ensure_phone_idle(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file, self.cbrs_esim)
+            setup_droid_properties(self.log, ad, sim_conf_file)
         else:
             self.wait_for_sim_ready(ad)
             ensure_phone_default_state(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file, self.cbrs_esim)
+            setup_droid_properties(self.log, ad, sim_conf_file)
 
         default_slot = getattr(ad, "default_slot", 0)
         if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:
