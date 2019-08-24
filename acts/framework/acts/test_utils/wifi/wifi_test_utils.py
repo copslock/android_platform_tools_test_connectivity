@@ -762,6 +762,7 @@ def wifi_test_device_init(ad):
     # TODO(angli): need to verify the country code was actually set. No generic
     # way to check right now.
     ad.adb.shell("halutil -country %s" % WifiEnums.CountryCode.US)
+    ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
     utils.set_ambient_display(ad, False)
 
 
