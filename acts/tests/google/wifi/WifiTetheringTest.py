@@ -89,7 +89,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
             False: if not
         """
         # Currently only Verizon support IPv6 tethering
-        carrier_supports_tethering = ["vzw"]
+        carrier_supports_tethering = ["vzw", "Far EasTone", "Chunghwa Telecom"]
         operator = get_operator_name(self.log, dut)
         return operator in carrier_supports_tethering
 
@@ -101,7 +101,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
             True: if carrier supports ipv6
             False: if not
         """
-        carrier_supports_ipv6 = ["vzw", "tmo"]
+        carrier_supports_ipv6 = ["vzw", "tmo", "Far EasTone", "Chunghwa Telecom"]
         operator = get_operator_name(self.log, dut)
         self.log.info("Carrier is %s" % operator)
         return operator in carrier_supports_ipv6
