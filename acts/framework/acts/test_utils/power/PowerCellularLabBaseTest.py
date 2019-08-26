@@ -241,9 +241,13 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         """
         super().teardown_class()
 
-        if self.anritsu:
-            self.anritsu.stop_simulation()
-            self.anritsu.disconnect()
+        try:
+            if self.anritsu:
+                self.anritsu.stop_simulation()
+                self.anritsu.disconnect()
+        except AnritsuError as e:
+            self.log.error('Error while tearing down the Anritsu controller. '
+                           'Error message: ' + str(e))
 
         # Log a summary of results
         results_table_log = 'Results for cellular power tests:'
