@@ -374,7 +374,10 @@ def refresh_droid_config(log, ad):
     for sub_info in sub_info_list:
         sub_id = sub_info["subscriptionId"]
         sim_slot = sub_info["simSlotIndex"]
-        carrier_id = sub_info["carrierId"]
+        if sub_info.get("carrierId"):
+            carrier_id = sub_info["carrierId"]
+        else:
+            carrier_id = -1
 
         if sim_slot != INVALID_SIM_SLOT_INDEX:
             if sub_id not in ad.telephony["subscription"]:
