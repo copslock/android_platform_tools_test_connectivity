@@ -436,46 +436,65 @@ def get_if_addr6(intf, address_type):
     return None
 
 
-@utils.timeout(60)
-def wait_for_dhcp(intf):
+def wait_for_dhcp(interface_name):
     """Wait the DHCP address assigned to desired interface.
 
     Getting DHCP address takes time and the wait time isn't constant. Utilizing
     utils.timeout to keep trying until success
 
     Args:
-        intf: desired interface name
+        interface_name: desired interface name
     Returns:
         ip: ip address of the desired interface name
     Raise:
         TimeoutError: After timeout, if no DHCP assigned, raise
     """
     log = logging.getLogger()
-    reset_host_interface(intf)
+    reset_host_interface(interface_name)
+    start_time = time.time()
+    time_limit_seconds = 60
     ip = '0.0.0.0'
-    while ip == '0.0.0.0':
-        ip = scapy.get_if_addr(intf)
-    log.info('DHCP address assigned to {} as {}'.format(intf, ip))
-    return ip
+    while start_time + time_limit_seconds < time.time():
+        ip = scapy.get_if_addr(interface_name)
+        if ip == '0.0.0.0':
+            time.sleep(1)
+        else:
+            log.info('DHCP address assigned to %s as %s' % (interface_name, ip))
+            return ip
+    raise TimeoutError('Timed out while getting if_addr after %s seconds.' %
+                           time_limit_seconds)
 
-
-def reset_host_interface(intf):
+def reset_host_interface(intferface_name):
     """Reset the host interface.
 
     Args:
-        intf: the desired interface to reset
+        intferface_name: the desired interface to reset
     """
     log = logging.getLogger()
-    intf_down_cmd = 'ifconfig %s down' % intf
-    intf_up_cmd = 'ifconfig %s up' % intf
+    intf_down_cmd = 'ifconfig %s down' % intferface_name
+    intf_up_cmd = 'ifconfig %s up' % intferface_name
     try:
         job.run(intf_down_cmd)
         time.sleep(10)
         job.run(intf_up_cmd)
-        log.info('{} has been reset'.format(intf))
+        log.info('{} has been reset'.format(intferface_name))
     except job.Error:
         raise Exception('No such interface')
 
+def bringdown_host_interface(intferface_name):
+    """Reset the host interface.
+
+    Args:
+        intferface_name: the desired interface to reset
+    """
+    log = logging.getLogger()
+    intf_down_cmd = 'ifconfig %s down' % intferface_name
+    try:
+        job.run(intf_down_cmd)
+        time.sleep(2)
+        log.info('{} has been brought down'.format(intferface_name))
+    except job.Error:
+        raise Exception('No such interface')
 
 def create_pkt_config(test_class):
     """Creates the config for generating multicast packets
