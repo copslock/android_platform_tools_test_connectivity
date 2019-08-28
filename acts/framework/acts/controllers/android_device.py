@@ -1449,6 +1449,10 @@ class AndroidDevice:
             self.send_keycode("BACK")
 
     def exit_setup_wizard(self):
+        # Handling Android TV's setupwizard is ignored for now.
+        if 'feature:com.google.android.tv.installed' in self.adb.shell(
+                'pm list features'):
+            return
         if not self.is_user_setup_complete() or self.is_setupwizard_on():
             # b/116709539 need this to prevent reboot after skip setup wizard
             self.adb.shell(
