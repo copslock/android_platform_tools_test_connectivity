@@ -830,6 +830,14 @@ class WifiRssi_AllChannels_ActiveTraffic_Test(WifiRssiTest):
             ['VHT20', 'VHT40', 'VHT80'], ['ActiveTraffic'])
 
 
+class WifiRssi_SampleChannels_NoTraffic_Test(WifiRssiTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = self.generate_test_cases(
+            ['test_rssi_stability', 'test_rssi_vs_atten'], [6, 36, 149],
+            ['VHT20', 'VHT40', 'VHT80'], ['NoTraffic'])
+
+
 class WifiRssiTrackingTest(WifiRssiTest):
     def __init__(self, controllers):
         super().__init__(controllers)
