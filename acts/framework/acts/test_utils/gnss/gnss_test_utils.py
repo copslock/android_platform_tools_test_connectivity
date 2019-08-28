@@ -113,16 +113,22 @@ def enable_compact_and_particle_fusion_log(ad):
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
                  "GSERVICES_OVERRIDE -e location:proks_config 28")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e flp_use_particle_fusion true")
+                 "GSERVICES_OVERRIDE -e location:flp_use_particle_fusion true")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e flp_particle_fusion_extended_bug_report"
-                 " true")
+                 "GSERVICES_OVERRIDE -e "
+                 "location:flp_particle_fusion_extended_bug_report true")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e flp_event_log_size 54000")
+                 "GSERVICES_OVERRIDE -e location:flp_event_log_size 86400")
+    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
+                 "GSERVICES_OVERRIDE -e "
+                 "location:flp_particle_fusion_bug_report_window_sec 86400")
+    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
+                 "GSERVICES_OVERRIDE -e location:"
+                 "flp_particle_fusion_bug_report_max_buffer_size 86400")
     ad.adb.shell("am force-stop com.google.android.gms")
     ad.adb.shell("am broadcast -a com.google.android.gms.INITIALIZE")
-    ad.adb.shell("sqlite3 /data/data/com.google.android.gsf/databases/"
-                 "gservices.db 'SELECT * FROM overrides'")
+    ad.adb.shell("dumpsys activity service com.google.android.location."
+                 "internal.GoogleLocationManagerService")
 
 def disable_xtra_throttle(ad):
     """Disable XTRA throttle will have no limit to download XTRA data.
