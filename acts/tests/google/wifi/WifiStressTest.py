@@ -52,7 +52,12 @@ class WifiStressTest(WifiBaseTest):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        self.dut_client = self.android_devices[1]
+        # Note that test_stress_softAP_startup_and_stop_5g will always fail
+        # when testing with a single device.
+        if len(self.android_devices) > 1:
+            self.dut_client = self.android_devices[1]
+        else:
+            self.dut_client = None
         wutils.wifi_test_device_init(self.dut)
         req_params = []
         opt_param = [
