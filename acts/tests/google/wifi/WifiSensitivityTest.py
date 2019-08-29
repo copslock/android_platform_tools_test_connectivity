@@ -380,8 +380,8 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 num_of_tries=5,
                 check_connectivity=False)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
-        atten_dut_chain_map = wputils.get_atten_dut_chain_map(
-            self.attenuators, self.dut, self.ping_server, self.dut_ip)
+        atten_dut_chain_map = wputils.get_current_atten_dut_chain_map(
+            self.attenuators, self.dut, self.ping_server)
         for idx, atten in enumerate(self.attenuators):
             if atten_dut_chain_map[idx] == testcase_params['attenuated_chain']:
                 atten.offset = atten.instrument.max_atten
