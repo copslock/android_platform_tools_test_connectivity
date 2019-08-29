@@ -21,7 +21,7 @@ from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.instrumentation_base_test import \
     InstrumentationBaseTest
 
-MOCK_POWER_CONFIG = {
+MOCK_INSTRUMENTATION_CONFIG = {
     'not_file': 'NOT_FILE',
     'file1': 'FILE',
     'lvl1': {
@@ -54,7 +54,8 @@ class MockInstrumentationBaseTest(InstrumentationBaseTest):
     def __init__(self):
         self.user_params = MOCK_ACTS_USERPARAMS
         self.current_test_name = None
-        self._power_config = ConfigWrapper(MOCK_POWER_CONFIG)
+        self._instrumentation_config = ConfigWrapper(
+            MOCK_INSTRUMENTATION_CONFIG)
 
 
 class InstrumentationBaseTestTest(unittest.TestCase):
@@ -65,9 +66,10 @@ class InstrumentationBaseTestTest(unittest.TestCase):
         """Test that params with the 'FILE' marker are properly substituted
         with the corresponding paths from ACTS user_params.
         """
-        mock_config = copy.deepcopy(MOCK_POWER_CONFIG)
+        mock_config = copy.deepcopy(MOCK_INSTRUMENTATION_CONFIG)
         self.instrumentation_test._resolve_file_paths(mock_config)
-        self.assertEqual(mock_config['not_file'], MOCK_POWER_CONFIG['not_file'])
+        self.assertEqual(mock_config['not_file'],
+                         MOCK_INSTRUMENTATION_CONFIG['not_file'])
         self.assertEqual(mock_config['file1'], MOCK_ACTS_USERPARAMS['file1'])
         self.assertEqual(mock_config['lvl1']['file2'],
                          MOCK_ACTS_USERPARAMS['file2'])
