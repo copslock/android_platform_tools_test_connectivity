@@ -345,6 +345,11 @@ class WifiBaseTest(BaseTestClass):
         if ent_network_pwd:
             self.user_params["ent_networks_pwd"] = []
 
+        # kill hostapd & dhcpd if the cleanup was not successful
+        for i in range(len(self.access_points)):
+            self.log.debug("Check ap state and cleanup")
+            self._cleanup_hostapd_and_dhcpd(i)
+
         for count in range(config_count):
 
             network_list_2g = []
@@ -437,11 +442,6 @@ class WifiBaseTest(BaseTestClass):
 
             orig_network_list_5g = copy.copy(network_list_5g)
             orig_network_list_2g = copy.copy(network_list_2g)
-
-            # kill hostapd & dhcpd if the cleanup was not successful
-            for i in range(len(self.access_points)):
-                self.log.debug("Check ap state and cleanup")
-                self._cleanup_hostapd_and_dhcpd(i)
 
             if len(network_list_5g) > 1:
                 self.config_5g = self._generate_legacy_ap_config(network_list_5g)
