@@ -14,12 +14,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import collections
 import os
 import tempfile
 
 from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
 
 DEFAULT_INST_LOG_DIR = 'instrument-logs'
+
+START_TIMESTAMP = 'start'
+END_TIMESTAMP = 'end'
 
 
 def pull_proto(ad, dest_dir, source_path=None):
@@ -54,7 +58,8 @@ def pull_proto(ad, dest_dir, source_path=None):
 
 
 def get_session_from_local_file(proto_file):
-    """Get a instrumentation_data.Session object from a proto file on the host.
+    """Get a instrumentation_data_pb2.Session object from a proto file on the
+    host.
 
     Args:
         proto_file: Path to the proto file (on host)
@@ -66,7 +71,8 @@ def get_session_from_local_file(proto_file):
 
 
 def get_session_from_device(ad, proto_file=None):
-    """Get a instrumentation_data.Session object from a proto file on device.
+    """Get a instrumentation_data_pb2.Session object from a proto file on
+    device.
 
     Args:
         ad: AndroidDevice object
@@ -78,3 +84,38 @@ def get_session_from_device(ad, proto_file=None):
     with tempfile.TemporaryDirectory() as tmp_dir:
         pulled_proto = pull_proto(ad, tmp_dir, proto_file)
         return get_session_from_local_file(pulled_proto)
+
+
+def get_test_timestamps(session):
+    """Parse an instrumentation_data_pb2.Session to get the timestamps for each
+    test.
+
+    Args:
+        session: an instrumentation_data.Session object
+
+    Returns: a dict in the format
+        {
+            <test name> : (<begin_time>, <end_time>),
+            ...
+        }
+    """
+    timestamps = collections.defaultdict(dict)
+    for test_status in session.test_status:
+        entries = test_status.results.entries
+        # Timestamp entries have the key 'timestamp-message'
+        if any(entry.key == 'timestamps-message' for entry in entries):
+            test_name = None
+            timestamp = None
+            timestamp_type = None
+            for entry in entries:
+                if entry.key == 'test':
+                    test_name = entry.value_string
+                if entry.key == 'timestamp':
+                    timestamp = entry.value_long
+                if entry.key == 'start-timestamp':
+                    timestamp_type = START_TIMESTAMP
+                if entry.key == 'end-timestamp':
+                    timestamp_type = END_TIMESTAMP
+            if test_name and timestamp and timestamp_type:
+                timestamps[test_name][timestamp_type] = timestamp
+    return timestamps
