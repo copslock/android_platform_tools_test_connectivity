@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import os
-import threading
 
 import yaml
 from acts.keys import Config
@@ -155,27 +154,21 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             out[cmd] = self.ad_dut.adb.shell(cmd)
         return out
 
-    def adb_run_async(self, cmds, wait_secs=0):
+    def adb_run_async(self, cmds):
         """Run the specified command, or list of commands, with the ADB shell.
         (async)
 
         Args:
             cmds: A string or list of strings representing ADB shell command(s)
-            wait_secs: Creates a timer thread that terminates after the
-                specified number of seconds.
 
-        Returns: Tuple (procs, timer)
-            procs: dict mapping command to resulting subprocess.Popen object
-            timer: timer thread. Call join() to wait on the thread.
+        Returns: dict mapping command to resulting subprocess.Popen object
         """
         if isinstance(cmds, str):
             cmds = [cmds]
         procs = {}
-        timer = threading.Timer(wait_secs, lambda: None)
-        timer.start()
         for cmd in cmds:
             procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
-        return procs, timer
+        return procs
 
     # Basic setup methods
 
