@@ -19,7 +19,7 @@ import socket
 import unittest
 from unittest.mock import Mock
 from unittest.mock import patch
-import acts.controllers.gnssinst_lib.abstract_inst as pyinst
+import acts.controllers.abstract_inst as pyinst
 
 
 class SocketInstrumentTest(unittest.TestCase):
