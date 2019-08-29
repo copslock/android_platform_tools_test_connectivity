@@ -52,9 +52,15 @@ class WifiManagerTest(WifiBaseTest):
 
     def setup_class(self):
         self.dut = self.android_devices[0]
-        self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
-        wutils.wifi_test_device_init(self.dut_client)
+        wutils.wifi_toggle_state(self.dut, True)
+
+        self.dut_client = None
+        if len(self.android_devices) > 1:
+            self.dut_client = self.android_devices[1]
+            wutils.wifi_test_device_init(self.dut_client)
+            wutils.wifi_toggle_state(self.dut_client, True)
+
         req_params = []
         opt_param = [
             "open_network", "reference_networks", "iperf_server_address",
@@ -69,8 +75,6 @@ class WifiManagerTest(WifiBaseTest):
         asserts.assert_true(
             len(self.reference_networks) > 0,
             "Need at least one reference network with psk.")
-        wutils.wifi_toggle_state(self.dut, True)
-        wutils.wifi_toggle_state(self.dut_client, True)
         self.wpapsk_2g = self.reference_networks[0]["2g"]
         self.wpapsk_5g = self.reference_networks[0]["5g"]
         self.open_network_2g = self.open_network[0]["2g"]
@@ -88,7 +92,8 @@ class WifiManagerTest(WifiBaseTest):
             ad.droid.goToSleepNow()
         self.turn_location_off_and_scan_toggle_off()
         wutils.reset_wifi(self.dut)
-        wutils.reset_wifi(self.dut_client)
+        if self.dut_client:
+            wutils.reset_wifi(self.dut_client)
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
