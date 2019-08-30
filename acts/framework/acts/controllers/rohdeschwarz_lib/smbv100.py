@@ -16,7 +16,7 @@
 """Python module for Rohde & Schwarz SMBV100 Vector Signal Generator."""
 
 import numbers
-from acts.controllers.gnssinst_lib import abstract_inst
+from acts.controllers import abstract_inst
 
 
 class SMBV100Error(abstract_inst.SocketInstrumentError):
