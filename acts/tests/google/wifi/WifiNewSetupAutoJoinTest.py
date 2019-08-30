@@ -148,6 +148,8 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
         self.dut.cat_adb_log(test_name, begin_time)
 
     def teardown_class(self):
+        for ad in self.android_devices:
+            wutils.reset_wifi(ad)
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
