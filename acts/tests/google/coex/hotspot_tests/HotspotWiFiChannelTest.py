@@ -41,7 +41,7 @@ CNSS_LOG_PATH = '/data/vendor/wifi/wlan_logs'
 CNSS_CMD = 'cnss_diag -f -s'
 
 
-class HotspotWiFiChannelTest(acts.base_test.baseBaseTestClass):
+class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
     """Idea behind this test is to check which wifi channel gets picked with
     different lte bands(low, mid and high frequencies) when connected via
     hotspot from secondary device. As of now there is no failure condition
@@ -82,7 +82,7 @@ class HotspotWiFiChannelTest(acts.base_test.baseBaseTestClass):
         """Writes the data to csv file
 
         Args:
-            data: data to be writen into csv.
+            data: data to be written into csv.
         """
         with open('{}/test_data.csv'.format(self.log_path), 'a',
                   newline="") as cf:
@@ -146,7 +146,7 @@ class HotspotWiFiChannelTest(acts.base_test.baseBaseTestClass):
         self.cmw.reset()
 
         # Turn ON LTE signalling
-        if not self.cmw.switch_lte_signalling('ON') == 'ON':
+        if not self.cmw.switch_lte_signalling('ON') == 'ON,ADJ':
             self.log.error('Failed to turned ON LTE signalling.')
             return False
 
