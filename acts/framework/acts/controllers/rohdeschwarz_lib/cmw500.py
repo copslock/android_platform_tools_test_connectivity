@@ -16,7 +16,7 @@
 
 import time
 
-from acts.controllers.gnssinst_lib import abstract_inst
+from acts.controllers import abstract_inst
 
 
 class Cmw500(abstract_inst.SocketInstrument):
