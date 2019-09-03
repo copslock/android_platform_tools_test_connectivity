@@ -73,6 +73,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             wputils.get_full_rf_connection_map(self.attenuators, self.dut,
                                                self.remote_server,
                                                self.main_network))
+        self.log.info("RF Map (by Network): {}".format(self.rf_map_by_network))
+        self.log.info("RF Map (by Atten): {}".format(self.rf_map_by_atten))
 
         #Turn WiFi ON
         for dev in self.android_devices:

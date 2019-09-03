@@ -910,6 +910,9 @@ def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
                     "network": net_id,
                     "dut_chain": chain
                 })
+    logging.debug("RF Map (by Network): {}".format(rf_map_by_network))
+    logging.debug("RF Map (by Atten): {}".format(rf_map_by_atten))
+
     return rf_map_by_network, rf_map_by_atten
 
 
