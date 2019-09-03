@@ -58,15 +58,15 @@ class WifiP2pBaseTest(BaseTestClass):
 
         if len(self.android_devices) > 2:
             self.dut3 = self.android_devices[2]
+            acts.utils.set_location_service(self.dut3, True)
             wutils.wifi_test_device_init(self.dut3)
             utils.sync_device_time(self.dut3)
             self.dut3.droid.wifiP2pInitialize()
             time.sleep(p2pconsts.DEFAULT_FUNCTION_SWITCH_TIME)
             asserts.assert_true(self.dut3.droid.wifiP2pIsEnabled(),
-                    "DUT1's p2p should be initialized but it didn't")
+                    "DUT3's p2p should be initialized but it didn't")
             self.dut3.name = "Android_" + self.dut3.serial
             self.dut3.droid.wifiP2pSetDeviceName(self.dut3.name)
-            acts.utils.set_location_service(self.dut3, True)
 
 
     def teardown_class(self):
