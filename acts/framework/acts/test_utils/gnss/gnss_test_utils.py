@@ -683,14 +683,19 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
     Args:
         ad: An AndroidDevice object.
         begin_time: test begin time.
-        true_position: Coordinate as [latitude, longitude] to calculate position error.
+        true_position: Coordinate as [latitude, longitude] to calculate
+        position error.
         type: Different API for location fix. Use gnss/flp/nmea
 
     Returns:
         ttff_data: A dict of all TTFF data.
     """
     ttff_data = {}
+    ttff_loop_time = get_current_epoch_time()
     while True:
+        if get_current_epoch_time() - ttff_loop_time >= 120000:
+            raise signals.TestFailure("Fail to search specific GPSService "
+                                      "message in logcat. Abort test.")
         if not ad.is_adb_logcat_on:
             ad.start_adb_logcat()
         stop_gps_results = ad.search_logcat("stop gps test", begin_time)
@@ -708,21 +713,28 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
             ttff_loop = int(ttff_log[8].split(":")[-1])
             if ttff_loop in ttff_data.keys():
                 continue
+            ttff_loop_time = get_current_epoch_time()
             ttff_sec = float(ttff_log[11])
             if ttff_sec != 0.0:
                 ttff_cn = float(ttff_log[18].strip("]"))
                 if type == "gnss":
-                    gnss_results = ad.search_logcat("GPSService: Check item", begin_time)
+                    gnss_results = ad.search_logcat("GPSService: Check item",
+                                                    begin_time)
                     if gnss_results:
                         ad.log.debug(gnss_results[-1]["log_message"])
-                        gnss_location_log = gnss_results[-1]["log_message"].split()
-                        ttff_lat = float(gnss_location_log[8].split("=")[-1].strip(","))
-                        ttff_lon = float(gnss_location_log[9].split("=")[-1].strip(","))
+                        gnss_location_log = \
+                            gnss_results[-1]["log_message"].split()
+                        ttff_lat = float(
+                            gnss_location_log[8].split("=")[-1].strip(","))
+                        ttff_lon = float(
+                            gnss_location_log[9].split("=")[-1].strip(","))
                 elif type == "flp":
-                    flp_results = ad.search_logcat("GPSService: FLP Location", begin_time)
+                    flp_results = ad.search_logcat("GPSService: FLP Location",
+                                                   begin_time)
                     if flp_results:
                         ad.log.debug(flp_results[-1]["log_message"])
-                        flp_location_log = flp_results[-1]["log_message"].split()
+                        flp_location_log = \
+                            flp_results[-1]["log_message"].split()
                         ttff_lat = float(flp_location_log[8].split(",")[0])
                         ttff_lon = float(flp_location_log[8].split(",")[1])
             else:
