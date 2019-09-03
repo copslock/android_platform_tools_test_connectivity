@@ -535,7 +535,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                     setattr(self, testcase_name,
                             partial(self._test_sensitivity, testcase_params))
                     test_cases.append(testcase_name)
-            return test_cases
+        return test_cases
 
 
 class WifiSensitivity_AllChannels_Test(WifiSensitivityTest):
