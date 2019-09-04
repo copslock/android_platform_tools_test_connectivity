@@ -542,8 +542,13 @@ class WifiSensitivity_AllChannels_Test(WifiSensitivityTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = self.generate_test_cases(
-            [1, 2, 6, 10, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            ['0', '1', '2x2'])
+            [6, 36, 40, 44, 48, 149, 153, 157, 161], ['0', '1', '2x2'])
+
+
+class WifiSensitivity_SampleChannels_Test(WifiSensitivityTest):
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.tests = self.generate_test_cases([6, 36, 149], ['0', '1', '2x2'])
 
 
 class WifiSensitivity_2GHz_Test(WifiSensitivityTest):
