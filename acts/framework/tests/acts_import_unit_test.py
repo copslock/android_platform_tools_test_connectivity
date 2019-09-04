@@ -48,7 +48,7 @@ else:
 PY_FILE_REGEX = re.compile('.+\.py$')
 
 BLACKLIST = [
-    'acts/controllers/gnssinst_lib/rohdeschwarz/contest.py',
+    'acts/controllers/rohdeschwarz_lib/contest.py',
     'acts/controllers/native.py',
     'acts/controllers/native_android_device.py',
     'acts/controllers/packet_sender.py',
