@@ -454,7 +454,7 @@ def wait_for_dhcp(interface_name):
     start_time = time.time()
     time_limit_seconds = 60
     ip = '0.0.0.0'
-    while start_time + time_limit_seconds < time.time():
+    while start_time + time_limit_seconds > time.time():
         ip = scapy.get_if_addr(interface_name)
         if ip == '0.0.0.0':
             time.sleep(1)
