@@ -80,6 +80,8 @@ BLACKLIST = [
     'tests/google/tel/live/TelLiveNoSimTest.py',
     'tests/google/tel/live/TelLiveLockedSimTest.py',
     'tests/google/tel/live/TelLiveEmergencyTest.py',
+    'tests/google/tel/live/TelLiveConnectivityMonitorTest.py',
+    'tests/google/tel/live/TelLiveConnectivityMonitorMobilityTest.py',
     'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
     'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
     'tests/google/fuchsia/wlan/RebootStressTest.py',

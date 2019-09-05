@@ -7589,4 +7589,3 @@ def toggle_connectivity_monitor_setting(ad, state=True):
     monitor_setting = ad.adb.getprop("persist.radio.enable_tel_mon")
     ad.log.info("radio.enable_tel_mon setting is %s", monitor_setting)
     return monitor_setting == expected_monitor_setting
-

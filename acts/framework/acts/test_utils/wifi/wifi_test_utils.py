@@ -54,12 +54,12 @@ roaming_attn = {
         "AP1_on_AP2_off": [
             0,
             0,
-            60,
-            60
+            95,
+            95
         ],
         "AP1_off_AP2_on": [
-            60,
-            60,
+            95,
+            95,
             0,
             0
         ],
@@ -2001,7 +2001,9 @@ def trigger_roaming_and_validate(dut, attenuator, attn_val_name, expected_con):
         WifiEnums.SSID_KEY: expected_con[WifiEnums.SSID_KEY],
         WifiEnums.BSSID_KEY: expected_con["bssid"],
     }
-    set_attns_steps(attenuator, attn_val_name)
+    set_attns(attenuator, attn_val_name)
+    logging.info("Wait %ss for roaming to finish.", ROAMING_TIMEOUT)
+    time.sleep(ROAMING_TIMEOUT)
 
     verify_wifi_connection_info(dut, expected_con)
     expected_bssid = expected_con[WifiEnums.BSSID_KEY]
