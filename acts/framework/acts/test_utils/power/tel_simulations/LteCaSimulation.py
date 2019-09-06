@@ -83,8 +83,6 @@ class LteCaSimulation(LteSimulation):
             parameters: list of parameters
         """
 
-        super(LteSimulation, self).parse_parameters(parameters)
-
         # Enable all base stations initially. The ones that are not needed after
         # parsing the CA combo string can be removed.
         self.anritsu.set_simulation_model(
