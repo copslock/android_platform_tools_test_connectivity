@@ -86,8 +86,8 @@ class TelLabDataTest(TelephonyBaseTest):
     SETTLING_TIME = 30
     SERIAL_NO = cb_serial_number()
 
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ad = self.android_devices[0]
         self.ip_server = self.iperf_servers[0]
         self.port_num = self.ip_server.port
@@ -106,7 +106,6 @@ class TelLabDataTest(TelephonyBaseTest):
                                  self.start_power_level) / self.step_size))
         self.log.info("Max iterations is %d", self.MAX_ITERATIONS)
 
-    def setup_class(self):
         try:
             self.anritsu = MD8475A(self.md8475a_ip_address, self.wlan_option,
                                    self.md8475_version)

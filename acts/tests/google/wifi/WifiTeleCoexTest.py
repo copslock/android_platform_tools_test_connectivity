@@ -26,12 +26,9 @@ class WifiTeleCoexTest(TelephonyBaseTest):
     """Tests for WiFi, Celular Co-existance."""
 
 
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
-
-
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
+
         self.dut = self.android_devices[0]
         wifi_utils.wifi_test_device_init(self.dut)
         # Set attenuation to 0 on all channels.

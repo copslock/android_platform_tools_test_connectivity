@@ -66,8 +66,8 @@ from acts.utils import get_current_epoch_time
 from acts.keys import Config
 
 class TelLiveNoQXDMLogTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.dut = self.android_devices[0]
         self.ad_reference = self.android_devices[1] if len(
             self.android_devices) > 1 else None
