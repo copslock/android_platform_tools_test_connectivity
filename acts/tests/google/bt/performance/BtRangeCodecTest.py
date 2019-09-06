@@ -31,8 +31,8 @@ PHONE_BT_ENABLE_WAITING_TIME = 10
 
 class BtRangeCodecTest(A2dpCodecBaseTest):
 
-    def __init__(self, configs):
-        super().__init__(configs)
+    def setup_class(self):
+        super().setup_class()
         self.bt_logger = log.BluetoothMetricLogger.for_test_case()
         self.start_time = time.time()
         self.attenuator = self.attenuators[0]

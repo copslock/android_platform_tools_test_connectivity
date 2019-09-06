@@ -47,8 +47,8 @@ class BtChameleonTest(BtFunhausBaseTest):
     audio_file_2k1k_300_sec = "audio_file_2k1k_300_sec.wav"
     android_sdcard_music_path = "/sdcard/Music"
 
-    def __init__(self, controllers):
-        BtFunhausBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.chameleon = self.chameleon_devices[0]
         self.dut = self.android_devices[0]
         self.raw_audio_dest = "{}/{}".format(self.android_devices[0].log_path,
