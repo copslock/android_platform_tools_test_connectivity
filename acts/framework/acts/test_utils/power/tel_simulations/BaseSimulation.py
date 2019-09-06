@@ -265,7 +265,7 @@ class BaseSimulation():
             parameters: list of parameters
         """
 
-        pass
+        raise NotImplementedError()
 
     def consume_parameter(self, parameters, parameter_name, num_values=0):
         """ Parses a parameter from a list.

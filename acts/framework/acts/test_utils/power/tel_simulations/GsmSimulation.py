@@ -92,8 +92,6 @@ class GsmSimulation(BaseSimulation):
             parameters: list of parameters
         """
 
-        super().parse_parameters(parameters)
-
         # Setup band
 
         values = self.consume_parameter(parameters, self.PARAM_BAND, 1)
