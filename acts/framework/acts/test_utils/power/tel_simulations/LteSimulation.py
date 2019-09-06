@@ -1538,7 +1538,7 @@ class LteSimulation(BaseSimulation):
             bts.bandwidth = BtsBandwidth.LTE_BANDWIDTH_1dot4MHz
         else:
             msg = "Bandwidth = {} MHz is not valid for LTE".format(bandwidth)
-            self.log.Error(msg)
+            self.log.error(msg)
             raise ValueError(msg)
         time.sleep(5)  # It takes some time to propagate the new settings
 
