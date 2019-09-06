@@ -61,7 +61,7 @@ class RangeApNonSupporting11McTest(WifiBaseTest, RttBaseTest):
         stats = rutils.analyze_results(events, self.rtt_reference_distance_mm,
                                        self.rtt_reference_distance_margin_mm,
                                        self.rtt_min_expected_rssi_dbm,
-                                       self.lci_reference, self.lcr_reference)
+                                       [], [])
         dut.log.debug("Stats=%s", stats)
 
         for bssid, stat in stats.items():
