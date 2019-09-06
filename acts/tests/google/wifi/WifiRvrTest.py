@@ -309,7 +309,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         rssi = []
         for atten in testcase_params['atten_range']:
             if not wputils.health_check(self.dut, 5):
-                asserts.skip('Battery level too low. Skipping test.')
+                asserts.skip('Batter low or DUT overheating. Skipping test.')
             # Set Attenuation
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
@@ -490,9 +490,6 @@ class WifiRvrTest(base_test.BaseTestClass):
 
     def _test_rvr(self, testcase_params):
         """ Function that gets called for each test case
-
-        The function gets called in each rvr test case. The function customizes
-        the rvr test based on the test name of the test that called it
 
         Args:
             testcase_params: dict containing test-specific parameters
