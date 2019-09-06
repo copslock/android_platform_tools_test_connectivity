@@ -53,9 +53,6 @@ class MessagesStressTest(AwareBaseTest):
 
     SERVICE_NAME = "GoogleTestServiceXY"
 
-    def __init__(self, controllers):
-        AwareBaseTest.__init__(self, controllers)
-
     def init_info(self, msg, id, messages_by_msg, messages_by_id):
         """Initialize the message data structures.
 

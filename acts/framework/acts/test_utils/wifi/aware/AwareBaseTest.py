@@ -23,10 +23,6 @@ from acts.test_utils.wifi.aware import aware_test_utils as autils
 
 
 class AwareBaseTest(BaseTestClass):
-    def __init__(self, controllers):
-        if not hasattr(self, 'android_devices'):
-            super(AwareBaseTest, self).__init__(controllers)
-
     # message ID counter to make sure all uses are unique
     msg_id = 0
 

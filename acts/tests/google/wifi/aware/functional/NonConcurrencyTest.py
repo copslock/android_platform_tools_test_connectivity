@@ -36,9 +36,6 @@ class NonConcurrencyTest(AwareBaseTest):
     SERVICE_NAME = "GoogleTestXYZ"
     TETHER_SSID = "GoogleTestSoftApXYZ"
 
-    def __init__(self, controllers):
-        AwareBaseTest.__init__(self, controllers)
-
     def teardown_test(self):
         AwareBaseTest.teardown_test(self)
         for ad in self.android_devices:
