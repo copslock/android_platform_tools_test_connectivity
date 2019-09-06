@@ -47,10 +47,9 @@ class WifiStressTest(WifiBaseTest):
       network.
     """
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         # Note that test_stress_softAP_startup_and_stop_5g will always fail
         # when testing with a single device.

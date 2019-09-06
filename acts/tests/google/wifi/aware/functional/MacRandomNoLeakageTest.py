@@ -44,11 +44,9 @@ class MacRandomNoLeakageTest(AwareBaseTest, WifiBaseTest):
     PASSPHRASE = "This is some random passphrase - very very secure!!"
     PMK = "ODU0YjE3YzdmNDJiNWI4NTQ2NDJjNDI3M2VkZTQyZGU="
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-        AwareBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         asserts.assert_true(hasattr(self, 'packet_capture'),
                             "Needs packet_capture attribute to support sniffing.")
         self.configure_packet_capture(channel_5g=self.AWARE_DEFAULT_CHANNEL_5_BAND,
