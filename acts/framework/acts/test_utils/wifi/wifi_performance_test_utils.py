@@ -980,11 +980,63 @@ def get_iperf_arg_string(duration,
     return iperf_args
 
 
-def health_check(dut, batt_thresh=5):
+def get_dut_temperature(dut):
+    """Function to get dut temperature.
+
+    The function fetches and returns the reading from the temperature sensor
+    used for skin temperature and thermal throttling.
+
+    Args:
+        dut: AndroidDevice of interest
+    Returns:
+        temperature: device temperature. 0 if temperature could not be read
+    """
+    candidate_zones = ['sdm-therm-monitor', 'sdm-therm-adc', 'back_therm']
+    for zone in candidate_zones:
+        try:
+            temperature = int(
+                dut.adb.shell(
+                    'cat /sys/class/thermal/tz-by-name/{}/temp'.format(zone)))
+            break
+        except ValueError:
+            temperature = 0
+    if temperature == 0:
+        logging.debug('Could not check DUT temperature.')
+    elif temperature > 100:
+        temperature = temperature / 1000
+    return temperature
+
+
+def health_check(dut, batt_thresh=5, temp_threshold=50):
+    """Function to check health status of a DUT.
+
+    The function checks both battery levels and temperature to avoid DUT
+    powering off during the test.
+
+    Args:
+        dut: AndroidDevice of interest
+        batt_thresh: battery level threshold
+        temp_threshold: temperature threshold
+    Returns:
+        health_check: boolean confirming device is healthy
+    """
+    health_check = True
     battery_level = utils.get_battery_level(dut)
     if battery_level < batt_thresh:
-        return 0
-    return 1
+        logging.warning("Battery level low ({}%)".format(battery_level))
+        health_check = False
+    elif battery_level < batt_thresh + 5:
+        logging.debug(
+            "EARLY WARNING: Battery level = {}%".format(battery_level))
+
+    temperature = get_dut_temperature(dut)
+    if temperature > temp_threshold:
+        logging.warning("DUT Overheating ({} C)".format(temperature))
+        health_check = False
+    elif temperature > temp_threshold - 5:
+        logging.debug(
+            "EARLY WARNING: DUT Temperature = {}C".format(temperature))
+    return health_check
 
 
 def push_bdf(dut, bdf_file):
