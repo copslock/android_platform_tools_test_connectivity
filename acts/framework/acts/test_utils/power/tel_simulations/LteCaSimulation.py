@@ -27,6 +27,51 @@ from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
 
 
 class LteCaSimulation(LteSimulation):
+
+    # Dictionary of lower DL channel number bound for each band.
+    LOWEST_DL_CN_DICTIONARY = {
+        1: 0,
+        2: 600,
+        3: 1200,
+        4: 1950,
+        5: 2400,
+        6: 2650,
+        7: 2750,
+        8: 3450,
+        9: 3800,
+        10: 4150,
+        11: 4750,
+        12: 5010,
+        13: 5180,
+        14: 5280,
+        17: 5730,
+        18: 5850,
+        19: 6000,
+        20: 6150,
+        21: 6450,
+        22: 6600,
+        23: 7500,
+        24: 7700,
+        25: 8040,
+        26: 8690,
+        27: 9040,
+        28: 9210,
+        29: 9660,
+        30: 9770,
+        31: 9870,
+        32: 36000,
+        33: 36200,
+        34: 36350,
+        35: 36950,
+        36: 37550,
+        37: 37750,
+        38: 38250,
+        39: 38650,
+        40: 39650,
+        41: 41590,
+        42: 45590
+    }
+
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
     # the same configuration manually.
@@ -227,15 +272,18 @@ class LteCaSimulation(LteSimulation):
 
                 self.set_channel_bandwidth(self.bts[bts_index], bw)
 
+                # Calculate the channel number for the second carrier to be
+                # contiguous to the first one
+                channel_number = int(self.LOWEST_DL_CN_DICTIONARY[int(band)] +
+                                     bw * 10 - 2)
+
                 # Temporarily adding this line to workaround a bug in the
                 # Anritsu callbox in which the channel number needs to be set
                 # to a different value before setting it to the final one.
-                self.bts[bts_index].dl_channel = str(
-                    int(self.bts[bts_index - 1].dl_channel) + bw * 10 - 1)
+                self.bts[bts_index].dl_channel = str(channel_number + 1)
                 time.sleep(8)
 
-                self.bts[bts_index].dl_channel = str(
-                    int(self.bts[bts_index - 1].dl_channel) + bw * 10 - 2)
+                self.bts[bts_index].dl_channel = str(channel_number)
 
                 bts_index += 1
 
