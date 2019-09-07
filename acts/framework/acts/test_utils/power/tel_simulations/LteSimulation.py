@@ -1558,11 +1558,15 @@ class LteSimulation(BaseSimulation):
         # Wait for the setting to propagate
         time.sleep(5)
 
-    def calibrate(self):
+    def calibrate(self, band):
         """ Calculates UL and DL path loss if it wasn't done before
 
         Before running the base class implementation, configure the base station
-        to only use one downlink antenna with maximum bandwidth. """
+        to only use one downlink antenna with maximum bandwidth.
+
+        Args:
+            band: the band that is currently being calibrated.
+        """
 
         # Set in TM1 mode and 1 antenna for downlink calibration for LTE
         init_dl_antenna = None
@@ -1579,13 +1583,12 @@ class LteSimulation(BaseSimulation):
 
         # Set bandwidth to the maximum allowed value during calibration
         self.set_channel_bandwidth(
-            self.bts1,
-            max(self.allowed_bandwidth_dictionary[int(self.bts1.band)]))
+            self.bts1, max(self.allowed_bandwidth_dictionary[int(band)]))
 
         # SET TBS pattern for calibration
         self.bts1.tbs_pattern = "FULLALLOCATION" if self.tbs_pattern_on else "OFF"
 
-        super().calibrate()
+        super().calibrate(band)
 
         # Restore values as they were before changing them for calibration.
         if init_dl_antenna is not None:
