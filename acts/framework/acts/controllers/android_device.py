@@ -1068,7 +1068,7 @@ class AndroidDevice:
         time.sleep(10)
         log_path = getattr(self, "sdm_log_path", DEFAULT_SDM_LOG_PATH)
         sdm_logs = self.get_file_names(
-            log_path, begin_time=begin_time, match_string="*.sdm")
+            log_path, begin_time=begin_time, match_string="*.sdm*")
         if sdm_logs:
             sdm_log_path = os.path.join(self.device_log_path,
                                         "SDM_%s" % self.serial)
