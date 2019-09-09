@@ -108,48 +108,17 @@ class LteSimulation(BaseSimulation):
         'low': -20
     }
 
-    # Total RBs for each bandwidth
+    # Bandwidth [MHz] to total RBs mapping
+    total_rbs_dictionary = {20: 100, 15: 75, 10: 50, 5: 25, 3: 15, 1.4: 6}
 
-    total_rbs_dictionary = {
-        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 100,
-        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 75,
-        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 50,
-        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 25,
-        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 15,
-        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 6
-    }
+    # Bandwidth [MHz] to RB group size
+    rbg_dictionary = {20: 4, 15: 4, 10: 3, 5: 2, 3: 2, 1.4: 1}
 
-    # RB groups for each bandwidth
+    # Bandwidth [MHz] to minimum number of DL RBs that can be assigned to a UE
+    min_dl_rbs_dictionary = {20: 16, 15: 12, 10: 9, 5: 4, 3: 4, 1.4: 2}
 
-    rbg_dictionary = {
-        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 4,
-        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 4,
-        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 3,
-        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 2,
-        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 2,
-        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 1
-    }
-
-    # Table of minimum number of RBs. This is needed to achieve peak
-    # throughput.
-
-    min_dl_rbs_dictionary = {
-        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 16,
-        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 12,
-        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 9,
-        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 4,
-        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 4,
-        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2
-    }
-
-    min_ul_rbs_dictionary = {
-        BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 8,
-        BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 6,
-        BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 4,
-        BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 2,
-        BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 2,
-        BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 1
-    }
+    # Bandwidth [MHz] to minimum number of UL RBs that can be assigned to a UE
+    min_ul_rbs_dictionary = {20: 8, 15: 6, 10: 4, 5: 2, 3: 2, 1.4: 1}
 
     # Allowed bandwidth for each band.
     allowed_bandwidth_dictionary = {
@@ -219,525 +188,189 @@ class LteSimulation(BaseSimulation):
 
     # Peak throughput lookup tables for each TDD subframe
     # configuration and bandwidth
-
+    # yapf: disable
     tdd_config4_tput_lut = {
         0: {
-            '5MHz': {
-                'DL': 3.82,
-                'UL': 2.63
-            },
-            '10MHz': {
-                'DL': 11.31,
-                'UL': 9.03
-            },
-            '15MHz': {
-                'DL': 16.9,
-                'UL': 20.62
-            },
-            '20MHz': {
-                'DL': 22.88,
-                'UL': 28.43
-            }
+            5: {'DL': 3.82, 'UL': 2.63},
+            10: {'DL': 11.31,'UL': 9.03},
+            15: {'DL': 16.9, 'UL': 20.62},
+            20: {'DL': 22.88, 'UL': 28.43}
         },
         1: {
-            '5MHz': {
-                'DL': 6.13,
-                'UL': 4.08
-            },
-            '10MHz': {
-                'DL': 18.36,
-                'UL': 9.69
-            },
-            '15MHz': {
-                'DL': 28.62,
-                'UL': 14.21
-            },
-            '20MHz': {
-                'DL': 39.04,
-                'UL': 19.23
-            }
+            5: {'DL': 6.13, 'UL': 4.08},
+            10: {'DL': 18.36, 'UL': 9.69},
+            15: {'DL': 28.62, 'UL': 14.21},
+            20: {'DL': 39.04, 'UL': 19.23}
         },
         2: {
-            '5MHz': {
-                'DL': 5.68,
-                'UL': 2.30
-            },
-            '10MHz': {
-                'DL': 25.51,
-                'UL': 4.68
-            },
-            '15MHz': {
-                'DL': 39.3,
-                'UL': 7.13
-            },
-            '20MHz': {
-                'DL': 53.64,
-                'UL': 9.72
-            }
+            5: {'DL': 5.68, 'UL': 2.30},
+            10: {'DL': 25.51, 'UL': 4.68},
+            15: {'DL': 39.3, 'UL': 7.13},
+            20: {'DL': 53.64, 'UL': 9.72}
         },
         3: {
-            '5MHz': {
-                'DL': 8.26,
-                'UL': 3.45
-            },
-            '10MHz': {
-                'DL': 23.20,
-                'UL': 6.99
-            },
-            '15MHz': {
-                'DL': 35.35,
-                'UL': 10.75
-            },
-            '20MHz': {
-                'DL': 48.3,
-                'UL': 14.6
-            }
+            5: {'DL': 8.26, 'UL': 3.45},
+            10: {'DL': 23.20, 'UL': 6.99},
+            15: {'DL': 35.35, 'UL': 10.75},
+            20: {'DL': 48.3, 'UL': 14.6}
         },
         4: {
-            '5MHz': {
-                'DL': 6.16,
-                'UL': 2.30
-            },
-            '10MHz': {
-                'DL': 26.77,
-                'UL': 4.68
-            },
-            '15MHz': {
-                'DL': 40.7,
-                'UL': 7.18
-            },
-            '20MHz': {
-                'DL': 55.6,
-                'UL': 9.73
-            }
+            5: {'DL': 6.16, 'UL': 2.30},
+            10: {'DL': 26.77, 'UL': 4.68},
+            15: {'DL': 40.7, 'UL': 7.18},
+            20: {'DL': 55.6, 'UL': 9.73}
         },
         5: {
-            '5MHz': {
-                'DL': 6.91,
-                'UL': 1.12
-            },
-            '10MHz': {
-                'DL': 30.33,
-                'UL': 2.33
-            },
-            '15MHz': {
-                'DL': 46.04,
-                'UL': 3.54
-            },
-            '20MHz': {
-                'DL': 62.9,
-                'UL': 4.83
-            }
+            5: {'DL': 6.91, 'UL': 1.12},
+            10: {'DL': 30.33, 'UL': 2.33},
+            15: {'DL': 46.04, 'UL': 3.54},
+            20: {'DL': 62.9, 'UL': 4.83}
         },
         6: {
-            '5MHz': {
-                'DL': 6.13,
-                'UL': 4.13
-            },
-            '10MHz': {
-                'DL': 14.79,
-                'UL': 11.98
-            },
-            '15MHz': {
-                'DL': 23.28,
-                'UL': 17.46
-            },
-            '20MHz': {
-                'DL': 31.75,
-                'UL': 23.95
-            }
+            5: {'DL': 6.13, 'UL': 4.13},
+            10: {'DL': 14.79, 'UL': 11.98},
+            15: {'DL': 23.28, 'UL': 17.46},
+            20: {'DL': 31.75, 'UL': 23.95}
         }
     }
 
     tdd_config3_tput_lut = {
         0: {
-            '5MHz': {
-                'DL': 5.04,
-                'UL': 3.7
-            },
-            '10MHz': {
-                'DL': 15.11,
-                'UL': 17.56
-            },
-            '15MHz': {
-                'DL': 22.59,
-                'UL': 30.31
-            },
-            '20MHz': {
-                'DL': 30.41,
-                'UL': 41.61
-            }
+            5: {'DL': 5.04, 'UL': 3.7},
+            10: {'DL': 15.11, 'UL': 17.56},
+            15: {'DL': 22.59, 'UL': 30.31},
+            20: {'DL': 30.41, 'UL': 41.61}
         },
         1: {
-            '5MHz': {
-                'DL': 8.07,
-                'UL': 5.66
-            },
-            '10MHz': {
-                'DL': 24.58,
-                'UL': 13.66
-            },
-            '15MHz': {
-                'DL': 39.05,
-                'UL': 20.68
-            },
-            '20MHz': {
-                'DL': 51.59,
-                'UL': 28.76
-            }
+            5: {'DL': 8.07, 'UL': 5.66},
+            10: {'DL': 24.58, 'UL': 13.66},
+            15: {'DL': 39.05, 'UL': 20.68},
+            20: {'DL': 51.59, 'UL': 28.76}
         },
         2: {
-            '5MHz': {
-                'DL': 7.59,
-                'UL': 3.31
-            },
-            '10MHz': {
-                'DL': 34.08,
-                'UL': 6.93
-            },
-            '15MHz': {
-                'DL': 53.64,
-                'UL': 10.51
-            },
-            '20MHz': {
-                'DL': 70.55,
-                'UL': 14.41
-            }
+            5: {'DL': 7.59, 'UL': 3.31},
+            10: {'DL': 34.08, 'UL': 6.93},
+            15: {'DL': 53.64, 'UL': 10.51},
+            20: {'DL': 70.55, 'UL': 14.41}
         },
         3: {
-            '5MHz': {
-                'DL': 10.9,
-                'UL': 5.0
-            },
-            '10MHz': {
-                'DL': 30.99,
-                'UL': 10.25
-            },
-            '15MHz': {
-                'DL': 48.3,
-                'UL': 15.81
-            },
-            '20MHz': {
-                'DL': 63.24,
-                'UL': 21.65
-            }
+            5: {'DL': 10.9, 'UL': 5.0},
+            10: {'DL': 30.99, 'UL': 10.25},
+            15: {'DL': 48.3, 'UL': 15.81},
+            20: {'DL': 63.24, 'UL': 21.65}
         },
         4: {
-            '5MHz': {
-                'DL': 8.11,
-                'UL': 3.32
-            },
-            '10MHz': {
-                'DL': 35.74,
-                'UL': 6.95
-            },
-            '15MHz': {
-                'DL': 55.6,
-                'UL': 10.51
-            },
-            '20MHz': {
-                'DL': 72.72,
-                'UL': 14.41
-            }
+            5: {'DL': 8.11, 'UL': 3.32},
+            10: {'DL': 35.74, 'UL': 6.95},
+            15: {'DL': 55.6, 'UL': 10.51},
+            20: {'DL': 72.72, 'UL': 14.41}
         },
         5: {
-            '5MHz': {
-                'DL': 9.28,
-                'UL': 1.57
-            },
-            '10MHz': {
-                'DL': 40.49,
-                'UL': 3.44
-            },
-            '15MHz': {
-                'DL': 62.9,
-                'UL': 5.23
-            },
-            '20MHz': {
-                'DL': 82.21,
-                'UL': 7.15
-            }
+            5: {'DL': 9.28, 'UL': 1.57},
+            10: {'DL': 40.49, 'UL': 3.44},
+            15: {'DL': 62.9, 'UL': 5.23},
+            20: {'DL': 82.21, 'UL': 7.15}
         },
         6: {
-            '5MHz': {
-                'DL': 8.06,
-                'UL': 5.74
-            },
-            '10MHz': {
-                'DL': 19.82,
-                'UL': 17.51
-            },
-            '15MHz': {
-                'DL': 31.75,
-                'UL': 25.77
-            },
-            '20MHz': {
-                'DL': 42.12,
-                'UL': 34.91
-            }
+            5: {'DL': 8.06, 'UL': 5.74},
+            10: {'DL': 19.82, 'UL': 17.51},
+            15: {'DL': 31.75, 'UL': 25.77},
+            20: {'DL': 42.12, 'UL': 34.91}
         }
     }
 
     tdd_config2_tput_lut = {
         0: {
-            '5MHz': {
-                'DL': 3.11,
-                'UL': 2.55
-            },
-            '10MHz': {
-                'DL': 9.93,
-                'UL': 11.1
-            },
-            '15MHz': {
-                'DL': 13.9,
-                'UL': 21.51
-            },
-            '20MHz': {
-                'DL': 20.02,
-                'UL': 41.66
-            }
+            5: {'DL': 3.11, 'UL': 2.55},
+            10: {'DL': 9.93, 'UL': 11.1},
+            15: {'DL': 13.9, 'UL': 21.51},
+            20: {'DL': 20.02, 'UL': 41.66}
         },
         1: {
-            '5MHz': {
-                'DL': 5.33,
-                'UL': 4.27
-            },
-            '10MHz': {
-                'DL': 15.14,
-                'UL': 13.95
-            },
-            '15MHz': {
-                'DL': 33.84,
-                'UL': 19.73
-            },
-            '20MHz': {
-                'DL': 44.61,
-                'UL': 27.35
-            }
+            5: {'DL': 5.33, 'UL': 4.27},
+            10: {'DL': 15.14, 'UL': 13.95},
+            15: {'DL': 33.84, 'UL': 19.73},
+            20: {'DL': 44.61, 'UL': 27.35}
         },
         2: {
-            '5MHz': {
-                'DL': 6.87,
-                'UL': 3.32
-            },
-            '10MHz': {
-                'DL': 17.06,
-                'UL': 6.76
-            },
-            '15MHz': {
-                'DL': 49.63,
-                'UL': 10.5
-            },
-            '20MHz': {
-                'DL': 65.2,
-                'UL': 14.41
-            }
+            5: {'DL': 6.87, 'UL': 3.32},
+            10: {'DL': 17.06, 'UL': 6.76},
+            15: {'DL': 49.63, 'UL': 10.5},
+            20: {'DL': 65.2, 'UL': 14.41}
         },
         3: {
-            '5MHz': {
-                'DL': 5.41,
-                'UL': 4.17
-            },
-            '10MHz': {
-                'DL': 16.89,
-                'UL': 9.73
-            },
-            '15MHz': {
-                'DL': 44.29,
-                'UL': 15.7
-            },
-            '20MHz': {
-                'DL': 53.95,
-                'UL': 19.85
-            }
+            5: {'DL': 5.41, 'UL': 4.17},
+            10: {'DL': 16.89, 'UL': 9.73},
+            15: {'DL': 44.29, 'UL': 15.7},
+            20: {'DL': 53.95, 'UL': 19.85}
         },
         4: {
-            '5MHz': {
-                'DL': 8.7,
-                'UL': 3.32
-            },
-            '10MHz': {
-                'DL': 17.58,
-                'UL': 6.76
-            },
-            '15MHz': {
-                'DL': 51.08,
-                'UL': 10.47
-            },
-            '20MHz': {
-                'DL': 66.45,
-                'UL': 14.38
-            }
+            5: {'DL': 8.7, 'UL': 3.32},
+            10: {'DL': 17.58, 'UL': 6.76},
+            15: {'DL': 51.08, 'UL': 10.47},
+            20: {'DL': 66.45, 'UL': 14.38}
         },
         5: {
-            '5MHz': {
-                'DL': 9.46,
-                'UL': 1.55
-            },
-            '10MHz': {
-                'DL': 19.02,
-                'UL': 3.48
-            },
-            '15MHz': {
-                'DL': 58.89,
-                'UL': 5.23
-            },
-            '20MHz': {
-                'DL': 76.85,
-                'UL': 7.1
-            }
+            5: {'DL': 9.46, 'UL': 1.55},
+            10: {'DL': 19.02, 'UL': 3.48},
+            15: {'DL': 58.89, 'UL': 5.23},
+            20: {'DL': 76.85, 'UL': 7.1}
         },
         6: {
-            '5MHz': {
-                'DL': 4.74,
-                'UL': 3.9
-            },
-            '10MHz': {
-                'DL': 12.32,
-                'UL': 13.37
-            },
-            '15MHz': {
-                'DL': 27.74,
-                'UL': 25.02
-            },
-            '20MHz': {
-                'DL': 35.48,
-                'UL': 32.95
-            }
+            5: {'DL': 4.74, 'UL': 3.9},
+            10: {'DL': 12.32, 'UL': 13.37},
+            15: {'DL': 27.74, 'UL': 25.02},
+            20: {'DL': 35.48, 'UL': 32.95}
         }
     }
 
     tdd_config1_tput_lut = {
         0: {
-            '5MHz': {
-                'DL': 4.25,
-                'UL': 3.35
-            },
-            '10MHz': {
-                'DL': 8.38,
-                'UL': 7.22
-            },
-            '15MHz': {
-                'DL': 12.41,
-                'UL': 13.91
-            },
-            '20MHz': {
-                'DL': 16.27,
-                'UL': 24.09
-            }
+            5: {'DL': 4.25, 'UL': 3.35},
+            10: {'DL': 8.38, 'UL': 7.22},
+            15: {'DL': 12.41, 'UL': 13.91},
+            20: {'DL': 16.27, 'UL': 24.09}
         },
         1: {
-            '5MHz': {
-                'DL': 7.28,
-                'UL': 4.61
-            },
-            '10MHz': {
-                'DL': 14.73,
-                'UL': 9.69
-            },
-            '15MHz': {
-                'DL': 21.91,
-                'UL': 13.86
-            },
-            '20MHz': {
-                'DL': 27.63,
-                'UL': 17.18
-            }
+            5: {'DL': 7.28, 'UL': 4.61},
+            10: {'DL': 14.73, 'UL': 9.69},
+            15: {'DL': 21.91, 'UL': 13.86},
+            20: {'DL': 27.63, 'UL': 17.18}
         },
         2: {
-            '5MHz': {
-                'DL': 10.37,
-                'UL': 2.27
-            },
-            '10MHz': {
-                'DL': 20.92,
-                'UL': 4.66
-            },
-            '15MHz': {
-                'DL': 31.01,
-                'UL': 7.04
-            },
-            '20MHz': {
-                'DL': 42.03,
-                'UL': 9.75
-            }
+            5: {'DL': 10.37, 'UL': 2.27},
+            10: {'DL': 20.92, 'UL': 4.66},
+            15: {'DL': 31.01, 'UL': 7.04},
+            20: {'DL': 42.03, 'UL': 9.75}
         },
         3: {
-            '5MHz': {
-                'DL': 9.25,
-                'UL': 3.44
-            },
-            '10MHz': {
-                'DL': 18.38,
-                'UL': 6.95
-            },
-            '15MHz': {
-                'DL': 27.59,
-                'UL': 10.62
-            },
-            '20MHz': {
-                'DL': 34.85,
-                'UL': 13.45
-            }
+            5: {'DL': 9.25, 'UL': 3.44},
+            10: {'DL': 18.38, 'UL': 6.95},
+            15: {'DL': 27.59, 'UL': 10.62},
+            20: {'DL': 34.85, 'UL': 13.45}
         },
         4: {
-            '5MHz': {
-                'DL': 10.71,
-                'UL': 2.26
-            },
-            '10MHz': {
-                'DL': 21.54,
-                'UL': 4.67
-            },
-            '15MHz': {
-                'DL': 31.91,
-                'UL': 7.2
-            },
-            '20MHz': {
-                'DL': 43.35,
-                'UL': 9.74
-            }
+            5: {'DL': 10.71, 'UL': 2.26},
+            10: {'DL': 21.54, 'UL': 4.67},
+            15: {'DL': 31.91, 'UL': 7.2},
+            20: {'DL': 43.35, 'UL': 9.74}
         },
         5: {
-            '5MHz': {
-                'DL': 12.34,
-                'UL': 1.08
-            },
-            '10MHz': {
-                'DL': 24.78,
-                'UL': 2.34
-            },
-            '15MHz': {
-                'DL': 36.68,
-                'UL': 3.57
-            },
-            '20MHz': {
-                'DL': 49.84,
-                'UL': 4.81
-            }
+            5: {'DL': 12.34, 'UL': 1.08},
+            10: {'DL': 24.78, 'UL': 2.34},
+            15: {'DL': 36.68, 'UL': 3.57},
+            20: {'DL': 49.84, 'UL': 4.81}
         },
         6: {
-            '5MHz': {
-                'DL': 5.76,
-                'UL': 4.41
-            },
-            '10MHz': {
-                'DL': 11.68,
-                'UL': 9.7
-            },
-            '15MHz': {
-                'DL': 17.34,
-                'UL': 17.95
-            },
-            '20MHz': {
-                'DL': 23.5,
-                'UL': 23.42
-            }
+            5: {'DL': 5.76, 'UL': 4.41},
+            10: {'DL': 11.68, 'UL': 9.7},
+            15: {'DL': 17.34, 'UL': 17.95},
+            20: {'DL': 23.5, 'UL': 23.42}
         }
     }
+    # yapf: enable
 
     # Peak throughput lookup table dictionary
-
     tdd_config_tput_lut_dict = {
         'TDD_CONFIG1':
         tdd_config1_tput_lut,  # DL 256QAM, UL 64QAM & TBS turned OFF
@@ -1086,19 +719,19 @@ class LteSimulation(BaseSimulation):
             Total band signal power in dBm
         """
 
-        bandwidth = bts.bandwidth
+        bandwidth = self.get_bandwidth(bts)
 
-        if bandwidth == BtsBandwidth.LTE_BANDWIDTH_20MHz.value:  # 100 RBs
+        if bandwidth == 20:  # 100 RBs
             power = rsrp + 30.79
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_15MHz.value:  # 75 RBs
+        elif bandwidth == 15:  # 75 RBs
             power = rsrp + 29.54
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_10MHz.value:  # 50 RBs
+        elif bandwidth == 10:  # 50 RBs
             power = rsrp + 27.78
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_5MHz.value:  # 25 RBs
+        elif bandwidth == 5:  # 25 RBs
             power = rsrp + 24.77
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_3MHz.value:  # 15 RBs
+        elif bandwidth == 3:  # 15 RBs
             power = rsrp + 22.55
-        elif bandwidth == BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value:  # 6 RBs
+        elif bandwidth == 1.4:  # 6 RBs
             power = rsrp + 18.57
         else:
             raise ValueError("Invalid bandwidth value.")
@@ -1128,7 +761,7 @@ class LteSimulation(BaseSimulation):
 
         """
 
-        bandwidth = bts.bandwidth
+        bandwidth = self.get_bandwidth(bts)
         rb_ratio = float(bts.nrb_dl) / self.total_rbs_dictionary[bandwidth]
         streams = float(bts.dl_antenna)
         mcs = bts.lte_mcs_dl
@@ -1159,48 +792,48 @@ class LteSimulation(BaseSimulation):
         elif duplex_mode == self.DuplexMode.FDD.value:
             if not self.dl_256_qam and self.tbs_pattern_on and mcs == "28":
                 max_rate_per_stream = {
-                    BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 9.96,
-                    BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 17.0,
-                    BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 34.7,
-                    BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 52.7,
-                    BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 72.2
+                    3: 9.96,
+                    5: 17.0,
+                    10: 34.7,
+                    15: 52.7,
+                    20: 72.2
                 }.get(bandwidth, None)
             if not self.dl_256_qam and self.tbs_pattern_on and mcs == "27":
                 max_rate_per_stream = {
-                    BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.94,
+                    1.4: 2.94,
                 }.get(bandwidth, None)
             elif not self.dl_256_qam and not self.tbs_pattern_on and mcs == "27":
                 max_rate_per_stream = {
-                    BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.87,
-                    BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 7.7,
-                    BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 14.4,
-                    BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 28.7,
-                    BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 42.3,
-                    BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 57.7
+                    1.4: 2.87,
+                    3: 7.7,
+                    5: 14.4,
+                    10: 28.7,
+                    15: 42.3,
+                    20: 57.7
                 }.get(bandwidth, None)
             elif self.dl_256_qam and self.tbs_pattern_on and mcs == "27":
                 max_rate_per_stream = {
-                    BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 13.2,
-                    BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 22.9,
-                    BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 46.3,
-                    BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 72.2,
-                    BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 93.9
+                    3: 13.2,
+                    5: 22.9,
+                    10: 46.3,
+                    15: 72.2,
+                    20: 93.9
                 }.get(bandwidth, None)
             elif self.dl_256_qam and self.tbs_pattern_on and mcs == "26":
                 max_rate_per_stream = {
-                    BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 3.96,
+                    1.4: 3.96,
                 }.get(bandwidth, None)
             elif self.dl_256_qam and not self.tbs_pattern_on and mcs == "27":
                 max_rate_per_stream = {
-                    BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 11.3,
-                    BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 19.8,
-                    BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 44.1,
-                    BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 68.1,
-                    BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 88.4
+                    3: 11.3,
+                    5: 19.8,
+                    10: 44.1,
+                    15: 68.1,
+                    20: 88.4
                 }.get(bandwidth, None)
             elif self.dl_256_qam and not self.tbs_pattern_on and mcs == "26":
                 max_rate_per_stream = {
-                    BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 3.96,
+                    1.4: 3.96,
                 }.get(bandwidth, None)
 
         if not max_rate_per_stream:
@@ -1234,7 +867,7 @@ class LteSimulation(BaseSimulation):
 
         """
 
-        bandwidth = bts.bandwidth
+        bandwidth = self.get_bandwidth(bts)
         rb_ratio = float(bts.nrb_ul) / self.total_rbs_dictionary[bandwidth]
         mcs = bts.lte_mcs_ul
 
@@ -1264,21 +897,21 @@ class LteSimulation(BaseSimulation):
         elif duplex_mode == self.DuplexMode.FDD.value:
             if mcs == "23" and not self.ul_64_qam:
                 max_rate_per_stream = {
-                    BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 2.85,
-                    BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 7.18,
-                    BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 12.1,
-                    BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 24.5,
-                    BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 36.5,
-                    BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 49.1
+                    1.4: 2.85,
+                    3: 7.18,
+                    5: 12.1,
+                    10: 24.5,
+                    15: 36.5,
+                    20: 49.1
                 }.get(bandwidth, None)
             elif mcs == "28" and self.ul_64_qam:
                 max_rate_per_stream = {
-                    BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 4.2,
-                    BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 10.5,
-                    BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 17.2,
-                    BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 35.3,
-                    BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 53.0,
-                    BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 72.6
+                    1.4: 4.2,
+                    3: 10.5,
+                    5: 17.2,
+                    10: 35.3,
+                    15: 53.0,
+                    20: 72.6
                 }.get(bandwidth, None)
 
         if not max_rate_per_stream:
@@ -1437,7 +1070,7 @@ class LteSimulation(BaseSimulation):
                              "positive between 0 and 100.")
 
         # Get the available number of RBs for the channel bandwidth
-        bw = bts.bandwidth
+        bw = self.get_bandwidth(bts)
         # Get the current transmission mode
         tm = bts.transmode
         # Get min and max values from tables
@@ -1541,6 +1174,19 @@ class LteSimulation(BaseSimulation):
             self.log.error(msg)
             raise ValueError(msg)
         time.sleep(5)  # It takes some time to propagate the new settings
+
+    def get_bandwidth(self, bts):
+        """ Obtains bandwidth in MHz for a base station. The Anritsu callbox
+        returns a string that needs to be mapped to the right number.
+
+        Args:
+            bts: base station handle
+
+        Returns:
+            the channel bandwidth in MHz
+        """
+
+        return BtsBandwidth.get_float_value(bts.bandwidth)
 
     def set_dlul_configuration(self, bts, config):
         """ Sets the frame structure for TDD bands.
