@@ -471,9 +471,9 @@ class BaseSimulation():
 
         # If downlink or uplink were not yet calibrated, do it now
         if not self.dl_path_loss:
-            self.dl_path_loss = self.downlink_calibration(self.bts1)
+            self.dl_path_loss = self.downlink_calibration()
         if not self.ul_path_loss:
-            self.ul_path_loss = self.uplink_calibration(self.bts1)
+            self.ul_path_loss = self.uplink_calibration()
 
         # Detach after calibrating
         self.detach()
@@ -503,17 +503,14 @@ class BaseSimulation():
         time.sleep(2)
 
     def downlink_calibration(self,
-                             bts,
                              rat=None,
                              power_units_conversion_func=None):
         """ Computes downlink path loss and returns the calibration value
 
-        The bts needs to be set at the desired config (bandwidth, mode, etc)
-        before running the calibration. The phone also needs to be attached
-        to the desired basesation for calibration
+        The DUT needs to be attached to the base station before calling this
+        method.
 
         Args:
-            bts: basestation handle
             rat: desired RAT to calibrate (matching the label reported by
                 the phone)
             power_units_conversion_func: a function to convert the units
@@ -532,9 +529,9 @@ class BaseSimulation():
                 "reported by the phone.")
 
         # Set BTS to a good output level to minimize measurement error
-        init_output_level = bts.output_level
+        init_output_level = self.bts1.output_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        bts.output_level = self.DL_CAL_TARGET_POWER[
+        self.bts1.output_level = self.DL_CAL_TARGET_POWER[
             self.anritsu._md8475_version]
 
         # Set phone sleep time out
@@ -561,7 +558,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        bts.output_level = init_output_level
+        self.bts1.output_level = init_output_level
         time.sleep(2)
 
         # Calculate the mean of the measurements
@@ -570,7 +567,7 @@ class BaseSimulation():
         # Convert from RSRP to signal power
         if power_units_conversion_func:
             avg_down_power = power_units_conversion_func(
-                reported_asu_power, bts)
+                reported_asu_power, self.bts1)
         else:
             avg_down_power = reported_asu_power
 
@@ -590,15 +587,11 @@ class BaseSimulation():
 
         return down_call_path_loss
 
-    def uplink_calibration(self, bts):
+    def uplink_calibration(self):
         """ Computes uplink path loss and returns the calibration value
 
-        The bts needs to be set at the desired config (bandwidth, mode, etc)
-        before running the calibration. The phone also neeeds to be attached
-        to the desired basesation for calibration
-
-        Args:
-            bts: basestation handle
+        The DUT needs to be attached to the base station before calling this
+        method.
 
         Returns:
             Uplink calibration value and measured UL power
@@ -607,9 +600,9 @@ class BaseSimulation():
         # Set BTS1 to maximum input allowed in order to perform
         # uplink calibration
         target_power = self.MAX_PHONE_OUTPUT_POWER
-        initial_input_level = bts.input_level
+        initial_input_level = self.bts1.input_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        bts.input_level = self.MAX_BTS_INPUT_POWER
+        self.bts1.input_level = self.MAX_BTS_INPUT_POWER
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -647,7 +640,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        bts.input_level = initial_input_level
+        self.bts1.input_level = initial_input_level
         time.sleep(2)
 
         # Phone only supports 1x1 Uplink so always chain 0
