@@ -47,11 +47,9 @@ BLUETOOTH_WAIT_TIME = 2
 
 class WlanWithA2dpFunctionalityTest(CoexBaseTest):
 
-    def __init__(self, controllers):
-        super().__init__(controllers)
-
     def setup_class(self):
         super().setup_class()
+
         req_params = ["iterations", "fping_params", "headset_mac_address",
                       "audio_params"]
         self.unpack_userparams(req_params)
