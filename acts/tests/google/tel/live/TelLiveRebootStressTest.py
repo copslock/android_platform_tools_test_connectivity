@@ -81,8 +81,8 @@ from acts.utils import rand_ascii_str
 
 
 class TelLiveRebootStressTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        TelephonyBaseTest.setup_class(self)
 
         self.stress_test_number = int(
             self.user_params.get("stress_test_number", 10))
@@ -95,8 +95,6 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         self.user_params["check_crash"] = False
         self.skip_reset_between_cases = False
 
-    def setup_class(self):
-        TelephonyBaseTest.setup_class(self)
         self.dut_capabilities = self.dut.telephony.get("capabilities", [])
         self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
         self.default_testing_func_names = []

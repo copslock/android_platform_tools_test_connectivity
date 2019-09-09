@@ -126,8 +126,8 @@ from acts.utils import adb_shell_ping
 
 
 class TelLiveDataTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
 
         self.stress_test_number = self.get_stress_test_number()
         self.provider = self.android_devices[0]

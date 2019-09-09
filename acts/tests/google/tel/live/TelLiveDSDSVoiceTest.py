@@ -129,8 +129,8 @@ DEFAULT_PING_DURATION = 120  # in seconds
 
 
 class TelLiveDSDSVoiceTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.number_of_devices = 2
         self.stress_test_number = self.get_stress_test_number()
         self.dds_operator = self.user_params.get("dds_operator", None)

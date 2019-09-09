@@ -78,8 +78,8 @@ DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION = 1 * 60 * 60  # default 1 hour
 
 
 class TelLiveVideoTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        TelephonyBaseTest.setup_class(self)
 
         self.stress_test_number = self.get_stress_test_number()
 
@@ -87,8 +87,6 @@ class TelLiveVideoTest(TelephonyBaseTest):
             "long_duration_call_total_duration",
             DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
 
-    def setup_class(self):
-        TelephonyBaseTest.setup_class(self)
         for ad in self.android_devices:
             if not get_capability_for_subscription(ad, CAPABILITY_VT,
                 get_outgoing_voice_sub_id(ad)):

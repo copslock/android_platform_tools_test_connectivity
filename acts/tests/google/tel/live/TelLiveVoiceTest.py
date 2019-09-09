@@ -99,8 +99,8 @@ DEFAULT_PING_DURATION = 120  # in seconds
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 class TelLiveVoiceTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
 
         self.stress_test_number = self.get_stress_test_number()
         self.long_duration_call_total_duration = self.user_params.get(
