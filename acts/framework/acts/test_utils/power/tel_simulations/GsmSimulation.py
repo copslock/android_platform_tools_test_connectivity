@@ -71,17 +71,24 @@ class GsmSimulation(BaseSimulation):
 
         super().__init__(anritsu, log, dut, test_config, calibration_table)
 
-        anritsu.load_simulation_paramfile(
-            ntpath.join(self.callbox_config_path, self.GSM_BASIC_SIM_FILE))
-        self.anritsu.load_cell_paramfile(
-            ntpath.join(self.callbox_config_path, self.GSM_CELL_FILE))
-
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_GSM_ONLY,
                 dut.droid.subscriptionGetDefaultSubId()):
             log.error("Coold not set preferred network type.")
         else:
             log.info("Preferred network type set.")
+
+    def load_config_files(self, anritsu):
+        """ Loads configuration files for the simulation.
+
+            Args:
+                anritsu: the Anritsu callbox controller
+        """
+
+        anritsu.load_simulation_paramfile(
+            ntpath.join(self.callbox_config_path, self.GSM_BASIC_SIM_FILE))
+        anritsu.load_cell_paramfile(
+            ntpath.join(self.callbox_config_path, self.GSM_CELL_FILE))
 
     def parse_parameters(self, parameters):
         """ Configs a GSM simulation using a list of parameters.
