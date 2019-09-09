@@ -92,48 +92,6 @@ from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 
 
 class TelephonyBaseTest(BaseTestClass):
-    def __init__(self, controllers):
-
-        BaseTestClass.__init__(self, controllers)
-        self.wifi_network_ssid = self.user_params.get(
-            "wifi_network_ssid") or self.user_params.get(
-                "wifi_network_ssid_2g") or self.user_params.get(
-                    "wifi_network_ssid_5g")
-        self.wifi_network_pass = self.user_params.get(
-            "wifi_network_pass") or self.user_params.get(
-                "wifi_network_pass_2g") or self.user_params.get(
-                    "wifi_network_ssid_5g")
-
-        self.log_path = getattr(logging, "log_path", None)
-        self.qxdm_log = self.user_params.get("qxdm_log", True)
-        self.sdm_log = self.user_params.get("sdm_log", False)
-        self.enable_radio_log_on = self.user_params.get(
-            "enable_radio_log_on", False)
-        self.cbrs_esim = self.user_params.get("cbrs_esim", False)
-        self.account_util = self.user_params.get("account_util", None)
-        if isinstance(self.account_util, list):
-            self.account_util = self.account_util[0]
-        self.fi_util = self.user_params.get("fi_util", None)
-        if isinstance(self.fi_util, list):
-            self.fi_util = self.fi_util[0]
-        tasks = [(self._init_device, [ad]) for ad in self.android_devices]
-        multithread_func(self.log, tasks)
-        self.skip_reset_between_cases = self.user_params.get(
-            "skip_reset_between_cases", True)
-        self.log_path = getattr(logging, "log_path", None)
-        self.sim_config = {
-                            "config":SINGLE_SIM_CONFIG,
-                            "number_of_sims":1
-                        }
-
-        for ad in self.android_devices:
-            if hasattr(ad, "dsds"):
-                self.sim_config = {
-                                    "config":MULTI_SIM_CONFIG,
-                                    "number_of_sims":2
-                                }
-                break
-
     # Use for logging in the test cases to facilitate
     # faster log lookup and reduce ambiguity in logging.
     @staticmethod
@@ -188,6 +146,46 @@ class TelephonyBaseTest(BaseTestClass):
         return _safe_wrap_test_case
 
     def setup_class(self):
+        super().setup_class()
+        self.wifi_network_ssid = self.user_params.get(
+            "wifi_network_ssid") or self.user_params.get(
+                "wifi_network_ssid_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
+        self.wifi_network_pass = self.user_params.get(
+            "wifi_network_pass") or self.user_params.get(
+                "wifi_network_pass_2g") or self.user_params.get(
+                    "wifi_network_ssid_5g")
+
+        self.log_path = getattr(logging, "log_path", None)
+        self.qxdm_log = self.user_params.get("qxdm_log", True)
+        self.sdm_log = self.user_params.get("sdm_log", False)
+        self.enable_radio_log_on = self.user_params.get(
+            "enable_radio_log_on", False)
+        self.cbrs_esim = self.user_params.get("cbrs_esim", False)
+        self.account_util = self.user_params.get("account_util", None)
+        if isinstance(self.account_util, list):
+            self.account_util = self.account_util[0]
+        self.fi_util = self.user_params.get("fi_util", None)
+        if isinstance(self.fi_util, list):
+            self.fi_util = self.fi_util[0]
+        tasks = [(self._init_device, [ad]) for ad in self.android_devices]
+        multithread_func(self.log, tasks)
+        self.skip_reset_between_cases = self.user_params.get(
+            "skip_reset_between_cases", True)
+        self.log_path = getattr(logging, "log_path", None)
+        self.sim_config = {
+                            "config":SINGLE_SIM_CONFIG,
+                            "number_of_sims":1
+                        }
+
+        for ad in self.android_devices:
+            if hasattr(ad, "dsds"):
+                self.sim_config = {
+                                    "config":MULTI_SIM_CONFIG,
+                                    "number_of_sims":2
+                                }
+                break
+
         qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
         if isinstance(qxdm_log_mask_cfg, list):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]

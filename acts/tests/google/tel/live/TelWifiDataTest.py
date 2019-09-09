@@ -48,8 +48,8 @@ DEFAULT_IRAT_DURATION = 60
 
 
 class TelWifiDataTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
 
         self.stress_test_number = self.get_stress_test_number()
 
