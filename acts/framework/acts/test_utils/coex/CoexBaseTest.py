@@ -48,15 +48,6 @@ AVRCP_WAIT_TIME = 3
 
 class CoexBaseTest(BaseTestClass):
 
-    def __init__(self, controllers):
-        super().__init__(controllers)
-        self.pri_ad = self.android_devices[0]
-        if len(self.android_devices) == 2:
-            self.sec_ad = self.android_devices[1]
-        elif len(self.android_devices) == 3:
-            self.third_ad = self.android_devices[2]
-        self.ssh_config = None
-
     class IperfVariables:
 
         def __init__(self, current_test_name):
@@ -73,6 +64,14 @@ class CoexBaseTest(BaseTestClass):
                 self.is_bidirectional = True
 
     def setup_class(self):
+        super().setup_class()
+        self.pri_ad = self.android_devices[0]
+        if len(self.android_devices) == 2:
+            self.sec_ad = self.android_devices[1]
+        elif len(self.android_devices) == 3:
+            self.third_ad = self.android_devices[2]
+        self.ssh_config = None
+
         self.counter = 0
         self.thread_list = []
         if not setup_multiple_devices_for_bt_test(self.android_devices):
