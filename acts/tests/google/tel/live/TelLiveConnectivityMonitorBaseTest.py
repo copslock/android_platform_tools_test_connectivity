@@ -115,14 +115,12 @@ IGNORED_CALL_DROP_TRIGGERS = ["toggle_apm", "toggle_wifi"]
 
 
 class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        TelephonyBaseTest.setup_class(self)
         self.user_params["enable_connectivity_metrics"] = False
         self.user_params["telephony_auto_rerun"] = 0
         self.consecutive_failure_limit = 5
 
-    def setup_class(self):
-        TelephonyBaseTest.setup_class(self)
         self.dut = self.android_devices[0]
         self.ad_reference = self.android_devices[1]
         self.dut_model = get_model_name(self.dut)

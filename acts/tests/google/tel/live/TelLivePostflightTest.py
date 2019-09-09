@@ -25,10 +25,9 @@ from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 
 
 class TelLivePostflightTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.user_params["telephony_auto_rerun"] = 0
 
     def teardown_class(self):
