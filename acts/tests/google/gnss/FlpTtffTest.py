@@ -16,6 +16,7 @@
 
 from acts import utils
 from acts import asserts
+from acts import signals
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
 from acts.utils import get_current_epoch_time
@@ -63,15 +64,15 @@ class FlpTtffTest(BaseTestClass):
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.default_gnss_signal_attenuation)
         _init_device(self.ad)
-        if not verify_internet_connection(self.ad.log, self.ad, retries=3,
-                                          expected_state=True):
-            abort_all_tests(self.ad.log, "Fail to connect to LTE network")
 
     def setup_test(self):
         get_baseband_and_gms_version(self.ad)
         clear_logd_gnss_qxdm_log(self.ad)
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.default_gnss_signal_attenuation)
+        if not verify_internet_connection(self.ad.log, self.ad, retries=3,
+                                          expected_state=True):
+            raise signals.TestFailure("Fail to connect to LTE network.")
 
     def teardown_test(self):
         stop_qxdm_logger(self.ad)
