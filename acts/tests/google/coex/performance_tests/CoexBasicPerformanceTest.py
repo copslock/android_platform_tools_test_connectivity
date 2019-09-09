@@ -20,8 +20,8 @@ from acts.test_utils.coex.coex_test_utils import perform_classic_discovery
 
 class CoexBasicPerformanceTest(CoexPerformanceBaseTest):
 
-    def __init__(self, controllers):
-        super().__init__(controllers)
+    def setup_class(self):
+        super().setup_class()
 
     def run_iperf_and_perform_discovery(self):
         """Starts iperf client on host machine and bluetooth discovery

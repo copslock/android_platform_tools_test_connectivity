@@ -20,11 +20,9 @@ from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 
 class WlanStandalonePerformanceTest(CoexPerformanceBaseTest):
 
-    def __init__(self, controllers):
-        super().__init__(controllers)
-
     def setup_class(self):
         super().setup_class()
+
 
     def setup_test(self):
         super().setup_test()
