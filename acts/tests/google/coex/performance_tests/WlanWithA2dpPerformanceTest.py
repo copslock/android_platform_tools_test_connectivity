@@ -36,11 +36,9 @@ from acts.test_utils.coex.coex_test_utils import push_music_to_android_device
 
 class WlanWithA2dpPerformanceTest(CoexPerformanceBaseTest):
 
-    def __init__(self, controllers):
-        super().__init__(controllers)
-
     def setup_class(self):
         super().setup_class()
+
         req_params = ["iterations", "fping_params", "headset_mac_address",
                       "audio_params"]
         self.unpack_userparams(req_params)

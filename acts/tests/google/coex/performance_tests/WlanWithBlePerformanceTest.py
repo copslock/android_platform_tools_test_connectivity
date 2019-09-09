@@ -30,11 +30,9 @@ class WlanWithBlePerformanceTest(CoexPerformanceBaseTest):
     bluetooth_gatt_list = []
     gatt_server_list = []
 
-    def __init__(self, controllers):
-        super().__init__(controllers)
-
     def setup_class(self):
         super().setup_class()
+
 
     def setup_test(self):
         super().setup_test()
