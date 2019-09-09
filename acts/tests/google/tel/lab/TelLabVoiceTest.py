@@ -65,8 +65,8 @@ DEFAULT_CALL_NUMBER = "0123456789"
 
 
 class TelLabVoiceTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         try:
             self.stress_test_number = int(
                 self.user_params["stress_test_number"])
@@ -94,7 +94,6 @@ class TelLabVoiceTest(TelephonyBaseTest):
         if self.ad.sim_card == "VzW12349":
             set_preferred_apn_by_adb(self.ad, "VZWINTERNET")
 
-    def setup_class(self):
         try:
             self.anritsu = MD8475A(self.md8475a_ip_address, self.wlan_option,
                                    self.md8475_version)
