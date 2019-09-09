@@ -126,16 +126,10 @@ class BaseSimulation():
         # Enable roaming on the phone
         toggle_cell_data_roaming(self.dut, True)
 
-        # Set
+        # Load callbox config files
         self.callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
             self.anritsu._md8475_version)
-
-    def start(self):
-        """ Start simulation.
-
-        Starts the simulation in the Anritsu Callbox.
-
-        """
+        self.load_config_files(self.anritsu)
 
         # Make sure airplane mode is on so the phone won't attach right away
         toggle_airplane_mode(self.log, self.dut, True)
@@ -145,6 +139,17 @@ class BaseSimulation():
 
         # Start simulation if it wasn't started
         self.anritsu.start_simulation()
+
+    def load_config_files(self):
+        """ Loads configuration files for the simulation.
+
+        This method needs to be implement by derived simulation classes.
+
+        Args:
+            anritsu: the Anritsu callbox controller
+        """
+
+        raise NotImplementedError()
 
     def attach(self):
         """ Attach the phone to the basestation.
@@ -206,14 +211,6 @@ class BaseSimulation():
                 self.log.info("UE attached to the callbox.")
                 break
 
-        # Set signal levels obtained from the test parameters
-        if self.sim_dl_power:
-            self.set_downlink_rx_power(self.bts1, self.sim_dl_power)
-            time.sleep(2)
-        if self.sim_ul_power:
-            self.set_uplink_tx_power(self.bts1, self.sim_ul_power)
-            time.sleep(2)
-
         return True
 
     def detach(self):
@@ -254,6 +251,25 @@ class BaseSimulation():
 
         # Stop the simulation
         self.anritsu.stop_simulation()
+
+    def start(self):
+        """ Start the simulation by attaching the phone and setting the
+        required DL and UL power.
+
+        Note that this refers to starting the simulated testing environment
+        and not to starting the simulation in the Anritsu callbox, which was
+        done during the class initialization. """
+
+        if not self.attach():
+            raise RuntimeError('Could not attach to base station.')
+
+        # Set signal levels obtained from the test parameters
+        if self.sim_dl_power:
+            self.set_downlink_rx_power(self.bts1, self.sim_dl_power)
+            time.sleep(2)
+        if self.sim_ul_power:
+            self.set_uplink_tx_power(self.bts1, self.sim_ul_power)
+            time.sleep(2)
 
     def parse_parameters(self, parameters):
         """ Configures simulation using a list of parameters.

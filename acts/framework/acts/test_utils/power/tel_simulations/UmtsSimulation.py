@@ -106,9 +106,6 @@ class UmtsSimulation(BaseSimulation):
 
         super().__init__(anritsu, log, dut, test_config, calibration_table)
 
-        anritsu.load_simulation_paramfile(
-            ntpath.join(self.callbox_config_path, self.UMTS_BASIC_SIM_FILE))
-
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_WCDMA_ONLY,
                 dut.droid.subscriptionGetDefaultSubId()):
@@ -118,6 +115,16 @@ class UmtsSimulation(BaseSimulation):
 
         self.release_version = None
         self.packet_rate = None
+
+    def load_config_files(self, anritsu):
+        """ Loads configuration files for the simulation.
+
+            Args:
+                anritsu: the Anritsu callbox controller
+        """
+
+        anritsu.load_simulation_paramfile(
+            ntpath.join(self.callbox_config_path, self.UMTS_BASIC_SIM_FILE))
 
     def parse_parameters(self, parameters):
         """ Configs an UMTS simulation using a list of parameters.

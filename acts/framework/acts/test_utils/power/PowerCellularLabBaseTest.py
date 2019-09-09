@@ -176,8 +176,11 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Wait for new params to settle
         time.sleep(5)
 
-        # Attach the phone to the basestation
-        if not self.simulation.attach():
+        # Start the simulation. This method will raise a RuntimeException if
+        # the phone is unable to attach.
+        try:
+            self.simulation.start()
+        except RuntimeError:
             return False
 
         self.simulation.start_test_case()
@@ -331,6 +334,3 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         self.simulation = simulation_class(self.anritsu, self.log, self.dut,
                                            self.user_params[self.PARAMS_KEY],
                                            self.calibration_table[sim_type])
-
-        # Start the simulation
-        self.simulation.start()
