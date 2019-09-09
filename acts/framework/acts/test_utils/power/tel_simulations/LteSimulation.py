@@ -685,17 +685,13 @@ class LteSimulation(BaseSimulation):
         super().set_downlink_rx_power(bts, power)
 
     def downlink_calibration(self,
-                             bts,
                              rat=None,
                              power_units_conversion_func=None):
-        """ Computes downlink path loss and returns the calibration value
+        """ Computes downlink path loss and returns the calibration value.
 
-        The bts needs to be set at the desired config (bandwidth, mode, etc)
-        before running the calibration. The phone also needs to be attached
-        to the desired basesation for calibration
+        See base class implementation for details.
 
         Args:
-            bts: basestation handle
             rat: ignored, replaced by 'lteRsrp'
             power_units_conversion_func: ignored, replaced by
                 self.rsrp_to_signal_power
@@ -706,7 +702,6 @@ class LteSimulation(BaseSimulation):
         """
 
         return super().downlink_calibration(
-            bts,
             rat='lteDbm',
             power_units_conversion_func=self.rsrp_to_signal_power)
 
