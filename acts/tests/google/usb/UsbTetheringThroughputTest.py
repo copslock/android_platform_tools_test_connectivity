@@ -287,6 +287,6 @@ class UsbTetheringThroughputTest(base_test.BaseTestClass):
                     self.usb_controller_path,
                     self.get_usb_speed()[1].strip('.dwc3')),
                 ignore_status=True)
-            time.sleep(IFCONFIG_SETTLE_TIME)
+            self.dut.adb.wait_for_device()
             self.dut.start_services()
         self.run_iperf_tx_rx('usb_2', self.iperf_usb_2_criteria)
