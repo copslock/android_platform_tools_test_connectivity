@@ -52,6 +52,12 @@ class WifiRvrTest(base_test.BaseTestClass):
         base_test.BaseTestClass.__init__(self, controllers)
         self.failure_count_metric = BlackboxMetricLogger.for_test_case(
             metric_name='failure_count')
+        self.peak_tput_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='peak_tput')
+        self.high_tput_range_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='high_tput_range')
+        self.low_tput_range_metric = BlackboxMetricLogger.for_test_case(
+            metric_name='low_tput_range')
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -113,12 +119,8 @@ class WifiRvrTest(base_test.BaseTestClass):
                         result['testcase_params']['traffic_type']),
                     x_label='Attenuation (dB)',
                     primary_y='Throughput (Mbps)')
-            total_attenuation = [
-                att + result['fixed_attenuation']
-                for att in result['attenuation']
-            ]
             plots[plot_id].add_line(
-                total_attenuation,
+                result['total_attenuation'],
                 result['throughput_receive'],
                 result['test_name'],
                 marker='circle')
@@ -152,7 +154,39 @@ class WifiRvrTest(base_test.BaseTestClass):
                     or current_throughput >
                     throughput_limits['upper_limit'][idx]):
                 failure_count = failure_count + 1
+
+        # Set test metrics
         self.failure_count_metric.metric_value = failure_count
+        self.peak_tput_metric.metric_value = max(
+            rvr_result['throughput_receive'])
+
+        tput_below_limit = [
+            tput < self.testclass_params['tput_metric_targets'][
+                rvr_result['testcase_params']['mode']]['high']
+            for tput in rvr_result['throughput_receive']
+        ]
+        for idx in range(len(tput_below_limit)):
+            if all(tput_below_limit[idx:]):
+                self.high_tput_range_metric.metric_value = rvr_result[
+                    'total_attenuation'][max(idx, 1) - 1]
+                break
+        else:
+            self.high_tput_range_metric.metric_value = -1
+
+        tput_below_limit = [
+            tput < self.testclass_params['tput_metric_targets'][
+                rvr_result['testcase_params']['mode']]['low']
+            for tput in rvr_result['throughput_receive']
+        ]
+        for idx in range(len(tput_below_limit)):
+            if all(tput_below_limit[idx:]):
+                self.low_tput_range_metric.metric_value = rvr_result[
+                    'total_attenuation'][max(idx, 1) - 1]
+                break
+        else:
+            self.low_tput_range_metric.metric_value = -1
+
+        # Assert pass or fail
         if failure_count >= self.testclass_params['failure_count_tolerance']:
             asserts.fail('Test failed. Found {} points outside limits.'.format(
                 failure_count))
@@ -263,10 +297,6 @@ class WifiRvrTest(base_test.BaseTestClass):
         except:
             self.log.warning('ValueError: Golden file not found')
 
-        total_attenuation = [
-            att + rvr_result['fixed_attenuation']
-            for att in rvr_result['attenuation']
-        ]
         # Generate graph annotatios
         hover_text = [
             'TX MCS = {0} ({1:.1f}%). RX MCS = {2} ({3:.1f}%)'.format(
@@ -277,7 +307,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             for curr_llstats in rvr_result['llstats']
         ]
         figure.add_line(
-            total_attenuation,
+            rvr_result['total_attenuation'],
             rvr_result['throughput_receive'],
             'Test Results',
             hover_text=hover_text,
@@ -377,6 +407,10 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result['fixed_attenuation'] = self.testbed_params[
             'fixed_attenuation'][str(testcase_params['channel'])]
         rvr_result['attenuation'] = list(testcase_params['atten_range'])
+        rvr_result['total_attenuation'] = [
+            att + rvr_result['fixed_attenuation']
+            for att in rvr_result['attenuation']
+        ]
         rvr_result['rssi'] = rssi
         rvr_result['throughput_receive'] = throughput
         rvr_result['llstats'] = llstats
