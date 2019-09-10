@@ -26,6 +26,7 @@ from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
 DEST_DIR = 'dest/proto_dir'
 SOURCE_PATH = 'source/proto/protofile'
 SAMPLE_PROTO = 'data/sample.instrumentation_data_proto'
+SAMPLE_TIMESTAMP_PROTO = 'data/sample_timestamp.instrumentation_data_proto'
 
 
 class InstrumentationProtoParserTest(unittest.TestCase):
@@ -62,6 +63,17 @@ class InstrumentationProtoParserTest(unittest.TestCase):
         proto_file = os.path.join(os.path.dirname(__file__), SAMPLE_PROTO)
         self.assertIsInstance(parser.get_session_from_local_file(proto_file),
                               instrumentation_data_pb2.Session)
+
+    def test_get_test_timestamps(self):
+        proto_file = os.path.join(os.path.dirname(__file__),
+                                  SAMPLE_TIMESTAMP_PROTO)
+        session = parser.get_session_from_local_file(proto_file)
+        timestamps = parser.get_test_timestamps(session)
+        self.assertEqual(
+            timestamps['partialWakelock'][parser.START_TIMESTAMP],
+            1567029917802)
+        self.assertEqual(
+            timestamps['partialWakelock'][parser.END_TIMESTAMP], 1567029932879)
 
 
 if __name__ == '__main__':
