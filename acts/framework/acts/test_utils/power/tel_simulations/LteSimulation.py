@@ -664,10 +664,8 @@ class LteSimulation(BaseSimulation):
         # started. Saving this value in a variable for later
         self.sim_dl_power = dl_power
 
-    def set_downlink_rx_power(self, bts, rsrp):
-        """ Sets downlink rx power in RSRP using calibration
-
-        Lte simulation overrides this method so that it can convert from
+    def calibrated_downlink_rx_power(self, bts, rsrp):
+        """ LTE simulation overrides this method so that it can convert from
         RSRP to total signal power transmitted from the basestation.
 
         Args:
@@ -681,8 +679,8 @@ class LteSimulation(BaseSimulation):
             "Setting downlink signal level to {} RSRP ({} dBm)".format(
                 rsrp, power))
 
-        # Use parent method to set signal level
-        super().set_downlink_rx_power(bts, power)
+        # Use parent method to calculate signal level
+        return super().calibrated_downlink_rx_power(bts, power)
 
     def downlink_calibration(self,
                              rat=None,
