@@ -204,8 +204,16 @@ class DataCostTest(base_test.BaseTestClass):
             ad.adb.shell("rm -rf %s%s" % (DOWNLOAD_PATH, file_name))
 
         #  verify multipath preference values
-        self._verify_multipath_preferences(
-            ad, RELIABLE, NONE, wifi_network, cell_network)
+        curr_time = time.time()
+        while time.time() < curr_time + TIMEOUT:
+            try:
+                self._verify_multipath_preferences(
+                    ad, RELIABLE, NONE, wifi_network, cell_network)
+                return True
+            except signals.TestFailure as e:
+                self.log.debug("%s" % e)
+            time.sleep(1)
+        return False
 
     # TODO gmoturu@: Need to add tests that use the mobility rig and test when
     # the WiFi signal is poor and data signal is good.
