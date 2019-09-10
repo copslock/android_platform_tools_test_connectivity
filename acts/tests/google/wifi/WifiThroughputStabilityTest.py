@@ -462,7 +462,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             test_id = tuple(
                 self.extract_test_id(
                     current_params,
-                    ['traffic_type', 'traffic_direction', 'signal_level'
+                    ['mode', 'traffic_type', 'traffic_direction', 'signal_level'
                      ]).items())
             test_data = channel_data.setdefault(
                 test_id, collections.OrderedDict(position=[], throughput=[]))
@@ -491,7 +491,8 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             )
             for test_id, test_data in channel_data.items():
                 test_id_dict = dict(test_id)
-                legend = '{} {} - {} RSSI'.format(
+                legend = '{}, {} {}, {} RSSI'.format(
+                    test_id_dict['mode'],
                     test_id_dict['traffic_type'],
                     test_id_dict['traffic_direction'],
                     test_id_dict['signal_level'])
