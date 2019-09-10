@@ -265,10 +265,12 @@ class BaseSimulation():
 
         # Set signal levels obtained from the test parameters
         if self.sim_dl_power:
-            self.set_downlink_rx_power(self.bts1, self.sim_dl_power)
+            self.bts1.output_level = self.calibrated_downlink_rx_power(
+                self.bts1, self.sim_dl_power)
             time.sleep(2)
         if self.sim_ul_power:
-            self.set_uplink_tx_power(self.bts1, self.sim_ul_power)
+            self.bts1.input_level = self.calibrated_uplink_tx_power(
+                self.bts1, self.sim_ul_power)
             time.sleep(2)
 
     def parse_parameters(self, parameters):
@@ -350,13 +352,17 @@ class BaseSimulation():
                               power, self.DOWNLINK_SIGNAL_LEVEL_UNITS))
             return power
 
-    def set_downlink_rx_power(self, bts, signal_level):
-        """ Sets downlink rx power using calibration if available
+    def calibrated_downlink_rx_power(self, bts, signal_level):
+        """ Calculates the power level at the instrument's output in order to
+        obtain the required rx power level at the DUT's input.
+
+        If calibration values are not available, returns the uncalibrated signal
+        level.
 
         Args:
             bts: the base station in which to change the signal level
             signal_level: desired downlink received power, can be either a
-            key value pair, an int or a float
+                key value pair, an int or a float
         """
 
         # Obtain power value if the provided signal_level is a key value pair
@@ -384,25 +390,29 @@ class BaseSimulation():
             self.log.info(
                 "Requested phone DL Rx power of {} dBm, setting callbox Tx "
                 "power at {} dBm".format(power, calibrated_power))
-            bts.output_level = calibrated_power
             time.sleep(2)
             # Power has to be a natural number so calibration wont be exact.
             # Inform the actual received power after rounding.
             self.log.info(
                 "Phone downlink received power is {0:.2f} dBm".format(
                     calibrated_power - self.dl_path_loss))
+            return calibrated_power
         except TypeError:
-            bts.output_level = round(power)
             self.log.info("Phone downlink received power set to {} (link is "
                           "uncalibrated).".format(round(power)))
+            return round(power)
 
-    def set_uplink_tx_power(self, bts, signal_level):
-        """ Sets uplink tx power using calibration if available
+    def calibrated_uplink_tx_power(self, bts, signal_level):
+        """ Calculates the power level at the instrument's input in order to
+        obtain the required tx power level at the DUT's output.
+
+        If calibration values are not available, returns the uncalibrated signal
+        level.
 
         Args:
             bts: the base station in which to change the signal level
             signal_level: desired uplink transmitted power, can be either a
-            key value pair, an int or a float
+                key value pair, an int or a float
         """
 
         # Obtain power value if the provided signal_level is a key value pair
@@ -435,17 +445,17 @@ class BaseSimulation():
             self.log.info(
                 "Requested phone UL Tx power of {} dBm, setting callbox Rx "
                 "power at {} dBm".format(power, calibrated_power))
-            bts.input_level = calibrated_power
             time.sleep(2)
             # Power has to be a natural number so calibration wont be exact.
             # Inform the actual transmitted power after rounding.
             self.log.info(
                 "Phone uplink transmitted power is {0:.2f} dBm".format(
                     calibrated_power + self.ul_path_loss))
+            return calibrated_power
         except TypeError:
-            bts.input_level = round(power)
             self.log.info("Phone uplink transmitted power set to {} (link is "
                           "uncalibrated).".format(round(power)))
+            return round(power)
 
         # Stop IP traffic after setting the UL power level
         self.stop_traffic_for_calibration()
