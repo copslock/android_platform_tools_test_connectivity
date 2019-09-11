@@ -57,7 +57,9 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
 
     def setup_class(self):
         self.cmw = cmw500.Cmw500(self.callbox_params['host'],
-                                self.callbox_params['port'])
+                                 self.callbox_params['port'])
+        # Get basestation object.
+        self.bts = self.cmw.get_base_station()
         csv_header = ('Hotspot Mode', 'lte_band', 'LTE_dl_channel',
                       'LTE_ul_freq', 'LTE_dl_freq', 'wifi_channel')
         self.write_data_to_csv(csv_header)
@@ -102,7 +104,7 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
         for hmode, lband in itertools.product(self.hotspot_mode, lte_band):
             for channel in band_channel_map.get(lband):
                 test_case_name = ('test_hotspot_lte_band_{}_channel_{}_wifi'
-                                 '_band_{}'.format(lband, channel, hmode))
+                                  '_band_{}'.format(lband, channel, hmode))
                 test_params = OrderedDict(
                     lte_band=lband,
                     LTE_dl_channel=channel,
@@ -124,8 +126,8 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
                                   test_params['LTE_dl_channel'])
         band = test_params['hotspot_mode'].lower()
         self.initiate_wifi_tethering_and_connect(band)
-        test_params['LTE_ul_freq'] = self.cmw.ul_frequency
-        test_params['LTE_dl_freq'] = self.cmw.dl_frequency
+        test_params['LTE_ul_freq'] = self.bts.ul_frequency
+        test_params['LTE_dl_freq'] = self.bts.dl_frequency
         test_params['wifi_channel'] = self.get_wifi_channel(self.sec_ad)
         data = (test_params['hotspot_mode'], test_params['lte_band'],
                 test_params['LTE_dl_channel'], test_params['LTE_ul_freq'],
@@ -145,24 +147,24 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
         # Reset system
         self.cmw.reset()
 
+        if band in tdd_band_list:
+            self.bts.duplex_mode = cmw500.DuplexMode.TDD
+
         # Turn ON LTE signalling
-        if not self.cmw.switch_lte_signalling('ON') == 'ON,ADJ':
-            self.log.error('Failed to turned ON LTE signalling.')
-            return False
+        self.cmw.switch_lte_signalling(cmw500.LteState.LTE_ON)
 
         # Set Signalling params
         self.cmw.enable_packet_switching()
-        self.cmw.set_downlink_power_level('-64.8')
-        if band in tdd_band_list:
-            self.cmw.duplex_mode = 'TDD'
-        self.cmw.band = band
-        self.cmw.bandwidth = 'B050'
-        self.cmw.dl_channel = channel
+        self.bts.downlink_power_level = '-59.8'
+
+        self.bts.band = band
+        self.bts.bandwidth = cmw500.LteBandwidth.BANDWIDTH_5MHz
+        self.bts.dl_channel = channel
         time.sleep(1)
         self.log.info('Callbox settings: band: {}, bandwidth: {}, '
-                      'dl_channel: {}, '.format(self.cmw.band,
-                                                self.cmw.bandwidth,
-                                                self.cmw.dl_channel
+                      'dl_channel: {}, '.format(self.bts.band,
+                                                self.bts.bandwidth,
+                                                self.bts.dl_channel
                                                 ))
 
         toggle_airplane_mode(self.log, self.pri_ad, False)
