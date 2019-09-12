@@ -53,6 +53,7 @@ BLACKLIST = [
     'acts/controllers/native_android_device.py',
     'acts/controllers/packet_sender.py',
     'acts/test_utils/wifi/ota_chamber.py',
+    'acts/controllers/buds_lib/dev_utils/proto/gen/nanopb_pb2.py',
     'acts/test_utils/wifi/wifi_performance_test_utils.py',
     'acts/test_utils/wifi/wifi_power_test_utils.py',
     'acts/test_utils/wifi/wifi_retail_ap.py',
