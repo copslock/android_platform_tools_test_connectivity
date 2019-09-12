@@ -40,10 +40,6 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
     # Time gap (in seconds) when switching between Initiator and Responder
     TIME_BETWEEN_ROLES = 4
 
-    def __init__(self, controllers):
-        AwareBaseTest.__init__(self, controllers)
-        RttBaseTest.__init__(self, controllers)
-
     def setup_test(self):
         """Manual setup here due to multiple inheritance: explicitly execute the
         setup method from both parents.
