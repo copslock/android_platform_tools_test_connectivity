@@ -588,6 +588,11 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
     performance in varying channel conditions
     """
 
+    def __init__(self, controllers):
+        WifiSensitivityTest.__init__(self, controllers)
+        self.bb_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
+
     def setup_class(self):
         WifiSensitivityTest.setup_class(self)
         self.ota_chamber = ota_chamber.create(
@@ -635,10 +640,12 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 test_id_str = '{} {}Mbps, Chain Mask = {}'.format(
                     test_id_dict['mode'], test_id_dict['rate'],
                     test_id_dict['chain_mask'])
+                metric_test_config = '{}_{}_ch{}'.format(test_id_dict['mode'], test_id_dict['rate'], test_id_dict['chain_mask'])
             else:
                 test_id_str = '{} MCS{} Nss{}, Chain Mask = {}'.format(
                     test_id_dict['mode'], test_id_dict['rate'],
                     test_id_dict['num_streams'], test_id_dict['chain_mask'])
+                metric_test_config = '{}_mcs{}_nss{}_ch{}'.format(test_id_dict['mode'], test_id_dict['rate'], test_id_dict['num_streams'], test_id_dict['chain_mask'])
             curr_plot = wputils.BokehFigure(
                 title=str(test_id_str),
                 x_label='Orientation (deg)',
@@ -648,6 +655,11 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                     channel_results['orientation'],
                     channel_results['sensitivity'],
                     legend='Channel {}'.format(channel))
+                metric_tag = 'ota_summary_ch{}_{}'.format(channel, metric_test_config)
+                metric_name = metric_tag + '.avg_sensitivity'
+                metric_value = sum(channel_results['sensitivity']) / len(
+                    channel_results['sensitivity'])
+                self.bb_metric_logger.add_metric(metric_name, metric_value)
             current_context = (
                 context.get_current_context().get_full_output_path())
             output_file_path = os.path.join(current_context,
@@ -740,7 +752,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
 
 class WifiOtaSensitivity_10Degree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
-        WifiSensitivityTest.__init__(self, controllers)
+        WifiOtaSensitivityTest.__init__(self, controllers)
         requested_channels = [6, 36, 149]
         requested_rates = [
             self.RateTuple(8, 1, 86.7),
@@ -755,7 +767,7 @@ class WifiOtaSensitivity_10Degree_Test(WifiOtaSensitivityTest):
 
 class WifiOtaSensitivity_SingleChain_10Degree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
-        WifiSensitivityTest.__init__(self, controllers)
+        WifiOtaSensitivityTest.__init__(self, controllers)
         requested_channels = [6, 36, 149]
         requested_rates = [
             self.RateTuple(8, 1, 86.7),
@@ -768,7 +780,7 @@ class WifiOtaSensitivity_SingleChain_10Degree_Test(WifiOtaSensitivityTest):
 
 class WifiOtaSensitivity_45Degree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
-        WifiSensitivityTest.__init__(self, controllers)
+        WifiOtaSensitivityTest.__init__(self, controllers)
         requested_rates = [
             self.RateTuple(8, 1, 86.7),
             self.RateTuple(0, 1, 7.2),

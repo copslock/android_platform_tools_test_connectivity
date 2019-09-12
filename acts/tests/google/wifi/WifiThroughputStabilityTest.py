@@ -437,8 +437,8 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             metric_name='avg_throughput')
         self.std_dev_percent_metric = BlackboxMetricLogger.for_test_case(
             metric_name='std_dev_percent')
-        self.bb_metric_logger = wputils.BlackboxMappedMetricLogger.for_test_class(
-        )
+        self.bb_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
 
     def setup_class(self):
         WifiThroughputStabilityTest.setup_class(self)
