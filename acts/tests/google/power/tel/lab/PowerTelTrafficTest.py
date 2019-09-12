@@ -130,6 +130,10 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         self.dl_tput_logger.metric_value = self.iperf_results.get('DL', 0)
         self.ul_tput_logger.metric_value = self.iperf_results.get('UL', 0)
 
+        # Log the throughput values to Spanner
+        self.power_logger.set_dl_tput(self.iperf_results.get('DL', 0))
+        self.power_logger.set_ul_tput(self.iperf_results.get('UL', 0))
+
         for ips in self.iperf_servers:
             ips.stop()
 
@@ -176,8 +180,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             self.log.info("Getting {} throughput results.".format(
                 iph.traffic_direction))
 
-            iperf_result = iph.process_iperf_results(
-                device, self.log, self.iperf_servers, self.test_name)
+            iperf_result = iph.process_iperf_results(device, self.log,
+                                                     self.iperf_servers,
+                                                     self.test_name)
 
             throughput[iph.traffic_direction] = iperf_result
 
@@ -207,16 +212,14 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                                "current simulation class.")
             else:
 
-                self.log.info(
-                    "The expected {} throughput is {} Mbit/s.".format(
-                        direction, expected_t))
+                self.log.info("The expected {} throughput is {} Mbit/s.".format(
+                    direction, expected_t))
                 asserts.assert_true(
                     0.90 < throughput / expected_t < 1.10,
                     "{} throughput differed more than 10% from the expected "
-                    "value! ({}/{} = {})".format(direction, round(
-                        throughput, 3), round(expected_t, 3),
-                                                 round(throughput / expected_t,
-                                                       3)))
+                    "value! ({}/{} = {})".format(
+                        direction, round(throughput, 3), round(expected_t, 3),
+                        round(throughput / expected_t, 3)))
 
         super().pass_fail_check()
 
@@ -234,8 +237,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         """
 
         # The iPerf server is hosted in this computer
-        self.iperf_server_address = scapy.get_if_addr(
-            self.pkt_sender.interface)
+        self.iperf_server_address = scapy.get_if_addr(self.pkt_sender.interface)
 
         # Start iPerf traffic
         iperf_helpers = []
@@ -276,24 +278,22 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         ]:
             # Downlink traffic
             iperf_helpers.append(
-                self.start_iperf_traffic(
-                    client_host,
-                    server_idx=len(iperf_helpers),
-                    traffic_direction='DL',
-                    window=dl_tcp_window,
-                    bandwidth=self.bandwidth_limit_dl))
+                self.start_iperf_traffic(client_host,
+                                         server_idx=len(iperf_helpers),
+                                         traffic_direction='DL',
+                                         window=dl_tcp_window,
+                                         bandwidth=self.bandwidth_limit_dl))
 
         if self.traffic_direction in [
                 self.PARAM_DIRECTION_UL, self.PARAM_DIRECTION_DL_UL
         ]:
             # Uplink traffic
             iperf_helpers.append(
-                self.start_iperf_traffic(
-                    client_host,
-                    server_idx=len(iperf_helpers),
-                    traffic_direction='UL',
-                    window=ul_tcp_window,
-                    bandwidth=self.bandwidth_limit_ul))
+                self.start_iperf_traffic(client_host,
+                                         server_idx=len(iperf_helpers),
+                                         traffic_direction='UL',
+                                         window=ul_tcp_window,
+                                         bandwidth=self.bandwidth_limit_ul))
 
         return iperf_helpers
 
@@ -320,8 +320,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         config = {
             'traffic_type': 'TCP',
-            'duration':
-            self.mon_duration + self.mon_offset + self.IPERF_MARGIN,
+            'duration': self.mon_duration + self.mon_offset + self.IPERF_MARGIN,
             'start_meas_time': 4,
             'server_idx': server_idx,
             'port': self.iperf_servers[server_idx].port,
@@ -339,8 +338,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         self.iperf_servers[server_idx].start()
 
         # Start the client in the android device
-        wputils.run_iperf_client_nonblocking(
-            client_host, self.iperf_server_address, iph.iperf_args)
+        wputils.run_iperf_client_nonblocking(client_host,
+                                             self.iperf_server_address,
+                                             iph.iperf_args)
 
         return iph
 
