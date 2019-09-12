@@ -51,9 +51,6 @@ class DataPathTest(AwareBaseTest):
     # take some time
     WAIT_FOR_CLUSTER = 5
 
-    def __init__(self, controllers):
-        AwareBaseTest.__init__(self, controllers)
-
     def create_config(self, dtype):
         """Create a base configuration based on input parameters.
 

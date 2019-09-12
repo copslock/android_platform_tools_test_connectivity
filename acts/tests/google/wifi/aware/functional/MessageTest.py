@@ -35,9 +35,6 @@ class MessageTest(AwareBaseTest):
     NUM_MSGS_NO_QUEUE = 10
     NUM_MSGS_QUEUE_DEPTH_MULT = 2  # number of messages = mult * queue depth
 
-    def __init__(self, controllers):
-        AwareBaseTest.__init__(self, controllers)
-
     def create_msg(self, caps, payload_size, id):
         """Creates a message string of the specified size containing the input id.
 
