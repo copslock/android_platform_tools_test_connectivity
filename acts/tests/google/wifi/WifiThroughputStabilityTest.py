@@ -437,6 +437,8 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             metric_name='avg_throughput')
         self.std_dev_percent_metric = BlackboxMetricLogger.for_test_case(
             metric_name='std_dev_percent')
+        self.bb_metric_logger = wputils.BlackboxMappedMetricLogger.for_test_class(
+        )
 
     def setup_class(self):
         WifiThroughputStabilityTest.setup_class(self)
@@ -460,10 +462,9 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             channel_data = testclass_data.setdefault(current_params['channel'],
                                                      collections.OrderedDict())
             test_id = tuple(
-                self.extract_test_id(
-                    current_params,
-                    ['mode', 'traffic_type', 'traffic_direction', 'signal_level'
-                     ]).items())
+                self.extract_test_id(current_params, [
+                    'mode', 'traffic_type', 'traffic_direction', 'signal_level'
+                ]).items())
             test_data = channel_data.setdefault(
                 test_id, collections.OrderedDict(position=[], throughput=[]))
             current_throughput = (
@@ -482,6 +483,23 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         elif chamber_mode == 'stepped stirrers':
             x_label = 'Position Index'
 
+        # Publish test class metrics
+        for channel, channel_data in testclass_data.items():
+            for test_id, test_data in channel_data.items():
+                test_id_dict = dict(test_id)
+                metric_tag = 'ota_summary_{}_{}_{}_ch{}_{}'.format(
+                    test_id_dict['signal_level'], test_id_dict['traffic_type'],
+                    test_id_dict['traffic_direction'], channel,
+                    test_id_dict['mode'])
+                metric_name = metric_tag + '.avg_throughput'
+                metric_value = math.fsum(test_data['throughput']) / len(
+                    test_data['throughput'])
+                self.bb_metric_logger.add_metric(metric_name, metric_value)
+                metric_name = metric_tag + '.min_throughput'
+                metric_value = min(test_data['throughput'])
+                self.bb_metric_logger.add_metric(metric_name, metric_value)
+
+        # Plot test class results
         plots = []
         for channel, channel_data in testclass_data.items():
             current_plot = wputils.BokehFigure(
@@ -492,8 +510,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             for test_id, test_data in channel_data.items():
                 test_id_dict = dict(test_id)
                 legend = '{}, {} {}, {} RSSI'.format(
-                    test_id_dict['mode'],
-                    test_id_dict['traffic_type'],
+                    test_id_dict['mode'], test_id_dict['traffic_type'],
                     test_id_dict['traffic_direction'],
                     test_id_dict['signal_level'])
                 current_plot.add_line(test_data['position'],
