@@ -40,9 +40,6 @@ class DiscoveryTest(AwareBaseTest):
     # Note: reliability of message transmission is tested elsewhere
     msg_retx_count = 5  # hard-coded max value, internal API
 
-    def __init__(self, controllers):
-        AwareBaseTest.__init__(self, controllers)
-
     def create_base_config(self, caps, is_publish, ptype, stype, payload_size,
                            ttl, term_ind_on, null_match):
         """Create a base configuration based on input parameters.
