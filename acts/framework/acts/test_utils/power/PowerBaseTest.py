@@ -24,6 +24,7 @@ from acts import base_test
 from acts import utils
 from acts.controllers import monsoon
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
+from acts.test_utils.power.loggers.power_metric_logger import PowerMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
@@ -49,6 +50,7 @@ class ObjNew():
     """Create a random obj with unknown attributes and value.
 
     """
+
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -67,6 +69,7 @@ class PowerBaseTest(base_test.BaseTestClass):
     """Base class for all wireless power related tests.
 
     """
+
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
@@ -75,6 +78,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.start_meas_time = 0
         self.rockbottom_script = None
         self.img_name = ''
+        self.power_logger = PowerMetricLogger.for_test_case()
 
     def setup_class(self):
 
@@ -107,9 +111,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         asserts.abort_class_if(
             not self.threshold_file,
             'Required test pass/fail threshold file is missing')
-        asserts.abort_class_if(
-            not self.rockbottom_script,
-            'Required rockbottom setting script is missing')
+        asserts.abort_class_if(not self.rockbottom_script,
+                               'Required rockbottom setting script is missing')
 
         # Unpack test specific configs
         self.unpack_testparams(getattr(self, TEST_PARAMS))
@@ -121,7 +124,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon_info = self.create_monsoon_info()
 
         # Sync device time, timezone and country code
-        utils.require_sl4a((self.dut, ))
+        utils.require_sl4a((self.dut,))
         utils.sync_device_time(self.dut)
         self.dut.droid.wifiSetCountryCode('US')
 
@@ -154,6 +157,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         self.log.info('Tearing down the test case')
         self.mon.usb('on')
+        self.power_logger.set_avg_power(self.power_result.metric_value)
+        self.power_logger.set_testbed(self.testbed_name)
         # Take Bugreport
         if self.bug_report:
             begin_time = utils.get_current_epoch_time()
@@ -175,8 +180,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.dut.stop_services()
         self.log.info('Executing rockbottom script for ' + self.dut.model)
         os.chmod(self.rockbottom_script, 0o777)
-        os.system('{} {} {}'.format(self.rockbottom_script,
-                                    self.dut.serial,
+        os.system('{} {} {}'.format(self.rockbottom_script, self.dut.serial,
                                     self.img_name))
         # Make sure the DUT is in root mode after coming back
         self.dut.root_adb()
@@ -440,10 +444,11 @@ class PowerBaseTest(base_test.BaseTestClass):
             iperf_result = ipf.IPerfResult(iperf_file)
 
             # Compute the throughput in Mbit/s
-            throughput = (math.fsum(
-                iperf_result.instantaneous_rates[self.start_meas_time:-1]
-            ) / len(iperf_result.instantaneous_rates[self.start_meas_time:-1])
-                          ) * 8 * (1.024**2)
+            throughput = (
+                math.fsum(
+                    iperf_result.instantaneous_rates[self.start_meas_time:-1]) /
+                len(iperf_result.instantaneous_rates[self.start_meas_time:-1])
+            ) * 8 * (1.024**2)
 
             self.log.info('The average throughput is {}'.format(throughput))
         except ValueError:
