@@ -44,10 +44,9 @@ class WifiSoftApAcsTest(WifiBaseTest):
     * 2GHz and 5GHz  Wi-Fi network visible to the device.
     """
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)

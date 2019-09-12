@@ -43,10 +43,9 @@ class WlanScanTest(WifiBaseTest):
     * Several Wi-Fi networks visible to the device, including an open Wi-Fi
       network or a onHub/GoogleWifi
     """
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.start_access_point = False
         if "AccessPoint" in self.user_params:
             # This section sets up the config that could be sent to the AP if

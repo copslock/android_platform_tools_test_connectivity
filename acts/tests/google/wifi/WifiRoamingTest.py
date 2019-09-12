@@ -28,9 +28,6 @@ WifiEnums = wutils.WifiEnums
 
 class WifiRoamingTest(WifiBaseTest):
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
         """Setup required dependencies from config file and configure
            the required networks for testing roaming.
@@ -38,6 +35,8 @@ class WifiRoamingTest(WifiBaseTest):
         Returns:
             True if successfully configured the requirements for testing.
         """
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = ["roaming_attn", "roam_interval", "ping_addr",

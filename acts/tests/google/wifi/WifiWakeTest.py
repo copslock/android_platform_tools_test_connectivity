@@ -39,10 +39,9 @@ class WifiWakeTest(WifiBaseTest):
     * Two APs that can be turned on and off
     """
 
-    def __init__(self, controllers):
-        super().__init__(controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         # turn location back on
