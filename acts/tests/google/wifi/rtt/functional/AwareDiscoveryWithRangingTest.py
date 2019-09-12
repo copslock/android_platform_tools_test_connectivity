@@ -43,10 +43,6 @@ class AwareDiscoveryWithRangingTest(AwareBaseTest, RttBaseTest):
     # for both Initiators and Responders. Only the first mode works.
     RANGING_INITIATOR_RESPONDER_CONCURRENCY_LIMITATION = True
 
-    def __init__(self, controllers):
-        AwareBaseTest.__init__(self, controllers)
-        RttBaseTest.__init__(self, controllers)
-
     def setup_test(self):
         """Manual setup here due to multiple inheritance: explicitly execute the
     setup method from both parents."""
