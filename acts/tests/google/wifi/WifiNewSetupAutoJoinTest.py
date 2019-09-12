@@ -29,9 +29,6 @@ NETWORK_ERROR = "Device is not connected to reference network"
 
 
 class WifiNewSetupAutoJoinTest(WifiBaseTest):
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def add_network_and_enable(self, network):
         """Add a network and enable it.
 
@@ -52,6 +49,8 @@ class WifiNewSetupAutoJoinTest(WifiBaseTest):
         Returns:
             True if successfully configured the requirements for testing.
         """
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = ("atten_val", "ping_addr", "max_bugreports")
