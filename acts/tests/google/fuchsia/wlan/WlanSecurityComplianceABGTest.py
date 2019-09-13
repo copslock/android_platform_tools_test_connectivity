@@ -110,8 +110,8 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
     * One Android device or Fuchsia device
     * One Access Point
     """
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         if 'dut' in self.user_params:
             if self.user_params['dut'] == 'fuchsia_devices':
                 self.dut = create_wlan_device(self.fuchsia_devices[0])
@@ -133,7 +133,6 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
         self.secure_network_5g = secure_network['5g']
         self.security_profile = None
 
-    def setup_class(self):
         self.access_point.stop_all_aps()
 
     def setup_test(self):
