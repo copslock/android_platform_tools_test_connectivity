@@ -19,13 +19,13 @@ import itertools
 import json
 import logging
 import math
+import numpy
 import os
 from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers.utils_lib import ssh
-from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -50,14 +50,10 @@ class WifiRvrTest(base_test.BaseTestClass):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.failure_count_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='failure_count')
-        self.peak_tput_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='peak_tput')
-        self.high_tput_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='high_tput_range')
-        self.low_tput_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='low_tput_range')
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -156,35 +152,8 @@ class WifiRvrTest(base_test.BaseTestClass):
                 failure_count = failure_count + 1
 
         # Set test metrics
-        self.failure_count_metric.metric_value = failure_count
-        self.peak_tput_metric.metric_value = max(
-            rvr_result['throughput_receive'])
-
-        tput_below_limit = [
-            tput < self.testclass_params['tput_metric_targets'][
-                rvr_result['testcase_params']['mode']]['high']
-            for tput in rvr_result['throughput_receive']
-        ]
-        for idx in range(len(tput_below_limit)):
-            if all(tput_below_limit[idx:]):
-                self.high_tput_range_metric.metric_value = rvr_result[
-                    'total_attenuation'][max(idx, 1) - 1]
-                break
-        else:
-            self.high_tput_range_metric.metric_value = -1
-
-        tput_below_limit = [
-            tput < self.testclass_params['tput_metric_targets'][
-                rvr_result['testcase_params']['mode']]['low']
-            for tput in rvr_result['throughput_receive']
-        ]
-        for idx in range(len(tput_below_limit)):
-            if all(tput_below_limit[idx:]):
-                self.low_tput_range_metric.metric_value = rvr_result[
-                    'total_attenuation'][max(idx, 1) - 1]
-                break
-        else:
-            self.low_tput_range_metric.metric_value = -1
+        rvr_result['metrics']['failure_count'] = failure_count
+        self.testcase_metric_logger.add_metric('failure_count', failure_count)
 
         # Assert pass or fail
         if failure_count >= self.testclass_params['failure_count_tolerance']:
@@ -317,6 +286,43 @@ class WifiRvrTest(base_test.BaseTestClass):
         output_file_path = os.path.join(self.log_path,
                                         '{}.html'.format(test_name))
         figure.generate_figure(output_file_path)
+
+        #Set test metrics
+        rvr_result['metrics'] = {}
+        rvr_result['metrics']['peak_tput'] = max(
+            rvr_result['throughput_receive'])
+        self.testcase_metric_logger.add_metric(
+            'peak_tput', rvr_result['metrics']['peak_tput'])
+
+        tput_below_limit = [
+            tput < self.testclass_params['tput_metric_targets'][
+                rvr_result['testcase_params']['mode']]['high']
+            for tput in rvr_result['throughput_receive']
+        ]
+        for idx in range(len(tput_below_limit)):
+            if all(tput_below_limit[idx:]):
+                rvr_result['metrics']['high_tput_range'] = rvr_result[
+                    'total_attenuation'][max(idx, 1) - 1]
+                break
+        else:
+            rvr_result['metrics']['high_tput_range'] = -1
+        self.testcase_metric_logger.add_metric(
+            'high_tput_range', rvr_result['metrics']['high_tput_range'])
+
+        tput_below_limit = [
+            tput < self.testclass_params['tput_metric_targets'][
+                rvr_result['testcase_params']['mode']]['low']
+            for tput in rvr_result['throughput_receive']
+        ]
+        for idx in range(len(tput_below_limit)):
+            if all(tput_below_limit[idx:]):
+                rvr_result['metrics']['low_tput_range'] = rvr_result[
+                    'total_attenuation'][max(idx, 1) - 1]
+                break
+        else:
+            rvr_result['metrics']['low_tput_range'] = -1
+        self.testcase_metric_logger.add_metric(
+            'low_tput_range', rvr_result['metrics']['low_tput_range'])
 
     def run_rvr_test(self, testcase_params):
         """Test function to run RvR.
@@ -661,8 +667,10 @@ class WifiOtaRvrTest(WifiRvrTest):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.failure_count_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='failure_count')
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
 
     def setup_class(self):
         WifiRvrTest.setup_class(self)
@@ -672,6 +680,79 @@ class WifiOtaRvrTest(WifiRvrTest):
     def teardown_class(self):
         WifiRvrTest.teardown_class(self)
         self.ota_chamber.reset_chamber()
+
+    def process_testclass_results(self):
+        """Saves plot with all test results to enable comparison."""
+        # Plot individual test id results raw data and compile metrics
+        plots = collections.OrderedDict()
+        compiled_data = collections.OrderedDict()
+        for result in self.testclass_results:
+            test_id = (result['testcase_params']['channel'],
+                       result['testcase_params']['mode'],
+                       result['testcase_params']['traffic_type'],
+                       result['testcase_params']['traffic_direction'])
+            if test_id not in plots:
+                # Initialize test id data when not present
+                compiled_data[test_id] = {'throughput': [], 'metrics': {}}
+                compiled_data[test_id]['metrics'] = {
+                    key: []
+                    for key in result['metrics'].keys()
+                }
+                plots[test_id] = wputils.BokehFigure(
+                    title='Channel {} {} ({} {})'.format(
+                        result['testcase_params']['channel'],
+                        result['testcase_params']['mode'],
+                        result['testcase_params']['traffic_type'],
+                        result['testcase_params']['traffic_direction']),
+                    x_label='Attenuation (dB)',
+                    primary_y='Throughput (Mbps)')
+            # Compile test id data and metrics
+            compiled_data[test_id]['throughput'].append(
+                result['throughput_receive'])
+            compiled_data[test_id]['total_attenuation'] = result[
+                'total_attenuation']
+            for metric_key, metric_value in result['metrics'].items():
+                compiled_data[test_id]['metrics'][metric_key].append(
+                    metric_value)
+            # Add test id to plots
+            plots[test_id].add_line(
+                result['total_attenuation'],
+                result['throughput_receive'],
+                result['test_name'],
+                width=1,
+                style='dashed',
+                marker='circle')
+
+        # Compute average RvRs and compount metrics over orientations
+        for test_id, test_data in compiled_data.items():
+            high_tput_hit_freq = numpy.mean(
+                numpy.not_equal(test_data['metrics']['high_tput_range'], -1))
+            self.testclass_metric_logger.add_metric('high_tput_hit_freq',
+                                                    high_tput_hit_freq)
+            for metric_key, metric_value in test_data['metrics'].items():
+                avg_metric_key = "avg_{}".format(metric_key)
+                avg_metric_value = numpy.mean(metric_value)
+                self.testclass_metric_logger.add_metric(
+                    avg_metric_key, avg_metric_value)
+            test_data['avg_rvr'] = numpy.mean(test_data['throughput'], 0)
+            test_data['median_rvr'] = numpy.median(test_data['throughput'], 0)
+            plots[test_id].add_line(
+                test_data['total_attenuation'],
+                test_data['avg_rvr'],
+                legend='Average Throughput',
+                marker='circle')
+            plots[test_id].add_line(
+                test_data['total_attenuation'],
+                test_data['median_rvr'],
+                legend='Median Throughput',
+                marker='square')
+
+        figure_list = []
+        for test_id, plot in plots.items():
+            plot.generate_figure()
+            figure_list.append(plot)
+        output_file_path = os.path.join(self.log_path, 'results.html')
+        wputils.BokehFigure.save_figures(figure_list, output_file_path)
 
     def setup_rvr_test(self, testcase_params):
         # Set turntable orientation
