@@ -1123,17 +1123,15 @@ def health_check(dut, batt_thresh=5, temp_threshold=50):
     if battery_level < batt_thresh:
         logging.warning("Battery level low ({}%)".format(battery_level))
         health_check = False
-    elif battery_level < batt_thresh + 5:
-        logging.debug(
-            "EARLY WARNING: Battery level = {}%".format(battery_level))
+    else:
+        logging.debug("Battery level = {}%".format(battery_level))
 
     temperature = get_dut_temperature(dut)
     if temperature > temp_threshold:
         logging.warning("DUT Overheating ({} C)".format(temperature))
         health_check = False
-    elif temperature > temp_threshold - 5:
-        logging.debug(
-            "EARLY WARNING: DUT Temperature = {}C".format(temperature))
+    else:
+        logging.debug("DUT Temperature = {}C".format(temperature))
     return health_check
 
 
