@@ -520,6 +520,8 @@ class WifiOtaPingTest(WifiPingTest):
             metric_name='ping_range')
         self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
             metric_name='ping_rtt')
+        self.bb_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
 
     def setup_class(self):
         WifiPingTest.setup_class(self)
@@ -558,13 +560,15 @@ class WifiOtaPingTest(WifiPingTest):
             x_label=x_label,
             primary_y='Range (dB)',
         )
-        for config, config_data in range_vs_angle.items():
-            figure.add_line(config_data['position'], config_data['range'],
-                            'Channel {}'.format(config))
-            average_range = sum(config_data['range']) / len(
-                config_data['range'])
-            print('Average range for Channel {} is: {}dB'.format(
-                config, average_range))
+        for channel, channel_data in range_vs_angle.items():
+            figure.add_line(channel_data['position'], channel_data['range'],
+                            'Channel {}'.format(channel))
+            average_range = sum(channel_data['range']) / len(
+                channel_data['range'])
+            self.log.info('Average range for Channel {} is: {}dB'.format(
+                channel, average_range))
+            metric_name = 'ota_summary_ch{}.avg_range'.format(channel)
+            self.bb_metric_logger.add_metric(metric_name, average_range)
         current_context = context.get_current_context().get_full_output_path()
         plot_file_path = os.path.join(current_context, 'results.html')
         figure.generate_figure(plot_file_path)
