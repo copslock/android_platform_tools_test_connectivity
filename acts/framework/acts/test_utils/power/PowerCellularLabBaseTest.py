@@ -24,6 +24,7 @@ from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
 from acts.test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
 from acts.test_utils.power.tel_simulations.LteCaSimulation import LteCaSimulation
 from acts.test_utils.power.tel_simulations.LteImsSimulation import LteImsSimulation
+from acts.test_utils.tel import tel_test_utils as telutils
 
 
 class PowerCellularLabBaseTest(PBT.PowerBaseTest):
@@ -98,6 +99,11 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Store the value of the key to access the test config in the
         # user_params dictionary.
         self.PARAMS_KEY = self.TAG + "_params"
+
+        # Turn on airplane mode for all devices, as some might
+        # be unused during the test
+        for ad in self.android_devices:
+            telutils.toggle_airplane_mode(self.log, ad, True)
 
         # Establish connection to Anritsu Callbox
         return self.connect_to_anritsu()
