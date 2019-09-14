@@ -104,11 +104,7 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
     # Create a new plot with the datatable above
     plot = figure(
-        plot_width=1300,
-        plot_height=700,
-        title=plot_title,
-        tools=TOOLS,
-        output_backend="webgl")
+        plot_width=1300, plot_height=700, title=plot_title, tools=TOOLS)
     plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="width"))
     plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="height"))
     plot.line('x0', 'y0', source=source, line_width=2)
@@ -118,12 +114,14 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     plot.title.text_font_size = {'value': '15pt'}
 
     #Callback Java scripting
-    source.callback = CustomJS(
-        args=dict(mytable=dt),
-        code="""
-    var inds = cb_obj.get('selected')['1d'].indices;
-    var d1 = cb_obj.get('data');
-    var d2 = mytable.get('source').get('data');
+    source.selected.js_on_change(
+        "indices",
+        CustomJS(
+            args=dict(source=source, mytable=dt),
+            code="""
+    var inds = cb_obj.indices;
+    var d1 = source.data;
+    var d2 = mytable.source.data;
     ym = 0
     ts = 0
     d2['x0'] = []
@@ -153,8 +151,8 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     d2['y0'].push(dy0)
     d2['z1'].push(dz1)
     d2['z2'].push(dz2)
-    mytable.trigger('change');
-    """)
+    mytable.change.emit();
+    """))
 
     #Layout the plot and the datatable bar
     l = layout([[dt], [plot]])
@@ -459,10 +457,12 @@ def wait_for_dhcp(interface_name):
         if ip == '0.0.0.0':
             time.sleep(1)
         else:
-            log.info('DHCP address assigned to %s as %s' % (interface_name, ip))
+            log.info(
+                'DHCP address assigned to %s as %s' % (interface_name, ip))
             return ip
     raise TimeoutError('Timed out while getting if_addr after %s seconds.' %
-                           time_limit_seconds)
+                       time_limit_seconds)
+
 
 def reset_host_interface(intferface_name):
     """Reset the host interface.
@@ -481,6 +481,7 @@ def reset_host_interface(intferface_name):
     except job.Error:
         raise Exception('No such interface')
 
+
 def bringdown_host_interface(intferface_name):
     """Reset the host interface.
 
@@ -495,6 +496,7 @@ def bringdown_host_interface(intferface_name):
         log.info('{} has been brought down'.format(intferface_name))
     except job.Error:
         raise Exception('No such interface')
+
 
 def create_pkt_config(test_class):
     """Creates the config for generating multicast packets
