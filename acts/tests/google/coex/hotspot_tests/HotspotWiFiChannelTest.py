@@ -37,6 +37,7 @@ from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import WifiEnums
 from acts.utils import create_dir
 
+BANDWIDTH_2G = 20
 CNSS_LOG_PATH = '/data/vendor/wifi/wlan_logs'
 CNSS_CMD = 'cnss_diag -f -s'
 
@@ -49,19 +50,20 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
     """
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.pri_ad = self.android_devices[0]
-        self.sec_ad = self.android_devices[1]
         req_params = ['callbox_params', 'network', 'lte_bands', 'hotspot_mode']
         self.unpack_userparams(req_params)
         self.tests = self.generate_test_cases()
 
     def setup_class(self):
+        self.pri_ad = self.android_devices[0]
+        self.sec_ad = self.android_devices[1]
         self.cmw = cmw500.Cmw500(self.callbox_params['host'],
                                  self.callbox_params['port'])
         # Get basestation object.
         self.bts = self.cmw.get_base_station()
         csv_header = ('Hotspot Mode', 'lte_band', 'LTE_dl_channel',
-                      'LTE_ul_freq', 'LTE_dl_freq', 'wifi_channel')
+                      'LTE_ul_freq', 'LTE_dl_freq', 'wifi_channel',
+                      'wifi_bandwidth')
         self.write_data_to_csv(csv_header)
 
     def setup_test(self):
@@ -129,9 +131,11 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
         test_params['LTE_ul_freq'] = self.bts.ul_frequency
         test_params['LTE_dl_freq'] = self.bts.dl_frequency
         test_params['wifi_channel'] = self.get_wifi_channel(self.sec_ad)
+        test_params['wifi_bandwidth'] = self.get_wifi_bandwidth(self.sec_ad)
         data = (test_params['hotspot_mode'], test_params['lte_band'],
                 test_params['LTE_dl_channel'], test_params['LTE_ul_freq'],
-                test_params['LTE_dl_freq'], test_params['wifi_channel'])
+                test_params['LTE_dl_freq'], test_params['wifi_channel'],
+                test_params['wifi_bandwidth'])
 
         self.write_data_to_csv(data)
 
@@ -214,4 +218,22 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
             self.log.info('Channel Chosen: {}'.format(wifi_channel))
             return wifi_channel
         else:
-            raise ValueError("Wifi connection inactive.")
+            raise ValueError('Wifi connection inactive.')
+
+    def get_wifi_bandwidth(self, ad):
+        """Gets the Wifi Bandwidth for the SSID connected.
+
+        Args:
+            ad: Android device to get bandwidth.
+
+        Returns:
+            bandwidth: if connected wifi is 5GHz.
+            2G_BANDWIDTH: if connected wifi is 2GHz,
+        """
+        out = ad.adb.shell('iw wlan0 link')
+        match = re.search(r'[0-9.]+MHz', out)
+        if match:
+            bandwidth = match.group(0).strip('MHz')
+            return bandwidth
+        else:
+            return BANDWIDTH_2G
