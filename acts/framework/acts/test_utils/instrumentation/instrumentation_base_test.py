@@ -123,8 +123,16 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.ad_apps = app_installer.AppInstaller(self.ad_dut)
         self._prepare_device()
 
+    def teardown_class(self):
+        """Class teardown"""
+        self._cleanup_device()
+
     def _prepare_device(self):
         """Prepares the device for testing."""
+        pass
+
+    def _cleanup_device(self):
+        """Clean up device after test completion."""
         pass
 
     def _get_controller_config(self, controller_name):
