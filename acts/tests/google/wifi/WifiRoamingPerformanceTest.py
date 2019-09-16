@@ -428,7 +428,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         if not wputils.health_check(self.dut, 10):
             asserts.skip('Battery level too low. Skipping test.')
         wutils.reset_wifi(self.dut)
-        self.dut.droid.wifiSetCountryCode(
+        wutils.set_wifi_country_code(self.dut,
             self.testclass_params['country_code'])
         (primary_net_id,
          primary_net_config) = next(net for net in self.main_network.items()
