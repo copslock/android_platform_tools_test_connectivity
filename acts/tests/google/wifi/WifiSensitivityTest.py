@@ -446,7 +446,9 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             testcase_params['attenuated_chain'] = 'DUT-Chain-{}'.format(
                 1 if testcase_params['chain_mask'] == '0' else 0)
         else:
-            testcase_params['attenuated_chain'] = None
+            # Set attenuated chain to -1. Do not set to None as this will be
+            # compared to RF chain map which may include None
+            testcase_params['attenuated_chain'] = -1
 
         self.testclass_params[
             'range_ping_loss_threshold'] = 100 - self.testclass_params[
