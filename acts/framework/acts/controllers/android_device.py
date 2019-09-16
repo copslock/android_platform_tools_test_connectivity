@@ -51,7 +51,7 @@ ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
                       "/data/ramdump/", "/data/vendor/ssrdump",
-                      "/data/vendor/ramdump/bluetooth")
+                      "/data/vendor/ramdump/bluetooth", "/data/vendor/log/cbd")
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
 DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
