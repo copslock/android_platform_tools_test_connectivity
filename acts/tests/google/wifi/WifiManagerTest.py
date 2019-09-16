@@ -497,6 +497,21 @@ class WifiManagerTest(WifiBaseTest):
                    " toggling Airplane mode and rebooting.")
             raise signals.TestFailure(msg)
 
+    def verify_traffic_between_devices(self,dest_device,src_device,num_of_tries=2):
+        """Test the clients and DUT can ping each other.
+
+        Args:
+            num_of_tries: the retry times of ping test.
+            dest_device:Test device.
+            src_device:Second DUT access same AP
+        """
+        dest_device = dest_device.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        for _ in range(num_of_tries):
+            if acts.utils.adb_shell_ping(src_device, count=10, dest_ip=dest_device, timeout=20):
+                break
+        else:
+            asserts.fail("Ping to %s from %s failed" % (src_device.serial, dest_device))
+
     """Tests"""
 
     @test_tracker_info(uuid="525fc5e3-afba-4bfd-9a02-5834119e3c66")
@@ -903,10 +918,7 @@ class WifiManagerTest(WifiBaseTest):
         """
         wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["2g"])
         wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["2g"])
-        dut_address = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
-        asserts.assert_true(
-            acts.utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_address, timeout=20),
-            "%s ping %s failed" % (self.dut_client.serial, dut_address))
+        self.verify_traffic_between_devices(self.dut,self.dut_client)
 
     @test_tracker_info(uuid="94bdd657-649b-4a2c-89c3-3ec6ba18e08e")
     def test_connect_to_5g_can_be_pinged(self):
@@ -919,10 +931,7 @@ class WifiManagerTest(WifiBaseTest):
         """
         wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["5g"])
         wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["5g"])
-        dut_address = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
-        asserts.assert_true(
-            acts.utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_address, timeout=20),
-            "%s ping %s failed" % (self.dut_client.serial, dut_address))
+        self.verify_traffic_between_devices(self.dut,self.dut_client)
 
     @test_tracker_info(uuid="d87359aa-c4da-4554-b5de-8e3fa852a6b0")
     def test_sta_turn_off_screen_can_be_pinged(self):
@@ -938,14 +947,8 @@ class WifiManagerTest(WifiBaseTest):
         wutils.connect_to_wifi_network(self.dut, self.wpa_networks[0]["2g"])
         wutils.connect_to_wifi_network(self.dut_client, self.wpa_networks[0]["2g"])
         # Check DUT and DUT_Client can ping each other successfully
-        dut_address = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
-        dut_client_address = self.dut_client.droid.connectivityGetIPv4Addresses('wlan0')[0]
-        asserts.assert_true(
-            acts.utils.adb_shell_ping(self.dut, count=10, dest_ip=dut_client_address, timeout=20),
-            "ping DUT %s failed" % dut_client_address)
-        asserts.assert_true(
-            acts.utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_address, timeout=20),
-            "ping DUT %s failed" % dut_address)
+        self.verify_traffic_between_devices(self.dut,self.dut_client)
+        self.verify_traffic_between_devices(self.dut_client,self.dut)
         # DUT turn off screen and go sleep for 5 mins
         self.dut.droid.wakeLockRelease()
         self.dut.droid.goToSleepNow()
@@ -954,9 +957,7 @@ class WifiManagerTest(WifiBaseTest):
         self.log.info("Sleep for 5 minutes")
         time.sleep(300)
         # Verify DUT_Client can ping DUT when DUT sleeps
-        asserts.assert_true(
-            acts.utils.adb_shell_ping(self.dut_client, count=10, dest_ip=dut_address, timeout=20),
-            "ping DUT %s failed" % dut_address)
+        self.verify_traffic_between_devices(self.dut,self.dut_client)
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
