@@ -553,9 +553,9 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             'VHT80': [36, 149]
         }
         test_cases = []
-        for channel, mode, traffic_type, traffic_direction, signal_level, position in itertools.product(
-                channels, modes, traffic_types, traffic_directions,
-                signal_levels, positions):
+        for channel, mode, position, traffic_type, signal_level, traffic_direction in itertools.product(
+                channels, modes, positions, traffic_types, signal_levels,
+                traffic_directions):
             if channel not in allowed_configs[mode]:
                 continue
             testcase_params = collections.OrderedDict(
