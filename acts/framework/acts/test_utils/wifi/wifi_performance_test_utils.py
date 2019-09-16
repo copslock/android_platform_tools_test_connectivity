@@ -965,6 +965,7 @@ def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
         # Reset attenuator to 0
         test_atten.set_atten(0, strict=False)
     ping_future.result()
+    logging.debug('Chain Map: {}'.format(chain_map))
     return chain_map
 
 
