@@ -554,7 +554,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             wutils.reset_wifi(self.dut)
             self.main_network[testcase_params['band']][
                 'channel'] = testcase_params['channel']
-            self.dut.droid.wifiSetCountryCode(
+            wutils.set_wifi_country_code(self.dut,
                 self.testclass_params['country_code'])
             wutils.wifi_connect(
                 self.dut,
