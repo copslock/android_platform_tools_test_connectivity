@@ -114,7 +114,7 @@ class WifiSoftApRvrTest(WifiRvrTest):
         # Reset WiFi on all devices
         for dev in self.android_devices:
             wutils.reset_wifi(dev)
-            dev.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+            wutils.set_wifi_country_code(dev, wutils.WifiEnums.CountryCode.US)
 
         # Setup Soft AP
         sap_config = wutils.create_softap_config()

@@ -1740,8 +1740,8 @@ class DataPathTest(AwareBaseTest):
         init_dut = self.android_devices[0]
         resp_dut = self.android_devices[1]
 
-        init_dut.droid.wifiSetCountryCode(init_domain)
-        resp_dut.droid.wifiSetCountryCode(resp_domain)
+        wutils.set_wifi_country_code(init_dut.droid, init_domain)
+        wutils.set_wifi_country_code(resp_dut.droid, resp_domain)
 
         if use_ib:
             (resp_req_key, init_req_key, resp_aware_if, init_aware_if,
