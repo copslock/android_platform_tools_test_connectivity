@@ -372,7 +372,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         else:
             wutils.reset_wifi(self.dut)
             wutils.set_wifi_country_code(self.dut,
-                self.testclass_params['country_code'])
+                                         self.testclass_params['country_code'])
             self.main_network[band]['channel'] = testcase_params['channel']
             wutils.wifi_connect(
                 self.dut,
@@ -500,11 +500,13 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         self.testclass_results.append(result)
         self.pass_fail_check(result)
 
-    def generate_test_cases(self, channels, chain_mask):
+    def generate_test_cases(self, channels, modes, chain_mask):
         """Function that auto-generates test cases for a test class."""
         test_cases = []
         for channel in channels:
-            for mode in self.VALID_TEST_CONFIGS[channel]:
+            requested_modes = set(modes).intersection(
+                set(self.VALID_TEST_CONFIGS[channel]))
+            for mode in requested_modes:
                 if 'VHT' in mode:
                     rates = self.VALID_RATES[mode]
                 elif 'HT' in mode:
@@ -547,40 +549,44 @@ class WifiSensitivity_AllChannels_Test(WifiSensitivityTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = self.generate_test_cases(
-            [6, 36, 40, 44, 48, 149, 153, 157, 161], ['0', '1', '2x2'])
+            [6, 36, 40, 44, 48, 149, 153, 157, 161],
+            ['VHT20', 'VHT40', 'VHT80'], ['0', '1', '2x2'])
 
 
 class WifiSensitivity_SampleChannels_Test(WifiSensitivityTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = self.generate_test_cases([6, 36, 149], ['0', '1', '2x2'])
+        self.tests = self.generate_test_cases(
+            [6, 36, 149], ['VHT20', 'VHT40', 'VHT80'], ['0', '1', '2x2'])
 
 
 class WifiSensitivity_2GHz_Test(WifiSensitivityTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = self.generate_test_cases([1, 2, 6, 10, 11],
-                                              ['0', '1', '2x2'])
+                                              ['VHT20'], ['0', '1', '2x2'])
 
 
 class WifiSensitivity_5GHz_Test(WifiSensitivityTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = self.generate_test_cases(
-            [36, 40, 44, 48, 149, 153, 157, 161], ['0', '1', '2x2'])
+            [36, 40, 44, 48, 149, 153, 157, 161], ['VHT20', 'VHT40', 'VHT80'],
+            ['0', '1', '2x2'])
 
 
 class WifiSensitivity_UNII1_Test(WifiSensitivityTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = self.generate_test_cases([36, 40, 44, 48],
-                                              ['0', '1', '2x2'])
+        self.tests = self.generate_test_cases(
+            [36, 40, 44, 48], ['VHT20', 'VHT40', 'VHT80'], ['0', '1', '2x2'])
 
 
 class WifiSensitivity_UNII3_Test(WifiSensitivityTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = self.generate_test_cases([149, 153, 157, 161],
+                                              ['VHT20', 'VHT40', 'VHT80'],
                                               ['0', '1', '2x2'])
 
 
@@ -714,12 +720,14 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             start_atten = max(start_atten, 0)
         return start_atten
 
-    def generate_test_cases(self, channels, requested_rates, chain_mask,
+    def generate_test_cases(self, channels, modes, requested_rates, chain_mask,
                             angles):
         """Function that auto-generates test cases for a test class."""
         test_cases = []
         for channel in channels:
-            for mode in self.VALID_TEST_CONFIGS[channel]:
+            requested_modes = set(modes).intersection(
+                set(self.VALID_TEST_CONFIGS[channel]))
+            for mode in requested_modes:
                 if 'VHT' in mode:
                     valid_rates = self.VALID_RATES[mode]
                 elif 'HT' in mode:
@@ -772,9 +780,9 @@ class WifiOtaSensitivity_10Degree_Test(WifiOtaSensitivityTest):
             self.RateTuple(8, 2, 173.3),
             self.RateTuple(2, 2, 43.3)
         ]
-        self.tests = self.generate_test_cases(requested_channels,
-                                              requested_rates, ['2x2'],
-                                              list(range(0, 360, 10)))
+        self.tests = self.generate_test_cases(
+            requested_channels, ['VHT20', 'VHT80'], requested_rates, ['2x2'],
+            list(range(0, 360, 10)))
 
 
 class WifiOtaSensitivity_SingleChain_10Degree_Test(WifiOtaSensitivityTest):
@@ -785,9 +793,9 @@ class WifiOtaSensitivity_SingleChain_10Degree_Test(WifiOtaSensitivityTest):
             self.RateTuple(8, 1, 86.7),
             self.RateTuple(2, 1, 21.7)
         ]
-        self.tests = self.generate_test_cases(requested_channels,
-                                              requested_rates, ['2x2'],
-                                              list(range(0, 360, 10)))
+        self.tests = self.generate_test_cases(
+            requested_channels, ['VHT20', 'VHT80'], requested_rates, ['2x2'],
+            list(range(0, 360, 10)))
 
 
 class WifiOtaSensitivity_45Degree_Test(WifiOtaSensitivityTest):
@@ -800,5 +808,5 @@ class WifiOtaSensitivity_45Degree_Test(WifiOtaSensitivityTest):
             self.RateTuple(2, 2, 43.3)
         ]
         self.tests = self.generate_test_cases(
-            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], requested_rates,
-            ['2x2'], list(range(0, 360, 45)))
+            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], ['VHT20', 'VHT80'],
+            requested_rates, ['2x2'], list(range(0, 360, 45)))
