@@ -261,7 +261,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         else:
             wutils.wifi_toggle_state(self.dut, True)
             wutils.reset_wifi(self.dut)
-            wutils.set_wifi_country_code(self.dut,
+            self.dut.droid.wifiSetCountryCode(
                 self.testclass_params['country_code'])
             self.main_network[band]['channel'] = testcase_params['channel']
             wutils.wifi_connect(
