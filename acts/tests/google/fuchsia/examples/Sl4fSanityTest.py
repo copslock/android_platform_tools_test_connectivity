@@ -29,10 +29,9 @@ from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 
 class Sl4fSanityTest(BaseTestClass):
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         success_str = ("Congratulations! Fuchsia controllers have been "
                        "initialized successfully!")
         err_str = ("Sorry, please try verifying FuchsiaDevice is in your "

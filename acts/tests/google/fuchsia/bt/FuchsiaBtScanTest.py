@@ -32,12 +32,11 @@ from acts.test_utils.bt.bt_test_utils import generate_id_by_size
 class FuchsiaBtScanTest(BaseTestClass):
     scan_timeout_seconds = 30
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.pri_dut = self.fuchsia_devices[0]
         self.sec_dut = self.fuchsia_devices[1]
 
-    def setup_class(self):
         self.pri_dut.btc_lib.initBluetoothControl()
         self.sec_dut.btc_lib.initBluetoothControl()
 
