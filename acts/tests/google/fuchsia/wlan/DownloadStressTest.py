@@ -52,8 +52,8 @@ class DownloadStressTest(BaseTestClass):
     num_of_small_downloads = 5
     download_threads_result = []
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ssid = rand_ascii_str(10)
         self.fd = self.fuchsia_devices[0]
         self.wlan_device = create_wlan_device(self.fd)
@@ -62,7 +62,6 @@ class DownloadStressTest(BaseTestClass):
             self.user_params.get("download_stress_test_iterations",
                                  self.num_of_iterations))
 
-    def setup_class(self):
         setup_ap_and_associate(
             access_point=self.ap,
             client=self.wlan_device,
