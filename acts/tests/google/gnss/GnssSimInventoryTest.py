@@ -9,8 +9,8 @@ from acts.test_utils.tel.tel_test_utils import is_sim_ready_by_adb
 
 class GnssSimInventoryTest(BaseTestClass):
     """ GNSS SIM Inventory Tests"""
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ad = self.android_devices[0]
         req_params = ["sim_inventory_recipient", "sim_inventory_ldap"]
         self.unpack_userparams(req_param_names=req_params)
