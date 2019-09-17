@@ -16,6 +16,7 @@
 
 import ntpath
 
+from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
@@ -88,14 +89,14 @@ class UmtsSimulation(BaseSimulation):
         BtsPacketRate.WCDMA_DL43_2M_UL5_76M: 5.25
     }
 
-    def __init__(self, anritsu, log, dut, test_config, calibration_table):
+    def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for UMTS simulation with 1 basetation
 
         Loads a simple UMTS simulation enviroment with 1 basestation. It also
         creates the BTS handle so we can change the parameters as desired.
 
         Args:
-            anritsu: the Anritsu callbox controller
+            simulator: a cellular simulator controller
             log: a logger handle
             dut: the android device handler
             test_config: test configuration obtained from the config file
@@ -104,7 +105,14 @@ class UmtsSimulation(BaseSimulation):
 
         """
 
-        super().__init__(anritsu, log, dut, test_config, calibration_table)
+        super().__init__(simulator, log, dut, test_config, calibration_table)
+
+        # The UMTS simulation relies on the cellular simulator to be a MD8475
+        if not isinstance(self.simulator, anritsusim.MD8475CellularSimulator):
+            raise ValueError('The UMTS simulation relies on the simulator to '
+                             'be an Anritsu MD8475 A/B instrument.')
+
+        self.anritsu = self.simulator.anritsu
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_WCDMA_ONLY,
@@ -116,14 +124,10 @@ class UmtsSimulation(BaseSimulation):
         self.release_version = None
         self.packet_rate = None
 
-    def load_config_files(self, anritsu):
-        """ Loads configuration files for the simulation.
+    def load_config_files(self):
+        """ Loads configuration files for the simulation. """
 
-            Args:
-                anritsu: the Anritsu callbox controller
-        """
-
-        anritsu.load_simulation_paramfile(
+        self.anritsu.load_simulation_paramfile(
             ntpath.join(self.callbox_config_path, self.UMTS_BASIC_SIM_FILE))
 
     def parse_parameters(self, parameters):
