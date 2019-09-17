@@ -709,19 +709,23 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     Returns:
         ping_result: dict containing ping results and other meta data
     """
-    ping_cmd = 'ping -w {} -i {} -s {} -D'.format(
-        ping_duration,
+    ping_count = int(ping_duration/ping_interval)
+    ping_deadline = int(ping_count*ping_interval)+1
+    ping_cmd = 'ping -c {} -w {} -i {} -s {} -D'.format(
+        ping_count,
+        ping_deadline,
         ping_interval,
         ping_size,
     )
+    start_time = time.time()
     if isinstance(src_device, AndroidDevice):
         ping_cmd = '{} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.adb.shell(
-            ping_cmd, timeout=ping_duration + SHORT_SLEEP, ignore_status=True)
+            ping_cmd, timeout=ping_deadline+SHORT_SLEEP, ignore_status=True)
     elif isinstance(src_device, ssh.connection.SshConnection):
         ping_cmd = 'sudo {} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.run(
-            ping_cmd, timeout=ping_duration + SHORT_SLEEP,
+            ping_cmd, timeout=ping_deadline+SHORT_SLEEP,
             ignore_status=True).stdout
     else:
         raise TypeError(
