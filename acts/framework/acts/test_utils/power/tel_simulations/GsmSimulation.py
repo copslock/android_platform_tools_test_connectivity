@@ -17,6 +17,7 @@
 import ntpath
 
 from acts.controllers.anritsu_lib.md8475a import BtsGprsMode
+from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.anritsu_utils import GSM_BAND_DCS1800
 from acts.test_utils.tel.anritsu_utils import GSM_BAND_EGSM900
@@ -53,14 +54,14 @@ class GsmSimulation(BaseSimulation):
         '1900': GSM_BAND_RGSM900
     }
 
-    def __init__(self, anritsu, log, dut, test_config, calibration_table):
+    def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for GSM simulation with 1 basetation
 
         Loads a simple LTE simulation enviroment with 1 basestation. It also
         creates the BTS handle so we can change the parameters as desired.
 
         Args:
-            anritsu: the Anritsu callbox controller
+            simulator: a cellular simulator controller
             log: a logger handle
             dut: the android device handler
             test_config: test configuration obtained from the config file
@@ -69,7 +70,14 @@ class GsmSimulation(BaseSimulation):
 
         """
 
-        super().__init__(anritsu, log, dut, test_config, calibration_table)
+        super().__init__(simulator, log, dut, test_config, calibration_table)
+
+        # The GSM simulation relies on the cellular simulator to be a MD8475
+        if not isinstance(self.simulator, anritsusim.MD8475CellularSimulator):
+            raise ValueError('The GSM simulation relies on the simulator to '
+                             'be an Anritsu MD8475 A/B instrument.')
+
+        self.anritsu = self.simulator.anritsu
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_GSM_ONLY,
@@ -78,16 +86,12 @@ class GsmSimulation(BaseSimulation):
         else:
             log.info("Preferred network type set.")
 
-    def load_config_files(self, anritsu):
-        """ Loads configuration files for the simulation.
+    def load_config_files(self):
+        """ Loads configuration files for the simulation. """
 
-            Args:
-                anritsu: the Anritsu callbox controller
-        """
-
-        anritsu.load_simulation_paramfile(
+        self.anritsu.load_simulation_paramfile(
             ntpath.join(self.callbox_config_path, self.GSM_BASIC_SIM_FILE))
-        anritsu.load_cell_paramfile(
+        self.anritsu.load_cell_paramfile(
             ntpath.join(self.callbox_config_path, self.GSM_CELL_FILE))
 
     def parse_parameters(self, parameters):

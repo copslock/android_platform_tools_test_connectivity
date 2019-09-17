@@ -95,14 +95,14 @@ class BaseSimulation():
                 if value:
                     setattr(self, attr, value)
 
-    def __init__(self, anritsu, log, dut, test_config, calibration_table):
+    def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the Simulation object.
 
         Keeps a reference to the callbox, log and dut handlers and
         initializes the class attributes.
 
         Args:
-            anritsu: the Anritsu callbox controller
+            simulator: a cellular simulator controller
             log: a logger handle
             dut: the android device handler
             test_config: test configuration obtained from the config file
@@ -110,7 +110,8 @@ class BaseSimulation():
                 different bands.
         """
 
-        self.anritsu = anritsu
+        self.simulator = simulator
+        self.anritsu = simulator.anritsu
         self.log = log
         self.dut = dut
         self.calibration_table = calibration_table
@@ -157,7 +158,7 @@ class BaseSimulation():
         # Load callbox config files
         self.callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
             self.anritsu._md8475_version)
-        self.load_config_files(self.anritsu)
+        self.load_config_files()
 
         # Make sure airplane mode is on so the phone won't attach right away
         toggle_airplane_mode(self.log, self.dut, True)
@@ -171,11 +172,7 @@ class BaseSimulation():
     def load_config_files(self):
         """ Loads configuration files for the simulation.
 
-        This method needs to be implement by derived simulation classes.
-
-        Args:
-            anritsu: the Anritsu callbox controller
-        """
+        This method needs to be implement by derived simulation classes. """
 
         raise NotImplementedError()
 

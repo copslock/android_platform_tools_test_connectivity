@@ -17,8 +17,8 @@ import time
 import os
 
 import acts.test_utils.power.PowerBaseTest as PBT
-from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
-from acts.controllers.anritsu_lib.md8475a import MD8475A
+import acts.controllers.cellular_simulator as simulator
+from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsu
 from acts.test_utils.power.tel_simulations.GsmSimulation import GsmSimulation
 from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
 from acts.test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
@@ -60,19 +60,14 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         super().__init__(controllers)
 
         self.simulation = None
-        self.anritsu = None
+        self.cellular_simulator = None
         self.calibration_table = {}
         self.power_results = {}
-
-        # If callbox version was not specified in the config files,
-        # set a default value
-        if not hasattr(self, "md8475_version"):
-            self.md8475_version = "A"
 
     def setup_class(self):
         """ Executed before any test case is started.
 
-        Sets the device to rockbottom and connects to the anritsu callbox.
+        Sets the device to rockbottom and connects to the cellular instrument.
 
         Returns:
             False if connecting to the callbox fails.
@@ -105,25 +100,45 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         for ad in self.android_devices:
             telutils.toggle_airplane_mode(self.log, ad, True)
 
-        # Establish connection to Anritsu Callbox
-        return self.connect_to_anritsu()
+        # Establish a connection with the cellular simulator equipment
+        try:
+            self.cellular_simulator = self.initialize_simulator()
+        except ValueError:
+            self.log.error('No cellular simulator could be selected with the '
+                           'current configuration.')
+            raise
+        except simulator.CellularSimulatorError:
+            self.log.error('Could not initialize the cellular simulator.')
+            raise
 
-    def connect_to_anritsu(self):
+    def initialize_simulator(self):
         """ Connects to Anritsu Callbox and gets handle object.
 
         Returns:
             False if a connection with the callbox could not be started
         """
 
-        try:
+        if hasattr(self, 'md8475_version'):
 
-            self.anritsu = MD8475A(self.md8475a_ip_address,
-                                   self.wlan_option,
-                                   md8475_version=self.md8475_version)
-            return True
-        except AnritsuError:
-            self.log.error('Error in connecting to Anritsu Callbox')
-            return False
+            self.log.info('Selecting Anrtisu MD8475 callbox.')
+
+            # Verify the callbox IP address has been indicated in the configs
+            if not hasattr(self, 'md8475_version'):
+                raise RuntimeError(
+                    'md8475a_ip_address was not included in the test '
+                    'configuration.')
+
+            if self.md8475_version == 'A':
+                return anritsu.MD8475CellularSimulator(self.md8475a_ip_address)
+            elif self.md8475_version == 'B':
+                return anritsu.MD8475BCellularSimulator(
+                    self.md8475a_ip_address)
+            else:
+                raise ValueError('Invalid MD8475 version.')
+        else:
+            raise RuntimeError(
+                'The simulator could not be initialized because '
+                'a callbox was not defined in the configs file.')
 
     def setup_test(self):
         """ Executed before every test case.
@@ -250,11 +265,10 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         super().teardown_class()
 
         try:
-            if self.anritsu:
-                self.anritsu.stop_simulation()
-                self.anritsu.disconnect()
-        except AnritsuError as e:
-            self.log.error('Error while tearing down the Anritsu controller. '
+            if self.cellular_simulator:
+                self.cellular_simulator.destroy()
+        except simulator.CellularSimulatorError as e:
+            self.log.error('Error while tearing down the callbox controller. '
                            'Error message: ' + str(e))
 
         # Log a summary of results
@@ -336,6 +350,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.calibration_table[sim_type] = {}
 
         # Instantiate a new simulation
-        self.simulation = simulation_class(self.anritsu, self.log, self.dut,
+        self.simulation = simulation_class(self.cellular_simulator, self.log,
+                                           self.dut,
                                            self.user_params[self.PARAMS_KEY],
                                            self.calibration_table[sim_type])
