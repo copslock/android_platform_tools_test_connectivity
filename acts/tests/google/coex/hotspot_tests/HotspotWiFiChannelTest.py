@@ -185,8 +185,8 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
         if wifi_band == '2g':
             wband = WifiEnums.WIFI_CONFIG_APBAND_2G
         elif wifi_band == '5g':
-            wutils.set_wifi_country_code(self.pri_ad, WifiEnums.CountryCode.US)
-            wutils.set_wifi_country_code(self.sec_ad, WifiEnums.CountryCode.US)
+            self.pri_ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
+            self.sec_ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
             wband = WifiEnums.WIFI_CONFIG_APBAND_5G
         elif wifi_band == 'auto':
             wband = WifiEnums.WIFI_CONFIG_APBAND_AUTO
