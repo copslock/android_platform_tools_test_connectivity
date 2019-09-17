@@ -25,6 +25,7 @@ import time
 
 from acts import signals
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.ap_lib import hostapd_security
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import associate
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import disconnect
@@ -32,6 +33,7 @@ from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts.test_utils.fuchsia import utils
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.utils import rand_ascii_str
+
 
 
 class ConnectionStressTest(BaseTestClass):
@@ -57,7 +59,7 @@ class ConnectionStressTest(BaseTestClass):
         self.dut.reset_wifi()
         self.ap.stop_all_aps()
 
-    def start_ap(self, profile, channel):
+    def start_ap(self, profile, channel, security=None):
         """Starts an Access Point
 
         Args:
@@ -69,64 +71,143 @@ class ConnectionStressTest(BaseTestClass):
             access_point=self.ap,
             profile_name=profile,
             channel=channel,
-            ssid=self.ssid)
+            ssid=self.ssid,
+            security=security)
 
-    def connect_disconnect(self, ap_config):
+    def connect_disconnect(self,
+                           ap_config,
+                           ssid=None,
+                           password=None,
+                           negative_test=False):
         """Helper to start an AP, connect DUT to it and disconnect
 
         Args:
             ap_config: Dictionary contaning profile name and channel
+            ssid: ssid to connect to
+            password: password for the ssid to connect to
         """
         # Start AP
-        self.start_ap(ap_config['profile'], ap_config['channel'])
+        self.start_ap(ap_config['profile'],
+                      ap_config['channel'],
+                      ap_config['security'])
 
+        failed = False
         # Connect and Disconnect several times
         for x in range(0, self.num_of_iterations):
-            # Connect
-            if associate(self.dut, ssid=self.ssid):
-                self.log.info('%d. Successfully associated' % x)
+            if not ssid:
+                ssid = self.ssid
+            if negative_test:
+                if not associate(self.dut, ssid=ssid, password=password):
+                    self.log.info('Attempt %d. Did not associate as expected.'
+                                  % x)
+                else:
+                    self.log.error('Attempt %d. Negative test successfully '
+                                   'associated. Fail.' % x)
+                    failed = True
             else:
-                raise signals.TestFailure('%d. Failed to associate.' % x)
-            # Disconnect
-            disconnect(self.dut)
+                # Connect
+                if associate(self.dut, ssid=ssid, password=password):
+                    self.log.info('Attempt %d. Successfully associated' % x)
+                else:
+                    self.log.error('Attempt %d. Failed to associate.' % x)
+                    failed = True
+                # Disconnect
+                disconnect(self.dut)
+
             # Wait a second before trying again
             time.sleep(1)
 
         # Stop AP
         self.ap.stop_all_aps()
+        if failed:
+            raise signals.TestFailure('One or more association attempt failed.')
 
     def test_whirlwind_2g(self):
         self.connect_disconnect({
             'profile': 'whirlwind',
-            'channel': self.channel_2G
+            'channel': self.channel_2G,
+            'security': None
         })
 
     def test_whirlwind_5g(self):
         self.connect_disconnect({
             'profile': 'whirlwind',
-            'channel': self.channel_5G
+            'channel': self.channel_5G,
+            'security': None
         })
 
     def test_whirlwind_11ab_2g(self):
         self.connect_disconnect({
             'profile': 'whirlwind_11ab_legacy',
-            'channel': self.channel_2G
+            'channel': self.channel_2G,
+            'security': None
         })
 
     def test_whirlwind_11ab_5g(self):
         self.connect_disconnect({
             'profile': 'whirlwind_11ab_legacy',
-            'channel': self.channel_5G
+            'channel': self.channel_5G,
+            'security': None
         })
 
     def test_whirlwind_11ag_2g(self):
         self.connect_disconnect({
             'profile': 'whirlwind_11ag_legacy',
-            'channel': self.channel_2G
+            'channel': self.channel_2G,
+            'security': None
         })
 
     def test_whirlwind_11ag_5g(self):
         self.connect_disconnect({
             'profile': 'whirlwind_11ag_legacy',
-            'channel': self.channel_5G
+            'channel': self.channel_5G,
+            'security': None
         })
+
+    def test_wrong_ssid_whirlwind_2g(self):
+        self.connect_disconnect(
+            {
+                'profile': 'whirlwind',
+                'channel': self.channel_2G,
+                'security': None
+            },
+            ssid=rand_ascii_str(20),
+            negative_test=True
+        )
+
+    def test_wrong_ssid_whirlwind_5g(self):
+        self.connect_disconnect(
+            {
+                'profile': 'whirlwind',
+                'channel': self.channel_5G,
+                'security': None
+            },
+            ssid=rand_ascii_str(20),
+            negative_test=True
+        )
+
+    def test_wrong_password_whirlwind_2g(self):
+        self.connect_disconnect(
+            {
+                'profile': 'whirlwind',
+                'channel': self.channel_2G,
+                'security': hostapd_security.Security(
+                    security_mode='wpa2',
+                    password=rand_ascii_str(10))
+            },
+            password=rand_ascii_str(20),
+            negative_test=True
+        )
+
+    def test_wrong_password_whirlwind_5g(self):
+        self.connect_disconnect(
+            {
+                'profile': 'whirlwind',
+                'channel': self.channel_5G,
+                'security': hostapd_security.Security(
+                    security_mode='wpa2',
+                    password=rand_ascii_str(10))
+            },
+            password=rand_ascii_str(20),
+            negative_test=True
+        )
