@@ -759,6 +759,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                     setattr(self, testcase_name,
                             partial(self._test_sensitivity, testcase_params))
                     test_cases.append(testcase_name)
+        return test_cases
 
 
 class WifiOtaSensitivity_10Degree_Test(WifiOtaSensitivityTest):
