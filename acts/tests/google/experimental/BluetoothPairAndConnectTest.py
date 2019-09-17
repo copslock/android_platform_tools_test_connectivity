@@ -52,8 +52,8 @@ class BluetoothPairAndConnectTest(BaseTestClass):
        bt_utils: BTUtils test action object
     """
 
-    def __init__(self, configs):
-        BaseTestClass.__init__(self, configs)
+    def setup_class(self):
+        super().setup_class()
         # Sanity check of the devices under test
         # TODO(b/119051823): Investigate using a config validator to replace this.
         if not self.android_devices:

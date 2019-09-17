@@ -32,8 +32,8 @@ class GattPtsTest(PtsBaseClass):
     ble_advertise_interval = 100
     pts_action_mapping = None
 
-    def __init__(self, controllers):
-        super(GattPtsTest, self).__init__(controllers)
+    def setup_class(self):
+        super(GattPtsTest, self).setup_class()
         self.dut_bluetooth_local_name = "fs_test"
         self.dut.initialize_bluetooth_controller()
         self.dut.set_bluetooth_local_name(self.dut_bluetooth_local_name)
@@ -74,8 +74,6 @@ class GattPtsTest(PtsBaseClass):
 
         self.pts.set_ics_and_ixit(ics, ixit)
 
-    def setup_class(self):
-        super(GattPtsTest, self).setup_class()
         self.dut.unbond_all_known_devices()
         self.dut.start_pairing_helper()
 
