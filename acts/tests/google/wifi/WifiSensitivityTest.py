@@ -382,6 +382,8 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         atten_dut_chain_map = wputils.get_current_atten_dut_chain_map(
             self.attenuators, self.dut, self.ping_server)
+        self.log.info(
+            "Current Attenuator-DUT Chain Map: {}".format(atten_dut_chain_map))
         for idx, atten in enumerate(self.attenuators):
             if atten_dut_chain_map[idx] == testcase_params['attenuated_chain']:
                 atten.offset = atten.instrument.max_atten
@@ -438,6 +440,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 'Reference test not found. Starting from {} dB'.format(
                     self.testclass_params['atten_start']))
             start_atten = self.testclass_params['atten_start']
+            start_atten = max(start_atten, 0)
         return start_atten
 
     def compile_test_params(self, testcase_params):
@@ -642,12 +645,16 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 test_id_str = '{} {}Mbps, Chain Mask = {}'.format(
                     test_id_dict['mode'], test_id_dict['rate'],
                     test_id_dict['chain_mask'])
-                metric_test_config = '{}_{}_ch{}'.format(test_id_dict['mode'], test_id_dict['rate'], test_id_dict['chain_mask'])
+                metric_test_config = '{}_{}_ch{}'.format(
+                    test_id_dict['mode'], test_id_dict['rate'],
+                    test_id_dict['chain_mask'])
             else:
                 test_id_str = '{} MCS{} Nss{}, Chain Mask = {}'.format(
                     test_id_dict['mode'], test_id_dict['rate'],
                     test_id_dict['num_streams'], test_id_dict['chain_mask'])
-                metric_test_config = '{}_mcs{}_nss{}_ch{}'.format(test_id_dict['mode'], test_id_dict['rate'], test_id_dict['num_streams'], test_id_dict['chain_mask'])
+                metric_test_config = '{}_mcs{}_nss{}_ch{}'.format(
+                    test_id_dict['mode'], test_id_dict['rate'],
+                    test_id_dict['num_streams'], test_id_dict['chain_mask'])
             curr_plot = wputils.BokehFigure(
                 title=str(test_id_str),
                 x_label='Orientation (deg)',
@@ -657,7 +664,8 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                     channel_results['orientation'],
                     channel_results['sensitivity'],
                     legend='Channel {}'.format(channel))
-                metric_tag = 'ota_summary_ch{}_{}'.format(channel, metric_test_config)
+                metric_tag = 'ota_summary_ch{}_{}'.format(
+                    channel, metric_test_config)
                 metric_name = metric_tag + '.avg_sensitivity'
                 metric_value = sum(channel_results['sensitivity']) / len(
                     channel_results['sensitivity'])
@@ -703,6 +711,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             print('Reference test not found. Starting from {} dB'.format(
                 self.testclass_params['atten_start']))
             start_atten = self.testclass_params['atten_start']
+            start_atten = max(start_atten, 0)
         return start_atten
 
     def generate_test_cases(self, channels, requested_rates, chain_mask,
