@@ -19,6 +19,7 @@ import math
 import ntpath
 from enum import Enum
 
+from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
 from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
@@ -426,13 +427,13 @@ class LteSimulation(BaseSimulation):
             self.tbs_pattern_on = None
             self.dl_channel = None
 
-    def __init__(self, anritsu, log, dut, test_config, calibration_table):
+    def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for LTE simulation with 1 basetation
 
         Loads a simple LTE simulation enviroment with 1 basestation.
 
         Args:
-            anritsu: the Anritsu callbox controller
+            simulator: a cellular simulator controller
             log: a logger handle
             dut: the android device handler
             test_config: test configuration obtained from the config file
@@ -441,7 +442,14 @@ class LteSimulation(BaseSimulation):
 
         """
 
-        super().__init__(anritsu, log, dut, test_config, calibration_table)
+        super().__init__(simulator, log, dut, test_config, calibration_table)
+
+        # The LTE simulation relies on the cellular simulator to be a MD8475
+        if not isinstance(self.simulator, anritsusim.MD8475CellularSimulator):
+            raise ValueError('The LTE simulation relies on the simulator to '
+                             'be an Anritsu MD8475 A/B instrument.')
+
+        self.anritsu = self.simulator.anritsu
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_LTE_ONLY,
@@ -467,7 +475,7 @@ class LteSimulation(BaseSimulation):
         self.dl_256_qam = test_config.get(self.KEY_DL_256_QAM, False)
 
         if self.dl_256_qam:
-            if anritsu._md8475_version == 'A':
+            if self.anritsu._md8475_version == 'A':
                 self.log.warning("The key '{}' is set to true but MD8475A "
                                  "callbox doesn't support that modulation "
                                  "order.".format(self.KEY_DL_256_QAM))
@@ -484,7 +492,7 @@ class LteSimulation(BaseSimulation):
         self.ul_64_qam = test_config.get(self.KEY_UL_64_QAM, False)
 
         if self.ul_64_qam:
-            if anritsu._md8475_version == 'A':
+            if self.anritsu._md8475_version == 'A':
                 self.log.warning("The key '{}' is set to true but MD8475A "
                                  "callbox doesn't support that modulation "
                                  "order.".format(self.KEY_UL_64_QAM))
@@ -566,12 +574,8 @@ class LteSimulation(BaseSimulation):
             else:
                 bts_handle.tbs_pattern = "OFF"
 
-    def load_config_files(self, anritsu):
-        """ Loads configuration files for the simulation.
-
-            Args:
-                anritsu: the Anritsu callbox controller
-        """
+    def load_config_files(self):
+        """ Loads configuration files for the simulation. """
 
         cell_file_name = self.LTE_BASIC_CELL_FILE
         sim_file_name = self.LTE_BASIC_SIM_FILE
@@ -583,8 +587,8 @@ class LteSimulation(BaseSimulation):
         cell_file_path = ntpath.join(self.callbox_config_path, cell_file_name)
         sim_file_path = ntpath.join(self.callbox_config_path, sim_file_name)
 
-        anritsu.load_simulation_paramfile(sim_file_path)
-        anritsu.load_cell_paramfile(cell_file_path)
+        self.anritsu.load_simulation_paramfile(sim_file_path)
+        self.anritsu.load_cell_paramfile(cell_file_path)
 
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation using a list of parameters.
