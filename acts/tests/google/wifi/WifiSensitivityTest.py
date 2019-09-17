@@ -371,8 +371,8 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             self.log.info('Already connected to desired network')
         else:
             wutils.reset_wifi(self.dut)
-            wutils.set_wifi_country_code(self.dut,
-                                         self.testclass_params['country_code'])
+            self.dut.droid.wifiSetCountryCode(
+                self.testclass_params['country_code'])
             self.main_network[band]['channel'] = testcase_params['channel']
             wutils.wifi_connect(
                 self.dut,

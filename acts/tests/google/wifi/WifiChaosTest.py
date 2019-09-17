@@ -116,7 +116,7 @@ class WifiChaosTest(WifiBaseTest):
         self.admin = 'admin' + str(random.randint(1000001, 12345678))
         wutils.wifi_test_device_init(self.dut)
         # Set country code explicitly to "US".
-        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
+        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
 
         asserts.assert_true(
             self.lock_pcap(),
