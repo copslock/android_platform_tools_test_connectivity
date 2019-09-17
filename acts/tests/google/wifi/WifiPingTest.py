@@ -410,6 +410,19 @@ class WifiPingTest(base_test.BaseTestClass):
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
 
+    def get_range_start_atten(self, testcase_params):
+        """Gets the starting attenuation for this ping test.
+
+        This function is used to get the starting attenuation for ping range
+        tests. This implementation returns the default starting attenuation,
+        however, defining this function enables a more involved configuration
+        for over-the-air test classes.
+
+        Args:
+            testcase_params: dict containing all test params
+        """
+        return self.testclass_params['range_atten_start']
+
     def compile_test_params(self, testcase_params):
         if testcase_params['test_type'] == 'test_ping_range':
             testcase_params.update(
@@ -432,12 +445,12 @@ class WifiPingTest(base_test.BaseTestClass):
                 ping_size=self.testclass_params['ping_size'])
 
         if testcase_params['test_type'] == 'test_ping_range':
+            start_atten = self.get_range_start_atten(testcase_params)
             num_atten_steps = int((self.testclass_params['range_atten_stop'] -
-                                   self.testclass_params['range_atten_start'])
+                                   start_atten)
                                   / self.testclass_params['range_atten_step'])
             testcase_params['atten_range'] = [
-                self.testclass_params['range_atten_start'] +
-                x * self.testclass_params['range_atten_step']
+                start_atten + x * self.testclass_params['range_atten_step']
                 for x in range(0, num_atten_steps)
             ]
         else:
@@ -586,6 +599,45 @@ class WifiOtaPingTest(WifiPingTest):
             self.ota_chamber.set_orientation(testcase_params['position'])
         elif testcase_params['chamber_mode'] == 'stepped stirrers':
             self.ota_chamber.step_stirrers(testcase_params['total_positions'])
+
+    def extract_test_id(self, testcase_params, id_fields):
+        test_id = collections.OrderedDict(
+            (param, testcase_params[param]) for param in id_fields)
+        return test_id
+
+    def get_range_start_atten(self, testcase_params):
+        """Gets the starting attenuation for this ping test.
+
+        The function gets the starting attenuation by checking whether a test
+        at the same configuration has executed. If so it sets the starting
+        point a configurable number of dBs below the reference test.
+
+        Returns:
+            start_atten: starting attenuation for current test
+        """
+        # Get the current and reference test config. The reference test is the
+        # one performed at the current MCS+1
+        ref_test_params = self.extract_test_id(
+            testcase_params,
+            ['channel', 'mode'])
+        # Check if reference test has been run and set attenuation accordingly
+        previous_params = [
+            self.extract_test_id(
+                result['testcase_params'],
+                ['channel', 'mode'])
+            for result in self.testclass_results
+        ]
+        try:
+            ref_index = previous_params[::-1].index(ref_test_params)
+            ref_index = len(previous_params) - 1 - ref_index
+            start_atten = self.testclass_results[ref_index][
+                'atten_at_range'] - (
+                    self.testclass_params['adjacent_range_test_gap'])
+        except ValueError:
+            print('Reference test not found. Starting from {} dB'.format(
+                self.testclass_params['range_atten_start']))
+            start_atten = self.testclass_params['range_atten_start']
+        return start_atten
 
     def generate_test_cases(self, ap_power, channels, modes, chamber_mode,
                             positions):
