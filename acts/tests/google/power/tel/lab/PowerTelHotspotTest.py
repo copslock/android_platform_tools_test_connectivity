@@ -103,7 +103,7 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
         for dut in [hotspot_dut, slave_dut]:
             self.log.info("Setting Country Code to %s for SN:%s" %
                           (country_code, dut.serial))
-            wutils.set_wifi_country_code(dut, country_code)
+            dut.droid.wifiSetCountryCode(country_code)
 
         # Setup tethering
         wutils.start_wifi_tethering(

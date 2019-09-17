@@ -759,17 +759,11 @@ def wifi_test_device_init(ad):
     ad.log.info("wpa_supplicant log change status: %s", output)
     utils.sync_device_time(ad)
     ad.droid.telephonyToggleDataConnection(False)
-    set_wifi_country_code(ad, WifiEnums.CountryCode.US)
+    # TODO(angli): need to verify the country code was actually set. No generic
+    # way to check right now.
+    ad.adb.shell("halutil -country %s" % WifiEnums.CountryCode.US)
+    ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
     utils.set_ambient_display(ad, False)
-
-def set_wifi_country_code(ad, country_code):
-    """Sets the wifi country code on the device.
-
-    Args:
-        ad: An AndroidDevice object.
-        country_code: 2 letter ISO country code
-    """
-    ad.adb.shell("cmd wifi force-country-code enabled %s" % country_code)
 
 
 def start_wifi_connection_scan(ad):

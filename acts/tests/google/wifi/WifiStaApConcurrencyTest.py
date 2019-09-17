@@ -61,8 +61,8 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         utils.sync_device_time(self.dut)
         utils.sync_device_time(self.dut_client)
         # Set country code explicitly to "US".
-        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
-        wutils.set_wifi_country_code(self.dut_client, wutils.WifiEnums.CountryCode.US)
+        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
         # Enable verbose logging on the duts
         self.dut.droid.wifiEnableVerboseLogging(1)
         asserts.assert_equal(self.dut.droid.wifiGetVerboseLoggingLevel(), 1,
@@ -86,7 +86,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         if len(self.android_devices) > 2:
             wutils.wifi_test_device_init(self.android_devices[2])
             utils.sync_device_time(self.android_devices[2])
-            wutils.set_wifi_country_code(self.android_devices[2], wutils.WifiEnums.CountryCode.US)
+            self.android_devices[2].droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
             self.android_devices[2].droid.wifiEnableVerboseLogging(1)
             asserts.assert_equal(self.android_devices[2].droid.wifiGetVerboseLoggingLevel(), 1,
                 "Failed to enable WiFi verbose logging on the client dut.")

@@ -435,8 +435,8 @@ class WifiMacRandomizationTest(WifiBaseTest):
             7. Verify the factory MAC is not leaked.
 
         """
-        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
-        wutils.set_wifi_country_code(self.dut_client, wutils.WifiEnums.CountryCode.US)
+        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
         mac_sta = self.connect_to_network_and_verify_mac_randomization(
                 self.wpapsk_2g)
         softap = wutils.start_softap_and_verify(self, WIFI_CONFIG_APBAND_2G)
