@@ -1290,8 +1290,7 @@ def is_phone_in_call_iwlan(log, ad, call_id=None):
             return False
     nw_type = get_network_rat(log, ad, NETWORK_SERVICE_DATA)
     if nw_type != RAT_IWLAN:
-        ad.log.error("Data rat on: %s. Expected: iwlan", nw_type)
-        return False
+        ad.log.warning("Data rat on: %s. Expected: iwlan", nw_type)
     return True
 
 
