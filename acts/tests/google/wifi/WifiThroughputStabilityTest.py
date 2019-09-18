@@ -577,7 +577,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         return test_cases
 
 
-class WifiOtaThroughputStabilityTenDegree_Test(WifiOtaThroughputStabilityTest):
+class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
         self.tests = self.generate_test_cases([6, 36, 149], ['VHT20', 'VHT80'],
