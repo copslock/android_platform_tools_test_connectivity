@@ -80,6 +80,7 @@ from acts.test_utils.tel.tel_test_utils import activate_google_fi_account
 from acts.test_utils.tel.tel_test_utils import check_google_fi_activated
 from acts.test_utils.tel.tel_test_utils import check_fi_apk_installed
 from acts.test_utils.tel.tel_test_utils import phone_switch_to_msim_mode
+from acts.test_utils.tel.tel_test_utils import activate_esim_using_suw
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import SINGLE_SIM_CONFIG, MULTI_SIM_CONFIG
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -296,6 +297,8 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.log.info("Phone already in Dual SIM Mode")
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
             ad.log.info("Device has no or unknown SIM in it")
+            # eSIM needs activation
+            activate_esim_using_suw(ad)
             ensure_phone_idle(self.log, ad)
         elif self.user_params.get("Attenuator"):
             ad.log.info("Device in chamber room")
