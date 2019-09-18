@@ -19,10 +19,12 @@ import itertools
 import json
 import logging
 import math
+import numpy
 import os
 import statistics
 from acts import asserts
 from acts import base_test
+from acts import context
 from acts import utils
 from acts.controllers.utils_lib import ssh
 from acts.controllers import iperf_server as ipf
@@ -93,12 +95,15 @@ class WifiRssiTest(base_test.BaseTestClass):
             postprocessed_results: compiled arrays of RSSI measurements
         """
         # Set Blackbox metric values
-        self.testcase_metric_logger.add_metric('signal_poll_rssi_stdev', max(
-            postprocessed_results['signal_poll_rssi']['stdev']))
-        self.testcase_metric_logger.add_metric('chain_0_rssi_stdev',max(
-            postprocessed_results['chain_0_rssi']['stdev']))
-        self.testcase_metric_logger.add_metric('chain_1_rssi_stdev',max(
-            postprocessed_results['chain_1_rssi']['stdev']))
+        self.testcase_metric_logger.add_metric(
+            'signal_poll_rssi_stdev',
+            max(postprocessed_results['signal_poll_rssi']['stdev']))
+        self.testcase_metric_logger.add_metric(
+            'chain_0_rssi_stdev',
+            max(postprocessed_results['chain_0_rssi']['stdev']))
+        self.testcase_metric_logger.add_metric(
+            'chain_1_rssi_stdev',
+            max(postprocessed_results['chain_1_rssi']['stdev']))
 
         # Evaluate test pass/fail
         test_failed = any([
@@ -164,8 +169,10 @@ class WifiRssiTest(base_test.BaseTestClass):
                     avg_error = RSSI_ERROR_VAL
                     avg_shift = RSSI_ERROR_VAL
                 # Set Blackbox metric values
-                self.testcase_metric_logger.add_metric('{}_error'.format(key),avg_error)
-                self.testcase_metric_logger.add_metric('{}_shift'.format(key),avg_shift)
+                self.testcase_metric_logger.add_metric('{}_error'.format(key),
+                                                       avg_error)
+                self.testcase_metric_logger.add_metric('{}_shift'.format(key),
+                                                       avg_shift)
                 # Evaluate test pass/fail
                 rssi_failure = (avg_error >
                                 self.testclass_params['abs_tolerance']
@@ -429,6 +436,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         # Run test and log result
         rssi_result = collections.OrderedDict()
         rssi_result['test_name'] = self.current_test_name
+        rssi_result['testcase_params'] = testcase_params
         rssi_result['ap_settings'] = self.access_point.ap_settings.copy()
         rssi_result['attenuation'] = list(testcase_params['rssi_atten_range'])
         rssi_result['connected_bssid'] = self.main_network[
@@ -638,8 +646,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             connected_measurements=int(
                 self.testclass_params['rssi_stability_duration'] /
                 self.testclass_params['polling_frequency']),
-            scan_measurements=self.
-            testclass_params['rssi_vs_atten_scan_measurements'],
+            scan_measurements=0,
             first_measurement_delay=MED_SLEEP,
             rssi_atten_range=self.testclass_params['rssi_stability_atten'])
         testcase_params['band'] = self.access_point.band_lookup_by_channel(
@@ -721,11 +728,12 @@ class WifiRssiTest(base_test.BaseTestClass):
 
         self.setup_rssi_test(testcase_params)
         rssi_result = self.run_rssi_test(testcase_params)
+        rssi_result['postprocessed_results'] = self.post_process_rssi_sweep(
+            rssi_result)
         self.testclass_results.append(rssi_result)
-        postprocessed_results = self.post_process_rssi_sweep(rssi_result)
-        self.plot_rssi_vs_attenuation(postprocessed_results)
-        self.pass_fail_check_rssi_accuracy(testcase_params,
-                                           postprocessed_results)
+        self.plot_rssi_vs_attenuation(rssi_result['postprocessed_results'])
+        self.pass_fail_check_rssi_accuracy(
+            testcase_params, rssi_result['postprocessed_results'])
 
     def _test_rssi_stability(self, testcase_params):
         """ Function that gets called for each test case of rssi_stability
@@ -738,12 +746,14 @@ class WifiRssiTest(base_test.BaseTestClass):
 
         self.setup_rssi_test(testcase_params)
         rssi_result = self.run_rssi_test(testcase_params)
+        rssi_result['postprocessed_results'] = self.post_process_rssi_sweep(
+            rssi_result)
         self.testclass_results.append(rssi_result)
-        postprocessed_results = self.post_process_rssi_sweep(rssi_result)
-        self.plot_rssi_vs_time(rssi_result, postprocessed_results, 1)
-        self.plot_rssi_distribution(postprocessed_results)
-        self.pass_fail_check_rssi_stability(testcase_params,
-                                            postprocessed_results)
+        self.plot_rssi_vs_time(rssi_result,
+                               rssi_result['postprocessed_results'], 1)
+        self.plot_rssi_distribution(rssi_result['postprocessed_results'])
+        self.pass_fail_check_rssi_stability(
+            testcase_params, rssi_result['postprocessed_results'])
 
     def _test_rssi_tracking(self, testcase_params):
         """ Function that gets called for each test case of rssi_tracking
@@ -756,11 +766,13 @@ class WifiRssiTest(base_test.BaseTestClass):
 
         self.setup_rssi_test(testcase_params)
         rssi_result = self.run_rssi_test(testcase_params)
+        rssi_result['postprocessed_results'] = self.post_process_rssi_sweep(
+            rssi_result)
         self.testclass_results.append(rssi_result)
-        postprocessed_results = self.post_process_rssi_sweep(rssi_result)
-        self.plot_rssi_vs_time(rssi_result, postprocessed_results, 1)
-        self.pass_fail_check_rssi_accuracy(testcase_params,
-                                           postprocessed_results)
+        self.plot_rssi_vs_time(rssi_result,
+                               rssi_result['postprocessed_results'], 1)
+        self.pass_fail_check_rssi_accuracy(
+            testcase_params, rssi_result['postprocessed_results'])
 
     def generate_test_cases(self, test_types, channels, modes, traffic_modes):
         """Function that auto-generates test cases for a test class."""
@@ -850,11 +862,77 @@ class WifiOtaRssiTest(WifiRssiTest):
             self.user_params['OTAChamber'])[0]
 
     def teardown_class(self):
-        WifiRssiTest.teardown_class(self)
         self.ota_chamber.reset_chamber()
+        self.process_testclass_results()
 
     def teardown_test(self):
-        self.ota_chamber.reset_chamber()
+        if self.ota_chamber.current_mode == 'continuous':
+            self.ota_chamber.reset_chamber()
+
+    def extract_test_id(self, testcase_params, id_fields):
+        test_id = collections.OrderedDict(
+            (param, testcase_params[param]) for param in id_fields)
+        return test_id
+
+    def process_testclass_results(self):
+        """Saves all test results to enable comparison."""
+        testclass_data = collections.OrderedDict()
+        for test_result in self.testclass_results:
+            current_params = test_result['testcase_params']
+
+            channel = current_params['channel']
+            channel_data = testclass_data.setdefault(
+                channel,
+                collections.OrderedDict(
+                    orientation=[],
+                    rssi=collections.OrderedDict(
+                        signal_poll_rssi=[], chain_0_rssi=[],
+                        chain_1_rssi=[])))
+
+            channel_data['orientation'].append(current_params['orientation'])
+            channel_data['rssi']['signal_poll_rssi'].append(
+                test_result['postprocessed_results']['signal_poll_rssi']
+                ['mean'][0])
+            channel_data['rssi']['chain_0_rssi'].append(
+                test_result['postprocessed_results']['chain_0_rssi']['mean']
+                [0])
+            channel_data['rssi']['chain_1_rssi'].append(
+                test_result['postprocessed_results']['chain_1_rssi']['mean']
+                [0])
+
+        chamber_mode = self.testclass_results[0]['testcase_params'][
+            'chamber_mode']
+        if chamber_mode == 'orientation':
+            x_label = 'Angle (deg)'
+        elif chamber_mode == 'stepped stirrers':
+            x_label = 'Position Index'
+
+        # Publish test class metrics
+        for channel, channel_data in testclass_data.items():
+            for rssi_metric, rssi_metric_value in channel_data['rssi'].items():
+                metric_name = 'ota_summary_ch{}.avg_{}'.format(
+                    channel, rssi_metric)
+                metric_value = numpy.mean(rssi_metric_value)
+                self.testclass_metric_logger.add_metric(
+                    metric_name, metric_value)
+
+        # Plot test class results
+        plots = []
+        for channel, channel_data in testclass_data.items():
+            current_plot = wputils.BokehFigure(
+                title='Channel {} - Rssi vs. Position'.format(channel),
+                x_label=x_label,
+                primary_y='RSSI (dBm)',
+            )
+            for rssi_metric, rssi_metric_value in channel_data['rssi'].items():
+                legend = rssi_metric
+                current_plot.add_line(channel_data['orientation'],
+                                      rssi_metric_value, legend)
+            current_plot.generate_figure()
+            plots.append(current_plot)
+        current_context = context.get_current_context().get_full_output_path()
+        plot_file_path = os.path.join(current_context, 'results.html')
+        wputils.BokehFigure.save_figures(plots, plot_file_path)
 
     def setup_rssi_test(self, testcase_params):
         # Test setup
@@ -864,8 +942,56 @@ class WifiOtaRssiTest(WifiRssiTest):
         else:
             self.ota_chamber.set_orientation(testcase_params['orientation'])
 
-    def _test_rssi_variation(self, testcase_params):
-        self._test_rssi_stability(testcase_params)
+    def compile_ota_rssi_test_params(self, testcase_params):
+        """Function to complete compiling test-specific parameters
+
+        Args:
+            testcase_params: dict containing test-specific parameters
+        """
+        if "rssi_over_orientation" in self.test_name:
+            rssi_test_duration = self.testclass_params[
+                'rssi_over_orientation_duration']
+        elif "rssi_variation" in self.test_name:
+            rssi_test_duration = self.testclass_params[
+                'rssi_variation_duration']
+
+        testcase_params.update(
+            connected_measurements=int(
+                rssi_test_duration /
+                self.testclass_params['polling_frequency']),
+            scan_measurements=0,
+            first_measurement_delay=MED_SLEEP,
+            rssi_atten_range=[
+                self.testclass_params['rssi_ota_test_attenuation']
+            ])
+        testcase_params['band'] = self.access_point.band_lookup_by_channel(
+            testcase_params['channel'])
+        testcase_params['tracked_bssid'] = [
+            self.main_network[testcase_params['band']].get(
+                'BSSID', '00:00:00:00')
+        ]
+
+        testcase_params['traffic_timeout'] = self.get_traffic_timeout(
+            testcase_params)
+        if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
+            testcase_params['iperf_args'] = '-i 1 -t {} -J'.format(
+                testcase_params['traffic_timeout'])
+        else:
+            testcase_params['iperf_args'] = '-i 1 -t {} -J -R'.format(
+                testcase_params['traffic_timeout'])
+        return testcase_params
+
+    def _test_ota_rssi(self, testcase_params):
+        testcase_params = self.compile_ota_rssi_test_params(testcase_params)
+
+        self.setup_rssi_test(testcase_params)
+        rssi_result = self.run_rssi_test(testcase_params)
+        rssi_result['postprocessed_results'] = self.post_process_rssi_sweep(
+            rssi_result)
+        self.testclass_results.append(rssi_result)
+        self.plot_rssi_vs_time(rssi_result,
+                               rssi_result['postprocessed_results'], 1)
+        self.plot_rssi_distribution(rssi_result['postprocessed_results'])
 
     def generate_test_cases(self, test_types, channels, modes, traffic_modes,
                             chamber_modes, orientations):
@@ -895,7 +1021,7 @@ class WifiOtaRssiTest(WifiRssiTest):
                 ['traffic_type'],
                 chamber_mode=chamber_mode,
                 orientation=orientation)
-            test_function = getattr(self, '_{}'.format(test_type))
+            test_function = self._test_ota_rssi
             setattr(self, test_name, partial(test_function, testcase_params))
             test_cases.append(test_name)
         return test_cases
@@ -909,16 +1035,17 @@ class WifiOtaRssi_Accuracy_Test(WifiOtaRssiTest):
             ['orientation'], list(range(0, 360, 45)))
 
 
-class WifiOtaRssi_Variation_Test(WifiOtaRssiTest):
+class WifiOtaRssi_StirrerVariation_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
             ['test_rssi_variation'], [6, 36, 149], ['VHT20'],
             ['ActiveTraffic'], ['StirrersOn'], [0])
 
+
 class WifiOtaRssi_TenDegree_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
         self.tests = self.generate_test_cases(
-            ['test_rssi_variation'], [6, 36, 149], ['VHT20'],
-            ['ActiveTraffic'], ['StirrersOff'], list(range(0, 360, 10)))
+            ['test_rssi_over_orientation'], [6, 36, 149], ['VHT20'],
+            ['ActiveTraffic'], ['orientation'], list(range(0, 360, 10)))
