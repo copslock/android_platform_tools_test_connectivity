@@ -509,7 +509,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("%s end", log_msg)
         self.dut_incall = False
         if self.cbrs_esim:
-            time.sleep(15)
+            time.sleep(30)
             self._cbrs_data_check_test(begin_time, expected_cbrs=True,
                                        test_time="after")
         if not result:
@@ -719,7 +719,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             ad.log.error("Found %d checks failed, expected cbrs %s",
                          cbrs_fail_count, expected_cbrs)
             cbrs_fail_count += 1
-        self.result_info["CBRS Total"] + 1
+        self.result_info["CBRS Total"] += 1
         return True
 
     def call_test(self, call_verification_func=None):
