@@ -7421,6 +7421,36 @@ def my_current_screen_content(ad, content):
     return True
 
 
+def activate_esim_using_suw(ad):
+    _START_SUW = ('am start -a android.intent.action.MAIN -n '
+                  'com.google.android.setupwizard/.SetupWizardTestActivity')
+    _STOP_SUW = ('am start -a com.android.setupwizard.EXIT')
+
+    toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
+    ad.adb.shell("settings put system screen_off_timeout 1800000")
+    ad.ensure_screen_on()
+    ad.send_keycode("MENU")
+    ad.send_keycode("HOME")
+    for _ in range(3):
+        ad.log.info("Attempt %d - activating eSIM", (_ + 1))
+        ad.adb.shell(_START_SUW)
+        time.sleep(10)
+        log_screen_shot(ad, "start_suw")
+        for _ in range(4):
+            ad.send_keycode("TAB")
+            time.sleep(0.5)
+        ad.send_keycode("ENTER")
+        time.sleep(15)
+        log_screen_shot(ad, "activate_esim")
+        get_screen_shot_log(ad)
+        ad.adb.shell(_STOP_SUW)
+        time.sleep(5)
+        current_sim = get_sim_state(ad)
+        ad.log.info("Current SIM status is %s", current_sim)
+        if current_sim not in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
+            break
+    return True
+
 def activate_google_fi_account(ad, retries=10):
     _FI_APK = "com.google.android.apps.tycho"
     _FI_ACTIVATE_CMD = ('am start -c android.intent.category.DEFAULT -n '
