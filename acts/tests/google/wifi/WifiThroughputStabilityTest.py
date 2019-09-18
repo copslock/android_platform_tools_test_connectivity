@@ -446,8 +446,8 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             self.user_params['OTAChamber'])[0]
 
     def teardown_class(self):
-        self.process_testclass_results()
         self.ota_chamber.reset_chamber()
+        self.process_testclass_results()
 
     def extract_test_id(self, testcase_params, id_fields):
         test_id = collections.OrderedDict(
