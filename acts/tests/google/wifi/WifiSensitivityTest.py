@@ -770,7 +770,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
         return test_cases
 
 
-class WifiOtaSensitivity_10Degree_Test(WifiOtaSensitivityTest):
+class WifiOtaSensitivity_TenDegree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
         WifiOtaSensitivityTest.__init__(self, controllers)
         requested_channels = [6, 36, 149]
@@ -785,7 +785,7 @@ class WifiOtaSensitivity_10Degree_Test(WifiOtaSensitivityTest):
             list(range(0, 360, 10)))
 
 
-class WifiOtaSensitivity_SingleChain_10Degree_Test(WifiOtaSensitivityTest):
+class WifiOtaSensitivity_SingleChain_TenDegree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
         WifiOtaSensitivityTest.__init__(self, controllers)
         requested_channels = [6, 36, 149]
