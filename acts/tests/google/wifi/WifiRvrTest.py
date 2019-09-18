@@ -681,16 +681,26 @@ class WifiOtaRvrTest(WifiRvrTest):
         WifiRvrTest.teardown_class(self)
         self.ota_chamber.reset_chamber()
 
+    def extract_test_id(self, testcase_params, id_fields):
+        test_id = collections.OrderedDict(
+            (param, testcase_params[param]) for param in id_fields)
+        return test_id
+
     def process_testclass_results(self):
         """Saves plot with all test results to enable comparison."""
         # Plot individual test id results raw data and compile metrics
         plots = collections.OrderedDict()
         compiled_data = collections.OrderedDict()
         for result in self.testclass_results:
-            test_id = (result['testcase_params']['channel'],
-                       result['testcase_params']['mode'],
-                       result['testcase_params']['traffic_type'],
-                       result['testcase_params']['traffic_direction'])
+            test_id = tuple(
+                self.extract_test_id(
+                    result['testcase_params'],
+                    ['channel', 'mode', 'traffic_type', 'traffic_direction'
+                     ]).items())
+            #test_id = (result['testcase_params']['channel'],
+            #           result['testcase_params']['mode'],
+            #           result['testcase_params']['traffic_type'],
+            #           result['testcase_params']['traffic_direction'])
             if test_id not in plots:
                 # Initialize test id data when not present
                 compiled_data[test_id] = {'throughput': [], 'metrics': {}}
@@ -725,15 +735,20 @@ class WifiOtaRvrTest(WifiRvrTest):
 
         # Compute average RvRs and compount metrics over orientations
         for test_id, test_data in compiled_data.items():
+            test_id_dict = dict(test_id)
+            metric_tag = '{}_{}_ch{}_{}'.format(
+                test_id_dict['traffic_type'],
+                test_id_dict['traffic_direction'], test_id_dict['channel'],
+                test_id_dict['mode'])
             high_tput_hit_freq = numpy.mean(
                 numpy.not_equal(test_data['metrics']['high_tput_range'], -1))
-            self.testclass_metric_logger.add_metric('high_tput_hit_freq',
-                                                    high_tput_hit_freq)
+            self.testclass_metric_logger.add_metric(
+                '{}.high_tput_hit_freq'.format(metric_tag), high_tput_hit_freq)
             for metric_key, metric_value in test_data['metrics'].items():
-                avg_metric_key = "avg_{}".format(metric_key)
-                avg_metric_value = numpy.mean(metric_value)
+                metric_key = "{}.avg_{}".format(metric_tag, metric_key)
+                metric_value = numpy.mean(metric_value)
                 self.testclass_metric_logger.add_metric(
-                    avg_metric_key, avg_metric_value)
+                    metric_key, metric_value)
             test_data['avg_rvr'] = numpy.mean(test_data['throughput'], 0)
             test_data['median_rvr'] = numpy.median(test_data['throughput'], 0)
             plots[test_id].add_line(
