@@ -44,8 +44,8 @@ from acts.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 
 class FlpTtffTest(BaseTestClass):
     """ FLP TTFF Tests"""
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ad = self.android_devices[0]
         req_params = ["pixel_lab_network", "standalone_cs_criteria",
                       "qdsp6m_path", "flp_ttff_max_threshold",
@@ -57,7 +57,6 @@ class FlpTtffTest(BaseTestClass):
             SSID = network['SSID']
             self.ssid_map[SSID] = network
 
-    def setup_class(self):
         if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
             self.ad.log.info("Force airplane mode off")
             force_airplane_mode(self.ad, False)
