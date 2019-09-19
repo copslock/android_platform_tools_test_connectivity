@@ -19,6 +19,7 @@ import csv
 import itertools
 import json
 import logging
+import numpy
 import os
 from acts import asserts
 from acts import context
@@ -192,7 +193,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                          'Target Sensitivity = {}'.format(
                              result['peak_throughput_pct'],
                              result['sensitivity'], golden_sensitivity))
-        if result['peak_throughput_pct'] < 100:
+        if result['peak_throughput_pct'] < 95:
             self.log.warning('Result unreliable. Peak rate unstable')
         if result['sensitivity'] - golden_sensitivity < self.testclass_params[
                 'sensitivity_tolerance']:
@@ -217,7 +218,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             channel = testcase_params['channel']
             if channel not in channels_tested:
                 channels_tested.append(channel)
-            if result['peak_throughput_pct'] == 100:
+            if result['peak_throughput_pct'] >= 95:
                 testclass_results_dict[test_id][channel] = result[
                     'sensitivity']
             else:
@@ -563,8 +564,8 @@ class WifiSensitivity_SampleChannels_Test(WifiSensitivityTest):
 class WifiSensitivity_2GHz_Test(WifiSensitivityTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = self.generate_test_cases([1, 2, 6, 10, 11],
-                                              ['VHT20'], ['0', '1', '2x2'])
+        self.tests = self.generate_test_cases([1, 2, 6, 10, 11], ['VHT20'],
+                                              ['0', '1', '2x2'])
 
 
 class WifiSensitivity_5GHz_Test(WifiSensitivityTest):
@@ -638,7 +639,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 }
             testclass_results_dict[test_id][channel]['orientation'].append(
                 result['testcase_params']['orientation'])
-            if result['peak_throughput_pct'] == 100:
+            if result['peak_throughput_pct'] >= 95:
                 testclass_results_dict[test_id][channel]['sensitivity'].append(
                     result['sensitivity'])
             else:
@@ -669,13 +670,15 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 curr_plot.add_line(
                     channel_results['orientation'],
                     channel_results['sensitivity'],
-                    legend='Channel {}'.format(channel))
+                    legend='Channel {}'.format(channel),
+                    marker='circle')
                 metric_tag = 'ota_summary_ch{}_{}'.format(
                     channel, metric_test_config)
                 metric_name = metric_tag + '.avg_sensitivity'
-                metric_value = sum(channel_results['sensitivity']) / len(
-                    channel_results['sensitivity'])
+                metric_value = numpy.nanmean(channel_results['sensitivity'])
                 self.bb_metric_logger.add_metric(metric_name, metric_value)
+                self.log.info(("Average Sensitivity for {}: {:.2f}").format(
+                    metric_tag, metric_value))
             current_context = (
                 context.get_current_context().get_full_output_path())
             output_file_path = os.path.join(current_context,
@@ -717,7 +720,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             print('Reference test not found. Starting from {} dB'.format(
                 self.testclass_params['atten_start']))
             start_atten = self.testclass_params['atten_start']
-            start_atten = max(start_atten, 0)
+        start_atten = max(start_atten, 0)
         return start_atten
 
     def generate_test_cases(self, channels, modes, requested_rates, chain_mask,
