@@ -374,10 +374,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                 iperf_file = server_output_path
             try:
                 iperf_result = ipf.IPerfResult(iperf_file)
-                curr_throughput = (math.fsum(iperf_result.instantaneous_rates[
-                    self.testclass_params['iperf_ignored_interval']:-1]) / len(
-                        iperf_result.instantaneous_rates[self.testclass_params[
-                            'iperf_ignored_interval']:-1])) * 8 * (1.024**2)
+                curr_throughput = numpy.mean(iperf_result.instantaneous_rates[
+                    self.testclass_params['iperf_ignored_interval']:-1]
+                                             ) * 8 * (1.024**2)
             except:
                 self.log.warning(
                     'ValueError: Cannot get iperf result. Setting to 0')
