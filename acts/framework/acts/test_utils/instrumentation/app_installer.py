@@ -14,11 +14,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import re
 
 from acts.libs.proc import job
 
 PKG_NAME_PATTERN = r"^package:\s+name='(?P<pkg_name>.*?)'"
+PM_PATH_PATTERN = r"^package:(?P<apk_path>.*)"
 
 
 class AppInstaller(object):
@@ -82,3 +84,21 @@ class AppInstaller(object):
             match = re.compile(PKG_NAME_PATTERN).search(dump)
             self._pkgs[apk_path] = match.group('pkg_name') if match else ''
         return self._pkgs[apk_path]
+
+    def pull_apk(self, package_name, dest):
+        """Pull the corresponding apk file from device given the package name
+
+        Args:
+            package_name: Package name
+            dest: Destination directory
+
+        Returns: Path to the pulled apk, or None if package not installed
+        """
+        if not self.ad.is_apk_installed(package_name):
+            self.ad.log.warning('Unable to find package %s on device. Pull '
+                                'aborted.' % package_name)
+            return None
+        apk_path = re.compile(PM_PATH_PATTERN).search(
+            self.ad.adb.shell('pm path %s' % package_name)).group('apk_path')
+        self.ad.pull_files(apk_path, dest)
+        return os.path.join(dest, os.path.basename(apk_path))
