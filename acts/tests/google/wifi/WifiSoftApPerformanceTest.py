@@ -35,14 +35,10 @@ class WifiSoftApRvrTest(WifiRvrTest):
         base_test.BaseTestClass.__init__(self, controllers)
         self.tests = ("test_rvr_TCP_DL_2GHz", "test_rvr_TCP_UL_2GHz",
                       "test_rvr_TCP_DL_5GHz", "test_rvr_TCP_UL_5GHz")
-        self.failure_count_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='failure_count')
-        self.peak_tput_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='peak_tput')
-        self.high_tput_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='high_tput_range')
-        self.low_tput_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='low_tput_range')
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
