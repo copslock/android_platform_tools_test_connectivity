@@ -26,6 +26,10 @@ START_TIMESTAMP = 'start'
 END_TIMESTAMP = 'end'
 
 
+class ProtoParserError(Exception):
+    """Class for exceptions raised by the proto parser."""
+
+
 def pull_proto(ad, dest_dir, source_path=None):
     """Pull latest instrumentation result proto from device.
 
@@ -44,16 +48,15 @@ def pull_proto(ad, dest_dir, source_path=None):
             ad.adb.shell('echo $EXTERNAL_STORAGE'), DEFAULT_INST_LOG_DIR)
         filename = ad.adb.shell('ls %s -t | head -n1' % default_full_proto_dir)
         if not filename:
-            ad.log.warning('No instrumentation result protos found at default '
-                           'location.')
-            return ''
+            raise ProtoParserError(
+                'No instrumentation result protos found at default location.')
         source_path = os.path.join(default_full_proto_dir, filename)
     ad.pull_files(source_path, dest_dir)
     dest_path = os.path.join(dest_dir, filename)
     if not os.path.exists(dest_path):
-        ad.log.warning('Failed to pull instrumentation result proto: %s -> %s'
-                       % (source_path, dest_path))
-        return ''
+        raise ProtoParserError(
+            'Failed to pull instrumentation result proto: %s -> %s'
+            % (source_path, dest_path))
     return dest_path
 
 

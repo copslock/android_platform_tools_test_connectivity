@@ -56,10 +56,12 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             instrumentation_config_path = os.path.join(
                 self.user_params[Config.key_config_path.value],
                 DEFAULT_INSTRUMENTATION_CONFIG_FILE)
-        self._instrumentation_config = None
+        self._instrumentation_config = ConfigWrapper()
         if os.path.exists(instrumentation_config_path):
             self._instrumentation_config = self._load_instrumentation_config(
                 instrumentation_config_path)
+            self._class_config = self._instrumentation_config.get_config(
+                self.__class__.__name__)
         else:
             self.log.warning(
                 'Instrumentation config file %s does not exist' %
@@ -143,18 +145,16 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
             controller_name: Name of the controller config to fetch
         Returns: The controller config, as a ConfigWrapper
         """
-        class_config = self._instrumentation_config.get_config(
-            self.__class__.__name__)
         if self.current_test_name:
             # Return the testcase level config, used for setting up test
-            case_config = class_config.get_config(self.current_test_name)
+            case_config = self._class_config.get_config(self.current_test_name)
             return case_config.get_config(controller_name)
         else:
             # Merge the base and testclass level configs, used for setting up
             # class.
             merged_config = self._instrumentation_config.get_config(
                 controller_name)
-            merged_config.update(class_config.get_config(controller_name))
+            merged_config.update(self._class_config.get_config(controller_name))
             return merged_config
 
     def adb_run(self, cmds):
