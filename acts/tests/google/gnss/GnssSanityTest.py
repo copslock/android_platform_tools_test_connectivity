@@ -73,8 +73,8 @@ from acts.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 
 class GnssSanityTest(BaseTestClass):
     """ GNSS Function Sanity Tests"""
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ad = self.android_devices[0]
         req_params = ["pixel_lab_network", "standalone_cs_criteria",
                       "supl_cs_criteria", "xtra_ws_criteria", "xtra_cs_criteria",
@@ -99,7 +99,6 @@ class GnssSanityTest(BaseTestClass):
             self.wifi_xtra_cs_criteria = self.xtra_cs_criteria
         self.flash_new_radio_or_mbn()
 
-    def setup_class(self):
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.default_gnss_signal_attenuation)
         _init_device(self.ad)
