@@ -92,11 +92,21 @@ class WifiPingTest(base_test.BaseTestClass):
                 for file in os.listdir(
                     self.testbed_params['golden_results_path'])
             ]
+        if hasattr(self, 'bdf'):
+            self.log.info('Pushing WiFi BDF to DUT.')
+            wputils.push_bdf(self.dut, self.bdf)
+        if hasattr(self, 'firmware'):
+            self.log.info('Pushing WiFi firmware to DUT.')
+            wlanmdsp = [
+                file for file in self.firmware if "wlanmdsp.mbn" in file
+            ][0]
+            data_msc = [file for file in self.firmware
+                        if "Data.msc" in file][0]
+            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         self.testclass_results = []
 
         # Turn WiFi ON
-        for dev in self.android_devices:
-            wutils.wifi_toggle_state(dev, True)
+        wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_class(self):
         # Turn WiFi OFF
@@ -446,9 +456,9 @@ class WifiPingTest(base_test.BaseTestClass):
 
         if testcase_params['test_type'] == 'test_ping_range':
             start_atten = self.get_range_start_atten(testcase_params)
-            num_atten_steps = int((self.testclass_params['range_atten_stop'] -
-                                   start_atten)
-                                  / self.testclass_params['range_atten_step'])
+            num_atten_steps = int(
+                (self.testclass_params['range_atten_stop'] - start_atten) /
+                self.testclass_params['range_atten_step'])
             testcase_params['atten_range'] = [
                 start_atten + x * self.testclass_params['range_atten_step']
                 for x in range(0, num_atten_steps)
@@ -617,14 +627,12 @@ class WifiOtaPingTest(WifiPingTest):
         """
         # Get the current and reference test config. The reference test is the
         # one performed at the current MCS+1
-        ref_test_params = self.extract_test_id(
-            testcase_params,
-            ['channel', 'mode'])
+        ref_test_params = self.extract_test_id(testcase_params,
+                                               ['channel', 'mode'])
         # Check if reference test has been run and set attenuation accordingly
         previous_params = [
-            self.extract_test_id(
-                result['testcase_params'],
-                ['channel', 'mode'])
+            self.extract_test_id(result['testcase_params'],
+                                 ['channel', 'mode'])
             for result in self.testclass_results
         ]
         try:

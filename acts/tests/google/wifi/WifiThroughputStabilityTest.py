@@ -119,7 +119,21 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
                 for file in os.listdir(
                     self.testbed_params['golden_results_path'])
             ]
+        if hasattr(self, 'bdf'):
+            self.log.info('Pushing WiFi BDF to DUT.')
+            wputils.push_bdf(self.dut, self.bdf)
+        if hasattr(self, 'firmware'):
+            self.log.info('Pushing WiFi firmware to DUT.')
+            wlanmdsp = [
+                file for file in self.firmware if "wlanmdsp.mbn" in file
+            ][0]
+            data_msc = [file for file in self.firmware
+                        if "Data.msc" in file][0]
+            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         self.testclass_results = []
+
+        # Turn WiFi ON
+        wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
         self.iperf_server.stop()
@@ -577,7 +591,8 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         return test_cases
 
 
-class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest):
+class WifiOtaThroughputStability_TenDegree_Test(
+        WifiOtaThroughputStabilityTest):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
         self.tests = self.generate_test_cases([6, 36, 149], ['VHT20', 'VHT80'],
