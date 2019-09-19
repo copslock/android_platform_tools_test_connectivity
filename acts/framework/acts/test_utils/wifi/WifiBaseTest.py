@@ -24,6 +24,7 @@ import time
 import acts.controllers.access_point as ap
 
 from acts import asserts
+from acts import signals
 from acts import utils
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
@@ -608,3 +609,46 @@ class WifiBaseTest(BaseTestClass):
             hostapd_constants.BAND_5G, channel_5g)
         if not result:
             raise ValueError("Failed to configure channel for 5G band.")
+
+    @staticmethod
+    def wifi_test_wrap(fn):
+        def _safe_wrap_test_case(self, *args, **kwargs):
+            test_id = "%s:%s:%s" % (self.__class__.__name__, self.test_name,
+                                    self.log_begin_time.replace(' ', '-'))
+            self.test_id = test_id
+            self.result_detail = ""
+            tries = int(self.user_params.get("wifi_auto_rerun", 3))
+            for ad in self.android_devices:
+                ad.log_path = self.log_path
+            for i in range(tries + 1):
+                result = True
+                if i > 0:
+                    log_string = "[Test Case] RETRY:%s %s" % (i, self.test_name)
+                    self.log.info(log_string)
+                    self._teardown_test(self.test_name)
+                    self._setup_test(self.test_name)
+                try:
+                    result = fn(self, *args, **kwargs)
+                except signals.TestFailure as e:
+                    self.log.warn("Error msg: %s" % e)
+                    if self.result_detail:
+                        signal.details = self.result_detail
+                    result = False
+                except signals.TestSignal:
+                    if self.result_detail:
+                        signal.details = self.result_detail
+                    raise
+                except Exception as e:
+                    self.log.exception(e)
+                    asserts.fail(self.result_detail)
+                if result is False:
+                    if i < tries:
+                        continue
+                else:
+                    break
+            if result is not False:
+                asserts.explicit_pass(self.result_detail)
+            else:
+                asserts.fail(self.result_detail)
+
+        return _safe_wrap_test_case
