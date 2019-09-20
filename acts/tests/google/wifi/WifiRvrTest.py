@@ -18,7 +18,6 @@ import collections
 import itertools
 import json
 import logging
-import math
 import numpy
 import os
 from acts import asserts
@@ -54,6 +53,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             wputils.BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
             wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -163,7 +163,9 @@ class WifiRvrTest(base_test.BaseTestClass):
 
         # Set test metrics
         rvr_result['metrics']['failure_count'] = failure_count
-        self.testcase_metric_logger.add_metric('failure_count', failure_count)
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric('failure_count',
+                                                   failure_count)
 
         # Assert pass or fail
         if failure_count >= self.testclass_params['failure_count_tolerance']:
@@ -301,8 +303,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         rvr_result['metrics'] = {}
         rvr_result['metrics']['peak_tput'] = max(
             rvr_result['throughput_receive'])
-        self.testcase_metric_logger.add_metric(
-            'peak_tput', rvr_result['metrics']['peak_tput'])
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric(
+                'peak_tput', rvr_result['metrics']['peak_tput'])
 
         tput_below_limit = [
             tput < self.testclass_params['tput_metric_targets'][
@@ -316,8 +319,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                 break
         else:
             rvr_result['metrics']['high_tput_range'] = -1
-        self.testcase_metric_logger.add_metric(
-            'high_tput_range', rvr_result['metrics']['high_tput_range'])
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric(
+                'high_tput_range', rvr_result['metrics']['high_tput_range'])
 
         tput_below_limit = [
             tput < self.testclass_params['tput_metric_targets'][
@@ -331,8 +335,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                 break
         else:
             rvr_result['metrics']['low_tput_range'] = -1
-        self.testcase_metric_logger.add_metric(
-            'low_tput_range', rvr_result['metrics']['low_tput_range'])
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric(
+                'low_tput_range', rvr_result['metrics']['low_tput_range'])
 
     def run_rvr_test(self, testcase_params):
         """Test function to run RvR.
@@ -680,6 +685,7 @@ class WifiOtaRvrTest(WifiRvrTest):
             wputils.BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
             wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = False
 
     def setup_class(self):
         WifiRvrTest.setup_class(self)
@@ -706,10 +712,6 @@ class WifiOtaRvrTest(WifiRvrTest):
                     result['testcase_params'],
                     ['channel', 'mode', 'traffic_type', 'traffic_direction'
                      ]).items())
-            #test_id = (result['testcase_params']['channel'],
-            #           result['testcase_params']['mode'],
-            #           result['testcase_params']['traffic_type'],
-            #           result['testcase_params']['traffic_direction'])
             if test_id not in plots:
                 # Initialize test id data when not present
                 compiled_data[test_id] = {'throughput': [], 'metrics': {}}
