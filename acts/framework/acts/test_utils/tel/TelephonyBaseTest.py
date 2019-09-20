@@ -102,6 +102,8 @@ class TelephonyBaseTest(BaseTestClass):
                                     self.log_begin_time.replace(' ', '-'))
             self.test_id = test_id
             self.result_detail = ""
+            self.testsignal_details = ""
+            self.testsignal_extras = ""
             tries = int(self.user_params.get("telephony_auto_rerun", 1))
             for ad in self.android_devices:
                 ad.log_path = self.log_path
@@ -114,13 +116,11 @@ class TelephonyBaseTest(BaseTestClass):
                     self._setup_test(self.test_name)
                 try:
                     result = fn(self, *args, **kwargs)
-                except signals.TestFailure:
-                    if self.result_detail:
-                        signal.details = self.result_detail
+                except signals.TestFailure as e:
+                    self.testsignal_details = e.details
+                    self.testsignal_extras = e.extras
                     result = False
                 except signals.TestSignal:
-                    if self.result_detail:
-                        signal.details = self.result_detail
                     raise
                 except Exception as e:
                     self.log.exception(e)
@@ -142,7 +142,10 @@ class TelephonyBaseTest(BaseTestClass):
             if result is not False:
                 asserts.explicit_pass(self.result_detail)
             else:
-                asserts.fail(self.result_detail)
+                if self.result_detail:
+                    asserts.fail(self.result_detail)
+                else:
+                    asserts.fail(self.testsignal_details, self.testsignal_extras)
 
         return _safe_wrap_test_case
 
