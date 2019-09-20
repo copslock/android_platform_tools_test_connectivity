@@ -61,6 +61,12 @@ class DuplexMode(Enum):
     TDD = 'TDD'
 
 
+class SchedulingMode(Enum):
+    """Supported scheduling modes."""
+    RMC = 'RMC'
+    USERDEFINEDCH = 'UDCHannels'
+
+
 class TransmissionModes(Enum):
     """Supported transmission modes."""
     TM1 = 'TM1'
@@ -77,6 +83,49 @@ class UseCarrierSpecific(Enum):
     """Enable or disable carrier specific."""
     UCS_ON = 'ON'
     UCS_OFF = 'OFF'
+
+
+class RbPosition(Enum):
+    """Supported RB postions."""
+    LOW = 'LOW'
+    HIGH = 'HIGH'
+    P5 = 'P5'
+    P10 = 'P10'
+    P23 = 'P23'
+    P35 = 'P35'
+    P48 = 'P48'
+
+
+class ModulationType(Enum):
+    """Supported Modulation Types."""
+    QPSK = 'QPSK'
+    Q16 = 'Q16',
+    Q64 = 'Q64',
+    Q256 = 'Q256'
+
+
+class DciFormat(Enum):
+    """Support DCI Formats for MIMOs"""
+    D1 = 'D1'
+    D1A = 'D1A'
+    D1B = 'D1B'
+    D2 = 'D2'
+    D2A = 'D2A'
+    D2B = 'D2B'
+    D2C = 'D2C'
+
+
+class MimoModes(Enum):
+    """MIMO Modes dl antennas"""
+    MIMO1x1 = 'ONE'
+    MIMO2x2 = 'TWO'
+    MIMO4x4 = 'FOUR'
+
+
+class RrcState(Enum):
+    """States to enable/disable rrc."""
+    RRC_ON = 'ON'
+    RRC_OFF = 'OFF'
 
 
 class Cmw500(abstract_inst.SocketInstrument):
@@ -240,6 +289,40 @@ class Cmw500(abstract_inst.SocketInstrument):
         """Exits remote mode to local mode."""
         self.send_and_recv('&GTL')
 
+    @property
+    def rrc_connection(self):
+        """Gets the RRC connection state."""
+        return self.send_and_recv('CONFigure:LTE:SIGN:CONNection:KRRC?')
+
+    @rrc_connection.setter
+    def rrc_connection(self, state):
+        """Selects whether the RRC connection is kept or released after attach.
+
+        Args:
+            mode: RRC State ON/OFF.
+        """
+        if not isinstance(state, RrcState):
+            raise ValueError('state should be the instance of RrcState.')
+
+        cmd = 'CONFigure:LTE:SIGN:CONNection:KRRC {}'.format(state.value)
+        self.send_and_recv(cmd)
+
+    @property
+    def rrc_connection_timer(self):
+        """Gets the inactivity timeout for disabled rrc connection."""
+        return self.send_and_recv('CONFigure:LTE:SIGN:CONNection:RITimer?')
+
+    @rrc_connection_timer.setter
+    def rrc_connection_timer(self, time_in_secs):
+        """Sets the inactivity timeout for disabled rrc connection. By default
+        the timeout is set to 5.
+
+        Args:
+            time_in_secs: timeout of inactivity in rrc connection.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:RITimer {}'.format(time_in_secs)
+        self.send_and_recv(cmd)
+
     def get_base_station(self, bts_num=BtsNumber.BTS1):
         """Gets the base station object based on bts num. By default
         bts_num set to PCC
@@ -277,6 +360,7 @@ class BaseStation(object):
         """
         if not isinstance(mode, DuplexMode):
             raise ValueError('mode should be an instance of DuplexMode.')
+
         cmd = 'CONFigure:LTE:SIGN:{}:DMODe {}'.format(self._bts, mode.value)
         self._cmw.send_and_recv(cmd)
 
@@ -403,6 +487,7 @@ class BaseStation(object):
         if not isinstance(tm_mode, TransmissionModes):
             raise ValueError('tm_mode should be an instance of '
                              'Transmission modes.')
+
         cmd = 'CONFigure:LTE:SIGN:CONNection:{}:TRANsmission {}'.format(
             self._bts, tm_mode.value)
         self._cmw.send_and_recv(cmd)
@@ -420,8 +505,270 @@ class BaseStation(object):
         Args:
             pwlevel: power level in dBm.
         """
-        cmd = 'CONFigure:LTE:SIGN:DL:{}:RSEPre:LEVel {}'.format(self._bts,
-                                                                pwlevel)
+        cmd = 'CONFigure:LTE:SIGN:DL:{}:RSEPre:LEVel {}'.format(
+            self._bts, pwlevel)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def uldl_configuration(self):
+        """Gets uldl configuration of the cell."""
+        cmd = 'CONFigure:LTE:SIGN:CELL:{}:ULDL?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @uldl_configuration.setter
+    def uldl_configuration(self, uldl):
+        """Sets the ul-dl configuration.
+
+        Args:
+            uldl: Configuration value ranging from 0 to 6.
+        """
+        if uldl not in range(0, 7):
+            raise ValueError('uldl configuration value should be between'
+                             ' 0 and 6 inclusive.')
+
+        cmd = 'CONFigure:LTE:SIGN:CELL:{}:ULDL {}'.format(self._bts, uldl)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def tdd_special_subframe(self):
+        """Gets special subframe of the cell."""
+        cmd = 'CONFigure:LTE:SIGN:CELL:{}:SSUBframe?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @tdd_special_subframe.setter
+    def tdd_special_subframe(self, sframe):
+        """Sets the tdd special subframe of the cell.
+
+        Args:
+            sframe: Integer value ranging from 1 to 9.
+        """
+        if sframe not in range(0, 10):
+            raise ValueError('tdd special subframe should be between 0 and 9'
+                             ' inclusive.')
+
+        cmd = 'CONFigure:LTE:SIGN:CELL:{}:SSUBframe {}'.format(
+            self._bts, sframe)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def scheduling_mode(self):
+        """Gets the current scheduling mode."""
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:STYPe?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @scheduling_mode.setter
+    def scheduling_mode(self, mode):
+        """Sets the scheduling type for the cell.
+
+        Args:
+            mode: Selects the channel mode to be scheduled.
+        """
+        if not isinstance(mode, SchedulingMode):
+            raise ValueError('mode should be the instance of scheduling mode.')
+
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:STYPe {}'.format(
+            self._bts, mode.value)
+        self._cmw.send_and_recv(cmd)
+
+    # TODO: (@sairamganesh) find a common way to set parameters for rmc and
+    # user defined channels(udch) scheduling.
+    @property
+    def rmc_rb_configuration_dl(self):
+        """Gets rmc's rb configuration for down link. This function returns
+        Number of Resource blocks, Resource block position and Modulation type.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:DL?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @rmc_rb_configuration_dl.setter
+    def rmc_rb_configuration_dl(self, rb_config):
+        """Sets the rb configuration for down link with scheduling type RMC.
+
+        Args:
+            rb_config: Tuple containing Number of resource blocks, resource
+            block position and modulation type.
+
+        Raises:
+            ValueError: If tuple unpacking fails.
+        """
+        rb, rb_pos, modulation = rb_config
+
+        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:DL {},{},'
+               '{}'.format(self._bts, rb, rb_pos, modulation))
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def rmc_rb_configuration_ul(self):
+        """Gets rmc's rb configuration for up link. This function returns
+        Number of Resource blocks, Resource block position and Modulation type.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:UL?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @rmc_rb_configuration_ul.setter
+    def rmc_rb_configuration_ul(self, rb_config):
+        """Sets the rb configuration for up link with scheduling type RMC.
+
+        Args:
+            rb_config: Tuple containing Number of resource blocks, resource
+            block position and modulation type.
+
+        Raises:
+            ValueError: If tuple unpacking fails.
+        """
+        rb, rb_pos, modulation = rb_config
+
+        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:UL {},{},'
+               '{}'.format(self._bts, rb, rb_pos, modulation))
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def udch_rb_configuration_dl(self):
+        """Gets udch's rb configuration for down link. This function returns
+        Number of Resource blocks, Resource block position, Modulation type and
+        tbs.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:UDCH:DL?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @udch_rb_configuration_dl.setter
+    def udch_rb_configuration_dl(self, rb_config):
+        """Sets the rb configuration for down link with scheduling type RMC.
+
+        Args:
+            rb_config: Tuple containing Number of resource blocks, resource
+            block position, modulation type and tbs value.
+
+        Raises:
+            ValueError: If tuple unpacking fails.
+        """
+        rb, start_rb, md_type, tbs = rb_config
+
+        if rb not in range(0, 51):
+            raise ValueError('rb should be between 0 and 50 inclusive.')
+
+        if not isinstance(md_type, ModulationType):
+            raise ValueError('md_type should be the instance of ModulationType.')
+
+        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:udch:DL {},{},'
+               '{},{}'.format(self._bts, rb, start_rb, md_type, tbs))
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def udch_rb_configuration_ul(self):
+        """Gets udch's rb configuration for up link. This function returns
+        Number of Resource blocks, Resource block position, Modulation type
+        and tbs.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:UDCH:UL?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @udch_rb_configuration_ul.setter
+    def udch_rb_configuration_ul(self, rb_config):
+        """Sets the rb configuration for up link with scheduling type RMC.
+
+        Args:
+            rb_config: Tuple containing Number of resource blocks, resource
+            block position, modulation type and tbs value.
+
+        Raises:
+            ValueError: If tuple unpacking fails/Specified out of range.
+        """
+        rb, start_rb, md_type, tbs = rb_config
+
+        if rb not in range(0, 51):
+            raise ValueError('rb should be between 0 and 50 inclusive.')
+
+        if not isinstance(md_type, ModulationType):
+            raise ValueError('md_type should be the instance of ModulationType.')
+
+        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:udch:UL {},{},'
+               '{},{}'.format(self._bts, rb, start_rb, md_type, tbs))
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def rb_position_dl(self):
+        """Gets the position of the allocated down link resource blocks within
+        the channel band-width.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:RBPosition:DL?'.format(
+            self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @rb_position_dl.setter
+    def rb_position_dl(self, rbpos):
+        """Selects the position of the allocated down link resource blocks
+        within the channel band-width
+
+        Args:
+            rbpos: position of resource blocks.
+        """
+        if not isinstance(rbpos, RbPosition):
+            raise ValueError('rbpos should be the instance of RbPosition.')
+
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:RBPosition:DL {}'.format(
+            self._bts, rbpos.value)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def rb_position_ul(self):
+        """Gets the position of the allocated up link resource blocks within
+        the channel band-width.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:RBPosition:UL?'.format(
+            self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @rb_position_ul.setter
+    def rb_position_ul(self, rbpos):
+        """Selects the position of the allocated up link resource blocks
+        within the channel band-width.
+
+        Args:
+            rbpos: position of resource blocks.
+        """
+        if not isinstance(rbpos, RbPosition):
+            raise ValueError('rbpos should be the instance of RbPosition.')
+
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:RBPosition:UL {}'.format(
+            self._bts, rbpos.value)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def dci_format(self):
+        """Gets the downlink control information (DCI) format."""
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:DCIFormat?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @dci_format.setter
+    def dci_format(self, dci_format):
+        """Selects the downlink control information (DCI) format.
+
+        Args:
+            dci_format: supported dci.
+        """
+        if not isinstance(dci_format, DciFormat):
+            raise ValueError('dci_format should be the instance of DciFormat.')
+
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:DCIFormat {}'.format(
+            self._bts, dci_format)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def dl_antenna(self):
+        """Gets dl antenna count of cell."""
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @dl_antenna.setter
+    def dl_antenna(self, num_antenna):
+        """Sets the dl antenna count of cell.
+
+        Args:
+            num_antenna: Count of number of dl antennas to use.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas {}'.format(
+            self._bts, num_antenna)
         self._cmw.send_and_recv(cmd)
 
 
