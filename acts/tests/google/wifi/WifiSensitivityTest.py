@@ -27,7 +27,6 @@ from acts import base_test
 from acts import utils
 from acts.controllers import iperf_client
 from acts.controllers.utils_lib import ssh
-from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -126,8 +125,11 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.failure_count_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='sensitivity')
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -558,7 +560,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
 
 class WifiSensitivity_AllChannels_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases(
             [6, 36, 40, 44, 48, 149, 153, 157, 161],
             ['VHT20', 'VHT40', 'VHT80'], ['0', '1', '2x2'])
@@ -566,21 +568,21 @@ class WifiSensitivity_AllChannels_Test(WifiSensitivityTest):
 
 class WifiSensitivity_SampleChannels_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases(
             [6, 36, 149], ['VHT20', 'VHT40', 'VHT80'], ['0', '1', '2x2'])
 
 
 class WifiSensitivity_2GHz_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases([1, 2, 6, 10, 11], ['VHT20'],
                                               ['0', '1', '2x2'])
 
 
 class WifiSensitivity_5GHz_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases(
             [36, 40, 44, 48, 149, 153, 157, 161], ['VHT20', 'VHT40', 'VHT80'],
             ['0', '1', '2x2'])
@@ -588,14 +590,14 @@ class WifiSensitivity_5GHz_Test(WifiSensitivityTest):
 
 class WifiSensitivity_UNII1_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases(
             [36, 40, 44, 48], ['VHT20', 'VHT40', 'VHT80'], ['0', '1', '2x2'])
 
 
 class WifiSensitivity_UNII3_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases([149, 153, 157, 161],
                                               ['VHT20', 'VHT40', 'VHT80'],
                                               ['0', '1', '2x2'])
@@ -611,9 +613,12 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
     """
 
     def __init__(self, controllers):
-        WifiSensitivityTest.__init__(self, controllers)
-        self.bb_metric_logger = (
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
             wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = False
 
     def setup_class(self):
         WifiSensitivityTest.setup_class(self)
@@ -686,7 +691,8 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                     channel, metric_test_config)
                 metric_name = metric_tag + '.avg_sensitivity'
                 metric_value = numpy.nanmean(channel_results['sensitivity'])
-                self.bb_metric_logger.add_metric(metric_name, metric_value)
+                self.testclass_metric_logger.add_metric(
+                    metric_name, metric_value)
                 self.log.info(("Average Sensitivity for {}: {:.2f}").format(
                     metric_tag, metric_value))
             current_context = (

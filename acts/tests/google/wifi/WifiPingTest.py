@@ -25,7 +25,6 @@ from acts import context
 from acts import base_test
 from acts import utils
 from acts.controllers.utils_lib import ssh
-from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -57,10 +56,12 @@ class WifiPingTest(base_test.BaseTestClass):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.ping_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_range')
-        self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_rtt')
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
+
         self.tests = self.generate_test_cases(
             ap_power='standard',
             channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
@@ -153,7 +154,9 @@ class WifiPingTest(base_test.BaseTestClass):
                   len(x))] for x in sorted_rtt
         ]
         # Set blackbox metric
-        self.ping_rtt_metric.metric_value = max(rtt_at_test_percentile)
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric('ping_rtt',
+                                                   max(rtt_at_test_percentile))
         # Evaluate test pass/fail
         test_failed = False
         for idx, rtt in enumerate(rtt_at_test_percentile):
@@ -183,7 +186,9 @@ class WifiPingTest(base_test.BaseTestClass):
         # Get target range
         rvr_range = self.get_range_from_rvr()
         # Set Blackbox metric
-        self.ping_range_metric.metric_value = result['range']
+        if self.publish_testcase_metrics:
+            self.testcase_metric_logger.add_metric('ping_range',
+                                                   result['range'])
         # Evaluate test pass/fail
         if result['range'] - rvr_range < -self.testclass_params[
                 'range_gap_threshold']:
@@ -516,11 +521,7 @@ class WifiPingTest(base_test.BaseTestClass):
 
 class WifiPing_LowPowerAP_Test(WifiPingTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.ping_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_range')
-        self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_rtt')
+        super().__init__(self, controllers)
         self.tests = self.generate_test_cases(
             ap_power='low_power',
             channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
@@ -539,12 +540,11 @@ class WifiOtaPingTest(WifiPingTest):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.ping_range_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_range')
-        self.ping_rtt_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='ping_rtt')
-        self.bb_metric_logger = (
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
             wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = False
 
     def setup_class(self):
         WifiPingTest.setup_class(self)
@@ -591,7 +591,7 @@ class WifiOtaPingTest(WifiPingTest):
             self.log.info('Average range for Channel {} is: {}dB'.format(
                 channel, average_range))
             metric_name = 'ota_summary_ch{}.avg_range'.format(channel)
-            self.bb_metric_logger.add_metric(metric_name, average_range)
+            self.testclass_metric_logger.add_metric(metric_name, average_range)
         current_context = context.get_current_context().get_full_output_path()
         plot_file_path = os.path.join(current_context, 'results.html')
         figure.generate_figure(plot_file_path)
