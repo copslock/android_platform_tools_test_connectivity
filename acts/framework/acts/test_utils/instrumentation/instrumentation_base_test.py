@@ -19,12 +19,15 @@ import os
 import yaml
 from acts.keys import Config
 from acts.test_utils.instrumentation import app_installer
+from acts.test_utils.instrumentation import instrumentation_proto_parser \
+    as proto_parser
 from acts.test_utils.instrumentation.adb_commands import common
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationCommandBuilder
 
 from acts import base_test
+from acts import context
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -187,6 +190,20 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         for cmd in cmds:
             procs[cmd] = self.ad_dut.adb.shell_nb(cmd)
         return procs
+
+    def dump_instrumentation_result_proto(self):
+        """Dump the instrumentation result proto as a human-readable txt file
+        in the log directory.
+
+        Returns: The parsed instrumentation_data_pb2.Session
+        """
+        session = proto_parser.get_session_from_device(self.ad_dut)
+        proto_txt_path = os.path.join(
+            context.get_current_context().get_full_output_path(),
+            'instrumentation_proto.txt')
+        with open(proto_txt_path, 'w') as f:
+            f.write(str(session))
+        return session
 
     # Basic setup methods
 
