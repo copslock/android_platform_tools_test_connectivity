@@ -118,9 +118,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
 
     def feature_validator(self, *args):
         failed_tests = []
-        for method in ("_check_subscription", "_check_data", "_check_mms_mt",
+        for method in ("_check_subscription", "_check_data",
                        "_check_sms_mt", "_check_call_setup_teardown",
-                       "_check_sms", "_check_mms"):
+                       "_check_sms"):
             func = getattr(self, method)
             if not func():
                 self.log.error("%s failed", method)
