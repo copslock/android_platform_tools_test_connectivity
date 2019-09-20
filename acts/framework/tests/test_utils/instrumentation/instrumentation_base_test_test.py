@@ -56,6 +56,8 @@ class MockInstrumentationBaseTest(InstrumentationBaseTest):
         self.current_test_name = None
         self._instrumentation_config = ConfigWrapper(
             MOCK_INSTRUMENTATION_CONFIG)
+        self._class_config = self._instrumentation_config.get_config(
+            self.__class__.__name__)
 
 
 class InstrumentationBaseTestTest(unittest.TestCase):
