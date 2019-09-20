@@ -39,6 +39,7 @@ class WifiSoftApRvrTest(WifiRvrTest):
             wputils.BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
             wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
 
     def setup_class(self):
         """Initializes common test hardware and parameters.

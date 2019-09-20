@@ -58,6 +58,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             wputils.BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
             wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_test_metrics = True
 
     def setup_class(self):
         self.dut = self.android_devices[0]
@@ -109,15 +110,16 @@ class WifiRssiTest(base_test.BaseTestClass):
             postprocessed_results: compiled arrays of RSSI measurements
         """
         # Set Blackbox metric values
-        self.testcase_metric_logger.add_metric(
-            'signal_poll_rssi_stdev',
-            max(postprocessed_results['signal_poll_rssi']['stdev']))
-        self.testcase_metric_logger.add_metric(
-            'chain_0_rssi_stdev',
-            max(postprocessed_results['chain_0_rssi']['stdev']))
-        self.testcase_metric_logger.add_metric(
-            'chain_1_rssi_stdev',
-            max(postprocessed_results['chain_1_rssi']['stdev']))
+        if self.publish_test_metrics:
+            self.testcase_metric_logger.add_metric(
+                'signal_poll_rssi_stdev',
+                max(postprocessed_results['signal_poll_rssi']['stdev']))
+            self.testcase_metric_logger.add_metric(
+                'chain_0_rssi_stdev',
+                max(postprocessed_results['chain_0_rssi']['stdev']))
+            self.testcase_metric_logger.add_metric(
+                'chain_1_rssi_stdev',
+                max(postprocessed_results['chain_1_rssi']['stdev']))
 
         # Evaluate test pass/fail
         test_failed = any([
@@ -183,10 +185,11 @@ class WifiRssiTest(base_test.BaseTestClass):
                     avg_error = RSSI_ERROR_VAL
                     avg_shift = RSSI_ERROR_VAL
                 # Set Blackbox metric values
-                self.testcase_metric_logger.add_metric('{}_error'.format(key),
-                                                       avg_error)
-                self.testcase_metric_logger.add_metric('{}_shift'.format(key),
-                                                       avg_shift)
+                if self.publish_test_metrics:
+                    self.testcase_metric_logger.add_metric(
+                        '{}_error'.format(key), avg_error)
+                    self.testcase_metric_logger.add_metric(
+                        '{}_shift'.format(key), avg_shift)
                 # Evaluate test pass/fail
                 rssi_failure = (avg_error >
                                 self.testclass_params['abs_tolerance']
@@ -869,6 +872,14 @@ class WifiOtaRssiTest(WifiRssiTest):
     It allows setting orientation and other chamber parameters to study
     performance in varying channel conditions
     """
+
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.testcase_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            wputils.BlackboxMappedMetricLogger.for_test_class())
+        self.publish_test_metrics = False
 
     def setup_class(self):
         WifiRssiTest.setup_class(self)
