@@ -817,6 +817,29 @@ class WifiOtaSensitivity_SingleChain_TenDegree_Test(WifiOtaSensitivityTest):
             list(range(0, 360, 10)))
 
 
+class WifiOtaSensitivity_ThirtyDegree_Test(WifiOtaSensitivityTest):
+    def __init__(self, controllers):
+        WifiOtaSensitivityTest.__init__(self, controllers)
+        requested_channels = [6, 36, 149]
+        requested_rates = [
+            self.RateTuple(9, 1, 96),
+            self.RateTuple(8, 1, 86.7),
+            self.RateTuple(7, 1, 72.2),
+            self.RateTuple(4, 1, 43.3),
+            self.RateTuple(2, 1, 21.7),
+            self.RateTuple(0, 1, 7.2),
+            self.RateTuple(9, 2, 192),
+            self.RateTuple(8, 2, 173.3),
+            self.RateTuple(7, 2, 144.4),
+            self.RateTuple(4, 2, 86.7),
+            self.RateTuple(2, 2, 43.3),
+            self.RateTuple(0, 2, 14.4)
+        ]
+        self.tests = self.generate_test_cases(
+            requested_channels, ['VHT20', 'VHT80'], requested_rates, ['2x2'],
+            list(range(0, 360, 30)))
+
+
 class WifiOtaSensitivity_45Degree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
         WifiOtaSensitivityTest.__init__(self, controllers)
