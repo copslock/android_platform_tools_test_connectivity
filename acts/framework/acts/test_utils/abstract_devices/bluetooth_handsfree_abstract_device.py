@@ -100,7 +100,7 @@ class BluetoothHandsfreeAbstractDevice:
 
 
 class PixelBudsBluetoothHandsfreeAbstractDevice(
-    BluetoothHandsfreeAbstractDevice):
+        BluetoothHandsfreeAbstractDevice):
 
     CMD_EVENT = 'EvtHex'
 
@@ -250,6 +250,62 @@ class JaybirdX3EarbudsBluetoothHandsfreeAbstractDevice(
         return self.jaybird_controller.press_volume_up()
 
 
+class AndroidHeadsetBluetoothHandsfreeAbstractDevice(
+        BluetoothHandsfreeAbstractDevice):
+
+    def __init__(self, ad_controller):
+        self.ad_controller = ad_controller
+
+    @property
+    def mac_address(self):
+        return self.ad_controller.droid.bluetoothGetLocalAddress()
+
+    def accept_call(self):
+        return self.ad_controller.droid.telecomAcceptRingingCall(None)
+
+    def end_call(self):
+        return self.ad_controller.droid.telecomEndCall()
+
+    def enter_pairing_mode(self):
+        self.ad_controller.droid.bluetoothStartPairingHelper(True)
+        return self.ad_controller.droid.bluetoothMakeDiscoverable()
+
+    def next_track(self):
+        return (self.ad_controller.droid.
+                bluetoothMediaPassthrough("skipNext"))
+
+    def pause(self):
+        return self.ad_controller.droid.bluetoothMediaPassthrough("pause")
+
+    def play(self):
+        return self.ad_controller.droid.bluetoothMediaPassthrough("play")
+
+    def power_off(self):
+        return self.ad_controller.droid.bluetoothToggleState(False)
+
+    def power_on(self):
+        return self.ad_controller.droid.bluetoothToggleState(True)
+
+    def previous_track(self):
+        return (self.ad_controller.droid.
+                bluetoothMediaPassthrough("skipPrev"))
+
+    def reject_call(self):
+        return self.ad_controller.droid.telecomCallDisconnect(
+            self.ad_controller.droid.telecomCallGetCallIds()[0])
+
+    def volume_down(self):
+        target_step = self.ad_controller.droid.getMediaVolume() - 1
+        target_step = max(target_step, 0)
+        return self.ad_controller.droid.setMediaVolume(target_step)
+
+    def volume_up(self):
+        target_step = self.ad_controller.droid.getMediaVolume() + 1
+        max_step = self.ad_controller.droid.getMaxMediaVolume()
+        target_step = min(target_step, max_step)
+        return self.ad_controller.droid.setMediaVolume(target_step)
+
+
 class BluetoothHandsfreeAbstractDeviceFactory:
     """Generates a BluetoothHandsfreeAbstractDevice for any device controller.
     """
@@ -257,7 +313,8 @@ class BluetoothHandsfreeAbstractDeviceFactory:
     _controller_abstract_devices = {
         'EarstudioReceiver': EarstudioReceiverBluetoothHandsfreeAbstractDevice,
         'JaybirdX3Earbuds': JaybirdX3EarbudsBluetoothHandsfreeAbstractDevice,
-        'ParentDevice': PixelBudsBluetoothHandsfreeAbstractDevice
+        'ParentDevice': PixelBudsBluetoothHandsfreeAbstractDevice,
+        'AndroidDevice': AndroidHeadsetBluetoothHandsfreeAbstractDevice
     }
 
     def generate(self, controller):
