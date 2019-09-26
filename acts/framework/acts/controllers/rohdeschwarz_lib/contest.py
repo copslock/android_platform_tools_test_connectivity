@@ -47,7 +47,7 @@ class Contest(object):
     MAXIMUM_OUTPUT_READ_RETRIES = 25
 
     # Root directory for the FTP server in the remote computer
-    FTP_ROOT = 'D:\\Contest\\Reports\\reports\\'
+    FTP_ROOT = 'D:\\Logs\\'
 
     def __init__(self, logger, remote_ip, remote_port, automation_listen_ip,
                  automation_port, dut_on_func, dut_off_func, ftp_usr, ftp_pwd):
