@@ -38,8 +38,8 @@ class RebootStressTest(BaseTestClass):
     # Eg: "reboot_stress_test_iterations": "10"
     num_of_iterations = 3
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ssid = rand_ascii_str(10)
         self.fd = self.fuchsia_devices[0]
         self.wlan_device = create_wlan_device(self.fd)
@@ -48,7 +48,6 @@ class RebootStressTest(BaseTestClass):
             self.user_params.get("reboot_stress_test_iterations",
                                  self.num_of_iterations))
 
-    def setup_class(self):
         setup_ap_and_associate(
             access_point=self.ap,
             client=self.wlan_device,

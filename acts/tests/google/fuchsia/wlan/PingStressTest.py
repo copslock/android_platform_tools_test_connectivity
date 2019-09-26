@@ -43,10 +43,9 @@ class PingStressTest(BaseTestClass):
     google_dns_1 = '8.8.8.8'
     google_dns_2 = '8.8.4.4'
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.ssid = rand_ascii_str(10)
         self.fd = self.fuchsia_devices[0]
         self.wlan_device = create_wlan_device(self.fd)
