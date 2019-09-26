@@ -103,7 +103,7 @@ class TelephonyBaseTest(BaseTestClass):
             self.test_id = test_id
             self.result_detail = ""
             self.testsignal_details = ""
-            self.testsignal_extras = ""
+            self.testsignal_extras = {}
             tries = int(self.user_params.get("telephony_auto_rerun", 1))
             for ad in self.android_devices:
                 ad.log_path = self.log_path
