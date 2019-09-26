@@ -94,8 +94,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon.attach_device(self.dut)
 
         # Unpack the test/device specific parameters
-        TEST_PARAMS = self.TAG + '_params'
-        req_params = [TEST_PARAMS, 'custom_files']
+        req_params = ['custom_files']
         self.unpack_userparams(req_params)
         # Unpack the custom files based on the test configs
         for file in self.custom_files:
@@ -115,7 +114,9 @@ class PowerBaseTest(base_test.BaseTestClass):
                                'Required rockbottom setting script is missing')
 
         # Unpack test specific configs
-        self.unpack_testparams(getattr(self, TEST_PARAMS))
+        TEST_PARAMS = self.TAG + '_params'
+        self.test_params = self.user_params.get(TEST_PARAMS, {})
+        self.unpack_testparams(self.test_params)
         if hasattr(self, 'attenuators'):
             self.num_atten = self.attenuators[0].instrument.num_atten
             self.atten_level = self.unpack_custom_file(self.attenuation_file)
@@ -159,10 +160,17 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon.usb('on')
         self.power_logger.set_avg_power(self.power_result.metric_value)
         self.power_logger.set_testbed(self.testbed_name)
+
         # Take Bugreport
         if self.bug_report:
             begin_time = utils.get_current_epoch_time()
             self.dut.take_bug_report(self.test_name, begin_time)
+
+        # Allow the device to cooldown before executing the next test
+        last_test = self.current_test_name == self.results.requested[-1]
+        cooldown = self.test_params.get('cooldown', None)
+        if cooldown and not last_test:
+            time.sleep(cooldown)
 
     def teardown_class(self):
         """Clean up the test class after tests finish running
