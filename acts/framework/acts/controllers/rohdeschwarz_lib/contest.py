@@ -387,14 +387,17 @@ class AutomationServer:
                               "DUT to off state.")
                 self.dut_off_func()
                 self.send_ok()
+            elif command.startswith(self.NOTIFICATION_TESTPLAN_START):
+                self.log.info('Test plan is starting.')
+                self.send_ok()
             elif command.startswith(self.NOTIFICATION_TESTCASE_START):
                 self.log.info('Test case is starting.')
                 self.send_ok()
-            elif command in [
-                self.NOTIFICATION_TESTPLAN_START,
-                self.NOTIFICATION_TESCASE_END,
-                self.NOTIFICATION_TESTPLAN_END
-            ]:
+            elif command.startswith(self.NOTIFICATION_TESCASE_END):
+                self.log.info('Test case finished.')
+                self.send_ok()
+            elif command.startswith(self.NOTIFICATION_TESTPLAN_END):
+                self.log.info('Test plan finished.')
                 self.send_ok()
             else:
                 self.log.error('Unhandled automation command: ' + command)
