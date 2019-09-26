@@ -212,6 +212,9 @@ class Contest(object):
              a JSON object containing the test results
         """
 
+        if not testplan_directory:
+            raise ValueError('Invalid testplan directory.')
+
         # Download test reports from the remote host
         job.run('wget -r --user={} --password={} -P {} ftp://{}/{}'.format(
             self.ftp_user, self.ftp_pass, logging.log_path,
