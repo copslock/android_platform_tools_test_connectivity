@@ -56,8 +56,8 @@ class RebootAPStressTest(BaseTestClass):
     # after AP reboot.
     wait_after_ap_reboot_s = 1
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ssid = rand_ascii_str(10)
         self.wlan_device = create_wlan_device(self.fuchsia_devices[0])
         self.ap = self.access_points[0]
