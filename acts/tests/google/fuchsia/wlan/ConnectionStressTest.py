@@ -44,8 +44,8 @@ class ConnectionStressTest(BaseTestClass):
     channel_2G = hostapd_constants.AP_DEFAULT_CHANNEL_2G
     channel_5G = hostapd_constants.AP_DEFAULT_CHANNEL_5G
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ssid = rand_ascii_str(10)
         self.fd = self.fuchsia_devices[0]
         self.dut = create_wlan_device(self.fd)
