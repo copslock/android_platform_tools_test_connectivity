@@ -504,7 +504,8 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
                 ad.wait_for_boot_completion()
                 ad.root_adb()
                 ad.log.info("Re-install sl4a")
-                ad.adb.shell("settings put global package_verifier_enable 0")
+                ad.adb.shell("settings put global verifier_verify_adb_installs"
+                             " 0")
                 ad.adb.install("-r /tmp/base.apk")
                 time.sleep(10)
                 try:
