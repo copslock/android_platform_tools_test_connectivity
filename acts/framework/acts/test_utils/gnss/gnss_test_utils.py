@@ -415,7 +415,6 @@ def init_gtw_gpstool(ad):
     remount_device(ad)
     pull_gtw_gpstool(ad)
     ad.adb.shell("settings put global verifier_verify_adb_installs 0")
-    ad.adb.shell("settings put global package_verifier_enable 0")
     reinstall_gtw_gpstool(ad)
 
 def fastboot_factory_reset(ad):
@@ -466,7 +465,6 @@ def fastboot_factory_reset(ad):
                 break
             ad.log.info("Re-install sl4a")
             ad.adb.shell("settings put global verifier_verify_adb_installs 0")
-            ad.adb.shell("settings put global package_verifier_enable 0")
             ad.adb.install("-r -g -t /tmp/base.apk")
             reinstall_gtw_gpstool(ad)
             time.sleep(10)

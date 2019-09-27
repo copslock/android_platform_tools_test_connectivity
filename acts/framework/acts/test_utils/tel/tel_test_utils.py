@@ -6660,7 +6660,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
             if ad.is_sl4a_installed():
                 break
             ad.log.info("Re-install sl4a")
-            ad.adb.shell("settings put global package_verifier_enable 0")
+            ad.adb.shell("settings put global verifier_verify_adb_installs 0")
             ad.adb.install("-r /tmp/base.apk")
             time.sleep(10)
             break
