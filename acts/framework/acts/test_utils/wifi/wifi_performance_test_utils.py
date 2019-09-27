@@ -16,6 +16,7 @@
 
 import bokeh, bokeh.plotting
 import collections
+import itertools
 import json
 import logging
 import math
@@ -383,6 +384,18 @@ class BokehFigure():
         self.plot.add_tools(
             bokeh.models.tools.WheelZoomTool(dimensions='height'))
 
+    def _filter_line(self, x_data, y_data, hover_text=None):
+        """Function to remove NaN points from bokeh plots."""
+        x_data_filtered = []
+        y_data_filtered = []
+        hover_text_filtered = []
+        for x, y, hover in itertools.zip_longest(x_data, y_data, hover_text):
+            if not math.isnan(y):
+                x_data_filtered.append(x)
+                y_data_filtered.append(y)
+                hover_text_filtered.append(hover)
+        return x_data_filtered, y_data_filtered, hover_text_filtered
+
     def add_line(self,
                  x_data,
                  y_data,
@@ -418,11 +431,13 @@ class BokehFigure():
             style = [5, 5]
         if not hover_text:
             hover_text = ['y={}'.format(y) for y in y_data]
+        x_data_filter, y_data_filter, hover_text_filter = self._filter_line(
+            x_data, y_data, hover_text)
         self.figure_data.append({
-            'x_data': x_data,
-            'y_data': y_data,
+            'x_data': x_data_filter,
+            'y_data': y_data_filter,
             'legend': legend,
-            'hover_text': hover_text,
+            'hover_text': hover_text_filter,
             'color': color,
             'width': width,
             'style': style,
