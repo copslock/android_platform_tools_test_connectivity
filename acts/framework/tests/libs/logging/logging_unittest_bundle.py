@@ -14,13 +14,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import sys
 import unittest
 
 
 def main():
     suite = unittest.TestLoader().discover(
-        start_dir='./acts/framework/tests/libs/logging', pattern='*_test.py')
+        start_dir=os.path.dirname(__file__), pattern='*_test.py')
     return suite
 
 
