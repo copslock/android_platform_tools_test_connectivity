@@ -91,6 +91,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
                 self.log.debug(self.calibration_table)
                 break
 
+        # Ensure the calibration table only contains non-negative values
+        self.ensure_valid_calibration_table(self.calibration_table)
+
         # Store the value of the key to access the test config in the
         # user_params dictionary.
         self.PARAMS_KEY = self.TAG + "_params"
@@ -354,3 +357,22 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
                                            self.dut,
                                            self.user_params[self.PARAMS_KEY],
                                            self.calibration_table[sim_type])
+
+
+    def ensure_valid_calibration_table(self, calibration_table):
+        """ Ensures the calibration table has the correct structure.
+
+        A valid calibration table is a nested dictionary with non-negative
+        number values
+
+        """
+        if not calibration_table or not isinstance(calibration_table, dict):
+            raise TypeError('The calibration table must be a dictionary')
+        for val in calibration_table.values():
+            if isinstance(val, dict):
+                self.ensure_valid_calibration_table(val)
+            elif not isinstance(val, float) and not isinstance(val, int):
+                raise TypeError('Calibration table value must be a number')
+            elif val < 0.0:
+                raise ValueError('Calibration table contains negative values')
+
