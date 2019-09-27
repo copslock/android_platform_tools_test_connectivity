@@ -17,6 +17,8 @@ import logging
 import os
 import subprocess
 
+import sys
+
 import acts
 from acts import base_test
 from acts import signals
@@ -76,7 +78,7 @@ class ActsUnitTest(base_test.BaseTestClass):
             file_path = os.path.join(acts_unittest_path, unittest_file)
             test_processes.append(
                 subprocess.Popen(
-                    file_path,
+                    [sys.executable, file_path],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT))
 
@@ -95,10 +97,14 @@ class ActsUnitTest(base_test.BaseTestClass):
                 self.log.error('Unit Test %s failed with error %s.' %
                                (test_process.args, test_process.returncode))
                 self.log.error('=' * 79)
-                self.log.error(stdout.decode('utf-8', errors='replace'))
+                self.log.debug('Failure for `%s`:\n%s' %
+                               (test_process.args,
+                                stdout.decode('utf-8', errors='replace')))
                 fail_test = True
             else:
-                self.log.debug(stdout.decode('utf-8', errors='replace'))
+                self.log.debug('Output for `%s`:\n%s' %
+                               (test_process.args,
+                                stdout.decode('utf-8', errors='replace')))
 
         if fail_test:
             raise signals.TestFailure(
