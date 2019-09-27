@@ -14,17 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from collections import defaultdict
+import collections
 
-TYPE_TO_FLAG = defaultdict(lambda: '--es')
-TYPE_TO_FLAG.update(
-    {
-        bool: '--ez',
-        int: '--ei',
-        float: '--ef',
-        str: '--es'
-    }
-)
+TYPE_TO_FLAG = collections.defaultdict(lambda: '--es')
+TYPE_TO_FLAG.update({bool: '--ez', int: '--ei', float: '--ef', str: '--es'})
 
 
 class IntentBuilder(object):
@@ -41,7 +34,7 @@ class IntentBuilder(object):
         self._component = None
         self._data_uri = None
         self._flags = []
-        self._key_value_params = {}
+        self._key_value_params = collections.OrderedDict()
 
     def set_action(self, action):
         """Set the intent action, as marked by the -a flag"""
@@ -85,6 +78,6 @@ class IntentBuilder(object):
                 str_value = str(value)
                 if isinstance(value, bool):
                     str_value = str_value.lower()
-                cmd.append(
-                    ' '.join((TYPE_TO_FLAG[type(value)], key, str_value)))
+                cmd.append(' '.join((TYPE_TO_FLAG[type(value)], key,
+                                     str_value)))
         return ' '.join(cmd).strip()
