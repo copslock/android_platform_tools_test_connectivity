@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import shutil
+
 from acts.metrics.core import ProtoMetric
 from acts.metrics.logger import MetricLogger
 
@@ -32,6 +34,7 @@ class BlackboxMetricLogger(MetricLogger):
 
     Attributes:
         proto_module: The proto module for ActsBlackboxMetricResult.
+        proto_dir: The directory in which the proto module is found.
         metric_name: The name of the metric, used to determine output filename.
         metric_key: The metric key to use. If unset, the logger will use the
                     context's identifier.
@@ -40,7 +43,8 @@ class BlackboxMetricLogger(MetricLogger):
 
     PROTO_FILE = 'protos/acts_blackbox.proto'
 
-    def __init__(self, metric_name, metric_key=None, event=None):
+    def __init__(self, metric_name, metric_key=None, event=None,
+                 compiler_out=None):
         """Initializes a logger for Blackbox metrics.
 
         Args:
@@ -48,9 +52,11 @@ class BlackboxMetricLogger(MetricLogger):
             metric_key: The metric key to use. If unset, the logger will use
                         the context's identifier.
             event: The event triggering the creation of this logger.
+            compiler_out: The directory to store the compiled proto module
         """
         super().__init__(event=event)
-        self.proto_module = self._compile_proto(self.PROTO_FILE)
+        self.proto_module = self._compile_proto(self.PROTO_FILE,
+                                                compiler_out=compiler_out)
         if not metric_name:
             raise ValueError("metric_name must be supplied.")
         self.metric_name = metric_name
