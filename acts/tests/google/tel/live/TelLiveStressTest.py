@@ -125,7 +125,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.file_download_method = "curl"
         else:
             self.android_devices = self.android_devices[:2]
+        self.sdm_log = self.user_params.get("sdm_log", False)
         for ad in self.android_devices:
+            setattr(ad, "sdm_log", self.sdm_log)
             ad.adb.shell("setprop nfc.debug_enable 1")
             if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")
@@ -150,7 +152,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut_incall = False
         self.dsds_esim = self.user_params.get("dsds_esim", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
-        self.sdm_log = self.user_params.get("sdm_log", False)
         telephony_info = getattr(self.dut, "telephony", {})
         self.dut_capabilities = telephony_info.get("capabilities", [])
         self.dut_wfc_modes = telephony_info.get("wfc_modes", [])
