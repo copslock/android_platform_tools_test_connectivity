@@ -11,6 +11,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import shutil
 import tempfile
 import unittest
 
@@ -90,26 +91,26 @@ class MockTest(base_test.BaseTestClass):
 
 class TestDecoratorIntegrationTests(unittest.TestCase):
 
-    MOCK_CONFIG = {
-        "testbed": {
-            "name": "SampleTestBed",
-        },
-        "logpath": tempfile.mkdtemp(),
-        "cli_args": None,
-        "testpaths": ["./"],
-    }
+    @classmethod
+    def setUpClass(cls):
+        cls.MOCK_CONFIG = {
+            "testbed": {
+                "name": "SampleTestBed",
+            },
+            "logpath": tempfile.mkdtemp(),
+            "cli_args": None,
+            "testpaths": ["./"],
+        }
 
-    MOCK_TEST_RUN_LIST = [(MockTest.__name__, [MockTest.TEST_CASE_LIST])]
-
-    def setUp(self):
-        pass
+        cls.MOCK_TEST_RUN_LIST = [(MockTest.__name__,
+                                   [MockTest.TEST_CASE_LIST])]
 
     def _run_with_test_logic(self, func):
         if hasattr(MockTest, MockTest.TEST_LOGIC_ATTR):
             delattr(MockTest, MockTest.TEST_LOGIC_ATTR)
         setattr(MockTest, MockTest.TEST_LOGIC_ATTR, func)
-        self.test_runner = test_runner.TestRunner(TestDecoratorIntegrationTests.MOCK_CONFIG,
-                                                  TestDecoratorIntegrationTests.MOCK_TEST_RUN_LIST)
+        self.test_runner = test_runner.TestRunner(self.MOCK_CONFIG,
+                                                  self.MOCK_TEST_RUN_LIST)
         self.test_runner.run(MockTest)
 
     def _validate_results_has_extra(self, result, extra_key, extra_value):
@@ -126,6 +127,10 @@ class TestDecoratorIntegrationTests(unittest.TestCase):
     def test_mock_test_with_raise_generic(self):
         self._run_with_test_logic(raise_generic)
         self._validate_results_has_extra(self.test_runner.results, UUID_KEY, TEST_TRACKER_UUID)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.MOCK_CONFIG['logpath'])
 
 
 if __name__ == "__main__":

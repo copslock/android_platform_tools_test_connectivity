@@ -13,6 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import shutil
 import tempfile
 import unittest
 from threading import RLock
@@ -64,6 +65,9 @@ class EventBusIntegrationTest(TestCase):
         event_bus._event_bus = event_bus._EventBus()
         TestClass.instance_event_received = []
         TestClass.static_event_received = []
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
 
     def test_test_class_subscribed_fn_receives_event(self):
         """Tests that TestClasses have their subscribed functions called."""
