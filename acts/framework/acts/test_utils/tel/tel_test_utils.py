@@ -1567,6 +1567,9 @@ def initiate_call(log,
         else:
             return True
     finally:
+        if hasattr(ad, "sdm_log") and getattr(ad, "sdm_log"):
+            ad.adb.shell("i2cset -fy 3 64 6 1 b", ignore_status=True)
+            ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
         if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
             ad.droid.telecomShowInCallScreen()
