@@ -314,11 +314,13 @@ class WifiRvrTest(base_test.BaseTestClass):
         ]
         for idx in range(len(tput_below_limit)):
             if all(tput_below_limit[idx:]):
-                rvr_result['metrics']['high_tput_range'] = rvr_result[
-                    'total_attenuation'][max(idx, 1) - 1]
+                if idx == 0:
+                    #Throughput was never above limit
+                    rvr_result['metrics']['high_tput_range'] = -1
+                else:
+                    rvr_result['metrics']['high_tput_range'] = rvr_result[
+                        'total_attenuation'][max(idx, 1) - 1]
                 break
-        else:
-            rvr_result['metrics']['high_tput_range'] = -1
         if self.publish_testcase_metrics:
             self.testcase_metric_logger.add_metric(
                 'high_tput_range', rvr_result['metrics']['high_tput_range'])
