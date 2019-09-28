@@ -190,15 +190,15 @@ class WifiPingTest(base_test.BaseTestClass):
             self.testcase_metric_logger.add_metric('ping_range',
                                                    result['range'])
         # Evaluate test pass/fail
+        test_message = ('Attenuation at range is {}dB. Golden range is {}dB. '
+                        'LLStats at Range: {}'.format(
+                            result['range'], rvr_range,
+                            result['llstats_at_range']))
         if result['range'] - rvr_range < -self.testclass_params[
                 'range_gap_threshold']:
-            asserts.fail(
-                'Attenuation at range is {}dB. Golden range is {}dB'.format(
-                    result['range'], rvr_range))
+            asserts.fail(test_message)
         else:
-            asserts.explicit_pass(
-                'Attenuation at range is {}dB. Golden range is {}dB'.format(
-                    result['range'], rvr_range))
+            asserts.explicit_pass(test_message)
 
     def pass_fail_check(self, result):
         if 'range' in result['testcase_params']['test_type']:
@@ -233,6 +233,15 @@ class WifiPingTest(base_test.BaseTestClass):
             ping_loss_over_att)
         ping_range_result['range'] = (ping_range_result['atten_at_range'] +
                                       ping_range_result['fixed_attenuation'])
+        ping_range_result['llstats_at_range'] = (
+            'TX MCS = {0} ({1:.1f}%). '
+            'RX MCS = {2} ({3:.1f}%)'.format(
+                ping_range_result['llstats'][range_index]['summary']
+                ['common_tx_mcs'], ping_range_result['llstats'][range_index]
+                ['summary']['common_tx_mcs_freq'] * 100,
+                ping_range_result['llstats'][range_index]['summary']
+                ['common_rx_mcs'], ping_range_result['llstats'][range_index]
+                ['summary']['common_rx_mcs_freq'] * 100))
 
         # Save results
         results_file_path = os.path.join(
@@ -241,22 +250,24 @@ class WifiPingTest(base_test.BaseTestClass):
             json.dump(ping_range_result, results_file, indent=4)
 
         # Plot results
-        figure = wputils.BokehFigure(
-            self.current_test_name,
-            x_label='Timestamp (s)',
-            primary_y='Round Trip Time (ms)')
-        for idx, result in enumerate(ping_range_result['ping_results']):
-            if len(result['rtt']) > 1:
-                x_data = [
-                    t - result['time_stamp'][0] for t in result['time_stamp']
-                ]
-                figure.add_line(
-                    x_data, result['rtt'],
-                    'RTT @ {}dB'.format(ping_range_result['attenuation'][idx]))
+        if 'range' not in self.current_test_name:
+            figure = wputils.BokehFigure(
+                self.current_test_name,
+                x_label='Timestamp (s)',
+                primary_y='Round Trip Time (ms)')
+            for idx, result in enumerate(ping_range_result['ping_results']):
+                if len(result['rtt']) > 1:
+                    x_data = [
+                        t - result['time_stamp'][0]
+                        for t in result['time_stamp']
+                    ]
+                    figure.add_line(
+                        x_data, result['rtt'], 'RTT @ {}dB'.format(
+                            ping_range_result['attenuation'][idx]))
 
-        output_file_path = os.path.join(
-            self.log_path, '{}.html'.format(self.current_test_name))
-        figure.generate_figure(output_file_path)
+            output_file_path = os.path.join(
+                self.log_path, '{}.html'.format(self.current_test_name))
+            figure.generate_figure(output_file_path)
 
     def get_range_from_rvr(self):
         """Function gets range from RvR golden results
@@ -302,6 +313,7 @@ class WifiPingTest(base_test.BaseTestClass):
             test_result: dict containing ping results and other meta data
         """
         # Prepare results dict
+        llstats_obj = wputils.LinkLayerStats(self.dut)
         test_result = collections.OrderedDict()
         test_result['testcase_params'] = testcase_params.copy()
         test_result['test_name'] = self.current_test_name
@@ -311,6 +323,7 @@ class WifiPingTest(base_test.BaseTestClass):
             'fixed_attenuation'][str(testcase_params['channel'])]
         test_result['rssi_results'] = []
         test_result['ping_results'] = []
+        test_result['llstats'] = []
         # Run ping and sweep attenuation as needed
         zero_counter = 0
         for atten in testcase_params['atten_range']:
@@ -321,12 +334,17 @@ class WifiPingTest(base_test.BaseTestClass):
                 int(testcase_params['ping_duration'] / 2 /
                     self.RSSI_POLL_INTERVAL), self.RSSI_POLL_INTERVAL,
                 testcase_params['ping_duration'] / 2)
+            # Refresh link layer stats
+            llstats_obj.update_stats()
             current_ping_stats = wputils.get_ping_stats(
                 self.ping_server, self.dut_ip,
                 testcase_params['ping_duration'],
                 testcase_params['ping_interval'], testcase_params['ping_size'])
             current_rssi = rssi_future.result()
             test_result['rssi_results'].append(current_rssi)
+            llstats_obj.update_stats()
+            curr_llstats = llstats_obj.llstats_incremental.copy()
+            test_result['llstats'].append(curr_llstats)
             if current_ping_stats['connected']:
                 self.log.info(
                     'Attenuation = {0}dB\tPacket Loss = {1}%\t'
@@ -570,10 +588,13 @@ class WifiOtaPingTest(WifiPingTest):
                 range_vs_angle[curr_config]['position'].append(
                     curr_params['position'])
                 range_vs_angle[curr_config]['range'].append(test['range'])
+                range_vs_angle[curr_config]['llstats_at_range'].append(
+                    test['llstats_at_range'])
             else:
                 range_vs_angle[curr_config] = {
                     'position': [curr_params['position']],
-                    'range': [test['range']]
+                    'range': [test['range']],
+                    'llstats_at_range': [test['llstats_at_range']]
                 }
         chamber_mode = self.testclass_results[0]['testcase_params'][
             'chamber_mode']
@@ -587,8 +608,11 @@ class WifiOtaPingTest(WifiPingTest):
             primary_y='Range (dB)',
         )
         for channel, channel_data in range_vs_angle.items():
-            figure.add_line(channel_data['position'], channel_data['range'],
-                            'Channel {}'.format(channel))
+            figure.add_line(
+                x_data=channel_data['position'],
+                y_data=channel_data['range'],
+                hover_text=channel_data['llstats_at_range'],
+                legend='Channel {}'.format(channel))
             average_range = sum(channel_data['range']) / len(
                 channel_data['range'])
             self.log.info('Average range for Channel {} is: {}dB'.format(
