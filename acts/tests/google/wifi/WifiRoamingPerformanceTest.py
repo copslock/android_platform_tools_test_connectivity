@@ -16,13 +16,13 @@
 
 import collections
 import json
-import logging
 import math
 import os
 import time
 from acts import asserts
 from acts import base_test
 from acts import context
+from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers.utils_lib import ssh
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
@@ -89,6 +89,11 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.log.info("RF Map (by Atten): {}".format(self.rf_map_by_atten))
 
         #Turn WiFi ON
+        if self.testclass_params.get('airplane_mode', 1):
+            self.log.info('Turning on airplane mode.')
+            asserts.assert_true(
+                utils.force_airplane_mode(self.dut, True),
+                "Can not turn on airplane mode.")
         wutils.wifi_toggle_state(self.dut, True)
 
     def pass_fail_traffic_continuity(self, result):
