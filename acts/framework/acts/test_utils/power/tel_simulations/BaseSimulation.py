@@ -86,6 +86,7 @@ class BaseSimulation():
             parameters to None. """
             self.output_power = None
             self.input_power = None
+            self.band = None
 
         def incorporate(self, new_config):
             """ Incorporates a different configuration by replacing the current
@@ -318,6 +319,9 @@ class BaseSimulation():
 
         if config.input_power:
             bts_handle.input_level = config.input_power
+
+        if config.band:
+            self.set_band(bts_handle, config.band)
 
     def consume_parameter(self, parameters, parameter_name, num_values=0):
         """ Parses a parameter from a list.
@@ -721,26 +725,29 @@ class BaseSimulation():
 
         return up_call_path_loss
 
-    def set_band(self, bts, band, calibrate_if_necessary=True):
+    def set_band(self, bts, band):
         """ Sets the band used for communication.
-
-        When moving to a new band, recalibrate the link.
 
         Args:
             bts: basestation handle
             band: desired band
-            calibrate_if_necessary: if False calibration will be skipped
         """
 
         bts.band = band
         time.sleep(5)  # It takes some time to propagate the new band
 
-        # Invalidate the calibration values
+    def load_pathloss_if_required(self):
+        """ If calibration is required, try to obtain the pathloss values from
+        the calibration table and measure them if they are not available. """
+        # Invalidate the previous values
         self.dl_path_loss = None
         self.ul_path_loss = None
 
-        # Only calibrate when required.
-        if self.calibration_required and calibrate_if_necessary:
+        # Load the new ones
+        if self.calibration_required:
+
+            band = self.primary_config.band
+
             # Try loading the path loss values from the calibration table. If
             # they are not available, use the automated calibration procedure.
             try:

@@ -158,6 +158,7 @@ class UmtsSimulation(BaseSimulation):
                 "the required band number.".format(self.PARAM_BAND))
 
         self.set_band(self.bts1, values[1])
+        self.load_pathloss_if_required()
 
         # Setup release version
 

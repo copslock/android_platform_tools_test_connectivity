@@ -483,6 +483,9 @@ class LteCaSimulation(LteSimulation):
             self.configure_bts(self.bts[bts_index], new_configs[bts_index])
             self.bts_configs[bts_index].incorporate(new_configs[bts_index])
 
+        # Now that the band is set, calibrate the link for the PCC if necessary
+        self.load_pathloss_if_required()
+
     def start_test_case(self):
         """ Attaches the phone to all the other basestations.
 
