@@ -69,10 +69,12 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
     def setup_class(self):
         super().setup_class()
         self.dut = self.android_devices[0]
-        self.ad_reference = self.android_devices[1] if len(
-            self.android_devices) > 1 else None
+        if len(self.android_devices) > 1:
+            self.ad_reference = self.android_devices[1]
+            setattr(self.ad_reference, "qxdm_log", False)
+        else:
+            self.ad_reference = None
         setattr(self.dut, "qxdm_log", False)
-        setattr(self.ad_reference, "qxdm_log", False)
         self.stress_test_number = int(
             self.user_params.get("stress_test_number", 5))
         self.skip_reset_between_cases = False
@@ -379,9 +381,8 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         begin_time = get_current_epoch_time()
         for i in range(3):
             try:
-                bugreport_path = os.path.join(ad.log_path, self.test_name)
-                create_dir(bugreport_path)
                 ad.take_bug_report(self.test_name, begin_time)
+                bugreport_path = ad.device_log_path
                 break
             except Exception as e:
                 ad.log.error("bugreport attempt %s error: %s", i + 1, e)
@@ -406,9 +407,11 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
                 exe_cmd("tar -xvf %s" %
                         (bugreport_path + "/dumpstate_board.tar"))
                 os.chdir(current_dir)
-                if os.path.isfile(bugreport_path + "/power_anomaly_data.txt"):
-                    ad.log.info("Modem Power Anomaly File Exists!!")
-                    return True
+            else:
+                ad.log.info("The dumpstate_path file %s does not exist" % dumpstate_path)
+            if os.path.isfile(bugreport_path + "/power_anomaly_data.txt"):
+                ad.log.info("Modem Power Anomaly File Exists!!")
+                return True
             ad.log.info("Modem Power Anomaly File DO NOT Exist!!")
             return False
         except Exception as e:
