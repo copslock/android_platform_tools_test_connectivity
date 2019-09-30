@@ -46,6 +46,13 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
     CALLBOX_CONFIG_PATH = 'C:\\Users\\MD8475A\\Documents\\DAN_configs\\'
 
     def __init__(self, ip_address):
+        """ Initializes the cellular simulator.
+
+        Args:
+            ip_address: the ip address of the MD8475 instrument
+        """
+        super().__init__()
+
         try:
             self.anritsu = md8475a.MD8475A(ip_address,
                                            md8475_version=self.MD8475_VERSION)
