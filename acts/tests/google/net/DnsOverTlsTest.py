@@ -86,28 +86,27 @@ class DnsOverTlsTest(base_test.BaseTestClass):
         """
         return stop_tcpdump(ad, self.tcpdump_pid, self.test_name)
 
-    def _verify_dns_queries_over_tls(self, pcap_file, dns, tls=True):
+    def _verify_dns_queries_over_tls(self, pcap_file, tls=True):
         """ Verify if DNS queries were over TLS or not
 
         Args:
             1. pcap_file: tcpdump file
-            2. dns: private DNS set in strict mode
-            3. tls: if queries should be over TLS or port 853
+            2. tls: if queries should be over TLS or port 853
         """
-        if not dns:
-            dns = cconst.DNS_GOOGLE
         try:
             packets = rdpcap(pcap_file)
-        except Scapy_Exception:
+        except Scapy_Excaption:
             asserts.fail("Not a valid pcap file")
         for pkt in packets:
             summary = "%s" % pkt.summary()
-            if tls and UDP in pkt and pkt[UDP].dport == 53 and \
-                dns not in summary and 'mtalk.google.com' not in summary:
-                  asserts.fail("Found query to port 53: %s" % summary)
-            elif not tls and TCP in pkt and pkt[TCP].dport == 853 and \
-                not pkt[TCP].flags:
-                  asserts.fail("Found query to port 853: %s" % summary)
+            for host in self.ping_hosts:
+                host = host.split('.')[-2]
+                if tls and UDP in pkt and pkt[UDP].dport == 53 and \
+                    host in summary:
+                      asserts.fail("Found query to port 53: %s" % summary)
+                elif not tls and TCP in pkt and pkt[TCP].dport == 853 and \
+                    not pkt[TCP].flags:
+                      asserts.fail("Found query to port 853: %s" % summary)
 
     def _verify_rst_packets(self, pcap_file):
         """ Verify if RST packets are found in the pcap file
@@ -155,7 +154,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
         pcap_file = self._stop_tcp_dump(self.dut)
 
         # verify DNS queries
-        self._verify_dns_queries_over_tls(pcap_file, hostname, use_tls)
+        self._verify_dns_queries_over_tls(pcap_file, use_tls)
 
         # reset wifi
         wutils.reset_wifi(self.dut)
