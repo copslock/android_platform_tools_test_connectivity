@@ -23,10 +23,10 @@ from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.controllers.anritsu_lib.md8475a import TestProcedure
 from acts.controllers.anritsu_lib.md8475a import TestPowerControl
 from acts.controllers.anritsu_lib.md8475a import TestMeasurement
-from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
+from acts.test_utils.power.tel_simulations import LteSimulation
 
 
-class LteCaSimulation(LteSimulation):
+class LteCaSimulation(LteSimulation.LteSimulation):
 
     # Dictionary of lower DL channel number bound for each band.
     LOWEST_DL_CN_DICTIONARY = {

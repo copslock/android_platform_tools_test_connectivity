@@ -25,6 +25,36 @@ from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 
 
+class TransmissionMode(Enum):
+    """ Transmission modes for LTE (e.g., TM1, TM4, ...) """
+    TM1 = "TM1"
+    TM2 = "TM2"
+    TM3 = "TM3"
+    TM4 = "TM4"
+    TM7 = "TM7"
+    TM8 = "TM8"
+    TM9 = "TM9"
+
+
+class MimoMode(Enum):
+    """ Mimo modes """
+    MIMO_1x1 = "1x1"
+    MIMO_2x2 = "2x2"
+    MIMO_4x4 = "4x4"
+
+
+class SchedulingMode(Enum):
+    """ Traffic scheduling modes (e.g., STATIC, DYNAMIC) """
+    DYNAMIC = "DYNAMIC"
+    STATIC = "STATIC"
+
+
+class DuplexMode(Enum):
+    """ DL/UL Duplex mode """
+    FDD = "FDD"
+    TDD = "TDD"
+
+
 class LteSimulation(BaseSimulation):
     """ Simple LTE simulation with only one basestation.
 
@@ -48,39 +78,6 @@ class LteSimulation(BaseSimulation):
     KEY_TBS_PATTERN = "tbs_pattern_on"
     KEY_DL_256_QAM = "256_qam_dl"
     KEY_UL_64_QAM = "64_qam_ul"
-
-    class TransmissionMode(Enum):
-        ''' Transmission modes for LTE (e.g., TM1, TM4, ..)
-
-        '''
-        TM1 = "TM1"
-        TM2 = "TM2"
-        TM3 = "TM3"
-        TM4 = "TM4"
-        TM7 = "TM7"
-        TM8 = "TM8"
-        TM9 = "TM9"
-
-    class MimoMode(Enum):
-        """ Mimo modes """
-
-        MIMO_1x1 = "1x1"
-        MIMO_2x2 = "2x2"
-        MIMO_4x4 = "4x4"
-
-    class SchedulingMode(Enum):
-        ''' Traffic scheduling modes (e.g., STATIC, DYNAMIC)
-
-        '''
-        DYNAMIC = "DYNAMIC"
-        STATIC = "STATIC"
-
-    class DuplexMode(Enum):
-        ''' DL/UL Duplex mode
-
-        '''
-        FDD = "FDD"
-        TDD = "TDD"
 
     # Units in which signal level is defined in DOWNLINK_SIGNAL_LEVEL_DICTIONARY
     DOWNLINK_SIGNAL_LEVEL_UNITS = "RSRP"
@@ -526,7 +523,7 @@ class LteSimulation(BaseSimulation):
 
         if config.scheduling_mode:
 
-            if (config.scheduling_mode == LteSimulation.SchedulingMode.STATIC
+            if (config.scheduling_mode == SchedulingMode.STATIC
                     and not all([
                         config.dl_rbs, config.ul_rbs, config.dl_mcs,
                         config.ul_mcs
@@ -586,7 +583,7 @@ class LteSimulation(BaseSimulation):
         new_config.band = values[1]
 
         # Set DL/UL frame configuration
-        if self.get_duplex_mode(new_config.band) == self.DuplexMode.TDD:
+        if self.get_duplex_mode(new_config.band) == DuplexMode.TDD:
 
             values = self.consume_parameter(parameters,
                                             self.PARAM_FRAME_CONFIG, 1)
@@ -624,7 +621,7 @@ class LteSimulation(BaseSimulation):
                 "The test name needs to include parameter '{}' followed by the "
                 "mimo mode.".format(self.PARAM_MIMO))
 
-        for mimo_mode in LteSimulation.MimoMode:
+        for mimo_mode in MimoMode:
             if values[1] == mimo_mode.value:
                 new_config.mimo_mode = mimo_mode
                 break
@@ -632,7 +629,7 @@ class LteSimulation(BaseSimulation):
             raise ValueError("The {} parameter needs to be followed by either "
                              "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
 
-        if (new_config.mimo_mode == LteSimulation.MimoMode.MIMO_4x4
+        if (new_config.mimo_mode == MimoMode.MIMO_4x4
                 and not self.simulator.LTE_SUPPORTS_4X4_MIMO):
             raise ValueError("The test requires 4x4 MIMO, but that is not "
                              "supported by the cellular simulator.")
@@ -647,7 +644,7 @@ class LteSimulation(BaseSimulation):
                 "int value from 1 to 4 indicating transmission mode.".format(
                     self.PARAM_TM))
 
-        for tm in LteSimulation.TransmissionMode:
+        for tm in TransmissionMode:
             if values[1] == tm.value[2:]:
                 new_config.transmission_mode = tm
                 break
@@ -661,20 +658,20 @@ class LteSimulation(BaseSimulation):
         values = self.consume_parameter(parameters, self.PARAM_SCHEDULING, 1)
 
         if not values:
-            new_config.scheduling_mode = LteSimulation.SchedulingMode.STATIC
+            new_config.scheduling_mode = SchedulingMode.STATIC
             self.log.warning(
                 "The test name does not include the '{}' parameter. Setting to "
                 "static by default.".format(self.PARAM_SCHEDULING))
         elif values[1] == self.PARAM_SCHEDULING_DYNAMIC:
-            new_config.scheduling_mode = LteSimulation.SchedulingMode.DYNAMIC
+            new_config.scheduling_mode = SchedulingMode.DYNAMIC
         elif values[1] == self.PARAM_SCHEDULING_STATIC:
-            new_config.scheduling_mode = LteSimulation.SchedulingMode.STATIC
+            new_config.scheduling_mode = SchedulingMode.STATIC
         else:
             raise ValueError(
                 "The test name parameter '{}' has to be followed by either "
                 "'dynamic' or 'static'.".format(self.PARAM_SCHEDULING))
 
-        if new_config.scheduling_mode == LteSimulation.SchedulingMode.STATIC:
+        if new_config.scheduling_mode == SchedulingMode.STATIC:
 
             values = self.consume_parameter(parameters, self.PARAM_PATTERN, 2)
 
@@ -848,11 +845,11 @@ class LteSimulation(BaseSimulation):
             Maximum throughput in mbps.
 
         """
-        if bts_config.mimo_mode == LteSimulation.MimoMode.MIMO_1x1:
+        if bts_config.mimo_mode == MimoMode.MIMO_1x1:
             streams = 1
-        elif bts_config.mimo_mode == LteSimulation.MimoMode.MIMO_2x2:
+        elif bts_config.mimo_mode == MimoMode.MIMO_2x2:
             streams = 1
-        elif bts_config.mimo_mode == LteSimulation.MimoMode.MIMO_4x4:
+        elif bts_config.mimo_mode == MimoMode.MIMO_4x4:
             streams = 1
         else:
             raise ValueError('Unable to calculate maximum downlink throughput '
@@ -1034,20 +1031,20 @@ class LteSimulation(BaseSimulation):
 
         # If the selected transmission mode does not support the number of DL
         # antennas, throw an exception.
-        if (tmode in [self.TransmissionMode.TM1, self.TransmissionMode.TM7]
+        if (tmode in [TransmissionMode.TM1, TransmissionMode.TM7]
                 and bts.dl_antenna != '1'):
             # TM1 and TM7 only support 1 DL antenna
             raise ValueError("{} allows only one DL antenna. Change the "
                              "number of DL antennas before setting the "
                              "transmission mode.".format(tmode.value))
-        elif tmode == self.TransmissionMode.TM8 and bts.dl_antenna != '2':
+        elif tmode == TransmissionMode.TM8 and bts.dl_antenna != '2':
             # TM8 requires 2 DL antennas
             raise ValueError("TM2 requires two DL antennas. Change the "
                              "number of DL antennas before setting the "
                              "transmission mode.")
         elif (tmode in [
-                self.TransmissionMode.TM2, self.TransmissionMode.TM3,
-                self.TransmissionMode.TM4, self.TransmissionMode.TM9
+                TransmissionMode.TM2, TransmissionMode.TM3,
+                TransmissionMode.TM4, TransmissionMode.TM9
         ] and bts.dl_antenna == '1'):
             # TM2, TM3, TM4 and TM9 require 2 or 4 DL antennas
             raise ValueError("{} requires at least two DL atennas. Change the "
@@ -1071,9 +1068,9 @@ class LteSimulation(BaseSimulation):
         # If the requested mimo mode is not compatible with the current TM,
         # warn the user before changing the value.
 
-        if mimo == self.MimoMode.MIMO_1x1:
+        if mimo == MimoMode.MIMO_1x1:
             if bts.transmode not in [
-                    self.TransmissionMode.TM1, self.TransmissionMode.TM7
+                    TransmissionMode.TM1, TransmissionMode.TM7
             ]:
                 self.log.warning(
                     "Using only 1 DL antennas is not allowed with "
@@ -1081,21 +1078,21 @@ class LteSimulation(BaseSimulation):
                     "number of DL antennas will override this "
                     "setting.")
             bts.dl_antenna = 1
-        elif mimo == self.MimoMode.MIMO_2x2:
+        elif mimo == MimoMode.MIMO_2x2:
             if bts.transmode not in [
-                    self.TransmissionMode.TM2, self.TransmissionMode.TM3,
-                    self.TransmissionMode.TM4, self.TransmissionMode.TM8,
-                    self.TransmissionMode.TM9
+                    TransmissionMode.TM2, TransmissionMode.TM3,
+                    TransmissionMode.TM4, TransmissionMode.TM8,
+                    TransmissionMode.TM9
             ]:
                 self.log.warning("Using two DL antennas is not allowed with "
                                  "the current transmission mode. Changing the "
                                  "number of DL antennas will override this "
                                  "setting.")
             bts.dl_antenna = 2
-        elif mimo == self.MimoMode.MIMO_4x4:
+        elif mimo == MimoMode.MIMO_4x4:
             if bts.transmode not in [
-                    self.TransmissionMode.TM2, self.TransmissionMode.TM3,
-                    self.TransmissionMode.TM4, self.TransmissionMode.TM9
+                    TransmissionMode.TM2, TransmissionMode.TM3,
+                    TransmissionMode.TM4, TransmissionMode.TM9
             ]:
                 self.log.warning("Using four DL antennas is not allowed with "
                                  "the current transmission mode. Changing the "
@@ -1127,7 +1124,7 @@ class LteSimulation(BaseSimulation):
 
         bts.lte_scheduling_mode = scheduling.value
 
-        if scheduling == self.SchedulingMode.STATIC:
+        if scheduling == SchedulingMode.STATIC:
 
             if not packet_rate:
                 raise RuntimeError("Packet rate needs to be indicated when "
@@ -1197,7 +1194,7 @@ class LteSimulation(BaseSimulation):
         desired_dl_rbs = percentage_to_amount(
             min_val=min_dl_rbs, max_val=max_rbs, percentage=dl)
 
-        if tm == self.TransmissionMode.TM3 or tm == self.TransmissionMode.TM4:
+        if tm == TransmissionMode.TM3 or tm == TransmissionMode.TM4:
 
             # For TM3 and TM4 the number of DL RBs needs to be max_rbs or a
             # multiple of the RBG size
@@ -1319,8 +1316,8 @@ class LteSimulation(BaseSimulation):
 
         # Set up a temporary calibration configuration.
         temporary_config = self.BtsConfig()
-        temporary_config.mimo_mode = LteSimulation.MimoMode.MIMO_1x1
-        temporary_config.transmission_mode = LteSimulation.TransmissionMode.TM1
+        temporary_config.mimo_mode = MimoMode.MIMO_1x1
+        temporary_config.transmission_mode = TransmissionMode.TM1
         temporary_config.bandwidth = max(
             self.allowed_bandwidth_dictionary[int(band)])
         self.configure_bts(self.bts1, temporary_config)
@@ -1357,9 +1354,9 @@ class LteSimulation(BaseSimulation):
         """
 
         if 33 <= int(band) <= 46:
-            return self.DuplexMode.TDD
+            return DuplexMode.TDD
         else:
-            return self.DuplexMode.FDD
+            return DuplexMode.FDD
 
     def set_band(self, bts, band):
         """ Sets the right duplex mode before switching to a new band.
