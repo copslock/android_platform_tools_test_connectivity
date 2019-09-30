@@ -22,9 +22,27 @@ class AbstractCellularSimulator:
 
     This class defines the interface that every cellular simulator controller
     needs to implement and shouldn't be instantiated by itself. """
+
+    # Indicates if it is able to use 256 QAM as the downlink modulation for LTE
+    LTE_SUPPORTS_DL_256QAM = None
+
+    # Indicates if it is able to use 64 QAM as the uplink modulation for LTE
+    LTE_SUPPORTS_UL_64QAM = None
+
+    # Indicates if 4x4 MIMO is supported for LTE
+    LTE_SUPPORTS_4X4_MIMO = None
+
     def destroy(self):
         """ Sends finalization commands to the cellular equipment and closes
         the connection. """
+        raise NotImplementedError()
+
+    def setup_lte_scenario(self):
+        """ Configures the equipment for an LTE simulation. """
+        raise NotImplementedError()
+
+    def setup_lte_ca_scenario(self):
+        """ Configures the equipment for an LTE with CA simulation. """
         raise NotImplementedError()
 
 
