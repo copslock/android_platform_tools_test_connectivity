@@ -46,8 +46,8 @@ class ConcurrentBleAdvertisementDiscoveryTest(BluetoothBaseTest):
     max_advertisements = -1
     advertise_callback_list = []
 
-    def __init__(self, controllers):
-        BluetoothBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.droid_list = get_advanced_droid_list(self.android_devices)
         self.scn_ad = self.android_devices[0]
         self.adv_ad = self.android_devices[1]

@@ -28,8 +28,8 @@ DEFAULT_ANOMALIES_THRESHOLD = 0
 
 class BtCodecSweepTest(A2dpCodecBaseTest):
 
-    def __init__(self, configs):
-        super().__init__(configs)
+    def setup_class(self):
+        super().setup_class()
         self.bt_logger = BluetoothMetricLogger.for_test_case()
         self.start_time = time.time()
 
