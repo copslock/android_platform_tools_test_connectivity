@@ -46,8 +46,8 @@ class BluetoothReconnectTest(BaseTestClass):
        dut_bt_addr: The Bluetooth address of the Apollo earbuds
     """
 
-    def __init__(self, configs):
-        BaseTestClass.__init__(self, configs)
+    def setup_class(self):
+        super().setup_class()
         # sanity check of the dut devices.
         # TODO(b/119051823): Investigate using a config validator to replace this.
         if not self.android_devices:
