@@ -688,7 +688,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             curr_plot = wputils.BokehFigure(
                 title=str(test_id_str),
                 x_label='Orientation (deg)',
-                primary_y='Sensitivity (dBm)')
+                primary_y_label='Sensitivity (dBm)')
             for channel, channel_results in test_data.items():
                 curr_plot.add_line(
                     channel_results['orientation'],

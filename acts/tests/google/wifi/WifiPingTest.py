@@ -259,7 +259,7 @@ class WifiPingTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 self.current_test_name,
                 x_label='Timestamp (s)',
-                primary_y='Round Trip Time (ms)')
+                primary_y_label='Round Trip Time (ms)')
             for idx, result in enumerate(ping_range_result['ping_results']):
                 if len(result['rtt']) > 1:
                     x_data = [
@@ -610,7 +610,7 @@ class WifiOtaPingTest(WifiPingTest):
         figure = wputils.BokehFigure(
             title='Range vs. Position',
             x_label=x_label,
-            primary_y='Range (dB)',
+            primary_y_label='Range (dB)',
         )
         for channel, channel_data in range_vs_angle.items():
             figure.add_line(

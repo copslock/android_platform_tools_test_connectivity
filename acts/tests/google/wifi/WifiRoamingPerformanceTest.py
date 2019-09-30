@@ -211,8 +211,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
                 x_label='Time (ms)',
-                primary_y=primary_y_axis,
-                secondary_y='RSSI (dBm)')
+                primary_y_label=primary_y_axis,
+                secondary_y_label='RSSI (dBm)')
             roam_stats[secondary_atten] = collections.OrderedDict()
             for result in results_list:
                 self.detect_roam_events(result)
@@ -366,8 +366,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
                 x_label='Time (ms)',
-                primary_y='RTT (ms)',
-                secondary_y='RSSI (dBm)')
+                primary_y_label='RTT (ms)',
+                secondary_y_label='RSSI (dBm)')
         figure.add_line(
             x_data=result['ping_result']['time_stamp'],
             y_data=result['ping_result']['rtt'],
@@ -400,8 +400,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
                 x_label='Time (s)',
-                primary_y='Throughput (Mbps)',
-                secondary_y='RSSI (dBm)')
+                primary_y_label='Throughput (Mbps)',
+                secondary_y_label='RSSI (dBm)')
         iperf_time_stamps = [
             idx * IPERF_INTERVAL for idx in range(len(result['throughput']))
         ]

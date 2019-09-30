@@ -129,7 +129,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                         result['testcase_params']['mode'],
                         result['testcase_params']['traffic_type']),
                     x_label='Attenuation (dB)',
-                    primary_y='Throughput (Mbps)')
+                    primary_y_label='Throughput (Mbps)')
             plots[plot_id].add_line(
                 result['total_attenuation'],
                 result['throughput_receive'],
@@ -256,7 +256,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         figure = wputils.BokehFigure(
             title=test_name,
             x_label='Attenuation (dB)',
-            primary_y='Throughput (Mbps)')
+            primary_y_label='Throughput (Mbps)')
         try:
             golden_path = next(file_name
                                for file_name in self.golden_files_list
@@ -736,7 +736,7 @@ class WifiOtaRvrTest(WifiRvrTest):
                         result['testcase_params']['traffic_type'],
                         result['testcase_params']['traffic_direction']),
                     x_label='Attenuation (dB)',
-                    primary_y='Throughput (Mbps)')
+                    primary_y_label='Throughput (Mbps)')
             # Compile test id data and metrics
             compiled_data[test_id]['throughput'].append(
                 result['throughput_receive'])
