@@ -19,7 +19,6 @@ import time
 from acts.controllers.anritsu_lib.md8475a import BtsTechnology
 from acts.controllers.anritsu_lib.md8475a import LteMimoMode
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
-from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.controllers.anritsu_lib.md8475a import TestProcedure
 from acts.controllers.anritsu_lib.md8475a import TestPowerControl
 from acts.controllers.anritsu_lib.md8475a import TestMeasurement
@@ -98,7 +97,8 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         self.anritsu = simulator.anritsu
 
-        self.bts = [self.bts1, self.anritsu.get_BTS(BtsNumber.BTS2)]
+        self.bts = [self.anritsu.get_BTS(BtsNumber.BTS1),
+                    self.anritsu.get_BTS(BtsNumber.BTS2)]
 
         if self.anritsu._md8475_version == 'B':
             self.bts.extend([
@@ -110,10 +110,10 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         # settings from the PCC base station.
         self.bts_configs = [self.primary_config]
 
-        for bts_index in range(1, len(self.bts)):
+        for bts_index in range(1, self.simulator.LTE_MAX_CARRIERS):
             new_config = self.BtsConfig()
             new_config.incorporate(self.primary_config)
-            self.configure_bts(self.bts[bts_index], new_config)
+            self.simulator.configure_bts(new_config, bts_index)
             self.bts_configs.append(new_config)
 
         # Get LTE CA frequency bands setting from the test configuration
@@ -128,31 +128,8 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         """ Do initial configuration in the simulator. """
         self.simulator.setup_lte_ca_scenario()
 
-    def configure_bts(self, bts_handle, config):
-        """ Adds LTE with CA specific procedures. See parent class
-        implementation for more details.
-
-        Args:
-            bts_handle: a handle to the Anritsu base station controller.
-            config: a BtsConfig object containing the desired configuration.
-        """
-
-        # The callbox won't restore the band-dependent default values if the
-        # request is to switch to the same band as the one the base station is
-        # currently using. To ensure that default values are restored, go to a
-        # different band before switching.
-        if config.band and int(bts_handle.band) == config.band:
-            # Using bands 1 and 2 but it could be any others
-            bts_handle.band = '1' if config.band != 1 else '2'
-            # Switching to config.band will be handled by the parent class
-            # implementation of this method.
-
-        super().configure_bts(bts_handle, config)
-
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation with CA using a list of parameters.
-
-        Calls the parent method first, then consumes parameters specific to LTE
 
         Args:
             parameters: list of parameters
@@ -214,7 +191,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
             if ca_class.upper() == 'A':
 
-                if bts_index >= len(self.bts):
+                if bts_index >= self.simulator.LTE_MAX_CARRIERS:
                     raise ValueError("This callbox model doesn't allow the "
                                      "requested CA configuration")
 
@@ -228,7 +205,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
             elif ca_class.upper() == 'C':
 
-                if bts_index + 1 >= len(self.bts):
+                if bts_index + 1 >= self.simulator.LTE_MAX_CARRIERS:
                     raise ValueError("This callbox model doesn't allow the "
                                      "requested CA configuration")
 
@@ -480,7 +457,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         # Setup the base stations with the obtained configurations and then save
         # these parameters in the current configuration objects
         for bts_index in range(len(new_configs)):
-            self.configure_bts(self.bts[bts_index], new_configs[bts_index])
+            self.simulator.configure_bts(new_configs[bts_index], bts_index)
             self.bts_configs[bts_index].incorporate(new_configs[bts_index])
 
         # Now that the band is set, calibrate the link for the PCC if necessary
@@ -510,7 +487,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         for bts_index in range(1, self.num_carriers):
             new_config = self.BtsConfig()
             new_config.dl_cc_enabled = True
-            self.configure_bts(self.bts[bts_index], new_config)
+            self.simulator.configure_bts(new_config, bts_index)
             self.bts_configs[bts_index].incorporate(new_config)
 
         self.anritsu.start_testcase()
@@ -551,5 +528,5 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             new_config = self.BtsConfig()
             new_config.output_power = self.calibrated_downlink_rx_power(
                 self.bts_configs[bts_index], self.sim_dl_power)
-            self.configure_bts(self.bts[bts_index], new_config)
+            self.simulator.configure_bts(new_config, bts_index)
             self.bts_configs[bts_index].incorporate(new_config)

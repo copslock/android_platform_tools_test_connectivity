@@ -33,6 +33,9 @@ class AbstractCellularSimulator:
     # Indicates if 4x4 MIMO is supported for LTE
     LTE_SUPPORTS_4X4_MIMO = None
 
+    # The maximum number of carriers that this simulator can support for LTE
+    LTE_MAX_CARRIERS = None
+
     def __init__(self):
         """ Initializes the cellular simulator. """
         self.log = logger.create_tagged_trace_logger('CellularSimulator')
@@ -48,6 +51,27 @@ class AbstractCellularSimulator:
 
     def setup_lte_ca_scenario(self):
         """ Configures the equipment for an LTE with CA simulation. """
+        raise NotImplementedError()
+
+    def configure_bts(self, config, bts_index=0):
+        """ Commands the equipment to setup a base station with the required
+        configuration. This method applies configurations that are common to all
+        RATs.
+
+        Args:
+            config: a BaseSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
+        raise NotImplementedError()
+
+    def configure_lte_bts(self, config, bts_index=0):
+        """ Commands the equipment to setup an LTE base station with the
+        required configuration.
+
+        Args:
+            config: an LteSimulation.BtsConfig object.
+            bts_index: the base station number.
+        """
         raise NotImplementedError()
 
 
