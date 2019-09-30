@@ -13,6 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from acts import logger
 
 
 class AbstractCellularSimulator:
@@ -31,6 +32,10 @@ class AbstractCellularSimulator:
 
     # Indicates if 4x4 MIMO is supported for LTE
     LTE_SUPPORTS_4X4_MIMO = None
+
+    def __init__(self):
+        """ Initializes the cellular simulator. """
+        self.log = logger.create_tagged_trace_logger('CellularSimulator')
 
     def destroy(self):
         """ Sends finalization commands to the cellular equipment and closes
