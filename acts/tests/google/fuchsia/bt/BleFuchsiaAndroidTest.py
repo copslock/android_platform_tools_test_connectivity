@@ -37,8 +37,8 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
     active_adv_callback_list = []
     droid = None
 
-    def __init__(self, controllers):
-        BluetoothBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
 
         # Android device under test
         self.ad = self.android_devices[0]
