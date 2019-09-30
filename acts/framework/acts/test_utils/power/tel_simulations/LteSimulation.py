@@ -416,6 +416,7 @@ class LteSimulation(BaseSimulation):
             self.ul_modulation_order = None
             self.tbs_pattern_on = None
             self.dl_channel = None
+            self.dl_cc_enabled = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Configures Anritsu system for LTE simulation with 1 basetation
@@ -540,6 +541,11 @@ class LteSimulation(BaseSimulation):
                                      nrb_ul=config.ul_rbs,
                                      mcs_ul=config.ul_mcs,
                                      mcs_dl=config.dl_mcs)
+
+        # This variable stores a boolean value so the following is needed to
+        # differentiate False from None
+        if config.dl_cc_enabled is not None:
+            bts_handle.dl_cc_enabled = config.dl_cc_enabled
 
         if config.dl_modulation_order:
             bts_handle.lte_dl_modulation_order = config.dl_modulation_order
