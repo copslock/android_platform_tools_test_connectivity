@@ -104,15 +104,17 @@ class UmtsSimulation(BaseSimulation):
                 different bands.
 
         """
-
-        super().__init__(simulator, log, dut, test_config, calibration_table)
-
         # The UMTS simulation relies on the cellular simulator to be a MD8475
         if not isinstance(self.simulator, anritsusim.MD8475CellularSimulator):
             raise ValueError('The UMTS simulation relies on the simulator to '
                              'be an Anritsu MD8475 A/B instrument.')
 
+        # The Anritsu controller needs to be unwrapped before calling
+        # super().__init__ because setup_simulator() requires self.anritsu and
+        # will be called during the parent class initialization.
         self.anritsu = self.simulator.anritsu
+
+        super().__init__(simulator, log, dut, test_config, calibration_table)
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_WCDMA_ONLY,
@@ -124,11 +126,18 @@ class UmtsSimulation(BaseSimulation):
         self.release_version = None
         self.packet_rate = None
 
-    def load_config_files(self):
-        """ Loads configuration files for the simulation. """
+    def setup_simulator(self):
+        """ Do initial configuration in the simulator. """
+
+        # Load callbox config files
+        callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
+            self.anritsu._md8475_version)
 
         self.anritsu.load_simulation_paramfile(
-            ntpath.join(self.callbox_config_path, self.UMTS_BASIC_SIM_FILE))
+            ntpath.join(callbox_config_path, self.UMTS_BASIC_SIM_FILE))
+
+        # Start simulation if it wasn't started
+        self.anritsu.start_simulation()
 
     def parse_parameters(self, parameters):
         """ Configs an UMTS simulation using a list of parameters.

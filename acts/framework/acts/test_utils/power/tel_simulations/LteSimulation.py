@@ -16,7 +16,6 @@
 
 import time
 import math
-import ntpath
 from enum import Enum
 
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
@@ -30,12 +29,6 @@ class LteSimulation(BaseSimulation):
     """ Simple LTE simulation with only one basestation.
 
     """
-
-    # Simulation config files in the callbox computer.
-    # These should be replaced in the future by setting up
-    # the same configuration manually.
-    LTE_BASIC_SIM_FILE = 'SIM_default_LTE.wnssp'
-    LTE_BASIC_CELL_FILE = 'CELL_LTE_config.wnscp'
 
     # Simulation config keywords contained in the test name
     PARAM_FRAME_CONFIG = "tddconfig"
@@ -449,8 +442,6 @@ class LteSimulation(BaseSimulation):
             raise ValueError('The LTE simulation relies on the simulator to '
                              'be an Anritsu MD8475 A/B instrument.')
 
-        self.anritsu = self.simulator.anritsu
-
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_LTE_ONLY,
                 dut.droid.subscriptionGetDefaultSubId()):
@@ -475,9 +466,9 @@ class LteSimulation(BaseSimulation):
         self.dl_256_qam = test_config.get(self.KEY_DL_256_QAM, False)
 
         if self.dl_256_qam:
-            if self.anritsu._md8475_version == 'A':
-                self.log.warning("The key '{}' is set to true but MD8475A "
-                                 "callbox doesn't support that modulation "
+            if not self.simulator.LTE_SUPPORTS_DL_256QAM:
+                self.log.warning("The key '{}' is set to true but the "
+                                 "simulator doesn't support that modulation "
                                  "order.".format(self.KEY_DL_256_QAM))
                 self.dl_256_qam = False
             else:
@@ -492,9 +483,9 @@ class LteSimulation(BaseSimulation):
         self.ul_64_qam = test_config.get(self.KEY_UL_64_QAM, False)
 
         if self.ul_64_qam:
-            if self.anritsu._md8475_version == 'A':
-                self.log.warning("The key '{}' is set to true but MD8475A "
-                                 "callbox doesn't support that modulation "
+            if not self.simulator.LTE_SUPPORTS_UL_64QAM:
+                self.log.warning("The key '{}' is set to true but the "
+                                 "simulator doesn't support that modulation "
                                  "order.".format(self.KEY_UL_64_QAM))
                 self.ul_64_qam = False
             else:
@@ -574,21 +565,9 @@ class LteSimulation(BaseSimulation):
             else:
                 bts_handle.tbs_pattern = "OFF"
 
-    def load_config_files(self):
-        """ Loads configuration files for the simulation. """
-
-        cell_file_name = self.LTE_BASIC_CELL_FILE
-        sim_file_name = self.LTE_BASIC_SIM_FILE
-
-        if self.anritsu._md8475_version == 'B':
-            cell_file_name += '2'
-            sim_file_name += '2'
-
-        cell_file_path = ntpath.join(self.callbox_config_path, cell_file_name)
-        sim_file_path = ntpath.join(self.callbox_config_path, sim_file_name)
-
-        self.anritsu.load_simulation_paramfile(sim_file_path)
-        self.anritsu.load_cell_paramfile(cell_file_path)
+    def setup_simulator(self):
+        """ Do initial configuration in the simulator. """
+        self.simulator.setup_lte_scenario()
 
     def parse_parameters(self, parameters):
         """ Configs an LTE simulation using a list of parameters.
@@ -661,9 +640,9 @@ class LteSimulation(BaseSimulation):
                              "1x1, 2x2 or 4x4.".format(self.PARAM_MIMO))
 
         if (new_config.mimo_mode == LteSimulation.MimoMode.MIMO_4x4
-                and self.anritsu._md8475_version == 'A'):
+                and not self.simulator.LTE_SUPPORTS_4X4_MIMO):
             raise ValueError("The test requires 4x4 MIMO, but that is not "
-                             "supported by the MD8475A callbox.")
+                             "supported by the cellular simulator.")
 
         # Setup transmission mode
 
@@ -744,18 +723,20 @@ class LteSimulation(BaseSimulation):
                 new_config.ul_mcs = 23
 
         # Setup LTE RRC status change function and timer for LTE idle test case
-
+        # TODO (b/141838145): setting RRC timer parameters requires unwrapping
+        # the simulator class as it still doesn't support these methods.
         values = self.consume_parameter(parameters,
                                         self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
         if not values:
             self.log.info(
                 "The test name does not include the '{}' parameter. Disabled "
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
-            self.anritsu.set_lte_rrc_status_change(False)
+            self.simulator.anritsu.set_lte_rrc_status_change(False)
         else:
             self.rrc_sc_timer = int(values[1])
-            self.anritsu.set_lte_rrc_status_change(True)
-            self.anritsu.set_lte_rrc_status_change_timer(self.rrc_sc_timer)
+            self.simulator.anritsu.set_lte_rrc_status_change(True)
+            self.simulator.anritsu.set_lte_rrc_status_change_timer(
+                self.rrc_sc_timer)
 
         # Get uplink power
 

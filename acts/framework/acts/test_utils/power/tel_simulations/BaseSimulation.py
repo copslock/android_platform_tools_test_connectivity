@@ -155,25 +155,17 @@ class BaseSimulation():
         # Enable roaming on the phone
         toggle_cell_data_roaming(self.dut, True)
 
-        # Load callbox config files
-        self.callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
-            self.anritsu._md8475_version)
-        self.load_config_files()
-
         # Make sure airplane mode is on so the phone won't attach right away
         toggle_airplane_mode(self.log, self.dut, True)
 
         # Wait for airplane mode setting to propagate
         time.sleep(2)
 
-        # Start simulation if it wasn't started
-        self.anritsu.start_simulation()
+        # Prepare the simulator for this simulation setup
+        self.setup_simulator()
 
-    def load_config_files(self):
-        """ Loads configuration files for the simulation.
-
-        This method needs to be implement by derived simulation classes. """
-
+    def setup_simulator(self):
+        """ Do initial configuration in the simulator. """
         raise NotImplementedError()
 
     def attach(self):
