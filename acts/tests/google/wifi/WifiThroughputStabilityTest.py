@@ -226,7 +226,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             json.dump(test_result_dict, results_file)
         # Plot and save
         figure = wputils.BokehFigure(
-            test_name, x_label='Time (s)', primary_y='Throughput (Mbps)')
+            test_name, x_label='Time (s)', primary_y_label='Throughput (Mbps)')
         time_data = list(range(0, len(instantaneous_rates_Mbps)))
         figure.add_line(
             time_data,
@@ -525,7 +525,7 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
             current_plot = wputils.BokehFigure(
                 title='Channel {} - Rate vs. Position'.format(channel),
                 x_label=x_label,
-                primary_y='Rate (Mbps)',
+                primary_y_label='Rate (Mbps)',
             )
             for test_id, test_data in channel_data.items():
                 test_id_dict = dict(test_id)
