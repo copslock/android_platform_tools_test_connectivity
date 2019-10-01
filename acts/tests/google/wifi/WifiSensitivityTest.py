@@ -409,7 +409,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         else:
             wutils.reset_wifi(self.dut)
             wutils.set_wifi_country_code(self.dut,
-                self.testclass_params['country_code'])
+                                         self.testclass_params['country_code'])
             testcase_params['test_network']['channel'] = testcase_params[
                 'channel']
             wutils.wifi_connect(self.dut,
@@ -417,6 +417,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                                 num_of_tries=5,
                                 check_connectivity=False)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        # Activate/attenuate the correct chains
         if testcase_params['channel'] not in self.atten_dut_chain_map.keys():
             self.atten_dut_chain_map[testcase_params[
                 'channel']] = wputils.get_current_atten_dut_chain_map(
@@ -655,6 +656,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
 
     def setup_class(self):
         WifiSensitivityTest.setup_class(self)
+        self.current_chain_mask = '2x2'
         self.ota_chamber = ota_chamber.create(
             self.user_params['OTAChamber'])[0]
 
@@ -667,6 +669,41 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
         self.ota_chamber.set_orientation(testcase_params['orientation'])
         # Continue test setup
         WifiSensitivityTest.setup_sensitivity_test(self, testcase_params)
+
+    def setup_dut(self, testcase_params):
+        """Sets up the DUT in the configuration required by the test.
+
+        Args:
+            testcase_params: dict containing AP and other test params
+        """
+        # Configure the right INI settings
+        if testcase_params['chain_mask'] != self.current_chain_mask:
+            self.log.info('Updating WiFi chain mask to: {}'.format(
+                testcase_params['chain_mask']))
+            if testcase_params['chain_mask'] in ['0', '1']:
+                wputils.set_ini_single_chain_mode(
+                    self.dut, int(testcase_params['chain_mask']))
+            else:
+                wputils.set_ini_two_chain_mode(self.dut)
+        # Check battery level before test
+        if not wputils.health_check(self.dut, 10):
+            asserts.skip('Battery level too low. Skipping test.')
+        # Turn screen off to preserve battery
+        self.dut.go_to_sleep()
+        if wputils.validate_network(self.dut,
+                                    testcase_params['test_network']['SSID']):
+            self.log.info('Already connected to desired network')
+        else:
+            wutils.reset_wifi(self.dut)
+            wutils.set_wifi_country_code(self.dut,
+                                         self.testclass_params['country_code'])
+            testcase_params['test_network']['channel'] = testcase_params[
+                'channel']
+            wutils.wifi_connect(self.dut,
+                                testcase_params['test_network'],
+                                num_of_tries=5,
+                                check_connectivity=False)
+        self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def process_testclass_results(self):
         """Saves and plots test results from all executed test cases."""
@@ -839,17 +876,14 @@ class WifiOtaSensitivity_TenDegree_Test(WifiOtaSensitivityTest):
                                               list(range(0, 360, 10)))
 
 
-class WifiOtaSensitivity_SingleChain_TenDegree_Test(WifiOtaSensitivityTest):
+class WifiOtaSensitivity_PerChain_TenDegree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
         WifiOtaSensitivityTest.__init__(self, controllers)
         requested_channels = [6, 36, 149]
-        requested_rates = [
-            self.RateTuple(8, 1, 86.7),
-            self.RateTuple(2, 1, 21.7)
-        ]
-        self.tests = self.generate_test_cases(requested_channels,
-                                              ['VHT20', 'VHT80'],
-                                              requested_rates, ['2x2'],
+        requested_rates = [self.RateTuple(2, 1, 21.7)]
+        self.tests = self.generate_test_cases(requested_channels, ['VHT20'],
+                                              requested_rates,
+                                              ['0', '1', '2x2'],
                                               list(range(0, 360, 10)))
 
 

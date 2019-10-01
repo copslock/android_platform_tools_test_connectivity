@@ -20,6 +20,7 @@ import itertools
 import json
 import logging
 import math
+import os
 import re
 import statistics
 import time
@@ -1041,7 +1042,9 @@ def get_dut_temperature(dut):
     Returns:
         temperature: device temperature. 0 if temperature could not be read
     """
-    candidate_zones = ['skin-therm', 'sdm-therm-monitor', 'sdm-therm-adc', 'back_therm']
+    candidate_zones = [
+        'skin-therm', 'sdm-therm-monitor', 'sdm-therm-adc', 'back_therm'
+    ]
     for zone in candidate_zones:
         try:
             temperature = int(
@@ -1140,3 +1143,75 @@ def push_firmware(dut, wlanmdsp_file, datamsc_file):
     dut.push_system_file(wlanmdsp_file, '/vendor/firmware/wlanmdsp.mbn')
     dut.push_system_file(datamsc_file, '/vendor/firmware/Data.msc')
     dut.reboot()
+
+
+def _set_ini_fields(ini_file_path, ini_field_dict):
+    template_regex = r'^{}=[0-9,.x-]+'
+    with open(ini_file_path, 'r') as f:
+        ini_lines = f.read().splitlines()
+        for idx, line in enumerate(ini_lines):
+            for field_name, field_value in ini_field_dict.items():
+                line_regex = re.compile(template_regex.format(field_name))
+                if re.match(line_regex, line):
+                    ini_lines[idx] = "{}={}".format(field_name, field_value)
+                    print(ini_lines[idx])
+    with open(ini_file_path, 'w') as f:
+        f.write("\n".join(ini_lines))
+
+
+def _edit_dut_ini(dut, ini_fields):
+    """Function to edit Wifi ini files."""
+    dut_ini_path = '/vendor/firmware/wlan/qca_cld/WCNSS_qcom_cfg.ini'
+    local_ini_path = os.path.expanduser('~/WCNSS_qcom_cfg.ini')
+    dut.pull_files(dut_ini_path, local_ini_path)
+
+    _set_ini_fields(local_ini_path, ini_fields)
+
+    dut.push_system_file(local_ini_path, dut_ini_path)
+    dut.reboot()
+
+
+def set_ini_single_chain_mode(dut, chain):
+    ini_fields = {
+        'gEnable2x2': 0,
+        'gSetTxChainmask1x1': chain,
+        'gSetRxChainmask1x1': chain,
+        'gDualMacFeatureDisable': 1,
+        'gDot11Mode': 0
+    }
+    _edit_dut_ini(dut, ini_fields)
+
+
+def set_ini_two_chain_mode(dut):
+    ini_fields = {
+        'gEnable2x2': 2,
+        'gSetTxChainmask1x1': 1,
+        'gSetRxChainmask1x1': 1,
+        'gDualMacFeatureDisable': 6,
+        'gDot11Mode': 0
+    }
+    _edit_dut_ini(dut, ini_fields)
+
+
+def set_ini_tx_mode(dut, mode):
+    TX_MODE_DICT = {
+        "Auto": 0,
+        "11n": 4,
+        "11ac": 9,
+        "11abg": 1,
+        "11b": 2,
+        "11g": 3,
+        "11g only": 5,
+        "11n only": 6,
+        "11b only": 7,
+        "11ac only": 8
+    }
+
+    ini_fields = {
+        'gEnable2x2': 2,
+        'gSetTxChainmask1x1': 1,
+        'gSetRxChainmask1x1': 1,
+        'gDualMacFeatureDisable': 6,
+        'gDot11Mode': TX_MODE_DICT[mode]
+    }
+    _edit_dut_ini(dut, ini_fields)
