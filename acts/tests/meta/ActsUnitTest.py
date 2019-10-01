@@ -16,7 +16,6 @@
 import logging
 import os
 import subprocess
-
 import sys
 
 import acts
@@ -97,7 +96,7 @@ class ActsUnitTest(base_test.BaseTestClass):
                 self.log.error('Unit Test %s failed with error %s.' %
                                (test_process.args, test_process.returncode))
                 self.log.error('=' * 79)
-                self.log.debug('Failure for `%s`:\n%s' %
+                self.log.error('Failure for `%s`:\n%s' %
                                (test_process.args,
                                 stdout.decode('utf-8', errors='replace')))
                 fail_test = True
