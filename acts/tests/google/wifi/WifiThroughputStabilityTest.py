@@ -27,6 +27,7 @@ from acts import context
 from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers.utils_lib import ssh
+from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
@@ -52,9 +53,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         base_test.BaseTestClass.__init__(self, controllers)
         # Define metrics to be uploaded to BlackBox
         self.testcase_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_case())
+            BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_class())
+            BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
         # Generate test cases
         self.tests = self.generate_test_cases(
@@ -456,9 +457,9 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         base_test.BaseTestClass.__init__(self, controllers)
         # Define metrics to be uploaded to BlackBox
         self.testcase_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_case())
+            BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_class())
+            BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = False
 
     def setup_class(self):
