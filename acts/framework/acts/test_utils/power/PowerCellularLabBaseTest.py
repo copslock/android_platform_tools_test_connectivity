@@ -19,6 +19,7 @@ import os
 import acts.test_utils.power.PowerBaseTest as PBT
 import acts.controllers.cellular_simulator as simulator
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsu
+from acts.controllers.rohdeschwarz_lib import cmw500_cellular_simulator as cmw
 from acts.test_utils.power.tel_simulations.GsmSimulation import GsmSimulation
 from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
 from acts.test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
@@ -138,6 +139,18 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
                     self.md8475a_ip_address)
             else:
                 raise ValueError('Invalid MD8475 version.')
+
+        elif hasattr(self, 'cmw500_ip') or hasattr(self, 'cmw500_port'):
+
+            for key in ['cmw500_ip', 'cmw500_port']:
+                if not hasattr(self, key):
+                    raise RuntimeError('The CMW500 cellular simulator '
+                                       'requires %s to be set in the '
+                                       'config file.' % key)
+
+            return cmw.CMW500CellularSimulator(self.cmw500_ip,
+                                               self.cmw500_port)
+
         else:
             raise RuntimeError(
                 'The simulator could not be initialized because '

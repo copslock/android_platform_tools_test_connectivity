@@ -396,7 +396,7 @@ class MD8475BCellularSimulator(MD8475CellularSimulator):
     LTE_SUPPORTS_4X4_MIMO = True
 
     # The maximum number of carriers that this simulator can support for LTE
-    LTE_MAX_CARRIERS = 5
+    LTE_MAX_CARRIERS = 4
 
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
