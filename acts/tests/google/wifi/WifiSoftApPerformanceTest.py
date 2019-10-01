@@ -21,7 +21,7 @@ from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers import iperf_client as ipc
-from acts.metrics.loggers.blackbox import BlackboxMetricLogger
+from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from WifiRvrTest import WifiRvrTest
@@ -36,9 +36,9 @@ class WifiSoftApRvrTest(WifiRvrTest):
         self.tests = ("test_rvr_TCP_DL_2GHz", "test_rvr_TCP_UL_2GHz",
                       "test_rvr_TCP_DL_5GHz", "test_rvr_TCP_UL_5GHz")
         self.testcase_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_case())
+            BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
-            wputils.BlackboxMappedMetricLogger.for_test_class())
+            BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
 
     def setup_class(self):
