@@ -345,23 +345,23 @@ class BokehFigure():
     def __init__(self,
                  title=None,
                  x_label=None,
-                 primary_y=None,
-                 secondary_y=None,
+                 primary_y_label=None,
+                 secondary_y_label=None,
                  height=700,
                  width=1300,
-                 title_size=15,
-                 axis_label_size=12):
+                 title_size='15pt',
+                 axis_label_size='12pt'):
         self.figure_data = []
         self.fig_property = {
             'title': title,
             'x_label': x_label,
-            'primary_y_label': primary_y,
-            'secondary_y_label': secondary_y,
+            'primary_y_label': primary_y_label,
+            'secondary_y_label': secondary_y_label,
             'num_lines': 0,
             'height': height,
             'width': width,
-            'title_size': '{}pt'.format(title_size),
-            'axis_label_size': '{}pt'.format(axis_label_size)
+            'title_size': title_size,
+            'axis_label_size': axis_label_size
         }
         self.TOOLS = (
             'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
@@ -444,7 +444,7 @@ class BokehFigure():
             'marker': marker,
             'marker_size': marker_size,
             'shaded_region': shaded_region,
-            'y_range_name': y_axis
+            'y_axis': y_axis
         })
         self.fig_property['num_lines'] += 1
 
@@ -489,7 +489,7 @@ class BokehFigure():
             'marker': marker,
             'marker_size': marker_size,
             'shaded_region': None,
-            'y_range_name': y_axis
+            'y_axis': y_axis
         })
         self.fig_property['num_lines'] += 1
 
@@ -515,8 +515,8 @@ class BokehFigure():
                     line_width=line['width'],
                     color=line['color'],
                     line_dash=line['style'],
-                    name=line['y_range_name'],
-                    y_range_name=line['y_range_name'],
+                    name=line['y_axis'],
+                    y_range_name=line['y_axis'],
                     source=source)
             if line['shaded_region']:
                 band_x = line['shaded_region']['x_vector']
@@ -538,10 +538,10 @@ class BokehFigure():
                     legend=line['legend'],
                     line_color=line['color'],
                     fill_color=line['color'],
-                    name=line['y_range_name'],
-                    y_range_name=line['y_range_name'],
+                    name=line['y_axis'],
+                    y_range_name=line['y_axis'],
                     source=source)
-            if line['y_range_name'] == 'secondary':
+            if line['y_axis'] == 'secondary':
                 two_axes = True
 
         #x-axis formatting

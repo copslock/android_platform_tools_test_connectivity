@@ -306,7 +306,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         figure = wputils.BokehFigure(
             self.current_test_name,
             x_label='Attenuation (dB)',
-            primary_y='RSSI (dBm)')
+            primary_y_label='RSSI (dBm)')
         figure.add_line(
             postprocessed_results['total_attenuation'],
             postprocessed_results['signal_poll_rssi']['mean'],
@@ -350,7 +350,7 @@ class WifiRssiTest(base_test.BaseTestClass):
         figure = wputils.BokehFigure(
             self.current_test_name,
             x_label='Time (s)',
-            primary_y=center_curves * 'Centered' + 'RSSI (dBm)',
+            primary_y_label=center_curves * 'Centered' + 'RSSI (dBm)',
         )
 
         # yapf: disable
@@ -426,8 +426,8 @@ class WifiRssiTest(base_test.BaseTestClass):
         figure = wputils.BokehFigure(
             self.current_test_name,
             x_label='RSSI (dBm)',
-            primary_y='p(RSSI = x)',
-            secondary_y='p(RSSI <= x)')
+            primary_y_label='p(RSSI = x)',
+            secondary_y_label='p(RSSI <= x)')
         for rssi_key, rssi_data in rssi_dist.items():
             figure.add_line(
                 x_data=rssi_data['rssi_values'],
@@ -952,7 +952,7 @@ class WifiOtaRssiTest(WifiRssiTest):
             current_plot = wputils.BokehFigure(
                 title='Channel {} - Rssi vs. Position'.format(channel),
                 x_label=x_label,
-                primary_y='RSSI (dBm)',
+                primary_y_label='RSSI (dBm)',
             )
             for rssi_metric, rssi_metric_value in channel_data['rssi'].items():
                 legend = rssi_metric
