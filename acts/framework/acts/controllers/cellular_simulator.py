@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 from acts import logger
+from acts.test_utils.power import tel_simulations as sims
 
 
 class AbstractCellularSimulator:
@@ -62,7 +63,15 @@ class AbstractCellularSimulator:
             config: a BaseSimulation.BtsConfig object.
             bts_index: the base station number.
         """
-        raise NotImplementedError()
+
+        if config.output_power:
+            self.set_output_power(bts_index, config.output_power)
+
+        if config.input_power:
+            self.set_input_power(bts_index, config.input_power)
+
+        if isinstance(config, sims.LteSimulation.LteSimulation.BtsConfig):
+            self.configure_lte_bts(config, bts_index)
 
     def configure_lte_bts(self, config, bts_index=0):
         """ Commands the equipment to setup an LTE base station with the
@@ -71,6 +80,175 @@ class AbstractCellularSimulator:
         Args:
             config: an LteSimulation.BtsConfig object.
             bts_index: the base station number.
+        """
+        if config.band:
+            self.set_band(bts_index, config.band)
+
+        if config.dlul_config:
+            self.set_tdd_config(bts_index, config.dlul_config)
+
+        if config.bandwidth:
+            self.set_bandwidth(bts_index, config.bandwidth)
+
+        if config.dl_channel:
+            self.set_downlink_channel_number(bts_index, config.dl_channel)
+
+        if config.mimo_mode:
+            self.set_mimo_mode(bts_index, config.mimo_mode)
+
+        if config.transmission_mode:
+            self.set_transmission_mode(bts_index, config.transmission_mode)
+
+        if config.scheduling_mode:
+
+            if (config.scheduling_mode ==
+                    sims.LteSimulation.SchedulingMode.STATIC
+                    and not (config.dl_rbs and config.ul_rbs and config.dl_mcs
+                             and config.ul_mcs)):
+                raise ValueError('When the scheduling mode is set to manual, '
+                                 'the RB and MCS parameters are required.')
+
+            # If scheduling mode is set to Dynamic, the RB and MCS parameters
+            # will be ignored by set_scheduling_mode.
+            self.set_scheduling_mode(bts_index, config.scheduling_mode,
+                                     config.dl_mcs, config.ul_mcs,
+                                     config.dl_rbs, config.ul_rbs)
+
+        # This variable stores a boolean value so the following is needed to
+        # differentiate False from None
+        if config.dl_cc_enabled is not None:
+            self.set_enabled_for_ca(bts_index, config.dl_cc_enabled)
+
+        if config.dl_modulation_order:
+            self.set_dl_modulation(bts_index, config.dl_modulation_order)
+
+        if config.ul_modulation_order:
+            self.set_ul_modulation(bts_index, config.ul_modulation_order)
+
+        # This variable stores a boolean value so the following is needed to
+        # differentiate False from None
+        if config.tbs_pattern_on is not None:
+            self.set_tbs_pattern_on(bts_index, config.tbs_pattern_on)
+
+    def set_band(self, bts_index, band):
+        """ Sets the band for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            band: the new band
+        """
+        raise NotImplementedError()
+
+    def set_input_power(self, bts_index, input_power):
+        """ Sets the input power for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            input_power: the new input power
+        """
+        raise NotImplementedError()
+
+    def set_output_power(self, bts_index, output_power):
+        """ Sets the output power for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            output_power: the new output power
+        """
+        raise NotImplementedError()
+
+    def set_tdd_config(self, bts_index, tdd_config):
+        """ Sets the tdd configuration number for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            tdd_config: the new tdd configuration number
+        """
+        raise NotImplementedError()
+
+    def set_bandwidth(self, bts_index, bandwidth):
+        """ Sets the bandwidth for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            bandwidth: the new bandwidth
+        """
+        raise NotImplementedError()
+
+    def set_downlink_channel_number(self, bts_index, channel_number):
+        """ Sets the downlink channel number for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            channel_number: the new channel number
+        """
+        raise NotImplementedError()
+
+    def set_mimo_mode(self, bts_index, mimo_mode):
+        """ Sets the mimo mode for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            mimo_mode: the new mimo mode
+        """
+        raise NotImplementedError()
+
+    def set_transmission_mode(self, bts_index, transmission_mode):
+        """ Sets the transmission mode for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            transmission_mode: the new transmission mode
+        """
+        raise NotImplementedError()
+
+    def set_scheduling_mode(self, bts_index, scheduling_mode, mcs_dl, mcs_ul,
+                            nrb_dl, nrb_ul):
+        """ Sets the scheduling mode for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            scheduling_mode: the new scheduling mode
+            mcs_dl: Downlink MCS (only for STATIC scheduling)
+            mcs_ul: Uplink MCS (only for STATIC scheduling)
+            nrb_dl: Number of RBs for downlink (only for STATIC scheduling)
+            nrb_ul: Number of RBs for uplink (only for STATIC scheduling)
+        """
+        raise NotImplementedError()
+
+    def set_enabled_for_ca(self, bts_index, enabled):
+        """ Enables or disables the base station during carrier aggregation.
+
+        Args:
+            bts_index: the base station number
+            enabled: whether the base station should be enabled for ca.
+        """
+        raise NotImplementedError()
+
+    def set_dl_modulation(self, bts_index, modulation):
+        """ Sets the DL modulation for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            modulation: the new DL modulation
+        """
+        raise NotImplementedError()
+
+    def set_ul_modulation(self, bts_index, modulation):
+        """ Sets the UL modulation for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            modulation: the new UL modulation
+        """
+        raise NotImplementedError()
+
+    def set_tbs_pattern_on(self, bts_index, tbs_pattern_on):
+        """ Enables or disables TBS pattern in the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            tbs_pattern_on: the new TBS pattern setting
         """
         raise NotImplementedError()
 
