@@ -103,109 +103,95 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             self.anritsu.get_BTS(md8475a.BtsNumber.BTS2)
         ]
 
-    def configure_bts(self, config, bts_index=0):
-        """ Commands the equipment to setup a base station with the required
-        configuration. This method applies configurations that are common to all
-        RATs.
+    def set_input_power(self, bts_index, input_power):
+        """ Sets the input power for the indicated base station.
 
         Args:
-            config: a BaseSimulation.BtsConfig object.
-            bts_index: the base station number.
+            bts_index: the base station number
+            input_power: the new input power
         """
+        self.bts[bts_index].input_level = input_power
 
-        bts_handle = self.bts[bts_index]
-
-        if config.output_power:
-            bts_handle.output_level = config.output_power
-
-        if config.input_power:
-            bts_handle.input_level = config.input_power
-
-        if isinstance(config, LteSimulation.LteSimulation.BtsConfig):
-            self.configure_lte_bts(config, bts_index)
-
-    def configure_lte_bts(self, config, bts_index=0):
-        """ Commands the equipment to setup an LTE base station with the
-        required configuration.
+    def set_output_power(self, bts_index, output_power):
+        """ Sets the output power for the indicated base station.
 
         Args:
-            config: an LteSimulation.BtsConfig object.
-            bts_index: the base station number.
+            bts_index: the base station number
+            output_power: the new output power
         """
+        self.bts[bts_index].output_level = output_power
 
-        bts_handle = self.bts[bts_index]
+    def set_downlink_channel_number(self, bts_index, channel_number):
+        """ Sets the downlink channel number for the indicated base station.
 
-        if config.band:
-            self.set_band(bts_handle, config.band)
+        Args:
+            bts_index: the base station number
+            channel_number: the new channel number
+        """
+        # Temporarily adding this line to workaround a bug in the
+        # Anritsu callbox in which the channel number needs to be set
+        # to a different value before setting it to the final one.
+        self.bts[bts_index].dl_channel = str(channel_number + 1)
+        time.sleep(8)
+        self.bts[bts_index].dl_channel = str(channel_number)
 
-        if config.dlul_config:
-            self.set_dlul_configuration(bts_handle, config.dlul_config)
+    def set_enabled_for_ca(self, bts_index, enabled):
+        """ Enables or disables the base station during carrier aggregation.
 
-        if config.bandwidth:
-            self.set_channel_bandwidth(bts_handle, config.bandwidth)
+        Args:
+            bts_index: the base station number
+            enabled: whether the base station should be enabled for ca.
+        """
+        self.bts[bts_index].dl_cc_enabled = enabled
 
-        if config.dl_channel:
-            # Temporarily adding this line to workaround a bug in the
-            # Anritsu callbox in which the channel number needs to be set
-            # to a different value before setting it to the final one.
-            bts_handle.dl_channel = str(config.dl_channel + 1)
-            time.sleep(8)
-            bts_handle.dl_channel = str(config.dl_channel)
+    def set_dl_modulation(self, bts_index, modulation):
+        """ Sets the DL modulation for the indicated base station.
 
-        if config.mimo_mode:
-            self.set_mimo_mode(bts_handle, config.mimo_mode)
+        Args:
+            bts_index: the base station number
+            modulation: the new DL modulation
+        """
+        self.bts[bts_index].lte_dl_modulation_order = modulation
 
-        if config.transmission_mode:
-            self.set_transmission_mode(bts_handle, config.transmission_mode)
+    def set_ul_modulation(self, bts_index, modulation):
+        """ Sets the UL modulation for the indicated base station.
 
-        if config.scheduling_mode:
+        Args:
+            bts_index: the base station number
+            modulation: the new UL modulation
+        """
+        self.bts[bts_index].lte_ul_modulation_order = modulation
 
-            if (config.scheduling_mode == LteSimulation.SchedulingMode.STATIC
-                    and not all([
-                        config.dl_rbs, config.ul_rbs, config.dl_mcs,
-                        config.ul_mcs
-                    ])):
-                raise ValueError('When the scheduling mode is set to manual, '
-                                 'the RB and MCS parameters are required.')
+    def set_tbs_pattern_on(self, bts_index, tbs_pattern_on):
+        """ Enables or disables TBS pattern in the indicated base station.
 
-            # If scheduling mode is set to Dynamic, the RB and MCS parameters
-            # will be ignored by set_scheduling_mode.
-            self.set_scheduling_mode(
-                bts_handle,
-                config.scheduling_mode,
-                packet_rate=md8475a.BtsPacketRate.LTE_MANUAL,
-                nrb_dl=config.dl_rbs,
-                nrb_ul=config.ul_rbs,
-                mcs_ul=config.ul_mcs,
-                mcs_dl=config.dl_mcs)
+        Args:
+            bts_index: the base station number
+            tbs_pattern_on: the new TBS pattern setting
+        """
+        if tbs_pattern_on:
+            self.bts[bts_index].tbs_pattern = 'FULLALLOCATION'
+        else:
+            self.bts[bts_index].tbs_pattern = 'OFF'
 
-        # This variable stores a boolean value so the following is needed to
-        # differentiate False from None
-        if config.dl_cc_enabled is not None:
-            bts_handle.dl_cc_enabled = config.dl_cc_enabled
-
-        if config.dl_modulation_order:
-            bts_handle.lte_dl_modulation_order = config.dl_modulation_order
-
-        if config.ul_modulation_order:
-            bts_handle.lte_u_modulation_order = config.ul_modulation_order
-
-        # This variable stores a boolean value so the following is needed to
-        # differentiate False from None
-        if config.tbs_pattern_on is not None:
-            if config.tbs_pattern_on:
-                bts_handle.tbs_pattern = "FULLALLOCATION"
-            else:
-                bts_handle.tbs_pattern = "OFF"
-
-    def set_band(self, bts, band):
+    def set_band(self, bts_index, band):
         """ Sets the right duplex mode before switching to a new band.
 
         Args:
-            bts: basestation handle
+            bts_index: the base station number
             band: desired band
-            calibrate_if_necessary: if False calibration will be skipped
         """
+        bts = self.bts[bts_index]
+
+        # The callbox won't restore the band-dependent default values if the
+        # request is to switch to the same band as the one the base station is
+        # currently using. To ensure that default values are restored, go to a
+        # different band before switching.
+        if int(bts.band) == band:
+            # Using bands 1 and 2 but it could be any others
+            bts.band = '1' if band != 1 else '2'
+            # Switching to config.band will be handled by the parent class
+            # implementation of this method.
 
         bts.duplex_mode = self.get_duplex_mode(band).value
         bts.band = band
@@ -225,10 +211,11 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         else:
             return LteSimulation.DuplexMode.FDD
 
-    def set_dlul_configuration(self, bts, config):
+    def set_tdd_config(self, bts_index, config):
         """ Sets the frame structure for TDD bands.
 
         Args:
+            bts_index: the base station number
             config: the desired frame structure. An int between 0 and 6.
         """
 
@@ -236,18 +223,20 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             raise ValueError("The frame structure configuration has to be a "
                              "number between 0 and 6")
 
-        bts.uldl_configuration = config
+        self.bts[bts_index].uldl_configuration = config
 
         # Wait for the setting to propagate
         time.sleep(5)
 
-    def set_channel_bandwidth(self, bts, bandwidth):
+    def set_bandwidth(self, bts_index, bandwidth):
         """ Sets the LTE channel bandwidth (MHz)
 
         Args:
-            bts: basestation handle
+            bts_index: the base station number
             bandwidth: desired bandwidth (MHz)
         """
+        bts = self.bts[bts_index]
+
         if bandwidth == 20:
             bts.bandwidth = md8475a.BtsBandwidth.LTE_BANDWIDTH_20MHz
         elif bandwidth == 15:
@@ -266,13 +255,15 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             raise ValueError(msg)
         time.sleep(5)  # It takes some time to propagate the new settings
 
-    def set_mimo_mode(self, bts, mimo):
+    def set_mimo_mode(self, bts_index, mimo):
         """ Sets the number of DL antennas for the desired MIMO mode.
 
         Args:
-            bts: basestation handle
+            bts_index: the base station number
             mimo: object of class MimoMode
         """
+
+        bts = self.bts[bts_index]
 
         # If the requested mimo mode is not compatible with the current TM,
         # warn the user before changing the value.
@@ -317,18 +308,12 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         else:
             RuntimeError("The requested MIMO mode is not supported.")
 
-    def set_scheduling_mode(self,
-                            bts,
-                            scheduling,
-                            packet_rate=None,
-                            mcs_dl=None,
-                            mcs_ul=None,
-                            nrb_dl=None,
-                            nrb_ul=None):
+    def set_scheduling_mode(self, bts_index, scheduling, mcs_dl, mcs_ul,
+                            nrb_dl, nrb_ul):
         """ Sets the scheduling mode for LTE
 
         Args:
-            bts: basestation handle
+            bts_index: the base station number
             scheduling: DYNAMIC or STATIC scheduling (Enum list)
             mcs_dl: Downlink MCS (only for STATIC scheduling)
             mcs_ul: Uplink MCS (only for STATIC scheduling)
@@ -336,38 +321,32 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             nrb_ul: Number of RBs for uplink (only for STATIC scheduling)
         """
 
+        bts = self.bts[bts_index]
         bts.lte_scheduling_mode = scheduling.value
 
         if scheduling == LteSimulation.SchedulingMode.STATIC:
 
-            if not packet_rate:
-                raise RuntimeError("Packet rate needs to be indicated when "
-                                   "selecting static scheduling.")
+            if not all([nrb_dl, nrb_ul, mcs_dl, mcs_ul]):
+                raise ValueError('When the scheduling mode is set to manual, '
+                                 'the RB and MCS parameters are required.')
 
-            bts.packet_rate = packet_rate
-
-            if packet_rate == md8475a.BtsPacketRate.LTE_MANUAL:
-
-                if not (mcs_dl and mcs_ul and nrb_dl and nrb_ul):
-                    raise RuntimeError("When using manual packet rate the "
-                                       "number of dl/ul RBs and the dl/ul "
-                                       "MCS needs to be indicated with the "
-                                       "optional arguments.")
-
-                bts.lte_mcs_dl = mcs_dl
-                bts.lte_mcs_ul = mcs_ul
-                bts.nrb_dl = nrb_dl
-                bts.nrb_ul = nrb_ul
+            bts.packet_rate = md8475a.BtsPacketRate.LTE_MANUAL
+            bts.lte_mcs_dl = mcs_dl
+            bts.lte_mcs_ul = mcs_ul
+            bts.nrb_dl = nrb_dl
+            bts.nrb_ul = nrb_ul
 
         time.sleep(5)  # It takes some time to propagate the new settings
 
-    def set_transmission_mode(self, bts, tmode):
+    def set_transmission_mode(self, bts_index, tmode):
         """ Sets the transmission mode for the LTE basetation
 
         Args:
-            bts: basestation handle
+            bts_index: the base station number
             tmode: Enum list from class 'TransmissionModeLTE'
         """
+
+        bts = self.bts[bts_index]
 
         # If the selected transmission mode does not support the number of DL
         # antennas, throw an exception.
@@ -430,27 +409,6 @@ class MD8475BCellularSimulator(MD8475CellularSimulator):
     # Filepath to the config files stored in the Anritsu callbox. Needs to be
     # formatted to replace {} with either A or B depending on the model.
     CALLBOX_CONFIG_PATH = 'C:\\Users\\MD8475B\\Documents\\DAN_configs\\'
-
-    def configure_lte_bts(self, config, bts_index=0):
-        """ Commands the equipment to setup an LTE base station with the
-        required configuration.
-
-        Args:
-            config: an LteSimulation.BtsConfig object.
-            bts_index: the base station number.
-        """
-
-        bts_handle = self.bts[bts_index]
-
-        # The callbox won't restore the band-dependent default values if the
-        # request is to switch to the same band as the one the base station is
-        # currently using. To ensure that default values are restored, go to a
-        # different band before switching.
-        if config.band and int(bts_handle.band) == config.band:
-            # Using bands 1 and 2 but it could be any others
-            bts_handle.band = '1' if config.band != 1 else '2'
-            # Switching to config.band will be handled by the parent class
-            # implementation of this method.
 
     def setup_lte_ca_scenario(self):
         """ The B model can support up to five carriers. """
