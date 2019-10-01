@@ -3752,6 +3752,11 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
         ad.log.info("Toggle Enhanced 4G LTE Mode from %s to %s", current_state,
                     new_state)
         ad.droid.imsSetEnhanced4gMode(new_state)
+    check_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
+    if check_state != new_state:
+        ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, still set to %s",
+                     new_state, check_state)
+        return False
     return True
 
 
