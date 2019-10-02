@@ -55,6 +55,11 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         super().__init__(controllers)
 
+        # Verify that at least one PacketSender controller has been initialized
+        if not hasattr(self, 'packet_senders'):
+            raise RuntimeError('At least one packet sender controller needs '
+                               'to be defined in the test config files.')
+
         # These variables are passed to iPerf when starting data
         # traffic with the -b parameter to limit throughput on
         # the application layer.
@@ -237,7 +242,8 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         """
 
         # The iPerf server is hosted in this computer
-        self.iperf_server_address = scapy.get_if_addr(self.pkt_sender.interface)
+        self.iperf_server_address = scapy.get_if_addr(
+            self.packet_senders[0].interface)
 
         # Start iPerf traffic
         iperf_helpers = []
