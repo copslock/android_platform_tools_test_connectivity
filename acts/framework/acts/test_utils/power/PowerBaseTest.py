@@ -50,7 +50,6 @@ class ObjNew():
     """Create a random obj with unknown attributes and value.
 
     """
-
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -69,7 +68,6 @@ class PowerBaseTest(base_test.BaseTestClass):
     """Base class for all wireless power related tests.
 
     """
-
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
@@ -111,8 +109,9 @@ class PowerBaseTest(base_test.BaseTestClass):
         asserts.abort_class_if(
             not self.threshold_file,
             'Required test pass/fail threshold file is missing')
-        asserts.abort_class_if(not self.rockbottom_script,
-                               'Required rockbottom setting script is missing')
+        asserts.abort_class_if(
+            not self.rockbottom_script,
+            'Required rockbottom setting script is missing')
 
         # Unpack test specific configs
         self.unpack_testparams(getattr(self, TEST_PARAMS))
@@ -124,7 +123,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon_info = self.create_monsoon_info()
 
         # Sync device time, timezone and country code
-        utils.require_sl4a((self.dut,))
+        utils.require_sl4a((self.dut, ))
         utils.sync_device_time(self.dut)
         self.dut.droid.wifiSetCountryCode('US')
 
@@ -444,11 +443,10 @@ class PowerBaseTest(base_test.BaseTestClass):
             iperf_result = ipf.IPerfResult(iperf_file)
 
             # Compute the throughput in Mbit/s
-            throughput = (
-                math.fsum(
-                    iperf_result.instantaneous_rates[self.start_meas_time:-1]) /
-                len(iperf_result.instantaneous_rates[self.start_meas_time:-1])
-            ) * 8 * (1.024**2)
+            throughput = (math.fsum(
+                iperf_result.instantaneous_rates[self.start_meas_time:-1]
+            ) / len(iperf_result.instantaneous_rates[self.start_meas_time:-1])
+                          ) * 8 * (1.024**2)
 
             self.log.info('The average throughput is {}'.format(throughput))
         except ValueError:

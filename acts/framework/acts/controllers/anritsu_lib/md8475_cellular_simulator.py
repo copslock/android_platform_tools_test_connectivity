@@ -62,8 +62,8 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         super().__init__()
 
         try:
-            self.anritsu = md8475a.MD8475A(
-                ip_address, md8475_version=self.MD8475_VERSION)
+            self.anritsu = md8475a.MD8475A(ip_address,
+                                           md8475_version=self.MD8475_VERSION)
         except anritsu.AnristuError:
             raise cc.CellularSimulatorError('Could not connect to MD8475.')
 
@@ -362,10 +362,11 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         while self.anritsu.get_testcase_status() == "0":
             retry_counter += 1
             if retry_counter == 3:
-                raise RuntimeError("The test case failed to start after {} "
-                                   "retries. The connection between the phone "
-                                   "and the base station might be unstable."
-                                   .format(retry_counter))
+                raise RuntimeError(
+                    "The test case failed to start after {} "
+                    "retries. The connection between the phone "
+                    "and the base station might be unstable.".format(
+                        retry_counter))
             time.sleep(10)
 
     def set_transmission_mode(self, bts_index, tmode):

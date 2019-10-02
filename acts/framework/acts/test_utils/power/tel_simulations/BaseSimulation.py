@@ -507,9 +507,7 @@ class BaseSimulation():
         """
         self.simulator.stop_data_traffic()
 
-    def downlink_calibration(self,
-                             rat=None,
-                             power_units_conversion_func=None):
+    def downlink_calibration(self, rat=None, power_units_conversion_func=None):
         """ Computes downlink path loss and returns the calibration value
 
         The DUT needs to be attached to the base station before calling this
