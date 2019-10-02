@@ -18,7 +18,7 @@ import time
 
 from acts import base_test
 from acts import asserts
-from acts.controllers.gnssinst_lib.rohdeschwarz import contest
+from acts.controllers.rohdeschwarz_lib import contest
 from acts.test_utils.tel import tel_test_utils
 import json
 
