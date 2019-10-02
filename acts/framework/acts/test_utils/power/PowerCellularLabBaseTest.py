@@ -91,10 +91,6 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Ensure the calibration table only contains non-negative values
         self.ensure_valid_calibration_table(self.calibration_table)
 
-        # Store the value of the key to access the test config in the
-        # user_params dictionary.
-        self.PARAMS_KEY = self.TAG + "_params"
-
         # Turn on airplane mode for all devices, as some might
         # be unused during the test
         for ad in self.android_devices:
@@ -359,7 +355,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Instantiate a new simulation
         self.simulation = simulation_class(self.cellular_simulator, self.log,
                                            self.dut,
-                                           self.user_params[self.PARAMS_KEY],
+                                           self.test_params,
                                            self.calibration_table[sim_type])
 
     def ensure_valid_calibration_table(self, calibration_table):
