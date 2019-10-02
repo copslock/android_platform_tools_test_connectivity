@@ -76,10 +76,6 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         super().setup_class()
 
-        # Gets the name of the interface from which packets are sent
-        if hasattr(self, 'packet_senders'):
-            self.pkt_sender = self.packet_senders[0]
-
         # Load calibration tables
         filename_calibration_table = (
             self.FILENAME_CALIBRATION_TABLE_UNFORMATTED.format(
