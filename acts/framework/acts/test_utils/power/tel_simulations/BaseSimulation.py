@@ -729,11 +729,3 @@ class BaseSimulation():
             Maximum throughput in mbps
         """
         raise NotImplementedError()
-
-    def start_test_case(self):
-        """ Starts a test case in the current simulation.
-
-        Requires the phone to be attached.
-        """
-
-        pass
