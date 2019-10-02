@@ -17,11 +17,11 @@ import re
 from acts.controllers.anritsu_lib.md8475a import BtsNumber
 from acts.controllers.anritsu_lib.md8475a import BtsTechnology
 from acts.controllers.anritsu_lib.md8475a import LteMimoMode
-import acts.controllers.cellular_simulator as cellular_simulator
 from acts.test_utils.power.tel_simulations import LteSimulation
 
 
 class LteCaSimulation(LteSimulation.LteSimulation):
+    """ Carrier aggregation LTE simulation. """
 
     # Dictionary of lower DL channel number bound for each band.
     LOWEST_DL_CN_DICTIONARY = {
@@ -74,13 +74,13 @@ class LteCaSimulation(LteSimulation.LteSimulation):
     KEY_FREQ_BANDS = "freq_bands"
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
-        """ Configures Anritsu system for LTE simulation with carrier
+        """ Initializes the simulator for LTE simulation with carrier
         aggregation.
 
         Loads a simple LTE simulation enviroment with 5 basestations.
 
         Args:
-            simulator: the Anritsu callbox controller
+            simulator: the cellular instrument controller
             log: a logger handle
             dut: the android device handler
             test_config: test configuration obtained from the config file

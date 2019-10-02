@@ -25,9 +25,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 
 
 class UmtsSimulation(BaseSimulation):
-    """ Simple UMTS simulation with only one basestation.
-
-    """
+    """ Single base station simulation. """
 
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
@@ -92,7 +90,7 @@ class UmtsSimulation(BaseSimulation):
     }
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
-        """ Configures Anritsu system for UMTS simulation with 1 basetation
+        """ Initializes the cellular simulator for a UMTS simulation.
 
         Loads a simple UMTS simulation enviroment with 1 basestation. It also
         creates the BTS handle so we can change the parameters as desired.
