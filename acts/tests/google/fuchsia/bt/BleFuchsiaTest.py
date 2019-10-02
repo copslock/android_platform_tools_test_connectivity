@@ -30,8 +30,8 @@ class BleFuchsiaTest(BaseTestClass):
     active_adv_callback_list = []
     droid = None
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
 
         if (len(self.fuchsia_devices) < 2):
             self.log.error("BleFuchsiaTest Init: Not enough fuchsia devices.")
