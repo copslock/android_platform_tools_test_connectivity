@@ -3741,21 +3741,17 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
             If None, opposite of the current state.
 
     """
-    # TODO: b/26293960 No framework API available to set IMS by SubId.
-    if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
-        ad.log.info("Enhanced 4G Lte Mode Setting is not enabled by platform.")
-        return False
-    current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
+    current_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
     if new_state is None:
         new_state = not current_state
     if new_state != current_state:
-        ad.log.info("Toggle Enhanced 4G LTE Mode from %s to %s", current_state,
-                    new_state)
-        ad.droid.imsSetEnhanced4gMode(new_state)
-    check_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
+        ad.log.info("Toggle Enhanced 4G LTE Mode from %s to %s on sub_id %s", current_state,
+                    new_state, sub_id)
+        ad.droid.imsMmTelSetAdvancedCallingEnabled(sub_id, new_state)
+    check_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
     if check_state != new_state:
-        ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, still set to %s",
-                     new_state, check_state)
+        ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, still set to %s on sub_id %s",
+                     new_state, check_state, sub_id)
         return False
     return True
 
