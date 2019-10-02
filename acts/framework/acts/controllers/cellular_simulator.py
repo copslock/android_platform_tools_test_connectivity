@@ -37,6 +37,9 @@ class AbstractCellularSimulator:
     # The maximum number of carriers that this simulator can support for LTE
     LTE_MAX_CARRIERS = None
 
+    # The maximum power that the equipment is able to transmit
+    MAX_DL_POWER = None
+
     def __init__(self):
         """ Initializes the cellular simulator. """
         self.log = logger.create_tagged_trace_logger('CellularSimulator')
@@ -250,6 +253,55 @@ class AbstractCellularSimulator:
             bts_index: the base station number
             tbs_pattern_on: the new TBS pattern setting
         """
+        raise NotImplementedError()
+
+    def lte_attach_secondary_carriers(self):
+        """ Activates the secondary carriers for CA. Requires the DUT to be
+        attached to the primary carrier first. """
+        raise NotImplementedError()
+
+    def wait_until_attached(self, timeout=120):
+        """ Waits until the DUT is attached to the primary carrier.
+
+        Args:
+            timeout: after this amount of time the method will raise a
+                CellularSimulatorError exception. Default is 120 seconds.
+        """
+        raise NotImplementedError()
+
+    def wait_until_communication_state(self, timeout=120):
+        """ Waits until the DUT is in Communication state.
+
+        Args:
+            timeout: after this amount of time the method will raise a
+                CellularSimulatorError exception. Default is 120 seconds.
+        """
+        raise NotImplementedError()
+
+    def wait_until_idle_state(self, timeout=120):
+        """ Waits until the DUT is in Idle state.
+
+        Args:
+            timeout: after this amount of time the method will raise a
+                CellularSimulatorError exception. Default is 120 seconds.
+        """
+        raise NotImplementedError()
+
+    def detach(self):
+        """ Turns off all the base stations so the DUT loose connection."""
+        raise NotImplementedError()
+
+    def stop(self):
+        """ Stops current simulation. After calling this method, the simulator
+        will need to be set up again. """
+        raise NotImplementedError()
+
+    def start_data_traffic(self):
+        """ Starts transmitting data from the instrument to the DUT. """
+        raise NotImplementedError()
+
+    def stop_data_traffic(self):
+        """ Stops transmitting data from the instrument to the DUT. """
         raise NotImplementedError()
 
 
