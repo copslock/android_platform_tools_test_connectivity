@@ -266,6 +266,13 @@ class BaseSimulation():
         if not self.attach():
             raise RuntimeError('Could not attach to base station.')
 
+        # Starts IP traffic while changing this setting to force the UE to be
+        # in Communication state, as UL power cannot be set in Idle state
+        self.start_traffic_for_calibration()
+
+        # Wait until it goes to communication state
+        self.simulator.wait_until_communication_state()
+
         # Set signal levels obtained from the test parameters
         new_config = self.BtsConfig()
         new_config.output_power = self.calibrated_downlink_rx_power(
@@ -274,6 +281,9 @@ class BaseSimulation():
             self.primary_config, self.sim_ul_power)
         self.simulator.configure_bts(new_config)
         self.primary_config.incorporate(new_config)
+
+        # Stop IP traffic after setting the UL power level
+        self.stop_traffic_for_calibration()
 
     def parse_parameters(self, parameters):
         """ Configures simulation using a list of parameters.
@@ -425,13 +435,6 @@ class BaseSimulation():
         else:
             power = signal_level
 
-        # Starts IP traffic while changing this setting to force the UE to be
-        # in Communication state, as UL power cannot be set in Idle state
-        self.start_traffic_for_calibration()
-
-        # Wait until it goes to communication state
-        self.simulator.wait_until_communication_state()
-
         # Try to use measured path loss value. If this was not set, it will
         # throw an TypeError exception
         try:
@@ -460,9 +463,6 @@ class BaseSimulation():
             self.log.info("Phone uplink transmitted power set to {} (link is "
                           "uncalibrated).".format(round(power)))
             return round(power)
-
-        # Stop IP traffic after setting the UL power level
-        self.stop_traffic_for_calibration()
 
     def calibrate(self, band):
         """ Calculates UL and DL path loss if it wasn't done before.
