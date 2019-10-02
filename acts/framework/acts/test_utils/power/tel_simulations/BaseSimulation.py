@@ -25,7 +25,7 @@ from acts.test_utils.tel.tel_test_utils import toggle_cell_data_roaming
 
 
 class BaseSimulation():
-    """ Base class for an Anritsu Simulation abstraction.
+    """ Base class for cellular connectivity simulations.
 
     Classes that inherit from this base class implement different simulation
     setups. The base class contains methods that are common to all simulation
@@ -260,8 +260,9 @@ class BaseSimulation():
         required DL and UL power.
 
         Note that this refers to starting the simulated testing environment
-        and not to starting the simulation in the Anritsu callbox, which was
-        done during the class initialization. """
+        and not to starting the signaling on the cellular instruments,
+        which might have been done earlier depending on the cellular
+        instrument controller implementation. """
 
         if not self.attach():
             raise RuntimeError('Could not attach to base station.')

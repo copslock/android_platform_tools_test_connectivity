@@ -29,9 +29,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_MODE_GSM_ONLY
 
 
 class GsmSimulation(BaseSimulation):
-    """ Simple GSM simulation with only one basestation.
-
-    """
+    """ Single base station GSM. """
 
     # Simulation config files in the callbox computer.
     # These should be replaced in the future by setting up
@@ -57,7 +55,7 @@ class GsmSimulation(BaseSimulation):
     }
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
-        """ Configures Anritsu system for GSM simulation with 1 basetation
+        """ Initializes the simulator for a single-carrier GSM simulation.
 
         Loads a simple LTE simulation enviroment with 1 basestation. It also
         creates the BTS handle so we can change the parameters as desired.
