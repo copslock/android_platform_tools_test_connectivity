@@ -24,7 +24,6 @@ class PowerTelIdleTest(PWCEL.PowerCellularLabBaseTest):
     cellular idle scenarios to verify the ability to set power consumption
     to a minimum during connectivity power tests.
     """
-
     def power_tel_idle_test(self):
         """ Measures power when the device is on LTE RRC idle state. """
 

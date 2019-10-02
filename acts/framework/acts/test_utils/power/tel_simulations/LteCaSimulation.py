@@ -93,8 +93,10 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         self.anritsu = simulator.anritsu
 
-        self.bts = [self.anritsu.get_BTS(BtsNumber.BTS1),
-                    self.anritsu.get_BTS(BtsNumber.BTS2)]
+        self.bts = [
+            self.anritsu.get_BTS(BtsNumber.BTS1),
+            self.anritsu.get_BTS(BtsNumber.BTS2)
+        ]
 
         if self.anritsu._md8475_version == 'B':
             self.bts.extend([
@@ -116,7 +118,7 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         if self.KEY_FREQ_BANDS not in test_config:
             self.log.warning("The key '{}' is not set in the config file. "
                              "Setting to null by default.".format(
-                self.KEY_FREQ_BANDS))
+                                 self.KEY_FREQ_BANDS))
 
         self.freq_bands = test_config.get(self.KEY_FREQ_BANDS, True)
 
@@ -133,12 +135,11 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         # Enable all base stations initially. The ones that are not needed after
         # parsing the CA combo string can be removed.
-        self.anritsu.set_simulation_model(
-            BtsTechnology.LTE,
-            BtsTechnology.LTE,
-            BtsTechnology.LTE,
-            BtsTechnology.LTE,
-            reset=False)
+        self.anritsu.set_simulation_model(BtsTechnology.LTE,
+                                          BtsTechnology.LTE,
+                                          BtsTechnology.LTE,
+                                          BtsTechnology.LTE,
+                                          reset=False)
 
         # Create an empty array for new configuration objects. Elements will be
         # added to this list after parsing the CA configuration from the band
@@ -409,16 +410,16 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                     "The '{}' parameter was not set, using 100% RBs for both "
                     "DL and UL. To set the percentages of total RBs include "
                     "the '{}' parameter followed by two ints separated by an "
-                    "underscore indicating downlink and uplink percentages."
-                    .format(self.PARAM_PATTERN, self.PARAM_PATTERN))
+                    "underscore indicating downlink and uplink percentages.".
+                    format(self.PARAM_PATTERN, self.PARAM_PATTERN))
                 dl_pattern = 100
                 ul_pattern = 100
             else:
                 dl_pattern = int(values[1])
                 ul_pattern = int(values[2])
 
-            if (dl_pattern, ul_pattern) not in [(0, 100), (100, 0), (100,
-                                                                     100)]:
+            if (dl_pattern, ul_pattern) not in [(0, 100), (100, 0),
+                                                (100, 100)]:
                 raise ValueError(
                     "Only full RB allocation for DL or UL is supported in CA "
                     "sims. The allowed combinations are 100/0, 0/100 and "
@@ -442,8 +443,8 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
                 dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
                     new_configs[bts_index].bandwidth,
-                    new_configs[bts_index].transmission_mode,
-                    dl_pattern, ul_pattern)
+                    new_configs[bts_index].transmission_mode, dl_pattern,
+                    ul_pattern)
 
                 new_configs[bts_index].dl_rbs = dl_rbs
                 new_configs[bts_index].ul_rbs = ul_rbs
