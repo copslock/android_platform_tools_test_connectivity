@@ -31,7 +31,7 @@ class PowerTelIdleTest(PWCEL.PowerCellularLabBaseTest):
         idle_wait_time = self.simulation.rrc_sc_timer + 30
 
         # Wait for RRC status change to trigger
-        self.simulation.wait_for_rrc_idle_state(idle_wait_time)
+        self.cellular_simulator.wait_until_idle_state(idle_wait_time)
 
         # Measure power
         self.collect_power_data()
