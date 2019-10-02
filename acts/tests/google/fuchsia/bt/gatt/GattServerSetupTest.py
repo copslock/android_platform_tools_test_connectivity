@@ -31,8 +31,8 @@ import gatt_server_databases as database
 class GattServerSetupTest(BaseTestClass):
     err_message = "Setting up database failed with: {}"
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.fuchsia_dut = self.fuchsia_devices[0]
 
     def setup_database(self, database):
