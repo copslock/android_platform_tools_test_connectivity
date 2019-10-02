@@ -217,8 +217,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                                "current simulation class.")
             else:
 
-                self.log.info("The expected {} throughput is {} Mbit/s.".format(
-                    direction, expected_t))
+                self.log.info(
+                    "The expected {} throughput is {} Mbit/s.".format(
+                        direction, expected_t))
                 asserts.assert_true(
                     0.90 < throughput / expected_t < 1.10,
                     "{} throughput differed more than 10% from the expected "
@@ -326,7 +327,8 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         config = {
             'traffic_type': 'TCP',
-            'duration': self.mon_duration + self.mon_offset + self.IPERF_MARGIN,
+            'duration':
+            self.mon_duration + self.mon_offset + self.IPERF_MARGIN,
             'start_meas_time': 4,
             'server_idx': server_idx,
             'port': self.iperf_servers[server_idx].port,
