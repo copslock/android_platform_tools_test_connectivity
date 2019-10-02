@@ -362,7 +362,6 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
                                            self.user_params[self.PARAMS_KEY],
                                            self.calibration_table[sim_type])
 
-
     def ensure_valid_calibration_table(self, calibration_table):
         """ Ensures the calibration table has the correct structure.
 
@@ -379,4 +378,3 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
                 raise TypeError('Calibration table value must be a number')
             elif val < 0.0:
                 raise ValueError('Calibration table contains negative values')
-

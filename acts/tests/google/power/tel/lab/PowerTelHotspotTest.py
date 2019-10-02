@@ -106,12 +106,14 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
             dut.droid.wifiSetCountryCode(country_code)
 
         # Setup tethering
-        wutils.start_wifi_tethering(
-            self.dut, self.network[wutils.WifiEnums.SSID_KEY],
-            self.network[wutils.WifiEnums.PWD_KEY], self.wifi_band)
+        wutils.start_wifi_tethering(self.dut,
+                                    self.network[wutils.WifiEnums.SSID_KEY],
+                                    self.network[wutils.WifiEnums.PWD_KEY],
+                                    self.wifi_band)
 
-        wutils.wifi_connect(
-            self.android_devices[1], self.network, check_connectivity=False)
+        wutils.wifi_connect(self.android_devices[1],
+                            self.network,
+                            check_connectivity=False)
 
         # Start data traffic
         iperf_helpers = self.start_tel_traffic(self.android_devices[1])
