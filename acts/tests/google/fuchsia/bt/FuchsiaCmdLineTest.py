@@ -32,8 +32,8 @@ from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 class FuchsiaCmdLineTest(BaseTestClass):
     target_device_name = ""
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         if not "target_device_name" in self.user_params.keys():
             self.log.warning("Missing user config \"target_device_name\"!")
             self.target_device_name = ""

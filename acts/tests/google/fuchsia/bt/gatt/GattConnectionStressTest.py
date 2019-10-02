@@ -42,8 +42,8 @@ class GattConnectionStressTest(BaseTestClass):
     scan_timeout_seconds = 10
     default_iterations = 1000
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.fuchsia_client_dut = self.fuchsia_devices[0]
         self.fuchsia_server_dut = self.fuchsia_devices[1]
         self.default_iterations = self.user_params.get(
