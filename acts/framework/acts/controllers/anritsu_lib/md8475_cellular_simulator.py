@@ -341,6 +341,33 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
 
         time.sleep(5)  # It takes some time to propagate the new settings
 
+    def lte_attach_secondary_carriers(self):
+        """ Activates the secondary carriers for CA. Requires the DUT to be
+        attached to the primary carrier first. """
+
+        testcase = self.anritsu.get_AnritsuTestCases()
+        # Setting the procedure to selection is needed because of a bug in the
+        # instrument's software (b/139547391).
+        testcase.procedure = md8475a.TestProcedure.PROCEDURE_SELECTION
+        testcase.procedure = md8475a.TestProcedure.PROCEDURE_MULTICELL
+        testcase.power_control = md8475a.TestPowerControl.POWER_CONTROL_DISABLE
+        testcase.measurement_LTE = md8475a.TestMeasurement.MEASUREMENT_DISABLE
+
+        self.anritsu.start_testcase()
+
+        retry_counter = 0
+        self.log.info("Waiting for the test case to start...")
+        time.sleep(5)
+
+        while self.anritsu.get_testcase_status() == "0":
+            retry_counter += 1
+            if retry_counter == 3:
+                raise RuntimeError("The test case failed to start after {} "
+                                   "retries. The connection between the phone "
+                                   "and the base station might be unstable."
+                                   .format(retry_counter))
+            time.sleep(10)
+
     def set_transmission_mode(self, bts_index, tmode):
         """ Sets the transmission mode for the LTE basetation
 
