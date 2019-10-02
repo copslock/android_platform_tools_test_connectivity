@@ -14,13 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import time
 import math
 from enum import Enum
 
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
-from acts.controllers.anritsu_lib.md8475a import BtsBandwidth
-from acts.controllers.anritsu_lib.md8475a import BtsPacketRate
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 
@@ -56,9 +53,7 @@ class DuplexMode(Enum):
 
 
 class LteSimulation(BaseSimulation):
-    """ Simple LTE simulation with only one basestation.
-
-    """
+    """ Single-carrier LTE simulation. """
 
     # Simulation config keywords contained in the test name
     PARAM_FRAME_CONFIG = "tddconfig"
@@ -419,7 +414,7 @@ class LteSimulation(BaseSimulation):
             self.dl_cc_enabled = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
-        """ Configures Anritsu system for LTE simulation with 1 basetation
+        """ Initializes the simulator for a single-carrier LTE simulation.
 
         Loads a simple LTE simulation enviroment with 1 basestation.
 
