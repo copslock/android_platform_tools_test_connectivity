@@ -27,6 +27,9 @@ RECORD_FILE_TEMPLATE = 'recorded_audio_%s.wav'
 class DeviceNotFound(Exception):
     """Raises exception if audio capture device is not found."""
 
+# TODO: (@sairamganesh) This class will be deprecated for
+# ../acts/test_utils/coex/audio_capture_device.py
+
 
 class AudioCapture:
 
