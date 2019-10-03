@@ -100,6 +100,10 @@ def create(configs):
                  " but is not attached.") % ad.serial,
                 serial=ad.serial)
     _start_services_on_ads(ads)
+    for ad in ads:
+        if ad.droid:
+            utils.set_location_service(ad, False)
+            utils.sync_device_time(ad)
     return ads
 
 
