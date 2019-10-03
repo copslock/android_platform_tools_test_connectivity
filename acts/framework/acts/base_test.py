@@ -198,16 +198,6 @@ class BaseTestClass(MoblyBaseTest):
             class_name=self.__class__.__name__,
             controller_configs=self.testbed_configs)
 
-        # Import and register the built-in controller modules specified
-        # in testbed config.
-        for module in self._import_builtin_controllers():
-            self.register_controller(module, builtin=True)
-        if hasattr(self, 'android_devices'):
-            for ad in self.android_devices:
-                if ad.droid:
-                    utils.set_location_service(ad, False)
-                    utils.sync_device_time(ad)
-
     def _import_builtin_controllers(self):
         """Import built-in controller modules.
 
@@ -386,6 +376,10 @@ class BaseTestClass(MoblyBaseTest):
         is called.
         """
         event_bus.post(TestClassBeginEvent(self))
+        # Import and register the built-in controller modules specified
+        # in testbed config.
+        for module in self._import_builtin_controllers():
+            self.register_controller(module, builtin=True)
         return self.setup_class()
 
     def _teardown_class(self):
