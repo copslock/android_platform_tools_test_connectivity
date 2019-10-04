@@ -14,19 +14,21 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 from __future__ import absolute_import
-import sys
+
 import os
+import sys
+
 # A temporary hack to prevent tests/libs/logging from being selected as the
 # python default logging module.
 sys.path[0] = os.path.join(sys.path[0], '../')
 import unittest
-import logging
 import mock
-import mobly.config_parser as mobly_config_parser
 
 from acts import base_test
 from acts.libs import version_selector
 from acts.test_decorators import test_tracker_info
+
+from mobly.config_parser import TestRunConfig
 
 
 def versioning_decorator(min_sdk, max_sdk):
@@ -101,14 +103,9 @@ class VersionSelectorIntegrationTest(unittest.TestCase):
     def test_versioned_test_class_calls_both_functions(self):
         """Tests that VersionedTestClass (above) can be called with
         test_tracker_info."""
-        test_run_config = mobly_config_parser.TestRunConfig()
-        test_run_config.testbed_name = 'VersionSelectorUnitTests'
+        test_run_config = TestRunConfig()
+        test_run_config.log_path = ''
         test_run_config.summary_writer = mock.MagicMock()
-
-        #TODO(markdr): Remove this stanza after the next Mobly release.
-        test_run_config.user_params = {}
-        test_run_config.controller_configs = {}
-
         test_class = VersionedTestClass(test_run_config)
         test_class.run(['test_1', 'test_2'])
 

@@ -88,6 +88,7 @@ class EventBusIntegrationTest(TestCase):
         """Tests that @subscribe bundles register only instance listeners."""
         test_run_config = mobly_config_parser.TestRunConfig()
         test_run_config.testbed_name = ''
+        test_run_config.log_path = ''
         # TODO(markdr): Remove this line after the next Mobly release.
         test_run_config.user_params = {}
         test_object = TestClass(test_run_config)
