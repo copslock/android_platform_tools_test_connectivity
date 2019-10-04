@@ -20,33 +20,37 @@ Required custom config parameters:
 
 """
 from acts.base_test import BaseTestClass
-from fuchsia_cmd_input import CmdInput
+from cmd_input import CmdInput
 from queue import Empty
 
-import os
-import uuid
 
-from acts.test_utils.tel.tel_test_utils import setup_droid_properties
-
-
-class FuchsiaCmdLineTest(BaseTestClass):
+class BluetoothCmdLineTest(BaseTestClass):
     target_device_name = ""
 
     def setup_class(self):
         super().setup_class()
+        dut = self.user_params.get('dut', None)
+        if dut:
+            if dut == 'fuchsia_devices':
+                self.dut = self.fuchsia_devices[0]
+                self.dut.btc_lib.initBluetoothControl()
+                self.dut.sdp_lib.init()
+            elif dut == 'android_devices':
+                self.dut = self.android_devices[0]
+            else:
+                raise ValueError('Invalid DUT specified in config. (%s)' %
+                                 self.user_params['dut'])
+        else:
+            # Default is an Fuchsia device
+            self.dut = self.fuchsia_devices[0]
         if not "target_device_name" in self.user_params.keys():
             self.log.warning("Missing user config \"target_device_name\"!")
             self.target_device_name = ""
         else:
             self.target_device_name = self.user_params["target_device_name"]
 
-        # TODO: Make sl4f function
-        # Possibly set_name in fidl_fuchsia_bluetooth_control.rs
-        #self.fuchsia_devices[0].droid.bluetoothSetLocalName("CMD LINE Test")
-
     def test_cmd_line_helper(self):
         cmd_line = CmdInput()
-        cmd_line.setup_vars(self.fuchsia_devices, self.target_device_name,
-                            self.log)
+        cmd_line.setup_vars(self.dut, self.target_device_name, self.log)
         cmd_line.cmdloop()
         return True

@@ -22,6 +22,8 @@ from queue import Empty
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.fuchsia_device import FuchsiaDevice
 from acts.test_utils.bt.bt_constants import ble_scan_settings_modes
+from acts.test_utils.bt.bt_constants import gatt_cb_strings
+from acts.test_utils.bt.bt_constants import gatt_event
 from acts.test_utils.bt.bt_constants import scan_result
 from acts.test_utils.bt.bt_gatt_utils import GattTestUtilsError
 from acts.test_utils.bt.bt_gatt_utils import disconnect_gatt_connection
@@ -56,7 +58,6 @@ class BluetoothDevice(object):
     Attributes:
         device: A generic Bluetooth device.
     """
-
     def __init__(self, device):
         self.device = device
         self.log = logging
@@ -146,8 +147,72 @@ class BluetoothDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
-    def gatt_client_ready_characteristic_by_handle(self, peer_identifier,
-                                                   handle):
+    def gatt_client_write_characteristic_without_response_by_handle(
+        self, peer_identifier, handle, value):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_write_characteristic_by_handle(self, peer_identifier,
+                                                   handle, offset, value):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_read_characteristic_by_handle(self, peer_identifier,
+                                                  handle):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_read_long_characteristic_by_handle(self, peer_identifier,
+                                                       handle, offset,
+                                                       max_bytes):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_enable_notifiy_characteristic_by_handle(
+        self, peer_identifier, handle):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_disable_notifiy_characteristic_by_handle(
+        self, peer_identifier, handle):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_read_descriptor_by_handle(self, peer_identifier, handle):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_write_descriptor_by_handle(self, peer_identifier, handle,
+                                               offset, value):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_long_read_descriptor_by_handle(self, peer_identifier,
+                                                   handle, offset, max_bytes):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
@@ -283,10 +348,35 @@ class AndroidBluetoothDevice(BluetoothDevice):
     Attributes:
         android_device: An Android Bluetooth device.
     """
-
     def __init__(self, android_device):
         super().__init__(android_device)
+        self.gatt_timeout = 10
         self.peer_mapping = {}
+        self.discovered_services_index = None
+
+    def _client_wait(self, gatt_event, gatt_callback):
+        return self._timed_pop(gatt_event, gatt_callback)
+
+    def _timed_pop(self, gatt_event, gatt_callback):
+        expected_event = gatt_event["evt"].format(gatt_callback)
+        try:
+            return self.device.ed.pop_event(expected_event, self.gatt_timeout)
+        except Empty as emp:
+            raise AssertionError(gatt_event["err"].format(expected_event))
+
+    def _setup_discovered_services_index(self, bluetooth_gatt):
+        """ Sets the discovered services index for the gatt connection
+        related to the Bluetooth GATT callback object.
+
+        Args:
+            bluetooth_gatt: The BluetoothGatt callback id
+        """
+        if not self.discovered_services_index:
+            self.device.droid.gattClientDiscoverServices(bluetooth_gatt)
+            expected_event = gatt_cb_strings['gatt_serv_disc'].format(
+                self.gatt_callback)
+            event = self.dut.ed.pop_event(expected_event, self.gatt_timeout)
+            self.discovered_services_index = event['data']['ServicesIndex']
 
     def a2dp_initiate_open_stream(self):
         raise NotImplementedError("{} not yet implemented.".format(
@@ -314,13 +404,223 @@ class AndroidBluetoothDevice(BluetoothDevice):
         else:
             self.device.droid.bluetoothMakeUndiscoverable()
 
-    def initialize_bluetooth(self):
+    def initialize_bluetooth_controller(self):
+        """ Just pass for Android as there is no concept of initializing
+        a Bluetooth controller.
+        """
         pass
 
     def start_pairing_helper(self):
         """ Starts the Android pairing helper.
         """
         self.device.droid.bluetoothStartPairingHelper(True)
+
+    def gatt_client_write_characteristic_without_response_by_handle(
+        self, peer_identifier, handle, value):
+        """ Perform a GATT Client write Characteristic without response to
+        remote peer GATT server database.
+
+        Args:
+            peer_identifier: The mac address associated with the GATT connection
+            handle: The characteristic handle (or instance id).
+            value: The list of bytes to write.
+        Returns:
+            True if success, False if failure.
+        """
+        peer_info = self.peer_mapping.get(peer_identifier)
+        if not peer_info:
+            self.log.error(
+                "Peer idenifier {} not currently connected or unknown.".format(
+                    peer_identifier))
+            return False
+        self._setup_discovered_services_index()
+        self.device.droid.gattClientWriteCharacteristicByInstanceId(
+            peer_info.get('bluetooth_gatt'), self.discovered_services_index,
+            handle, value)
+        try:
+            event = self._client_wait(gatt_event['char_write'],
+                                      peer_info.get('gatt_callback'))
+        except AssertionError as err:
+            self.log.error("Failed to write Characteristic: {}".format(err))
+        return True
+
+    def gatt_client_write_characteristic_by_handle(self, peer_identifier,
+                                                   handle, offset, value):
+        """ Perform a GATT Client write Characteristic without response to
+        remote peer GATT server database.
+
+        Args:
+            peer_identifier: The mac address associated with the GATT connection
+            handle: The characteristic handle (or instance id).
+            offset: Not used yet.
+            value: The list of bytes to write.
+        Returns:
+            True if success, False if failure.
+        """
+        peer_info = self.peer_mapping.get(peer_identifier)
+        if not peer_info:
+            self.log.error(
+                "Peer idenifier {} not currently connected or unknown.".format(
+                    peer_identifier))
+            return False
+        self._setup_discovered_services_index()
+        self.device.droid.gattClientWriteCharacteristicByInstanceId(
+            peer_info.get('bluetooth_gatt'), self.discovered_services_index,
+            handle, value)
+        try:
+            event = self._client_wait(gatt_event['char_write'],
+                                      peer_info.get('gatt_callback'))
+        except AssertionError as err:
+            self.log.error("Failed to write Characteristic: {}".format(err))
+        return True
+
+    def gatt_client_read_characteristic_by_handle(self, peer_identifier,
+                                                  handle):
+        """ Perform a GATT Client read Characteristic to remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The mac address associated with the GATT connection
+            handle: The characteristic handle (or instance id).
+        Returns:
+            Value of Characteristic if success, None if failure.
+        """
+        peer_info = self.peer_mapping.get(peer_identifier)
+        if not peer_info:
+            self.log.error(
+                "Peer idenifier {} not currently connected or unknown.".format(
+                    peer_identifier))
+            return False
+        self._setup_discovered_services_index()
+        self.dut.droid.gattClientReadCharacteristicByInstanceId(
+            peer_info.get('bluetooth_gatt'), self.discovered_services_index,
+            handle)
+        try:
+            event = self._client_wait(gatt_event['char_read'],
+                                      peer_info.get('gatt_callback'))
+        except AssertionError as err:
+            self.log.error("Failed to read Characteristic: {}".format(err))
+
+        return event['data']['CharacteristicValue']
+
+    def gatt_client_read_long_characteristic_by_handle(self, peer_identifier,
+                                                       handle, offset,
+                                                       max_bytes):
+        """ Perform a GATT Client read Characteristic to remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The mac address associated with the GATT connection
+            offset: Not used yet.
+            handle: The characteristic handle (or instance id).
+            max_bytes: Not used yet.
+        Returns:
+            Value of Characteristic if success, None if failure.
+        """
+        peer_info = self.peer_mapping.get(peer_identifier)
+        if not peer_info:
+            self.log.error(
+                "Peer idenifier {} not currently connected or unknown.".format(
+                    peer_identifier))
+            return False
+        self._setup_discovered_services_index()
+        self.dut.droid.gattClientReadCharacteristicByInstanceId(
+            peer_info.get('bluetooth_gatt'), self.discovered_services_index,
+            handle)
+        try:
+            event = self._client_wait(gatt_event['char_read'],
+                                      peer_info.get('gatt_callback'))
+        except AssertionError as err:
+            self.log.error("Failed to read Characteristic: {}".format(err))
+
+        return event['data']['CharacteristicValue']
+
+    def gatt_client_enable_notifiy_characteristic_by_handle(
+        self, peer_identifier, handle):
+        """ Perform a GATT Client enable Characteristic notification to remote
+        peer GATT server database.
+
+        Args:
+            peer_identifier: The mac address associated with the GATT connection
+            handle: The characteristic handle.
+        Returns:
+            True is success, False if failure.
+        """
+        raise NotImplementedError("{} not yet implemented.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_disable_notifiy_characteristic_by_handle(
+        self, peer_identifier, handle):
+        """ Perform a GATT Client disable Characteristic notification to remote
+        peer GATT server database.
+
+        Args:
+            peer_identifier: The mac address associated with the GATT connection
+            handle: The characteristic handle.
+        Returns:
+            True is success, False if failure.
+        """
+        raise NotImplementedError("{} not yet implemented.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def gatt_client_read_descriptor_by_handle(self, peer_identifier, handle):
+        """ Perform a GATT Client read Descriptor to remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The mac address associated with the GATT connection
+            handle: The Descriptor handle (or instance id).
+        Returns:
+            Value of Descriptor if success, None if failure.
+        """
+        peer_info = self.peer_mapping.get(peer_identifier)
+        if not peer_info:
+            self.log.error(
+                "Peer idenifier {} not currently connected or unknown.".format(
+                    peer_identifier))
+            return False
+        self._setup_discovered_services_index()
+        self.dut.droid.gattClientReadDescriptorByInstanceId(
+            peer_info.get('bluetooth_gatt'), self.discovered_services_index,
+            handle)
+        try:
+            event = self._client_wait(gatt_event['desc_read'],
+                                      peer_info.get('gatt_callback'))
+        except AssertionError as err:
+            self.log.error("Failed to read Descriptor: {}".format(err))
+        # TODO: Implement sending Descriptor value in SL4A such that the data
+        # can be represented by: event['data']['DescriptorValue']
+        return ""
+
+    def gatt_client_write_descriptor_by_handle(self, peer_identifier, handle,
+                                               offset, value):
+        """ Perform a GATT Client write Descriptor to the remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The mac address associated with the GATT connection
+            handle: The Descriptor handle (or instance id).
+            offset: Not used yet
+            value: The list of bytes to write.
+        Returns:
+            True if success, False if failure.
+        """
+        peer_info = self.peer_mapping.get(peer_identifier)
+        if not peer_info:
+            self.log.error(
+                "Peer idenifier {} not currently connected or unknown.".format(
+                    peer_identifier))
+            return False
+        self._setup_discovered_services_index()
+        self.device.droid.gattClientWriteDescriptorByInstanceId(
+            peer_info.get('bluetooth_gatt'), self.discovered_services_index,
+            handle, value)
+        try:
+            event = self._client_wait(gatt_event['desc_write'],
+                                      peer_info.get('gatt_callback'))
+        except AssertionError as err:
+            self.log.error("Failed to write Characteristic: {}".format(err))
+        return True
 
     def gatt_connect(self, peer_identifier, transport, autoconnect=False):
         """ Perform a GATT connection to a perihperal.
@@ -362,11 +662,11 @@ class AndroidBluetoothDevice(BluetoothDevice):
             disconnect_gatt_connection(self.device,
                                        peer_info.get("bluetooth_gatt"),
                                        peer_info.get("gatt_callback"))
-            self.cen_ad.droid.gattClientClose(peer_info.get("bluetooth_gatt"))
+            self.device.droid.gattClientClose(peer_info.get("bluetooth_gatt"))
         except GattTestUtilsError as err:
             self.log.error(err)
             return False
-        self.cen_ad.droid.gattClientClose(peer_info.get("bluetooth_gatt"))
+        self.device.droid.gattClientClose(peer_info.get("bluetooth_gatt"))
 
     def gatt_client_refresh(self, peer_identifier):
         """ Perform a GATT Client Refresh of a perihperal.
@@ -429,7 +729,7 @@ class AndroidBluetoothDevice(BluetoothDevice):
     def get_local_bluetooth_address(self):
         """ Returns the Bluetooth local address.
         """
-        self.device.droid.bluetoothGetLocalAddress()
+        return self.device.droid.bluetoothGetLocalAddress()
 
     def reset_bluetooth(self):
         """ Resets Bluetooth on the Android Device.
@@ -499,7 +799,6 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
     Attributes:
         fuchsia_device: A Fuchsia Bluetooth device.
     """
-
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
 
@@ -562,6 +861,208 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         self.device.btc_lib.setName(name)
 
+    def gatt_client_write_characteristic_without_response_by_handle(
+        self, peer_identifier, handle, value):
+        """ Perform a GATT Client write Characteristic without response to
+        remote peer GATT server database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The characteristic handle.
+            value: The list of bytes to write.
+        Returns:
+            True if success, False if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.writeCharByIdWithoutResponse(
+            handle, value)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to write characteristic handle {} with err: {}".format(
+                    peer_identifier, result.get("error")))
+            return False
+        return True
+
+    def gatt_client_write_characteristic_by_handle(self, peer_identifier,
+                                                   handle, offset, value):
+        """ Perform a GATT Client write Characteristic to remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The characteristic handle.
+            offset: The offset to start writing to.
+            value: The list of bytes to write.
+        Returns:
+            True if success, False if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.writeCharById(handle, offset, value)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to write characteristic handle {} with err: {}".format(
+                    peer_identifier, result.get("error")))
+            return False
+        return True
+
+    def gatt_client_read_characteristic_by_handle(self, peer_identifier,
+                                                  handle):
+        """ Perform a GATT Client read Characteristic to remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The characteristic handle.
+        Returns:
+            Value of Characteristic if success, None if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.readCharacteristicById(handle)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to read characteristic handle {} with err: {}".format(
+                    peer_identifier, result.get("error")))
+            return None
+        return result.get("result")
+
+    def gatt_client_read_long_characteristic_by_handle(self, peer_identifier,
+                                                       handle, offset,
+                                                       max_bytes):
+        """ Perform a GATT Client read Characteristic to remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The characteristic handle.
+            offset: The offset to start reading.
+            max_bytes: The max bytes to return for each read.
+        Returns:
+            Value of Characteristic if success, None if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.readLongCharacteristicById(
+            handle, offset, max_bytes)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to read characteristic handle {} with err: {}".format(
+                    peer_identifier, result.get("error")))
+            return None
+        return result.get("result")
+
+    def gatt_client_enable_notifiy_characteristic_by_handle(
+        self, peer_identifier, handle):
+        """ Perform a GATT Client enable Characteristic notification to remote
+        peer GATT server database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The characteristic handle.
+        Returns:
+            True is success, False if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.enableNotifyCharacteristic(handle)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to enable characteristic notifications for handle {} "
+                "with err: {}".format(peer_identifier, result.get("error")))
+            return None
+        return result.get("result")
+
+    def gatt_client_disable_notifiy_characteristic_by_handle(
+        self, peer_identifier, handle):
+        """ Perform a GATT Client disable Characteristic notification to remote
+        peer GATT server database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The characteristic handle.
+        Returns:
+            True is success, False if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.disableNotifyCharacteristic(handle)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to disable characteristic notifications for handle {} "
+                "with err: {}".format(peer_identifier, result.get("error")))
+            return None
+        return result.get("result")
+
+    def gatt_client_read_descriptor_by_handle(self, peer_identifier, handle):
+        """ Perform a GATT Client read Descriptor to remote peer GATT server
+        database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The Descriptor handle.
+        Returns:
+            Value of Descriptor if success, None if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.readDescriptorById(handle)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to read descriptor for handle {} with err: {}".format(
+                    peer_identifier, result.get("error")))
+            return None
+        return result.get("result")
+
+    def gatt_client_write_descriptor_by_handle(self, peer_identifier, handle,
+                                               offset, value):
+        """ Perform a GATT Client write Descriptor to remote peer GATT server
+        database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The Descriptor handle.
+            offset: The offset to start writing at.
+            value: The list of bytes to write.
+        Returns:
+            True if success, False if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.writeDescriptorById(
+            handle, offset, value)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to write descriptor for handle {} with err: {}".format(
+                    peer_identifier, result.get("error")))
+            return None
+        return True
+
     def gatt_connect(self, peer_identifier, transport, autoconnect):
         """ Perform a GATT connection to a perihperal.
 
@@ -574,7 +1075,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         connection_result = self.device.gattc_lib.bleConnectToPeripheral(
             peer_identifier)
-        if connection_result.get("error") is None:
+        if connection_result.get("error") is not None:
             self.log.error("Failed to connect to peer id {}: {}".format(
                 peer_identifier, connection_result.get("error")))
             return False
@@ -728,6 +1229,30 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
 
         """
         self.device.btc_lib.forgetDevice(peer_identifier)
+
+    def _find_service_id_and_connect_to_service_for_handle(
+        self, peer_identifier, handle):
+        fail_err = "Failed to find handle {} in Peer database."
+        try:
+            services = self.device.gattc_lib.listServices(peer_identifier)
+            for service in services['result']:
+                service_id = service['id']
+                self.device.gattc_lib.connectToService(peer_identifier,
+                                                       service_id)
+                chars = self.device.gattc_lib.discoverCharacteristics()
+
+                for char in chars['result']:
+                    char_id = char['id']
+                    if handle == char_id:
+                        return True
+                    descriptors = char['descriptors']
+                    for desc in descriptors:
+                        desc_id = desc["id"]
+                        if handle == desc_id:
+                            return True
+        except Exception as err:
+            self.log.error(fail_err.format(err))
+            return False
 
     def _read_all_characteristics(self, peer_identifier, uuid=None):
         fail_err = "Failed to read all characteristics with: {}"

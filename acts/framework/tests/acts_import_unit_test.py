@@ -94,6 +94,7 @@ BLACKLIST = [
     'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
     'tests/google/fuchsia/wlan/RebootStressTest.py',
     'acts/test_utils/gnss/gnss_testlog_utils.py',
+    'tests/google/fuchsia/bt/BluetoothCmdLineTest.py',
 ]
 
 BLACKLIST_DIRECTORIES = [

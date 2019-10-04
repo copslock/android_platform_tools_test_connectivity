@@ -43,6 +43,7 @@ This is all to say this documentation pattern is expected.
 
 """
 
+from acts.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
 from acts.test_utils.bt.bt_constants import bt_attribute_values
 from acts.test_utils.bt.bt_constants import sig_uuid_constants
 
@@ -67,12 +68,12 @@ class CmdInput(cmd.Cmd):
     le_ids = []
     unique_mac_addr_id = None
 
-    def setup_vars(self, fuchsia_devices, target_device_name, log):
-        self.pri_dut = fuchsia_devices[0]
-        self.pri_dut.btc_lib.initBluetoothControl()
-        self.pri_dut.sdp_lib.init()
-        if len(fuchsia_devices) > 1:
-            self.sec_dut = fuchsia_devices[1]
+    def setup_vars(self, dut, target_device_name, log):
+        self.pri_dut = dut
+        # Note: test_dut is the start of a slow conversion from a Fuchsia specific
+        # Tool to an abstract_device tool. Only commands that use test_dut will work
+        # Otherwise this tool is primarially targeted at Fuchsia devices.
+        self.test_dut = create_bluetooth_device(self.pri_dut)
         self.target_device_name = target_device_name
         self.log = log
 
@@ -84,6 +85,12 @@ class CmdInput(cmd.Cmd):
         return True
 
     """ Useful Helper functions and cmd line tooling """
+
+    def str_to_bool(self, s):
+        if s.lower() == 'true':
+            return True
+        elif s.lower() == 'false':
+            return False
 
     def _find_unique_id_over_le(self):
         scan_filter = {"name_substring": self.target_device_name}
@@ -757,13 +764,14 @@ class CmdInput(cmd.Cmd):
             if len(args) != 3:
                 self.log.info("3 Arguments required: [Id] [Offset] [Size]")
                 return
-            id = int(args[0])
+            id = int(args[0], 16)
             offset = int(args[1])
             size = int(args[2])
             write_value = []
             for i in range(size):
                 write_value.append(i % 256)
-            self.pri_dut.gattc_lib.writeCharById(id, offset, write_value)
+            self.test_dut.gatt_client_write_characteristic_by_handle(
+                self.unique_mac_addr_id, id, offset, write_value)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -786,13 +794,13 @@ class CmdInput(cmd.Cmd):
             if len(args) != 2:
                 self.log.info("2 Arguments required: [Id] [Size]")
                 return
-            id = int(args[0])
+            id = int(args[0], 16)
             size = args[1]
             write_value = []
             for i in range(int(size)):
                 write_value.append(i % 256)
-            self.pri_dut.gattc_lib.writeCharByIdWithoutResponse(
-                id, write_value)
+            self.test_dut.gatt_client_write_characteristic_without_response_by_handle(
+                self.unique_mac_addr_id, id, write_value)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -809,8 +817,9 @@ class CmdInput(cmd.Cmd):
         """
         cmd = "Enable notifications by Characteristic id."
         try:
-            id = int(line)
-            self.pri_dut.gattc_lib.enableNotifyCharacteristic(id)
+            id = int(line, 16)
+            self.test_dut.gatt_client_enable_notifiy_characteristic_by_handle(
+                self.unique_mac_addr_id, id)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -827,8 +836,9 @@ class CmdInput(cmd.Cmd):
         """
         cmd = "Disable notify Characteristic by id."
         try:
-            id = int(line)
-            self.pri_dut.gattc_lib.disableNotifyCharacteristic(id)
+            id = int(line, 16)
+            self.test_dut.gatt_client_disable_notifiy_characteristic_by_handle(
+                self.unique_mac_addr_id, id)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -845,14 +855,11 @@ class CmdInput(cmd.Cmd):
         """
         cmd = "Read Characteristic value by ID."
         try:
-            id = int(line)
-            read_val = self.pri_dut.gattc_lib.readCharacteristicById(id)
+            id = int(line, 16)
+            read_val = self.test_dut.gatt_client_read_characteristic_by_handle(
+                self.unique_mac_addr_id, id)
             self.log.info("Characteristic Value with id {}: {}".format(
-                id, read_val['result']))
-            str_value = ""
-            for val in read_val['result']:
-                str_value += chr(val)
-            print("    str val: {}".format(str_value))
+                id, read_val))
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -873,16 +880,16 @@ class CmdInput(cmd.Cmd):
         cmd = "Write Descriptor by id."
         try:
             args = line.split()
-            id = int(args[0])
+            id = int(args[0], 16)
             offset = int(args[1])
             size = args[2]
             write_value = []
             for i in range(int(size)):
                 write_value.append(i % 256)
-            write_result = self.pri_dut.gattc_lib.writeDescriptorById(
-                id, offset, write_value)
+            write_result = self.test_dut.gatt_client_write_descriptor_by_handle(
+                self.unique_mac_addr_id, id, offset, write_value)
             self.log.info("Descriptor Write result {}: {}".format(
-                id, write_result['result']))
+                id, write_result))
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -898,10 +905,11 @@ class CmdInput(cmd.Cmd):
         """
         cmd = "Read Descriptor by ID."
         try:
-            id = int(line)
-            read_val = self.pri_dut.gattc_lib.readDescriptorById(id)
+            id = int(line, 16)
+            read_val = self.test_dut.gatt_client_read_descriptor_by_handle(
+                self.unique_mac_addr_id, id)
             self.log.info("Descriptor Value with id {}: {}".format(
-                id, read_val['result']))
+                id, read_val))
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -925,7 +933,7 @@ class CmdInput(cmd.Cmd):
             if len(args) != 3:
                 self.log.info("3 Arguments required: [Id] [Offset] [Size]")
                 return
-            id = int(args[0])
+            id = int(args[0], 16)
             offset = int(args[1])
             max_bytes = int(args[2])
             read_val = self.pri_dut.gattc_lib.readLongCharacteristicById(
@@ -1092,7 +1100,8 @@ class CmdInput(cmd.Cmd):
         """
         cmd = "Change Bluetooth Controller discoverablility."
         try:
-            result = self.pri_dut.btc_lib.setDiscoverable(bool(discoverable))
+            result = self.test_dut.set_discoverable(
+                self.str_to_bool(discoverable))
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1109,7 +1118,7 @@ class CmdInput(cmd.Cmd):
         """
         cmd = "Change Bluetooth Controller local name."
         try:
-            result = self.pri_dut.btc_lib.setName(name)
+            result = self.test_dut.set_bluetooth_local_name(name)
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1128,7 +1137,8 @@ class CmdInput(cmd.Cmd):
         """
         cmd = "Change whether the Bluetooth Controller is in active."
         try:
-            result = self.pri_dut.btc_lib.requestDiscovery(bool(discover))
+            result = self.pri_dut.btc_lib.requestDiscovery(
+                self.str_to_bool(discover))
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1282,7 +1292,7 @@ class CmdInput(cmd.Cmd):
         """
         cmd = "Initialize the Bluetooth Controller."
         try:
-            result = self.pri_dut.btc_lib.initBluetoothControl()
+            result = self.test_dut.initialize_bluetooth_controller()
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1297,7 +1307,7 @@ class CmdInput(cmd.Cmd):
         """
         cmd = "Get the local BR/EDR address of the Bluetooth Controller."
         try:
-            result = self.pri_dut.btc_lib.getActiveAdapterAddress()['result']
+            result = self.test_dut.get_local_bluetooth_address()
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
