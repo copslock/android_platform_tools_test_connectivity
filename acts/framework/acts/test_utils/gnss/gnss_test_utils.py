@@ -42,6 +42,15 @@ TTFF_REPORT = collections.namedtuple(
     "TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
 TRACK_REPORT = collections.namedtuple(
     "TRACK_REPORT", "track_l5flag track_pe track_top4cn track_cn")
+LOCAL_PROP_FILE_CONTENTS =  """\
+log.tag.LocationManagerService=VERBOSE
+log.tag.GnssLocationProvider=VERBOSE
+log.tag.GnssMeasurementsProvider=VERBOSE
+log.tag.GpsNetInitiatedHandler=VERBOSE
+log.tag.GnssNetworkConnectivityHandler=VERBOSE
+log.tag.ConnectivityService=VERBOSE
+log.tag.ConnectivityManager=VERBOSE
+log.tag.GnssVisibilityControl=VERBOSE"""
 
 
 class GnssTestUtilsError(Exception):
@@ -88,11 +97,7 @@ def enable_gnss_verbose_logging(ad):
     remount_device(ad)
     ad.log.info("Enable GNSS VERBOSE Logging and persistent logcat.")
     ad.adb.shell("echo DEBUG_LEVEL = 5 >> /vendor/etc/gps.conf")
-    ad.adb.shell("echo log.tag.LocationManagerService=VERBOSE >> /data/local.prop")
-    ad.adb.shell("echo log.tag.GnssLocationProvider=VERBOSE >> /data/local.prop")
-    ad.adb.shell("echo log.tag.GnssMeasurementsProvider=VERBOSE >> /data/local.prop")
-    ad.adb.shell("echo log.tag.GpsNetInitiatedHandler=VERBOSE >> /data/local.prop")
-    ad.adb.shell("echo log.tag.GnssNetworkConnectivityHandler=VERBOSE >> /data/local.prop")
+    ad.adb.shell("echo %r >> /data/local.prop" % LOCAL_PROP_FILE_CONTENTS)
     ad.adb.shell("chmod 644 /data/local.prop")
     ad.adb.shell("setprop persist.logd.size 16777216")
     ad.adb.shell("setprop persist.vendor.radio.adb_log_on 1")
