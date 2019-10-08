@@ -62,6 +62,11 @@ bluetooth = DeviceState('service call bluetooth_manager', '6', '8')
 nfc = DeviceState('svc nfc', 'enable', 'disable')
 
 
+# Calling
+
+disable_dialing = DeviceSetprop('ro.telephony.disable-call', 'true', 'false')
+
+
 # Screen
 
 screen_adaptive_brightness = DeviceSetting(
@@ -115,3 +120,12 @@ enable_full_batterystats_history = 'dumpsys batterystats --enable full-history'
 
 disable_doze = 'dumpsys deviceidle disable'
 
+
+# Miscellaneous
+
+test_harness = DeviceBinaryCommandSeries(
+    [
+        DeviceSetprop('ro.monkey'),
+        DeviceSetprop('ro.test_harness')
+    ]
+)
