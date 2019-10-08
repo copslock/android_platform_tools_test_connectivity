@@ -86,6 +86,7 @@ class MockChamber(OtaChamber):
         self.device_id = self.config['device_id']
         self.log = logger.create_tagged_trace_logger('OtaChamber|{}'.format(
             self.device_id))
+        self.current_mode = None
 
     def set_orientation(self, orientation):
         self.log.info('Setting orientation to {} degrees.'.format(orientation))
@@ -125,6 +126,7 @@ class OctoboxChamber(OtaChamber):
         self.TURNTABLE_FILE_PATH = '/usr/local/bin/fnPerformaxCmd'
         utils.exe_cmd('sudo {} -d {} -i 0'.format(self.TURNTABLE_FILE_PATH,
                                                   self.device_id))
+        self.current_mode = None
 
     def set_orientation(self, orientation):
         self.log.info('Setting orientation to {} degrees.'.format(orientation))

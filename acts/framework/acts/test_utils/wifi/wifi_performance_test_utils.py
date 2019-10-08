@@ -16,6 +16,8 @@
 
 import bokeh, bokeh.plotting
 import collections
+import itertools
+import json
 import logging
 import math
 import re
@@ -23,6 +25,8 @@ import statistics
 import time
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.utils_lib import ssh
+from acts.metrics.core import ProtoMetric
+from acts.metrics.logger import MetricLogger
 from acts import utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from concurrent.futures import ThreadPoolExecutor
@@ -245,23 +249,23 @@ class BokehFigure():
     def __init__(self,
                  title=None,
                  x_label=None,
-                 primary_y=None,
-                 secondary_y=None,
+                 primary_y_label=None,
+                 secondary_y_label=None,
                  height=700,
                  width=1300,
-                 title_size=15,
-                 axis_label_size=12):
+                 title_size='15pt',
+                 axis_label_size='12pt'):
         self.figure_data = []
         self.fig_property = {
             'title': title,
             'x_label': x_label,
-            'primary_y_label': primary_y,
-            'secondary_y_label': secondary_y,
+            'primary_y_label': primary_y_label,
+            'secondary_y_label': secondary_y_label,
             'num_lines': 0,
             'height': height,
             'width': width,
-            'title_size': '{}pt'.format(title_size),
-            'axis_label_size': '{}pt'.format(axis_label_size)
+            'title_size': title_size,
+            'axis_label_size': axis_label_size
         }
         self.TOOLS = (
             'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
@@ -283,6 +287,18 @@ class BokehFigure():
             bokeh.models.tools.WheelZoomTool(dimensions='width'))
         self.plot.add_tools(
             bokeh.models.tools.WheelZoomTool(dimensions='height'))
+
+    def _filter_line(self, x_data, y_data, hover_text=None):
+        """Function to remove NaN points from bokeh plots."""
+        x_data_filtered = []
+        y_data_filtered = []
+        hover_text_filtered = []
+        for x, y, hover in itertools.zip_longest(x_data, y_data, hover_text):
+            if not math.isnan(y):
+                x_data_filtered.append(x)
+                y_data_filtered.append(y)
+                hover_text_filtered.append(hover)
+        return x_data_filtered, y_data_filtered, hover_text_filtered
 
     def add_line(self,
                  x_data,
@@ -319,18 +335,20 @@ class BokehFigure():
             style = [5, 5]
         if not hover_text:
             hover_text = ['y={}'.format(y) for y in y_data]
+        x_data_filter, y_data_filter, hover_text_filter = self._filter_line(
+            x_data, y_data, hover_text)
         self.figure_data.append({
-            'x_data': x_data,
-            'y_data': y_data,
+            'x_data': x_data_filter,
+            'y_data': y_data_filter,
             'legend': legend,
-            'hover_text': hover_text,
+            'hover_text': hover_text_filter,
             'color': color,
             'width': width,
             'style': style,
             'marker': marker,
             'marker_size': marker_size,
             'shaded_region': shaded_region,
-            'y_range_name': y_axis
+            'y_axis': y_axis
         })
         self.fig_property['num_lines'] += 1
 
@@ -375,7 +393,7 @@ class BokehFigure():
             'marker': marker,
             'marker_size': marker_size,
             'shaded_region': None,
-            'y_range_name': y_axis
+            'y_axis': y_axis
         })
         self.fig_property['num_lines'] += 1
 
@@ -401,8 +419,8 @@ class BokehFigure():
                     line_width=line['width'],
                     color=line['color'],
                     line_dash=line['style'],
-                    name=line['y_range_name'],
-                    y_range_name=line['y_range_name'],
+                    name=line['y_axis'],
+                    y_range_name=line['y_axis'],
                     source=source)
             if line['shaded_region']:
                 band_x = line['shaded_region']['x_vector']
@@ -424,10 +442,10 @@ class BokehFigure():
                     legend=line['legend'],
                     line_color=line['color'],
                     fill_color=line['color'],
-                    name=line['y_range_name'],
-                    y_range_name=line['y_range_name'],
+                    name=line['y_axis'],
+                    y_range_name=line['y_axis'],
                     source=source)
-            if line['y_range_name'] == 'secondary':
+            if line['y_axis'] == 'secondary':
                 two_axes = True
 
         #x-axis formatting
@@ -456,9 +474,19 @@ class BokehFigure():
         self.plot.title.text_font_size = self.fig_property['title_size']
 
         if output_file is not None:
-            bokeh.plotting.output_file(output_file)
-            bokeh.plotting.save(self.plot)
+            self.save_figure(output_file)
         return self.plot
+
+    def _save_figure_json(self, output_file):
+        """Function to save a json format of a figure"""
+        figure_dict = collections.OrderedDict(
+            fig_property=self.fig_property,
+            figure_data=self.figure_data,
+            tools=self.TOOLS,
+            tooltips=self.TOOLTIPS)
+        output_file = output_file.replace('.html', '_plot_data.json')
+        with open(output_file, 'w') as outfile:
+            json.dump(figure_dict, outfile, indent=4)
 
     def save_figure(self, output_file):
         """Function to save BokehFigure.
@@ -468,6 +496,7 @@ class BokehFigure():
         """
         bokeh.plotting.output_file(output_file)
         bokeh.plotting.save(self.plot)
+        self._save_figure_json(output_file)
 
     @staticmethod
     def save_figures(figure_array, output_file_path):
@@ -477,8 +506,11 @@ class BokehFigure():
             figure_array: list of BokehFigure object to be plotted
             output_file: string specifying output file path
         """
-        for figure in figure_array:
+        for idx, figure in enumerate(figure_array):
             figure.generate_figure()
+            json_file_path = output_file_path.replace(
+                '.html', '{}-plot_data.json'.format(idx))
+            figure._save_figure_json(json_file_path)
         plot_array = [figure.plot for figure in figure_array]
         all_plots = bokeh.layouts.column(children=plot_array)
         bokeh.plotting.output_file(output_file_path)
@@ -611,19 +643,22 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     Returns:
         ping_result: dict containing ping results and other meta data
     """
-    ping_cmd = 'ping -w {} -i {} -s {} -D'.format(
-        ping_duration,
+    ping_count = int(ping_duration / ping_interval)
+    ping_deadline = int(ping_count * ping_interval) + 1
+    ping_cmd = 'ping -c {} -w {} -i {} -s {} -D'.format(
+        ping_count,
+        ping_deadline,
         ping_interval,
         ping_size,
     )
     if isinstance(src_device, AndroidDevice):
         ping_cmd = '{} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.adb.shell(
-            ping_cmd, timeout=ping_duration + SHORT_SLEEP, ignore_status=True)
+            ping_cmd, timeout=ping_deadline + SHORT_SLEEP, ignore_status=True)
     elif isinstance(src_device, ssh.connection.SshConnection):
         ping_cmd = 'sudo {} {}'.format(ping_cmd, dest_address)
         ping_output = src_device.run(
-            ping_cmd, timeout=ping_duration + SHORT_SLEEP,
+            ping_cmd, timeout=ping_deadline + SHORT_SLEEP,
             ignore_status=True).stdout
     else:
         raise TypeError(
@@ -867,6 +902,7 @@ def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
         # Reset attenuator to 0
         test_atten.set_atten(0, strict=False)
     ping_future.result()
+    logging.debug('Chain Map: {}'.format(chain_map))
     return chain_map
 
 
@@ -910,6 +946,9 @@ def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
                     "network": net_id,
                     "dut_chain": chain
                 })
+    logging.debug("RF Map (by Network): {}".format(rf_map_by_network))
+    logging.debug("RF Map (by Atten): {}".format(rf_map_by_atten))
+
     return rf_map_by_network, rf_map_by_atten
 
 
@@ -977,11 +1016,61 @@ def get_iperf_arg_string(duration,
     return iperf_args
 
 
-def health_check(dut, batt_thresh=5):
+def get_dut_temperature(dut):
+    """Function to get dut temperature.
+
+    The function fetches and returns the reading from the temperature sensor
+    used for skin temperature and thermal throttling.
+
+    Args:
+        dut: AndroidDevice of interest
+    Returns:
+        temperature: device temperature. 0 if temperature could not be read
+    """
+    candidate_zones = ['sdm-therm-monitor', 'sdm-therm-adc', 'back_therm']
+    for zone in candidate_zones:
+        try:
+            temperature = int(
+                dut.adb.shell(
+                    'cat /sys/class/thermal/tz-by-name/{}/temp'.format(zone)))
+            break
+        except ValueError:
+            temperature = 0
+    if temperature == 0:
+        logging.debug('Could not check DUT temperature.')
+    elif temperature > 100:
+        temperature = temperature / 1000
+    return temperature
+
+
+def health_check(dut, batt_thresh=5, temp_threshold=50):
+    """Function to check health status of a DUT.
+
+    The function checks both battery levels and temperature to avoid DUT
+    powering off during the test.
+
+    Args:
+        dut: AndroidDevice of interest
+        batt_thresh: battery level threshold
+        temp_threshold: temperature threshold
+    Returns:
+        health_check: boolean confirming device is healthy
+    """
+    health_check = True
     battery_level = utils.get_battery_level(dut)
     if battery_level < batt_thresh:
-        return 0
-    return 1
+        logging.warning("Battery level low ({}%)".format(battery_level))
+        health_check = False
+    else:
+        logging.debug("Battery level = {}%".format(battery_level))
+
+    temperature = get_dut_temperature(dut)
+    if temperature > temp_threshold:
+        logging.warning("DUT Overheating ({} C)".format(temperature))
+        health_check = False
+    else:
+        logging.debug("DUT Temperature = {}C".format(temperature))
+    return health_check
 
 
 def push_bdf(dut, bdf_file):

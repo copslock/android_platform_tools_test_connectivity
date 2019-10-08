@@ -16,13 +16,13 @@
 
 import collections
 import json
-import logging
 import math
 import os
 import time
 from acts import asserts
 from acts import base_test
 from acts import context
+from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers.utils_lib import ssh
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
@@ -67,16 +67,34 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
 
+        if hasattr(self, 'bdf'):
+            self.log.info('Pushing WiFi BDF to DUT.')
+            wputils.push_bdf(self.dut, self.bdf)
+        if hasattr(self, 'firmware'):
+            self.log.info('Pushing WiFi firmware to DUT.')
+            wlanmdsp = [
+                file for file in self.firmware if "wlanmdsp.mbn" in file
+            ][0]
+            data_msc = [file for file in self.firmware
+                        if "Data.msc" in file][0]
+            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         # Get RF connection map
         self.log.info("Getting RF connection map.")
+        wutils.wifi_toggle_state(self.dut, True)
         self.rf_map_by_network, self.rf_map_by_atten = (
             wputils.get_full_rf_connection_map(self.attenuators, self.dut,
                                                self.remote_server,
                                                self.main_network))
+        self.log.info("RF Map (by Network): {}".format(self.rf_map_by_network))
+        self.log.info("RF Map (by Atten): {}".format(self.rf_map_by_atten))
 
         #Turn WiFi ON
-        for dev in self.android_devices:
-            wutils.wifi_toggle_state(dev, True)
+        if self.testclass_params.get('airplane_mode', 1):
+            self.log.info('Turning on airplane mode.')
+            asserts.assert_true(
+                utils.force_airplane_mode(self.dut, True),
+                "Can not turn on airplane mode.")
+        wutils.wifi_toggle_state(self.dut, True)
 
     def pass_fail_traffic_continuity(self, result):
         """Pass fail check for traffic continuity
@@ -193,8 +211,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
                 x_label='Time (ms)',
-                primary_y=primary_y_axis,
-                secondary_y='RSSI (dBm)')
+                primary_y_label=primary_y_axis,
+                secondary_y_label='RSSI (dBm)')
             roam_stats[secondary_atten] = collections.OrderedDict()
             for result in results_list:
                 self.detect_roam_events(result)
@@ -348,8 +366,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
                 x_label='Time (ms)',
-                primary_y='RTT (ms)',
-                secondary_y='RSSI (dBm)')
+                primary_y_label='RTT (ms)',
+                secondary_y_label='RSSI (dBm)')
         figure.add_line(
             x_data=result['ping_result']['time_stamp'],
             y_data=result['ping_result']['rtt'],
@@ -382,8 +400,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
                 x_label='Time (s)',
-                primary_y='Throughput (Mbps)',
-                secondary_y='RSSI (dBm)')
+                primary_y_label='Throughput (Mbps)',
+                secondary_y_label='RSSI (dBm)')
         iperf_time_stamps = [
             idx * IPERF_INTERVAL for idx in range(len(result['throughput']))
         ]
@@ -406,8 +424,11 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         (primary_net_id,
          primary_net_config) = next(net for net in self.main_network.items()
                                     if net[1]['roaming_label'] == 'primary')
-        for atten in self.attenuators:
-            if primary_net_id in atten.path:
+        for idx, atten in enumerate(self.attenuators):
+            nets_on_port = [
+                item["network"] for item in self.rf_map_by_atten[idx]
+            ]
+            if primary_net_id in nets_on_port:
                 atten.set_atten(0)
             else:
                 atten.set_atten(atten.instrument.max_atten)
@@ -507,8 +528,11 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         else:
             iperf_file = client_output_path
         iperf_result = ipf.IPerfResult(iperf_file)
+        instantaneous_rates = [
+            rate * 8 * (1.024**2) for rate in iperf_result.instantaneous_rates
+        ]
         return {
-            'throughput': iperf_result.instantaneous_rates,
+            'throughput': instantaneous_rates,
             'rssi_result': rssi_future.result(),
             'ap_settings': self.access_point.ap_settings,
         }

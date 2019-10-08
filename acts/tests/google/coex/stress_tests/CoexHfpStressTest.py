@@ -31,11 +31,9 @@ from acts.test_utils.tel.tel_voice_utils import set_audio_route
 
 class CoexHfpStressTest(CoexBaseTest):
 
-    def __init__(self, controllers):
-        CoexBaseTest.__init__(self, controllers)
-
     def setup_class(self):
         CoexBaseTest.setup_class(self)
+
         req_params = ["iterations"]
         self.unpack_userparams(req_params)
 

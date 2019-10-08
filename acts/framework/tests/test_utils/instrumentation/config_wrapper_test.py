@@ -26,6 +26,7 @@ MOCK_CONFIG = {
     'big_int': 50000,
     'small_int': 5,
     'float': 7.77,
+    'string': 'insert text here',
     'real_paths_only': REAL_PATHS,
     'real_and_fake_paths': [
         'realpath/1', 'fakepath/0'
@@ -67,6 +68,14 @@ class ConfigWrapperTest(unittest.TestCase):
             self.mock_config.get('small_int', verify_fn=verifier,
                                  failure_msg=msg)
 
+    def test_get_config(self):
+        """Test that get_config() returns an empty ConfigWrapper if no
+        sub-config exists with the given name.
+        """
+        ret = self.mock_config.get_config('missing')
+        self.assertIsInstance(ret, ConfigWrapper)
+        self.assertFalse(ret)
+
     def test_get_int(self):
         """Test that get_int() returns the value if it is an int, and raises
         an exception if it isn't.
@@ -76,14 +85,16 @@ class ConfigWrapperTest(unittest.TestCase):
         with self.assertRaisesRegex(InvalidParamError, 'of type int'):
             self.mock_config.get_int('float')
 
-    def test_get_float(self):
-        """Test that get_float() returns the value if it is a float, and raises
-        an exception if it isn't.
+    def test_get_numeric(self):
+        """Test that get_numeric() returns the value if it is an int or float,
+        and raises an exception if it isn't.
         """
-        self.assertEqual(self.mock_config.get_float('float'),
+        self.assertEqual(self.mock_config.get_numeric('small_int'),
+                         MOCK_CONFIG['small_int'])
+        self.assertEqual(self.mock_config.get_numeric('float'),
                          MOCK_CONFIG['float'])
-        with self.assertRaisesRegex(InvalidParamError, 'of type float'):
-            self.mock_config.get_float('small_int')
+        with self.assertRaisesRegex(InvalidParamError, 'of type int or float'):
+            self.mock_config.get_numeric('string')
 
     @mock.patch('os.path.exists', side_effect=lambda f: f in REAL_PATHS)
     def test_get_files(self, *_):

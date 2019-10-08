@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2018 - The Android Open Source Project
 #
@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import acts
 import json
 import logging
 import math
@@ -25,33 +24,11 @@ from acts import base_test
 from acts import utils
 from acts.controllers import monsoon
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
+from acts.test_utils.power.loggers.power_metric_logger import PowerMetricLogger
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
-SETTINGS_PAGE = 'am start -n com.android.settings/.Settings'
-SCROLL_BOTTOM = 'input swipe 0 2000 0 0'
-UNLOCK_SCREEN = 'input keyevent 82'
-SET_BATTERY_LEVEL = 'dumpsys battery set level 100'
-SCREENON_USB_DISABLE = 'dumpsys battery unplug'
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
-AOD_OFF = 'settings put secure doze_always_on 0'
-MUSIC_IQ_OFF = 'pm disable-user com.google.intelligence.sense'
-DISABLE_THERMAL = 'setprop persist.vendor.disable.thermal.control 1'
-# Command to disable gestures
-LIFT = 'settings put secure doze_pulse_on_pick_up 0'
-DOUBLE_TAP = 'settings put secure doze_pulse_on_double_tap 0'
-JUMP_TO_CAMERA = 'settings put secure camera_double_tap_power_gesture_disabled 1'
-RAISE_TO_CAMERA = 'settings put secure camera_lift_trigger_enabled 0'
-FLIP_CAMERA = 'settings put secure camera_double_twist_to_flip_enabled 0'
-ASSIST_GESTURE = 'settings put secure assist_gesture_enabled 0'
-ASSIST_GESTURE_ALERT = 'settings put secure assist_gesture_silence_alerts_enabled 0'
-ASSIST_GESTURE_WAKE = 'settings put secure assist_gesture_wake_enabled 0'
-SYSTEM_NAVI = 'settings put secure system_navigation_keys_enabled 0'
-# End of command to disable gestures
-AUTO_TIME_OFF = 'settings put global auto_time 0'
-AUTO_TIMEZONE_OFF = 'settings put global auto_time_zone 0'
-FORCE_YOUTUBE_STOP = 'am force-stop com.google.android.youtube'
-FORCE_DIALER_STOP = 'am force-stop com.google.android.dialer'
 IPERF_TIMEOUT = 180
 THRESHOLD_TOLERANCE = 0.2
 GET_FROM_PHONE = 'get_from_dut'
@@ -73,7 +50,6 @@ class ObjNew():
     """Create a random obj with unknown attributes and value.
 
     """
-
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -92,14 +68,15 @@ class PowerBaseTest(base_test.BaseTestClass):
     """Base class for all wireless power related tests.
 
     """
-
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
-        BlackboxMetricLogger.for_test_case(
-            metric_name='avg_power', result_attr='power_consumption')
+        self.power_result = BlackboxMetricLogger.for_test_case(
+            metric_name='avg_power')
         self.start_meas_time = 0
         self.rockbottom_script = None
+        self.img_name = ''
+        self.power_logger = PowerMetricLogger.for_test_case()
 
     def setup_class(self):
 
@@ -115,8 +92,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon.attach_device(self.dut)
 
         # Unpack the test/device specific parameters
-        TEST_PARAMS = self.TAG + '_params'
-        req_params = [TEST_PARAMS, 'custom_files']
+        req_params = ['custom_files']
         self.unpack_userparams(req_params)
         # Unpack the custom files based on the test configs
         for file in self.custom_files:
@@ -128,9 +104,18 @@ class PowerBaseTest(base_test.BaseTestClass):
                 self.network_file = file
             elif 'rockbottom_' + self.dut.model in file:
                 self.rockbottom_script = file
+        #Abort the class if threshold and rockbottom file is missing
+        asserts.abort_class_if(
+            not self.threshold_file,
+            'Required test pass/fail threshold file is missing')
+        asserts.abort_class_if(
+            not self.rockbottom_script,
+            'Required rockbottom setting script is missing')
 
         # Unpack test specific configs
-        self.unpack_testparams(getattr(self, TEST_PARAMS))
+        TEST_PARAMS = self.TAG + '_params'
+        self.test_params = self.user_params.get(TEST_PARAMS, {})
+        self.unpack_testparams(self.test_params)
         if hasattr(self, 'attenuators'):
             self.num_atten = self.attenuators[0].instrument.num_atten
             self.atten_level = self.unpack_custom_file(self.attenuation_file)
@@ -138,20 +123,30 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.threshold = self.unpack_custom_file(self.threshold_file)
         self.mon_info = self.create_monsoon_info()
 
-        # Onetime task for each test class
-        # Temporary fix for b/77873679
-        self.adb_disable_verity()
-        self.dut.adb.shell('mv /vendor/bin/chre /vendor/bin/chre_renamed')
-        self.dut.adb.shell('pkill chre')
+        # Sync device time, timezone and country code
+        utils.require_sl4a((self.dut, ))
+        utils.sync_device_time(self.dut)
+        self.dut.droid.wifiSetCountryCode('US')
+
+        screen_on_img = self.user_params.get('screen_on_img', [])
+        if screen_on_img:
+            img_src = screen_on_img[0]
+            img_dest = '/sdcard/Pictures/'
+            success = self.dut.push_system_file(img_src, img_dest)
+            if success:
+                self.img_name = os.path.basename(img_src)
 
     def setup_test(self):
         """Set up test specific parameters or configs.
 
         """
         # Reset the power consumption to 0 before each tests
-        self.power_consumption = 0
+        self.power_result.metric_value = 0
         # Set the device into rockbottom state
         self.dut_rockbottom()
+        wutils.reset_wifi(self.dut)
+        wutils.wifi_toggle_state(self.dut, False)
+
         # Wait for extra time if needed for the first test
         if hasattr(self, 'extra_wait'):
             self.more_wait_first_test()
@@ -162,10 +157,19 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         self.log.info('Tearing down the test case')
         self.mon.usb('on')
+        self.power_logger.set_avg_power(self.power_result.metric_value)
+        self.power_logger.set_testbed(self.testbed_name)
+
         # Take Bugreport
         if self.bug_report:
             begin_time = utils.get_current_epoch_time()
             self.dut.take_bug_report(self.test_name, begin_time)
+
+        # Allow the device to cooldown before executing the next test
+        last_test = self.current_test_name == self.results.requested[-1]
+        cooldown = self.test_params.get('cooldown', None)
+        if cooldown and not last_test:
+            time.sleep(cooldown)
 
     def teardown_class(self):
         """Clean up the test class after tests finish running
@@ -173,6 +177,22 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         self.log.info('Tearing down the test class')
         self.mon.usb('on')
+
+    def dut_rockbottom(self):
+        """Set the dut to rockbottom state
+
+        """
+        # The rockbottom script might include a device reboot, so it is
+        # necessary to stop SL4A during its execution.
+        self.dut.stop_services()
+        self.log.info('Executing rockbottom script for ' + self.dut.model)
+        os.chmod(self.rockbottom_script, 0o777)
+        os.system('{} {} {}'.format(self.rockbottom_script, self.dut.serial,
+                                    self.img_name))
+        # Make sure the DUT is in root mode after coming back
+        self.dut.root_adb()
+        # Restart SL4A
+        self.dut.start_services()
 
     def unpack_testparams(self, bulk_params):
         """Unpack all the test specific parameters.
@@ -231,71 +251,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         for i in range(self.num_atten):
             self.attenuators[i].set_atten(atten_list[i])
 
-    def dut_rockbottom(self):
-        """Set the phone into Rock-bottom state.
-
-        """
-        self.dut.log.info('Now set the device to Rockbottom State')
-
-        if self.rockbottom_script:
-            # The rockbottom script might include a device reboot, so it is
-            # necessary to stop SL4A during its execution.
-            self.dut.stop_services()
-            self.log.info('Executing rockbottom script for ' + self.dut.model)
-            os.chmod(self.rockbottom_script, 0o777)
-            os.system('{} {}'.format(self.rockbottom_script, self.dut.serial))
-            # Make sure the DUT is in root mode after coming back
-            self.dut.root_adb()
-            # Restart SL4A
-            self.dut.start_services()
-
-        utils.require_sl4a((self.dut, ))
-        self.dut.droid.connectivityToggleAirplaneMode(False)
-        time.sleep(2)
-        self.dut.droid.connectivityToggleAirplaneMode(True)
-        time.sleep(2)
-        utils.set_ambient_display(self.dut, False)
-        utils.set_auto_rotate(self.dut, False)
-        utils.set_adaptive_brightness(self.dut, False)
-        utils.sync_device_time(self.dut)
-        utils.set_location_service(self.dut, False)
-        utils.set_mobile_data_always_on(self.dut, False)
-        utils.disable_doze_light(self.dut)
-        utils.disable_doze(self.dut)
-        wutils.reset_wifi(self.dut)
-        wutils.wifi_toggle_state(self.dut, False)
-        try:
-            self.dut.droid.nfcDisable()
-        except acts.controllers.sl4a_lib.rpc_client.Sl4aApiError:
-            self.dut.log.info('NFC is not available')
-        self.dut.droid.setScreenBrightness(0)
-        self.dut.adb.shell(AOD_OFF)
-        self.dut.droid.setScreenTimeout(2200)
-        self.dut.droid.wakeUpNow()
-        self.dut.adb.shell(LIFT)
-        self.dut.adb.shell(DOUBLE_TAP)
-        self.dut.adb.shell(JUMP_TO_CAMERA)
-        self.dut.adb.shell(RAISE_TO_CAMERA)
-        self.dut.adb.shell(FLIP_CAMERA)
-        self.dut.adb.shell(ASSIST_GESTURE)
-        self.dut.adb.shell(ASSIST_GESTURE_ALERT)
-        self.dut.adb.shell(ASSIST_GESTURE_WAKE)
-        self.dut.adb.shell(SET_BATTERY_LEVEL)
-        self.dut.adb.shell(SCREENON_USB_DISABLE)
-        self.dut.adb.shell(UNLOCK_SCREEN)
-        self.dut.adb.shell(SETTINGS_PAGE)
-        self.dut.adb.shell(SCROLL_BOTTOM)
-        self.dut.adb.shell(MUSIC_IQ_OFF)
-        self.dut.adb.shell(AUTO_TIME_OFF)
-        self.dut.adb.shell(AUTO_TIMEZONE_OFF)
-        self.dut.adb.shell(FORCE_YOUTUBE_STOP)
-        self.dut.adb.shell(FORCE_DIALER_STOP)
-        self.dut.adb.shell(DISABLE_THERMAL)
-        self.dut.droid.wifiSetCountryCode('US')
-        self.dut.droid.wakeUpNow()
-        self.dut.log.info('Device has been set to Rockbottom state')
-        self.dut.log.info('Screen is ON')
-
     def measure_power_and_validate(self):
         """The actual test flow and result processing and validate.
 
@@ -310,7 +265,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         tag = ''
         # Collecting current measurement data and plot
         self.file_path, self.test_result = self.monsoon_data_collect_save()
-        self.power_consumption = self.test_result * PHONE_BATTERY_VOLTAGE
+        self.power_result.metric_value = (self.test_result *
+                                          PHONE_BATTERY_VOLTAGE)
         wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
 
     def pass_fail_check(self):
@@ -351,12 +307,11 @@ class PowerBaseTest(base_test.BaseTestClass):
         """
         if hasattr(self, IPERF_DURATION):
             self.mon_duration = self.iperf_duration - 10
-        mon_info = ObjNew(
-            dut=self.mon,
-            freq=self.mon_freq,
-            duration=self.mon_duration,
-            offset=self.mon_offset,
-            data_path=self.mon_data_path)
+        mon_info = ObjNew(dut=self.mon,
+                          freq=self.mon_freq,
+                          duration=self.mon_duration,
+                          offset=self.mon_offset,
+                          data_path=self.mon_data_path)
         return mon_info
 
     def monsoon_recover(self):
@@ -395,8 +350,8 @@ class PowerBaseTest(base_test.BaseTestClass):
         tag = '{}_{}_{}'.format(self.test_name, self.dut.model,
                                 self.dut.build_info['build_id'])
         data_path = os.path.join(self.mon_info.data_path, '{}.txt'.format(tag))
-        total_expected_samples = self.mon_info.freq * (
-            self.mon_info.duration + self.mon_info.offset)
+        total_expected_samples = self.mon_info.freq * (self.mon_info.duration +
+                                                       self.mon_info.offset)
         min_required_samples = total_expected_samples * MIN_PERCENT_SAMPLE / 100
         # Retry counter for monsoon data aquisition
         retry_measure = 1
@@ -464,8 +419,8 @@ class PowerBaseTest(base_test.BaseTestClass):
                         self.log.warning('No data taken, need to remeasure')
                     elif len(result._data_points) <= min_required_samples:
                         self.log.warning(
-                            'More than {} percent of samples are missing due to monsoon error. Need to remeasure'.
-                            format(100 - MIN_PERCENT_SAMPLE))
+                            'More than {} percent of samples are missing due to monsoon error. Need to remeasure'
+                            .format(100 - MIN_PERCENT_SAMPLE))
                     else:
                         need_collect_data = 0
                         self.log.warning(
@@ -483,9 +438,9 @@ class PowerBaseTest(base_test.BaseTestClass):
              throughput: the average throughput during tests.
         """
         # Get IPERF results and add this to the plot title
-        RESULTS_DESTINATION = os.path.join(self.iperf_server.log_path,
-                                           'iperf_client_output_{}.log'.format(
-                                               self.current_test_name))
+        RESULTS_DESTINATION = os.path.join(
+            self.iperf_server.log_path,
+            'iperf_client_output_{}.log'.format(self.current_test_name))
         self.dut.pull_files(TEMP_FILE, RESULTS_DESTINATION)
         # Calculate the average throughput
         if self.use_client_output:
@@ -506,15 +461,3 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.log.warning('Cannot get iperf result. Setting to 0')
             throughput = 0
         return throughput
-
-    # TODO(@qijiang)Merge with tel_test_utils.py
-    def adb_disable_verity(self):
-        """Disable verity on the device.
-
-        """
-        if self.dut.adb.getprop("ro.boot.veritymode") == "enforcing":
-            self.dut.adb.disable_verity()
-            self.dut.reboot()
-            self.dut.adb.root()
-            self.dut.adb.remount()
-            self.dut.adb.shell(SET_BATTERY_LEVEL)

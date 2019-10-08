@@ -104,11 +104,7 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
     # Create a new plot with the datatable above
     plot = figure(
-        plot_width=1300,
-        plot_height=700,
-        title=plot_title,
-        tools=TOOLS,
-        output_backend="webgl")
+        plot_width=1300, plot_height=700, title=plot_title, tools=TOOLS)
     plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="width"))
     plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="height"))
     plot.line('x0', 'y0', source=source, line_width=2)
@@ -118,12 +114,14 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     plot.title.text_font_size = {'value': '15pt'}
 
     #Callback Java scripting
-    source.callback = CustomJS(
-        args=dict(mytable=dt),
-        code="""
-    var inds = cb_obj.get('selected')['1d'].indices;
-    var d1 = cb_obj.get('data');
-    var d2 = mytable.get('source').get('data');
+    source.selected.js_on_change(
+        "indices",
+        CustomJS(
+            args=dict(source=source, mytable=dt),
+            code="""
+    var inds = cb_obj.indices;
+    var d1 = source.data;
+    var d2 = mytable.source.data;
     ym = 0
     ts = 0
     d2['x0'] = []
@@ -153,8 +151,8 @@ def monsoon_data_plot(mon_info, file_path, tag=""):
     d2['y0'].push(dy0)
     d2['z1'].push(dz1)
     d2['z2'].push(dz2)
-    mytable.trigger('change');
-    """)
+    mytable.change.emit();
+    """))
 
     #Layout the plot and the datatable bar
     l = layout([[dt], [plot]])
@@ -436,43 +434,66 @@ def get_if_addr6(intf, address_type):
     return None
 
 
-@utils.timeout(60)
-def wait_for_dhcp(intf):
+def wait_for_dhcp(interface_name):
     """Wait the DHCP address assigned to desired interface.
 
     Getting DHCP address takes time and the wait time isn't constant. Utilizing
     utils.timeout to keep trying until success
 
     Args:
-        intf: desired interface name
+        interface_name: desired interface name
     Returns:
         ip: ip address of the desired interface name
     Raise:
         TimeoutError: After timeout, if no DHCP assigned, raise
     """
     log = logging.getLogger()
-    reset_host_interface(intf)
+    reset_host_interface(interface_name)
+    start_time = time.time()
+    time_limit_seconds = 60
     ip = '0.0.0.0'
-    while ip == '0.0.0.0':
-        ip = scapy.get_if_addr(intf)
-    log.info('DHCP address assigned to {} as {}'.format(intf, ip))
-    return ip
+    while start_time + time_limit_seconds > time.time():
+        ip = scapy.get_if_addr(interface_name)
+        if ip == '0.0.0.0':
+            time.sleep(1)
+        else:
+            log.info(
+                'DHCP address assigned to %s as %s' % (interface_name, ip))
+            return ip
+    raise TimeoutError('Timed out while getting if_addr after %s seconds.' %
+                       time_limit_seconds)
 
 
-def reset_host_interface(intf):
+def reset_host_interface(intferface_name):
     """Reset the host interface.
 
     Args:
-        intf: the desired interface to reset
+        intferface_name: the desired interface to reset
     """
     log = logging.getLogger()
-    intf_down_cmd = 'ifconfig %s down' % intf
-    intf_up_cmd = 'ifconfig %s up' % intf
+    intf_down_cmd = 'ifconfig %s down' % intferface_name
+    intf_up_cmd = 'ifconfig %s up' % intferface_name
     try:
         job.run(intf_down_cmd)
         time.sleep(10)
         job.run(intf_up_cmd)
-        log.info('{} has been reset'.format(intf))
+        log.info('{} has been reset'.format(intferface_name))
+    except job.Error:
+        raise Exception('No such interface')
+
+
+def bringdown_host_interface(intferface_name):
+    """Reset the host interface.
+
+    Args:
+        intferface_name: the desired interface to reset
+    """
+    log = logging.getLogger()
+    intf_down_cmd = 'ifconfig %s down' % intferface_name
+    try:
+        job.run(intf_down_cmd)
+        time.sleep(2)
+        log.info('{} has been brought down'.format(intferface_name))
     except job.Error:
         raise Exception('No such interface')
 

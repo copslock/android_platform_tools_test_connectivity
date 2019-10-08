@@ -35,8 +35,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
     * One Android device or Fuchsia device
     * One Access Point
     """
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         if 'dut' in self.user_params:
             if self.user_params['dut'] == 'fuchsia_devices':
                 self.dut = create_wlan_device(self.fuchsia_devices[0])
@@ -74,7 +74,6 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         self.utf8_ssid_2g = '2𝔤_𝔊𝔬𝔬𝔤𝔩𝔢'
         self.utf8_ssid_5g = '5𝔤_𝔊𝔬𝔬𝔤𝔩𝔢'
 
-    def setup_class(self):
         self.access_point.stop_all_aps()
 
     def setup_test(self):

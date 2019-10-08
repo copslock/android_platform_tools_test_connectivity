@@ -28,9 +28,6 @@ WifiEnums = wutils.WifiEnums
 
 class WifiRoamingTest(WifiBaseTest):
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
         """Setup required dependencies from config file and configure
            the required networks for testing roaming.
@@ -38,11 +35,13 @@ class WifiRoamingTest(WifiBaseTest):
         Returns:
             True if successfully configured the requirements for testing.
         """
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
-        req_params = ("roaming_attn", "roam_interval", "ping_addr", "max_bugreports")
-        opt_param = [
-            "open_network", "reference_networks", "iperf_server_address"]
+        req_params = ["roaming_attn", "roam_interval", "ping_addr",
+                      "max_bugreports"]
+        opt_param = ["open_network", "reference_networks",]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
@@ -56,17 +55,12 @@ class WifiRoamingTest(WifiBaseTest):
             len(self.open_network) > 1,
             "Need at least two open networks for roaming")
         wutils.wifi_toggle_state(self.dut, True)
-        if "iperf_server_address" in self.user_params:
-            self.iperf_server = self.iperf_servers[0]
-            self.iperf_server.start()
 
     def teardown_class(self):
         self.dut.ed.clear_all_events()
         if "AccessPoint" in self.user_params:
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
-        if hasattr(self, 'iperf_server'):
-            self.iperf_server.stop()
 
     def setup_test(self):
         self.dut.droid.wakeLockAcquireBright()

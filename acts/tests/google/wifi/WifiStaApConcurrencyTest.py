@@ -45,10 +45,9 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
     * One Wi-Fi network visible to the device (for STA).
     """
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
@@ -73,19 +72,13 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             "Failed to enable WiFi verbose logging on the client dut.")
 
         req_params = ["AccessPoint", "dbs_supported_models"]
-        opt_param = ["iperf_server_address"]
+        opt_param = ["iperf_server_address", "iperf_server_port"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
 
-        if self.dut.model not in self.dbs_supported_models:
-            asserts.skip(
-                ("Device %s does not support dual interfaces.")
-                % self.dut.model)
-
-        if "iperf_server_address" in self.user_params:
-            self.iperf_server = self.iperf_servers[0]
-        if hasattr(self, 'iperf_server'):
-            self.iperf_server.start()
+        asserts.abort_class_if(
+            self.dut.model not in self.dbs_supported_models,
+            "Device %s does not support dual interfaces." % self.dut.model)
 
         # Set the client wifi state to on before the test begins.
         wutils.wifi_toggle_state(self.dut_client, True)
@@ -106,7 +99,11 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         wutils.wifi_toggle_state(self.dut, False)
 
     def teardown_test(self):
-        wutils.stop_wifi_tethering(self.dut)
+        # Prevent the stop wifi tethering failure to block ap close
+        try:
+            wutils.stop_wifi_tethering(self.dut)
+        except signals.TestFailure:
+            pass
         for ad in self.android_devices:
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
@@ -114,10 +111,6 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
         self.access_points[0].close()
         del self.user_params["reference_networks"]
         del self.user_params["open_network"]
-
-    def teardown_class(self):
-        if hasattr(self, 'iperf_server'):
-            self.iperf_server.stop()
 
     def on_fail(self, test_name, begin_time):
         for ad in self.android_devices:
@@ -171,7 +164,7 @@ class WifiStaApConcurrencyTest(WifiBaseTest):
             SSID = network[WifiEnums.SSID_KEY]
             self.log.info("Starting iperf traffic through {}".format(SSID))
             time.sleep(wait_time)
-            port_arg = "-p {}".format(self.iperf_server.port)
+            port_arg = "-p {}".format(self.iperf_server_port)
             success, data = ad.run_iperf_client(self.iperf_server_address,
                                                 port_arg)
             self.log.debug(pprint.pformat(data))

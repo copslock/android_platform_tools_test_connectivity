@@ -34,10 +34,9 @@ Ent = WifiEnums.Enterprise
 
 
 class WifiEnterpriseRoamingTest(WifiBaseTest):
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = (
@@ -104,7 +103,7 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
-        self.dut.droid.disableDevicePassword()
+        self.dut.droid.disableDevicePassword(self.device_password)
         self.dut.ed.clear_all_events()
         self.set_attns("default")
 

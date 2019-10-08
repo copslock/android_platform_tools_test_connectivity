@@ -27,6 +27,9 @@ RECORD_FILE_TEMPLATE = 'recorded_audio_%s.wav'
 class DeviceNotFound(Exception):
     """Raises exception if audio capture device is not found."""
 
+# TODO: (@sairamganesh) This class will be deprecated for
+# ../acts/test_utils/coex/audio_capture_device.py
+
 
 class AudioCapture:
 
@@ -48,6 +51,13 @@ class AudioCapture:
         self.record_file_template = os.path.join(path, RECORD_FILE_TEMPLATE)
         if not self.audio_params["ssh_config"]:
             self.__input_device = self.__get_input_device()
+
+    @property
+    def name(self):
+        try:
+            return self.audio_params["ssh_config"]["host"]
+        except KeyError:
+            return self.__input_device["name"]
 
     def __get_input_device(self):
         """Checks for the audio capture device."""
@@ -141,7 +151,7 @@ if __name__ == '__main__':
         '--test_params',
         type=json.loads,
         help="Contains sample rate, channels,"
-        " chunk and device index for recording.")
+             " chunk and device index for recording.")
     args = parser.parse_args()
     audio = AudioCapture(args.test_params, args.path)
     audio.capture_and_store_audio(args.test_params['trim_beginning'],

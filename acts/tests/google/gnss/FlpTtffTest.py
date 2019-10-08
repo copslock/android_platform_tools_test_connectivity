@@ -16,6 +16,7 @@
 
 from acts import utils
 from acts import asserts
+from acts import signals
 from acts.base_test import BaseTestClass
 from acts.test_decorators import test_tracker_info
 from acts.utils import get_current_epoch_time
@@ -43,8 +44,8 @@ from acts.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 
 class FlpTtffTest(BaseTestClass):
     """ FLP TTFF Tests"""
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ad = self.android_devices[0]
         req_params = ["pixel_lab_network", "standalone_cs_criteria",
                       "qdsp6m_path", "flp_ttff_max_threshold",
@@ -56,22 +57,21 @@ class FlpTtffTest(BaseTestClass):
             SSID = network['SSID']
             self.ssid_map[SSID] = network
 
-    def setup_class(self):
         if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
             self.ad.log.info("Force airplane mode off")
             force_airplane_mode(self.ad, False)
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.default_gnss_signal_attenuation)
         _init_device(self.ad)
-        if not verify_internet_connection(self.ad.log, self.ad, retries=3,
-                                          expected_state=True):
-            abort_all_tests(self.ad.log, "Fail to connect to LTE network")
 
     def setup_test(self):
         get_baseband_and_gms_version(self.ad)
         clear_logd_gnss_qxdm_log(self.ad)
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.default_gnss_signal_attenuation)
+        if not verify_internet_connection(self.ad.log, self.ad, retries=3,
+                                          expected_state=True):
+            raise signals.TestFailure("Fail to connect to LTE network.")
 
     def teardown_test(self):
         stop_qxdm_logger(self.ad)
@@ -102,7 +102,7 @@ class FlpTtffTest(BaseTestClass):
             begin_time = get_current_epoch_time()
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria,
                                         type="flp")
-            start_ttff_by_gtw_gpstool(self.ad, ttff_mode=mode, iteration=50)
+            start_ttff_by_gtw_gpstool(self.ad, ttff_mode=mode, iteration=10)
             ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                     location, type="flp")
             result = check_ttff_data(self.ad, ttff_data, ttff[mode], criteria)
@@ -136,8 +136,8 @@ class FlpTtffTest(BaseTestClass):
         Steps:
             1. Enable WiFi scanning in location setting.
             2. Connect to WiFi AP.
-            3. TTFF Hot Start for 50 iteration.
-            4. TTFF Cold Start for 50 iteration.
+            3. TTFF Hot Start for 10 iteration.
+            4. TTFF Cold Start for 10 iteration.
 
         Expected Results:
             Both FLP TTFF Hot Start and Cold Start results should be within
@@ -146,9 +146,10 @@ class FlpTtffTest(BaseTestClass):
         start_qxdm_logger(self.ad, get_current_epoch_time())
         set_wifi_and_bt_scanning(self.ad, True)
         wifi_toggle_state(self.ad, True)
-        connect_to_wifi_network(self.ad,
-                                self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold, self.pixel_lab_location)
+        connect_to_wifi_network(
+            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
+                                self.pixel_lab_location)
 
     @test_tracker_info(uuid="adc1a0c7-3635-420d-9481-0f5816c58334")
     def test_flp_ttff_strong_signal_wifiscan_on_wifi_not_connect(self):
@@ -158,8 +159,8 @@ class FlpTtffTest(BaseTestClass):
         Steps:
             1. Enable WiFi scanning in location setting.
             2. WiFi is not connected.
-            3. TTFF Hot Start for 50 iteration.
-            4. TTFF Cold Start for 50 iteration.
+            3. TTFF Hot Start for 10 iteration.
+            4. TTFF Cold Start for 10 iteration.
 
         Expected Results:
             Both FLP TTFF Hot Start and Cold Start results should be within
@@ -167,7 +168,8 @@ class FlpTtffTest(BaseTestClass):
         """
         start_qxdm_logger(self.ad, get_current_epoch_time())
         set_wifi_and_bt_scanning(self.ad, True)
-        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold, self.pixel_lab_location)
+        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
+                                self.pixel_lab_location)
 
     @test_tracker_info(uuid="3ec3cee2-b881-4c61-9df1-b6b81fcd4527")
     def test_flp_ttff_strong_signal_wifiscan_off(self):
@@ -176,8 +178,8 @@ class FlpTtffTest(BaseTestClass):
 
         Steps:
             1. Disable WiFi scanning in location setting.
-            2. TTFF Hot Start for 50 iteration.
-            3. TTFF Cold Start for 50 iteration.
+            2. TTFF Hot Start for 10 iteration.
+            3. TTFF Cold Start for 10 iteration.
 
         Expected Results:
             Both FLP TTFF Hot Start and Cold Start results should be within
@@ -185,7 +187,8 @@ class FlpTtffTest(BaseTestClass):
         """
         start_qxdm_logger(self.ad, get_current_epoch_time())
         set_wifi_and_bt_scanning(self.ad, False)
-        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold, self.pixel_lab_location)
+        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
+                                self.pixel_lab_location)
 
     @test_tracker_info(uuid="03c0d34f-8312-48d5-8753-93b09151233a")
     def test_flp_ttff_weak_signal_wifiscan_on_wifi_connect(self):
@@ -196,8 +199,8 @@ class FlpTtffTest(BaseTestClass):
             1. Set attenuation value to weak GNSS signal.
             2. Enable WiFi scanning in location setting.
             3. Connect to WiFi AP.
-            4. TTFF Hot Start for 50 iteration.
-            5. TTFF Cold Start for 50 iteration.
+            4. TTFF Hot Start for 10 iteration.
+            5. TTFF Cold Start for 10 iteration.
 
         Expected Results:
             Both FLP TTFF Hot Start and Cold Start results should be within
@@ -208,9 +211,10 @@ class FlpTtffTest(BaseTestClass):
         start_qxdm_logger(self.ad, get_current_epoch_time())
         set_wifi_and_bt_scanning(self.ad, True)
         wifi_toggle_state(self.ad, True)
-        connect_to_wifi_network(self.ad,
-                                self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold, self.pixel_lab_location)
+        connect_to_wifi_network(
+            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
+                                self.pixel_lab_location)
 
     @test_tracker_info(uuid="13daf7b3-5ac5-4107-b3dc-a3a8b5589fed")
     def test_flp_ttff_weak_signal_wifiscan_on_wifi_not_connect(self):
@@ -221,8 +225,8 @@ class FlpTtffTest(BaseTestClass):
             1. Set attenuation value to weak GNSS signal.
             2. Enable WiFi scanning in location setting.
             3. WiFi is not connected.
-            4. TTFF Hot Start for 50 iteration.
-            5. TTFF Cold Start for 50 iteration.
+            4. TTFF Hot Start for 10 iteration.
+            5. TTFF Cold Start for 10 iteration.
 
         Expected Results:
             Both FLP TTFF Hot Start and Cold Start results should be within
@@ -232,7 +236,8 @@ class FlpTtffTest(BaseTestClass):
                                    self.weak_gnss_signal_attenuation)
         start_qxdm_logger(self.ad, get_current_epoch_time())
         set_wifi_and_bt_scanning(self.ad, True)
-        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold, self.pixel_lab_location)
+        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
+                                self.pixel_lab_location)
 
     @test_tracker_info(uuid="1831f80f-099f-46d2-b484-f332046d5a4d")
     def test_flp_ttff_weak_signal_wifiscan_off(self):
@@ -242,8 +247,8 @@ class FlpTtffTest(BaseTestClass):
         Steps:
             1. Set attenuation value to weak GNSS signal.
             2. Disable WiFi scanning in location setting.
-            3. TTFF Hot Start for 50 iteration.
-            4. TTFF Cold Start for 50 iteration.
+            3. TTFF Hot Start for 10 iteration.
+            4. TTFF Cold Start for 10 iteration.
 
         Expected Results:
             Both FLP TTFF Hot Start and Cold Start results should be within
@@ -253,4 +258,5 @@ class FlpTtffTest(BaseTestClass):
                                    self.weak_gnss_signal_attenuation)
         start_qxdm_logger(self.ad, get_current_epoch_time())
         set_wifi_and_bt_scanning(self.ad, False)
-        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold, self.pixel_lab_location)
+        self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
+                                self.pixel_lab_location)

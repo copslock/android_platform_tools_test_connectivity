@@ -283,12 +283,12 @@ def setup_droid_properties_by_adb(log, ad, sim_filename=None):
     setattr(ad, 'telephony', device_props)
 
 
-def setup_droid_properties(log, ad, sim_filename=None, cbrs_esim=False):
+def setup_droid_properties(log, ad, sim_filename=None):
 
     if ad.skip_sl4a:
         return setup_droid_properties_by_adb(
             log, ad, sim_filename=sim_filename)
-    refresh_droid_config(log, ad, cbrs_esim)
+    refresh_droid_config(log, ad)
     device_props = {}
     device_props['subscription'] = {}
 
@@ -355,13 +355,12 @@ def setup_droid_properties(log, ad, sim_filename=None, cbrs_esim=False):
     ad.log.debug("telephony = %s", ad.telephony)
 
 
-def refresh_droid_config(log, ad, cbrs_esim=False):
+def refresh_droid_config(log, ad):
     """ Update Android Device telephony records for each sub_id.
 
     Args:
         log: log object
         ad: android device object
-        cbrs_esim: special case for cbrs feature
 
     Returns:
         None
@@ -371,21 +370,14 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
     droid = ad.droid
     sub_info_list = droid.subscriptionGetAllSubInfoList()
     ad.log.info("SubInfoList is %s", sub_info_list)
-    if cbrs_esim:
-        ad.log.info("CBRS testing detected, removing it form SubInfoList")
-        if len(sub_info_list) > 1:
-            # Check for CarrierId
-            index_to_delete = -1
-            for i, oper in enumerate(d['carrierId'] for d in sub_info_list):
-                ad.log.info("Index %d CarrierId %d", i, oper)
-                if oper == 2340:
-                    index_to_delete = i
-            del sub_info_list[index_to_delete]
-        ad.log.info("Updated SubInfoList is %s", sub_info_list)
     active_sub_id = get_outgoing_voice_sub_id(ad)
     for sub_info in sub_info_list:
         sub_id = sub_info["subscriptionId"]
         sim_slot = sub_info["simSlotIndex"]
+        if sub_info.get("carrierId"):
+            carrier_id = sub_info["carrierId"]
+        else:
+            carrier_id = -1
 
         if sim_slot != INVALID_SIM_SLOT_INDEX:
             if sub_id not in ad.telephony["subscription"]:
@@ -435,6 +427,10 @@ def refresh_droid_config(log, ad, cbrs_esim=False):
                         )
                 except:
                     ad.log.info("Carrier ID is not supported")
+            if carrier_id == 2340:
+                ad.log.info("SubId %s info: %s", sub_id, sorted(
+                    sub_record.items()))
+                return
             if not sub_info.get("number"):
                 sub_info[
                     "number"] = droid.telephonyGetLine1NumberForSubscription(
@@ -1571,6 +1567,9 @@ def initiate_call(log,
         else:
             return True
     finally:
+        if hasattr(ad, "sdm_log") and getattr(ad, "sdm_log"):
+            ad.adb.shell("i2cset -fy 3 64 6 1 b", ignore_status=True)
+            ad.adb.shell("i2cset -fy 3 65 6 1 b", ignore_status=True)
         ad.droid.telephonyStopTrackingCallStateChangeForSubscription(sub_id)
         if incall_ui_display == INCALL_UI_DISPLAY_FOREGROUND:
             ad.droid.telecomShowInCallScreen()
@@ -1767,7 +1766,13 @@ def dumpsys_carrier_config(ad):
         current_output.append(line.strip())
 
     configs = {}
-    phone_count = ad.droid.telephonyGetPhoneCount()
+    if ad.adb.getprop("ro.build.version.release")[0] in ("9", "P"):
+        phone_count = 1
+        if "," in ad.adb.getprop("gsm.network.type"):
+            phone_count = 2
+    else:
+        phone_count = ad.droid.telephonyGetPhoneCount()
+
     slot_0_subid = get_subid_from_slot_index(ad.log, ad, 0)
     if slot_0_subid != INVALID_SUB_ID:
         configs[slot_0_subid] = {}
@@ -3736,17 +3741,18 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
             If None, opposite of the current state.
 
     """
-    # TODO: b/26293960 No framework API available to set IMS by SubId.
-    if not ad.droid.imsIsEnhanced4gLteModeSettingEnabledByPlatform():
-        ad.log.info("Enhanced 4G Lte Mode Setting is not enabled by platform.")
-        return False
-    current_state = ad.droid.imsIsEnhanced4gLteModeSettingEnabledByUser()
+    current_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
     if new_state is None:
         new_state = not current_state
     if new_state != current_state:
-        ad.log.info("Toggle Enhanced 4G LTE Mode from %s to %s", current_state,
-                    new_state)
-        ad.droid.imsSetEnhanced4gMode(new_state)
+        ad.log.info("Toggle Enhanced 4G LTE Mode from %s to %s on sub_id %s", current_state,
+                    new_state, sub_id)
+        ad.droid.imsMmTelSetAdvancedCallingEnabled(sub_id, new_state)
+    check_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
+    if check_state != new_state:
+        ad.log.error("Failed to toggle Enhanced 4G LTE Mode to %s, still set to %s on sub_id %s",
+                     new_state, check_state, sub_id)
+        return False
     return True
 
 
@@ -6658,7 +6664,7 @@ def fastboot_wipe(ad, skip_setup_wizard=True):
             if ad.is_sl4a_installed():
                 break
             ad.log.info("Re-install sl4a")
-            ad.adb.shell("settings put global package_verifier_enable 0")
+            ad.adb.shell("settings put global verifier_verify_adb_installs 0")
             ad.adb.install("-r /tmp/base.apk")
             time.sleep(10)
             break
@@ -7419,6 +7425,36 @@ def my_current_screen_content(ad, content):
     return True
 
 
+def activate_esim_using_suw(ad):
+    _START_SUW = ('am start -a android.intent.action.MAIN -n '
+                  'com.google.android.setupwizard/.SetupWizardTestActivity')
+    _STOP_SUW = ('am start -a com.android.setupwizard.EXIT')
+
+    toggle_airplane_mode(ad.log, ad, new_state=False, strict_checking=False)
+    ad.adb.shell("settings put system screen_off_timeout 1800000")
+    ad.ensure_screen_on()
+    ad.send_keycode("MENU")
+    ad.send_keycode("HOME")
+    for _ in range(3):
+        ad.log.info("Attempt %d - activating eSIM", (_ + 1))
+        ad.adb.shell(_START_SUW)
+        time.sleep(10)
+        log_screen_shot(ad, "start_suw")
+        for _ in range(4):
+            ad.send_keycode("TAB")
+            time.sleep(0.5)
+        ad.send_keycode("ENTER")
+        time.sleep(15)
+        log_screen_shot(ad, "activate_esim")
+        get_screen_shot_log(ad)
+        ad.adb.shell(_STOP_SUW)
+        time.sleep(5)
+        current_sim = get_sim_state(ad)
+        ad.log.info("Current SIM status is %s", current_sim)
+        if current_sim not in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
+            break
+    return True
+
 def activate_google_fi_account(ad, retries=10):
     _FI_APK = "com.google.android.apps.tycho"
     _FI_ACTIVATE_CMD = ('am start -c android.intent.category.DEFAULT -n '
@@ -7587,4 +7623,3 @@ def toggle_connectivity_monitor_setting(ad, state=True):
     monitor_setting = ad.adb.getprop("persist.radio.enable_tel_mon")
     ad.log.info("radio.enable_tel_mon setting is %s", monitor_setting)
     return monitor_setting == expected_monitor_setting
-

@@ -19,6 +19,7 @@ import csv
 import itertools
 import json
 import logging
+import numpy
 import os
 from acts import asserts
 from acts import context
@@ -26,7 +27,7 @@ from acts import base_test
 from acts import utils
 from acts.controllers import iperf_client
 from acts.controllers.utils_lib import ssh
-from acts.metrics.loggers.blackbox import BlackboxMetricLogger
+from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.wifi import ota_chamber
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -125,8 +126,11 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
 
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.failure_count_metric = BlackboxMetricLogger.for_test_case(
-            metric_name='sensitivity')
+        self.testcase_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -158,11 +162,26 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 for file in os.listdir(
                     self.testbed_params['golden_results_path'])
             ]
+        if hasattr(self, 'bdf'):
+            self.log.info('Pushing WiFi BDF to DUT.')
+            wputils.push_bdf(self.dut, self.bdf)
+        if hasattr(self, 'firmware'):
+            self.log.info('Pushing WiFi firmware to DUT.')
+            wlanmdsp = [
+                file for file in self.firmware if "wlanmdsp.mbn" in file
+            ][0]
+            data_msc = [file for file in self.firmware
+                        if "Data.msc" in file][0]
+            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         self.testclass_results = []
 
         # Turn WiFi ON
-        for dev in self.android_devices:
-            wutils.wifi_toggle_state(dev, True)
+        if self.testclass_params.get('airplane_mode', 1):
+            self.log.info('Turning on airplane mode.')
+            asserts.assert_true(
+                utils.force_airplane_mode(self.dut, True),
+                "Can not turn on airplane mode.")
+        wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_class(self):
         # Turn WiFi OFF
@@ -192,7 +211,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                          'Target Sensitivity = {}'.format(
                              result['peak_throughput_pct'],
                              result['sensitivity'], golden_sensitivity))
-        if result['peak_throughput_pct'] < 100:
+        if result['peak_throughput_pct'] < 95:
             self.log.warning('Result unreliable. Peak rate unstable')
         if result['sensitivity'] - golden_sensitivity < self.testclass_params[
                 'sensitivity_tolerance']:
@@ -217,7 +236,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             channel = testcase_params['channel']
             if channel not in channels_tested:
                 channels_tested.append(channel)
-            if result['peak_throughput_pct'] == 100:
+            if result['peak_throughput_pct'] >= 95:
                 testclass_results_dict[test_id][channel] = result[
                     'sensitivity']
             else:
@@ -365,9 +384,12 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         current_network = self.dut.droid.wifiGetConnectionInfo()
-        valid_connection = wutils.validate_connection(self.dut)
-        if valid_connection and current_network['SSID'] == self.main_network[
-                band]['SSID']:
+        try:
+            connected = wutils.validate_connection(self.dut) is not None
+        except:
+            connected = False
+        if connected and current_network['SSID'] == self.main_network[band][
+                'SSID']:
             self.log.info('Already connected to desired network')
         else:
             wutils.reset_wifi(self.dut)
@@ -380,8 +402,10 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 num_of_tries=5,
                 check_connectivity=False)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
-        atten_dut_chain_map = wputils.get_atten_dut_chain_map(
-            self.attenuators, self.dut, self.ping_server, self.dut_ip)
+        atten_dut_chain_map = wputils.get_current_atten_dut_chain_map(
+            self.attenuators, self.dut, self.ping_server)
+        self.log.info(
+            "Current Attenuator-DUT Chain Map: {}".format(atten_dut_chain_map))
         for idx, atten in enumerate(self.attenuators):
             if atten_dut_chain_map[idx] == testcase_params['attenuated_chain']:
                 atten.offset = atten.instrument.max_atten
@@ -438,6 +462,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                 'Reference test not found. Starting from {} dB'.format(
                     self.testclass_params['atten_start']))
             start_atten = self.testclass_params['atten_start']
+            start_atten = max(start_atten, 0)
         return start_atten
 
     def compile_test_params(self, testcase_params):
@@ -446,7 +471,9 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             testcase_params['attenuated_chain'] = 'DUT-Chain-{}'.format(
                 1 if testcase_params['chain_mask'] == '0' else 0)
         else:
-            testcase_params['attenuated_chain'] = None
+            # Set attenuated chain to -1. Do not set to None as this will be
+            # compared to RF chain map which may include None
+            testcase_params['attenuated_chain'] = -1
 
         self.testclass_params[
             'range_ping_loss_threshold'] = 100 - self.testclass_params[
@@ -495,11 +522,13 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         self.testclass_results.append(result)
         self.pass_fail_check(result)
 
-    def generate_test_cases(self, channels, chain_mask):
+    def generate_test_cases(self, channels, modes, chain_mask):
         """Function that auto-generates test cases for a test class."""
         test_cases = []
         for channel in channels:
-            for mode in self.VALID_TEST_CONFIGS[channel]:
+            requested_modes = set(modes).intersection(
+                set(self.VALID_TEST_CONFIGS[channel]))
+            for mode in requested_modes:
                 if 'VHT' in mode:
                     rates = self.VALID_RATES[mode]
                 elif 'HT' in mode:
@@ -535,42 +564,51 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                     setattr(self, testcase_name,
                             partial(self._test_sensitivity, testcase_params))
                     test_cases.append(testcase_name)
-            return test_cases
+        return test_cases
 
 
 class WifiSensitivity_AllChannels_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases(
-            [1, 2, 6, 10, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            ['0', '1', '2x2'])
+            [6, 36, 40, 44, 48, 149, 153, 157, 161],
+            ['VHT20', 'VHT40', 'VHT80'], ['0', '1', '2x2'])
+
+
+class WifiSensitivity_SampleChannels_Test(WifiSensitivityTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = self.generate_test_cases(
+            [6, 36, 149], ['VHT20', 'VHT40', 'VHT80'], ['0', '1', '2x2'])
 
 
 class WifiSensitivity_2GHz_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = self.generate_test_cases([1, 2, 6, 10, 11],
+        super().__init__(controllers)
+        self.tests = self.generate_test_cases([1, 2, 6, 10, 11], ['VHT20'],
                                               ['0', '1', '2x2'])
 
 
 class WifiSensitivity_5GHz_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases(
-            [36, 40, 44, 48, 149, 153, 157, 161], ['0', '1', '2x2'])
+            [36, 40, 44, 48, 149, 153, 157, 161], ['VHT20', 'VHT40', 'VHT80'],
+            ['0', '1', '2x2'])
 
 
 class WifiSensitivity_UNII1_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = self.generate_test_cases([36, 40, 44, 48],
-                                              ['0', '1', '2x2'])
+        super().__init__(controllers)
+        self.tests = self.generate_test_cases(
+            [36, 40, 44, 48], ['VHT20', 'VHT40', 'VHT80'], ['0', '1', '2x2'])
 
 
 class WifiSensitivity_UNII3_Test(WifiSensitivityTest):
     def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases([149, 153, 157, 161],
+                                              ['VHT20', 'VHT40', 'VHT80'],
                                               ['0', '1', '2x2'])
 
 
@@ -582,6 +620,14 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
     It allows setting orientation and other chamber parameters to study
     performance in varying channel conditions
     """
+
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.testcase_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = False
 
     def setup_class(self):
         WifiSensitivityTest.setup_class(self)
@@ -617,7 +663,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 }
             testclass_results_dict[test_id][channel]['orientation'].append(
                 result['testcase_params']['orientation'])
-            if result['peak_throughput_pct'] == 100:
+            if result['peak_throughput_pct'] >= 95:
                 testclass_results_dict[test_id][channel]['sensitivity'].append(
                     result['sensitivity'])
             else:
@@ -630,19 +676,34 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 test_id_str = '{} {}Mbps, Chain Mask = {}'.format(
                     test_id_dict['mode'], test_id_dict['rate'],
                     test_id_dict['chain_mask'])
+                metric_test_config = '{}_{}_ch{}'.format(
+                    test_id_dict['mode'], test_id_dict['rate'],
+                    test_id_dict['chain_mask'])
             else:
                 test_id_str = '{} MCS{} Nss{}, Chain Mask = {}'.format(
+                    test_id_dict['mode'], test_id_dict['rate'],
+                    test_id_dict['num_streams'], test_id_dict['chain_mask'])
+                metric_test_config = '{}_mcs{}_nss{}_ch{}'.format(
                     test_id_dict['mode'], test_id_dict['rate'],
                     test_id_dict['num_streams'], test_id_dict['chain_mask'])
             curr_plot = wputils.BokehFigure(
                 title=str(test_id_str),
                 x_label='Orientation (deg)',
-                primary_y='Sensitivity (dBm)')
+                primary_y_label='Sensitivity (dBm)')
             for channel, channel_results in test_data.items():
                 curr_plot.add_line(
                     channel_results['orientation'],
                     channel_results['sensitivity'],
-                    legend='Channel {}'.format(channel))
+                    legend='Channel {}'.format(channel),
+                    marker='circle')
+                metric_tag = 'ota_summary_ch{}_{}'.format(
+                    channel, metric_test_config)
+                metric_name = metric_tag + '.avg_sensitivity'
+                metric_value = numpy.nanmean(channel_results['sensitivity'])
+                self.testclass_metric_logger.add_metric(
+                    metric_name, metric_value)
+                self.log.info(("Average Sensitivity for {}: {:.2f}").format(
+                    metric_tag, metric_value))
             current_context = (
                 context.get_current_context().get_full_output_path())
             output_file_path = os.path.join(current_context,
@@ -684,14 +745,17 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
             print('Reference test not found. Starting from {} dB'.format(
                 self.testclass_params['atten_start']))
             start_atten = self.testclass_params['atten_start']
+        start_atten = max(start_atten, 0)
         return start_atten
 
-    def generate_test_cases(self, channels, requested_rates, chain_mask,
+    def generate_test_cases(self, channels, modes, requested_rates, chain_mask,
                             angles):
         """Function that auto-generates test cases for a test class."""
         test_cases = []
         for channel in channels:
-            for mode in self.VALID_TEST_CONFIGS[channel]:
+            requested_modes = set(modes).intersection(
+                set(self.VALID_TEST_CONFIGS[channel]))
+            for mode in requested_modes:
                 if 'VHT' in mode:
                     valid_rates = self.VALID_RATES[mode]
                 elif 'HT' in mode:
@@ -731,45 +795,69 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                     setattr(self, testcase_name,
                             partial(self._test_sensitivity, testcase_params))
                     test_cases.append(testcase_name)
+        return test_cases
 
 
-class WifiOtaSensitivity_10Degree_Test(WifiOtaSensitivityTest):
+class WifiOtaSensitivity_TenDegree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
-        WifiSensitivityTest.__init__(self, controllers)
+        WifiOtaSensitivityTest.__init__(self, controllers)
         requested_channels = [6, 36, 149]
         requested_rates = [
             self.RateTuple(8, 1, 86.7),
-            self.RateTuple(0, 1, 7.2),
+            self.RateTuple(2, 1, 21.7),
             self.RateTuple(8, 2, 173.3),
+            self.RateTuple(2, 2, 43.3)
+        ]
+        self.tests = self.generate_test_cases(
+            requested_channels, ['VHT20', 'VHT80'], requested_rates, ['2x2'],
+            list(range(0, 360, 10)))
+
+
+class WifiOtaSensitivity_SingleChain_TenDegree_Test(WifiOtaSensitivityTest):
+    def __init__(self, controllers):
+        WifiOtaSensitivityTest.__init__(self, controllers)
+        requested_channels = [6, 36, 149]
+        requested_rates = [
+            self.RateTuple(8, 1, 86.7),
+            self.RateTuple(2, 1, 21.7)
+        ]
+        self.tests = self.generate_test_cases(
+            requested_channels, ['VHT20', 'VHT80'], requested_rates, ['2x2'],
+            list(range(0, 360, 10)))
+
+
+class WifiOtaSensitivity_ThirtyDegree_Test(WifiOtaSensitivityTest):
+    def __init__(self, controllers):
+        WifiOtaSensitivityTest.__init__(self, controllers)
+        requested_channels = [6, 36, 149]
+        requested_rates = [
+            self.RateTuple(9, 1, 96),
+            self.RateTuple(8, 1, 86.7),
+            self.RateTuple(7, 1, 72.2),
+            self.RateTuple(4, 1, 43.3),
+            self.RateTuple(2, 1, 21.7),
+            self.RateTuple(0, 1, 7.2),
+            self.RateTuple(9, 2, 192),
+            self.RateTuple(8, 2, 173.3),
+            self.RateTuple(7, 2, 144.4),
+            self.RateTuple(4, 2, 86.7),
+            self.RateTuple(2, 2, 43.3),
             self.RateTuple(0, 2, 14.4)
         ]
-        self.tests = self.generate_test_cases(requested_channels,
-                                              requested_rates, ['2x2'],
-                                              list(range(0, 360, 10)))
-
-
-class WifiOtaSensitivity_SingleChain_10Degree_Test(WifiOtaSensitivityTest):
-    def __init__(self, controllers):
-        WifiSensitivityTest.__init__(self, controllers)
-        requested_channels = [6, 36, 149]
-        requested_rates = [
-            self.RateTuple(8, 1, 86.7),
-            self.RateTuple(0, 1, 7.2),
-        ]
-        self.tests = self.generate_test_cases(requested_channels,
-                                              requested_rates, ['2x2'],
-                                              list(range(0, 360, 10)))
+        self.tests = self.generate_test_cases(
+            requested_channels, ['VHT20', 'VHT80'], requested_rates, ['2x2'],
+            list(range(0, 360, 30)))
 
 
 class WifiOtaSensitivity_45Degree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
-        WifiSensitivityTest.__init__(self, controllers)
+        WifiOtaSensitivityTest.__init__(self, controllers)
         requested_rates = [
             self.RateTuple(8, 1, 86.7),
-            self.RateTuple(0, 1, 7.2),
+            self.RateTuple(2, 1, 21.7),
             self.RateTuple(8, 2, 173.3),
-            self.RateTuple(0, 2, 14.4)
+            self.RateTuple(2, 2, 43.3)
         ]
         self.tests = self.generate_test_cases(
-            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], requested_rates,
-            ['2x2'], list(range(0, 360, 45)))
+            [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161], ['VHT20', 'VHT80'],
+            requested_rates, ['2x2'], list(range(0, 360, 45)))

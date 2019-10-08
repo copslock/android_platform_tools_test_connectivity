@@ -48,11 +48,12 @@ else:
 PY_FILE_REGEX = re.compile('.+\.py$')
 
 BLACKLIST = [
-    'acts/controllers/gnssinst_lib/rohdeschwarz/contest.py',
+    'acts/controllers/rohdeschwarz_lib/contest.py',
     'acts/controllers/native.py',
     'acts/controllers/native_android_device.py',
     'acts/controllers/packet_sender.py',
     'acts/test_utils/wifi/ota_chamber.py',
+    'acts/controllers/buds_lib/dev_utils/proto/gen/nanopb_pb2.py',
     'acts/test_utils/wifi/wifi_performance_test_utils.py',
     'acts/test_utils/wifi/wifi_power_test_utils.py',
     'acts/test_utils/wifi/wifi_retail_ap.py',
@@ -80,19 +81,22 @@ BLACKLIST = [
     'tests/google/tel/live/TelLiveNoSimTest.py',
     'tests/google/tel/live/TelLiveLockedSimTest.py',
     'tests/google/tel/live/TelLiveEmergencyTest.py',
+    'tests/google/tel/live/TelLiveConnectivityMonitorTest.py',
+    'tests/google/tel/live/TelLiveConnectivityMonitorMobilityTest.py',
     'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
     'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
     'tests/google/fuchsia/wlan/RebootStressTest.py',
 ]
 
 BLACKLIST_DIRECTORIES = [
+    'acts/controllers/buds_lib',
     # TODO: remove monsoon_lib after HVPM and LVPM sampling libraries are merged
     'acts/controllers/monsoon_lib',
-    'tests/google/gnss/',
     'acts/test_utils/audio_analysis_lib/',
     'acts/test_utils/coex/',
     'acts/test_utils/power/',
     'tests/google/coex/',
+    'tests/google/gnss/',
     'tests/google/power/',
     'tests/google/bt/performance/'
 ]

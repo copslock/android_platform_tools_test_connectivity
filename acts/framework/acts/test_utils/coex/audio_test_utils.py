@@ -14,11 +14,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import functools
 import logging
 import os
-from soundfile import SoundFile
+import wave
 
+from acts.test_utils.coex.audio_capture_device import CaptureAudioOverAdb
+from acts.test_utils.coex.audio_capture_device import CaptureAudioOverLocal
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.test_utils.audio_analysis_lib import audio_analysis
@@ -33,8 +34,46 @@ ANALYSIS_FILE_TEMPLATE = "audio_analysis_%s.txt"
 bits_per_sample = 32
 
 
+def get_audio_capture_device(test_class_instance):
+    """Gets the device object of the audio capture device connected to server.
+
+    The audio capture device returned is specified by the audio_params
+    within user_params. audio_params must specify a "type" field, that
+    is either "AndroidDevice" or "Local"
+
+    Args:
+        test_class_instance: object self of test class.
+
+    Returns:
+        Object of the audio capture device.
+
+    Raises:
+        ValueError if audio_params['type'] is not "AndroidDevice" or
+            "Local".
+        ValueError if "AndroidDevice" is specified, but there is only one
+            AndroidDevice within the testbed.
+    """
+    audio_params = test_class_instance.user_params.get('audio_params')
+
+    if audio_params['type'] == 'AndroidDevice':
+        if len(test_class_instance.android_devices) > 1:
+            return CaptureAudioOverAdb(
+                test_class_instance.android_devices[-1], audio_params)
+        else:
+            raise ValueError('At least 2 or more AndroidDevice should be '
+                             'specified to use as audio capture endpoint.')
+    elif audio_params['type'] == 'Local':
+        return CaptureAudioOverLocal(audio_params)
+    else:
+        raise ValueError('Unrecognized audio capture device '
+                         '%s' % audio_params['type'])
+
+
 class FileNotFound(Exception):
     """Raises Exception if file is not present"""
+
+# TODO @sairamganesh Rename this class to AudioCaptureResult and
+# remove duplicates which are in ../test_utils/coex/audio_capture_device.py.
 
 
 class SshAudioCapture(AudioCapture):
@@ -145,6 +184,19 @@ class SshAudioCapture(AudioCapture):
             block_size=block_size,
             threshold=threshold,
             tolerance=tolerance)
+
+    def get_last_record_duration_millis(self):
+        """Get duration of most recently recorded file.
+
+        Returns:
+            duration (float): duration of recorded file in milliseconds.
+        """
+        latest_file_path = self.record_file_template % self.last_fileno()
+        with wave.open(latest_file_path, 'r') as f:
+            frames = f.getnframes()
+            rate = f.getframerate()
+            duration = (frames / float(rate)) * 1000
+        return duration
 
     def audio_quality_analysis(self, path):
         """Measures audio quality based on the audio file given as input.

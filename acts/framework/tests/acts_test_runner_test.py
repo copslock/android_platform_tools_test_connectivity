@@ -15,16 +15,17 @@
 #   limitations under the License.
 
 import mock
+import os
 import shutil
 import tempfile
 import unittest
 
 from acts import keys
-from acts import signals
 from acts import test_runner
 
 import acts_android_device_test
 import mock_controller
+import IntegrationTest
 
 
 class ActsTestRunnerTest(unittest.TestCase):
@@ -35,14 +36,14 @@ class ActsTestRunnerTest(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = {
-            "testbed": {
-                "name": "SampleTestBed",
+            'testbed': {
+                'name': 'SampleTestBed',
             },
-            "logpath": self.tmp_dir,
-            "cli_args": None,
-            "testpaths": ["./"],
-            "icecream": 42,
-            "extra_param": "haha"
+            'logpath': self.tmp_dir,
+            'cli_args': None,
+            'testpaths': [os.path.dirname(IntegrationTest.__file__)],
+            'icecream': 42,
+            'extra_param': 'haha'
         }
         self.mock_run_list = [('SampleTest', None)]
 
@@ -59,11 +60,11 @@ class ActsTestRunnerTest(unittest.TestCase):
         tb_key = keys.Config.key_testbed.value
         mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
         my_config = [{
-            "serial": "xxxx",
-            "magic": "Magic1"
+            'serial': 'xxxx',
+            'magic': 'Magic1'
         }, {
-            "serial": "xxxx",
-            "magic": "Magic2"
+            'serial': 'xxxx',
+            'magic': 'Magic2'
         }]
         mock_test_config[tb_key][mock_ctrlr_config_name] = my_config
         tr = test_runner.TestRunner(mock_test_config,
@@ -73,9 +74,9 @@ class ActsTestRunnerTest(unittest.TestCase):
         tr.run()
         tr.stop()
         results = tr.results.summary_dict()
-        self.assertEqual(results["Requested"], 2)
-        self.assertEqual(results["Executed"], 2)
-        self.assertEqual(results["Passed"], 2)
+        self.assertEqual(results['Requested'], 2)
+        self.assertEqual(results['Executed'], 2)
+        self.assertEqual(results['Passed'], 2)
 
     @mock.patch(
         'acts.controllers.adb.AdbProxy',
@@ -84,7 +85,7 @@ class ActsTestRunnerTest(unittest.TestCase):
         'acts.controllers.fastboot.FastbootProxy',
         return_value=acts_android_device_test.MockFastbootProxy(1))
     @mock.patch(
-        'acts.controllers.android_device.list_adb_devices', return_value=["1"])
+        'acts.controllers.android_device.list_adb_devices', return_value=['1'])
     @mock.patch(
         'acts.controllers.android_device.get_all_instances',
         return_value=acts_android_device_test.get_mock_ads(1))
@@ -107,16 +108,16 @@ class ActsTestRunnerTest(unittest.TestCase):
         tb_key = keys.Config.key_testbed.value
         mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
         my_config = [{
-            "serial": "xxxx",
-            "magic": "Magic1"
+            'serial': 'xxxx',
+            'magic': 'Magic1'
         }, {
-            "serial": "xxxx",
-            "magic": "Magic2"
+            'serial': 'xxxx',
+            'magic': 'Magic2'
         }]
         mock_test_config[tb_key][mock_ctrlr_config_name] = my_config
-        mock_test_config[tb_key]["AndroidDevice"] = [{
-            "serial": "1",
-            "skip_sl4a": True
+        mock_test_config[tb_key]['AndroidDevice'] = [{
+            'serial': '1',
+            'skip_sl4a': True
         }]
         tr = test_runner.TestRunner(mock_test_config,
                                     [('IntegrationTest', None),
@@ -124,10 +125,10 @@ class ActsTestRunnerTest(unittest.TestCase):
         tr.run()
         tr.stop()
         results = tr.results.summary_dict()
-        self.assertEqual(results["Requested"], 2)
-        self.assertEqual(results["Executed"], 2)
-        self.assertEqual(results["Passed"], 2)
+        self.assertEqual(results['Requested'], 2)
+        self.assertEqual(results['Executed'], 2)
+        self.assertEqual(results['Passed'], 2)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

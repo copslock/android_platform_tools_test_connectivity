@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2018 - The Android Open Source Project
 #
@@ -17,12 +17,15 @@ import time
 import os
 
 import acts.test_utils.power.PowerBaseTest as PBT
-from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
-from acts.controllers.anritsu_lib.md8475a import MD8475A
+import acts.controllers.cellular_simulator as simulator
+from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsu
+from acts.controllers.rohdeschwarz_lib import cmw500_cellular_simulator as cmw
 from acts.test_utils.power.tel_simulations.GsmSimulation import GsmSimulation
 from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
 from acts.test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
 from acts.test_utils.power.tel_simulations.LteCaSimulation import LteCaSimulation
+from acts.test_utils.power.tel_simulations.LteImsSimulation import LteImsSimulation
+from acts.test_utils.tel import tel_test_utils as telutils
 
 
 class PowerCellularLabBaseTest(PBT.PowerBaseTest):
@@ -37,11 +40,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
     PARAM_SIM_TYPE_LTE = "lte"
     PARAM_SIM_TYPE_LTE_CA = "lteca"
+    PARAM_SIM_TYPE_LTE_IMS = "lteims"
     PARAM_SIM_TYPE_UMTS = "umts"
     PARAM_SIM_TYPE_GSM = "gsm"
 
     # Custom files
-    FILENAME_CALIBRATION_TABLE = "calibration_table.json"
+    FILENAME_CALIBRATION_TABLE_UNFORMATTED = 'calibration_table_{}.json'
 
     # Name of the files in the logs directory that will contain test results
     # and other information in csv format.
@@ -57,19 +61,14 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         super().__init__(controllers)
 
         self.simulation = None
-        self.anritsu = None
+        self.cellular_simulator = None
         self.calibration_table = {}
         self.power_results = {}
-
-        # If callbox version was not specified in the config files,
-        # set a default value
-        if not hasattr(self, "md8475_version"):
-            self.md8475_version = "A"
 
     def setup_class(self):
         """ Executed before any test case is started.
 
-        Sets the device to rockbottom and connects to the anritsu callbox.
+        Sets the device to rockbottom and connects to the cellular instrument.
 
         Returns:
             False if connecting to the callbox fails.
@@ -77,39 +76,77 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         super().setup_class()
 
-        # Gets the name of the interface from which packets are sent
-        if hasattr(self, 'packet_senders'):
-            self.pkt_sender = self.packet_senders[0]
-
         # Load calibration tables
+        filename_calibration_table = (
+            self.FILENAME_CALIBRATION_TABLE_UNFORMATTED.format(
+                self.testbed_name))
+
         for file in self.custom_files:
-            if self.FILENAME_CALIBRATION_TABLE in file:
+            if filename_calibration_table in file:
                 self.calibration_table = self.unpack_custom_file(file, False)
+                self.log.info('Loading calibration table from ' + file)
+                self.log.debug(self.calibration_table)
+                break
 
-        # Store the value of the key to access the test config in the
-        # user_params dictionary.
-        self.PARAMS_KEY = self.TAG + "_params"
+        # Ensure the calibration table only contains non-negative values
+        self.ensure_valid_calibration_table(self.calibration_table)
 
-        # Establish connection to Anritsu Callbox
-        return self.connect_to_anritsu()
+        # Turn on airplane mode for all devices, as some might
+        # be unused during the test
+        for ad in self.android_devices:
+            telutils.toggle_airplane_mode(self.log, ad, True)
 
-    def connect_to_anritsu(self):
+        # Establish a connection with the cellular simulator equipment
+        try:
+            self.cellular_simulator = self.initialize_simulator()
+        except ValueError:
+            self.log.error('No cellular simulator could be selected with the '
+                           'current configuration.')
+            raise
+        except simulator.CellularSimulatorError:
+            self.log.error('Could not initialize the cellular simulator.')
+            raise
+
+    def initialize_simulator(self):
         """ Connects to Anritsu Callbox and gets handle object.
 
         Returns:
             False if a connection with the callbox could not be started
         """
 
-        try:
+        if hasattr(self, 'md8475_version'):
 
-            self.anritsu = MD8475A(
-                self.md8475a_ip_address,
-                self.wlan_option,
-                md8475_version=self.md8475_version)
-            return True
-        except AnritsuError:
-            self.log.error('Error in connecting to Anritsu Callbox')
-            return False
+            self.log.info('Selecting Anrtisu MD8475 callbox.')
+
+            # Verify the callbox IP address has been indicated in the configs
+            if not hasattr(self, 'md8475_version'):
+                raise RuntimeError(
+                    'md8475a_ip_address was not included in the test '
+                    'configuration.')
+
+            if self.md8475_version == 'A':
+                return anritsu.MD8475CellularSimulator(self.md8475a_ip_address)
+            elif self.md8475_version == 'B':
+                return anritsu.MD8475BCellularSimulator(
+                    self.md8475a_ip_address)
+            else:
+                raise ValueError('Invalid MD8475 version.')
+
+        elif hasattr(self, 'cmw500_ip') or hasattr(self, 'cmw500_port'):
+
+            for key in ['cmw500_ip', 'cmw500_port']:
+                if not hasattr(self, key):
+                    raise RuntimeError('The CMW500 cellular simulator '
+                                       'requires %s to be set in the '
+                                       'config file.' % key)
+
+            return cmw.CMW500CellularSimulator(self.cmw500_ip,
+                                               self.cmw500_port)
+
+        else:
+            raise RuntimeError(
+                'The simulator could not be initialized because '
+                'a callbox was not defined in the configs file.')
 
     def setup_test(self):
         """ Executed before every test case.
@@ -141,6 +178,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.init_simulation(self.PARAM_SIM_TYPE_LTE)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_LTE_CA):
             self.init_simulation(self.PARAM_SIM_TYPE_LTE_CA)
+        elif self.consume_parameter(self.PARAM_SIM_TYPE_LTE_IMS):
+            self.init_simulation(self.PARAM_SIM_TYPE_LTE_IMS)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_UMTS):
             self.init_simulation(self.PARAM_SIM_TYPE_UMTS)
         elif self.consume_parameter(self.PARAM_SIM_TYPE_GSM):
@@ -165,11 +204,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Wait for new params to settle
         time.sleep(5)
 
-        # Attach the phone to the basestation
-        if not self.simulation.attach():
-            return False
-
-        self.simulation.start_test_case()
+        # Start the simulation. This method will raise an exception if
+        # the phone is unable to attach.
+        self.simulation.start()
 
         # Make the device go to sleep
         self.dut.droid.goToSleepNow()
@@ -183,10 +220,9 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         Save results to dictionary so they can be displayed after completing
         the test batch.
         """
-
         super().teardown_test()
 
-        self.power_results[self.test_name] = self.power_consumption
+        self.power_results[self.test_name] = self.power_result.metric_value
 
     def consume_parameter(self, parameter_name, num_values=0):
         """ Parses a parameter from the test name.
@@ -231,9 +267,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         """
         super().teardown_class()
 
-        if self.anritsu:
-            self.anritsu.stop_simulation()
-            self.anritsu.disconnect()
+        try:
+            if self.cellular_simulator:
+                self.cellular_simulator.destroy()
+        except simulator.CellularSimulatorError as e:
+            self.log.error('Error while tearing down the callbox controller. '
+                           'Error message: ' + str(e))
 
         # Log a summary of results
         results_table_log = 'Results for cellular power tests:'
@@ -291,7 +330,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.PARAM_SIM_TYPE_LTE: LteSimulation,
             self.PARAM_SIM_TYPE_UMTS: UmtsSimulation,
             self.PARAM_SIM_TYPE_GSM: GsmSimulation,
-            self.PARAM_SIM_TYPE_LTE_CA: LteCaSimulation
+            self.PARAM_SIM_TYPE_LTE_CA: LteCaSimulation,
+            self.PARAM_SIM_TYPE_LTE_IMS: LteImsSimulation
         }
 
         if not sim_type in simulation_dictionary:
@@ -313,9 +353,24 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             self.calibration_table[sim_type] = {}
 
         # Instantiate a new simulation
-        self.simulation = simulation_class(self.anritsu, self.log, self.dut,
-                                           self.user_params[self.PARAMS_KEY],
+        self.simulation = simulation_class(self.cellular_simulator, self.log,
+                                           self.dut,
+                                           self.test_params,
                                            self.calibration_table[sim_type])
 
-        # Start the simulation
-        self.simulation.start()
+    def ensure_valid_calibration_table(self, calibration_table):
+        """ Ensures the calibration table has the correct structure.
+
+        A valid calibration table is a nested dictionary with non-negative
+        number values
+
+        """
+        if not calibration_table or not isinstance(calibration_table, dict):
+            raise TypeError('The calibration table must be a dictionary')
+        for val in calibration_table.values():
+            if isinstance(val, dict):
+                self.ensure_valid_calibration_table(val)
+            elif not isinstance(val, float) and not isinstance(val, int):
+                raise TypeError('Calibration table value must be a number')
+            elif val < 0.0:
+                raise ValueError('Calibration table contains negative values')

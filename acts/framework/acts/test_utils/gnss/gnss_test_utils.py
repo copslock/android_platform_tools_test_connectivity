@@ -42,6 +42,15 @@ TTFF_REPORT = collections.namedtuple(
     "TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
 TRACK_REPORT = collections.namedtuple(
     "TRACK_REPORT", "track_l5flag track_pe track_top4cn track_cn")
+LOCAL_PROP_FILE_CONTENTS =  """\
+log.tag.LocationManagerService=VERBOSE
+log.tag.GnssLocationProvider=VERBOSE
+log.tag.GnssMeasurementsProvider=VERBOSE
+log.tag.GpsNetInitiatedHandler=VERBOSE
+log.tag.GnssNetworkConnectivityHandler=VERBOSE
+log.tag.ConnectivityService=VERBOSE
+log.tag.ConnectivityManager=VERBOSE
+log.tag.GnssVisibilityControl=VERBOSE"""
 
 
 class GnssTestUtilsError(Exception):
@@ -88,11 +97,7 @@ def enable_gnss_verbose_logging(ad):
     remount_device(ad)
     ad.log.info("Enable GNSS VERBOSE Logging and persistent logcat.")
     ad.adb.shell("echo DEBUG_LEVEL = 5 >> /vendor/etc/gps.conf")
-    ad.adb.shell("echo log.tag.LocationManagerService=VERBOSE >> /data/local.prop")
-    ad.adb.shell("echo log.tag.GnssLocationProvider=VERBOSE >> /data/local.prop")
-    ad.adb.shell("echo log.tag.GnssMeasurementsProvider=VERBOSE >> /data/local.prop")
-    ad.adb.shell("echo log.tag.GpsNetInitiatedHandler=VERBOSE >> /data/local.prop")
-    ad.adb.shell("echo log.tag.GnssNetworkConnectivityHandler=VERBOSE >> /data/local.prop")
+    ad.adb.shell("echo %r >> /data/local.prop" % LOCAL_PROP_FILE_CONTENTS)
     ad.adb.shell("chmod 644 /data/local.prop")
     ad.adb.shell("setprop persist.logd.size 16777216")
     ad.adb.shell("setprop persist.vendor.radio.adb_log_on 1")
@@ -113,16 +118,22 @@ def enable_compact_and_particle_fusion_log(ad):
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
                  "GSERVICES_OVERRIDE -e location:proks_config 28")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e flp_use_particle_fusion true")
+                 "GSERVICES_OVERRIDE -e location:flp_use_particle_fusion true")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e flp_particle_fusion_extended_bug_report"
-                 " true")
+                 "GSERVICES_OVERRIDE -e "
+                 "location:flp_particle_fusion_extended_bug_report true")
     ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e flp_event_log_size 54000")
+                 "GSERVICES_OVERRIDE -e location:flp_event_log_size 86400")
+    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
+                 "GSERVICES_OVERRIDE -e "
+                 "location:flp_particle_fusion_bug_report_window_sec 86400")
+    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
+                 "GSERVICES_OVERRIDE -e location:"
+                 "flp_particle_fusion_bug_report_max_buffer_size 86400")
     ad.adb.shell("am force-stop com.google.android.gms")
     ad.adb.shell("am broadcast -a com.google.android.gms.INITIALIZE")
-    ad.adb.shell("sqlite3 /data/data/com.google.android.gsf/databases/"
-                 "gservices.db 'SELECT * FROM overrides'")
+    ad.adb.shell("dumpsys activity service com.google.android.location."
+                 "internal.GoogleLocationManagerService")
 
 def disable_xtra_throttle(ad):
     """Disable XTRA throttle will have no limit to download XTRA data.
@@ -409,7 +420,6 @@ def init_gtw_gpstool(ad):
     remount_device(ad)
     pull_gtw_gpstool(ad)
     ad.adb.shell("settings put global verifier_verify_adb_installs 0")
-    ad.adb.shell("settings put global package_verifier_enable 0")
     reinstall_gtw_gpstool(ad)
 
 def fastboot_factory_reset(ad):
@@ -460,7 +470,6 @@ def fastboot_factory_reset(ad):
                 break
             ad.log.info("Re-install sl4a")
             ad.adb.shell("settings put global verifier_verify_adb_installs 0")
-            ad.adb.shell("settings put global package_verifier_enable 0")
             ad.adb.install("-r -g -t /tmp/base.apk")
             reinstall_gtw_gpstool(ad)
             time.sleep(10)
@@ -677,14 +686,19 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
     Args:
         ad: An AndroidDevice object.
         begin_time: test begin time.
-        true_position: Coordinate as [latitude, longitude] to calculate position error.
+        true_position: Coordinate as [latitude, longitude] to calculate
+        position error.
         type: Different API for location fix. Use gnss/flp/nmea
 
     Returns:
         ttff_data: A dict of all TTFF data.
     """
     ttff_data = {}
+    ttff_loop_time = get_current_epoch_time()
     while True:
+        if get_current_epoch_time() - ttff_loop_time >= 120000:
+            raise signals.TestFailure("Fail to search specific GPSService "
+                                      "message in logcat. Abort test.")
         if not ad.is_adb_logcat_on:
             ad.start_adb_logcat()
         stop_gps_results = ad.search_logcat("stop gps test", begin_time)
@@ -702,21 +716,28 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
             ttff_loop = int(ttff_log[8].split(":")[-1])
             if ttff_loop in ttff_data.keys():
                 continue
+            ttff_loop_time = get_current_epoch_time()
             ttff_sec = float(ttff_log[11])
             if ttff_sec != 0.0:
                 ttff_cn = float(ttff_log[18].strip("]"))
                 if type == "gnss":
-                    gnss_results = ad.search_logcat("GPSService: Check item", begin_time)
+                    gnss_results = ad.search_logcat("GPSService: Check item",
+                                                    begin_time)
                     if gnss_results:
                         ad.log.debug(gnss_results[-1]["log_message"])
-                        gnss_location_log = gnss_results[-1]["log_message"].split()
-                        ttff_lat = float(gnss_location_log[8].split("=")[-1].strip(","))
-                        ttff_lon = float(gnss_location_log[9].split("=")[-1].strip(","))
+                        gnss_location_log = \
+                            gnss_results[-1]["log_message"].split()
+                        ttff_lat = float(
+                            gnss_location_log[8].split("=")[-1].strip(","))
+                        ttff_lon = float(
+                            gnss_location_log[9].split("=")[-1].strip(","))
                 elif type == "flp":
-                    flp_results = ad.search_logcat("GPSService: FLP Location", begin_time)
+                    flp_results = ad.search_logcat("GPSService: FLP Location",
+                                                   begin_time)
                     if flp_results:
                         ad.log.debug(flp_results[-1]["log_message"])
-                        flp_location_log = flp_results[-1]["log_message"].split()
+                        flp_location_log = \
+                            flp_results[-1]["log_message"].split()
                         ttff_lat = float(flp_location_log[8].split(",")[0])
                         ttff_lon = float(flp_location_log[8].split(",")[1])
             else:

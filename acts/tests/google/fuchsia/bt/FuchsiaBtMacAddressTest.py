@@ -32,10 +32,9 @@ from acts.test_utils.bt.bt_test_utils import generate_id_by_size
 class FuchsiaBtMacAddressTest(BaseTestClass):
     scan_timeout_seconds = 10
 
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         if len(self.fuchsia_devices) < 2:
             raise signals.TestAbortAll("Need at least two Fuchsia devices")
         for device in self.fuchsia_devices:

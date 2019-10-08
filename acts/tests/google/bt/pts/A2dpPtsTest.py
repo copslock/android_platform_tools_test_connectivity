@@ -28,8 +28,8 @@ class A2dpPtsTest(PtsBaseClass):
     ble_advertise_interval = 100
     pts_action_mapping = None
 
-    def __init__(self, controllers):
-        super(A2dpPtsTest, self).__init__(controllers)
+    def setup_class(self):
+        super(A2dpPtsTest, self).setup_class()
         self.dut.initialize_bluetooth_controller()
         # self.dut.set_bluetooth_local_name(self.dut_bluetooth_local_name)
         local_dut_mac_address = self.dut.get_local_bluetooth_address()
@@ -58,8 +58,6 @@ class A2dpPtsTest(PtsBaseClass):
 
         self.pts.set_ics_and_ixit(ics, ixit)
 
-    def setup_class(self):
-        super(A2dpPtsTest, self).setup_class()
         self.dut.unbond_all_known_devices()
         self.dut.start_pairing_helper()
 

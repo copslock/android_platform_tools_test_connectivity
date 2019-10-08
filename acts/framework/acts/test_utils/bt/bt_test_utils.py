@@ -85,12 +85,13 @@ def _add_android_device_to_dictionary(android_device, profile_list,
             selector_dict[profile] = [android_device]
 
 
-def bluetooth_enabled_check(ad):
+def bluetooth_enabled_check(ad, timeout_sec=5):
     """Checks if the Bluetooth state is enabled, if not it will attempt to
     enable it.
 
     Args:
         ad: The Android device list to enable Bluetooth on.
+        timeout_sec: number of seconds to wait for toggle to take effect.
 
     Returns:
         True if successful, false if unsuccessful.
@@ -110,7 +111,10 @@ def bluetooth_enabled_check(ad):
                 return True
             ad.log.error(".. actual state is OFF")
             return False
-    return True
+    end_time = time.time() + timeout_sec
+    while not ad.droid.bluetoothCheckState() and time.time() < end_time:
+        time.sleep(1)
+    return ad.droid.bluetoothCheckState()
 
 
 def check_device_supported_profiles(droid):
@@ -212,13 +216,15 @@ def connect_phone_to_headset(android, headset, timeout=bt_default_timeout,
     """
     connected = is_a2dp_src_device_connected(android, headset.mac_address)
     log.info('Devices connected before pair attempt: %s' % connected)
+    if not connected:
+        # Turn on headset and initiate pairing mode.
+        headset.enter_pairing_mode()
+        android.droid.bluetoothStartPairingHelper()
     start_time = time.time()
     # If already connected, skip pair and connect attempt.
     while not connected and (time.time() - start_time < timeout):
-        bonded_info = android.droid.bluetoothA2dpGetConnectedDevices()
+        bonded_info = android.droid.bluetoothGetBondedDevices()
         if headset.mac_address not in [info["address"] for info in bonded_info]:
-            # Turn on headset and initiate pairing mode.
-            headset.enter_pairing_mode()
             # Use SL4A to pair and connect with headset.
             android.droid.bluetoothDiscoverAndBond(headset.mac_address)
         else:  # Device is bonded but not connected
@@ -1352,9 +1358,9 @@ def setup_multiple_devices_for_bt_test(android_devices):
                 a.log.info("Removing bond for device {}".format(b['address']))
                 d.bluetoothUnbond(b['address'])
         for a in android_devices:
-            a.adb.shell("setprop persist.bluetooth.btsnoopenable true")
-            getprop_result = bool(
-                a.adb.shell("getprop persist.bluetooth.btsnoopenable"))
+            a.adb.shell("setprop persist.bluetooth.btsnooplogmode full")
+            getprop_result = a.adb.shell(
+                "getprop persist.bluetooth.btsnooplogmode") == "full"
             if not getprop_result:
                 a.log.warning("Failed to enable Bluetooth Hci Snoop Logging.")
     except Exception as err:

@@ -68,6 +68,7 @@ class WifiSoftApTest(WifiBaseTest):
         self.dut_client.droid.wifiEnableVerboseLogging(1)
         asserts.assert_equal(self.dut_client.droid.wifiGetVerboseLoggingLevel(), 1,
             "Failed to enable WiFi verbose logging on the client dut.")
+        wutils.wifi_toggle_state(self.dut, True)
         wutils.wifi_toggle_state(self.dut_client, True)
         self.AP_IFACE = 'wlan0'
         if self.dut.model in self.dbs_supported_models:
@@ -87,7 +88,15 @@ class WifiSoftApTest(WifiBaseTest):
             del self.user_params["reference_networks"]
             del self.user_params["open_network"]
 
+    def setup_test(self):
+        # Set country code explicitly to "US".
+        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+
     def teardown_test(self):
+        self.dut.log.debug("Toggling Airplane mode OFF.")
+        asserts.assert_true(utils.force_airplane_mode(self.dut, False),
+                            "Can not turn off airplane mode: %s" % self.dut.serial)
         if self.dut.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.dut)
 
@@ -393,6 +402,25 @@ class WifiSoftApTest(WifiBaseTest):
         wutils.wifi_connect(self.dut_client, config, check_connectivity=False)
         wutils.stop_wifi_tethering(self.dut)
         wutils.wait_for_disconnect(self.dut_client)
+
+    @test_tracker_info(uuid="f2cf56ad-b8b9-43b6-ab15-a47b1d96b92e")
+    def test_full_tether_startup_2G_with_airplane_mode_on(self):
+        """Test full startup of wifi tethering in 2G band with
+        airplane mode on.
+
+        1. Turn on airplane mode.
+        2. Report current state.
+        3. Switch to AP mode.
+        4. verify SoftAP active.
+        5. Shutdown wifi tethering.
+        6. verify back to previous mode.
+        7. Turn off airplane mode.
+        """
+        self.dut.log.debug("Toggling Airplane mode ON.")
+        asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                            "Can not turn on airplane mode: %s" % self.dut.serial)
+        wutils.wifi_toggle_state(self.dut, True)
+        self.validate_full_tether_startup(WIFI_CONFIG_APBAND_2G)
 
     @test_tracker_info(uuid="05c6f929-7754-477f-a9cd-f77e850b818b")
     def test_full_tether_startup_2G_multiple_clients(self):

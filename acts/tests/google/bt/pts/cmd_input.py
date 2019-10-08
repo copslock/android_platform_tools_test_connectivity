@@ -1357,7 +1357,7 @@ class CmdInput(cmd.Cmd):
         cmd = "Test that verifies battery level indicator changes with the " \
             "phone. Phone current level."
         try:
-            self.bt_carkit_lib.cycle_absolute_volume_control(self.pri_dut)
+            self.bt_carkit_lib.cycle_battery_level(self.pri_dut)
         except Exception as err:
             self.log.info(FAILURE.format(cmd, err))
 
