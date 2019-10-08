@@ -39,7 +39,7 @@ class Sl4fSanityTest(BaseTestClass):
         if len(self.fuchsia_devices) > 0:
             self.log.info(success_str)
         else:
-            raise signals.TestSkipClass("err_str")
+            raise signals.TestAbortClass("err_str")
 
     def test_example(self):
         self.log.info("Congratulations! You've run your first test.")

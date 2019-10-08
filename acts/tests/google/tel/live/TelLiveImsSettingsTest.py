@@ -86,9 +86,9 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
             subid].get("capabilities", [])
         self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         if CAPABILITY_VOLTE not in self.dut_capabilities:
-            raise signals.TestSkipClass("VoLTE is not supported")
+            raise signals.TestAbortClass("VoLTE is not supported")
         if CAPABILITY_WFC not in self.dut_capabilities:
-            raise signals.TestSkipClass("WFC is not supported")
+            raise signals.TestAbortClass("WFC is not supported")
 
         self.default_volte = (CAPABILITY_VOLTE in self.dut_capabilities) and (
             self.carrier_configs[CarrierConfigs.

@@ -3219,7 +3219,7 @@ def trigger_modem_crash_by_modem(ad, timeout=120):
 def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
     result = False
     if not ad.is_apk_installed("com.google.mdstest"):
-        raise signals.TestSkipClass("mdstest is not installed")
+        raise signals.TestAbortClass("mdstest is not installed")
     mode = ad.droid.telephonyGetPhoneCount()
     if mode == 2:
         ad.log.info("Device already in MSIM mode")
@@ -3262,7 +3262,7 @@ def phone_switch_to_msim_mode(ad, retries=3, timeout=60):
 def phone_switch_to_ssim_mode(ad, retries=3, timeout=30):
     result = False
     if not ad.is_apk_installed("com.google.mdstest"):
-        raise signals.TestSkipClass("mdstest is not installed")
+        raise signals.TestAbortClass("mdstest is not installed")
     mode = ad.droid.telephonyGetPhoneCount()
     if mode == 1:
         ad.log.info("Device already in SSIM mode")
