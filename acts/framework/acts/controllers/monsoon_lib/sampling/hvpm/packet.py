@@ -53,8 +53,8 @@ class HvpmMeasurement(object):
      1  │    2   │ uint16 │  Main   │ Fine    │ Calibration/Measurement value
      2  │    4   │ uint16 │  USB    │ Coarse  │ Calibration/Measurement value
      3  │    6   │ uint16 │  USB    │ Fine    │ Calibration/Measurement value
-     4  │    8   │  int16 │  Aux    │ Coarse  │ Calibration/Measurement value
-     5  │   10   │  int16 │  Aux    │ Fine    │ Calibration/Measurement value
+     4  │    8   │ uint16 │  Aux    │ Coarse  │ Calibration/Measurement value
+     5  │   10   │ uint16 │  Aux    │ Fine    │ Calibration/Measurement value
      6  │   12   │ uint16 │  Main   │ Voltage │ Main V measurement, or Aux V
         │        │        │         │         │    if setVoltageChannel == 1
      7  │   14   │ uint16 │  USB    │ Voltage │ USB Voltage
@@ -76,7 +76,7 @@ class HvpmMeasurement(object):
     SIZE = 18
 
     def __init__(self, raw_data, sample_time):
-        self.values = struct.unpack('>4H2h2H2B', raw_data)
+        self.values = struct.unpack('>8H2B', raw_data)
         self._sample_time = sample_time
 
     def __getitem__(self, channel_and_reading_granularity):
