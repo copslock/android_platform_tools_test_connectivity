@@ -438,10 +438,10 @@ class CalibrationApplier(ParallelTransformer):
                 zero_offset += cal_zero
                 if cal_ref - zero_offset != 0:
                     slope = scale / (cal_ref - zero_offset)
-                    if granularity == Granularity.FINE:
-                        slope /= 1000
                 else:
                     slope = 0
+                if granularity == Granularity.FINE:
+                    slope /= 1000
 
                 index = HvpmMeasurement.get_index(channel, granularity)
                 calibrated_value[:, granularity] = slope * (
@@ -452,7 +452,7 @@ class CalibrationApplier(ParallelTransformer):
             readings[:, channel] = np.where(
                 measurements[:, fine_data_position] < self.fine_threshold,
                 calibrated_value[:, Granularity.FINE],
-                calibrated_value[:, Granularity.COARSE])
+                calibrated_value[:, Granularity.COARSE]) / 1000.0  # to mA
 
         main_voltage_index = HvpmMeasurement.get_index(Channel.MAIN,
                                                        Reading.VOLTAGE)

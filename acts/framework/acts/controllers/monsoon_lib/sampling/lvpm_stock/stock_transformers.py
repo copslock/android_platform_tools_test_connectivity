@@ -340,32 +340,6 @@ class CalibrationApplier(ParallelTransformer):
             return False
         return True
 
-    @staticmethod
-    def _get_currents(sample, calibration_data):
-        """Returns the list of current values for each channel.
-
-        Args:
-            sample: The Sample object to determine the current values of.
-            calibration_data: The CalibrationCollection used to calibrate the
-                sample.
-
-        Returns:
-
-        """
-        currents = [0] * 3
-        for channel in Channel.values:
-            current = sample[channel]
-            granularity = Granularity.FINE
-            if current & 1:
-                current &= ~1
-                granularity = Granularity.COARSE
-
-            zero = calibration_data.get(channel, Origin.ZERO, granularity)
-            scale = calibration_data.get(channel, Origin.SCALE, granularity)
-            currents[channel] = (current - zero) * scale
-
-        return currents
-
     def _transform_buffer(self, buffer):
         calibration_data = buffer.calibration_data
 
@@ -393,7 +367,7 @@ class CalibrationApplier(ParallelTransformer):
             # Monsoon.py algorithm.
             readings[:, channel] = np.where(
                 measurements[:, channel] & 1,
-                (measurements[:, channel] - 1 - coarse_zero) * coarse_scale,
+                ((measurements[:, channel] & ~1) - coarse_zero) * coarse_scale,
                 (measurements[:, channel] - fine_zero) * fine_scale)
 
         for i in range(len(buffer.samples)):
