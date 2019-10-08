@@ -29,11 +29,13 @@ MOCK_INSTRUMENTATION_CONFIG = {
         'lvl2': {'file1': 'FILE'}
     },
     'MockController': {
-        'param1': 1
+        'param1': 1,
+        'param2': 4
     },
     'MockInstrumentationBaseTest': {
         'MockController': {
-            'param2': 2
+            'param2': 2,
+            'param3': 5
         },
         'test_case': {
             'MockController': {
@@ -83,21 +85,21 @@ class InstrumentationBaseTestTest(unittest.TestCase):
         controller config for the current test case.
         """
         self.instrumentation_test.current_test_name = 'test_case'
-        config = self.instrumentation_test._get_controller_config(
+        config = self.instrumentation_test._get_merged_config(
             'MockController')
-        self.assertNotIn('param1', config)
-        self.assertNotIn('param2', config)
-        self.assertIn('param3', config)
+        self.assertEqual(config.get('param1'), 1)
+        self.assertEqual(config.get('param2'), 2)
+        self.assertEqual(config.get('param3'), 3)
 
     def test_get_controller_config_for_test_class(self):
         """Test that _get_controller_config returns the controller config for
         the current test class (while no test case is running).
         """
-        config = self.instrumentation_test._get_controller_config(
+        config = self.instrumentation_test._get_merged_config(
             'MockController')
-        self.assertIn('param1', config)
-        self.assertIn('param2', config)
-        self.assertNotIn('param3', config)
+        self.assertEqual(config.get('param1'), 1)
+        self.assertEqual(config.get('param2'), 2)
+        self.assertEqual(config.get('param3'), 5)
 
 
 if __name__ == '__main__':
