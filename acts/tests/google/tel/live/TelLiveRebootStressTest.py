@@ -95,8 +95,9 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         self.user_params["check_crash"] = False
         self.skip_reset_between_cases = False
 
-        self.dut_capabilities = self.dut.telephony.get("capabilities", [])
-        self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
+        self.dut_subID = get_outgoing_voice_sub_id(self.dut)
+        self.dut_capabilities = self.dut.telephony["subscription"][self.dut_subID].get("capabilities", [])
+        self.dut_wfc_modes = self.dut.telephony["subscription"][self.dut_subID].get("wfc_modes", [])
         self.default_testing_func_names = []
         for method in ("_check_volte", "_check_vt", "_check_csfb",
                        "_check_tethering", "_check_wfc_apm",
