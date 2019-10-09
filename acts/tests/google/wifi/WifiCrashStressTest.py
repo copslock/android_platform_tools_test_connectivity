@@ -41,7 +41,7 @@ class WifiCrashStressTest(WifiBaseTest):
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
         if not self.dut.is_apk_installed("com.google.mdstest"):
-            raise signals.TestSkipClass("mdstest is not installed")
+            raise signals.TestAbortClass("mdstest is not installed")
         req_params = ["dbs_supported_models", "stress_count"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(

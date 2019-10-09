@@ -1103,7 +1103,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_lte_volte_parallel_stress(self):
         """ VoLTE on stress test"""
         if CAPABILITY_VOLTE not in self.dut_capabilities:
-            raise signals.TestSkipClass("VoLTE is not supported")
+            raise signals.TestAbortClass("VoLTE is not supported")
         return self.parallel_tests(
             setup_func=self._setup_lte_volte_enabled,
             call_verification_func=is_phone_in_call_volte)
@@ -1121,7 +1121,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_wfc_parallel_stress(self):
         """ Wifi calling APM mode off stress test"""
         if CAPABILITY_WFC not in self.dut_capabilities:
-            raise signals.TestSkipClass("WFC is not supported")
+            raise signals.TestAbortClass("WFC is not supported")
         if WFC_MODE_WIFI_PREFERRED not in self.dut_wfc_modes:
             raise signals.TestSkip("WFC_MODE_WIFI_PREFERRED is not supported")
         return self.parallel_tests(
@@ -1133,7 +1133,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_wfc_apm_parallel_stress(self):
         """ Wifi calling in APM mode on stress test"""
         if CAPABILITY_WFC not in self.dut_capabilities:
-            raise signals.TestSkipClass("WFC is not supported")
+            raise signals.TestAbortClass("WFC is not supported")
         return self.parallel_tests(
             setup_func=self._setup_wfc_apm,
             call_verification_func=is_phone_in_call_iwlan)
@@ -1159,7 +1159,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_volte_modeprefchange_parallel_stress(self):
         """ VoLTE Mode Pref call stress test"""
         if CAPABILITY_VOLTE not in self.dut_capabilities:
-            raise signals.TestSkipClass("VoLTE is not supported")
+            raise signals.TestAbortClass("VoLTE is not supported")
         return self.parallel_with_network_change_tests(
             setup_func=self._setup_lte_volte_enabled)
 

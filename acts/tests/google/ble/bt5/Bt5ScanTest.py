@@ -66,11 +66,11 @@ class Bt5ScanTest(BluetoothBaseTest):
         self.adv_ad = self.android_devices[1]
 
         if not self.scn_ad.droid.bluetoothIsLeExtendedAdvertisingSupported():
-            raise signals.TestSkipClass(
+            raise signals.TestAbortClass(
                 "Scanner does not support LE Extended Advertising")
 
         if not self.adv_ad.droid.bluetoothIsLeExtendedAdvertisingSupported():
-            raise signals.TestSkipClass(
+            raise signals.TestAbortClass(
                 "Advertiser does not support LE Extended Advertising")
 
     def teardown_test(self):
