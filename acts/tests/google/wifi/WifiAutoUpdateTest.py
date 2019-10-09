@@ -93,7 +93,7 @@ class WifiAutoUpdateTest(WifiBaseTest):
         try:
             ota_updater.update(self.dut)
         except Exception as err:
-            raise signals.TestSkipClass(
+            raise signals.TestAbortClass(
                 "Failed up apply OTA update. Aborting tests")
 
     def setup_test(self):
