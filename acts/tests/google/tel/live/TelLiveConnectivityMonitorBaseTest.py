@@ -37,6 +37,7 @@ from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import get_model_name
 from acts.test_utils.tel.tel_test_utils import get_operator_name
+from acts.test_utils.tel.tel_test_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import last_call_drop_reason
 from acts.test_utils.tel.tel_test_utils import reboot_device
@@ -125,9 +126,11 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
         self.ad_reference = self.android_devices[1]
         self.dut_model = get_model_name(self.dut)
         self.dut_operator = get_operator_name(self.log, self.dut)
-        self.dut_capabilities = self.dut.telephony.get("capabilities", [])
-        self.dut_wfc_modes = self.dut.telephony.get("wfc_modes", [])
-        self.reference_capabilities = self.ad_reference.telephony.get(
+        self.dut_subID = get_outgoing_voice_sub_id(self.dut)
+        self.dut_capabilities = self.dut.telephony["subscription"][self.dut_subID].get("capabilities", [])
+        self.dut_wfc_modes = self.dut.telephony["subscription"][self.dut_subID].get("wfc_modes", [])
+        self.ad_reference_subID = get_outgoing_voice_sub_id(self.ad_reference)
+        self.reference_capabilities = self.ad_reference.telephony["subscription"][self.ad_reference_subID].get(
             "capabilities", [])
         self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         self.skip_reset_between_cases = False

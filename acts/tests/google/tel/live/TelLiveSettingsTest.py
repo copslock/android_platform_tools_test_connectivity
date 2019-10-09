@@ -51,7 +51,8 @@ class TelLiveSettingsTest(TelephonyBaseTest):
         self.number_of_devices = 1
         self.stress_test_number = self.get_stress_test_number()
         self.carrier_configs = dumpsys_carrier_config(self.dut)
-        self.dut_capabilities = self.dut.telephony.get("capabilities", [])
+        self.dut_subID = get_outgoing_voice_sub_id(self.dut)
+        self.dut_capabilities = self.dut.telephony["subscription"][self.dut_subID].get("capabilities", [])
 
     @test_tracker_info(uuid="c6149bd6-7080-453d-af37-1f9bd350a764")
     @TelephonyBaseTest.tel_test_wrap
