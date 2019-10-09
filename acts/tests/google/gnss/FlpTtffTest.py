@@ -56,7 +56,6 @@ class FlpTtffTest(BaseTestClass):
         for network in self.pixel_lab_network:
             SSID = network['SSID']
             self.ssid_map[SSID] = network
-
         if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
             self.ad.log.info("Force airplane mode off")
             force_airplane_mode(self.ad, False)
