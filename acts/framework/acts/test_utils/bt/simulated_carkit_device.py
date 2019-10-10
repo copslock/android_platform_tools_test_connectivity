@@ -19,6 +19,10 @@ from acts import asserts
 from acts.controllers import android_device
 from acts.test_utils.bt.bt_test_utils import bluetooth_enabled_check
 
+# TODO: This class to be deprecated for
+# ../acts/test_utils/abstract_devices/bluetooth_handsfree_abstract_device.py
+
+
 class SimulatedCarkitDevice():
     def __init__(self, serial):
         self.ad = android_device.create(serial)[0]
