@@ -97,8 +97,8 @@ PROFILE_ID = int(sig_uuid_constants['AudioSource'], 16)
 
 
 class SdpPtsTest(PtsBaseClass):
+
     def setup_class(self):
-        super(SdpPtsTest, self).setup_class()
         self.dut.initialize_bluetooth_controller()
         # self.dut.set_bluetooth_local_name(self.dut_bluetooth_local_name)
         local_dut_mac_address = self.dut.get_local_bluetooth_address()
@@ -126,7 +126,7 @@ class SdpPtsTest(PtsBaseClass):
             ixit = fuchsia_ixit
 
         self.pts.set_ics_and_ixit(ics, ixit)
-
+        super(SdpPtsTest, self).setup_class()
         self.dut.unbond_all_known_devices()
         self.dut.set_discoverable(True)
 
