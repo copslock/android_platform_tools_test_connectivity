@@ -439,20 +439,27 @@ class IPerfServerOverSsh(IPerfServerBase):
 class _AndroidDeviceBridge(object):
     """A helper class for connecting serial numbers to AndroidDevices."""
 
-    # A dict of serial -> AndroidDevice, where AndroidDevice is a device found
-    # in the current TestClass's controllers.
-    android_devices = {}
+    _test_class = None
 
     @staticmethod
     @subscribe_static(TestClassBeginEvent)
     def on_test_begin(event):
-        for device in getattr(event.test_class, 'android_devices', []):
-            _AndroidDeviceBridge.android_devices[device.serial] = device
+        _AndroidDeviceBridge._test_class = event.test_class
 
     @staticmethod
     @subscribe_static(TestClassEndEvent)
     def on_test_end(_):
-        _AndroidDeviceBridge.android_devices = {}
+        _AndroidDeviceBridge._test_class = None
+
+    @staticmethod
+    def android_devices():
+        """A dict of serial -> AndroidDevice, where AndroidDevice is a device
+        found in the current TestClass's controllers.
+        """
+        if not _AndroidDeviceBridge._test_class:
+            return {}
+        return {device.serial: device
+                for device in _AndroidDeviceBridge._test_class.android_devices}
 
 
 event_bus.register_subscription(
@@ -493,7 +500,7 @@ class IPerfServerOverAdb(IPerfServerBase):
         if isinstance(self._android_device_or_serial, AndroidDevice):
             return self._android_device_or_serial
         else:
-            return _AndroidDeviceBridge.android_devices[
+            return _AndroidDeviceBridge.android_devices()[
                 self._android_device_or_serial]
 
     def _get_device_log_path(self):

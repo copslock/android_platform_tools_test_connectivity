@@ -54,9 +54,9 @@ class LvpmMeasurement(object):
     Val │  Byte  │  Type  │ Monsoon │ Reading │
     Pos │ Offset │ Format │ Channel │  Type   │ Description
     ────┼────────┼────────┼─────────┼─────────┼──────────────────────────────
-     0  │   0    │ uint16 │  Main   │ Current │ Calibration value.
-     1  │   2    │ uint16 │  USB    │ Current │ Calibration value.
-     2  │   4    │ uint16 │  Aux    │ Current │ Calibration value.
+     0  │   0    │  int16 │  Main   │ Current │ Calibration value.
+     1  │   2    │  int16 │  USB    │ Current │ Calibration value.
+     2  │   4    │  int16 │  Aux    │ Current │ Calibration value.
      3  │   6    │ uint16 │  Main   │ Voltage │ Calibration value.
 
     If the measurement is a power reading:
@@ -64,11 +64,11 @@ class LvpmMeasurement(object):
     Val │  Byte  │  Type  │ Monsoon │ Reading │
     Pos │ Offset │ Format │ Channel │  Type   │ Description
     ────┼────────┼────────┼─────────┼─────────┼──────────────────────────────
-     0  │   0    │ uint16 │  Main   │ Current │ b0: if 1, Coarse, else Fine
+     0  │   0    │  int16 │  Main   │ Current │ b0: if 1, Coarse, else Fine
         │        │        │         │         │ b1-7: Measurement value.
-     1  │   2    │ uint16 │  USB    │ Current │ b0: if 1, Coarse, else Fine
+     1  │   2    │  int16 │  USB    │ Current │ b0: if 1, Coarse, else Fine
         │        │        │         │         │ b1-7: Measurement value.
-     2  │   4    │ uint16 │  Aux    │ Current │ b0: if 1, Coarse, else Fine
+     2  │   4    │  int16 │  Aux    │ Current │ b0: if 1, Coarse, else Fine
         │        │        │         │         │ b1-7: Measurement value.
      3  │   6    │ uint16 │  Main   │ Voltage │ Measurement value.
 
@@ -86,7 +86,7 @@ class LvpmMeasurement(object):
             sample_type: The type of sample that was recorded.
             entry_index: The index of the measurement within the packet.
         """
-        self.values = struct.unpack('>4H', raw_data)
+        self.values = struct.unpack('>3hH', raw_data)
         self._sample_time = sample_time
         self._sample_type = sample_type
 

@@ -22,6 +22,7 @@ import threading
 from acts import context
 from acts import utils
 from acts.controllers.android_device import AndroidDevice
+from acts.controllers.iperf_server import _AndroidDeviceBridge
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.event import event_bus
@@ -172,32 +173,6 @@ class IPerfClientOverSsh(IPerfClientBase):
         return full_out_path
 
 
-# TODO(markdr): Remove this after automagic controller creation has been
-# removed.
-class _AndroidDeviceBridge(object):
-    """A helper class that bridges the IPerfClientOverAdb to the AndroidDevices.
-
-    Using this class, IPerfClientOverAdb can access the AndroidDevices on the
-    test
-    """
-    android_devices = {}
-
-    @staticmethod
-    @subscribe_static(TestClassBeginEvent)
-    def on_test_begin(event):
-        for device in getattr(event.test_class, 'android_devices', []):
-            _AndroidDeviceBridge.android_devices[device.serial] = device
-
-    @staticmethod
-    @subscribe_static(TestClassEndEvent)
-    def on_test_end(_):
-        _AndroidDeviceBridge.android_devices = {}
-
-
-event_bus.register_subscription(_AndroidDeviceBridge.on_test_begin.subscription)
-event_bus.register_subscription(_AndroidDeviceBridge.on_test_end.subscription)
-
-
 class IPerfClientOverAdb(IPerfClientBase):
     """Class that handles iperf3 operations over ADB devices."""
 
@@ -217,7 +192,7 @@ class IPerfClientOverAdb(IPerfClientBase):
         if isinstance(self._android_device_or_serial, AndroidDevice):
             return self._android_device_or_serial
         else:
-            return _AndroidDeviceBridge.android_devices[
+            return _AndroidDeviceBridge.android_devices()[
                 self._android_device_or_serial]
 
     def start(self, ip, iperf_args, tag, timeout=3600):
