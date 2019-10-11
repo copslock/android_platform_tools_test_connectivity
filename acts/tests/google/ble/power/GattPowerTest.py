@@ -50,14 +50,12 @@ class GattPowerTest(PowerBaseTest):
     PMC_GATT_CMD = ("am broadcast -a com.android.pmc.GATT ")
     GATT_SERVER_MSG = "%s--es GattServer 1" % (PMC_GATT_CMD)
 
-    def __init__(self, controllers):
-        PowerBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super(GattPowerTest, self).setup_class()
 
         self.cen_ad = self.android_devices[0]
         self.per_ad = self.android_devices[1]
 
-    def setup_class(self):
-        super(GattPowerTest, self).setup_class()
         if not bluetooth_enabled_check(self.per_ad):
             self.log.error("Failed to turn on Bluetooth on peripheral")
 

@@ -20,12 +20,15 @@ import unittest
 import mock
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as parser
+from acts.test_utils.instrumentation.instrumentation_proto_parser import \
+    ProtoParserError
 from acts.test_utils.instrumentation.proto.gen import instrumentation_data_pb2
 
 
 DEST_DIR = 'dest/proto_dir'
 SOURCE_PATH = 'source/proto/protofile'
 SAMPLE_PROTO = 'data/sample.instrumentation_data_proto'
+SAMPLE_TIMESTAMP_PROTO = 'data/sample_timestamp.instrumentation_data_proto'
 
 
 class InstrumentationProtoParserTest(unittest.TestCase):
@@ -47,21 +50,30 @@ class InstrumentationProtoParserTest(unittest.TestCase):
 
     def test_pull_proto_fails_if_no_default_proto_found(self, *_):
         self.ad.adb.shell.side_effect = ['', None]
-        pulled_proto = parser.pull_proto(self.ad, DEST_DIR)
-        self.assertIn('No instrumentation result',
-                      self.ad.log.warning.call_args[0][0])
-        self.assertEqual(pulled_proto, '')
+        with self.assertRaisesRegex(
+                ProtoParserError, 'No instrumentation result'):
+            parser.pull_proto(self.ad, DEST_DIR)
 
     @mock.patch('os.path.exists', return_value=False)
     def test_pull_proto_fails_if_adb_pull_fails(self, *_):
-        pulled_proto = parser.pull_proto(self.ad, DEST_DIR, SOURCE_PATH)
-        self.assertIn('Failed to pull', self.ad.log.warning.call_args[0][0])
-        self.assertEqual(pulled_proto, '')
+        with self.assertRaisesRegex(ProtoParserError, 'Failed to pull'):
+            parser.pull_proto(self.ad, DEST_DIR, SOURCE_PATH)
 
     def test_parser_converts_valid_proto(self):
         proto_file = os.path.join(os.path.dirname(__file__), SAMPLE_PROTO)
         self.assertIsInstance(parser.get_session_from_local_file(proto_file),
                               instrumentation_data_pb2.Session)
+
+    def test_get_test_timestamps(self):
+        proto_file = os.path.join(os.path.dirname(__file__),
+                                  SAMPLE_TIMESTAMP_PROTO)
+        session = parser.get_session_from_local_file(proto_file)
+        timestamps = parser.get_test_timestamps(session)
+        self.assertEqual(
+            timestamps['partialWakelock'][parser.START_TIMESTAMP],
+            1567029917802)
+        self.assertEqual(
+            timestamps['partialWakelock'][parser.END_TIMESTAMP], 1567029932879)
 
 
 if __name__ == '__main__':

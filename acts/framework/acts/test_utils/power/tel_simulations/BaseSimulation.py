@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 #   Copyright 2018 - The Android Open Source Project
 #
@@ -18,16 +18,14 @@ import time
 from enum import Enum
 
 import numpy as np
-
-from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
-from acts.controllers.anritsu_lib.md8475a import BtsNumber
+from acts.controllers import cellular_simulator
 from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_cell_data_roaming
 
 
 class BaseSimulation():
-    """ Base class for an Anritsu Simulation abstraction.
+    """ Base class for cellular connectivity simulations.
 
     Classes that inherit from this base class implement different simulation
     setups. The base class contains methods that are common to all simulation
@@ -37,10 +35,8 @@ class BaseSimulation():
 
     NUM_UL_CAL_READS = 3
     NUM_DL_CAL_READS = 5
-    DL_CAL_TARGET_POWER = {'A': -15.0, 'B': -35.0}
     MAX_BTS_INPUT_POWER = 30
     MAX_PHONE_OUTPUT_POWER = 23
-    DL_MAX_POWER = {'A': -10.0, 'B': -30.0}
     UL_MIN_POWER = -60.0
 
     # Key to read the calibration setting from the test_config dictionary.
@@ -70,14 +66,40 @@ class BaseSimulation():
     # the simulations inheriting from this class.
     DOWNLINK_SIGNAL_LEVEL_UNITS = None
 
-    def __init__(self, anritsu, log, dut, test_config, calibration_table):
+    class BtsConfig:
+        """ Base station configuration class. This class is only a container for
+        base station parameters and should not interact with the instrument
+        controller.
+
+        Atributes:
+            output_power: a float indicating the required signal level at the
+                instrument's output.
+            input_level: a float indicating the required signal level at the
+                instrument's input.
+        """
+        def __init__(self):
+            """ Initialize the base station config by setting all its
+            parameters to None. """
+            self.output_power = None
+            self.input_power = None
+            self.band = None
+
+        def incorporate(self, new_config):
+            """ Incorporates a different configuration by replacing the current
+            values with the new ones for all the parameters different to None.
+            """
+            for attr, value in vars(new_config).items():
+                if value:
+                    setattr(self, attr, value)
+
+    def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the Simulation object.
 
         Keeps a reference to the callbox, log and dut handlers and
         initializes the class attributes.
 
         Args:
-            anritsu: the Anritsu callbox controller
+            simulator: a cellular simulator controller
             log: a logger handle
             dut: the android device handler
             test_config: test configuration obtained from the config file
@@ -85,7 +107,7 @@ class BaseSimulation():
                 different bands.
         """
 
-        self.anritsu = anritsu
+        self.simulator = simulator
         self.log = log
         self.dut = dut
         self.calibration_table = calibration_table
@@ -102,8 +124,8 @@ class BaseSimulation():
         self.calibration_required = test_config.get(self.KEY_CALIBRATION,
                                                     False)
 
-        # Gets BTS1 since this sim only has 1 BTS
-        self.bts1 = self.anritsu.get_BTS(BtsNumber.BTS1)
+        # Configuration object for the primary base station
+        self.primary_config = self.BtsConfig()
 
         # Store the current calibrated band
         self.current_calibrated_band = None
@@ -126,25 +148,18 @@ class BaseSimulation():
         # Enable roaming on the phone
         toggle_cell_data_roaming(self.dut, True)
 
-        # Set
-        self.callbox_config_path = self.CALLBOX_PATH_FORMAT_STR.format(
-            self.anritsu._md8475_version)
-
-    def start(self):
-        """ Start simulation.
-
-        Starts the simulation in the Anritsu Callbox.
-
-        """
-
         # Make sure airplane mode is on so the phone won't attach right away
         toggle_airplane_mode(self.log, self.dut, True)
 
         # Wait for airplane mode setting to propagate
         time.sleep(2)
 
-        # Start simulation if it wasn't started
-        self.anritsu.start_simulation()
+        # Prepare the simulator for this simulation setup
+        self.setup_simulator()
+
+    def setup_simulator(self):
+        """ Do initial configuration in the simulator. """
+        raise NotImplementedError()
 
     def attach(self):
         """ Attach the phone to the basestation.
@@ -163,9 +178,11 @@ class BaseSimulation():
         time.sleep(2)
 
         # Provide a good signal power for the phone to attach easily
-        self.bts1.input_level = -10
-        time.sleep(2)
-        self.bts1.output_level = -30
+        new_config = self.BtsConfig()
+        new_config.input_power = -10
+        new_config.output_power = -30
+        self.simulator.configure_bts(new_config)
+        self.primary_config.incorporate(new_config)
 
         # Try to attach the phone.
         for i in range(self.ATTACH_MAX_RETRIES):
@@ -176,15 +193,14 @@ class BaseSimulation():
                 toggle_airplane_mode(self.log, self.dut, False)
 
                 # Wait for the phone to attach.
-                self.anritsu.wait_for_registration_state(
-                    time_to_wait=self.ATTACH_WAITING_TIME)
+                self.simulator.wait_until_attached(
+                    timeout=self.ATTACH_WAITING_TIME)
 
-            except AnritsuError as e:
+            except cellular_simulator.CellularSimulatorError:
 
                 # The phone failed to attach
                 self.log.info(
                     "UE failed to attach on attempt number {}.".format(i + 1))
-                self.log.info("Error message: {}".format(str(e)))
 
                 # Turn airplane mode on to prepare the phone for a retry.
                 toggle_airplane_mode(self.log, self.dut, True)
@@ -206,14 +222,6 @@ class BaseSimulation():
                 self.log.info("UE attached to the callbox.")
                 break
 
-        # Set signal levels obtained from the test parameters
-        if self.sim_dl_power:
-            self.set_downlink_rx_power(self.bts1, self.sim_dl_power)
-            time.sleep(2)
-        if self.sim_ul_power:
-            self.set_uplink_tx_power(self.bts1, self.sim_ul_power)
-            time.sleep(2)
-
         return True
 
     def detach(self):
@@ -229,21 +237,13 @@ class BaseSimulation():
         # Wait for APM to propagate
         time.sleep(2)
 
-        # Try to power off the basestation. An exception will be raised if the
-        # simulation is not running, which is ok because it means the phone is
-        # not attached.
-        try:
-            self.anritsu.set_simulation_state_to_poweroff()
-        except AnritsuError:
-            self.log.warning('Could not power off the basestation. The '
-                             'simulation might be stopped.')
+        # Power off basestation
+        self.simulator.detach()
 
     def stop(self):
         """  Detach phone from the basestation by stopping the simulation.
 
-        Send stop command to anritsu and turn on airplane mode.
-
-        """
+        Stop the simulation and turn airplane mode on. """
 
         # Set the DUT to airplane mode so it doesn't see the
         # cellular network going off
@@ -253,7 +253,38 @@ class BaseSimulation():
         time.sleep(2)
 
         # Stop the simulation
-        self.anritsu.stop_simulation()
+        self.simulator.stop()
+
+    def start(self):
+        """ Start the simulation by attaching the phone and setting the
+        required DL and UL power.
+
+        Note that this refers to starting the simulated testing environment
+        and not to starting the signaling on the cellular instruments,
+        which might have been done earlier depending on the cellular
+        instrument controller implementation. """
+
+        if not self.attach():
+            raise RuntimeError('Could not attach to base station.')
+
+        # Starts IP traffic while changing this setting to force the UE to be
+        # in Communication state, as UL power cannot be set in Idle state
+        self.start_traffic_for_calibration()
+
+        # Wait until it goes to communication state
+        self.simulator.wait_until_communication_state()
+
+        # Set signal levels obtained from the test parameters
+        new_config = self.BtsConfig()
+        new_config.output_power = self.calibrated_downlink_rx_power(
+            self.primary_config, self.sim_dl_power)
+        new_config.input_power = self.calibrated_uplink_tx_power(
+            self.primary_config, self.sim_ul_power)
+        self.simulator.configure_bts(new_config)
+        self.primary_config.incorporate(new_config)
+
+        # Stop IP traffic after setting the UL power level
+        self.stop_traffic_for_calibration()
 
     def parse_parameters(self, parameters):
         """ Configures simulation using a list of parameters.
@@ -265,7 +296,7 @@ class BaseSimulation():
             parameters: list of parameters
         """
 
-        pass
+        raise NotImplementedError()
 
     def consume_parameter(self, parameters, parameter_name, num_values=0):
         """ Parses a parameter from a list.
@@ -334,13 +365,19 @@ class BaseSimulation():
                               power, self.DOWNLINK_SIGNAL_LEVEL_UNITS))
             return power
 
-    def set_downlink_rx_power(self, bts, signal_level):
-        """ Sets downlink rx power using calibration if available
+    def calibrated_downlink_rx_power(self, bts_config, signal_level):
+        """ Calculates the power level at the instrument's output in order to
+        obtain the required rx power level at the DUT's input.
+
+        If calibration values are not available, returns the uncalibrated signal
+        level.
 
         Args:
-            bts: the base station in which to change the signal level
+            bts_config: the current configuration at the base station. derived
+                classes implementations can use this object to indicate power as
+                spectral power density or in other units.
             signal_level: desired downlink received power, can be either a
-            key value pair, an int or a float
+                key value pair, an int or a float
         """
 
         # Obtain power value if the provided signal_level is a key value pair
@@ -353,14 +390,12 @@ class BaseSimulation():
         # throw an TypeError exception
         try:
             calibrated_power = round(power + self.dl_path_loss)
-            if (calibrated_power >
-                    self.DL_MAX_POWER[self.anritsu._md8475_version]):
+            if calibrated_power > self.simulator.MAX_DL_POWER:
                 self.log.warning(
                     "Cannot achieve phone DL Rx power of {} dBm. Requested TX "
                     "power of {} dBm exceeds callbox limit!".format(
                         power, calibrated_power))
-                calibrated_power = self.DL_MAX_POWER[
-                    self.anritsu._md8475_version]
+                calibrated_power = self.simulator.MAX_DL_POWER
                 self.log.warning(
                     "Setting callbox Tx power to max possible ({} dBm)".format(
                         calibrated_power))
@@ -368,25 +403,31 @@ class BaseSimulation():
             self.log.info(
                 "Requested phone DL Rx power of {} dBm, setting callbox Tx "
                 "power at {} dBm".format(power, calibrated_power))
-            bts.output_level = calibrated_power
             time.sleep(2)
             # Power has to be a natural number so calibration wont be exact.
             # Inform the actual received power after rounding.
             self.log.info(
                 "Phone downlink received power is {0:.2f} dBm".format(
                     calibrated_power - self.dl_path_loss))
+            return calibrated_power
         except TypeError:
-            bts.output_level = round(power)
             self.log.info("Phone downlink received power set to {} (link is "
                           "uncalibrated).".format(round(power)))
+            return round(power)
 
-    def set_uplink_tx_power(self, bts, signal_level):
-        """ Sets uplink tx power using calibration if available
+    def calibrated_uplink_tx_power(self, bts_config, signal_level):
+        """ Calculates the power level at the instrument's input in order to
+        obtain the required tx power level at the DUT's output.
+
+        If calibration values are not available, returns the uncalibrated signal
+        level.
 
         Args:
-            bts: the base station in which to change the signal level
+            bts_config: the current configuration at the base station. derived
+                classes implementations can use this object to indicate power as
+                spectral power density or in other units.
             signal_level: desired uplink transmitted power, can be either a
-            key value pair, an int or a float
+                key value pair, an int or a float
         """
 
         # Obtain power value if the provided signal_level is a key value pair
@@ -394,13 +435,6 @@ class BaseSimulation():
             power = signal_level.value
         else:
             power = signal_level
-
-        # Starts IP traffic while changing this setting to force the UE to be
-        # in Communication state, as UL power cannot be set in Idle state
-        self.start_traffic_for_calibration()
-
-        # Wait until it goes to communication state
-        self.anritsu.wait_for_communication_state()
 
         # Try to use measured path loss value. If this was not set, it will
         # throw an TypeError exception
@@ -419,24 +453,26 @@ class BaseSimulation():
             self.log.info(
                 "Requested phone UL Tx power of {} dBm, setting callbox Rx "
                 "power at {} dBm".format(power, calibrated_power))
-            bts.input_level = calibrated_power
             time.sleep(2)
             # Power has to be a natural number so calibration wont be exact.
             # Inform the actual transmitted power after rounding.
             self.log.info(
                 "Phone uplink transmitted power is {0:.2f} dBm".format(
                     calibrated_power + self.ul_path_loss))
+            return calibrated_power
         except TypeError:
-            bts.input_level = round(power)
             self.log.info("Phone uplink transmitted power set to {} (link is "
                           "uncalibrated).".format(round(power)))
+            return round(power)
 
-        # Stop IP traffic after setting the UL power level
-        self.stop_traffic_for_calibration()
-
-    def calibrate(self):
+    def calibrate(self, band):
         """ Calculates UL and DL path loss if it wasn't done before.
 
+        The should be already set to the required band before calling this
+        method.
+
+        Args:
+            band: the band that is currently being calibrated.
         """
 
         if self.dl_path_loss and self.ul_path_loss:
@@ -450,9 +486,9 @@ class BaseSimulation():
 
         # If downlink or uplink were not yet calibrated, do it now
         if not self.dl_path_loss:
-            self.dl_path_loss = self.downlink_calibration(self.bts1)
+            self.dl_path_loss = self.downlink_calibration()
         if not self.ul_path_loss:
-            self.ul_path_loss = self.uplink_calibration(self.bts1)
+            self.ul_path_loss = self.uplink_calibration()
 
         # Detach after calibrating
         self.detach()
@@ -463,36 +499,21 @@ class BaseSimulation():
             Starts UDP IP traffic before running calibration. Uses APN_1
             configured in the phone.
         """
-        try:
-            self.anritsu.start_ip_traffic()
-        except AnritsuError as inst:
-            # This typically happens when traffic is already running
-            self.log.warning("{}\n".format(inst))
-        time.sleep(4)
+        self.simulator.start_data_traffic()
 
     def stop_traffic_for_calibration(self):
         """
             Stops IP traffic after calibration.
         """
-        try:
-            self.anritsu.stop_ip_traffic()
-        except AnritsuError as inst:
-            # This typically happens when traffic has already been stopped
-            self.log.warning("{}\n".format(inst))
-        time.sleep(2)
+        self.simulator.stop_data_traffic()
 
-    def downlink_calibration(self,
-                             bts,
-                             rat=None,
-                             power_units_conversion_func=None):
+    def downlink_calibration(self, rat=None, power_units_conversion_func=None):
         """ Computes downlink path loss and returns the calibration value
 
-        The bts needs to be set at the desired config (bandwidth, mode, etc)
-        before running the calibration. The phone also needs to be attached
-        to the desired basesation for calibration
+        The DUT needs to be attached to the base station before calling this
+        method.
 
         Args:
-            bts: basestation handle
             rat: desired RAT to calibrate (matching the label reported by
                 the phone)
             power_units_conversion_func: a function to convert the units
@@ -510,11 +531,15 @@ class BaseSimulation():
                 "The parameter 'rat' has to indicate the RAT being used as "
                 "reported by the phone.")
 
+        # Save initial output level to restore it after calibration
+        restoration_config = self.BtsConfig()
+        restoration_config.output_power = self.primary_config.output_power
+
         # Set BTS to a good output level to minimize measurement error
-        init_output_level = bts.output_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        bts.output_level = self.DL_CAL_TARGET_POWER[
-            self.anritsu._md8475_version]
+        new_config = self.BtsConfig()
+        new_config.output_power = self.simulator.MAX_DL_POWER - 5
+        self.simulator.configure_bts(new_config)
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -540,7 +565,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        bts.output_level = init_output_level
+        self.simulator.configure_bts(restoration_config)
         time.sleep(2)
 
         # Calculate the mean of the measurements
@@ -549,13 +574,12 @@ class BaseSimulation():
         # Convert from RSRP to signal power
         if power_units_conversion_func:
             avg_down_power = power_units_conversion_func(
-                reported_asu_power, bts)
+                reported_asu_power, self.primary_config)
         else:
             avg_down_power = reported_asu_power
 
         # Calculate Path Loss
-        dl_target_power = self.DL_CAL_TARGET_POWER[
-            self.anritsu._md8475_version]
+        dl_target_power = self.simulator.MAX_DL_POWER - 5
         down_call_path_loss = dl_target_power - avg_down_power
 
         # Validate the result
@@ -569,26 +593,27 @@ class BaseSimulation():
 
         return down_call_path_loss
 
-    def uplink_calibration(self, bts):
+    def uplink_calibration(self):
         """ Computes uplink path loss and returns the calibration value
 
-        The bts needs to be set at the desired config (bandwidth, mode, etc)
-        before running the calibration. The phone also neeeds to be attached
-        to the desired basesation for calibration
-
-        Args:
-            bts: basestation handle
+        The DUT needs to be attached to the base station before calling this
+        method.
 
         Returns:
             Uplink calibration value and measured UL power
         """
 
+        # Save initial input level to restore it after calibration
+        restoration_config = self.BtsConfig()
+        restoration_config.input_power = self.primary_config.input_power
+
         # Set BTS1 to maximum input allowed in order to perform
         # uplink calibration
         target_power = self.MAX_PHONE_OUTPUT_POWER
-        initial_input_level = bts.input_level
         initial_screen_timeout = self.dut.droid.getScreenTimeout()
-        bts.input_level = self.MAX_BTS_INPUT_POWER
+        new_config = self.BtsConfig()
+        new_config.input_power = self.MAX_BTS_INPUT_POWER
+        self.simulator.configure_bts(new_config)
 
         # Set phone sleep time out
         self.dut.droid.setScreenTimeout(1800)
@@ -626,7 +651,7 @@ class BaseSimulation():
         # Reset phone and bts to original settings
         self.dut.droid.goToSleepNow()
         self.dut.droid.setScreenTimeout(initial_screen_timeout)
-        bts.input_level = initial_input_level
+        self.simulator.configure_bts(restoration_config)
         time.sleep(2)
 
         # Phone only supports 1x1 Uplink so always chain 0
@@ -649,33 +674,25 @@ class BaseSimulation():
 
         return up_call_path_loss
 
-    def set_band(self, bts, band, calibrate_if_necessary=True):
-        """ Sets the band used for communication.
-
-        When moving to a new band, recalibrate the link.
-
-        Args:
-            bts: basestation handle
-            band: desired band
-            calibrate_if_necessary: if False calibration will be skipped
-        """
-
-        bts.band = band
-        time.sleep(5)  # It takes some time to propagate the new band
-
-        # Invalidate the calibration values
+    def load_pathloss_if_required(self):
+        """ If calibration is required, try to obtain the pathloss values from
+        the calibration table and measure them if they are not available. """
+        # Invalidate the previous values
         self.dl_path_loss = None
         self.ul_path_loss = None
 
-        # Only calibrate when required.
-        if self.calibration_required and calibrate_if_necessary:
+        # Load the new ones
+        if self.calibration_required:
+
+            band = self.primary_config.band
+
             # Try loading the path loss values from the calibration table. If
             # they are not available, use the automated calibration procedure.
             try:
                 self.dl_path_loss = self.calibration_table[band]["dl"]
                 self.ul_path_loss = self.calibration_table[band]["ul"]
             except KeyError:
-                self.calibrate()
+                self.calibrate(band)
 
             # Complete the calibration table with the new values to be used in
             # the next tests.
@@ -711,19 +728,3 @@ class BaseSimulation():
             Maximum throughput in mbps
         """
         raise NotImplementedError()
-
-    def start_test_case(self):
-        """ Starts a test case in the current simulation.
-
-        Requires the phone to be attached.
-        """
-
-        pass
-
-    def wait_for_rrc_idle_state(self, wait_time):
-        """ Waits for UE RRC state change to idle mode.
-
-        Raises exception when UE fails to move to idle state
-        """
-
-        self.anritsu.wait_for_idle_state(wait_time)

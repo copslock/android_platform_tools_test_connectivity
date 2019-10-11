@@ -29,6 +29,7 @@ import string
 import socket
 import subprocess
 import time
+import threading
 import traceback
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -1300,6 +1301,27 @@ class SuppressLogOutput(object):
     def __exit__(self, *_):
         for handler in self._handlers:
             self._logger.addHandler(handler)
+
+
+class BlockingTimer(object):
+    """Context manager used to block until a specified amount of time has
+     elapsed.
+     """
+
+    def __init__(self, secs):
+        """Initializes a BlockingTimer
+
+        Args:
+            secs: Number of seconds to wait before exiting
+        """
+        self._thread = threading.Timer(secs, lambda: None)
+
+    def __enter__(self):
+        self._thread.start()
+        return self
+
+    def __exit__(self, *_):
+        self._thread.join()
 
 
 def is_valid_ipv4_address(address):

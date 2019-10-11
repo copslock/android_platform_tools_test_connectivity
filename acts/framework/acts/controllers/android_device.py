@@ -51,7 +51,7 @@ ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 CRASH_REPORT_PATHS = ("/data/tombstones/", "/data/vendor/ramdump/",
                       "/data/ramdump/", "/data/vendor/ssrdump",
-                      "/data/vendor/ramdump/bluetooth")
+                      "/data/vendor/ramdump/bluetooth", "/data/vendor/log/cbd")
 CRASH_REPORT_SKIPS = ("RAMDUMP_RESERVED", "RAMDUMP_STATUS", "RAMDUMP_OUTPUT",
                       "bluetooth")
 DEFAULT_QXDM_LOG_PATH = "/data/vendor/radio/diag_logs"
@@ -100,6 +100,10 @@ def create(configs):
                  " but is not attached.") % ad.serial,
                 serial=ad.serial)
     _start_services_on_ads(ads)
+    for ad in ads:
+        if ad.droid:
+            utils.set_location_service(ad, False)
+            utils.sync_device_time(ad)
     return ads
 
 
@@ -1068,7 +1072,7 @@ class AndroidDevice:
         time.sleep(10)
         log_path = getattr(self, "sdm_log_path", DEFAULT_SDM_LOG_PATH)
         sdm_logs = self.get_file_names(
-            log_path, begin_time=begin_time, match_string="*.sdm")
+            log_path, begin_time=begin_time, match_string="*.sdm*")
         if sdm_logs:
             sdm_log_path = os.path.join(self.device_log_path,
                                         "SDM_%s" % self.serial)
@@ -1449,6 +1453,10 @@ class AndroidDevice:
             self.send_keycode("BACK")
 
     def exit_setup_wizard(self):
+        # Handling Android TV's setupwizard is ignored for now.
+        if 'feature:com.google.android.tv.installed' in self.adb.shell(
+                'pm list features'):
+            return
         if not self.is_user_setup_complete() or self.is_setupwizard_on():
             # b/116709539 need this to prevent reboot after skip setup wizard
             self.adb.shell(

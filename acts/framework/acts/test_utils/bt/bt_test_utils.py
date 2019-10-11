@@ -1603,4 +1603,3 @@ def write_read_verify_data(client_ad, server_ad, msg, binary=False):
         log.error("Mismatch! Read: {}, Expected: {}".format(read_msg, msg))
         return False
     return True
-

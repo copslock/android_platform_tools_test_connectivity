@@ -69,16 +69,18 @@ from acts.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
 from acts.test_utils.gnss.gnss_test_utils import check_xtra_download
 from acts.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
 from acts.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
+from acts.test_utils.gnss.gnss_test_utils import enable_supl_mode
+from acts.test_utils.gnss.gnss_test_utils import start_toggle_gnss_by_gtw_gpstool
 
 
 class GnssSanityTest(BaseTestClass):
     """ GNSS Function Sanity Tests"""
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.ad = self.android_devices[0]
         req_params = ["pixel_lab_network", "standalone_cs_criteria",
-                      "supl_cs_criteria", "xtra_ws_criteria", "xtra_cs_criteria",
-                      "weak_signal_supl_cs_criteria",
+                      "supl_cs_criteria", "xtra_ws_criteria",
+                      "xtra_cs_criteria", "weak_signal_supl_cs_criteria",
                       "weak_signal_xtra_ws_criteria",
                       "weak_signal_xtra_cs_criteria",
                       "default_gnss_signal_attenuation",
@@ -98,20 +100,18 @@ class GnssSanityTest(BaseTestClass):
         else:
             self.wifi_xtra_cs_criteria = self.xtra_cs_criteria
         self.flash_new_radio_or_mbn()
-
-    def setup_class(self):
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.default_gnss_signal_attenuation)
         _init_device(self.ad)
-        if not verify_internet_connection(self.ad.log, self.ad, retries=3,
-                                          expected_state=True):
-            abort_all_tests(self.ad.log, "Fail to connect to LTE network")
 
     def setup_test(self):
         get_baseband_and_gms_version(self.ad)
         clear_logd_gnss_qxdm_log(self.ad)
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.default_gnss_signal_attenuation)
+        if not verify_internet_connection(self.ad.log, self.ad, retries=3,
+                                          expected_state=True):
+            raise signals.TestFailure("Fail to connect to LTE network.")
 
     def teardown_test(self):
         stop_qxdm_logger(self.ad)
@@ -260,7 +260,8 @@ class GnssSanityTest(BaseTestClass):
                     self.ad.log.error("\n%s" % error)
             else:
                 self.ad.log.info("NO \"%s\" initialization error found." % attr)
-        asserts.assert_true(error_mismatch, "Error message found after GNSS init")
+        asserts.assert_true(error_mismatch, "Error message found after GNSS "
+                                            "init")
 
     @test_tracker_info(uuid="ff318483-411c-411a-8b1a-422bd54f4a3f")
     def test_supl_capabilities(self):
@@ -437,7 +438,8 @@ class GnssSanityTest(BaseTestClass):
             4. DUT hang up call.
 
         Expected Results:
-            All SUPL TTFF Cold Start results should be less than supl_cs_criteria.
+            All SUPL TTFF Cold Start results should be less than
+            supl_cs_criteria.
         """
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
@@ -540,9 +542,9 @@ class GnssSanityTest(BaseTestClass):
             start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
             ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                     self.pixel_lab_location)
-            supl_ssr_test_result = check_ttff_data(self.ad, ttff_data,
-                                                   ttff_mode="Cold Start",
-                                                   criteria=self.supl_cs_criteria)
+            supl_ssr_test_result = check_ttff_data(
+                self.ad, ttff_data, ttff_mode="Cold Start",
+                criteria=self.supl_cs_criteria)
             self.ad.log.info("SUPL after Modem SSR test %d times -> %s"
                              % (times, supl_ssr_test_result))
             supl_ssr_test_result_all.append(supl_ssr_test_result)
@@ -714,7 +716,9 @@ class GnssSanityTest(BaseTestClass):
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
-        ws_result = check_ttff_data(self.ad, ws_ttff_data, ttff_mode="Warm Start",
+        ws_result = check_ttff_data(self.ad,
+                                    ws_ttff_data,
+                                    ttff_mode="Warm Start",
                                     criteria=self.xtra_ws_criteria)
         xtra_result.append(ws_result)
         begin_time = get_current_epoch_time()
@@ -722,7 +726,9 @@ class GnssSanityTest(BaseTestClass):
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
-        cs_result = check_ttff_data(self.ad, cs_ttff_data, ttff_mode="Cold Start",
+        cs_result = check_ttff_data(self.ad,
+                                    cs_ttff_data,
+                                    ttff_mode="Cold Start",
                                     criteria=self.xtra_cs_criteria)
         xtra_result.append(cs_result)
         asserts.assert_true(all(xtra_result),
@@ -753,7 +759,9 @@ class GnssSanityTest(BaseTestClass):
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
-        ws_result = check_ttff_data(self.ad, ws_ttff_data, ttff_mode="Warm Start",
+        ws_result = check_ttff_data(self.ad,
+                                    ws_ttff_data,
+                                    ttff_mode="Warm Start",
                                     criteria=self.weak_signal_xtra_ws_criteria)
         xtra_result.append(ws_result)
         begin_time = get_current_epoch_time()
@@ -761,7 +769,9 @@ class GnssSanityTest(BaseTestClass):
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
-        cs_result = check_ttff_data(self.ad, cs_ttff_data, ttff_mode="Cold Start",
+        cs_result = check_ttff_data(self.ad,
+                                    cs_ttff_data,
+                                    ttff_mode="Cold Start",
                                     criteria=self.weak_signal_xtra_cs_criteria)
         xtra_result.append(cs_result)
         asserts.assert_true(all(xtra_result),
@@ -788,13 +798,15 @@ class GnssSanityTest(BaseTestClass):
         self.ad.log.info("Turn airplane mode on")
         force_airplane_mode(self.ad, True)
         wifi_toggle_state(self.ad, True)
-        connect_to_wifi_network(self.ad,
-                                self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        connect_to_wifi_network(
+            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
-        ws_result = check_ttff_data(self.ad, ws_ttff_data, ttff_mode="Warm Start",
+        ws_result = check_ttff_data(self.ad,
+                                    ws_ttff_data,
+                                    ttff_mode="Warm Start",
                                     criteria=self.xtra_ws_criteria)
         xtra_result.append(ws_result)
         begin_time = get_current_epoch_time()
@@ -802,7 +814,9 @@ class GnssSanityTest(BaseTestClass):
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
         cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                    self.pixel_lab_location)
-        cs_result = check_ttff_data(self.ad, cs_ttff_data, ttff_mode="Cold Start",
+        cs_result = check_ttff_data(self.ad,
+                                    cs_ttff_data,
+                                    ttff_mode="Cold Start",
                                     criteria=self.wifi_xtra_cs_criteria)
         xtra_result.append(cs_result)
         asserts.assert_true(all(xtra_result),
@@ -834,9 +848,9 @@ class GnssSanityTest(BaseTestClass):
             start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=3)
             ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                     self.pixel_lab_location)
-            xtra_ssr_test_result = check_ttff_data(self.ad, ttff_data,
-                                                   ttff_mode="Cold Start",
-                                                   criteria=self.xtra_cs_criteria)
+            xtra_ssr_test_result = check_ttff_data(
+                self.ad, ttff_data, ttff_mode="Cold Start",
+                criteria=self.xtra_cs_criteria)
             self.ad.log.info("XTRA after Modem SSR test %d times -> %s"
                              % (times, xtra_ssr_test_result))
             xtra_ssr_test_result_all.append(xtra_ssr_test_result)
@@ -890,8 +904,8 @@ class GnssSanityTest(BaseTestClass):
         self.ad.log.info("Turn airplane mode on")
         force_airplane_mode(self.ad, True)
         wifi_toggle_state(self.ad, True)
-        connect_to_wifi_network(self.ad,
-                                self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        connect_to_wifi_network(
+            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
@@ -902,3 +916,23 @@ class GnssSanityTest(BaseTestClass):
             self.ad.log.info("Iteraion %d => %s" % (i, wifi_xtra_result))
         asserts.assert_true(all(wifi_xtra_result_all),
                             "Fail to Download XTRA file")
+
+    @test_tracker_info(uuid="2a9f2890-3c0a-48b8-821d-bf97e36355e9")
+    def test_quick_toggle_gnss_state(self):
+        """Verify GNSS can still work properly after quick toggle GNSS off
+        to on.
+
+        Steps:
+            1. Launch GTW_GPSTool.
+            2. Go to "Advance setting"
+            3. Set Cycle = 10 & Time-out = 60
+            4. Go to "Toggle GPS" tab
+            5. Execute "Start"
+
+        Expected Results:
+            No single Timeout is seen in 10 iterations.
+        """
+        enable_supl_mode(self.ad)
+        reboot(self.ad)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_toggle_gnss_by_gtw_gpstool(self.ad, iteration=10)

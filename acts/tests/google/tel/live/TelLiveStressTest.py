@@ -92,6 +92,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_idle_volte
 from acts.test_utils.tel.tel_voice_utils import get_current_voice_rat
 from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import get_operatorname_from_slot_index
+from acts.test_utils.tel.tel_subscription_utils import get_carrierid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
@@ -124,7 +125,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.file_download_method = "curl"
         else:
             self.android_devices = self.android_devices[:2]
+        self.sdm_log = self.user_params.get("sdm_log", False)
         for ad in self.android_devices:
+            setattr(ad, "sdm_log", self.sdm_log)
             ad.adb.shell("setprop nfc.debug_enable 1")
             if self.user_params.get("turn_on_tcpdump", False):
                 start_adb_tcpdump(ad, interface="any", mask="all")
@@ -149,7 +152,6 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut_incall = False
         self.dsds_esim = self.user_params.get("dsds_esim", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
-        self.sdm_log = self.user_params.get("sdm_log", False)
         telephony_info = getattr(self.dut, "telephony", {})
         self.dut_capabilities = telephony_info.get("capabilities", [])
         self.dut_wfc_modes = telephony_info.get("wfc_modes", [])
@@ -508,7 +510,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.log.info("%s end", log_msg)
         self.dut_incall = False
         if self.cbrs_esim:
-            time.sleep(15)
+            time.sleep(30)
             self._cbrs_data_check_test(begin_time, expected_cbrs=True,
                                        test_time="after")
         if not result:
@@ -718,7 +720,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             ad.log.error("Found %d checks failed, expected cbrs %s",
                          cbrs_fail_count, expected_cbrs)
             cbrs_fail_count += 1
-        self.result_info["CBRS Total"] + 1
+        self.result_info["CBRS Total"] += 1
         return True
 
     def call_test(self, call_verification_func=None):
@@ -968,8 +970,9 @@ class TelLiveStressTest(TelephonyBaseTest):
                 for i in range(0, 2):
                     sub_id = get_subid_from_slot_index(ad.log, ad, i)
                     operator = get_operatorname_from_slot_index(ad, i)
-                    ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
-                    if operator and "Google" in operator:
+                    carrier_id = get_carrierid_from_slot_index(ad, i)
+                    ad.log.info("Slot %d - Sub %s - %s - %d", i, sub_id, operator, carrier_id)
+                    if carrier_id == 2340:
                         ad.cbrs = sub_id
                         cbrs_sub_count += 1
             if cbrs_sub_count != 2:
@@ -1100,7 +1103,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_lte_volte_parallel_stress(self):
         """ VoLTE on stress test"""
         if CAPABILITY_VOLTE not in self.dut_capabilities:
-            raise signals.TestSkipClass("VoLTE is not supported")
+            raise signals.TestAbortClass("VoLTE is not supported")
         return self.parallel_tests(
             setup_func=self._setup_lte_volte_enabled,
             call_verification_func=is_phone_in_call_volte)
@@ -1118,7 +1121,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_wfc_parallel_stress(self):
         """ Wifi calling APM mode off stress test"""
         if CAPABILITY_WFC not in self.dut_capabilities:
-            raise signals.TestSkipClass("WFC is not supported")
+            raise signals.TestAbortClass("WFC is not supported")
         if WFC_MODE_WIFI_PREFERRED not in self.dut_wfc_modes:
             raise signals.TestSkip("WFC_MODE_WIFI_PREFERRED is not supported")
         return self.parallel_tests(
@@ -1130,7 +1133,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_wfc_apm_parallel_stress(self):
         """ Wifi calling in APM mode on stress test"""
         if CAPABILITY_WFC not in self.dut_capabilities:
-            raise signals.TestSkipClass("WFC is not supported")
+            raise signals.TestAbortClass("WFC is not supported")
         return self.parallel_tests(
             setup_func=self._setup_wfc_apm,
             call_verification_func=is_phone_in_call_iwlan)
@@ -1156,7 +1159,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def test_volte_modeprefchange_parallel_stress(self):
         """ VoLTE Mode Pref call stress test"""
         if CAPABILITY_VOLTE not in self.dut_capabilities:
-            raise signals.TestSkipClass("VoLTE is not supported")
+            raise signals.TestAbortClass("VoLTE is not supported")
         return self.parallel_with_network_change_tests(
             setup_func=self._setup_lte_volte_enabled)
 

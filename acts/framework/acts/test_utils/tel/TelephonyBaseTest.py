@@ -80,6 +80,7 @@ from acts.test_utils.tel.tel_test_utils import activate_google_fi_account
 from acts.test_utils.tel.tel_test_utils import check_google_fi_activated
 from acts.test_utils.tel.tel_test_utils import check_fi_apk_installed
 from acts.test_utils.tel.tel_test_utils import phone_switch_to_msim_mode
+from acts.test_utils.tel.tel_test_utils import activate_esim_using_suw
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_BACKGROUND
 from acts.test_utils.tel.tel_defines import SINGLE_SIM_CONFIG, MULTI_SIM_CONFIG
 from acts.test_utils.tel.tel_defines import PRECISE_CALL_STATE_LISTEN_LEVEL_FOREGROUND
@@ -92,9 +93,64 @@ from acts.test_utils.tel.tel_defines import INVALID_SUB_ID
 
 
 class TelephonyBaseTest(BaseTestClass):
-    def __init__(self, controllers):
+    # Use for logging in the test cases to facilitate
+    # faster log lookup and reduce ambiguity in logging.
+    @staticmethod
+    def tel_test_wrap(fn):
+        def _safe_wrap_test_case(self, *args, **kwargs):
+            test_id = "%s:%s:%s" % (self.__class__.__name__, self.test_name,
+                                    self.log_begin_time.replace(' ', '-'))
+            self.test_id = test_id
+            self.result_detail = ""
+            self.testsignal_details = ""
+            self.testsignal_extras = {}
+            tries = int(self.user_params.get("telephony_auto_rerun", 1))
+            for ad in self.android_devices:
+                ad.log_path = self.log_path
+            for i in range(tries + 1):
+                result = True
+                if i > 0:
+                    log_string = "[Test Case] RERUN %s" % self.test_name
+                    self.log.info(log_string)
+                    self._teardown_test(self.test_name)
+                    self._setup_test(self.test_name)
+                try:
+                    result = fn(self, *args, **kwargs)
+                except signals.TestFailure as e:
+                    self.testsignal_details = e.details
+                    self.testsignal_extras = e.extras
+                    result = False
+                except signals.TestSignal:
+                    raise
+                except Exception as e:
+                    self.log.exception(e)
+                    asserts.fail(self.result_detail)
+                if result is False:
+                    if i < tries:
+                        continue
+                else:
+                    break
+            if self.user_params.get("check_crash", True):
+                new_crash = ad.check_crash_report(self.test_name,
+                                                  self.begin_time, True)
+                if new_crash:
+                    msg = "Find new crash reports %s" % new_crash
+                    ad.log.error(msg)
+                    self.result_detail = "%s %s %s" % (self.result_detail,
+                                                       ad.serial, msg)
+                    result = False
+            if result is not False:
+                asserts.explicit_pass(self.result_detail)
+            else:
+                if self.result_detail:
+                    asserts.fail(self.result_detail)
+                else:
+                    asserts.fail(self.testsignal_details, self.testsignal_extras)
 
-        BaseTestClass.__init__(self, controllers)
+        return _safe_wrap_test_case
+
+    def setup_class(self):
+        super().setup_class()
         self.wifi_network_ssid = self.user_params.get(
             "wifi_network_ssid") or self.user_params.get(
                 "wifi_network_ssid_2g") or self.user_params.get(
@@ -134,60 +190,6 @@ class TelephonyBaseTest(BaseTestClass):
                                 }
                 break
 
-    # Use for logging in the test cases to facilitate
-    # faster log lookup and reduce ambiguity in logging.
-    @staticmethod
-    def tel_test_wrap(fn):
-        def _safe_wrap_test_case(self, *args, **kwargs):
-            test_id = "%s:%s:%s" % (self.__class__.__name__, self.test_name,
-                                    self.log_begin_time.replace(' ', '-'))
-            self.test_id = test_id
-            self.result_detail = ""
-            tries = int(self.user_params.get("telephony_auto_rerun", 1))
-            for ad in self.android_devices:
-                ad.log_path = self.log_path
-            for i in range(tries + 1):
-                result = True
-                if i > 0:
-                    log_string = "[Test Case] RERUN %s" % self.test_name
-                    self.log.info(log_string)
-                    self._teardown_test(self.test_name)
-                    self._setup_test(self.test_name)
-                try:
-                    result = fn(self, *args, **kwargs)
-                except signals.TestFailure:
-                    if self.result_detail:
-                        signal.details = self.result_detail
-                    result = False
-                except signals.TestSignal:
-                    if self.result_detail:
-                        signal.details = self.result_detail
-                    raise
-                except Exception as e:
-                    self.log.exception(e)
-                    asserts.fail(self.result_detail)
-                if result is False:
-                    if i < tries:
-                        continue
-                else:
-                    break
-            if self.user_params.get("check_crash", True):
-                new_crash = ad.check_crash_report(self.test_name,
-                                                  self.begin_time, True)
-                if new_crash:
-                    msg = "Find new crash reports %s" % new_crash
-                    ad.log.error(msg)
-                    self.result_detail = "%s %s %s" % (self.result_detail,
-                                                       ad.serial, msg)
-                    result = False
-            if result is not False:
-                asserts.explicit_pass(self.result_detail)
-            else:
-                asserts.fail(self.result_detail)
-
-        return _safe_wrap_test_case
-
-    def setup_class(self):
         qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
         if isinstance(qxdm_log_mask_cfg, list):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
@@ -298,15 +300,17 @@ class TelephonyBaseTest(BaseTestClass):
                 ad.log.info("Phone already in Dual SIM Mode")
         if get_sim_state(ad) in (SIM_STATE_ABSENT, SIM_STATE_UNKNOWN):
             ad.log.info("Device has no or unknown SIM in it")
+            # eSIM needs activation
+            activate_esim_using_suw(ad)
             ensure_phone_idle(self.log, ad)
         elif self.user_params.get("Attenuator"):
             ad.log.info("Device in chamber room")
             ensure_phone_idle(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file, self.cbrs_esim)
+            setup_droid_properties(self.log, ad, sim_conf_file)
         else:
             self.wait_for_sim_ready(ad)
             ensure_phone_default_state(self.log, ad)
-            setup_droid_properties(self.log, ad, sim_conf_file, self.cbrs_esim)
+            setup_droid_properties(self.log, ad, sim_conf_file)
 
         default_slot = getattr(ad, "default_slot", 0)
         if get_subid_from_slot_index(ad.log, ad, default_slot) != INVALID_SUB_ID:

@@ -21,7 +21,7 @@ from acts import asserts
 from acts import utils
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts.test_utils.tel.tel_test_utils import stop_qxdm_logger
+from acts.test_utils.tel.tel_test_utils import disable_qxdm_logger
 
 WifiEnums = wutils.WifiEnums
 
@@ -33,16 +33,15 @@ class WifiCrashStressTest(WifiBaseTest):
     * One Wi-Fi network visible to the device.
     """
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         self.dut_client = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_test_device_init(self.dut_client)
         if not self.dut.is_apk_installed("com.google.mdstest"):
-            raise signals.TestSkipClass("mdstest is not installed")
+            raise signals.TestAbortClass("mdstest is not installed")
         req_params = ["dbs_supported_models", "stress_count"]
         opt_param = ["reference_networks"]
         self.unpack_userparams(
@@ -95,7 +94,7 @@ class WifiCrashStressTest(WifiBaseTest):
         # Legacy pixels use persist.sys.modem.diag.mdlog.
         ad.adb.shell(
             "setprop persist.sys.modem.diag.mdlog false", ignore_status=True)
-        stop_qxdm_logger(ad)
+        disable_qxdm_logger(ad)
         cmd = ('am instrument -w -e request "4b 25 03 b0 00" '
                '"com.google.mdstest/com.google.mdstest.instrument.'
                'ModemCommandInstrumentation"')

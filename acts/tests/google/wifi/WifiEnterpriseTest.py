@@ -36,10 +36,9 @@ Ent = WifiEnums.Enterprise
 
 
 class WifiEnterpriseTest(WifiBaseTest):
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         # If running in a setup with attenuators, set attenuation on all
@@ -145,7 +144,7 @@ class WifiEnterpriseTest(WifiBaseTest):
 
     def teardown_class(self):
         wutils.reset_wifi(self.dut)
-        self.dut.droid.disableDevicePassword()
+        self.dut.droid.disableDevicePassword(self.device_password)
         self.dut.ed.clear_all_events()
 
     def setup_test(self):

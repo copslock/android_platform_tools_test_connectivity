@@ -64,7 +64,7 @@ class ConfigWrapper(collections.UserDict):
         """
         return self.get(param_name, default=ConfigWrapper())
 
-    def get_int(self, param_name, default=None):
+    def get_int(self, param_name, default=0):
         """Get integer parameter from config. Will raise an exception
         if result is not of type int.
         """
@@ -72,7 +72,7 @@ class ConfigWrapper(collections.UserDict):
                         verify_fn=lambda val: type(val) is int,
                         failure_msg='Param must be of type int.')
 
-    def get_numeric(self, param_name, default=None):
+    def get_numeric(self, param_name, default=0):
         """Get int or float parameter from config. Will raise an exception if
         result is not of type int or float.
         """

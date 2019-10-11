@@ -37,11 +37,9 @@ from acts.test_utils.coex.coex_test_utils import push_music_to_android_device
 
 class CoexA2dpStressTest(CoexBaseTest):
 
-    def __init__(self, controllers):
-        super().__init__(controllers)
-
     def setup_class(self):
         super().setup_class()
+
         req_params = ["iterations", "audio_params", "headset_mac_address"]
         self.unpack_userparams(req_params)
         if hasattr(self, "audio_params"):

@@ -74,8 +74,8 @@ WAIT_TIME_BETWEEN_HANDOVER = 10
 TIME_PERMITTED_FOR_CBRS_SWITCH = 2
 
 class TelLiveCBRSTest(TelephonyBaseTest):
-    def __init__(self, controllers):
-        TelephonyBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.number_of_devices = 2
         self.stress_test_number = self.get_stress_test_number()
         self.message_lengths = (50, 160, 180)

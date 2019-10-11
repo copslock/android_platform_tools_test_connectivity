@@ -33,7 +33,7 @@ WifiEnums = wutils.WifiEnums
 # for the system to settle down after the operation.
 DEFAULT_TIMEOUT = 10
 WIFICOND_KILL_SHELL_COMMAND = "killall wificond"
-WIFI_VENDOR_HAL_KILL_SHELL_COMMAND = "killall android.hardware.wifi@1.0-service"
+WIFI_VENDOR_HAL_KILL_SHELL_COMMAND = "killall android.hardware.wifi@1.0-service vendor.google.wifi_ext@1.0-service-vendor"
 SUPPLICANT_KILL_SHELL_COMMAND = "killall wpa_supplicant"
 
 class WifiCrashTest(WifiBaseTest):
@@ -44,10 +44,9 @@ class WifiCrashTest(WifiBaseTest):
     * One Wi-Fi network visible to the device.
     """
 
-    def __init__(self, controllers):
-        WifiBaseTest.__init__(self, controllers)
-
     def setup_class(self):
+        super().setup_class()
+
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = []

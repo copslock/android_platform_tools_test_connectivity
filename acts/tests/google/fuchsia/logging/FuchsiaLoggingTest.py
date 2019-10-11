@@ -20,8 +20,8 @@ from acts import asserts
 
 
 class FuchsiaLoggingTest(BaseTestClass):
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.dut = self.fuchsia_devices[0]
         self.message = "Logging Test"
 

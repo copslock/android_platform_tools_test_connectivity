@@ -72,19 +72,6 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
     """
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
-        if 'dut' in self.user_params:
-            if self.user_params['dut'] == 'fuchsia_devices':
-                self.dut = create_wlan_device(self.fuchsia_devices[0])
-            elif self.user_params['dut'] == 'android_devices':
-                self.dut = create_wlan_device(self.android_devices[0])
-            else:
-                raise ValueError('Invalid DUT specified in config. (%s)'
-                                 % self.user_params['dut'])
-        else:
-            # Default is an android device, just like the other tests
-            self.dut = create_wlan_device(self.android_devices[0])
-
-        self.access_point = self.access_points[0]
         self.tests = [
             'test_11n_capabilities_24_HT20',
             'test_11n_capabilities_24_HT40_lower',
@@ -104,6 +91,20 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             self.tests.append('test_11n_capabilities_debug')
 
     def setup_class(self):
+        super().setup_class()
+        if 'dut' in self.user_params:
+            if self.user_params['dut'] == 'fuchsia_devices':
+                self.dut = create_wlan_device(self.fuchsia_devices[0])
+            elif self.user_params['dut'] == 'android_devices':
+                self.dut = create_wlan_device(self.android_devices[0])
+            else:
+                raise ValueError('Invalid DUT specified in config. (%s)'
+                                 % self.user_params['dut'])
+        else:
+            # Default is an android device, just like the other tests
+            self.dut = create_wlan_device(self.android_devices[0])
+
+        self.access_point = self.access_points[0]
         self.access_point.stop_all_aps()
 
     def setup_test(self):

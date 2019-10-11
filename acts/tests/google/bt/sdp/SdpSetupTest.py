@@ -77,8 +77,8 @@ TEST_SDP_RECORD = {
 
 
 class SdpSetupTest(BaseTestClass):
-    def __init__(self, controllers):
-        BaseTestClass.__init__(self, controllers)
+    def setup_class(self):
+        super(SdpSetupTest, self).setup_class()
         if 'dut' in self.user_params:
             if self.user_params['dut'] == 'fuchsia_devices':
                 self.dut = create_bluetooth_device(self.fuchsia_devices[0])
@@ -92,8 +92,6 @@ class SdpSetupTest(BaseTestClass):
             self.dut = create_bluetooth_device(self.fuchsia_devices[0])
         self.dut.initialize_bluetooth_controller()
 
-    def setup_class(self):
-        super(SdpSetupTest, self).setup_class()
 
     def setup_test(self):
         self.dut.sdp_clean_up()
