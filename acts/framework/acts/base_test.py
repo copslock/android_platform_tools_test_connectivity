@@ -192,6 +192,7 @@ class BaseTestClass(MoblyBaseTest):
         self.consecutive_failure_limit = self.user_params.get(
             'consecutive_failure_limit', -1)
         self.size_limit_reached = False
+        self.retryable_exceptions = signals.TestFailure
 
         # Initialize a controller manager (Mobly)
         self._controller_manager = controller_manager.ControllerManager(
@@ -514,6 +515,14 @@ class BaseTestClass(MoblyBaseTest):
             begin_time: Logline format timestamp taken when the test started.
         """
 
+    def on_retry():
+        """Function to run before retrying a test through get_func_with_retry.
+
+        This function runs when a test is automatically retried. The function
+        can be used to modify internal test parameters, for example, to retry
+        a test with slightly different input variables.
+        """
+
     def _exec_procedure_func(self, func, tr_record):
         """Executes a procedure function like on_pass, on_fail etc.
 
@@ -647,6 +656,7 @@ class BaseTestClass(MoblyBaseTest):
 
         Returns: result of the test method
         """
+        exceptions = self.retryable_exceptions
         def wrapper(*args, **kwargs):
             error_msgs = []
             extras = {}
@@ -656,8 +666,9 @@ class BaseTestClass(MoblyBaseTest):
                     if retry:
                         self.teardown_test()
                         self.setup_test()
+                        self.on_retry()
                     return func(*args, **kwargs)
-                except signals.TestFailure as e:
+                except exceptions as e:
                     retry = True
                     msg = 'Failure on attempt %d: %s' % (i+1, e.details)
                     self.log.warning(msg)
