@@ -27,6 +27,7 @@ from acts.controllers import iperf_server as ipf
 from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.wifi import ota_chamber
+from acts.test_utils.wifi import ota_sniffer
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -65,7 +66,7 @@ class WifiRvrTest(base_test.BaseTestClass):
             'RetailAccessPoints', 'rvr_test_params', 'testbed_params',
             'RemoteServer'
         ]
-        opt_params = ['main_network', 'golden_files_list']
+        opt_params = ['main_network', 'golden_files_list', 'OTASniffer']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.rvr_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
@@ -74,6 +75,8 @@ class WifiRvrTest(base_test.BaseTestClass):
             ssh.settings.from_config(self.RemoteServer[0]['ssh_config']))
         self.iperf_client = self.iperf_clients[0]
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
+        if hasattr(self, 'OTASniffer'):
+            self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, 'results')
@@ -311,6 +314,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                 rvr_result['testcase_params']['mode']]['high']
             for tput in rvr_result['throughput_receive']
         ]
+        rvr_result['metrics']['high_tput_range'] = -1
         for idx in range(len(tput_below_limit)):
             if all(tput_below_limit[idx:]):
                 if idx == 0:
@@ -367,6 +371,11 @@ class WifiRvrTest(base_test.BaseTestClass):
                 attenuator.set_atten(atten, strict=False)
             # Refresh link layer stats
             llstats_obj.update_stats()
+            # Setup sniffer
+            if self.testbed_params['sniffer_enable']:
+                self.sniffer.start_capture(
+                    network=testcase_params['test_network'],
+                    duration=self.testclass_params['iperf_duration'] / 5)
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
             rssi_future = wputils.get_connected_rssi_nb(
@@ -383,6 +392,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                 'chain_1_rssi': rssi_result['chain_1_rssi']['mean']
             }
             rssi.append(current_rssi)
+            # Stop sniffer
+            if self.testbed_params['sniffer_enable']:
+                self.sniffer.stop_capture(tag=str(atten))
             # Parse and log result
             if testcase_params['use_client_output']:
                 iperf_file = client_output_path
@@ -474,17 +486,17 @@ class WifiRvrTest(base_test.BaseTestClass):
             asserts.skip('Overheating or Battery level low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
-        band = self.access_point.band_lookup_by_channel(
-            testcase_params['channel'])
-        if wputils.validate_network(self.dut, self.main_network[band]['SSID']):
+        if wputils.validate_network(self.dut,
+                                    testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
             wutils.reset_wifi(self.dut)
             self.dut.droid.wifiSetCountryCode(
                 self.testclass_params['country_code'])
-            self.main_network[band]['channel'] = testcase_params['channel']
+            testcase_params['test_network']['channel'] = testcase_params[
+                'channel']
             wutils.wifi_connect(self.dut,
-                                self.main_network[band],
+                                testcase_params['test_network'],
                                 num_of_tries=5,
                                 check_connectivity=True)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
@@ -524,6 +536,9 @@ class WifiRvrTest(base_test.BaseTestClass):
             x * self.testclass_params['atten_step']
             for x in range(0, num_atten_steps)
         ]
+        band = self.access_point.band_lookup_by_channel(
+            testcase_params['channel'])
+        testcase_params['test_network'] = self.main_network[band]
         if (testcase_params['traffic_direction'] == 'DL'
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
             ) or (testcase_params['traffic_direction'] == 'UL'
