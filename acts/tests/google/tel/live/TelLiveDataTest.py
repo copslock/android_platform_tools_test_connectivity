@@ -3224,6 +3224,52 @@ class TelLiveDataTest(TelephonyBaseTest):
             resume_internet_with_sl4a_port(dut, sl4a_port)
 
 
+    def _test_airplane_mode_stress(self):
+        ad = self.android_devices[0]
+        total_iteration = self.stress_test_number
+        fail_count = collections.defaultdict(int)
+        current_iteration = 1
+        for i in range(1, total_iteration + 1):
+            msg = "Airplane mode test Iteration: <%s> / <%s>" % (i, total_iteration)
+            self.log.info(msg)
+            if not toggle_airplane_mode(ad.log, ad, True):
+                ad.log.error("Toggle APM on failed")
+                fail_count["apm_on"] += 1
+                ad.log.error(">----Iteration : %d/%d failed.----<",
+                             i, total_iteration)
+            if not toggle_airplane_mode(ad.log, ad, False):
+                ad.log.error("Toggle APM off failed")
+                fail_count["apm_off"] += 1
+                ad.log.error(">----Iteration : %d/%d failed.----<",
+                             i, total_iteration)
+            ad.log.info(">----Iteration : %d/%d succeeded.----<",
+                        i, total_iteration)
+            current_iteration += 1
+        test_result = True
+        for failure, count in fail_count.items():
+            if count:
+                ad.log.error("%s: %s %s failures in %s iterations",
+                               self.test_name, count, failure,
+                               total_iteration)
+                test_result = False
+        return test_result
+
+    @test_tracker_info(uuid="3a82728f-18b5-4a35-9eab-4e6cf55271d9")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_apm_toggle_stress(self):
+        """ Test airplane mode toggle
+
+        1. Start with airplane mode off
+        2. Toggle airplane mode on
+        3. Toggle airplane mode off
+        4. Repeat above steps
+
+        Returns:
+            True if pass; False if fail.
+        """
+        return self._test_airplane_mode_stress()
+
+
     @test_tracker_info(uuid="fda33416-698a-408f-8ddc-b5cde13b1f83")
     @TelephonyBaseTest.tel_test_wrap
     def test_data_stall_detection_cellular(self):
