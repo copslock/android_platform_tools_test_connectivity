@@ -19,7 +19,7 @@ from acts.test_utils.gnss import dut_log_test_utils as diaglog
 import time
 import os
 from acts import utils
-MDLOG_RUNNING_TIME = 300
+MDLOG_RUNNING_TIME = 120
 
 class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
     """Power baseline tests for rockbottom state.
@@ -42,7 +42,7 @@ class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
         self.dut.send_keycode("SLEEP")
         self.measure_gnsspower_test_func()
         diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
-        time.sleep(MDLOG_RUNNING_TIME)
+        self.disconnect_usb(self.dut, MDLOG_RUNNING_TIME)
         qxdm_log_path = os.path.join(self.log_path, 'QXDM')
         diaglog.stop_background_diagmdlog(self.dut, qxdm_log_path)
 
@@ -51,6 +51,11 @@ class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
         self.dut.send_keycode("SLEEP")
         self.measure_gnsspower_test_func()
         diaglog.start_diagmdlog_background(self.dut, maskfile=self.maskfile)
-        time.sleep(MDLOG_RUNNING_TIME)
+        self.disconnect_usb(self.dut, MDLOG_RUNNING_TIME)
         qxdm_log_path = os.path.join(self.log_path, 'QXDM')
         diaglog.stop_background_diagmdlog(self.dut, qxdm_log_path)
+
+    def test_gnss_rockbottom(self):
+        self.dut.send_keycode("SLEEP")
+        time.sleep(120)
+        self.measure_gnsspower_test_func()
