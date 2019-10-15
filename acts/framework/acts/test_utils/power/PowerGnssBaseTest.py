@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import logging
+import time
 
 import acts.test_utils.power.PowerBaseTest as PBT
 
@@ -26,14 +27,15 @@ from bokeh.models import tools as bokeh_tools
 from bokeh.models.widgets import DataTable, TableColumn
 from bokeh.plotting import figure, output_file, save
 
+LOGTIME_RETRY_COUNT = 3
+RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
+RECOVER_MONSOON_RETRY_COUNT = 3
+MONSOON_RETRY_INTERVAL = 300
 
 class PowerGnssBaseTest(PBT.PowerBaseTest):
     """
     Base Class for all GNSS Power related tests
     """
-
-    def __init__(self, controllers):
-        base_test.BaseTestClass.__init__(self, controllers)
 
     def collect_power_data(self):
         """Measure power and plot.
@@ -119,3 +121,30 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
         # Layout the plot and the datatable bar
         l = layout([[dt], [plot]])
         save(l)
+
+    def disconnect_usb(self, ad, sleeptime):
+        """Disconnect usb while device is on sleep and
+        connect the usb again once the sleep time completes
+
+        sleeptime: sleep time where dut is disconnected from usb
+        """
+        self.dut.adb.shell(RESET_BATTERY_STATS)
+        time.sleep(1)
+        for _ in range(LOGTIME_RETRY_COUNT):
+            self.mon_info.dut.disconnect_dut()
+            if not ad.is_connected():
+                time.sleep(sleeptime)
+                self.mon_info.dut.reconnect_dut()
+                break
+        else:
+            self.log.error('Test failed after maximum retry')
+            for _ in range(RECOVER_MONSOON_RETRY_COUNT):
+                if self.monsoon_recover():
+                    break
+                else:
+                    self.log.warning(
+                        'Wait for {} second then try again'.format(
+                            MONSOON_RETRY_INTERVAL))
+                    time.sleep(MONSOON_RETRY_INTERVAL)
+            else:
+                self.log.error('Failed to recover monsoon')
