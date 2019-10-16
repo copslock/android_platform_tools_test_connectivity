@@ -190,7 +190,8 @@ class TelephonyBaseTest(BaseTestClass):
                                     "number_of_sims":2
                                 }
                 break
-
+        if "anritsu_md8475a_ip_address" in self.user_params:
+            return
         qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
         if isinstance(qxdm_log_mask_cfg, list):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
