@@ -46,7 +46,6 @@ LOSS_REGEX = re.compile(r'(?P<loss>\S+)% packet loss')
 # Threading decorator
 def nonblocking(f):
     """Creates a decorator transforming function calls to non-blocking"""
-
     def wrap(*args, **kwargs):
         executor = ThreadPoolExecutor(max_workers=1)
         thread_future = executor.submit(f, *args, **kwargs)
@@ -87,18 +86,16 @@ class LinkLayerStats():
         self.llstats_incremental = self._empty_llstats()
 
     def _empty_llstats(self):
-        return collections.OrderedDict(
-            mcs_stats=collections.OrderedDict(),
-            summary=collections.OrderedDict())
+        return collections.OrderedDict(mcs_stats=collections.OrderedDict(),
+                                       summary=collections.OrderedDict())
 
     def _empty_mcs_stat(self):
-        return collections.OrderedDict(
-            txmpdu=0,
-            rxmpdu=0,
-            mpdu_lost=0,
-            retries=0,
-            retries_short=0,
-            retries_long=0)
+        return collections.OrderedDict(txmpdu=0,
+                                       rxmpdu=0,
+                                       mpdu_lost=0,
+                                       retries=0,
+                                       retries_short=0,
+                                       retries_long=0)
 
     def _mcs_id_to_string(self, mcs_id):
         mcs_string = '{} {}MHz Nss{} MCS{} {}Mbps'.format(
@@ -138,13 +135,12 @@ class LinkLayerStats():
         return stats_diff
 
     def _generate_stats_summary(self, llstats_dict):
-        llstats_summary = collections.OrderedDict(
-            common_tx_mcs=None,
-            common_tx_mcs_count=0,
-            common_tx_mcs_freq=0,
-            common_rx_mcs=None,
-            common_rx_mcs_count=0,
-            common_rx_mcs_freq=0)
+        llstats_summary = collections.OrderedDict(common_tx_mcs=None,
+                                                  common_tx_mcs_count=0,
+                                                  common_tx_mcs_freq=0,
+                                                  common_rx_mcs=None,
+                                                  common_rx_mcs_count=0,
+                                                  common_rx_mcs_freq=0)
         txmpdu_count = 0
         rxmpdu_count = 0
         for mcs_id, mcs_stats in llstats_dict['mcs_stats'].items():
@@ -327,8 +323,8 @@ class BokehFigure():
         if y_axis not in ['default', 'secondary']:
             raise ValueError('y_axis must be default or secondary')
         if color == None:
-            color = self.COLORS[self.fig_property['num_lines'] % len(
-                self.COLORS)]
+            color = self.COLORS[self.fig_property['num_lines'] %
+                                len(self.COLORS)]
         if style == 'dashed':
             style = [5, 5]
         if not hover_text:
@@ -373,11 +369,11 @@ class BokehFigure():
         if y_axis not in ['default', 'secondary']:
             raise ValueError('y_axis must be default or secondary')
         if color == None:
-            color = self.COLORS[self.fig_property['num_lines'] % len(
-                self.COLORS)]
+            color = self.COLORS[self.fig_property['num_lines'] %
+                                len(self.COLORS)]
         if marker == None:
-            marker = self.MARKERS[self.fig_property['num_lines'] % len(
-                self.MARKERS)]
+            marker = self.MARKERS[self.fig_property['num_lines'] %
+                                  len(self.MARKERS)]
         if not hover_text:
             hover_text = ['y={}'.format(y) for y in y_data]
         self.figure_data.append({
@@ -405,44 +401,40 @@ class BokehFigure():
         two_axes = False
         for line in self.figure_data:
             source = bokeh.models.ColumnDataSource(
-                data=dict(
-                    x=line['x_data'],
-                    y=line['y_data'],
-                    hover_text=line['hover_text']))
+                data=dict(x=line['x_data'],
+                          y=line['y_data'],
+                          hover_text=line['hover_text']))
             if line['width'] > 0:
-                self.plot.line(
-                    x='x',
-                    y='y',
-                    legend=line['legend'],
-                    line_width=line['width'],
-                    color=line['color'],
-                    line_dash=line['style'],
-                    name=line['y_axis'],
-                    y_range_name=line['y_axis'],
-                    source=source)
+                self.plot.line(x='x',
+                               y='y',
+                               legend=line['legend'],
+                               line_width=line['width'],
+                               color=line['color'],
+                               line_dash=line['style'],
+                               name=line['y_axis'],
+                               y_range_name=line['y_axis'],
+                               source=source)
             if line['shaded_region']:
                 band_x = line['shaded_region']['x_vector']
                 band_x.extend(line['shaded_region']['x_vector'][::-1])
                 band_y = line['shaded_region']['lower_limit']
                 band_y.extend(line['shaded_region']['upper_limit'][::-1])
-                self.plot.patch(
-                    band_x,
-                    band_y,
-                    color='#7570B3',
-                    line_alpha=0.1,
-                    fill_alpha=0.1)
+                self.plot.patch(band_x,
+                                band_y,
+                                color='#7570B3',
+                                line_alpha=0.1,
+                                fill_alpha=0.1)
             if line['marker'] in self.MARKERS:
                 marker_func = getattr(self.plot, line['marker'])
-                marker_func(
-                    x='x',
-                    y='y',
-                    size=line['marker_size'],
-                    legend=line['legend'],
-                    line_color=line['color'],
-                    fill_color=line['color'],
-                    name=line['y_axis'],
-                    y_range_name=line['y_axis'],
-                    source=source)
+                marker_func(x='x',
+                            y='y',
+                            size=line['marker_size'],
+                            legend=line['legend'],
+                            line_color=line['color'],
+                            fill_color=line['color'],
+                            name=line['y_axis'],
+                            y_range_name=line['y_axis'],
+                            source=source)
             if line['y_axis'] == 'secondary':
                 two_axes = True
 
@@ -477,11 +469,10 @@ class BokehFigure():
 
     def _save_figure_json(self, output_file):
         """Function to save a json format of a figure"""
-        figure_dict = collections.OrderedDict(
-            fig_property=self.fig_property,
-            figure_data=self.figure_data,
-            tools=self.TOOLS,
-            tooltips=self.TOOLTIPS)
+        figure_dict = collections.OrderedDict(fig_property=self.fig_property,
+                                              figure_data=self.figure_data,
+                                              tools=self.TOOLS,
+                                              tooltips=self.TOOLTIPS)
         output_file = output_file.replace('.html', '_plot_data.json')
         with open(output_file, 'w') as outfile:
             json.dump(figure_dict, outfile, indent=4)
@@ -531,14 +522,13 @@ class PingResult(object):
         ping_interarrivals: A list-like object enumerating the amount of time
             between the beginning of each subsequent transmission.
     """
-
     def __init__(self, ping_output):
         self.packet_loss_percentage = 100
         self.transmission_times = []
 
         self.rtts = _ListWrap(self.transmission_times, lambda entry: entry.rtt)
-        self.timestamps = _ListWrap(
-            self.transmission_times, lambda entry: entry.timestamp)
+        self.timestamps = _ListWrap(self.transmission_times,
+                                    lambda entry: entry.timestamp)
         self.ping_interarrivals = _PingInterarrivals(self.transmission_times)
 
         self.start_time = 0
@@ -583,7 +573,6 @@ class PingTransmissionTimes(object):
         rtt: The round trip time for the packet sent.
         timestamp: The timestamp the packet started its trip.
     """
-
     def __init__(self, timestamp, rtt):
         self.rtt = rtt
         self.timestamp = timestamp
@@ -591,7 +580,6 @@ class PingTransmissionTimes(object):
 
 class _ListWrap(object):
     """A convenient helper class for treating list iterators as native lists."""
-
     def __init__(self, wrapped_list, func):
         self.__wrapped_list = wrapped_list
         self.__func = func
@@ -609,7 +597,6 @@ class _ListWrap(object):
 
 class _PingInterarrivals(object):
     """A helper class for treating ping interarrivals as a native list."""
-
     def __init__(self, ping_entries):
         self.__ping_entries = ping_entries
 
@@ -651,16 +638,17 @@ def get_ping_stats(src_device, dest_address, ping_duration, ping_interval,
     )
     if isinstance(src_device, AndroidDevice):
         ping_cmd = '{} {}'.format(ping_cmd, dest_address)
-        ping_output = src_device.adb.shell(
-            ping_cmd, timeout=ping_deadline + SHORT_SLEEP, ignore_status=True)
+        ping_output = src_device.adb.shell(ping_cmd,
+                                           timeout=ping_deadline + SHORT_SLEEP,
+                                           ignore_status=True)
     elif isinstance(src_device, ssh.connection.SshConnection):
         ping_cmd = 'sudo {} {}'.format(ping_cmd, dest_address)
-        ping_output = src_device.run(
-            ping_cmd, timeout=ping_deadline + SHORT_SLEEP,
-            ignore_status=True).stdout
+        ping_output = src_device.run(ping_cmd,
+                                     timeout=ping_deadline + SHORT_SLEEP,
+                                     ignore_status=True).stdout
     else:
-        raise TypeError(
-            'Unable to ping using src_device of type %s.' % type(src_device))
+        raise TypeError('Unable to ping using src_device of type %s.' %
+                        type(src_device))
     return PingResult(ping_output.splitlines())
 
 
@@ -686,13 +674,15 @@ def empty_rssi_result():
 def get_connected_rssi(dut,
                        num_measurements=1,
                        polling_frequency=SHORT_SLEEP,
-                       first_measurement_delay=0):
+                       first_measurement_delay=0,
+                       disconnect_warning=True):
     """Gets all RSSI values reported for the connected access point/BSSID.
 
     Args:
         dut: android device object from which to get RSSI
         num_measurements: number of scans done, and RSSIs collected
         polling_frequency: time to wait between RSSI measurements
+        disconnect_warning: boolean controlling disconnection logging messages
     Returns:
         connected_rssi: dict containing the measurements results for
         all reported RSSI values (signal_poll, per chain, etc.) and their
@@ -707,6 +697,7 @@ def get_connected_rssi(dut,
          ('chain_0_rssi', empty_rssi_result()),
          ('chain_1_rssi', empty_rssi_result())])
     # yapf: enable
+    previous_bssid = None
     t0 = time.time()
     time.sleep(first_measurement_delay)
     for idx in range(num_measurements):
@@ -716,10 +707,16 @@ def get_connected_rssi(dut,
         status_output = dut.adb.shell(WPA_CLI_STATUS)
         match = re.search('bssid=.*', status_output)
         if match:
-            bssid = match.group(0).split('=')[1]
-            connected_rssi['bssid'].append(bssid)
+            current_bssid = match.group(0).split('=')[1]
+            connected_rssi['bssid'].append(current_bssid)
+            if disconnect_warning and current_bssid != previous_bssid:
+                logging.info('CONNECT to {} detected.'.format(current_bssid))
         else:
-            connected_rssi['bssid'].append(RSSI_ERROR_VAL)
+            current_bssid = RSSI_ERROR_VAL
+            connected_rssi['bssid'].append(current_bssid)
+            if disconnect_warning and not math.isnan(previous_bssid):
+                logging.warning('WIFI DISCONNECT DETECTED!')
+        previous_bssid = current_bssid
         signal_poll_output = dut.adb.shell(SIGNAL_POLL)
         match = re.search('FREQUENCY=.*', signal_poll_output)
         if match:
@@ -784,7 +781,8 @@ def get_connected_rssi(dut,
 def get_connected_rssi_nb(dut,
                           num_measurements=1,
                           polling_frequency=SHORT_SLEEP,
-                          first_measurement_delay=0):
+                          first_measurement_delay=0,
+                          disconnect_warning=True):
     return get_connected_rssi(dut, num_measurements, polling_frequency,
                               first_measurement_delay)
 
@@ -808,8 +806,9 @@ def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
         time.sleep(MED_SLEEP)
         scan_output = dut.adb.shell(SCAN_RESULTS)
         for bssid in tracked_bssids:
-            bssid_result = re.search(
-                bssid + '.*', scan_output, flags=re.IGNORECASE)
+            bssid_result = re.search(bssid + '.*',
+                                     scan_output,
+                                     flags=re.IGNORECASE)
             if bssid_result:
                 bssid_result = bssid_result.group(0).split('\t')
                 scan_rssi[bssid]['data'].append(int(bssid_result[2]))
@@ -849,6 +848,7 @@ def atten_by_label(atten_list, path_label, atten_level):
     for atten in atten_list:
         if path_label in atten.path:
             atten.set_atten(atten_level)
+
 
 def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
     """Function to detect mapping between attenuator ports and DUT chains.
@@ -928,12 +928,11 @@ def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
     rf_map_by_atten = [[] for atten in attenuators]
     for net_id, net_config in networks.items():
         wutils.reset_wifi(dut)
-        wutils.wifi_connect(
-            dut,
-            net_config,
-            num_of_tries=1,
-            assert_on_fail=False,
-            check_connectivity=False)
+        wutils.wifi_connect(dut,
+                            net_config,
+                            num_of_tries=1,
+                            assert_on_fail=False,
+                            check_connectivity=False)
         rf_map_by_network[net_id] = get_current_atten_dut_chain_map(
             attenuators, dut, ping_server)
         for idx, chain in enumerate(rf_map_by_network[net_id]):
@@ -946,6 +945,7 @@ def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
     logging.debug("RF Map (by Atten): {}".format(rf_map_by_atten))
 
     return rf_map_by_network, rf_map_by_atten
+
 
 # Miscellaneous Wifi Utilities
 def validate_network(dut, ssid):
@@ -964,6 +964,7 @@ def validate_network(dut, ssid):
         return True
     else:
         return False
+
 
 def get_server_address(ssh_connection, dut_ip, subnet_mask):
     """Get server address on a specific subnet,
