@@ -100,9 +100,8 @@ class WifiRvrTest(base_test.BaseTestClass):
         # Turn WiFi ON
         if self.testclass_params.get('airplane_mode', 1):
             self.log.info('Turning on airplane mode.')
-            asserts.assert_true(
-                utils.force_airplane_mode(self.dut, True),
-                "Can not turn on airplane mode.")
+            asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                                "Can not turn on airplane mode.")
         wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
@@ -129,11 +128,10 @@ class WifiRvrTest(base_test.BaseTestClass):
                         result['testcase_params']['traffic_type']),
                     x_label='Attenuation (dB)',
                     primary_y_label='Throughput (Mbps)')
-            plots[plot_id].add_line(
-                result['total_attenuation'],
-                result['throughput_receive'],
-                result['test_name'],
-                marker='circle')
+            plots[plot_id].add_line(result['total_attenuation'],
+                                    result['throughput_receive'],
+                                    result['test_name'],
+                                    marker='circle')
         figure_list = []
         for plot_id, plot in plots.items():
             plot.generate_figure()
@@ -212,8 +210,8 @@ class WifiRvrTest(base_test.BaseTestClass):
                 abs(current_att - golden_att)
                 for golden_att in golden_attenuation
             ]
-            sorted_distances = sorted(
-                enumerate(att_distances), key=lambda x: x[1])
+            sorted_distances = sorted(enumerate(att_distances),
+                                      key=lambda x: x[1])
             closest_indeces = [dist[0] for dist in sorted_distances[0:3]]
             closest_throughputs = [
                 golden_results['throughput_receive'][index]
@@ -252,10 +250,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         with open(results_file_path, 'w') as results_file:
             json.dump(rvr_result, results_file, indent=4)
         # Plot and save
-        figure = wputils.BokehFigure(
-            title=test_name,
-            x_label='Attenuation (dB)',
-            primary_y_label='Throughput (Mbps)')
+        figure = wputils.BokehFigure(title=test_name,
+                                     x_label='Attenuation (dB)',
+                                     primary_y_label='Throughput (Mbps)')
         try:
             golden_path = next(file_name
                                for file_name in self.golden_files_list
@@ -272,13 +269,12 @@ class WifiRvrTest(base_test.BaseTestClass):
                 'lower_limit': throughput_limits['lower_limit'],
                 'upper_limit': throughput_limits['upper_limit']
             }
-            figure.add_line(
-                golden_attenuation,
-                golden_results['throughput_receive'],
-                'Golden Results',
-                color='green',
-                marker='circle',
-                shaded_region=shaded_region)
+            figure.add_line(golden_attenuation,
+                            golden_results['throughput_receive'],
+                            'Golden Results',
+                            color='green',
+                            marker='circle',
+                            shaded_region=shaded_region)
         except:
             self.log.warning('ValueError: Golden file not found')
 
@@ -291,13 +287,12 @@ class WifiRvrTest(base_test.BaseTestClass):
                 curr_llstats['summary']['common_rx_mcs_freq'] * 100)
             for curr_llstats in rvr_result['llstats']
         ]
-        figure.add_line(
-            rvr_result['total_attenuation'],
-            rvr_result['throughput_receive'],
-            'Test Results',
-            hover_text=hover_text,
-            color='red',
-            marker='circle')
+        figure.add_line(rvr_result['total_attenuation'],
+                        rvr_result['throughput_receive'],
+                        'Test Results',
+                        hover_text=hover_text,
+                        color='red',
+                        marker='circle')
 
         output_file_path = os.path.join(self.log_path,
                                         '{}.html'.format(test_name))
@@ -412,7 +407,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                      atten, curr_throughput, current_rssi['signal_poll_rssi'],
                      current_rssi['chain_0_rssi'],
                      current_rssi['chain_1_rssi']))
-            if curr_throughput == 0:
+            if curr_throughput == 0 and current_rssi['signal_poll_rssi'] < -80:
                 zero_counter = zero_counter + 1
             else:
                 zero_counter = 0
@@ -486,11 +481,10 @@ class WifiRvrTest(base_test.BaseTestClass):
             self.dut.droid.wifiSetCountryCode(
                 self.testclass_params['country_code'])
             self.main_network[band]['channel'] = testcase_params['channel']
-            wutils.wifi_connect(
-                self.dut,
-                self.main_network[band],
-                num_of_tries=5,
-                check_connectivity=True)
+            wutils.wifi_connect(self.dut,
+                                self.main_network[band],
+                                num_of_tries=5,
+                                check_connectivity=True)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def setup_rvr_test(self, testcase_params):
@@ -596,11 +590,10 @@ class WifiRvrTest(base_test.BaseTestClass):
 class WifiRvr_2GHz_Test(WifiRvrTest):
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.tests = self.generate_test_cases(
-            channels=[1, 6, 11],
-            modes=['VHT20'],
-            traffic_types=['TCP'],
-            traffic_directions=['DL', 'UL'])
+        self.tests = self.generate_test_cases(channels=[1, 6, 11],
+                                              modes=['VHT20'],
+                                              traffic_types=['TCP'],
+                                              traffic_directions=['DL', 'UL'])
 
 
 class WifiRvr_UNII1_Test(WifiRvrTest):
@@ -681,7 +674,6 @@ class WifiOtaRvrTest(WifiRvrTest):
     setting turntable orientation and other chamber parameters to study
     performance in varying channel conditions
     """
-
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.testcase_metric_logger = (
@@ -739,13 +731,12 @@ class WifiOtaRvrTest(WifiRvrTest):
                 compiled_data[test_id]['metrics'][metric_key].append(
                     metric_value)
             # Add test id to plots
-            plots[test_id].add_line(
-                result['total_attenuation'],
-                result['throughput_receive'],
-                result['test_name'],
-                width=1,
-                style='dashed',
-                marker='circle')
+            plots[test_id].add_line(result['total_attenuation'],
+                                    result['throughput_receive'],
+                                    result['test_name'],
+                                    width=1,
+                                    style='dashed',
+                                    marker='circle')
 
         # Compute average RvRs and compount metrics over orientations
         for test_id, test_data in compiled_data.items():
@@ -765,16 +756,14 @@ class WifiOtaRvrTest(WifiRvrTest):
                     metric_key, metric_value)
             test_data['avg_rvr'] = numpy.mean(test_data['throughput'], 0)
             test_data['median_rvr'] = numpy.median(test_data['throughput'], 0)
-            plots[test_id].add_line(
-                test_data['total_attenuation'],
-                test_data['avg_rvr'],
-                legend='Average Throughput',
-                marker='circle')
-            plots[test_id].add_line(
-                test_data['total_attenuation'],
-                test_data['median_rvr'],
-                legend='Median Throughput',
-                marker='square')
+            plots[test_id].add_line(test_data['total_attenuation'],
+                                    test_data['avg_rvr'],
+                                    legend='Average Throughput',
+                                    marker='circle')
+            plots[test_id].add_line(test_data['total_attenuation'],
+                                    test_data['median_rvr'],
+                                    legend='Median Throughput',
+                                    marker='square')
 
         figure_list = []
         for test_id, plot in plots.items():
@@ -806,12 +795,11 @@ class WifiOtaRvrTest(WifiRvrTest):
                 continue
             testcase_name = 'test_rvr_{}_{}_ch{}_{}_{}deg'.format(
                 traffic_type, direction, channel, mode, angle)
-            test_params = collections.OrderedDict(
-                channel=channel,
-                mode=mode,
-                traffic_type=traffic_type,
-                traffic_direction=direction,
-                orientation=angle)
+            test_params = collections.OrderedDict(channel=channel,
+                                                  mode=mode,
+                                                  traffic_type=traffic_type,
+                                                  traffic_direction=direction,
+                                                  orientation=angle)
             setattr(self, testcase_name, partial(self._test_rvr, test_params))
             test_cases.append(testcase_name)
         return test_cases
