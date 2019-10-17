@@ -43,9 +43,7 @@ class WifiRvrTest(base_test.BaseTestClass):
     example_connectivity_performance_ap_sta.json.
     """
 
-    TEST_TIMEOUT = 5
-    SHORT_SLEEP = 1
-    RSSI_POLL_INTERVAL = 1
+    TEST_TIMEOUT = 6
     MAX_CONSECUTIVE_ZEROS = 3
 
     def __init__(self, controllers):
@@ -367,8 +365,8 @@ class WifiRvrTest(base_test.BaseTestClass):
         llstats = []
         rssi = []
         for atten in testcase_params['atten_range']:
-            if not wputils.health_check(self.dut, 5):
-                asserts.skip('Batter low or DUT overheating. Skipping test.')
+            if not wputils.health_check(self.dut, 5, 50):
+                asserts.skip('Battery low or DUT overheating. Skipping test.')
             # Set Attenuation
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
@@ -481,13 +479,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.dut.go_to_sleep()
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
-        current_network = self.dut.droid.wifiGetConnectionInfo()
-        try:
-            connected = wutils.validate_connection(self.dut) is not None
-        except:
-            connected = False
-        if connected and current_network['SSID'] == self.main_network[band][
-                'SSID']:
+        if wputils.validate_network(self.dut, self.main_network[band]['SSID']):
             self.log.info('Already connected to desired network')
         else:
             wutils.reset_wifi(self.dut)
@@ -498,7 +490,7 @@ class WifiRvrTest(base_test.BaseTestClass):
                 self.dut,
                 self.main_network[band],
                 num_of_tries=5,
-                check_connectivity=False)
+                check_connectivity=True)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def setup_rvr_test(self, testcase_params):
