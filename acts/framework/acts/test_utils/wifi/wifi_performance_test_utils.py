@@ -25,8 +25,6 @@ import statistics
 import time
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.utils_lib import ssh
-from acts.metrics.core import ProtoMetric
-from acts.metrics.logger import MetricLogger
 from acts import utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from concurrent.futures import ThreadPoolExecutor
@@ -852,8 +850,6 @@ def atten_by_label(atten_list, path_label, atten_level):
         if path_label in atten.path:
             atten.set_atten(atten_level)
 
-
-# Miscellaneous Wifi Utilities
 def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
     """Function to detect mapping between attenuator ports and DUT chains.
 
@@ -951,6 +947,23 @@ def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
 
     return rf_map_by_network, rf_map_by_atten
 
+# Miscellaneous Wifi Utilities
+def validate_network(dut, ssid):
+    """Check that DUT has a valid internet connection through expected SSID
+
+    Args:
+        dut: android device of interest
+        ssid: expected ssid
+    """
+    current_network = dut.droid.wifiGetConnectionInfo()
+    try:
+        connected = wutils.validate_connection(dut) is not None
+    except:
+        connected = False
+    if connected and current_network['SSID'] == ssid:
+        return True
+    else:
+        return False
 
 def get_server_address(ssh_connection, dut_ip, subnet_mask):
     """Get server address on a specific subnet,
