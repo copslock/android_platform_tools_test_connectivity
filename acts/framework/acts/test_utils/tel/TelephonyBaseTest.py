@@ -167,6 +167,7 @@ class TelephonyBaseTest(BaseTestClass):
             "enable_radio_log_on", False)
         self.cbrs_esim = self.user_params.get("cbrs_esim", False)
         self.account_util = self.user_params.get("account_util", None)
+        self.save_passing_logs = self.user_params.get("save_passing_logs", False)
         if isinstance(self.account_util, list):
             self.account_util = self.account_util[0]
         self.fi_util = self.user_params.get("fi_util", None)
@@ -189,7 +190,8 @@ class TelephonyBaseTest(BaseTestClass):
                                     "number_of_sims":2
                                 }
                 break
-
+        if "anritsu_md8475a_ip_address" in self.user_params:
+            return
         qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
         if isinstance(qxdm_log_mask_cfg, list):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
@@ -476,6 +478,10 @@ class TelephonyBaseTest(BaseTestClass):
 
     def on_fail(self, test_name, begin_time):
         self._take_bug_report(test_name, begin_time)
+
+    def on_pass(self, test_name, begin_time):
+        if self.save_passing_logs:
+            self._take_bug_report(test_name, begin_time)
 
     def _ad_take_extra_logs(self, ad, test_name, begin_time):
         ad.adb.wait_for_device()

@@ -95,11 +95,22 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
         self.timeout = timeout
 
     def __enter__(self):
+        """Entry context manager for BlockingBrowser.
+
+        The enter context manager for BlockingBrowser attempts to lock the
+        browser file. If successful, it launches and returns a chromedriver
+        session. If an exception occurs while starting the browser, the lock
+        file is released.
+        """
         self.lock_file = open(self.lock_file_path, "r")
         start_time = time.time()
         while time.time() < start_time + self.timeout:
             try:
                 fcntl.flock(self.lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                time.sleep(BROWSER_WAIT_SHORT)
+                continue
+            try:
                 self.driver = selenium.webdriver.Chrome(
                     options=self.chrome_options,
                     desired_capabilities=self.chrome_capabilities)
@@ -109,11 +120,19 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
                 super(splinter.driver.webdriver.chrome.WebDriver,
                       self).__init__(2)
                 return super(BlockingBrowser, self).__enter__()
-            except BlockingIOError:
-                time.sleep(BROWSER_WAIT_SHORT)
+            except:
+                fcntl.flock(self.lock_file, fcntl.LOCK_UN)
+                self.lock_file.close()
+                raise RuntimeError("Error starting browser. "
+                                   "Releasing lock file.")
         raise TimeoutError("Could not start chrome browser in time.")
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """Exit context manager for BlockingBrowser.
+
+        The exit context manager simply calls the parent class exit and
+        releases the lock file.
+        """
         try:
             super(BlockingBrowser, self).__exit__(exc_type, exc_value,
                                                   traceback)
