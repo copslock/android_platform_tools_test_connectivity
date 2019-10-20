@@ -697,7 +697,7 @@ def get_connected_rssi(dut,
          ('chain_0_rssi', empty_rssi_result()),
          ('chain_1_rssi', empty_rssi_result())])
     # yapf: enable
-    previous_bssid = None
+    previous_bssid = RSSI_ERROR_VAL
     t0 = time.time()
     time.sleep(first_measurement_delay)
     for idx in range(num_measurements):
