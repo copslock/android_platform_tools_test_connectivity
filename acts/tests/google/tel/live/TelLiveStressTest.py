@@ -251,6 +251,19 @@ class TelLiveStressTest(TelephonyBaseTest):
             ad.log.info("RAT 2G is enabled successfully.")
         return True
 
+    def _get_network_rat(self, slot_id):
+        rat = self.dut.adb.getprop("gsm.network.type")
+        if "," in rat:
+            if self.dsds_esim:
+                rat = rat.split(',')[slot_id]
+            else:
+                (rat1, rat2) = rat.split(',')
+                if rat1 == "Unknown":
+                    rat = rat2
+                else:
+                    rat = rat1
+        return rat
+
     def _send_message(self, max_wait_time=2 * MAX_WAIT_TIME_SMS_RECEIVE):
         slot_id_rx = None
         if self.single_phone_test:
@@ -276,13 +289,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
         }
-        rat = self.dut.adb.getprop("gsm.network.type")
-        if "," in rat:
-            if self.dsds_esim:
-                rat = rat.split(',')[slot_id]
-            else:
-                rat = rat.split(',')[0]
-        self.dut.log.info("Network in RAT %s", rat)
+
+        self.dut.log.info("Network in RAT %s", self._get_network_rat(slot_id))
         if self.dut_incall and not is_rat_svd_capable(rat.upper()):
             self.dut.log.info("In call data not supported, test SMS only")
             selection = 0
@@ -336,13 +344,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("%s fails", log_msg)
                 self.result_info["%s Failure" % message_type] += 1
             else:
-                rat = self.dut.adb.getprop("gsm.network.type")
-                if "," in rat:
-                    if self.dsds_esim:
-                        rat = rat.split(',')[slot_id]
-                    else:
-                        rat = rat.split(',')[0]
-                self.dut.log.info("Network in RAT %s", rat)
+                self.dut.log.info("Network in RAT %s", self._get_network_rat(slot_id))
                 if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                     self.dut.log.info(
                         "In call data not supported, MMS failure expected")
@@ -783,13 +785,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.result_info["Internet Connection Check Total"] += 1
 
         if not self.internet_connection_check_method(self.log, self.dut):
-            rat = self.dut.adb.getprop("gsm.network.type")
-            if "," in rat:
-                if self.dsds_esim:
-                    rat = rat.split(',')[slot_id]
-                else:
-                    rat = rat.split(',')[0]
-            self.dut.log.info("Network in RAT %s", rat)
+            self.dut.log.info("Network in RAT %s", self._get_network_rat(slot_id))
             if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                 self.result_info[
                     "Expected Incall Internet Connection Check Failure"] += 1
