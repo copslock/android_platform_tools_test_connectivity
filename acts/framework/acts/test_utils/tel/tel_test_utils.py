@@ -7605,6 +7605,14 @@ def bring_up_connectivity_monitor(ad):
         return True
 
 
+def get_host_ip_address(ad):
+    cmd = "|".join(("ifconfig", "grep eno1 -A1", "grep inet", "awk '{$1=$1};1'", "cut -d ' ' -f 2"))
+    destination_ip = exe_cmd(cmd)
+    destination_ip = (destination_ip.decode("utf-8")).split("\n")[0]
+    ad.log.info("Host IP is %s", destination_ip)
+    return destination_ip
+
+
 def toggle_connectivity_monitor_setting(ad, state=True):
     monitor_setting = ad.adb.getprop("persist.radio.enable_tel_mon")
     ad.log.info("radio.enable_tel_mon setting is %s", monitor_setting)
