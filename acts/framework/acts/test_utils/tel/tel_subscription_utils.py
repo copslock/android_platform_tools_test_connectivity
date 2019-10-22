@@ -316,6 +316,9 @@ def perform_dds_switch(ad):
 def set_dds_on_slot_0(ad):
     sub_id = get_subid_from_slot_index(ad.log, ad, 0)
     operator = get_operatorname_from_slot_index(ad, 0)
+    if get_default_data_sub_id(ad) == sub_id:
+        ad.log.info("Current DDS is already on %s", operator)
+        return True
     ad.log.info("Setting DDS on %s", operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
@@ -329,6 +332,9 @@ def set_dds_on_slot_0(ad):
 def set_dds_on_slot_1(ad):
     sub_id = get_subid_from_slot_index(ad.log, ad, 1)
     operator = get_operatorname_from_slot_index(ad, 1)
+    if get_default_data_sub_id(ad) == sub_id:
+        ad.log.info("Current DDS is already on %s", operator)
+        return True
     ad.log.info("Setting DDS on %s", operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
