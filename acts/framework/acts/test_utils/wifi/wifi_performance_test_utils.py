@@ -697,7 +697,7 @@ def get_connected_rssi(dut,
          ('chain_0_rssi', empty_rssi_result()),
          ('chain_1_rssi', empty_rssi_result())])
     # yapf: enable
-    previous_bssid = RSSI_ERROR_VAL
+    previous_bssid = 'disconnected'
     t0 = time.time()
     time.sleep(first_measurement_delay)
     for idx in range(num_measurements):
@@ -712,9 +712,9 @@ def get_connected_rssi(dut,
             if disconnect_warning and current_bssid != previous_bssid:
                 logging.info('CONNECT to {} detected.'.format(current_bssid))
         else:
-            current_bssid = RSSI_ERROR_VAL
+            current_bssid = 'disconnected'
             connected_rssi['bssid'].append(current_bssid)
-            if disconnect_warning and not math.isnan(previous_bssid):
+            if disconnect_warning and previous_bssid != 'disconnected':
                 logging.warning('WIFI DISCONNECT DETECTED!')
         previous_bssid = current_bssid
         signal_poll_output = dut.adb.shell(SIGNAL_POLL)
