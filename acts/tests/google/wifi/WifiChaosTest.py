@@ -199,8 +199,12 @@ class WifiChaosTest(WifiBaseTest):
             sec: Time in seconds to run teh ping traffic.
 
         """
+        self.log.info("Finding Gateway...")
+        route_response = self.dut.adb.shell("ip route get 8.8.8.8")
+        gateway_ip = re.search('via (.*) dev', str(route_response)).group(1)
+        self.log.info("Gateway IP = %s" % gateway_ip)
         self.log.info("Running ping for %d seconds" % sec)
-        result = self.dut.adb.shell("ping -w %d %s" % (sec, PING_ADDR),
+        result = self.dut.adb.shell("ping -w %d %s" % (sec, gateway_ip),
                                     timeout=sec + 1)
         self.log.debug("Ping Result = %s" % result)
         if "100% packet loss" in result:
