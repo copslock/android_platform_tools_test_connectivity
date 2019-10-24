@@ -709,8 +709,6 @@ def get_connected_rssi(dut,
         if match:
             current_bssid = match.group(0).split('=')[1]
             connected_rssi['bssid'].append(current_bssid)
-            if disconnect_warning and current_bssid != previous_bssid:
-                logging.info('CONNECT to {} detected.'.format(current_bssid))
         else:
             current_bssid = 'disconnected'
             connected_rssi['bssid'].append(current_bssid)
