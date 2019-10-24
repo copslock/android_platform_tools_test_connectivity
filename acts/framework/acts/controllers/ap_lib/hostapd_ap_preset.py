@@ -254,6 +254,12 @@ def create_ap_preset(profile_name='whirlwind',
                                    channel=channel,
                                    ssid=ssid,
                                    security=security)
+    elif profile_name == 'asus_rtac86u':
+        config = asus.asus_rtac86u(iface_wlan_2g=iface_wlan_2g,
+                                   iface_wlan_5g=iface_wlan_5g,
+                                   channel=channel,
+                                   ssid=ssid,
+                                   security=security)
     else:
         raise ValueError('Invalid ap model specified (%s)' % profile_name)
 
