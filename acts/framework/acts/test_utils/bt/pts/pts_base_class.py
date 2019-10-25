@@ -121,8 +121,6 @@ class PtsBaseClass(BaseTestClass):
                 # TODO: Implement MMIs as necessary
             }
         }
-
-        self.pts.setup_pts()
         self.pts.bind_to(self.process_next_action)
 
     def teardown_class(self):
