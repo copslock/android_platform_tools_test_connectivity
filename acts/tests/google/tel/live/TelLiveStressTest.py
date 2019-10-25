@@ -289,8 +289,8 @@ class TelLiveStressTest(TelephonyBaseTest):
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
         }
-
-        self.dut.log.info("Network in RAT %s", self._get_network_rat(slot_id))
+        rat = self._get_network_rat(slot_id)
+        self.dut.log.info("Network in RAT %s", rat)
         if self.dut_incall and not is_rat_svd_capable(rat.upper()):
             self.dut.log.info("In call data not supported, test SMS only")
             selection = 0
@@ -344,7 +344,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("%s fails", log_msg)
                 self.result_info["%s Failure" % message_type] += 1
             else:
-                self.dut.log.info("Network in RAT %s", self._get_network_rat(slot_id))
+                rat = self._get_network_rat(slot_id)
+                self.dut.log.info("Network in RAT %s", rat)
                 if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                     self.dut.log.info(
                         "In call data not supported, MMS failure expected")
@@ -784,8 +785,9 @@ class TelLiveStressTest(TelephonyBaseTest):
         file_name = file_names[selection]
         self.result_info["Internet Connection Check Total"] += 1
 
+        rat = self._get_network_rat(slot_id)
         if not self.internet_connection_check_method(self.log, self.dut):
-            self.dut.log.info("Network in RAT %s", self._get_network_rat(slot_id))
+            self.dut.log.info("Network in RAT %s", rat)
             if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                 self.result_info[
                     "Expected Incall Internet Connection Check Failure"] += 1
