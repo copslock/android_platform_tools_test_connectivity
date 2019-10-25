@@ -15,6 +15,7 @@
 import acts.controllers.ap_lib.third_party_ap_profiles.actiontec as actiontec
 import acts.controllers.ap_lib.third_party_ap_profiles.asus as asus
 import acts.controllers.ap_lib.third_party_ap_profiles.belkin as belkin
+import acts.controllers.ap_lib.third_party_ap_profiles.linksys as linksys
 
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
@@ -271,6 +272,12 @@ def create_ap_preset(profile_name='whirlwind',
                                          channel=channel,
                                          ssid=ssid,
                                          security=security)
+    elif profile_name == 'linksys_ea4500':
+        config = linksys.linksys_ea4500(iface_wlan_2g=iface_wlan_2g,
+                                        iface_wlan_5g=iface_wlan_5g,
+                                        channel=channel,
+                                        ssid=ssid,
+                                        security=security)
     else:
         raise ValueError('Invalid ap model specified (%s)' % profile_name)
 
