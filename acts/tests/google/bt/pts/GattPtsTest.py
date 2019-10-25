@@ -33,12 +33,11 @@ class GattPtsTest(PtsBaseClass):
     pts_action_mapping = None
 
     def setup_class(self):
-        super(GattPtsTest, self).setup_class()
+        super().setup_class()
         self.dut_bluetooth_local_name = "fs_test"
         self.dut.initialize_bluetooth_controller()
         self.dut.set_bluetooth_local_name(self.dut_bluetooth_local_name)
         local_dut_mac_address = self.dut.get_local_bluetooth_address()
-        self.pts.set_profile_under_test("GATT")
 
         ics = None
         ixit = None
@@ -72,7 +71,11 @@ class GattPtsTest(PtsBaseClass):
                 "Unable to run PTS tests on unsupported hardare {}.".format(
                     type(self.dut)))
 
+        ### PTS SETUP: Required after ICS, IXIT, and profile is setup ###
+        self.pts.set_profile_under_test("GATT")
         self.pts.set_ics_and_ixit(ics, ixit)
+        self.pts.setup_pts()
+        ### End PTS Setup ###
 
         self.dut.unbond_all_known_devices()
         self.dut.start_pairing_helper()
