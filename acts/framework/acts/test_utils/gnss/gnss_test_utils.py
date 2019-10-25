@@ -99,6 +99,7 @@ def enable_gnss_verbose_logging(ad):
     ad.adb.shell("echo DEBUG_LEVEL = 5 >> /vendor/etc/gps.conf")
     ad.adb.shell("echo %r >> /data/local.prop" % LOCAL_PROP_FILE_CONTENTS)
     ad.adb.shell("chmod 644 /data/local.prop")
+    ad.adb.shell("setprop persist.logd.logpersistd.size 20000")
     ad.adb.shell("setprop persist.logd.size 16777216")
     ad.adb.shell("setprop persist.vendor.radio.adb_log_on 1")
     ad.adb.shell("setprop persist.logd.logpersistd logcatd")
@@ -807,7 +808,10 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     pe_list = [float(ttff_data[key].ttff_pe) for key in ttff_data.keys()]
     cn_list = [float(ttff_data[key].ttff_cn) for key in ttff_data.keys()]
     timeoutcount = sec_list.count(0.0)
-    avgttff = sum(sec_list)/(len(sec_list) - timeoutcount)
+    if len(sec_list) == timeoutcount:
+        avgttff = 9527
+    else:
+        avgttff = sum(sec_list)/(len(sec_list) - timeoutcount)
     if timeoutcount != 0:
         maxttff = 9527
     else:
