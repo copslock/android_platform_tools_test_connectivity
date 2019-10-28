@@ -407,7 +407,9 @@ class WifiRvrTest(base_test.BaseTestClass):
                      atten, curr_throughput, current_rssi['signal_poll_rssi'],
                      current_rssi['chain_0_rssi'],
                      current_rssi['chain_1_rssi']))
-            if curr_throughput == 0 and current_rssi['signal_poll_rssi'] < -80:
+            if curr_throughput == 0 and (
+                    current_rssi['signal_poll_rssi'] < -80
+                    or numpy.isnan(current_rssi['signal_poll_rssi'])):
                 zero_counter = zero_counter + 1
             else:
                 zero_counter = 0
