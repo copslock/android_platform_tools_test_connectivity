@@ -29,6 +29,7 @@ from acts.test_utils.tel import tel_test_utils as tel_utils
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_AUTO
+from acts.test_utils.wifi import wifi_constants
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
@@ -485,6 +486,139 @@ class WifiSoftApTest(WifiBaseTest):
         asserts.skip_if(len(self.android_devices) < 3,
                         "No extra android devices. Skip test")
         self.validate_full_tether_startup(WIFI_CONFIG_APBAND_5G, test_clients=True)
+
+    @test_tracker_info(uuid="b991129e-030a-4998-9b08-0687270bec24")
+    def test_number_of_softap_clients(self):
+        """Test for number of softap clients to be updated correctly
+
+        1. Turn of hotspot
+        2. Register softap callback
+        3. Let client connect to the hotspot
+        4. Register second softap callback
+        5. Force client connect/disconnect to hotspot
+        6. Unregister second softap callback
+        7. Force second client connect to hotspot (if supported)
+        8. Turn off hotspot
+        9. Verify second softap callback doesn't respond after unresister
+        """
+        config = wutils.start_softap_and_verify(self, WIFI_CONFIG_APBAND_AUTO)
+        # Register callback after softap enabled to avoid unnecessary callback
+        # impact the test
+        callbackId = self.dut.droid.registerSoftApCallback()
+        # Verify clients will update immediately after register callback
+        wutils.wait_for_expected_number_of_softap_clients(
+                self.dut, callbackId, 0)
+        wutils.wait_for_expected_softap_state(self.dut, callbackId,
+                wifi_constants.WIFI_AP_ENABLED_STATE)
+
+        # Force DUTs connect to Network
+        wutils.wifi_connect(self.dut_client, config,
+                check_connectivity=False)
+        wutils.wait_for_expected_number_of_softap_clients(
+                self.dut, callbackId, 1)
+
+        # Register another callback to verify multi callback clients case
+        callbackId_2 = self.dut.droid.registerSoftApCallback()
+        # Verify clients will update immediately after register callback
+        wutils.wait_for_expected_number_of_softap_clients(
+                self.dut, callbackId_2, 1)
+        wutils.wait_for_expected_softap_state(self.dut, callbackId_2,
+                wifi_constants.WIFI_AP_ENABLED_STATE)
+
+        # Client Off/On Wifi to verify number of softap clients will be updated
+        wutils.toggle_wifi_and_wait_for_reconnection(self.dut_client, config)
+
+        wutils.wait_for_expected_number_of_softap_clients(self.dut,
+                callbackId, 0)
+        wutils.wait_for_expected_number_of_softap_clients(self.dut,
+                callbackId_2, 0)
+        wutils.wait_for_expected_number_of_softap_clients(self.dut,
+                callbackId, 1)
+        wutils.wait_for_expected_number_of_softap_clients(self.dut,
+                callbackId_2, 1)
+
+        # Unregister callbackId_2 to verify multi callback clients case
+        self.dut.droid.unregisterSoftApCallback(callbackId_2)
+
+        if len(self.android_devices) > 2:
+            wutils.wifi_connect(self.android_devices[2], config,
+                    check_connectivity=False)
+            wutils.wait_for_expected_number_of_softap_clients(
+                    self.dut, callbackId, 2)
+
+        # Turn off softap when clients connected
+        wutils.stop_wifi_tethering(self.dut)
+        wutils.wait_for_disconnect(self.dut_client)
+        if len(self.android_devices) > 2:
+            wutils.wait_for_disconnect(self.android_devices[2])
+
+        # Verify client number change back to 0 after softap stop if client
+        # doesn't disconnect before softap stop
+        wutils.wait_for_expected_softap_state(self.dut, callbackId,
+                wifi_constants.WIFI_AP_DISABLING_STATE)
+        wutils.wait_for_expected_softap_state(self.dut, callbackId,
+                wifi_constants.WIFI_AP_DISABLED_STATE)
+        wutils.wait_for_expected_number_of_softap_clients(
+                self.dut, callbackId, 0)
+        # Unregister callback
+        self.dut.droid.unregisterSoftApCallback(callbackId)
+
+        # Check no any callbackId_2 event after unregister
+        asserts.assert_equal(
+                wutils.get_current_number_of_softap_clients(
+                self.dut, callbackId_2), None)
+
+    @test_tracker_info(uuid="35bc4ba1-bade-42ee-a563-0c73afb2402a")
+    def test_softap_auto_shut_off(self):
+        """Test for softap auto shut off
+
+        1. Turn of hotspot
+        2. Register softap callback
+        3. Let client connect to the hotspot
+        4. Start wait [wifi_constants.DEFAULT_SOFTAP_TIMEOUT_S] seconds
+        5. Check hotspot doesn't shut off
+        6. Let client disconnect to the hotspot
+        7. Start wait [wifi_constants.DEFAULT_SOFTAP_TIMEOUT_S] seconds
+        8. Check hotspot auto shut off
+        """
+        config = wutils.start_softap_and_verify(self, WIFI_CONFIG_APBAND_AUTO)
+        # Register callback after softap enabled to avoid unnecessary callback
+        # impact the test
+        callbackId = self.dut.droid.registerSoftApCallback()
+        # Verify clients will update immediately after register callback
+        wutils.wait_for_expected_number_of_softap_clients(self.dut,
+                callbackId, 0)
+        wutils.wait_for_expected_softap_state(self.dut, callbackId,
+                wifi_constants.WIFI_AP_ENABLED_STATE)
+
+        # Force DUTs connect to Network
+        wutils.wifi_connect(self.dut_client, config, check_connectivity=False)
+        wutils.wait_for_expected_number_of_softap_clients(
+                self.dut, callbackId, 1)
+
+        self.dut.log.info("Start waiting %s seconds with 1 clients ",
+                wifi_constants.DEFAULT_SOFTAP_TIMEOUT_S*1.1)
+        time.sleep(wifi_constants.DEFAULT_SOFTAP_TIMEOUT_S*1.1)
+
+        # When client connected, softap should keep as enabled
+        asserts.assert_true(self.dut.droid.wifiIsApEnabled(),
+                "SoftAp is not reported as running")
+
+        wutils.wifi_toggle_state(self.dut_client, False)
+        wutils.wait_for_expected_number_of_softap_clients(self.dut,
+                callbackId, 0)
+        self.dut.log.info("Start waiting %s seconds with 0 client",
+                wifi_constants.DEFAULT_SOFTAP_TIMEOUT_S*1.1)
+        time.sleep(wifi_constants.DEFAULT_SOFTAP_TIMEOUT_S*1.1)
+        # Softap should stop since no client connected
+        # doesn't disconnect before softap stop
+        wutils.wait_for_expected_softap_state(self.dut, callbackId,
+                wifi_constants.WIFI_AP_DISABLING_STATE)
+        wutils.wait_for_expected_softap_state(self.dut, callbackId,
+                wifi_constants.WIFI_AP_DISABLED_STATE)
+        asserts.assert_false(self.dut.droid.wifiIsApEnabled(),
+                "SoftAp is not reported as running")
+        self.dut.droid.unregisterSoftApCallback(callbackId)
 
     """ Tests End """
 
