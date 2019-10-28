@@ -36,13 +36,14 @@ GET_FROM_AP = 'get_from_ap'
 PHONE_BATTERY_VOLTAGE = 4.2
 MONSOON_MAX_CURRENT = 8.0
 MONSOON_RETRY_INTERVAL = 300
+DEFAULT_MONSOON_FREQUENCY = 500
 MEASUREMENT_RETRY_COUNT = 3
 RECOVER_MONSOON_RETRY_COUNT = 3
 MIN_PERCENT_SAMPLE = 95
 ENABLED_MODULATED_DTIM = 'gEnableModulatedDTIM='
 MAX_MODULATED_DTIM = 'gMaxLIModulatedDTIM='
 TEMP_FILE = '/sdcard/Download/tmp.log'
-IPERF_DURATION = 'iperf_duration'
+
 
 class ObjNew():
     """Create a random obj with unknown attributes and value.
@@ -89,9 +90,27 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon.set_voltage(PHONE_BATTERY_VOLTAGE)
         self.mon.attach_device(self.dut)
 
-        # Unpack the test/device specific parameters
-        req_params = ['custom_files']
-        self.unpack_userparams(req_params)
+        # Obtain test parameters from user_params
+        TEST_PARAMS = self.TAG + '_params'
+        self.test_params = self.user_params.get(TEST_PARAMS, {})
+        if not self.test_params:
+            self.log.warning(TEST_PARAMS + ' was not found in the user '
+                             'parameters defined in the config file.')
+
+        # Override user_param values with test parameters
+        self.user_params.update(self.test_params)
+
+        # Unpack user_params with default values. All the usages of user_params
+        # as self attributes need to be included either as a required parameter
+        # or as a parameter with a default value.
+        req_params = ['custom_files', 'mon_duration']
+        self.unpack_userparams(req_params,
+                               mon_freq=DEFAULT_MONSOON_FREQUENCY,
+                               mon_offset=0,
+                               bug_report=False,
+                               extra_wait=None,
+                               iperf_duration=None)
+
         # Unpack the custom files based on the test configs
         for file in self.custom_files:
             if 'pass_fail_threshold_' + self.dut.model in file:
@@ -110,10 +129,6 @@ class PowerBaseTest(base_test.BaseTestClass):
             not self.rockbottom_script,
             'Required rockbottom setting script is missing')
 
-        # Unpack test specific configs
-        TEST_PARAMS = self.TAG + '_params'
-        self.test_params = self.user_params.get(TEST_PARAMS, {})
-        self.unpack_testparams(self.test_params)
         if hasattr(self, 'attenuators'):
             self.num_atten = self.attenuators[0].instrument.num_atten
             self.atten_level = self.unpack_custom_file(self.attenuation_file)
@@ -145,7 +160,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         wutils.wifi_toggle_state(self.dut, False)
 
         # Wait for extra time if needed for the first test
-        if hasattr(self, 'extra_wait'):
+        if self.extra_wait:
             self.more_wait_first_test()
 
     def teardown_test(self):
@@ -190,15 +205,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.dut.root_adb()
         # Restart SL4A
         self.dut.start_services()
-
-    def unpack_testparams(self, bulk_params):
-        """Unpack all the test specific parameters.
-
-        Args:
-            bulk_params: dict with all test specific params in the config file
-        """
-        for key in bulk_params.keys():
-            setattr(self, key, bulk_params[key])
 
     def unpack_custom_file(self, file, test_specific=True):
         """Unpack the pass_fail_thresholds from a common file.
@@ -302,7 +308,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         Returns:
             mon_info: Dictionary with the monsoon packet config
         """
-        if hasattr(self, IPERF_DURATION):
+        if self.iperf_duration:
             self.mon_duration = self.iperf_duration - 10
         mon_info = ObjNew(dut=self.mon,
                           freq=self.mon_freq,
