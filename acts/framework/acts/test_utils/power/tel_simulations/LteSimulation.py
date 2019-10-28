@@ -76,6 +76,7 @@ class LteSimulation(BaseSimulation):
     PARAM_MIMO = "mimo"
     PARAM_DL_MCS = 'dlmcs'
     PARAM_UL_MCS = 'ulmcs'
+    PARAM_SSF = 'ssf'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
     # Test config keywords
@@ -384,6 +385,7 @@ class LteSimulation(BaseSimulation):
         Atributes:
             band: an integer indicating the required band number.
             dlul_config: an integer indicating the TDD config number.
+            ssf_config: an integer indicating the Special Sub-Frame config.
             bandwidth: a float indicating the required channel bandwidth.
             mimo_mode: an instance of LteSimulation.MimoMode indicating the
                 required MIMO mode for the downlink signal.
@@ -407,6 +409,7 @@ class LteSimulation(BaseSimulation):
             super().__init__()
             self.band = None
             self.dlul_config = None
+            self.ssf_config = None
             self.bandwidth = None
             self.mimo_mode = None
             self.transmission_mode = None
@@ -524,9 +527,10 @@ class LteSimulation(BaseSimulation):
 
         new_config.band = values[1]
 
-        # Set DL/UL frame configuration
+        # Set TDD-only configs
         if self.get_duplex_mode(new_config.band) == DuplexMode.TDD:
 
+            # Sub-frame DL/UL config
             values = self.consume_parameter(parameters,
                                             self.PARAM_FRAME_CONFIG, 1)
             if not values:
@@ -537,6 +541,18 @@ class LteSimulation(BaseSimulation):
                         self.PARAM_FRAME_CONFIG))
 
             new_config.dlul_config = int(values[1])
+
+            # Special Sub-Frame configuration
+            values = self.consume_parameter(parameters, self.PARAM_SSF, 1)
+
+            if not values:
+                self.log.warning(
+                    'The {} parameter was not provided. Setting '
+                    'Special Sub-Frame config to 6 by default.'.format(
+                        self.PARAM_SSF))
+                new_config.ssf_config = 6
+            else:
+                new_config.ssf_config = int(values[1])
 
         # Setup bandwidth
 

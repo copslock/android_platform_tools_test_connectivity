@@ -242,6 +242,23 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         # Wait for the setting to propagate
         time.sleep(5)
 
+    def set_ssf_config(self, bts_index, ssf_config):
+        """ Sets the Special Sub-Frame config number for the indicated
+        base station.
+
+        Args:
+            bts_index: the base station number
+            ssf_config: the new ssf config number
+        """
+        # Cast to int in case it was passed as a string
+        ssf_config = int(ssf_config)
+
+        if not 0 <= ssf_config <= 9:
+            raise ValueError('The Special Sub-Frame configuration has to be a '
+                             'number between 0 and 9.')
+
+        self.bts[bts_index].tdd_special_subframe = ssf_config
+
     def set_bandwidth(self, bts_index, bandwidth):
         """ Sets the LTE channel bandwidth (MHz)
 

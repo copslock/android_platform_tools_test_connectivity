@@ -90,6 +90,9 @@ class AbstractCellularSimulator:
         if config.dlul_config:
             self.set_tdd_config(bts_index, config.dlul_config)
 
+        if config.ssf_config:
+            self.set_ssf_config(bts_index, config.ssf_config)
+
         if config.bandwidth:
             self.set_bandwidth(bts_index, config.bandwidth)
 
@@ -177,6 +180,16 @@ class AbstractCellularSimulator:
         Args:
             bts_index: the base station number
             tdd_config: the new tdd configuration number
+        """
+        raise NotImplementedError()
+
+    def set_ssf_config(self, bts_index, ssf_config):
+        """ Sets the Special Sub-Frame config number for the indicated
+        base station.
+
+        Args:
+            bts_index: the base station number
+            ssf_config: the new ssf config number
         """
         raise NotImplementedError()
 

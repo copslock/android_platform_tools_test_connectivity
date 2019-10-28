@@ -287,6 +287,20 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.bts[bts_index].uldl_configuration = tdd_config
 
+    def set_ssf_config(self, bts_index, ssf_config):
+        """ Sets the Special Sub-Frame config number for the indicated
+        base station.
+
+        Args:
+            bts_index: the base station number
+            ssf_config: the new ssf config number
+        """
+        if not 0 <= ssf_config <= 9:
+            raise ValueError('The Special Sub-Frame configuration has to be a '
+                             'number between 0 and 9.')
+
+        self.bts[bts_index].tdd_special_subframe = ssf_config
+
     def set_bandwidth(self, bts_index, bandwidth):
         """ Sets the bandwidth for the indicated base station.
 
