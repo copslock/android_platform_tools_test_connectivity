@@ -30,6 +30,7 @@ from acts import context
 from acts import logger as acts_logger
 from acts import signals
 
+from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
 from acts.controllers.fuchsia_lib.bt.btc_lib import FuchsiaBtcLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
@@ -197,6 +198,9 @@ class FuchsiaDevice:
             self.log_path, "fuchsialog_%s_debug.txt" % self.serial)
         self.log_process = None
 
+        # Grab commands from FuchsiaAvdtpLib
+        self.avdtp_lib = FuchsiaAvdtpLib(self.address, self.test_counter,
+                                         self.client_id)
         # Grab commands from FuchsiaBleLib
         self.ble_lib = FuchsiaBleLib(self.address, self.test_counter,
                                      self.client_id)
