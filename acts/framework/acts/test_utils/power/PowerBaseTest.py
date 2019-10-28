@@ -33,7 +33,7 @@ IPERF_TIMEOUT = 180
 THRESHOLD_TOLERANCE = 0.2
 GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
-PHONE_BATTERY_VOLTAGE = 4.2
+PHONE_BATTERY_VOLTAGE_DEFAULT = 4.2
 MONSOON_MAX_CURRENT = 8.0
 MONSOON_RETRY_INTERVAL = 300
 DEFAULT_MONSOON_FREQUENCY = 500
@@ -82,14 +82,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.log = logging.getLogger()
         self.tests = self._get_all_test_names()
 
-        # Setup the must have controllers, phone and monsoon
-        self.dut = self.android_devices[0]
-        self.mon_data_path = os.path.join(self.log_path, 'Monsoon')
-        self.mon = self.monsoons[0]
-        self.mon.set_max_current(8.0)
-        self.mon.set_voltage(PHONE_BATTERY_VOLTAGE)
-        self.mon.attach_device(self.dut)
-
         # Obtain test parameters from user_params
         TEST_PARAMS = self.TAG + '_params'
         self.test_params = self.user_params.get(TEST_PARAMS, {})
@@ -109,7 +101,16 @@ class PowerBaseTest(base_test.BaseTestClass):
                                mon_offset=0,
                                bug_report=False,
                                extra_wait=None,
-                               iperf_duration=None)
+                               iperf_duration=None,
+                               mon_voltage=PHONE_BATTERY_VOLTAGE_DEFAULT)
+
+        # Setup the must have controllers, phone and monsoon
+        self.dut = self.android_devices[0]
+        self.mon_data_path = os.path.join(self.log_path, 'Monsoon')
+        self.mon = self.monsoons[0]
+        self.mon.set_max_current(8.0)
+        self.mon.set_voltage(self.mon_voltage)
+        self.mon.attach_device(self.dut)
 
         # Unpack the custom files based on the test configs
         for file in self.custom_files:
@@ -268,8 +269,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         tag = ''
         # Collecting current measurement data and plot
         self.file_path, self.test_result = self.monsoon_data_collect_save()
-        self.power_result.metric_value = (self.test_result *
-                                          PHONE_BATTERY_VOLTAGE)
+        self.power_result.metric_value = self.test_result * self.mon_voltage
         wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
 
     def pass_fail_check(self):
