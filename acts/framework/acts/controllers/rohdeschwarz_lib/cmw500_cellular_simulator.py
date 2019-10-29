@@ -514,6 +514,15 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         # TODO (b/143497738): implement.
         raise NotImplementedError()
 
+    def set_phich_resource(self, bts_index, phich):
+        """ Sets the PHICH Resource setting for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            phich: the new PHICH resource setting
+        """
+        raise NotImplementedError()
+
     def lte_attach_secondary_carriers(self):
         """ Activates the secondary carriers for CA. Requires the DUT to be
         attached to the primary carrier first. """

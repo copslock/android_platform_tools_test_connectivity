@@ -78,6 +78,7 @@ class LteSimulation(BaseSimulation):
     PARAM_UL_MCS = 'ulmcs'
     PARAM_SSF = 'ssf'
     PARAM_CFI = 'cfi'
+    PARAM_PHICH = 'phich'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
     # Test config keywords
@@ -404,6 +405,7 @@ class LteSimulation(BaseSimulation):
                 should be used or not
             dl_channel: an integer indicating the downlink channel number
             cfi: an integer indicating the Control Format Indicator
+            phich: a string indicating the PHICH group size parameter
         """
         def __init__(self):
             """ Initialize the base station config by setting all its
@@ -426,6 +428,7 @@ class LteSimulation(BaseSimulation):
             self.dl_channel = None
             self.dl_cc_enabled = None
             self.cfi = None
+            self.phich = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier LTE simulation.
@@ -716,6 +719,26 @@ class LteSimulation(BaseSimulation):
             new_config.cfi = 'BESTEFFORT'
         else:
             new_config.cfi = values[1]
+
+        # PHICH group size
+        values = self.consume_parameter(parameters, self.PARAM_PHICH, 1)
+
+        if not values:
+            self.log.warning('The {} parameter was not provided. Setting '
+                             'PHICH group size to 1 by default.'.format(
+                                 self.PARAM_PHICH))
+            new_config.phich = '1'
+        else:
+            if values[1] == '16':
+                new_config.phich = '1/6'
+            elif values[1] == '12':
+                new_config.phich = '1/2'
+            elif values[1] in ['1/6', '1/2', '1', '2']:
+                new_config.phich = values[1]
+            else:
+                raise ValueError('The {} parameter can only be followed by 1,'
+                                 '2, 1/2 (or 12) and 1/6 (or 16).'.format(
+                                     self.PARAM_PHICH))
 
         # Get uplink power
 

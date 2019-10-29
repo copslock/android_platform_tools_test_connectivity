@@ -141,6 +141,9 @@ class AbstractCellularSimulator:
         if config.cfi:
             self.set_cfi(bts_index, config.cfi)
 
+        if config.phich:
+            self.set_phich_resource(bts_index, config.phich)
+
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """ Configures the LTE RRC state change timer.
 
@@ -288,6 +291,15 @@ class AbstractCellularSimulator:
         Args:
             bts_index: the base station number
             cfi: the new CFI setting
+        """
+        raise NotImplementedError()
+
+    def set_phich_resource(self, bts_index, phich):
+        """ Sets the PHICH Resource setting for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            phich: the new PHICH resource setting
         """
         raise NotImplementedError()
 

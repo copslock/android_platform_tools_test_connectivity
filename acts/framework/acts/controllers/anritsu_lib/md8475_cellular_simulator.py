@@ -197,6 +197,15 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.bts[bts_index].cfi = cfi
 
+    def set_phich_resource(self, bts_index, phich):
+        """ Sets the PHICH Resource setting for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            phich: the new PHICH resource setting
+        """
+        self.bts[bts_index].phich_resource = phich
+
     def set_band(self, bts_index, band):
         """ Sets the right duplex mode before switching to a new band.
 

@@ -2023,6 +2023,43 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def phich_resource(self):
+        """ Gets the PHICH Resource setting for this base station.
+
+        Args:
+            None
+
+        Returns:
+            The PHICH Resource setting.
+        """
+        cmd = "PHICHRESOURCE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @phich_resource.setter
+    def phich_resource(self, phich):
+        """ Sets the PHICH Resource setting for this base station.
+
+        Args:
+            phich: one of 1/6, 1/2, 1, 2.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if phich's value is invalid
+        """
+
+        phich = str(phich)
+
+        valid_values = ['1/6', '1/2', '1', '2']
+        if phich not in valid_values:
+            raise ValueError('Valid values for PHICH Resource are %r' %
+                             valid_values)
+
+        cmd = "PHICHRESOURCE {},{}".format(phich, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def tdd_special_subframe(self):
         """ Gets SPECIALSUBFRAME of cell.
 
