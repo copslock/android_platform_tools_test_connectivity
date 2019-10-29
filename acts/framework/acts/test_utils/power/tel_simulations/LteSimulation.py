@@ -77,6 +77,7 @@ class LteSimulation(BaseSimulation):
     PARAM_DL_MCS = 'dlmcs'
     PARAM_UL_MCS = 'ulmcs'
     PARAM_SSF = 'ssf'
+    PARAM_CFI = 'cfi'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
     # Test config keywords
@@ -382,7 +383,7 @@ class LteSimulation(BaseSimulation):
         """ Extension of the BaseBtsConfig to implement parameters that are
          exclusive to LTE.
 
-        Atributes:
+        Attributes:
             band: an integer indicating the required band number.
             dlul_config: an integer indicating the TDD config number.
             ssf_config: an integer indicating the Special Sub-Frame config.
@@ -402,6 +403,7 @@ class LteSimulation(BaseSimulation):
             tbs_pattern_on: a boolean indicating whether full allocation mode
                 should be used or not
             dl_channel: an integer indicating the downlink channel number
+            cfi: an integer indicating the Control Format Indicator
         """
         def __init__(self):
             """ Initialize the base station config by setting all its
@@ -423,6 +425,7 @@ class LteSimulation(BaseSimulation):
             self.tbs_pattern_on = None
             self.dl_channel = None
             self.dl_cc_enabled = None
+            self.cfi = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier LTE simulation.
@@ -703,6 +706,16 @@ class LteSimulation(BaseSimulation):
             timer = int(values[1])
             self.simulator.set_lte_rrc_state_change_timer(True, timer)
             self.rrc_sc_timer = timer
+
+        # Channel Control Indicator
+        values = self.consume_parameter(parameters, self.PARAM_CFI, 1)
+
+        if not values:
+            self.log.warning('The {} parameter was not provided. Setting '
+                             'CFI to BESTEFFORT.'.format(self.PARAM_CFI))
+            new_config.cfi = 'BESTEFFORT'
+        else:
+            new_config.cfi = values[1]
 
         # Get uplink power
 

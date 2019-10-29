@@ -1987,6 +1987,42 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def cfi(self):
+        """ Gets the Control Format Indicator for this base station.
+
+        Args:
+            None
+
+        Returns:
+            The CFI number.
+        """
+        cmd = "CFI? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @cfi.setter
+    def cfi(self, cfi):
+        """ Sets the Control Format Indicator for this base station.
+
+        Args:
+            cfi: one of BESTEFFORT, AUTO, 1, 2 or 3.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if cfi's value is invalid
+        """
+
+        cfi = str(cfi)
+
+        valid_values = {'BESTEFFORT', 'AUTO', '1', '2', '3'}
+        if cfi not in valid_values:
+            raise ValueError('Valid values for CFI are %r' % valid_values)
+
+        cmd = "CFI {},{}".format(cfi, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def tdd_special_subframe(self):
         """ Gets SPECIALSUBFRAME of cell.
 

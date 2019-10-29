@@ -188,6 +188,15 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         if enabled:
             self.anritsu.set_lte_rrc_status_change_timer(time)
 
+    def set_cfi(self, bts_index, cfi):
+        """ Sets the Channel Format Indicator for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cfi: the new CFI setting
+        """
+        self.bts[bts_index].cfi = cfi
+
     def set_band(self, bts_index, band):
         """ Sets the right duplex mode before switching to a new band.
 

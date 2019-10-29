@@ -138,6 +138,9 @@ class AbstractCellularSimulator:
         if config.tbs_pattern_on is not None:
             self.set_tbs_pattern_on(bts_index, config.tbs_pattern_on)
 
+        if config.cfi:
+            self.set_cfi(bts_index, config.cfi)
+
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """ Configures the LTE RRC state change timer.
 
@@ -276,6 +279,15 @@ class AbstractCellularSimulator:
         Args:
             bts_index: the base station number
             tbs_pattern_on: the new TBS pattern setting
+        """
+        raise NotImplementedError()
+
+    def set_cfi(self, bts_index, cfi):
+        """ Sets the Channel Format Indicator for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cfi: the new CFI setting
         """
         raise NotImplementedError()
 

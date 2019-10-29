@@ -504,6 +504,16 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         # TODO (b/143918664): CMW500 doesn't have an equivalent setting.
         pass
 
+    def set_cfi(self, bts_index, cfi):
+        """ Sets the Channel Format Indicator for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cfi: the new CFI setting
+        """
+        # TODO (b/143497738): implement.
+        raise NotImplementedError()
+
     def lte_attach_secondary_carriers(self):
         """ Activates the secondary carriers for CA. Requires the DUT to be
         attached to the primary carrier first. """
