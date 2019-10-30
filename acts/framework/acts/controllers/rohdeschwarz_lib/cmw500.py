@@ -122,6 +122,13 @@ class MimoModes(Enum):
     MIMO4x4 = 'FOUR'
 
 
+class MimoScenario(Enum):
+    """Supportted mimo scenarios"""
+    SCEN1x1 = 'SCELl:FLEXible SUA1,RF1C,RX1,RF1C,TX1'
+    SCEN2x2 = 'TRO:FLEXible SUA1,RF1C,RX1,RF1C,TX1,RF3C,TX2'
+    SCEN4x4 = 'FRO FLEXible SUA1,RF1C,RX1,RF1C,TX1,RF3C,TX2,RF2C,TX3,RF4C,TX4'
+
+
 class RrcState(Enum):
     """States to enable/disable rrc."""
     RRC_ON = 'ON'
@@ -195,11 +202,14 @@ class Cmw500(abstract_inst.SocketInstrument):
             status = self._recv()
             return status
 
-    def set_mimo(self):
-        """Sets the scenario for the test."""
-        # TODO:(ganeshganesh) Create a common function to set mimo modes.
-        self.send_and_recv('ROUTe:LTE:SIGN:SCENario:SCELl:FLEXible SUW1,RF1C,'
-                           'RX1,RF1C,TX1')
+    def configure_mimo_settings(self, mimo):
+        """Sets the mimo scenario for the test.
+
+        Args:
+            mimo: mimo scenario to set.
+        """
+        cmd = 'ROUTe:LTE:SIGN:SCENario:{}'.format(mimo.value)
+        self.send_and_recv(cmd)
 
     def wait_for_lte_state_change(self, timeout=20):
         """Waits until the state of LTE changes.
@@ -244,7 +254,7 @@ class Cmw500(abstract_inst.SocketInstrument):
         else:
             raise CmwError('Failure in setting up/detaching connection')
 
-    def wait_for_connected_state(self, timeout=120):
+    def wait_for_attached_state(self, timeout=120):
         """Attach the controller with device.
 
         Args:
@@ -263,10 +273,22 @@ class Cmw500(abstract_inst.SocketInstrument):
         else:
             raise CmwError('Device could not be attached')
 
-        conn_state = self.send_and_recv('SENSe:LTE:SIGN:RRCState?')
+    def wait_for_connected_state(self, timeout=120):
+        """Checks if controller connected with device.
 
-        if conn_state == LTE_CONN_RESP:
-            self._logger.debug('Call box connected with device')
+        Args:
+            timeout: timeout for phone to be in connnected state.
+
+        Raises:
+            CmwError on time out.
+        """
+        end_time = time.time() + timeout
+        while time.time() <= end_time:
+            conn_state = self.send_and_recv('SENSe:LTE:SIGN:RRCState?')
+
+            if conn_state == LTE_CONN_RESP:
+                self._logger.debug('Call box connected with device')
+                break
         else:
             raise CmwError('Call box could not be connected with device')
 
@@ -570,19 +592,18 @@ class BaseStation(object):
             self._bts, mode.value)
         self._cmw.send_and_recv(cmd)
 
-    # TODO: (@sairamganesh) find a common way to set parameters for rmc and
-    # user defined channels(udch) scheduling.
     @property
-    def rmc_rb_configuration_dl(self):
+    def rb_configuration_dl(self):
         """Gets rmc's rb configuration for down link. This function returns
         Number of Resource blocks, Resource block position and Modulation type.
         """
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:DL?'.format(self._bts)
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:{}:DL?'.format(
+            self._bts, self.scheduling_mode)
         return self._cmw.send_and_recv(cmd)
 
-    @rmc_rb_configuration_dl.setter
-    def rmc_rb_configuration_dl(self, rb_config):
-        """Sets the rb configuration for down link with scheduling type RMC.
+    @rb_configuration_dl.setter
+    def rb_configuration_dl(self, rb_config):
+        """Sets the rb configuration for down link for scheduling type.
 
         Args:
             rb_config: Tuple containing Number of resource blocks, resource
@@ -591,23 +612,35 @@ class BaseStation(object):
         Raises:
             ValueError: If tuple unpacking fails.
         """
-        rb, rb_pos, modulation = rb_config
+        if self.scheduling_mode == 'RMC':
+            rb, rb_pos, modulation = rb_config
 
-        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:DL {},{},'
-               '{}'.format(self._bts, rb, rb_pos, modulation))
-        self._cmw.send_and_recv(cmd)
+            cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:DL {},{},'
+                   '{}'.format(self._bts, rb, rb_pos, modulation))
+            self._cmw.send_and_recv(cmd)
+
+        elif self.scheduling_mode == 'UDCH':
+            rb, start_rb, modulation, tbs = rb_config
+
+            if not 0 <= rb <= 26:
+                raise ValueError('rb should be between 0 and 26 inclusive.')
+
+            cmd = ('CONFigure:LTE:SIGN:CONNection:{}:UDCHannels:DL {},{},'
+                   '{},{}'.format(self._bts, rb, start_rb, modulation, tbs))
+            self._cmw.send_and_recv(cmd)
 
     @property
-    def rmc_rb_configuration_ul(self):
-        """Gets rmc's rb configuration for up link. This function returns
+    def rb_configuration_ul(self):
+        """Gets rb configuration for up link. This function returns
         Number of Resource blocks, Resource block position and Modulation type.
         """
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:UL?'.format(self._bts)
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:{}:UL?'.format(
+            self._bts, self.scheduling_mode)
         return self._cmw.send_and_recv(cmd)
 
-    @rmc_rb_configuration_ul.setter
-    def rmc_rb_configuration_ul(self, rb_config):
-        """Sets the rb configuration for up link with scheduling type RMC.
+    @rb_configuration_ul.setter
+    def rb_configuration_ul(self, rb_config):
+        """Sets the rb configuration for down link for scheduling mode.
 
         Args:
             rb_config: Tuple containing Number of resource blocks, resource
@@ -616,75 +649,22 @@ class BaseStation(object):
         Raises:
             ValueError: If tuple unpacking fails.
         """
-        rb, rb_pos, modulation = rb_config
+        if self.scheduling_mode == 'RMC':
+            rb, rb_pos, modulation = rb_config
 
-        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:UL {},{},'
-               '{}'.format(self._bts, rb, rb_pos, modulation))
-        self._cmw.send_and_recv(cmd)
+            cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:UL {},{},'
+                   '{}'.format(self._bts, rb, rb_pos, modulation))
+            self._cmw.send_and_recv(cmd)
 
-    @property
-    def udch_rb_configuration_dl(self):
-        """Gets udch's rb configuration for down link. This function returns
-        Number of Resource blocks, Resource block position, Modulation type and
-        tbs.
-        """
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:UDCH:DL?'.format(self._bts)
-        return self._cmw.send_and_recv(cmd)
+        elif self.scheduling_mode == 'UDCH':
+            rb, start_rb, modulation, tbs = rb_config
 
-    @udch_rb_configuration_dl.setter
-    def udch_rb_configuration_dl(self, rb_config):
-        """Sets the rb configuration for down link with scheduling type RMC.
+            if not 0 <= rb <= 26:
+                raise ValueError('rb should be between 0 and 26 inclusive.')
 
-        Args:
-            rb_config: Tuple containing Number of resource blocks, resource
-            block position, modulation type and tbs value.
-
-        Raises:
-            ValueError: If tuple unpacking fails.
-        """
-        rb, start_rb, md_type, tbs = rb_config
-
-        if rb not in range(0, 51):
-            raise ValueError('rb should be between 0 and 50 inclusive.')
-
-        if not isinstance(md_type, ModulationType):
-            raise ValueError('md_type should be the instance of ModulationType.')
-
-        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:udch:DL {},{},'
-               '{},{}'.format(self._bts, rb, start_rb, md_type, tbs))
-        self._cmw.send_and_recv(cmd)
-
-    @property
-    def udch_rb_configuration_ul(self):
-        """Gets udch's rb configuration for up link. This function returns
-        Number of Resource blocks, Resource block position, Modulation type
-        and tbs.
-        """
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:UDCH:UL?'.format(self._bts)
-        return self._cmw.send_and_recv(cmd)
-
-    @udch_rb_configuration_ul.setter
-    def udch_rb_configuration_ul(self, rb_config):
-        """Sets the rb configuration for up link with scheduling type RMC.
-
-        Args:
-            rb_config: Tuple containing Number of resource blocks, resource
-            block position, modulation type and tbs value.
-
-        Raises:
-            ValueError: If tuple unpacking fails/Specified out of range.
-        """
-        rb, start_rb, md_type, tbs = rb_config
-
-        if rb not in range(0, 51):
-            raise ValueError('rb should be between 0 and 50 inclusive.')
-
-        if not isinstance(md_type, ModulationType):
-            raise ValueError('md_type should be the instance of ModulationType.')
-
-        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:udch:UL {},{},'
-               '{},{}'.format(self._bts, rb, start_rb, md_type, tbs))
-        self._cmw.send_and_recv(cmd)
+            cmd = ('CONFigure:LTE:SIGN:CONNection:{}:UDCHannels:UL {},{},'
+                   '{},{}'.format(self._bts, rb, start_rb, modulation, tbs))
+            self._cmw.send_and_recv(cmd)
 
     @property
     def rb_position_dl(self):

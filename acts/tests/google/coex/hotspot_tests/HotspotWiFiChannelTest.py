@@ -173,8 +173,11 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
 
         toggle_airplane_mode(self.log, self.pri_ad, False)
         self.log.info('Waiting for device to attach.')
-        self.cmw.wait_for_connected_state()
+        self.cmw.wait_for_attached_state()
         self.log.info('Device attached with callbox.')
+        self.log.debug('Waiting for connected state.')
+        self.cmw.wait_for_connected_state()
+        self.log.info('Device connected with callbox')
 
     def initiate_wifi_tethering_and_connect(self, wifi_band=None):
         """Initiates wifi tethering and connects wifi.
