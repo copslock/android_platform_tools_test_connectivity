@@ -17,7 +17,6 @@
 import math
 from enum import Enum
 
-from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 
@@ -428,11 +427,6 @@ class LteSimulation(BaseSimulation):
         """
 
         super().__init__(simulator, log, dut, test_config, calibration_table)
-
-        # The LTE simulation relies on the cellular simulator to be a MD8475
-        if not isinstance(self.simulator, anritsusim.MD8475CellularSimulator):
-            raise ValueError('The LTE simulation relies on the simulator to '
-                             'be an Anritsu MD8475 A/B instrument.')
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_LTE_ONLY,
