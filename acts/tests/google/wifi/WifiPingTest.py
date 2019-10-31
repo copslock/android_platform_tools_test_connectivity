@@ -27,6 +27,7 @@ from acts import utils
 from acts.controllers.utils_lib import ssh
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.wifi import ota_chamber
+from acts.test_utils.wifi import ota_sniffer
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -77,13 +78,15 @@ class WifiPingTest(base_test.BaseTestClass):
             'ping_test_params', 'testbed_params', 'main_network',
             'RetailAccessPoints', 'RemoteServer'
         ]
-        opt_params = ['golden_files_list']
+        opt_params = ['golden_files_list', 'OTASniffer']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.ping_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.ping_server = ssh.connection.SshConnection(
             ssh.settings.from_config(self.RemoteServer[0]['ssh_config']))
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
+        if hasattr(self, 'OTASniffer'):
+            self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, 'results')
@@ -325,6 +328,12 @@ class WifiPingTest(base_test.BaseTestClass):
         test_result['rssi_results'] = []
         test_result['ping_results'] = []
         test_result['llstats'] = []
+        # Setup sniffer
+        if self.testbed_params['sniffer_enable']:
+            self.sniffer.start_capture(
+                testcase_params['test_network'],
+                testcase_params['ping_duration'] *
+                len(testcase_params['atten_range']) + self.TEST_TIMEOUT)
         # Run ping and sweep attenuation as needed
         zero_counter = 0
         for atten in testcase_params['atten_range']:
@@ -372,6 +381,8 @@ class WifiPingTest(base_test.BaseTestClass):
                     test_result['ping_results'].append(
                         self.DISCONNECTED_PING_RESULT)
                 break
+        if self.testbed_params['sniffer_enable']:
+            self.sniffer.stop_capture()
         return test_result
 
     def setup_ap(self, testcase_params):
@@ -411,23 +422,22 @@ class WifiPingTest(base_test.BaseTestClass):
             asserts.skip('Battery level too low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
-        band = self.access_point.band_lookup_by_channel(
-            testcase_params['channel'])
         current_network = self.dut.droid.wifiGetConnectionInfo()
         try:
             connected = wutils.validate_connection(self.dut) is not None
         except:
             connected = False
-        if connected and current_network['SSID'] == self.main_network[band][
-                'SSID']:
+        if connected and current_network['SSID'] == testcase_params[
+                'test_network']['SSID']:
             self.log.info('Already connected to desired network')
         else:
             wutils.reset_wifi(self.dut)
             self.dut.droid.wifiSetCountryCode(
                 self.testclass_params['country_code'])
-            self.main_network[band]['channel'] = testcase_params['channel']
+            testcase_params['test_network']['channel'] = testcase_params[
+                'channel']
             wutils.wifi_connect(self.dut,
-                                self.main_network[band],
+                                testcase_params['test_network'],
                                 num_of_tries=5,
                                 check_connectivity=False)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
@@ -460,6 +470,9 @@ class WifiPingTest(base_test.BaseTestClass):
         return self.testclass_params['range_atten_start']
 
     def compile_test_params(self, testcase_params):
+        band = self.access_point.band_lookup_by_channel(
+            testcase_params['channel'])
+        testcase_params['test_network'] = self.main_network[band]
         if testcase_params['test_type'] == 'test_ping_range':
             testcase_params.update(
                 ping_interval=self.testclass_params['range_ping_interval'],
