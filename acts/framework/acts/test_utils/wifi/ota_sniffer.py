@@ -1,23 +1,41 @@
-from acts import logger
-from acts.controllers.utils_lib import ssh
+#!/usr/bin/env python3
+#
+#   Copyright 2019 - The Android Open Source Project
+#
+#   Licensed under the Apache License, Version 2.0 (the 'License');
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an 'AS IS' BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 import csv
 import io
 import os
+from acts import context
+from acts import logger
+from acts import utils
+from acts.controllers.utils_lib import ssh
 
 
-def create(configs, logging_dir):
+def create(configs):
     """Factory method for sniffer
     Args:
-        configs: list of dicts with sniffer settings, settings must contain the following :
-        ssh_settings (ssh credentials required to log into the sniffer)
+        configs: list of dicts with sniffer settings, settings must contain the
+        following : ssh_settings, type
     """
     objs = []
     for config in configs:
         try:
             if config["type"] == "tshark":
-                objs.append(TsharkSniffer(config, logging_dir))
+                objs.append(TsharkSniffer(config))
             elif config["type"] == "mock":
-                objs.append(MockSniffer(config, logging_dir))
+                objs.append(MockSniffer(config))
         except KeyError:
             raise KeyError("Invalid sniffer configurations")
         return objs
@@ -28,17 +46,30 @@ def destroy(objs):
 
 
 class OtaSnifferBase(object):
-    """Base class provides functions whose implementation in shared by all sniffers"""
+    """Base class defining common sniffers functions."""
 
     _log_file_counter = 0
 
-    def start_capture(self):
-        """Starts the sniffer Capture"""
-        raise NotImplementedError
+    @property
+    def started(self):
+        raise NotImplementedError('started must be specified.')
 
-    def stop_capture(self):
-        """Stops the sniffer Capture"""
-        raise NotImplementedError
+    def start_capture(self, network, duration=30):
+        """Starts the sniffer Capture
+
+        Args:
+            network: dict containing network information such as SSID, etc.
+            duration: duration of sniffer capture in seconds
+        """
+        raise NotImplementedError('start_capture must be specified.')
+
+    def stop_capture(self, tag=""):
+        """Stops the sniffer Capture
+
+        Args:
+            tag: string to tag sniffer capture file name with
+        """
+        raise NotImplementedError('stop_capture must be specified.')
 
     def _get_remote_dump_path(self):
         return "sniffer_dump.csv"
@@ -46,80 +77,61 @@ class OtaSnifferBase(object):
     def _get_full_file_path(self, tag=None):
         """Returns the full file path for the sniffer capture dump file.
 
-        Returns the full file path (on test machine) for the sniffer capture dump file
+        Returns the full file path (on test machine) for the sniffer capture
+        dump file.
 
         Args:
             tag: The tag appended to the sniffer capture dump file .
         """
-        out_dir = os.path.join(self.log_dir, "sniffer_files")
-        if not os.path.exists(out_dir):
-            os.mkdir(out_dir)
         tags = [tag, "count", OtaSnifferBase._log_file_counter]
         out_file_name = 'Sniffer_Capture_%s.csv' % ('_'.join(
             [str(x) for x in tags if x != '' and x is not None]))
         OtaSnifferBase._log_file_counter += 1
 
-        file_path = os.path.join(out_dir, out_file_name)
+        file_path = os.path.join(self.log_path, out_file_name)
         return file_path
+
+    @property
+    def log_path(self):
+        current_context = context.get_current_context()
+        full_out_dir = os.path.join(current_context.get_full_output_path(),
+                                    'sniffer_captures')
+
+        # Ensure the directory exists.
+        utils.create_dir(full_out_dir)
+
+        return full_out_dir
 
 
 class MockSniffer(OtaSnifferBase):
     """Class that implements mock sniffer for test development and debug"""
-
-    def __init__(self, config, logging_dir):
+    def __init__(self, config):
         self.log = logger.create_tagged_trace_logger("Mock Sniffer")
-        self.log_dir = logging_dir
 
-    def _ssh_into_sniffer(self):
-        """logs into the sniffer machine"""
-        self.log.info("Logging into the sniffer machine")
-
-    def _connect_to_network(self):
-        """ Connects to a given network
-
-        Args:
-            network: dictionary of network credentials; SSID and password
-        """
-        self.log.info("Connecting to wireless network ")
-
-    def _run_sniffer(self):
-        """Starts the sniffer"""
-        self.log.info("Starting Sniffer")
-        self.log.info(
-            "Executing sniffer command on the sniffer machine")
-
-    def _stop_sniffer(self):
-        """ Stops the sniffer"""
-        self.log.info("Stopping Sniffer")
-
-    def start_capture(self):
+    def start_capture(self, network, duration=30):
         """Starts sniffer capture on the specified machine"""
+        self.log.info("Starting sniffer.")
 
-        self._ssh_into_sniffer()
-        self._connect_to_network()
-        self._run_sniffer()
-
-    def stop_capture(self):
+    def stop_capture(self, tag=""):
         """Stops the sniffer
 
         Returns:
-            The name of the processed sniffer dump from the terminated sniffer process
+            log_file: name of processed sniffer
         """
 
-        self._stop_sniffer()
-        log_file = self._get_full_file_path("Mock")
+        self.log.info("Stopping sniffer.")
+        log_file = self._get_full_file_path()
+        with open(log_file, 'w') as file:
+            file.write('this is a sniffer dump.')
         return log_file
 
 
 class TsharkSniffer(OtaSnifferBase):
     """Class that implements Tshark based Sniffer """
-
-    def __init__(self, config, logging_dir):
+    def __init__(self, config):
         self.sniffer_proc_pid = None
         self.log = logger.create_tagged_trace_logger("Tshark Sniffer")
         self.ssh_config = config["ssh_config"]
-        self.params = config["sniffer_params"]
-        self.log_dir = logging_dir
         self.type_subtype_dict = {
             "0": "Association Requests",
             "1": "Association Responses",
@@ -162,72 +174,53 @@ class TsharkSniffer(OtaSnifferBase):
             "frame_number", "frame_time_relative", "mactime", "frame_len",
             "rssi", "channel", "ta", "ra", "bssid", "type", "subtype",
             "duration", "seq", "retry", "pwrmgmt", "moredata", "ds", "phy",
-            "radio_datarate", "vht_datarate", "radiotap_mcs_index", "vht_mcs", "wlan_data_rate",
-            "11n_mcs_index", "11ac_mcs", "11n_bw", "11ac_bw", "vht_nss", "mcs_gi",
-            "vht_gi", "vht_coding", "ba_bm", "fc_status",
+            "radio_datarate", "vht_datarate", "radiotap_mcs_index", "vht_mcs",
+            "wlan_data_rate", "11n_mcs_index", "11ac_mcs", "11n_bw", "11ac_bw",
+            "vht_nss", "mcs_gi", "vht_gi", "vht_coding", "ba_bm", "fc_status",
             "bf_report"
         ]
-
 
         self._tshark_output_columns = [
-            "frame_number",
-            "frame_time_relative",
-            "mactime",
-            "ta",
-            "ra",
-            "bssid",
-            "rssi",
-            "channel",
-            "frame_len",
-            "Info",
-            "radio_datarate",
-            "radiotap_mcs_index",
-            "pwrmgmt",
-            "phy",
-            "vht_nss",
-            "vht_mcs",
-            "vht_datarate",
-            "11ac_mcs",
-            "11ac_bw",
-            "vht_gi",
-            "vht_coding",
-            "wlan_data_rate",
-            "11n_mcs_index",
-            "11n_bw",
-            "mcs_gi",
-            "type",
-            "subtype",
-            "duration",
-            "seq",
-            "retry",
-            "moredata",
-            "ds",
-            "ba_bm",
-            "fc_status",
-            "bf_report"
+            "frame_number", "frame_time_relative", "mactime", "ta", "ra",
+            "bssid", "rssi", "channel", "frame_len", "Info", "radio_datarate",
+            "radiotap_mcs_index", "pwrmgmt", "phy", "vht_nss", "vht_mcs",
+            "vht_datarate", "11ac_mcs", "11ac_bw", "vht_gi", "vht_coding",
+            "wlan_data_rate", "11n_mcs_index", "11n_bw", "mcs_gi", "type",
+            "subtype", "duration", "seq", "retry", "moredata", "ds", "ba_bm",
+            "fc_status", "bf_report"
         ]
 
-
-        self.tshark_fields = '-T fields -e frame.number -e frame.time_relative -e radiotap.mactime -e frame.len '+\
-        '-e radiotap.dbm_antsignal -e wlan_radio.channel '+\
-        '-e wlan.ta -e wlan.ra -e wlan.bssid '+\
-        '-e wlan.fc.type -e wlan.fc.type_subtype -e wlan.duration -e wlan.seq -e wlan.fc.retry -e wlan.fc.pwrmgt -e wlan.fc.moredata -e wlan.fc.ds '+\
-        '-e wlan_radio.phy '+\
-        '-e radiotap.datarate -e radiotap.vht.datarate.0 '+\
-        '-e radiotap.mcs.index -e radiotap.vht.mcs.0 '+\
-        '-e wlan_radio.data_rate -e wlan_radio.11n.mcs_index -e wlan_radio.11ac.mcs '+\
-        '-e wlan_radio.11n.bandwidth -e wlan_radio.11ac.bandwidth '+\
-        '-e radiotap.vht.nss.0 -e radiotap.mcs.gi -e radiotap.vht.gi -e radiotap.vht.coding.0 '+\
-        '-e wlan.ba.bm -e wlan.fcs.status -e wlan.vht.compressed_beamforming_report.snr '+ \
-        '-y IEEE802_11_RADIO -E separator="^" '
+        self.tshark_fields_list = [
+            'frame.number', 'frame.time_relative', 'radiotap.mactime',
+            'frame.len', 'radiotap.dbm_antsignal', 'wlan_radio.channel',
+            'wlan.ta', 'wlan.ra', 'wlan.bssid', 'wlan.fc.type',
+            'wlan.fc.type_subtype', 'wlan.duration', 'wlan.seq',
+            'wlan.fc.retry', 'wlan.fc.pwrmgt', 'wlan.fc.moredata',
+            'wlan.fc.ds', 'wlan_radio.phy', 'radiotap.datarate',
+            'radiotap.vht.datarate.0', 'radiotap.mcs.index',
+            'radiotap.vht.mcs.0', 'wlan_radio.data_rate',
+            'wlan_radio.11n.mcs_index', 'wlan_radio.11ac.mcs',
+            'wlan_radio.11n.bandwidth', 'wlan_radio.11ac.bandwidth',
+            'radiotap.vht.nss.0', 'radiotap.mcs.gi', 'radiotap.vht.gi',
+            'radiotap.vht.coding.0', 'wlan.ba.bm', 'wlan.fcs.status',
+            'wlan.vht.compressed_beamforming_report.snr'
+        ]
+        self.tshark_fields = self._generate_tshark_fields(
+            self.tshark_fields_list)
 
     @property
     def _started(self):
         return self.sniffer_proc_pid is not None
 
+    def _generate_tshark_fields(self, fields):
+        tshark_fields = '-T fields -y IEEE802_11_RADIO -E separator="^"'
+        for field in fields:
+            tshark_fields = tshark_fields + " -e {}".format(field)
+        return tshark_fields
+
     def _ssh_into_sniffer(self):
         """logs into the sniffer machine"""
-        self.log.info("Logging into Sniffer")
+        self.log.info("Logging into sniffer.")
         self._sniffer_server = ssh.connection.SshConnection(
             ssh.settings.from_config(self.ssh_config))
 
@@ -240,7 +233,7 @@ class TsharkSniffer(OtaSnifferBase):
         """
         self.log.info("Connecting to network {}".format(network["SSID"]))
 
-        #Scan to see if the requested SSID is available
+        # Scan to see if the requested SSID is available
         scan_result = self._sniffer_server.run("/usr/local/bin/airport -s")
 
         if network["SSID"] not in scan_result.stdout:
@@ -261,51 +254,59 @@ class TsharkSniffer(OtaSnifferBase):
     def _run_tshark(self, sniffer_command):
         """Starts the sniffer"""
 
-        self.log.info("Starting Sniffer")
+        self.log.info("Starting sniffer.")
         sniffer_job = self._sniffer_server.run_async(sniffer_command)
         self.sniffer_proc_pid = sniffer_job.stdout
 
     def _stop_tshark(self):
         """ Stops the sniffer"""
 
-        self.log.info("Stopping Sniffer")
+        self.log.info("Stopping sniffer")
 
         # while loop to kill the sniffer process
+        kill_line_logged = False
         while True:
             try:
-                #Returns error if process was killed already
-                self._sniffer_server.run("kill -15 {}".format(
-                    str(self.sniffer_proc_pid)))
-            except:
-                pass
-            try:
-                #Returns 1 if process was killed
+                # Returns 1 if process was killed
                 self._sniffer_server.run(
-                    "/bin/ps aux| grep {} | grep -v grep".format(
+                    "ps aux| grep {} | grep -v grep".format(
                         self.sniffer_proc_pid))
             except:
                 break
+            try:
+                # Returns error if process was killed already
+                if not kill_line_logged:
+                    self.log.info('Killing tshark process.')
+                    kill_line_logged = True
+                self._sniffer_server.run("kill -15 {}".format(
+                    str(self.sniffer_proc_pid)))
+            except:
+                # Except is hit when tshark is already dead but we will break
+                # out of the loop when confirming process is dead using ps aux
+                pass
 
-    def _process_tshark_dump(self, dump, sniffer_tag):
+    def _process_tshark_dump(self, dump, tag):
         """ Process tshark dump for better readability
+
         Processes tshark dump for better readability and saves it to a file.
-        Adds an info column at the end of each row.
-        Format of the info columns: subtype of the frame, sequence no and retry status
+        Adds an info column at the end of each row. Format of the info columns:
+        subtype of the frame, sequence no and retry status
 
         Args:
             dump : string of sniffer capture output
-            sniffer_tag : tag to be appended to the dump file
-
+            tag : tag to be appended to the dump file
         Returns:
             log_file : name of the file where the processed dump is stored
         """
         dump = io.StringIO(dump)
-        log_file = self._get_full_file_path(sniffer_tag)
+        log_file = self._get_full_file_path(tag)
         with open(log_file, "w") as output_csv:
-            reader = csv.DictReader(
-                dump, fieldnames=self.tshark_columns, delimiter="^")
-            writer = csv.DictWriter(
-                output_csv, fieldnames=self._tshark_output_columns, delimiter="\t")
+            reader = csv.DictReader(dump,
+                                    fieldnames=self.tshark_columns,
+                                    delimiter="^")
+            writer = csv.DictWriter(output_csv,
+                                    fieldnames=self._tshark_output_columns,
+                                    delimiter="\t")
             writer.writeheader()
             for row in reader:
                 if row["subtype"] in self.type_subtype_dict.keys():
@@ -314,28 +315,31 @@ class TsharkSniffer(OtaSnifferBase):
                         seq=row["seq"],
                         retry_status=row["retry"])
                 else:
-                    row["Info"] = "{sub} S={seq} retry={retry_status}\n".format(
-                        sub=row["subtype"],
-                        seq=row["seq"],
-                        retry_status=row["retry"])
+                    row["Info"] = "{} S={} retry={}\n".format(
+                        row["subtype"], row["seq"], row["retry"])
                 writer.writerow(row)
         return log_file
 
     def start_capture(self, network, duration=30):
-        """Starts sniffer capture on the specified machine"""
+        """Starts sniffer capture on the specified machine
+
+        Args:
+            network: dict describing network to sniff on
+            duration: duration of sniff
+        """
 
         # Checking for existing sniffer processes
         if self._started:
             self.log.info("Sniffer already running")
             return
 
-        self.tshark_command = "/usr/local/bin/tshark -l -I -t u -a duration:{}".format(
-            duration)
+        self.tshark_command = ('/usr/local/bin/tshark -l -I -t u '
+                               '-a duration:{}'.format(int(duration)))
 
         # Logging into the sniffer
         self._ssh_into_sniffer()
 
-        #Connecting to network
+        # Connecting to network
         self._connect_to_network(network)
 
         sniffer_command = "{tshark} {fields} > {log_file}".format(
@@ -343,16 +347,16 @@ class TsharkSniffer(OtaSnifferBase):
             fields=self.tshark_fields,
             log_file=self._get_remote_dump_path())
 
-        #Starting sniffer capture by executing tshark command
+        # Starting sniffer capture by executing tshark command
         self._run_tshark(sniffer_command)
 
-    def stop_capture(self, sniffer_tag=""):
+    def stop_capture(self, tag=""):
         """Stops the sniffer
 
         Returns:
-            The name of the processed sniffer dump from the terminated sniffer process
+            log_file: path to sniffer dump
         """
-        #Checking if there is an ongoing sniffer capture
+        # Checking if there is an ongoing sniffer capture
         if not self._started:
             self.log.error("No sniffer process running")
             return
@@ -361,9 +365,8 @@ class TsharkSniffer(OtaSnifferBase):
 
         sniffer_dump = self._sniffer_server.run('cat {}'.format(
             self._get_remote_dump_path()))
-
-        #Processing writing capture output to file
-        log_file = self._process_tshark_dump(sniffer_dump.stdout, sniffer_tag)
+        # Processing writing capture output to file
+        log_file = self._process_tshark_dump(sniffer_dump.stdout, tag)
 
         self.sniffer_proc_pid = None
 
