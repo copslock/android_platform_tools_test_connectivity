@@ -12,6 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts import utils
+
 import acts.controllers.ap_lib.third_party_ap_profiles.actiontec as actiontec
 import acts.controllers.ap_lib.third_party_ap_profiles.asus as asus
 import acts.controllers.ap_lib.third_party_ap_profiles.belkin as belkin
@@ -242,6 +244,123 @@ def create_ap_preset(profile_name='whirlwind',
                                   n_capabilities=[],
                                   ac_capabilities=[],
                                   vht_bandwidth=None)
+    elif profile_name == 'mistral':
+        hidden = _get_or_default(hidden, False)
+        force_wmm = _get_or_default(force_wmm, True)
+        beacon_interval = _get_or_default(beacon_interval, 100)
+        short_preamble = _get_or_default(short_preamble, True)
+        dtim_period = _get_or_default(dtim_period, 2)
+        frag_threshold = None
+        rts_threshold = None
+
+        # Google IE
+        # Country Code IE ('us' lowercase)
+        vendor_elements = {
+            'vendor_elements':
+            'dd0cf4f5e80505ff0000ffffffff'
+            '070a75732024041e95051e00'
+        }
+        default_configs = {'bridge': 'br-lan', 'iapp_interface': 'br-lan'}
+
+        if frequency < 5000:
+            interface = iface_wlan_2g
+            mode = _get_or_default(mode, hostapd_constants.MODE_11N_MIXED)
+            n_capabilities = _get_or_default(n_capabilities, [
+                hostapd_constants.N_CAPABILITY_LDPC,
+                hostapd_constants.N_CAPABILITY_SGI20,
+                hostapd_constants.N_CAPABILITY_SGI40,
+                hostapd_constants.N_CAPABILITY_TX_STBC,
+                hostapd_constants.N_CAPABILITY_RX_STBC1,
+                hostapd_constants.N_CAPABILITY_DSSS_CCK_40
+            ])
+
+            additional_params = utils.merge_dicts(
+                vendor_elements, hostapd_constants.ENABLE_RRM_BEACON_REPORT,
+                hostapd_constants.ENABLE_RRM_NEIGHBOR_REPORT, default_configs)
+            config = hostapd_config.HostapdConfig(
+                ssid=ssid,
+                hidden=hidden,
+                security=security,
+                interface=interface,
+                mode=mode,
+                force_wmm=force_wmm,
+                beacon_interval=beacon_interval,
+                dtim_period=dtim_period,
+                short_preamble=short_preamble,
+                frequency=frequency,
+                n_capabilities=n_capabilities,
+                frag_threshold=frag_threshold,
+                rts_threshold=rts_threshold,
+                bss_settings=bss_settings,
+                additional_parameters=additional_params,
+                set_ap_defaults_profile=profile_name)
+        else:
+            interface = iface_wlan_5g
+            vht_bandwidth = _get_or_default(vht_bandwidth, 80)
+            mode = _get_or_default(mode, hostapd_constants.MODE_11AC_MIXED)
+            if hostapd_config.ht40_plus_allowed(channel):
+                extended_channel = hostapd_constants.N_CAPABILITY_HT40_PLUS
+            elif hostapd_config.ht40_minus_allowed(channel):
+                extended_channel = hostapd_constants.N_CAPABILITY_HT40_MINUS
+            # Channel 165 operates in 20MHz with n or ac modes.
+            if channel == 165:
+                mode = hostapd_constants.MODE_11N_MIXED
+                extended_channel = hostapd_constants.N_CAPABILITY_HT20
+            if vht_bandwidth >= 40:
+                n_capabilities = _get_or_default(n_capabilities, [
+                    hostapd_constants.N_CAPABILITY_LDPC, extended_channel,
+                    hostapd_constants.N_CAPABILITY_SGI20,
+                    hostapd_constants.N_CAPABILITY_SGI40,
+                    hostapd_constants.N_CAPABILITY_TX_STBC,
+                    hostapd_constants.N_CAPABILITY_RX_STBC1
+                ])
+            else:
+                n_capabilities = _get_or_default(n_capabilities, [
+                    hostapd_constants.N_CAPABILITY_LDPC,
+                    hostapd_constants.N_CAPABILITY_SGI20,
+                    hostapd_constants.N_CAPABILITY_SGI40,
+                    hostapd_constants.N_CAPABILITY_TX_STBC,
+                    hostapd_constants.N_CAPABILITY_RX_STBC1,
+                    hostapd_constants.N_CAPABILITY_HT20
+                ])
+            ac_capabilities = _get_or_default(ac_capabilities, [
+                hostapd_constants.AC_CAPABILITY_MAX_MPDU_11454,
+                hostapd_constants.AC_CAPABILITY_RXLDPC,
+                hostapd_constants.AC_CAPABILITY_SHORT_GI_80,
+                hostapd_constants.AC_CAPABILITY_TX_STBC_2BY1,
+                hostapd_constants.AC_CAPABILITY_RX_STBC_1,
+                hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7,
+                hostapd_constants.AC_CAPABILITY_RX_ANTENNA_PATTERN,
+                hostapd_constants.AC_CAPABILITY_TX_ANTENNA_PATTERN,
+                hostapd_constants.AC_CAPABILITY_SU_BEAMFORMER,
+                hostapd_constants.AC_CAPABILITY_SU_BEAMFORMEE,
+                hostapd_constants.AC_CAPABILITY_MU_BEAMFORMER,
+                hostapd_constants.AC_CAPABILITY_SOUNDING_DIMENSION_4,
+                hostapd_constants.AC_CAPABILITY_BF_ANTENNA_4
+            ])
+
+            additional_params = utils.merge_dicts(
+                vendor_elements, hostapd_constants.ENABLE_RRM_BEACON_REPORT,
+                hostapd_constants.ENABLE_RRM_NEIGHBOR_REPORT, default_configs)
+            config = hostapd_config.HostapdConfig(
+                ssid=ssid,
+                hidden=hidden,
+                security=security,
+                interface=interface,
+                mode=mode,
+                force_wmm=force_wmm,
+                vht_channel_width=vht_bandwidth,
+                beacon_interval=beacon_interval,
+                dtim_period=dtim_period,
+                short_preamble=short_preamble,
+                frequency=frequency,
+                frag_threshold=frag_threshold,
+                rts_threshold=rts_threshold,
+                n_capabilities=n_capabilities,
+                ac_capabilities=ac_capabilities,
+                bss_settings=bss_settings,
+                additional_parameters=additional_params,
+                set_ap_defaults_profile=profile_name)
     elif profile_name == 'actiontec_pk5000':
         config = actiontec.actiontec_pk5000(iface_wlan_2g=iface_wlan_2g,
                                             channel=channel,

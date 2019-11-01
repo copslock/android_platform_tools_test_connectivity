@@ -402,8 +402,10 @@ def exe_cmd(*cmds):
         OSError is raised if an error occurred during the command execution.
     """
     cmd = ' '.join(cmds)
-    proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen(cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            shell=True)
     (out, err) = proc.communicate()
     if not err:
         return out
@@ -462,12 +464,11 @@ def start_standing_subprocess(cmd, check_health_delay=0, shell=True):
     Returns:
         The subprocess that got started.
     """
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=shell,
-        preexec_fn=os.setpgrp)
+    proc = subprocess.Popen(cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            shell=shell,
+                            preexec_fn=os.setpgrp)
     logging.debug("Start standing subprocess with cmd: %s", cmd)
     if check_health_delay > 0:
         time.sleep(check_health_delay)
@@ -562,7 +563,6 @@ def timeout(sec):
     Raises:
         TimeoutError is raised when time out happens.
     """
-
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -876,8 +876,8 @@ def bypass_setup_wizard(ad):
         if adb_error.stdout == "ADB_CMD_OUTPUT:0":
             if adb_error.stderr and \
                     not adb_error.stderr.startswith("Error type 3\n"):
-                logging.error(
-                    "ADB_CMD_OUTPUT:0, but error is %s " % adb_error.stderr)
+                logging.error("ADB_CMD_OUTPUT:0, but error is %s " %
+                              adb_error.stderr)
                 raise adb_error
             logging.debug("Bypass wizard call received harmless error 3: "
                           "No setup to bypass.")
@@ -1205,7 +1205,6 @@ def run_concurrent_actions(*calls):
 
     class WrappedException(Exception):
         """Raised when a passed-in callable raises an exception."""
-
     def call_wrapper(call):
         nonlocal first_exception
 
@@ -1291,7 +1290,6 @@ class SuppressLogOutput(object):
     """Context manager used to suppress all logging output for the specified
     logger and level(s).
     """
-
     def __init__(self, logger=logging.getLogger(), log_levels=None):
         """Create a SuppressLogOutput context manager
 
@@ -1324,7 +1322,6 @@ class BlockingTimer(object):
     """Context manager used to block until a specified amount of time has
      elapsed.
      """
-
     def __init__(self, secs):
         """Initializes a BlockingTimer
 
@@ -1364,3 +1361,17 @@ def is_valid_ipv6_address(address):
     except socket.error:  # not a valid address
         return False
     return True
+
+
+def merge_dicts(*dict_args):
+    """ Merges args list of dictionaries into a single dictionary.
+
+    Args:
+        dict_args: an args list of dictionaries to be merged. If multiple
+            dictionaries share a key, the last in the list will appear in the
+            final result.
+    """
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
