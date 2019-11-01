@@ -277,14 +277,6 @@ class BaseTestClass(MoblyBaseTest):
                     A list of json serializable objects, each represents the
                     info of a controller object. The order of the info object
                     should follow that of the input objects.
-            def get_post_job_info(controller_list):
-                [Optional] Returns information about the controller after the
-                test has run. This info is sent to test_run_summary.json's
-                "Extras" key.
-                Args:
-                    The list of controller objects created by the module
-                Returns:
-                    A (name, data) tuple.
         Registering a controller module declares a test class's dependency the
         controller. If the module config exists and the module matches the
         controller interface, controller objects will be instantiated with
@@ -338,28 +330,6 @@ class BaseTestClass(MoblyBaseTest):
             setattr(self, module_ref_name, controllers)
         return controllers
 
-    def unregister_controllers(self):
-        """Destroy controller objects and clear internal registry. Invokes
-        Mobly's controller manager's unregister_controllers.
-
-        This will be called upon test class teardown.
-        """
-        controller_modules = self._controller_manager._controller_modules
-        controller_objects = self._controller_manager._controller_objects
-        # Record post job info for the controller
-        for name, controller_module in controller_modules.items():
-            if hasattr(controller_module, 'get_post_job_info'):
-                self.log.debug('Getting post job info for %s', name)
-                try:
-                    name, value = controller_module.get_post_job_info(
-                        controller_objects[name])
-                    self.results.set_extra_data(name, value)
-                    self.summary_writer.dump(
-                        {name: value}, records.TestSummaryEntryType.USER_DATA)
-                except:
-                    self.log.error("Fail to get post job info for %s", name)
-        self._controller_manager.unregister_controllers()
-
     def _record_controller_info(self):
         """Collect controller information and write to summary file."""
         try:
@@ -387,8 +357,7 @@ class BaseTestClass(MoblyBaseTest):
         """Proxy function to guarantee the base implementation of teardown_class
         is called.
         """
-        self.teardown_class()
-        self.unregister_controllers()
+        super()._teardown_class()
         event_bus.post(TestClassEndEvent(self, self.results))
 
     def _setup_test(self, test_name):
