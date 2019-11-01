@@ -86,6 +86,7 @@ BLACKLIST = [
     'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
     'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
     'tests/google/fuchsia/wlan/RebootStressTest.py',
+    'acts/test_utils/gnss/gnss_testlog_utils.py',
 ]
 
 BLACKLIST_DIRECTORIES = [
