@@ -137,18 +137,6 @@ def get_info(ads):
     return device_info
 
 
-def get_post_job_info(ads):
-    """Returns the tracked build id to test_run_summary.json
-
-    Args:
-        ads: A list of AndroidDevice objects.
-
-    Returns:
-        A dict consisting of {'build_id': ads[0].build_info}
-    """
-    return 'Build Info', ads[0].build_info
-
-
 def _start_services_on_ads(ads):
     """Starts long running services on multiple AndroidDevice objects.
 
