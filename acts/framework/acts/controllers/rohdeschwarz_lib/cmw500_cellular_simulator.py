@@ -56,7 +56,8 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
     def destroy(self):
         """ Sends finalization commands to the cellular equipment and closes
         the connection. """
-        raise NotImplementedError()
+        self.cmw.disconnect()
+        self.cmw.close_remote_mode()
 
     def setup_lte_scenario(self):
         """ Configures the equipment for an LTE simulation. """
