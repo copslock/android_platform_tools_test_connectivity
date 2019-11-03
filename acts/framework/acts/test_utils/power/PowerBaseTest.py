@@ -43,8 +43,6 @@ ENABLED_MODULATED_DTIM = 'gEnableModulatedDTIM='
 MAX_MODULATED_DTIM = 'gMaxLIModulatedDTIM='
 TEMP_FILE = '/sdcard/Download/tmp.log'
 IPERF_DURATION = 'iperf_duration'
-INITIAL_ATTEN = [0, 0, 90, 90]
-
 
 class ObjNew():
     """Create a random obj with unknown attributes and value.
@@ -119,7 +117,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         if hasattr(self, 'attenuators'):
             self.num_atten = self.attenuators[0].instrument.num_atten
             self.atten_level = self.unpack_custom_file(self.attenuation_file)
-            self.set_attenuation(INITIAL_ATTEN)
         self.threshold = self.unpack_custom_file(self.threshold_file)
         self.mon_info = self.create_monsoon_info()
 

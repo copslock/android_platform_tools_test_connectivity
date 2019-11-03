@@ -19,6 +19,7 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
 IPERF_DURATION = 'iperf_duration'
+INITIAL_ATTEN = [0, 0, 90, 90]
 
 
 class PowerWiFiBaseTest(PBT.PowerBaseTest):
@@ -35,6 +36,8 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.access_point_main = self.access_points[0]
             if len(self.access_points) > 1:
                 self.access_point_aux = self.access_points[1]
+        if hasattr(self, 'attenuators'):
+            self.set_attenuation(INITIAL_ATTEN)
         if hasattr(self, 'network_file'):
             self.networks = self.unpack_custom_file(self.network_file, False)
             self.main_network = self.networks['main_network']
