@@ -18,6 +18,7 @@ import acts.controllers.ap_lib.third_party_ap_profiles.belkin as belkin
 import acts.controllers.ap_lib.third_party_ap_profiles.linksys as linksys
 import acts.controllers.ap_lib.third_party_ap_profiles.netgear as netgear
 import acts.controllers.ap_lib.third_party_ap_profiles.securifi as securifi
+import acts.controllers.ap_lib.third_party_ap_profiles.tplink as tplink
 
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
@@ -309,6 +310,12 @@ def create_ap_preset(profile_name='whirlwind',
                                           channel=channel,
                                           ssid=ssid,
                                           security=security)
+    elif profile_name == 'tplink_archerc5':
+        config = tplink.tplink_archerc5(iface_wlan_2g=iface_wlan_2g,
+                                        iface_wlan_5g=iface_wlan_5g,
+                                        channel=channel,
+                                        ssid=ssid,
+                                        security=security)
     else:
         raise ValueError('Invalid ap model specified (%s)' % profile_name)
 
