@@ -84,9 +84,6 @@ def reboot(ad):
     if not int(ad.adb.shell("settings get global mobile_data")) == 1:
         set_mobile_data(ad, True)
     utils.sync_device_time(ad)
-    if ad.model == "sailfish" or ad.model == "marlin":
-        remount_device(ad)
-        ad.adb.shell("echo at@test=8 >> /dev/at_mdm0")
 
 def enable_gnss_verbose_logging(ad):
     """Enable GNSS VERBOSE Logging and persistent logcat.
@@ -1025,6 +1022,7 @@ def get_baseband_and_gms_version(ad, extra_msg=""):
         ad: An AndroidDevice object.
     """
     try:
+        build_version = ad.adb.getprop("ro.build.id")
         baseband_version = ad.adb.getprop("gsm.version.baseband")
         gms_version = ad.adb.shell(
             "dumpsys package com.google.android.gms | grep versionName"
@@ -1032,6 +1030,7 @@ def get_baseband_and_gms_version(ad, extra_msg=""):
         mpss_version = ad.adb.shell("cat /sys/devices/soc0/images | grep MPSS "
                                     "| cut -d ':' -f 3")
         if not extra_msg:
+            ad.log.info("TestResult Build_Version %s" % build_version)
             ad.log.info("TestResult Baseband_Version %s" % baseband_version)
             ad.log.info(
                 "TestResult GMS_Version %s" % gms_version.replace(" ", ""))
