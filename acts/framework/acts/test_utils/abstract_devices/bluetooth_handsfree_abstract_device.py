@@ -14,8 +14,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 import inspect
-
+import time
+from acts import asserts
 from acts.controllers.buds_lib.dev_utils import apollo_sink_events
+from acts.test_utils.bt.bt_constants import bt_default_timeout
+
 
 
 def validate_controller(controller, abstract_device_class):
@@ -257,7 +260,18 @@ class AndroidHeadsetBluetoothHandsfreeAbstractDevice(
 
     @property
     def mac_address(self):
-        return self.ad_controller.droid.bluetoothGetLocalAddress()
+        """Getting device mac with more stability ensurance.
+
+        Sometime, getting mac address is flaky that it returns None. Adding a
+        loop to add more ensurance of getting correct mac address.
+        """
+        device_mac = None
+        start_time = time.time()
+        end_time = start_time + bt_default_timeout
+        while not device_mac and time.time() < end_time:
+            device_mac = self.ad_controller.droid.bluetoothGetLocalAddress()
+        asserts.assert_true(device_mac, 'Can not get the MAC address')
+        return device_mac
 
     def accept_call(self):
         return self.ad_controller.droid.telecomAcceptRingingCall(None)
