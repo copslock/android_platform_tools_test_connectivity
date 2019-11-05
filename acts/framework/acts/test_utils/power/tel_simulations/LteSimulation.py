@@ -645,12 +645,10 @@ class LteSimulation(BaseSimulation):
             self.log.info(
                 "The test name does not include the '{}' parameter. Disabled "
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
-            self.simulator.anritsu.set_lte_rrc_status_change(False)
+            self.simulator.set_lte_rrc_state_change_timer(False)
         else:
-            self.rrc_sc_timer = int(values[1])
-            self.simulator.anritsu.set_lte_rrc_status_change(True)
-            self.simulator.anritsu.set_lte_rrc_status_change_timer(
-                self.rrc_sc_timer)
+            timer = int(values[1])
+            self.simulator.anritsu.set_lte_rrc_status_change(True, timer)
 
         # Get uplink power
 

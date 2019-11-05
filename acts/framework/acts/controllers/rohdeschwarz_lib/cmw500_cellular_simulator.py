@@ -68,6 +68,18 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         """ Configures the equipment for an LTE with CA simulation. """
         raise NotImplementedError()
 
+    def set_lte_rrc_state_change_timer(self, enabled, time=10):
+        """ Configures the LTE RRC state change timer.
+
+        Args:
+            enabled: a boolean indicating if the timer should be on or off.
+            time: time in seconds for the timer to expire
+        """
+        # Setting this method to pass instead of raising an exception as it
+        # it is required by LTE sims.
+        # TODO (b/141838145): Implement RRC status change timer for CMW500.
+        pass
+
     def set_band(self, bts_index, band):
         """ Sets the band for the indicated base station.
 
