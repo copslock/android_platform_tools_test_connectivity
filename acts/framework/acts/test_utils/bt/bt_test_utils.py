@@ -226,6 +226,7 @@ def connect_phone_to_headset(android, headset, timeout=bt_default_timeout,
         bonded_info = android.droid.bluetoothGetBondedDevices()
         if headset.mac_address not in [info["address"] for info in bonded_info]:
             # Use SL4A to pair and connect with headset.
+            headset.enter_pairing_mode()
             android.droid.bluetoothDiscoverAndBond(headset.mac_address)
         else:  # Device is bonded but not connected
             android.droid.bluetoothConnectBonded(headset.mac_address)

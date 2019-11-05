@@ -535,7 +535,7 @@ class FuchsiaDevice:
             self.log.info(unable_to_connect_msg)
             raise e
         finally:
-            if action == 'stop':
+            if action == 'stop' and process_name == 'sl4f':
                 self._persistent_ssh_conn.close()
                 self._persistent_ssh_conn = None
 

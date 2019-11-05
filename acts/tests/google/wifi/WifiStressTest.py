@@ -198,8 +198,8 @@ class WifiStressTest(WifiBaseTest):
         else:
             # force start a single scan so we don't have to wait for the scheduled scan.
             wutils.start_wifi_connection_scan_and_return_status(self.dut)
-            self.log.info("Wait 20s for network selection.")
-            time.sleep(20)
+            self.log.info("Wait 60s for network selection.")
+            time.sleep(60)
         try:
             self.log.info("Connected to %s network after network selection"
                           % self.dut.droid.wifiGetConnectionInfo())
