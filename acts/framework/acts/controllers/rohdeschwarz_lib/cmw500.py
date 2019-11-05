@@ -73,7 +73,6 @@ class TransmissionModes(Enum):
     TM2 = 'TM2'
     TM3 = 'TM3'
     TM4 = 'TM4'
-    TM6 = 'TM6'
     TM7 = 'TM7'
     TM8 = 'TM8'
     TM9 = 'TM9'
@@ -302,7 +301,7 @@ class Cmw500(abstract_inst.SocketInstrument):
         return self.send_and_recv('*IDN?')
 
     def disconnect(self):
-        """Detach controller from device and switch to local mode."""
+        """Disconnect controller from device and switch to local mode."""
         self.switch_lte_signalling(LteState.LTE_OFF)
         self.close_remote_mode()
         self._close_socket()
@@ -310,6 +309,10 @@ class Cmw500(abstract_inst.SocketInstrument):
     def close_remote_mode(self):
         """Exits remote mode to local mode."""
         self.send_and_recv('&GTL')
+
+    def detach(self):
+        """Detach callbox and controller."""
+        self.send_and_recv('CALL:LTE:SIGN:PSWitched:ACTion DETach')
 
     @property
     def rrc_connection(self):
@@ -747,6 +750,8 @@ class BaseStation(object):
         Args:
             num_antenna: Count of number of dl antennas to use.
         """
+        if not isinstance(num_antenna, MimoModes):
+            raise ValueError('num_antenna should be an instance of MimoModes.')
         cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas {}'.format(
             self._bts, num_antenna)
         self._cmw.send_and_recv(cmd)
