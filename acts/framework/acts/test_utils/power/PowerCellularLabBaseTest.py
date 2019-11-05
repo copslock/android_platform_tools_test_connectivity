@@ -76,6 +76,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         super().setup_class()
 
+        # Unpack test parameters used in this class
+        self.unpack_userparams(md8475_version=None,
+                               md8475a_ip_address=None,
+                               cmw500_ip=None,
+                               cmw500_port=None)
+
         # Load calibration tables
         filename_calibration_table = (
             self.FILENAME_CALIBRATION_TABLE_UNFORMATTED.format(
@@ -114,12 +120,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             False if a connection with the callbox could not be started
         """
 
-        if hasattr(self, 'md8475_version'):
+        if self.md8475_version:
 
             self.log.info('Selecting Anrtisu MD8475 callbox.')
 
             # Verify the callbox IP address has been indicated in the configs
-            if not hasattr(self, 'md8475_version'):
+            if not self.md8475a_ip_address:
                 raise RuntimeError(
                     'md8475a_ip_address was not included in the test '
                     'configuration.')
@@ -132,7 +138,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
             else:
                 raise ValueError('Invalid MD8475 version.')
 
-        elif hasattr(self, 'cmw500_ip') or hasattr(self, 'cmw500_port'):
+        elif self.cmw500_ip or self.cmw500_port:
 
             for key in ['cmw500_ip', 'cmw500_port']:
                 if not hasattr(self, key):
