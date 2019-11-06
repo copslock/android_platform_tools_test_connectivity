@@ -30,7 +30,7 @@ from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
 IPERF_TIMEOUT = 180
-THRESHOLD_TOLERANCE = 0.2
+THRESHOLD_TOLERANCE_DEFAULT = 0.2
 GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
 PHONE_BATTERY_VOLTAGE_DEFAULT = 4.2
@@ -102,6 +102,7 @@ class PowerBaseTest(base_test.BaseTestClass):
                                bug_report=False,
                                extra_wait=None,
                                iperf_duration=None,
+                               pass_fail_tolerance=THRESHOLD_TOLERANCE_DEFAULT,
                                mon_voltage=PHONE_BATTERY_VOLTAGE_DEFAULT)
 
         # Setup the must have controllers, phone and monsoon
@@ -288,7 +289,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         if self.test_result:
             asserts.assert_true(
                 abs(self.test_result - current_threshold) / current_threshold <
-                THRESHOLD_TOLERANCE,
+                self.pass_fail_tolerance,
                 'Measured average current in [{}]: {:.2f}mA, which is '
                 'out of the acceptable range {:.2f}±{:.2f}mA'.format(
                     self.test_name, self.test_result, current_threshold,
