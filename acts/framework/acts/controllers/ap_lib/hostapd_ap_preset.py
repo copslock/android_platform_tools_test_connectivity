@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 import acts.controllers.ap_lib.third_party_ap_profiles.actiontec as actiontec
+import acts.controllers.ap_lib.third_party_ap_profiles.asus as asus
+import acts.controllers.ap_lib.third_party_ap_profiles.belkin as belkin
 
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
@@ -43,7 +45,7 @@ def create_ap_preset(profile_name='whirlwind',
                      dtim_period=None,
                      frag_threshold=None,
                      rts_threshold=None,
-                     force_wmm = None,
+                     force_wmm=None,
                      beacon_interval=None,
                      short_preamble=None,
                      n_capabilities=None,
@@ -110,16 +112,14 @@ def create_ap_preset(profile_name='whirlwind',
         if frequency < 5000:
             interface = iface_wlan_2g
             mode = _get_or_default(mode, hostapd_constants.MODE_11N_MIXED)
-            n_capabilities = _get_or_default(
-                n_capabilities,
-                [
-                    hostapd_constants.N_CAPABILITY_LDPC,
-                    hostapd_constants.N_CAPABILITY_SGI20,
-                    hostapd_constants.N_CAPABILITY_SGI40,
-                    hostapd_constants.N_CAPABILITY_TX_STBC,
-                    hostapd_constants.N_CAPABILITY_RX_STBC1,
-                    hostapd_constants.N_CAPABILITY_DSSS_CCK_40
-                ])
+            n_capabilities = _get_or_default(n_capabilities, [
+                hostapd_constants.N_CAPABILITY_LDPC,
+                hostapd_constants.N_CAPABILITY_SGI20,
+                hostapd_constants.N_CAPABILITY_SGI40,
+                hostapd_constants.N_CAPABILITY_TX_STBC,
+                hostapd_constants.N_CAPABILITY_RX_STBC1,
+                hostapd_constants.N_CAPABILITY_DSSS_CCK_40
+            ])
             config = hostapd_config.HostapdConfig(
                 ssid=ssid,
                 hidden=hidden,
@@ -151,39 +151,32 @@ def create_ap_preset(profile_name='whirlwind',
             if not vht_bandwidth:
                 pass
             elif vht_bandwidth >= 40:
-                n_capabilities = _get_or_default(
-                    n_capabilities,
-                    [
-                        hostapd_constants.N_CAPABILITY_LDPC,
-                        extended_channel,
-                        hostapd_constants.N_CAPABILITY_SGI20,
-                        hostapd_constants.N_CAPABILITY_SGI40,
-                        hostapd_constants.N_CAPABILITY_TX_STBC,
-                        hostapd_constants.N_CAPABILITY_RX_STBC1
-                    ])
-            else:
-                n_capabilities = _get_or_default(
-                    n_capabilities,
-                    [
-                        hostapd_constants.N_CAPABILITY_LDPC,
-                        hostapd_constants.N_CAPABILITY_SGI20,
-                        hostapd_constants.N_CAPABILITY_SGI40,
-                        hostapd_constants.N_CAPABILITY_TX_STBC,
-                        hostapd_constants.N_CAPABILITY_RX_STBC1,
-                        hostapd_constants.N_CAPABILITY_HT20
-                    ])
-            ac_capabilities = _get_or_default(
-                ac_capabilities,
-                [
-                    hostapd_constants.AC_CAPABILITY_MAX_MPDU_11454,
-                    hostapd_constants.AC_CAPABILITY_RXLDPC,
-                    hostapd_constants.AC_CAPABILITY_SHORT_GI_80,
-                    hostapd_constants.AC_CAPABILITY_TX_STBC_2BY1,
-                    hostapd_constants.AC_CAPABILITY_RX_STBC_1,
-                    hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7,
-                    hostapd_constants.AC_CAPABILITY_RX_ANTENNA_PATTERN,
-                    hostapd_constants.AC_CAPABILITY_TX_ANTENNA_PATTERN
+                n_capabilities = _get_or_default(n_capabilities, [
+                    hostapd_constants.N_CAPABILITY_LDPC, extended_channel,
+                    hostapd_constants.N_CAPABILITY_SGI20,
+                    hostapd_constants.N_CAPABILITY_SGI40,
+                    hostapd_constants.N_CAPABILITY_TX_STBC,
+                    hostapd_constants.N_CAPABILITY_RX_STBC1
                 ])
+            else:
+                n_capabilities = _get_or_default(n_capabilities, [
+                    hostapd_constants.N_CAPABILITY_LDPC,
+                    hostapd_constants.N_CAPABILITY_SGI20,
+                    hostapd_constants.N_CAPABILITY_SGI40,
+                    hostapd_constants.N_CAPABILITY_TX_STBC,
+                    hostapd_constants.N_CAPABILITY_RX_STBC1,
+                    hostapd_constants.N_CAPABILITY_HT20
+                ])
+            ac_capabilities = _get_or_default(ac_capabilities, [
+                hostapd_constants.AC_CAPABILITY_MAX_MPDU_11454,
+                hostapd_constants.AC_CAPABILITY_RXLDPC,
+                hostapd_constants.AC_CAPABILITY_SHORT_GI_80,
+                hostapd_constants.AC_CAPABILITY_TX_STBC_2BY1,
+                hostapd_constants.AC_CAPABILITY_RX_STBC_1,
+                hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7,
+                hostapd_constants.AC_CAPABILITY_RX_ANTENNA_PATTERN,
+                hostapd_constants.AC_CAPABILITY_TX_ANTENNA_PATTERN
+            ])
             config = hostapd_config.HostapdConfig(
                 ssid=ssid,
                 hidden=hidden,
@@ -250,8 +243,35 @@ def create_ap_preset(profile_name='whirlwind',
                                             channel=channel,
                                             ssid=ssid,
                                             security=security)
+    elif profile_name == 'actiontec_mi424wr':
+        config = actiontec.actiontec_mi424wr(iface_wlan_2g=iface_wlan_2g,
+                                             channel=channel,
+                                             ssid=ssid,
+                                             security=security)
+    elif profile_name == 'asus_rtac66u':
+        config = asus.asus_rtac66u(iface_wlan_2g=iface_wlan_2g,
+                                   iface_wlan_5g=iface_wlan_5g,
+                                   channel=channel,
+                                   ssid=ssid,
+                                   security=security)
+    elif profile_name == 'asus_rtac86u':
+        config = asus.asus_rtac86u(iface_wlan_2g=iface_wlan_2g,
+                                   iface_wlan_5g=iface_wlan_5g,
+                                   channel=channel,
+                                   ssid=ssid,
+                                   security=security)
+    elif profile_name == 'asus_rtac5300':
+        config = asus.asus_rtac5300(iface_wlan_2g=iface_wlan_2g,
+                                    iface_wlan_5g=iface_wlan_5g,
+                                    channel=channel,
+                                    ssid=ssid,
+                                    security=security)
+    elif profile_name == 'belkin_f9k1001v5':
+        config = belkin.belkin_f9k1001v5(iface_wlan_2g=iface_wlan_2g,
+                                         channel=channel,
+                                         ssid=ssid,
+                                         security=security)
     else:
         raise ValueError('Invalid ap model specified (%s)' % profile_name)
 
     return config
-

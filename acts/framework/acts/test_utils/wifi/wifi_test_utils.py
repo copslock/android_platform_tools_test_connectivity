@@ -44,7 +44,6 @@ DEFAULT_TIMEOUT = 10
 SHORT_TIMEOUT = 30
 ROAMING_TIMEOUT = 30
 WIFI_CONNECTION_TIMEOUT_DEFAULT = 30
-WIFI_ABNORMAL_CONNECTION_TIME = 10
 # Speed of light in m/s.
 SPEED_OF_LIGHT = 299792458
 
@@ -1167,9 +1166,7 @@ def _wait_for_connect_event(ad, ssid=None, id=None, tries=1):
     if id is None and ssid is None:
         for i in range(tries):
             try:
-                start = time.time()
                 conn_result = ad.ed.pop_event(wifi_constants.WIFI_CONNECTED, 30)
-                _assert_connection_time(start)
                 break
             except Empty:
                 pass
@@ -1177,25 +1174,16 @@ def _wait_for_connect_event(ad, ssid=None, id=None, tries=1):
     # If ssid or network id is specified, wait for specific connect event.
         for i in range(tries):
             try:
-                start = time.time()
                 conn_result = ad.ed.pop_event(wifi_constants.WIFI_CONNECTED, 30)
                 if id and conn_result['data'][WifiEnums.NETID_KEY] == id:
-                    _assert_connection_time(start)
                     break
                 elif ssid and conn_result['data'][WifiEnums.SSID_KEY] == ssid:
-                    _assert_connection_time(start)
                     break
             except Empty:
                 pass
 
     return conn_result
 
-def _assert_connection_time(start):
-    duration = time.time() - start
-    asserts.assert_true(
-        duration < WIFI_ABNORMAL_CONNECTION_TIME,
-        "Took " + str(duration) + "s to connect to network, " +
-        " expected " + str(WIFI_ABNORMAL_CONNECTION_TIME))
 
 def wait_for_disconnect(ad, timeout=10):
     """Wait for a disconnect event within the specified timeout.
@@ -1435,6 +1423,7 @@ def _wifi_connect_by_id(ad, network_id, num_of_tries=1):
                                   " id %d" % network_id)
     finally:
         ad.droid.wifiStopTrackingStateChange()
+
 
 def wifi_connect_using_network_request(ad, network, network_specifier,
                                        num_of_tries=3, assert_on_fail=True):
@@ -2023,7 +2012,6 @@ def create_softap_config():
     }
     return config
 
-
 def start_softap_and_verify(ad, band):
     """Bring-up softap and verify AP mode and in scan results.
 
@@ -2043,6 +2031,53 @@ def start_softap_and_verify(ad, band):
         config[WifiEnums.SSID_KEY])
     return config
 
+def wait_for_expected_number_of_softap_clients(ad, callbackId,
+        expected_num_of_softap_clients):
+    """Wait for the number of softap clients to be updated as expected.
+    Args:
+        callbackId: Id of the callback associated with registering.
+        expected_num_of_softap_clients: expected number of softap clients.
+    """
+    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_NUMBER_CLIENTS_CHANGED
+    asserts.assert_equal(ad.ed.pop_event(eventStr,
+            SHORT_TIMEOUT)['data'][wifi_constants.
+            SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY],
+            expected_num_of_softap_clients,
+            "Number of softap clients doesn't match with expected number")
+
+def wait_for_expected_softap_state(ad, callbackId, expected_softap_state):
+    """Wait for the expected softap state change.
+    Args:
+        callbackId: Id of the callback associated with registering.
+        expected_softap_state: The expected softap state.
+    """
+    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_STATE_CHANGED
+    asserts.assert_equal(ad.ed.pop_event(eventStr,
+            SHORT_TIMEOUT)['data'][wifi_constants.
+            SOFTAP_STATE_CHANGE_CALLBACK_KEY],
+            expected_softap_state,
+            "Softap state doesn't match with expected state")
+
+def get_current_number_of_softap_clients(ad, callbackId):
+    """pop up all of softap client updated event from queue.
+    Args:
+        callbackId: Id of the callback associated with registering.
+
+    Returns:
+        If exist aleast callback, returns last updated number_of_softap_clients.
+        Returns None when no any match callback event in queue.
+    """
+    eventStr = wifi_constants.SOFTAP_CALLBACK_EVENT + str(
+            callbackId) + wifi_constants.SOFTAP_NUMBER_CLIENTS_CHANGED
+    events = ad.ed.pop_all(eventStr)
+    for event in events:
+        num_of_clients = event['data'][wifi_constants.
+                SOFTAP_NUMBER_CLIENTS_CALLBACK_KEY]
+    if len(events) == 0:
+        return None
+    return num_of_clients
 
 def get_ssrdumps(ad, test_name=""):
     """Pulls dumps in the ssrdump dir
@@ -2058,7 +2093,6 @@ def get_ssrdumps(ad, test_name=""):
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
     ad.adb.shell("find /data/vendor/ssrdump/ -type f -delete")
-
 
 def start_pcap(pcap, wifi_band, test_name):
     """Start packet capture in monitor mode.

@@ -551,9 +551,14 @@ def toggle_airplane_mode_by_adb(log, ad, new_state=None):
     elif new_state is None:
         new_state = not cur_state
     ad.log.info("Change airplane mode from %s to %s", cur_state, new_state)
-    ad.adb.shell("settings put global airplane_mode_on %s" % int(new_state))
-    ad.adb.shell("am broadcast -a android.intent.action.AIRPLANE_MODE")
-    return True
+    try:
+        ad.adb.shell("settings put global airplane_mode_on %s" % int(new_state))
+        ad.adb.shell("am broadcast -a android.intent.action.AIRPLANE_MODE")
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    changed_state = bool(int(ad.adb.shell("settings get global airplane_mode_on")))
+    return changed_state == new_state
 
 
 def toggle_airplane_mode(log, ad, new_state=None, strict_checking=True):
@@ -7603,6 +7608,14 @@ def bring_up_connectivity_monitor(ad):
     else:
         ad.log.info("%s is running", monitor_apk)
         return True
+
+
+def get_host_ip_address(ad):
+    cmd = "|".join(("ifconfig", "grep eno1 -A1", "grep inet", "awk '{$1=$1};1'", "cut -d ' ' -f 2"))
+    destination_ip = exe_cmd(cmd)
+    destination_ip = (destination_ip.decode("utf-8")).split("\n")[0]
+    ad.log.info("Host IP is %s", destination_ip)
+    return destination_ip
 
 
 def toggle_connectivity_monitor_setting(ad, state=True):

@@ -133,6 +133,15 @@ class AbstractCellularSimulator:
         if config.tbs_pattern_on is not None:
             self.set_tbs_pattern_on(bts_index, config.tbs_pattern_on)
 
+    def set_lte_rrc_state_change_timer(self, enabled, time=10):
+        """ Configures the LTE RRC state change timer.
+
+        Args:
+            enabled: a boolean indicating if the timer should be on or off.
+            time: time in seconds for the timer to expire
+        """
+        raise NotImplementedError()
+
     def set_band(self, bts_index, band):
         """ Sets the band for the indicated base station.
 

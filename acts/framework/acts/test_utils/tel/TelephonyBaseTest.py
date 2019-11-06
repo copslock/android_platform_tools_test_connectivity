@@ -190,7 +190,8 @@ class TelephonyBaseTest(BaseTestClass):
                                     "number_of_sims":2
                                 }
                 break
-
+        if "anritsu_md8475a_ip_address" in self.user_params:
+            return
         qxdm_log_mask_cfg = self.user_params.get("qxdm_log_mask_cfg", None)
         if isinstance(qxdm_log_mask_cfg, list):
             qxdm_log_mask_cfg = qxdm_log_mask_cfg[0]
@@ -333,8 +334,7 @@ class TelephonyBaseTest(BaseTestClass):
         if getattr(ad, "telephony_test_setup", None):
             return True
 
-        if "enable_wifi_verbose_logging" in self.user_params:
-            ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
+        ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
 
         # Disable Emergency alerts
         # Set chrome browser start with no-first-run verification and
@@ -412,9 +412,7 @@ class TelephonyBaseTest(BaseTestClass):
             force_connectivity_metrics_upload(ad)
             time.sleep(30)
         try:
-            if "enable_wifi_verbose_logging" in self.user_params:
-                ad.droid.wifiEnableVerboseLogging(
-                    WIFI_VERBOSE_LOGGING_DISABLED)
+            ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_DISABLED)
         except Exception as e:
             self.log.error("Failure with %s", e)
         try:
