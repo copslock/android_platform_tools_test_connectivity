@@ -114,7 +114,6 @@ class OtaSnifferBase(object):
 
 class MockSniffer(OtaSnifferBase):
     """Class that implements mock sniffer for test development and debug."""
-
     def __init__(self, config):
         self.log = logger.create_tagged_trace_logger("Mock Sniffer")
 
@@ -354,12 +353,12 @@ class TsharkSnifferBase(OtaSnifferBase):
         log_file = self._get_full_file_path(tag)
         with open(temp_dump_file, "r") as input_csv, open(log_file,
                                                           "w") as output_csv:
-            reader = csv.DictReader(
-                input_csv, fieldnames=self.TSHARK_COLUMNS, delimiter="^")
-            writer = csv.DictWriter(
-                output_csv,
-                fieldnames=self.TSHARK_OUTPUT_COLUMNS,
-                delimiter="\t")
+            reader = csv.DictReader(input_csv,
+                                    fieldnames=self.TSHARK_COLUMNS,
+                                    delimiter="^")
+            writer = csv.DictWriter(output_csv,
+                                    fieldnames=self.TSHARK_OUTPUT_COLUMNS,
+                                    delimiter="\t")
             writer.writeheader()
             for row in reader:
                 if row["subtype"] in self.TYPE_SUBTYPE_DICT.keys():
@@ -427,7 +426,6 @@ class TsharkSnifferBase(OtaSnifferBase):
 
 class TsharkSnifferOnUnix(TsharkSnifferBase):
     """Class that implements Tshark based sniffer controller on Unix systems."""
-
     def _scan_for_networks(self):
         """Scans the wireless networks on the sniffer.
 
@@ -457,7 +455,6 @@ class TsharkSnifferOnUnix(TsharkSnifferBase):
 
 class TsharkSnifferOnLinux(TsharkSnifferBase):
     """Class that implements Tshark based sniffer controller on Linux systems."""
-
     def _scan_for_networks(self):
         """Scans the wireless networks on the sniffer.
 
@@ -480,8 +477,8 @@ class TsharkSnifferOnLinux(TsharkSnifferBase):
             password: password of the wireless network to connect to.
         """
         if password != "":
-            connect_command = "sudo nmcli device wifi connect {} password {} ".format(
-                ssid, password),
+            connect_command = "sudo nmcli device wifi connect {} password {}".format(
+                ssid, password)
         else:
             connect_command = "sudo nmcli device wifi connect {}".format(ssid)
         self._sniffer_server.run(connect_command)
