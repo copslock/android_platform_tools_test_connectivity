@@ -177,6 +177,17 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         else:
             self.bts[bts_index].tbs_pattern = 'OFF'
 
+    def set_lte_rrc_state_change_timer(self, enabled, time=10):
+        """ Configures the LTE RRC state change timer.
+
+        Args:
+            enabled: a boolean indicating if the timer should be on or off.
+            time: time in seconds for the timer to expire
+        """
+        self.anritsu.set_lte_rrc_status_change(enabled)
+        if enabled:
+            self.anritsu.set_lte_rrc_status_change_timer(time)
+
     def set_band(self, bts_index, band):
         """ Sets the right duplex mode before switching to a new band.
 
