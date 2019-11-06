@@ -217,7 +217,8 @@ def connect_phone_to_headset(android,
         connected (bool): True if devices are paired and connected by end of
         method. False otherwise.
     """
-    connected = is_a2dp_src_device_connected(android, headset.mac_address)
+    headset_mac_address = headset.mac_address
+    connected = is_a2dp_src_device_connected(android, headset_mac_address)
     log.info('Devices connected before pair attempt: %s' % connected)
     if not connected:
         # Turn on headset and initiate pairing mode.
@@ -232,13 +233,13 @@ def connect_phone_to_headset(android,
         ]:
             # Use SL4A to pair and connect with headset.
             headset.enter_pairing_mode()
-            android.droid.bluetoothDiscoverAndBond(headset.mac_address)
+            android.droid.bluetoothDiscoverAndBond(headset_mac_address)
         else:  # Device is bonded but not connected
-            android.droid.bluetoothConnectBonded(headset.mac_address)
+            android.droid.bluetoothConnectBonded(headset_mac_address)
         log.info('Waiting for connection...')
         time.sleep(connection_check_period)
         # Check for connection.
-        connected = is_a2dp_src_device_connected(android, headset.mac_address)
+        connected = is_a2dp_src_device_connected(android, headset_mac_address)
     log.info('Devices connected after pair attempt: %s' % connected)
     return connected
 
