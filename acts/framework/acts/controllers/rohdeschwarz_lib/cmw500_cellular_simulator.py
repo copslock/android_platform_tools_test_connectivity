@@ -339,7 +339,8 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             tbs_pattern_on: the new TBS pattern setting
         """
-        raise NotImplementedError()
+        # TODO (b/143918664): CMW500 doesn't have an equivalent setting.
+        pass
 
     def lte_attach_secondary_carriers(self):
         """ Activates the secondary carriers for CA. Requires the DUT to be
