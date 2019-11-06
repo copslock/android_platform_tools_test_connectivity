@@ -62,6 +62,7 @@ class PowerBTBaseTest(PBT.PowerBaseTest):
     def setup_test(self):
 
         super().setup_test()
+        self.unpack_userparams(volume=0.9)
         # Reset BT to factory defaults
         self.dut.droid.bluetoothFactoryReset()
         self.bt_device.reset()
