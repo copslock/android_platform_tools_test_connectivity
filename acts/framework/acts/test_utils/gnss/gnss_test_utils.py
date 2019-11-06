@@ -502,21 +502,28 @@ def clear_aiding_data_by_gtw_gpstool(ad):
     ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool --es mode clear")
     time.sleep(10)
 
-def start_gnss_by_gtw_gpstool(ad, state, type="gnss"):
+
+def start_gnss_by_gtw_gpstool(ad, state, type="gnss", bgdisplay=False):
     """Start or stop GNSS on GTW_GPSTool.
 
     Args:
         ad: An AndroidDevice object.
         state: True to start GNSS. False to Stop GNSS.
         type: Different API for location fix. Use gnss/flp/nmea
+        bgdisplay: true to run GTW when Display off.
+                   false to not run GTW when Display off.
     """
-    if state:
+    if state and not bgdisplay:
         ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool "
                      "--es mode gps --es type %s" % type)
+    elif state and bgdisplay:
+        ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool --es mode"
+                         " gps --es type {} --ez BG {}".format(type, bgdisplay))
     if not state:
         ad.log.info("Stop %s on GTW_GPSTool." % type)
         ad.adb.shell("am broadcast -a com.android.gpstool.stop_gps_action")
     time.sleep(3)
+
 
 def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss"):
     """Launch GTW GPSTool and Clear all GNSS aiding data
