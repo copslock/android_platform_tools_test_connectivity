@@ -81,20 +81,25 @@ class IPerfResult(object):
         will be loaded and this funtion is not intended to be used with files
         containing multiple iperf client runs.
         """
-        try:
-            with open(result_path, 'r') as f:
-                iperf_output = f.readlines()
-                if '}\n' in iperf_output:
-                    iperf_output = iperf_output[:iperf_output.index('}\n') + 1]
-                iperf_string = ''.join(iperf_output)
-                iperf_string = iperf_string.replace('nan', '0')
-                self.result = json.loads(iperf_string)
-        except ValueError:
-            with open(result_path, 'r') as f:
-                # Possibly a result from interrupted iperf run, skip first line
-                # and try again.
-                lines = f.readlines()[1:]
-                self.result = json.loads(''.join(lines))
+        # if result_path isn't a path, treat it as JSON
+        if not os.path.exists(result_path):
+            self.result = json.loads(result_path)
+        else:
+            try:
+                with open(result_path, 'r') as f:
+                    iperf_output = f.readlines()
+                    if '}\n' in iperf_output:
+                        iperf_output = iperf_output[:iperf_output.index('}\n')
+                                                    + 1]
+                    iperf_string = ''.join(iperf_output)
+                    iperf_string = iperf_string.replace('nan', '0')
+                    self.result = json.loads(iperf_string)
+            except ValueError:
+                with open(result_path, 'r') as f:
+                    # Possibly a result from interrupted iperf run,
+                    # skip first line and try again.
+                    lines = f.readlines()[1:]
+                    self.result = json.loads(''.join(lines))
 
     def _has_data(self):
         """Checks if the iperf result has valid throughput data.
@@ -197,7 +202,7 @@ class IPerfResult(object):
         instantaneous_rates = self.instantaneous_rates[iperf_ignored_interval:
                                                        -1]
         avg_rate = math.fsum(instantaneous_rates) / len(instantaneous_rates)
-        sqd_deviations = [(rate - avg_rate)**2 for rate in instantaneous_rates]
+        sqd_deviations = [(rate - avg_rate) ** 2 for rate in instantaneous_rates]
         std_dev = math.sqrt(
             math.fsum(sqd_deviations) / (len(sqd_deviations) - 1))
         return std_dev
