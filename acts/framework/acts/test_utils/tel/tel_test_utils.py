@@ -801,6 +801,15 @@ def get_service_state_by_adb(log, ad):
             ad.log.info("mVoiceRegState is %s %s", result.group(1),
                         result.group(2))
             return result.group(2)
+        else:
+            if getattr(ad, "sdm_log", False):
+                #look for all occurrence in string
+                result2 = re.findall(r"mVoiceRegState=(\S+)\((\S+)\)", output)
+                for voice_state in result2:
+                    if voice_state[0] == 0:
+                        ad.log.info("mVoiceRegState is 0 %s", voice_state[1])
+                        return voice_state[1]
+                return result2[1][1]
     else:
         result = re.search(r"mServiceState=(\S+)", output)
         if result:
