@@ -37,6 +37,8 @@ class PowerBTa2dpTest(PBtBT.PowerBTBaseTest):
         super().setup_test()
         btutils.connect_phone_to_headset(self.dut, self.bt_device, 60)
         vol = self.dut.droid.getMaxMediaVolume() * self.volume
+        self.dut.droid.setMediaVolume(0)
+        time.sleep(1)
         self.dut.droid.setMediaVolume(int(vol))
 
 

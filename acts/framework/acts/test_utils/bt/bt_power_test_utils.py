@@ -21,7 +21,7 @@ import acts.test_utils.instrumentation.instrumentation_command_builder as icb
 
 BLE_LOCATION_SCAN_ENABLE = 'settings put global ble_scan_always_enabled 1'
 BLE_LOCATION_SCAN_DISABLE = 'settings put global ble_scan_always_enabled 0'
-SCREEN_ON_WAIT_TIME = 1
+SCREEN_WAIT_TIME = 1
 
 
 class MediaControl(object):
@@ -44,11 +44,16 @@ class MediaControl(object):
         """Turn on screen and make sure media play is on foreground
 
         All media control keycode only works when screen is on and media player
-        is on the foreground.
+        is on the foreground. Turn off screen first and turn it on to make sure
+        all operation is based on the same screen status. Otherwise, 'MENU' key
+        would block command to be sent.
         """
+        self.android_device.droid.goToSleepNow()
+        time.sleep(SCREEN_WAIT_TIME)
+        self.android_device.droid.wakeUpNow()
+        time.sleep(SCREEN_WAIT_TIME)
         self.android_device.send_keycode('MENU')
-        self.android_device.send_keycode('MENU')
-        time.sleep(SCREEN_ON_WAIT_TIME)
+        time.sleep(SCREEN_WAIT_TIME)
 
     def play(self):
         """Start playing music.
