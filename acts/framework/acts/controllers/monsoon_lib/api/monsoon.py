@@ -160,6 +160,8 @@ class BaseMonsoon(object):
         """Deprecated. Use the connection callbacks instead."""
 
         def on_reconnect():
+            # Make sure the device is connected and available for commands.
+            android_device.wait_for_boot_completion()
             android_device.start_services()
             # Release wake lock to put device into sleep.
             android_device.droid.goToSleepNow()
@@ -179,15 +181,6 @@ class BaseMonsoon(object):
     def set_on_reconnect(self, callback):
         """Sets the callback to be called when Monsoon reconnects USB."""
         self.on_reconnect = callback
-
-    def monsoon_usb_auto(self):
-        """Deprecated. Use usb('auto') or usb(PassthroughStates.AUTO) instead.
-        """
-        self.usb(PassthroughStates.AUTO)
-
-    def reconnect_dut(self):
-        """Deprecated. Use usb('on') or usb(PassthroughStates.ON) instead."""
-        self.usb(PassthroughStates.ON)
 
     def take_samples(self, assembly_line):
         """Runs the sampling procedure based on the given assembly line."""
