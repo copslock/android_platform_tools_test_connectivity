@@ -29,10 +29,11 @@ class PowerBTcalibrationTest(PBtBT.PowerBTBaseTest):
 
         super().setup_test()
         self.attenuator = self.attenuators[0]
+        btutils.enable_bqr(self.dut)
+        btutils.enable_bluetooth(self.dut.droid, self.dut.ed)
         btutils.connect_phone_to_headset(self.dut, self.bt_device, 60)
         vol = self.dut.droid.getMaxMediaVolume() * self.volume
         self.dut.droid.setMediaVolume(int(vol))
-        btutils.enable_bqr(self.dut)
 
         self.cal_data_path = os.path.join(self.log_path, 'Calibration')
         self.log_file = os.path.join(self.cal_data_path, 'Cal_data.csv')
