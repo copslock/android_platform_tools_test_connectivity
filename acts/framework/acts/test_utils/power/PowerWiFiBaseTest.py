@@ -46,7 +46,7 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.pkt_sender = self.packet_senders[0]
         if hasattr(self, 'iperf_servers'):
             self.iperf_server = self.iperf_servers[0]
-        if hasattr(self, 'iperf_duration'):
+        if self.iperf_duration:
             self.mon_duration = self.iperf_duration - 10
             self.create_monsoon_info()
 
@@ -117,7 +117,7 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
         """
         super().collect_power_data()
         tag = ''
-        if hasattr(self, IPERF_DURATION):
+        if self.iperf_duration:
             throughput = self.process_iperf_results()
             tag = '_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(
                 self.RSSI, throughput)
