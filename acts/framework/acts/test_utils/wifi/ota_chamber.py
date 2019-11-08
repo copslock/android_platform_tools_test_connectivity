@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import contextlib
+import io
 import time
 from acts import logger
 from acts import utils
@@ -48,7 +50,6 @@ class OtaChamber(object):
     Base class provides functions whose implementation is shared by all
     chambers.
     """
-
     def reset_chamber(self):
         """Resets the chamber to its zero/home state."""
         raise NotImplementedError
@@ -80,7 +81,6 @@ class OtaChamber(object):
 
 class MockChamber(OtaChamber):
     """Class that implements mock chamber for test development and debug."""
-
     def __init__(self, config):
         self.config = config.copy()
         self.device_id = self.config['device_id']
@@ -117,7 +117,6 @@ class MockChamber(OtaChamber):
 
 class OctoboxChamber(OtaChamber):
     """Class that implements Octobox chamber."""
-
     def __init__(self, config):
         self.config = config.copy()
         self.device_id = self.config['device_id']
@@ -130,8 +129,9 @@ class OctoboxChamber(OtaChamber):
 
     def set_orientation(self, orientation):
         self.log.info('Setting orientation to {} degrees.'.format(orientation))
-        utils.exe_cmd('sudo {} -d {} -p {}'.format(
-            self.TURNTABLE_FILE_PATH, self.device_id, orientation))
+        utils.exe_cmd('sudo {} -d {} -p {}'.format(self.TURNTABLE_FILE_PATH,
+                                                   self.device_id,
+                                                   orientation))
 
     def reset_chamber(self):
         self.log.info('Resetting chamber to home state')
@@ -155,7 +155,6 @@ class ChamberAutoConnect(object):
 
 class BluetestChamber(OtaChamber):
     """Class that implements Octobox chamber."""
-
     def __init__(self, config):
         import flow
         self.config = config.copy()
@@ -165,6 +164,16 @@ class BluetestChamber(OtaChamber):
         self.stirrer_ids = [0, 1, 2]
         self.current_mode = None
 
+    # Capture print output decorator
+    @staticmethod
+    def _capture_output(func, *args, **kwargs):
+        """Creates a decorator to capture stdout from bluetest module"""
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            func(*args, **kwargs)
+        output = f.getvalue()
+        return output
+
     def _connect(self):
         self.chamber.connect(self.config['ip_address'],
                              self.config['username'], self.config['password'])
@@ -172,12 +181,15 @@ class BluetestChamber(OtaChamber):
     def _init_manual_mode(self):
         self.current_mode = 'manual'
         for stirrer_id in self.stirrer_ids:
-            self.chamber.chamber_stirring_manual_init(stirrer_id)
+            out = self._capture_output(
+                self.chamber.chamber_stirring_manual_init, stirrer_id)
+            if "failed" in out:
+                self.log.warning("Initialization error: {}".format(out))
         time.sleep(CHAMBER_SLEEP)
 
     def _init_continuous_mode(self):
         self.current_mode = 'continuous'
-        self.chamber.chamber_stirring_continous_init()
+        self.chamber.chamber_stirring_continuous_init()
 
     def _init_stepped_mode(self, steps):
         self.current_mode = 'stepped'
@@ -188,7 +200,17 @@ class BluetestChamber(OtaChamber):
         if self.current_mode != 'manual':
             self._init_manual_mode()
         self.log.info('Setting stirrer {} to {}.'.format(stirrer_id, position))
-        self.chamber.chamber_stirring_manual_set_pos(stirrer_id, position)
+        out = self._capture_output(
+            self.chamber.chamber_stirring_manual_set_pos, stirrer_id, position)
+        if "failed" in out:
+            self.log.warning("Bluetest error: {}".format(out))
+            self.log.warning("Set position failed. Retrying.")
+            self.current_mode = None
+            self.set_stirrer_pos(stirrer_id, position)
+        else:
+            self._capture_output(self.chamber.chamber_stirring_manual_wait,
+                                 CHAMBER_SLEEP)
+            self.log.warning('Stirrer {} at {}.'.format(stirrer_id, position))
 
     def set_orientation(self, orientation):
         self.set_stirrer_pos(2, orientation * 100 / 360)
@@ -196,10 +218,10 @@ class BluetestChamber(OtaChamber):
     def start_continuous_stirrers(self):
         if self.current_mode != 'continuous':
             self._init_continuous_mode()
-        self.chamber.chamber_stirring_continous_start()
+        self.chamber.chamber_stirring_continuous_start()
 
     def stop_continuous_stirrers(self):
-        self.chamber.chamber_stirring_continous_stop()
+        self.chamber.chamber_stirring_continuous_stop()
 
     def step_stirrers(self, steps):
         if self.current_mode != 'stepped':
