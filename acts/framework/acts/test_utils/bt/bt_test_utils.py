@@ -768,8 +768,8 @@ def enable_bqr(ad_list, bqr_interval=10, bqr_event_mask=15,):
             bqr_interval))
 
         ## Toggle airplane mode
-        ad.droid.connectivityToggleAirplaneMode()
-        ad.droid.connectivityToggleAirplaneMode()
+        ad.droid.connectivityToggleAirplaneMode(True)
+        ad.droid.connectivityToggleAirplaneMode(False)
 
 
 def get_device_selector_dictionary(android_device_list):
