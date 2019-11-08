@@ -81,6 +81,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
 
     def setup_lte_scenario(self):
         """ Configures the equipment for an LTE simulation. """
+        self.cmw.connection_type = cmw500.ConnectionType.DAU
         self.bts = [self.cmw.get_base_station()]
         self.cmw.switch_lte_signalling(cmw500.LteState.LTE_ON)
 
