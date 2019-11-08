@@ -35,8 +35,8 @@ class PowerGnssDpoSimTest(GBT.PowerGnssBaseTest):
         Decode the test config from the test name, set device to desired state.
         Measure power and plot results.
         """
-        self.collect_power_data()
-        self.pass_fail_check()
+        result = self.collect_power_data()
+        self.pass_fail_check(result.average_current)
 
     # Test cases
     def test_gnss_dpoOFF_measurement(self):
