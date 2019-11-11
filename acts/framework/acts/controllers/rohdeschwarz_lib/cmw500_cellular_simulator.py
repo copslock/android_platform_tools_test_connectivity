@@ -17,6 +17,27 @@ import time
 
 from acts.controllers.rohdeschwarz_lib import cmw500
 from acts.controllers import cellular_simulator as cc
+from acts.test_utils.power.tel_simulations import LteSimulation
+
+CMW_TM_MAPPING = {
+    LteSimulation.TransmissionMode.TM1: cmw500.TransmissionModes.TM1,
+    LteSimulation.TransmissionMode.TM2: cmw500.TransmissionModes.TM2,
+    LteSimulation.TransmissionMode.TM3: cmw500.TransmissionModes.TM3,
+    LteSimulation.TransmissionMode.TM4: cmw500.TransmissionModes.TM4,
+    LteSimulation.TransmissionMode.TM7: cmw500.TransmissionModes.TM7,
+    LteSimulation.TransmissionMode.TM8: cmw500.TransmissionModes.TM8,
+    LteSimulation.TransmissionMode.TM9: cmw500.TransmissionModes.TM9
+}
+
+CMW_SCH_MAPPING = {
+    LteSimulation.SchedulingMode.STATIC: cmw500.SchedulingMode.USERDEFINEDCH
+}
+
+CMW_MIMO_MAPPING = {
+    LteSimulation.MimoMode.MIMO_1x1: cmw500.MimoModes.MIMO1x1,
+    LteSimulation.MimoMode.MIMO_2x2: cmw500.MimoModes.MIMO2x2,
+    LteSimulation.MimoMode.MIMO_4x4: cmw500.MimoModes.MIMO4x4
+}
 
 
 class CMW500CellularSimulator(cc.AbstractCellularSimulator):
@@ -57,7 +78,6 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         """ Sends finalization commands to the cellular equipment and closes
         the connection. """
         self.cmw.disconnect()
-        self.cmw.close_remote_mode()
 
     def setup_lte_scenario(self):
         """ Configures the equipment for an LTE simulation. """
@@ -67,6 +87,18 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
     def setup_lte_ca_scenario(self):
         """ Configures the equipment for an LTE with CA simulation. """
         raise NotImplementedError()
+
+    def set_lte_rrc_state_change_timer(self, enabled, time=10):
+        """ Configures the LTE RRC state change timer.
+
+        Args:
+            enabled: a boolean indicating if the timer should be on or off.
+            time: time in seconds for the timer to expire
+        """
+        # Setting this method to pass instead of raising an exception as it
+        # it is required by LTE sims.
+        # TODO (b/141838145): Implement RRC status change timer for CMW500.
+        pass
 
     def set_band(self, bts_index, band):
         """ Sets the band for the indicated base station.
@@ -111,7 +143,8 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             output_power: the new output power
         """
-        raise NotImplementedError()
+        bts = self.bts[bts_index]
+        bts.downlink_power_level = output_power
 
     def set_tdd_config(self, bts_index, tdd_config):
         """ Sets the tdd configuration number for the indicated base station.
@@ -166,7 +199,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             mimo_mode: the new mimo mode
         """
         bts = self.bts[bts_index]
-
+        mimo_mode = CMW_MIMO_MAPPING[mimo_mode]
         if mimo_mode == cmw500.MimoModes.MIMO1x1:
             self.cmw.configure_mimo_settings(cmw500.MimoScenario.SCEN1x1)
             bts.dl_antenna = cmw500.MimoModes.MIMO1x1
@@ -190,6 +223,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         """
         bts = self.bts[bts_index]
 
+        tmode = CMW_TM_MAPPING[tmode]
         if (tmode in [
             cmw500.TransmissionModes.TM1,
             cmw500.TransmissionModes.TM7
@@ -224,7 +258,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             nrb_ul: Number of RBs for uplink.
         """
         bts = self.bts[bts_index]
-        bts.scheduling_mode = scheduling
+        bts.scheduling_mode = CMW_SCH_MAPPING[scheduling]
 
         if not self.ul_modulation and self.dl_modulation:
             raise ValueError('Modulation should be set prior to scheduling '
@@ -305,7 +339,8 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             tbs_pattern_on: the new TBS pattern setting
         """
-        raise NotImplementedError()
+        # TODO (b/143918664): CMW500 doesn't have an equivalent setting.
+        pass
 
     def lte_attach_secondary_carriers(self):
         """ Activates the secondary carriers for CA. Requires the DUT to be
@@ -341,7 +376,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
 
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""
-        self.cmw.disconnect()
+        self.cmw.detach()
 
     def stop(self):
         """ Stops current simulation. After calling this method, the simulator

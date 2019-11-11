@@ -84,9 +84,6 @@ def reboot(ad):
     if not int(ad.adb.shell("settings get global mobile_data")) == 1:
         set_mobile_data(ad, True)
     utils.sync_device_time(ad)
-    if ad.model == "sailfish" or ad.model == "marlin":
-        remount_device(ad)
-        ad.adb.shell("echo at@test=8 >> /dev/at_mdm0")
 
 def enable_gnss_verbose_logging(ad):
     """Enable GNSS VERBOSE Logging and persistent logcat.
@@ -505,21 +502,28 @@ def clear_aiding_data_by_gtw_gpstool(ad):
     ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool --es mode clear")
     time.sleep(10)
 
-def start_gnss_by_gtw_gpstool(ad, state, type="gnss"):
+
+def start_gnss_by_gtw_gpstool(ad, state, type="gnss", bgdisplay=False):
     """Start or stop GNSS on GTW_GPSTool.
 
     Args:
         ad: An AndroidDevice object.
         state: True to start GNSS. False to Stop GNSS.
         type: Different API for location fix. Use gnss/flp/nmea
+        bgdisplay: true to run GTW when Display off.
+                   false to not run GTW when Display off.
     """
-    if state:
+    if state and not bgdisplay:
         ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool "
                      "--es mode gps --es type %s" % type)
+    elif state and bgdisplay:
+        ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool --es mode"
+                         " gps --es type {} --ez BG {}".format(type, bgdisplay))
     if not state:
         ad.log.info("Stop %s on GTW_GPSTool." % type)
         ad.adb.shell("am broadcast -a com.android.gpstool.stop_gps_action")
     time.sleep(3)
+
 
 def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss"):
     """Launch GTW GPSTool and Clear all GNSS aiding data
@@ -1025,6 +1029,7 @@ def get_baseband_and_gms_version(ad, extra_msg=""):
         ad: An AndroidDevice object.
     """
     try:
+        build_version = ad.adb.getprop("ro.build.id")
         baseband_version = ad.adb.getprop("gsm.version.baseband")
         gms_version = ad.adb.shell(
             "dumpsys package com.google.android.gms | grep versionName"
@@ -1032,6 +1037,7 @@ def get_baseband_and_gms_version(ad, extra_msg=""):
         mpss_version = ad.adb.shell("cat /sys/devices/soc0/images | grep MPSS "
                                     "| cut -d ':' -f 3")
         if not extra_msg:
+            ad.log.info("TestResult Build_Version %s" % build_version)
             ad.log.info("TestResult Baseband_Version %s" % baseband_version)
             ad.log.info(
                 "TestResult GMS_Version %s" % gms_version.replace(" ", ""))

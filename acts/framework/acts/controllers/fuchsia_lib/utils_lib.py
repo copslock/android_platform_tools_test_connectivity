@@ -30,21 +30,24 @@ def get_private_key(ip_address, ssh_config):
     Returns:
         The ssh private key
     """
+    exceptions = []
     try:
         logging.debug('Trying to load SSH key type: ed25519')
         return paramiko.ed25519key.Ed25519Key(
             filename=get_ssh_key_for_host(ip_address, ssh_config))
-    except paramiko.SSHException:
+    except paramiko.SSHException as e:
+        exceptions.append(e)
         logging.debug('Failed loading SSH key type: ed25519')
 
     try:
         logging.debug('Trying to load SSH key type: rsa')
         return paramiko.RSAKey.from_private_key_file(
             filename=get_ssh_key_for_host(ip_address, ssh_config))
-    except paramiko.SSHException:
+    except paramiko.SSHException as e:
+        exceptions.append(e)
         logging.debug('Failed loading SSH key type: rsa')
 
-    raise paramiko.SSHException('No valid ssh key type found')
+    raise Exception('No valid ssh key type found', exceptions)
 
 
 def create_ssh_connection(ip_address,

@@ -70,10 +70,10 @@ class PowerTelVoiceCallTest(PWCEL.PowerCellularLabBaseTest):
         self.dut.droid.goToSleepNow()
 
         # Measure power
-        self.collect_power_data()
+        result = self.collect_power_data()
 
         # End the call
         hangup_call(self.log, self.dut)
 
         # Check if power measurement is within the required values
-        self.pass_fail_check()
+        self.pass_fail_check(result.average_current)
