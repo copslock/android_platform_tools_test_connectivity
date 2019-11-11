@@ -55,11 +55,6 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         super().__init__(controllers)
 
-        # Verify that at least one PacketSender controller has been initialized
-        if not hasattr(self, 'packet_senders'):
-            raise RuntimeError('At least one packet sender controller needs '
-                               'to be defined in the test config files.')
-
         # These variables are passed to iPerf when starting data
         # traffic with the -b parameter to limit throughput on
         # the application layer.
@@ -75,6 +70,14 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             metric_name='avg_dl_tput')
         self.ul_tput_logger = BlackboxMetricLogger.for_test_case(
             metric_name='avg_ul_tput')
+
+    def setup_class(self):
+        super().setup_class()
+
+        # Verify that at least one PacketSender controller has been initialized
+        if not hasattr(self, 'packet_senders'):
+            raise RuntimeError('At least one packet sender controller needs '
+                               'to be defined in the test config files.')
 
     def setup_test(self):
         """ Executed before every test case.
@@ -155,7 +158,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         iperf_helpers = self.start_tel_traffic(self.dut)
 
         # Measure power
-        self.collect_power_data()
+        result = self.collect_power_data()
 
         # Wait for iPerf to finish
         time.sleep(self.IPERF_MARGIN + 2)
@@ -164,9 +167,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         self.iperf_results = self.get_iperf_results(self.dut, iperf_helpers)
 
         # Check if power measurement is below the required value
-        self.pass_fail_check()
+        self.pass_fail_check(result.average_current)
 
-        return self.test_result, self.iperf_results
+        return result.average_current, self.iperf_results
 
     def get_iperf_results(self, device, iperf_helpers):
         """ Pulls iperf results from the device.
@@ -193,7 +196,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         return throughput
 
-    def pass_fail_check(self):
+    def pass_fail_check(self, average_current=None):
         """ Checks power consumption and throughput.
 
         Uses the base class method to check power consumption. Also, compares
@@ -227,7 +230,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                         direction, round(throughput, 3), round(expected_t, 3),
                         round(throughput / expected_t, 3)))
 
-        super().pass_fail_check()
+        super().pass_fail_check(average_current)
 
     def start_tel_traffic(self, client_host):
         """ Starts iPerf in the indicated device and initiates traffic.
@@ -241,7 +244,6 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         Returns:
             A list of iperf helpers.
         """
-
         # The iPerf server is hosted in this computer
         self.iperf_server_address = scapy.get_if_addr(
             self.packet_senders[0].interface)

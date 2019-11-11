@@ -29,11 +29,10 @@ class A2dpPtsTest(PtsBaseClass):
     pts_action_mapping = None
 
     def setup_class(self):
-        super(A2dpPtsTest, self).setup_class()
+        super().setup_class()
         self.dut.initialize_bluetooth_controller()
         # self.dut.set_bluetooth_local_name(self.dut_bluetooth_local_name)
         local_dut_mac_address = self.dut.get_local_bluetooth_address()
-        self.pts.set_profile_under_test("A2DP")
 
         ics = None
         ixit = None
@@ -56,7 +55,11 @@ class A2dpPtsTest(PtsBaseClass):
             ics = f_ics_lib.A2DP_ICS
             ixit = fuchsia_ixit
 
+        ### PTS SETUP: Required after ICS, IXIT, and profile is setup ###
+        self.pts.set_profile_under_test("A2DP")
         self.pts.set_ics_and_ixit(ics, ixit)
+        self.pts.setup_pts()
+        ### End PTS Setup ###
 
         self.dut.unbond_all_known_devices()
         self.dut.start_pairing_helper()

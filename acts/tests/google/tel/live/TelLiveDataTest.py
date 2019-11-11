@@ -3232,14 +3232,8 @@ class TelLiveDataTest(TelephonyBaseTest):
         for i in range(1, total_iteration + 1):
             msg = "Airplane mode test Iteration: <%s> / <%s>" % (i, total_iteration)
             self.log.info(msg)
-            if not toggle_airplane_mode(ad.log, ad, True):
-                ad.log.error("Toggle APM on failed")
-                fail_count["apm_on"] += 1
-                ad.log.error(">----Iteration : %d/%d failed.----<",
-                             i, total_iteration)
-            if not toggle_airplane_mode(ad.log, ad, False):
-                ad.log.error("Toggle APM off failed")
-                fail_count["apm_off"] += 1
+            if not airplane_mode_test(self.log, ad):
+                fail_count["apm_run"] += 1
                 ad.log.error(">----Iteration : %d/%d failed.----<",
                              i, total_iteration)
             ad.log.info(">----Iteration : %d/%d succeeded.----<",
@@ -3249,10 +3243,11 @@ class TelLiveDataTest(TelephonyBaseTest):
         for failure, count in fail_count.items():
             if count:
                 ad.log.error("%s: %s %s failures in %s iterations",
-                               self.test_name, count, failure,
-                               total_iteration)
+                             self.test_name, count, failure,
+                             total_iteration)
                 test_result = False
         return test_result
+
 
     @test_tracker_info(uuid="3a82728f-18b5-4a35-9eab-4e6cf55271d9")
     @TelephonyBaseTest.tel_test_wrap
