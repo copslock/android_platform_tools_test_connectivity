@@ -384,6 +384,9 @@ UAPSD_ENABLED = {'uapsd_advertisement_enabled': 1}
 
 UTF_8_SSID = {'utf8_ssid': 1}
 
+ENABLE_RRM_BEACON_REPORT = {'rrm_beacon_report': 1}
+ENABLE_RRM_NEIGHBOR_REPORT = {'rrm_neighbor_report': 1}
+
 VENDOR_IE = {
     'correct_length_beacon': {
         'vendor_elements': 'dd0411223301'
