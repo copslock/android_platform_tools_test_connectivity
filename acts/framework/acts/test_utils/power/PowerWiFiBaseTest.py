@@ -19,6 +19,7 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
 IPERF_DURATION = 'iperf_duration'
+INITIAL_ATTEN = [0, 0, 90, 90]
 
 
 class PowerWiFiBaseTest(PBT.PowerBaseTest):
@@ -35,6 +36,8 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.access_point_main = self.access_points[0]
             if len(self.access_points) > 1:
                 self.access_point_aux = self.access_points[1]
+        if hasattr(self, 'attenuators'):
+            self.set_attenuation(INITIAL_ATTEN)
         if hasattr(self, 'network_file'):
             self.networks = self.unpack_custom_file(self.network_file, False)
             self.main_network = self.networks['main_network']
@@ -43,7 +46,7 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             self.pkt_sender = self.packet_senders[0]
         if hasattr(self, 'iperf_servers'):
             self.iperf_server = self.iperf_servers[0]
-        if hasattr(self, 'iperf_duration'):
+        if self.iperf_duration:
             self.mon_duration = self.iperf_duration - 10
             self.create_monsoon_info()
 
@@ -112,10 +115,11 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
 
         If IPERF is run, need to pull iperf results and attach it to the plot.
         """
-        super().collect_power_data()
+        result = super().collect_power_data()
         tag = ''
-        if hasattr(self, IPERF_DURATION):
+        if self.iperf_duration:
             throughput = self.process_iperf_results()
             tag = '_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(
                 self.RSSI, throughput)
-            wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
+            wputils.monsoon_data_plot(self.mon_info, result, tag=tag)
+        return result

@@ -17,7 +17,6 @@
 import math
 from enum import Enum
 
-from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 
@@ -429,11 +428,6 @@ class LteSimulation(BaseSimulation):
 
         super().__init__(simulator, log, dut, test_config, calibration_table)
 
-        # The LTE simulation relies on the cellular simulator to be a MD8475
-        if not isinstance(self.simulator, anritsusim.MD8475CellularSimulator):
-            raise ValueError('The LTE simulation relies on the simulator to '
-                             'be an Anritsu MD8475 A/B instrument.')
-
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_LTE_ONLY,
                 dut.droid.subscriptionGetDefaultSubId()):
@@ -651,12 +645,10 @@ class LteSimulation(BaseSimulation):
             self.log.info(
                 "The test name does not include the '{}' parameter. Disabled "
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
-            self.simulator.anritsu.set_lte_rrc_status_change(False)
+            self.simulator.set_lte_rrc_state_change_timer(False)
         else:
-            self.rrc_sc_timer = int(values[1])
-            self.simulator.anritsu.set_lte_rrc_status_change(True)
-            self.simulator.anritsu.set_lte_rrc_status_change_timer(
-                self.rrc_sc_timer)
+            timer = int(values[1])
+            self.simulator.anritsu.set_lte_rrc_status_change(True, timer)
 
         # Get uplink power
 

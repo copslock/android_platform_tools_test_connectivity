@@ -119,7 +119,7 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
         iperf_helpers = self.start_tel_traffic(self.android_devices[1])
 
         # Measure power
-        self.collect_power_data()
+        result = self.collect_power_data()
 
         # Wait for iPerf to finish
         time.sleep(self.IPERF_MARGIN + 2)
@@ -129,7 +129,7 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
                                                     iperf_helpers)
 
         # Checks if power is below the required threshold.
-        self.pass_fail_check()
+        self.pass_fail_check(result.average_current)
 
     def setup_test(self):
         """ Executed before every test case.

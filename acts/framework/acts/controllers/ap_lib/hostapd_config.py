@@ -71,7 +71,6 @@ class HostapdConfig(object):
 
     All the settings for a router that are not part of an ssid.
     """
-
     def _get_11ac_center_channel_from_channel(self, channel):
         """Returns the center channel of the selected channel band based
            on the channel and channel bandwidth provided.
@@ -452,10 +451,9 @@ class HostapdConfig(object):
                 logging.warning(
                     'No channel bandwidth specified.  Using 80MHz for 11ac.')
                 self._vht_oper_chwidth = 1
-            if not vht_channel_width == 20:
-                if not vht_center_channel:
-                    self._vht_oper_centr_freq_seg0_idx = self._get_11ac_center_channel_from_channel(
-                        self.channel)
+            if not vht_channel_width == 20 and not vht_center_channel:
+                self._vht_oper_centr_freq_seg0_idx = self._get_11ac_center_channel_from_channel(
+                    self.channel)
             else:
                 self._vht_oper_centr_freq_seg0_idx = vht_center_channel
             self._ac_capabilities = set(ac_capabilities)
@@ -473,16 +471,16 @@ class HostapdConfig(object):
             self._bss_lookup[bss.name] = bss
 
     def __repr__(self):
-        return ('%s(mode=%r, channel=%r, frequency=%r, '
-                'n_capabilities=%r, beacon_interval=%r, '
-                'dtim_period=%r, frag_threshold=%r, ssid=%r, bssid=%r, '
-                'wmm_enabled=%r, security_config=%r, '
-                'spectrum_mgmt_required=%r)' %
-                (self.__class__.__name__, self._mode, self.channel,
-                 self.frequency, self._n_capabilities, self._beacon_interval,
-                 self._dtim_period, self._frag_threshold, self._ssid,
-                 self._bssid, self._wmm_enabled, self._security,
-                 self._spectrum_mgmt_required))
+        return (
+            '%s(mode=%r, channel=%r, frequency=%r, '
+            'n_capabilities=%r, beacon_interval=%r, '
+            'dtim_period=%r, frag_threshold=%r, ssid=%r, bssid=%r, '
+            'wmm_enabled=%r, security_config=%r, '
+            'spectrum_mgmt_required=%r)' %
+            (self.__class__.__name__, self._mode, self.channel, self.frequency,
+             self._n_capabilities, self._beacon_interval, self._dtim_period,
+             self._frag_threshold, self._ssid, self._bssid, self._wmm_enabled,
+             self._security, self._spectrum_mgmt_required))
 
     def supports_channel(self, value):
         """Check whether channel is supported by the current hardware mode.

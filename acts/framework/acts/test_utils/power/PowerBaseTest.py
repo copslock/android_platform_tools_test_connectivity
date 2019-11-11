@@ -17,39 +17,42 @@ import json
 import logging
 import math
 import os
+import re
 import time
+
 import acts.controllers.iperf_server as ipf
 from acts import asserts
 from acts import base_test
 from acts import utils
-from acts.controllers import monsoon
+from acts.controllers.monsoon_lib.api.common import MonsoonError
+from acts.controllers.monsoon_lib.api.common import PassthroughStates
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power.loggers.power_metric_logger import PowerMetricLogger
-from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.wifi import wifi_test_utils as wutils
 
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
 IPERF_TIMEOUT = 180
-THRESHOLD_TOLERANCE = 0.2
+THRESHOLD_TOLERANCE_DEFAULT = 0.2
 GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
-PHONE_BATTERY_VOLTAGE = 4.2
+PHONE_BATTERY_VOLTAGE_DEFAULT = 4.2
 MONSOON_MAX_CURRENT = 8.0
 MONSOON_RETRY_INTERVAL = 300
+DEFAULT_MONSOON_FREQUENCY = 500
 MEASUREMENT_RETRY_COUNT = 3
 RECOVER_MONSOON_RETRY_COUNT = 3
 MIN_PERCENT_SAMPLE = 95
 ENABLED_MODULATED_DTIM = 'gEnableModulatedDTIM='
 MAX_MODULATED_DTIM = 'gMaxLIModulatedDTIM='
 TEMP_FILE = '/sdcard/Download/tmp.log'
-IPERF_DURATION = 'iperf_duration'
-INITIAL_ATTEN = [0, 0, 90, 90]
 
 
 class ObjNew():
     """Create a random obj with unknown attributes and value.
 
     """
+
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -68,6 +71,7 @@ class PowerBaseTest(base_test.BaseTestClass):
     """Base class for all wireless power related tests.
 
     """
+
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
@@ -83,17 +87,38 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.log = logging.getLogger()
         self.tests = self._get_all_test_names()
 
+        # Obtain test parameters from user_params
+        TEST_PARAMS = self.TAG + '_params'
+        self.test_params = self.user_params.get(TEST_PARAMS, {})
+        if not self.test_params:
+            self.log.warning(TEST_PARAMS + ' was not found in the user '
+                             'parameters defined in the config file.')
+
+        # Override user_param values with test parameters
+        self.user_params.update(self.test_params)
+
+        # Unpack user_params with default values. All the usages of user_params
+        # as self attributes need to be included either as a required parameter
+        # or as a parameter with a default value.
+        req_params = ['custom_files', 'mon_duration']
+        self.unpack_userparams(req_params,
+                               mon_freq=DEFAULT_MONSOON_FREQUENCY,
+                               mon_offset=0,
+                               bug_report=False,
+                               extra_wait=None,
+                               iperf_duration=None,
+                               pass_fail_tolerance=THRESHOLD_TOLERANCE_DEFAULT,
+                               mon_voltage=PHONE_BATTERY_VOLTAGE_DEFAULT)
+
         # Setup the must have controllers, phone and monsoon
         self.dut = self.android_devices[0]
         self.mon_data_path = os.path.join(self.log_path, 'Monsoon')
+        os.makedirs(self.mon_data_path, exist_ok=True)
         self.mon = self.monsoons[0]
         self.mon.set_max_current(8.0)
-        self.mon.set_voltage(PHONE_BATTERY_VOLTAGE)
+        self.mon.set_voltage(self.mon_voltage)
         self.mon.attach_device(self.dut)
 
-        # Unpack the test/device specific parameters
-        req_params = ['custom_files']
-        self.unpack_userparams(req_params)
         # Unpack the custom files based on the test configs
         for file in self.custom_files:
             if 'pass_fail_threshold_' + self.dut.model in file:
@@ -104,7 +129,7 @@ class PowerBaseTest(base_test.BaseTestClass):
                 self.network_file = file
             elif 'rockbottom_' + self.dut.model in file:
                 self.rockbottom_script = file
-        #Abort the class if threshold and rockbottom file is missing
+        # Abort the class if threshold and rockbottom file is missing
         asserts.abort_class_if(
             not self.threshold_file,
             'Required test pass/fail threshold file is missing')
@@ -112,19 +137,14 @@ class PowerBaseTest(base_test.BaseTestClass):
             not self.rockbottom_script,
             'Required rockbottom setting script is missing')
 
-        # Unpack test specific configs
-        TEST_PARAMS = self.TAG + '_params'
-        self.test_params = self.user_params.get(TEST_PARAMS, {})
-        self.unpack_testparams(self.test_params)
         if hasattr(self, 'attenuators'):
             self.num_atten = self.attenuators[0].instrument.num_atten
             self.atten_level = self.unpack_custom_file(self.attenuation_file)
-            self.set_attenuation(INITIAL_ATTEN)
         self.threshold = self.unpack_custom_file(self.threshold_file)
         self.mon_info = self.create_monsoon_info()
 
         # Sync device time, timezone and country code
-        utils.require_sl4a((self.dut, ))
+        utils.require_sl4a((self.dut,))
         utils.sync_device_time(self.dut)
         self.dut.droid.wifiSetCountryCode('US')
 
@@ -148,7 +168,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         wutils.wifi_toggle_state(self.dut, False)
 
         # Wait for extra time if needed for the first test
-        if hasattr(self, 'extra_wait'):
+        if self.extra_wait:
             self.more_wait_first_test()
 
     def teardown_test(self):
@@ -194,20 +214,13 @@ class PowerBaseTest(base_test.BaseTestClass):
         # Restart SL4A
         self.dut.start_services()
 
-    def unpack_testparams(self, bulk_params):
-        """Unpack all the test specific parameters.
-
-        Args:
-            bulk_params: dict with all test specific params in the config file
-        """
-        for key in bulk_params.keys():
-            setattr(self, key, bulk_params[key])
-
     def unpack_custom_file(self, file, test_specific=True):
         """Unpack the pass_fail_thresholds from a common file.
 
         Args:
             file: the common file containing pass fail threshold.
+            test_specific: if True, returns the JSON element within the file
+                that starts with the test class name.
         """
         with open(file, 'r') as f:
             params = json.load(f)
@@ -255,21 +268,23 @@ class PowerBaseTest(base_test.BaseTestClass):
         """The actual test flow and result processing and validate.
 
         """
-        self.collect_power_data()
-        self.pass_fail_check()
+        result = self.collect_power_data()
+        self.pass_fail_check(result.average_current)
 
     def collect_power_data(self):
         """Measure power, plot and take log if needed.
 
+        Returns:
+            A MonsoonResult object.
         """
-        tag = ''
         # Collecting current measurement data and plot
-        self.file_path, self.test_result = self.monsoon_data_collect_save()
-        self.power_result.metric_value = (self.test_result *
-                                          PHONE_BATTERY_VOLTAGE)
-        wputils.monsoon_data_plot(self.mon_info, self.file_path, tag=tag)
+        result = self.monsoon_data_collect_save()
+        self.power_result.metric_value = (result.average_current *
+                                          self.mon_voltage)
+        wputils.monsoon_data_plot(self.mon_info, result)
+        return result
 
-    def pass_fail_check(self):
+    def pass_fail_check(self, average_current=None):
         """Check the test result and decide if it passed or failed.
 
         The threshold is provided in the config file. In this class, result is
@@ -282,18 +297,18 @@ class PowerBaseTest(base_test.BaseTestClass):
             return
 
         current_threshold = self.threshold[self.test_name]
-        if self.test_result:
+        if average_current:
             asserts.assert_true(
-                abs(self.test_result - current_threshold) / current_threshold <
-                THRESHOLD_TOLERANCE,
+                abs(average_current - current_threshold) / current_threshold <
+                self.pass_fail_tolerance,
                 'Measured average current in [{}]: {:.2f}mA, which is '
                 'out of the acceptable range {:.2f}±{:.2f}mA'.format(
-                    self.test_name, self.test_result, current_threshold,
+                    self.test_name, average_current, current_threshold,
                     self.pass_fail_tolerance * current_threshold))
             asserts.explicit_pass(
                 'Measurement finished for [{}]: {:.2f}mA, which is '
                 'within the acceptable range {:.2f}±{:.2f}'.format(
-                    self.test_name, self.test_result, current_threshold,
+                    self.test_name, average_current, current_threshold,
                     self.pass_fail_tolerance * current_threshold))
         else:
             asserts.fail(
@@ -305,7 +320,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         Returns:
             mon_info: Dictionary with the monsoon packet config
         """
-        if hasattr(self, IPERF_DURATION):
+        if self.iperf_duration:
             self.mon_duration = self.iperf_duration - 10
         mon_info = ObjNew(dut=self.mon,
                           freq=self.mon_freq,
@@ -330,8 +345,12 @@ class PowerBaseTest(base_test.BaseTestClass):
             logging.info('Monsoon recovered from unexpected error')
             time.sleep(2)
             return True
-        except monsoon.MonsoonError:
-            logging.info(self.mon.mon.ser.in_waiting)
+        except MonsoonError:
+            try:
+                self.log.info(self.mon_info.dut._mon.ser.in_waiting)
+            except AttributeError:
+                # This attribute does not exist for HVPMs.
+                pass
             logging.warning('Unable to recover monsoon from unexpected error')
             return False
 
@@ -342,94 +361,70 @@ class PowerBaseTest(base_test.BaseTestClass):
         log file. Take bug report if requested.
 
         Returns:
-            data_path: the absolute path to the log file of monsoon current
-                       measurement
-            avg_current: the average current of the test
+            A MonsoonResult object containing information about the gathered
+            data.
         """
 
         tag = '{}_{}_{}'.format(self.test_name, self.dut.model,
                                 self.dut.build_info['build_id'])
+
         data_path = os.path.join(self.mon_info.data_path, '{}.txt'.format(tag))
-        total_expected_samples = self.mon_info.freq * (self.mon_info.duration +
-                                                       self.mon_info.offset)
-        min_required_samples = total_expected_samples * MIN_PERCENT_SAMPLE / 100
-        # Retry counter for monsoon data aquisition
-        retry_measure = 1
-        # Indicator that need to re-collect data
-        need_collect_data = 1
-        result = None
-        while retry_measure <= MEASUREMENT_RETRY_COUNT:
-            try:
-                # If need to retake data
-                if need_collect_data == 1:
-                    #Resets the battery status right before the test started
-                    self.dut.adb.shell(RESET_BATTERY_STATS)
-                    self.log.info(
-                        'Starting power measurement with monsoon box, try #{}'.
-                        format(retry_measure))
-                    #Start the power measurement using monsoon
-                    self.mon_info.dut.monsoon_usb_auto()
-                    result = self.mon_info.dut.measure_power(
-                        self.mon_info.freq,
-                        self.mon_info.duration,
-                        tag=tag,
-                        offset=self.mon_info.offset)
-                    self.mon_info.dut.reconnect_dut()
-                # Reconnect to dut
-                else:
-                    self.mon_info.dut.reconnect_dut()
-                # Reconnect and return measurement results if no error happens
-                avg_current = result.average_current
-                monsoon.MonsoonData.save_to_text_file([result], data_path)
-                self.log.info('Power measurement done within {} try'.format(
+
+        # If the specified Monsoon data file already exists (e.g., multiple
+        # measurements in a single test), write the results to a new file with
+        # the postfix "_#".
+        if os.path.exists(data_path):
+            highest_value = 1
+            for filename in os.listdir(os.path.dirname(data_path)):
+                match = re.match(r'{}_(\d+).txt'.format(tag), filename)
+                if match:
+                    highest_value = int(match.group(1))
+
+            data_path = os.path.join(self.mon_info.data_path,
+                                     '%s_%s.txt' % (tag, highest_value + 1))
+
+        total_expected_samples = self.mon_info.freq * self.mon_info.duration
+        min_required_samples = (total_expected_samples
+                                * MIN_PERCENT_SAMPLE / 100)
+        for retry_measure in range(1, MEASUREMENT_RETRY_COUNT + 1):
+            # Resets the battery status right before the test starts.
+            self.dut.adb.shell(RESET_BATTERY_STATS)
+            self.log.info(
+                'Starting power measurement, attempt #{}.'.format(
                     retry_measure))
-                return data_path, avg_current
-            # Catch monsoon errors during measurement
-            except monsoon.MonsoonError:
-                self.log.info(self.mon_info.dut.mon.ser.in_waiting)
-                # Break early if it's one count away from limit
-                if retry_measure == MEASUREMENT_RETRY_COUNT:
-                    self.log.error(
-                        'Test failed after maximum measurement retry')
-                    break
+            # Start the power measurement using monsoon.
+            self.mon_info.dut.usb(PassthroughStates.AUTO)
+            result = self.mon_info.dut.measure_power(
+                self.mon_info.duration,
+                measure_after_seconds=self.mon_info.offset,
+                hz=self.mon_info.freq,
+                output_path=data_path)
+            self.mon_info.dut.usb(PassthroughStates.ON)
 
-                self.log.warning('Monsoon error happened, now try to recover')
-                # Retry loop to recover monsoon from error
-                retry_monsoon = 1
-                while retry_monsoon <= RECOVER_MONSOON_RETRY_COUNT:
-                    mon_status = self.monsoon_recover()
-                    if mon_status:
-                        break
-                    else:
-                        retry_monsoon += 1
-                        self.log.warning(
-                            'Wait for {} second then try again'.format(
-                                MONSOON_RETRY_INTERVAL))
-                        time.sleep(MONSOON_RETRY_INTERVAL)
+            self.log.debug(result)
+            self.log.debug('Samples Gathered: %s. Max Samples: %s '
+                           'Min Samples Required: %s.' %
+                           (result.num_samples, total_expected_samples,
+                            min_required_samples))
 
-                # Break the loop to end test if failed to recover monsoon
-                if not mon_status:
-                    self.log.error(
-                        'Tried our best, still failed to recover monsoon')
-                    break
-                else:
-                    # If there is no data, or captured samples are less than min
-                    # required, re-take
-                    if not result:
-                        self.log.warning('No data taken, need to remeasure')
-                    elif len(result._data_points) <= min_required_samples:
-                        self.log.warning(
-                            'More than {} percent of samples are missing due to monsoon error. Need to remeasure'
-                            .format(100 - MIN_PERCENT_SAMPLE))
-                    else:
-                        need_collect_data = 0
-                        self.log.warning(
-                            'Data collected is valid, try reconnect to DUT to finish test'
-                        )
-                    retry_measure += 1
+            if result.num_samples <= min_required_samples:
+                retry_measure += 1
+                self.log.warning(
+                    'More than {} percent of samples are missing due to '
+                    'dropped packets. Need to remeasure.'.format(
+                        100 - MIN_PERCENT_SAMPLE))
+                continue
 
-        if retry_measure > MEASUREMENT_RETRY_COUNT:
-            self.log.error('Test failed after maximum measurement retry')
+            self.log.info('Measurement successful after {} attempt(s).'.format(
+                retry_measure))
+            return result
+        else:
+            try:
+                self.log.info(self.mon_info.dut._mon.ser.in_waiting)
+            except AttributeError:
+                # This attribute does not exist for HVPMs.
+                pass
+            self.log.error('Unable to gather enough samples to run validation.')
 
     def process_iperf_results(self):
         """Get the iperf results and process.
@@ -454,7 +449,7 @@ class PowerBaseTest(base_test.BaseTestClass):
             throughput = (math.fsum(
                 iperf_result.instantaneous_rates[self.start_meas_time:-1]
             ) / len(iperf_result.instantaneous_rates[self.start_meas_time:-1])
-                          ) * 8 * (1.024**2)
+                          ) * 8 * (1.024 ** 2)
 
             self.log.info('The average throughput is {}'.format(throughput))
         except ValueError:

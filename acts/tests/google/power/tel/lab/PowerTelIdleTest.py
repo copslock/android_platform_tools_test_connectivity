@@ -33,7 +33,7 @@ class PowerTelIdleTest(PWCEL.PowerCellularLabBaseTest):
         self.cellular_simulator.wait_until_idle_state(idle_wait_time)
 
         # Measure power
-        self.collect_power_data()
+        result = self.collect_power_data()
 
         # Check if power measurement is below the required value
-        self.pass_fail_check()
+        self.pass_fail_check(result.average_current)

@@ -209,15 +209,6 @@ class BaseMonsoonTest(unittest.TestCase):
             'usbPassthroughMode should not be called when the '
             'state does not change.')
 
-    def test_monsoon_usb_auto_sets_usb_state_to_auto(self):
-        monsoon = MonsoonImpl()
-
-        monsoon.monsoon_usb_auto()
-
-        self.assertEqual(monsoon.status.usbPassthroughMode,
-                         PassthroughStates.AUTO,
-                         'monsoon_usb_auto() did not disconnect USB.')
-
     def take_samples_always_reestablishes_the_monsoon_connection(self):
         monsoon = MonsoonImpl()
         assembly_line = mock.Mock()

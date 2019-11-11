@@ -81,22 +81,30 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
         time.sleep(5)
         # Toggle between two networks
         begin_time = utils.get_current_epoch_time()
+        results = []
         for i in range(self.toggle_times):
             self.dut.log.info('Connecting to %s' % network_main[wc.SSID])
             self.dut.droid.wifiConnect(network_main)
-            file_path, avg_current = self.monsoon_data_collect_save()
+            results.append(self.monsoon_data_collect_save())
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
-            file_path, avg_current = self.monsoon_data_collect_save()
-        [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
-        self.test_result = dt.source.data['y0'][0]
-        self.power_result.metric_value = (
-            self.test_result * PHONE_BATTERY_VOLTAGE)
+            results.append(self.monsoon_data_collect_save())
+        wputils.monsoon_data_plot(self.mon_info, results)
+
+        total_current = 0
+        total_samples = 0
+        for result in results:
+            total_current += result.average_current * result.num_samples
+            total_samples += result.num_samples
+        average_current = total_current / total_samples
+
+        self.power_result.metric_value = [result.total_power for result in
+                                          results]
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
-        self.pass_fail_check()
+        self.pass_fail_check(average_current)
 
     @test_tracker_info(uuid='e5ff95c0-b17e-425c-a903-821ba555a9b9')
     def test_screenon_toggle_between_AP(self):
@@ -119,22 +127,30 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
         time.sleep(5)
         # Toggle between two networks
         begin_time = utils.get_current_epoch_time()
+        results = []
         for i in range(self.toggle_times):
             self.dut.log.info('Connecting to %s' % network_main[wc.SSID])
             self.dut.droid.wifiConnect(network_main)
-            file_path, avg_current = self.monsoon_data_collect_save()
+            results.append(self.monsoon_data_collect_save())
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
-            file_path, avg_current = self.monsoon_data_collect_save()
-        [plot, dt] = wputils.monsoon_data_plot(self.mon_info, file_path)
-        self.test_result = dt.source.data['y0'][0]
-        self.power_result.metric_value = (
-            self.test_result * PHONE_BATTERY_VOLTAGE)
+            results.append(self.monsoon_data_collect_save())
+        wputils.monsoon_data_plot(self.mon_info, results)
+
+        total_current = 0
+        total_samples = 0
+        for result in results:
+            total_current += result.average_current * result.num_samples
+            total_samples += result.num_samples
+        average_current = total_current / total_samples
+
+        self.power_result.metric_value = [result.total_power for result in
+                                          results]
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)
         # Path fail check
-        self.pass_fail_check()
+        self.pass_fail_check(average_current)
 
     @test_tracker_info(uuid='a16ae337-326f-4d09-990f-42232c3c0dc4')
     def test_screenoff_wifi_wedge(self):

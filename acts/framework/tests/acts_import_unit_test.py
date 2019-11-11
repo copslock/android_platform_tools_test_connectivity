@@ -48,6 +48,12 @@ else:
 PY_FILE_REGEX = re.compile('.+\.py$')
 
 BLACKLIST = [
+    # TODO(markdr): Remove these after BT team evaluates these tests.
+    'acts/test_utils/bt/PowerBaseTest.py',
+    'tests/google/ble/power/GattPowerTest.py',
+    'tests/google/bt/power/A2dpPowerTest.py',
+    'tests/google/ble/power/BleScanPowerTest.py',
+
     'acts/controllers/rohdeschwarz_lib/contest.py',
     'acts/controllers/native.py',
     'acts/controllers/native_android_device.py',
@@ -86,6 +92,7 @@ BLACKLIST = [
     'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
     'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
     'tests/google/fuchsia/wlan/RebootStressTest.py',
+    'acts/test_utils/gnss/gnss_testlog_utils.py',
 ]
 
 BLACKLIST_DIRECTORIES = [

@@ -24,6 +24,7 @@ import re
 import os
 import urllib.parse
 import time
+import acts.controllers.iperf_server as ipf
 
 from acts import signals
 from acts import utils
@@ -551,9 +552,14 @@ def toggle_airplane_mode_by_adb(log, ad, new_state=None):
     elif new_state is None:
         new_state = not cur_state
     ad.log.info("Change airplane mode from %s to %s", cur_state, new_state)
-    ad.adb.shell("settings put global airplane_mode_on %s" % int(new_state))
-    ad.adb.shell("am broadcast -a android.intent.action.AIRPLANE_MODE")
-    return True
+    try:
+        ad.adb.shell("settings put global airplane_mode_on %s" % int(new_state))
+        ad.adb.shell("am broadcast -a android.intent.action.AIRPLANE_MODE")
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    changed_state = bool(int(ad.adb.shell("settings get global airplane_mode_on")))
+    return changed_state == new_state
 
 
 def toggle_airplane_mode(log, ad, new_state=None, strict_checking=True):
@@ -796,6 +802,15 @@ def get_service_state_by_adb(log, ad):
             ad.log.info("mVoiceRegState is %s %s", result.group(1),
                         result.group(2))
             return result.group(2)
+        else:
+            if getattr(ad, "sdm_log", False):
+                #look for all occurrence in string
+                result2 = re.findall(r"mVoiceRegState=(\S+)\((\S+)\)", output)
+                for voice_state in result2:
+                    if voice_state[0] == 0:
+                        ad.log.info("mVoiceRegState is 0 %s", voice_state[1])
+                        return voice_state[1]
+                return result2[1][1]
     else:
         result = re.search(r"mServiceState=(\S+)", output)
         if result:
@@ -2800,6 +2815,122 @@ def verify_internet_connection(log, ad, retries=3, expected_state=True):
     return False
 
 
+def iperf_test_with_options(log,
+                            ad,
+                            iperf_server,
+                            iperf_option,
+                            timeout=180,
+                            rate_dict=None,
+                            blocking=True,
+                            log_file_path=None):
+    """Iperf adb run helper.
+
+    Args:
+        log: log object
+        ad: Android Device Object.
+        iperf_server: The iperf host url".
+        iperf_option: The options to pass to iperf client
+        timeout: timeout for file download to complete.
+        rate_dict: dictionary that can be passed in to save data
+        blocking: run iperf in blocking mode if True
+        log_file_path: location to save logs
+    Returns:
+        True if IPerf runs without throwing an exception
+    """
+    try:
+        if log_file_path:
+            ad.adb.shell("rm %s" % log_file_path, ignore_status=True)
+        ad.log.info("Running adb iperf test with server %s", iperf_server)
+        ad.log.info("IPerf options are %s", iperf_option)
+        if not blocking:
+            ad.run_iperf_client_nb(
+                iperf_server,
+                iperf_option,
+                timeout=timeout + 60,
+                log_file_path=log_file_path)
+            return True
+        result, data = ad.run_iperf_client(
+            iperf_server, iperf_option, timeout=timeout + 60)
+        ad.log.info("IPerf test result with server %s is %s", iperf_server,
+                    result)
+        if result:
+            iperf_str = ''.join(data)
+            iperf_result = ipf.IPerfResult(iperf_str)
+            if "-u" in iperf_option:
+                udp_rate = iperf_result.avg_rate
+                if udp_rate is None:
+                    ad.log.warning(
+                        "UDP rate is none, IPerf server returned error: %s",
+                        iperf_result.error)
+                ad.log.info("IPerf3 udp speed is %sbps", udp_rate)
+            else:
+                tx_rate = iperf_result.avg_send_rate
+                rx_rate = iperf_result.avg_receive_rate
+                if (tx_rate or rx_rate) is None:
+                    ad.log.warning(
+                        "A TCP rate is none, IPerf server returned error: %s",
+                        iperf_result.error)
+                ad.log.info(
+                    "IPerf3 upload speed is %sbps, download speed is %sbps",
+                    tx_rate, rx_rate)
+            if rate_dict is not None:
+                rate_dict["Uplink"] = tx_rate
+                rate_dict["Downlink"] = rx_rate
+        return result
+    except AdbError as e:
+        ad.log.warning("Fail to run iperf test with exception %s", e)
+        raise
+
+
+def iperf_udp_test_by_adb(log,
+                          ad,
+                          iperf_server,
+                          port_num=None,
+                          reverse=False,
+                          timeout=180,
+                          limit_rate=None,
+                          omit=10,
+                          ipv6=False,
+                          rate_dict=None,
+                          blocking=True,
+                          log_file_path=None):
+    """Iperf test by adb using UDP.
+
+    Args:
+        log: log object
+        ad: Android Device Object.
+        iperf_Server: The iperf host url".
+        port_num: TCP/UDP server port
+        reverse: whether to test download instead of upload
+        timeout: timeout for file download to complete.
+        limit_rate: iperf bandwidth option. None by default
+        omit: the omit option provided in iperf command.
+        ipv6: whether to run the test as ipv6
+        rate_dict: dictionary that can be passed in to save data
+        blocking: run iperf in blocking mode if True
+        log_file_path: location to save logs
+    """
+    iperf_option = "-u -i 1 -t %s -O %s -J" % (timeout, omit)
+    if limit_rate:
+        iperf_option += " -b %s" % limit_rate
+    if port_num:
+        iperf_option += " -p %s" % port_num
+    if ipv6:
+        iperf_option += " -6"
+    if reverse:
+        iperf_option += " -R"
+    try:
+        return iperf_test_with_options(log,
+                                        ad,
+                                        iperf_server,
+                                        iperf_option,
+                                        timeout,
+                                        rate_dict,
+                                        blocking,
+                                        log_file_path)
+    except AdbError:
+        return False
+
 def iperf_test_by_adb(log,
                       ad,
                       iperf_server,
@@ -2812,50 +2943,41 @@ def iperf_test_by_adb(log,
                       rate_dict=None,
                       blocking=True,
                       log_file_path=None):
-    """Iperf test by adb.
+    """Iperf test by adb using TCP.
 
     Args:
         log: log object
         ad: Android Device Object.
-        iperf_Server: The iperf host url".
+        iperf_server: The iperf host url".
         port_num: TCP/UDP server port
+        reverse: whether to test download instead of upload
         timeout: timeout for file download to complete.
         limit_rate: iperf bandwidth option. None by default
         omit: the omit option provided in iperf command.
+        ipv6: whether to run the test as ipv6
+        rate_dict: dictionary that can be passed in to save data
+        blocking: run iperf in blocking mode if True
+        log_file_path: location to save logs
     """
     iperf_option = "-t %s -O %s -J" % (timeout, omit)
-    if limit_rate: iperf_option += " -b %s" % limit_rate
-    if port_num: iperf_option += " -p %s" % port_num
-    if ipv6: iperf_option += " -6"
-    if reverse: iperf_option += " -R"
+    if limit_rate:
+        iperf_option += " -b %s" % limit_rate
+    if port_num:
+        iperf_option += " -p %s" % port_num
+    if ipv6:
+        iperf_option += " -6"
+    if reverse:
+        iperf_option += " -R"
     try:
-        if log_file_path:
-            ad.adb.shell("rm %s" % log_file_path, ignore_status=True)
-        ad.log.info("Running adb iperf test with server %s", iperf_server)
-        if not blocking:
-            ad.run_iperf_client_nb(
-                iperf_server,
-                iperf_option,
-                timeout=timeout + 60,
-                log_file_path=log_file_path)
-            return True
-        result, data = ad.run_iperf_client(
-            iperf_server, iperf_option, timeout=timeout + 60)
-        ad.log.info("Iperf test result with server %s is %s", iperf_server,
-                    result)
-        if result:
-            data_json = json.loads(''.join(data))
-            tx_rate = data_json['end']['sum_sent']['bits_per_second']
-            rx_rate = data_json['end']['sum_received']['bits_per_second']
-            ad.log.info(
-                'iPerf3 upload speed is %sbps, download speed is %sbps',
-                tx_rate, rx_rate)
-            if rate_dict is not None:
-                rate_dict["Uplink"] = tx_rate
-                rate_dict["Downlink"] = rx_rate
-        return result
-    except Exception as e:
-        ad.log.warning("Fail to run iperf test with exception %s", e)
+        return iperf_test_with_options(log,
+                                        ad,
+                                        iperf_server,
+                                        iperf_option,
+                                        timeout,
+                                        rate_dict,
+                                        blocking,
+                                        log_file_path)
+    except AdbError:
         return False
 
 

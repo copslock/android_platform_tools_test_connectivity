@@ -17,6 +17,8 @@
 import logging
 import time
 
+import os
+
 import acts.test_utils.power.PowerBaseTest as PBT
 
 from acts import base_test
@@ -38,40 +40,50 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
     """
 
     def collect_power_data(self):
-        """Measure power and plot.
+        """Measure power and plot."""
+        result = super().collect_power_data()
+        self.monsoon_data_plot_power(self.mon_info, result, tag='_Power')
+        return result
 
-        """
-        tag = '_Power'
-        super().collect_power_data()
-        self.monsoon_data_plot_power(self.mon_info, self.file_path, tag=tag)
-
-    def monsoon_data_plot_power(self, mon_info, file_path, tag=""):
+    def monsoon_data_plot_power(self, mon_info, monsoon_results, tag=''):
         """Plot the monsoon power data using bokeh interactive plotting tool.
 
         Args:
-            mon_info: Dictionary with the monsoon packet config
-            file_path: the path to the monsoon log file with current data
+            mon_info: Dictionary with the monsoon packet config.
+            monsoon_results: a MonsoonResult or list of MonsoonResult objects to
+                             to plot.
+            tag: an extra tag to append to the resulting filename.
 
         """
 
-        self.log.info("Plot the power measurement data")
-        # Get results as monsoon data object from the input file
-        results = monsoon.MonsoonData.from_text_file(file_path)
-        # Decouple current and timestamp data from the monsoon object
-        current_data = []
-        timestamps = []
-        voltage = results[0].voltage
-        for result in results:
-            current_data.extend(result.data_points)
-            timestamps.extend(result.timestamps)
-        period = 1 / mon_info.freq
-        time_relative = [x * period for x in range(len(current_data))]
-        # Calculate the average current for the test
+        if not isinstance(monsoon_results, list):
+            monsoon_results = [monsoon_results]
+        logging.info('Plotting the power measurement data.')
 
-        current_data = [x * 1000 for x in current_data]
-        power_data = [x * voltage for x in current_data]
-        avg_current = sum(current_data) / len(current_data)
-        color = ['navy'] * len(current_data)
+        voltage = monsoon_results[0].voltage
+
+        total_current = 0
+        total_samples = 0
+        for result in monsoon_results:
+            total_current += result.average_current * result.num_samples
+            total_samples += result.num_samples
+        avg_current = total_current / total_samples
+
+        time_relative = [
+            data_point.time
+            for monsoon_result in monsoon_results
+            for data_point in monsoon_result.get_data_points()
+        ]
+
+        power_data = [
+            data_point.current * voltage
+            for monsoon_result in monsoon_results
+            for data_point in monsoon_result.get_data_points()
+        ]
+
+        total_data_points = sum(
+            result.num_samples for result in monsoon_results)
+        color = ['navy'] * total_data_points
 
         # Preparing the data and source link for bokehn java callback
         source = ColumnDataSource(
@@ -94,18 +106,20 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
         dt = DataTable(
             source=s2, columns=columns, width=1300, height=60, editable=True)
 
-        plot_title = file_path[file_path.rfind('/') + 1:-4] + tag
-        output_file("%s/%s.html" % (mon_info.data_path, plot_title))
-        TOOLS = 'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save'
+        plot_title = (os.path.basename(
+            os.path.splitext(monsoon_results[0].tag)[0])
+                      + tag)
+        output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
+        tools = 'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save'
         # Create a new plot with the datatable above
         plot = figure(
             plot_width=1300,
             plot_height=700,
             title=plot_title,
-            tools=TOOLS,
-            output_backend="webgl")
-        plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="width"))
-        plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="height"))
+            tools=tools,
+            output_backend='webgl')
+        plot.add_tools(bokeh_tools.WheelZoomTool(dimensions='width'))
+        plot.add_tools(bokeh_tools.WheelZoomTool(dimensions='height'))
         plot.line('x0', 'y0', source=source, line_width=2)
         plot.circle('x0', 'y0', source=source, size=0.5, fill_color='color')
         plot.xaxis.axis_label = 'Time (s)'
@@ -119,8 +133,7 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
             code=customjsscript)
 
         # Layout the plot and the datatable bar
-        l = layout([[dt], [plot]])
-        save(l)
+        save(layout([[dt], [plot]]))
 
     def disconnect_usb(self, ad, sleeptime):
         """Disconnect usb while device is on sleep and

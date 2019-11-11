@@ -95,7 +95,7 @@ class DnsOverTlsTest(base_test.BaseTestClass):
         """
         try:
             packets = rdpcap(pcap_file)
-        except Scapy_Excaption:
+        except Scapy_Exception:
             asserts.fail("Not a valid pcap file")
         for pkt in packets:
             summary = "%s" % pkt.summary()

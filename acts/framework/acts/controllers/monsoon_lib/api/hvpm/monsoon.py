@@ -20,7 +20,7 @@ import time
 from Monsoon import HVPM
 from Monsoon import Operations as op
 
-from acts.controllers.monsoon_lib.api.common import MonsoonData
+from acts.controllers.monsoon_lib.api.common import MonsoonResult
 from acts.controllers.monsoon_lib.api.monsoon import BaseMonsoon
 from acts.controllers.monsoon_lib.sampling.engine.assembly_line import AssemblyLineBuilder
 from acts.controllers.monsoon_lib.sampling.engine.assembly_line import ThreadAssemblyLine
@@ -137,8 +137,9 @@ class Monsoon(BaseMonsoon):
         manager.shutdown()
 
         self._mon.setup_usb(self.serial)
-        monsoon_data = MonsoonData(aggregator.num_samples,
-                                   aggregator.sum_currents, hz, voltage)
+        monsoon_data = MonsoonResult(aggregator.num_samples,
+                                     aggregator.sum_currents, hz, voltage,
+                                     output_path)
         self._log.info('Measurement summary:\n%s', str(monsoon_data))
         return monsoon_data
 
