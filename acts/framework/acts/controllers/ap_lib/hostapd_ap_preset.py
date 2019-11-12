@@ -276,6 +276,12 @@ def create_ap_preset(profile_name='whirlwind',
                                   channel=channel,
                                   ssid=ssid,
                                   security=security)
+    elif profile_name == 'asus_rtn66u':
+        config = asus.asus_rtn66u(iface_wlan_2g=iface_wlan_2g,
+                                  iface_wlan_5g=iface_wlan_5g,
+                                  channel=channel,
+                                  ssid=ssid,
+                                  security=security)
     elif profile_name == 'belkin_f9k1001v5':
         config = belkin.belkin_f9k1001v5(iface_wlan_2g=iface_wlan_2g,
                                          channel=channel,
