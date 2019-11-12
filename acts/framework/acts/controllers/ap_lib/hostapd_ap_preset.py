@@ -17,6 +17,7 @@ import acts.controllers.ap_lib.third_party_ap_profiles.asus as asus
 import acts.controllers.ap_lib.third_party_ap_profiles.belkin as belkin
 import acts.controllers.ap_lib.third_party_ap_profiles.linksys as linksys
 import acts.controllers.ap_lib.third_party_ap_profiles.netgear as netgear
+import acts.controllers.ap_lib.third_party_ap_profiles.securifi as securifi
 
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
@@ -300,6 +301,11 @@ def create_ap_preset(profile_name='whirlwind',
     elif profile_name == 'netgear_wndr3400':
         config = netgear.netgear_wndr3400(iface_wlan_2g=iface_wlan_2g,
                                           iface_wlan_5g=iface_wlan_5g,
+                                          channel=channel,
+                                          ssid=ssid,
+                                          security=security)
+    elif profile_name == 'securifi_almond':
+        config = securifi.securifi_almond(iface_wlan_2g=iface_wlan_2g,
                                           channel=channel,
                                           ssid=ssid,
                                           security=security)
