@@ -162,3 +162,132 @@ def tplink_archerc5(iface_wlan_2g=None,
         vht_center_channel=vht_center_channel,
         additional_parameters=additional_params)
     return config
+
+
+def tplink_archerc7(iface_wlan_2g=None,
+                    iface_wlan_5g=None,
+                    channel=None,
+                    security=None,
+                    ssid=None):
+    # TODO(b/143104825): Permit RIFS once it is supported
+    """A simulated implementation of an TPLink ArcherC7 AP.
+    Args:
+        iface_wlan_2g: The 2.4Ghz interface of the test AP.
+        iface_wlan_5g: The 5GHz interface of the test AP.
+        channel: What channel to use.
+        security: A security profile (None or WPA2).
+        ssid: The network name.
+    Returns:
+        A hostapd config.
+    Differences from real ArcherC7:
+        5GHz:
+            Country Code:
+                Simulated: Has two country code IEs, one that matches
+                the actual, and another explicit IE that was required for
+                hostapd's 802.11d to work.
+        Both:
+            HT Info:
+                ArcherC7: RIFS Permitted
+                Simulated: RIFS Prohibited
+            RSN Capabilities:
+                ArcherC7: 0x000c (RSN PTKSA Replay Counter Capab: 16)
+                Simulated: 0x0000 (RSN PTKSA Replay Counter Capab: 1)
+    """
+    if not iface_wlan_2g or not iface_wlan_5g:
+        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
+    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
+            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
+        raise ValueError('Invalid interface name was passed.')
+    if security:
+        if security.security_mode is hostapd_constants.WPA2:
+            if not security.wpa2_cipher == 'CCMP':
+                raise ValueError(
+                    'The mock TPLink ArcherC7 only supports a WPA2 '
+                    'unicast and multicast cipher of CCMP. '
+                    'Invalid cipher mode (%s)' % security.security.wpa2_cipher)
+        else:
+            raise ValueError(
+                'The TPLink ArcherC7 only supports WPA2 or open. Invalid '
+                'security mode (%s)' % security.security_mode)
+
+    # Common Parameters
+    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    n_capabilities = [
+        hostapd_constants.N_CAPABILITY_LDPC,
+        hostapd_constants.N_CAPABILITY_SGI20,
+        hostapd_constants.N_CAPABILITY_TX_STBC,
+        hostapd_constants.N_CAPABILITY_RX_STBC1
+    ]
+    # Atheros IE
+    # WPS IE
+    vendor_elements = {
+        'vendor_elements':
+        'dd0900037f01010000ff7f'
+        'dd180050f204104a00011010440001021049000600372a000120'
+    }
+
+    # 2.4GHz
+    if channel <= 11:
+        interface = iface_wlan_2g
+        rates['basic_rates'] = '10 20 55 110'
+        short_preamble = True
+        mode = hostapd_constants.MODE_11N_MIXED
+        spectrum_mgmt = False
+        pwr_constraint = {}
+        ac_capabilities = None
+        vht_channel_width = None
+        vht_center_channel = None
+
+    # 5GHz
+    else:
+        interface = iface_wlan_5g
+        rates['basic_rates'] = '60 120 240'
+        short_preamble = False
+        mode = hostapd_constants.MODE_11AC_MIXED
+        spectrum_mgmt = True
+        # Country Information IE (w/ individual channel info)
+        vendor_elements['vendor_elements'] += (
+            '074255532024011e28011e2c011e30'
+            '011e3401173801173c01174001176401176801176c0117700117740117840117'
+            '8801178c011795011e99011e9d011ea1011ea5011e')
+        pwr_constraint = {'local_pwr_constraint': 3}
+        n_capabilities += [
+            hostapd_constants.N_CAPABILITY_HT40_PLUS,
+            hostapd_constants.N_CAPABILITY_SGI40,
+            hostapd_constants.N_CAPABILITY_MAX_AMSDU_7935
+        ]
+        ac_capabilities = [
+            hostapd_constants.AC_CAPABILITY_MAX_MPDU_11454,
+            hostapd_constants.AC_CAPABILITY_RXLDPC,
+            hostapd_constants.AC_CAPABILITY_SHORT_GI_80,
+            hostapd_constants.AC_CAPABILITY_TX_STBC_2BY1,
+            hostapd_constants.AC_CAPABILITY_RX_STBC_1,
+            hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7,
+            hostapd_constants.AC_CAPABILITY_RX_ANTENNA_PATTERN,
+            hostapd_constants.AC_CAPABILITY_TX_ANTENNA_PATTERN
+        ]
+        vht_channel_width = 80
+        vht_center_channel = 42
+
+    additional_params = _merge_dicts(rates, vendor_elements,
+                                     hostapd_constants.UAPSD_ENABLED,
+                                     pwr_constraint)
+
+    config = hostapd_config.HostapdConfig(
+        ssid=ssid,
+        channel=channel,
+        hidden=False,
+        security=security,
+        interface=interface,
+        mode=mode,
+        force_wmm=True,
+        beacon_interval=100,
+        dtim_period=1,
+        short_preamble=short_preamble,
+        n_capabilities=n_capabilities,
+        ac_capabilities=ac_capabilities,
+        vht_channel_width=vht_channel_width,
+        vht_center_channel=vht_center_channel,
+        spectrum_mgmt_required=spectrum_mgmt,
+        additional_parameters=additional_params)
+    return config
