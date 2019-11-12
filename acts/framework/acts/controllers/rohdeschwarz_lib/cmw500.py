@@ -134,6 +134,18 @@ class RrcState(Enum):
     RRC_OFF = 'OFF'
 
 
+class MacPadding(Enum):
+    """Enables/Disables Mac Padding."""
+    ON = 'ON'
+    OFF = 'OFF'
+
+
+class ConnectionType(Enum):
+    """Supported Connection Types."""
+    TEST = 'TESTmode'
+    DAU = 'DAPPlication'
+
+
 class Cmw500(abstract_inst.SocketInstrument):
 
     def __init__(self, ip_addr, port):
@@ -346,6 +358,36 @@ class Cmw500(abstract_inst.SocketInstrument):
             time_in_secs: timeout of inactivity in rrc connection.
         """
         cmd = 'CONFigure:LTE:SIGN:CONNection:RITimer {}'.format(time_in_secs)
+        self.send_and_recv(cmd)
+
+    @property
+    def dl_mac_padding(self):
+        """Gets the state of mac padding."""
+        return self.send_and_recv('CONFigure:LTE:SIGN:CONNection:DLPadding?')
+
+    @dl_mac_padding.setter
+    def dl_mac_padding(self, state):
+        """Enables/Disables downlink padding at the mac layer.
+
+        Args:
+            state: ON/OFF
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:DLPadding {}'.format(state.value)
+        self.send_and_recv(cmd)
+
+    @property
+    def connection_type(self):
+        """Gets the connection type applied in callbox."""
+        return self.send_and_recv('CONFigure:LTE:SIGN:CONNection:CTYPe?')
+
+    @connection_type.setter
+    def connection_type(self, ctype):
+        """Sets the connection type to be applied.
+
+        Args:
+            ctype: Connection type.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CTYPe {}'.format(ctype.value)
         self.send_and_recv(cmd)
 
     def get_base_station(self, bts_num=BtsNumber.BTS1):
