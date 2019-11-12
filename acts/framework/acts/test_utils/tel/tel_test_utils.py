@@ -7057,8 +7057,8 @@ def adb_disable_verity(ad):
 
 def recover_build_id(ad):
     build_fingerprint = ad.adb.getprop(
-        "ro.build.fingerprint") or ad.adb.getprop(
-            "ro.vendor.build.fingerprint")
+        "ro.vendor.build.fingerprint") or ad.adb.getprop(
+            "ro.build.fingerprint")
     if not build_fingerprint:
         return
     build_id = build_fingerprint.split("/")[3]
@@ -7075,7 +7075,7 @@ def build_id_override(ad, new_build_id=None, postfix=None):
     else:
         build_id = None
     existing_build_id = ad.adb.getprop("ro.build.id")
-    if postfix in build_id:
+    if postfix is not None and postfix in build_id:
         ad.log.info("Build id already contains %s", postfix)
         return
     if not new_build_id:
@@ -7088,10 +7088,10 @@ def build_id_override(ad, new_build_id=None, postfix=None):
     adb_disable_verity(ad)
     ad.adb.remount()
     if "backup.prop" not in ad.adb.shell("ls /sdcard/"):
-        ad.adb.shell("cp /default.prop /sdcard/backup.prop")
-    ad.adb.shell("cat /default.prop | grep -v ro.build.id > /sdcard/test.prop")
+        ad.adb.shell("cp /system/build.prop /sdcard/backup.prop")
+    ad.adb.shell("cat /system/build.prop | grep -v ro.build.id > /sdcard/test.prop")
     ad.adb.shell("echo ro.build.id=%s >> /sdcard/test.prop" % new_build_id)
-    ad.adb.shell("cp /sdcard/test.prop /default.prop")
+    ad.adb.shell("cp /sdcard/test.prop /system/build.prop")
     reboot_device(ad)
     ad.log.info("ro.build.id = %s", ad.adb.getprop("ro.build.id"))
 
