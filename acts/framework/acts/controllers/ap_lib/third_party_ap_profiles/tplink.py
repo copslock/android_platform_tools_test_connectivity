@@ -417,3 +417,80 @@ def tplink_c1200(iface_wlan_2g=None,
         vht_center_channel=vht_center_channel,
         additional_parameters=additional_params)
     return config
+
+
+def tplink_tlwr940n(iface_wlan_2g=None, channel=None, security=None,
+                    ssid=None):
+    # TODO(b/143104825): Permit RIFS once it is supported
+    """A simulated implementation of an TPLink TLWR940N AP.
+    Args:
+        iface_wlan_2g: The 2.4Ghz interface of the test AP.
+        channel: What channel to use.
+        security: A security profile (None or WPA2).
+        ssid: The network name.
+    Returns:
+        A hostapd config.
+    Differences from real TLWR940N:
+        HT Info:
+            TLWR940N: RIFS Permitted
+            Simulated: RIFS Prohibited
+        RSN Capabilities:
+            TLWR940N: 0x0000 (RSN PTKSA Replay Counter Capab: 1)
+            Simulated: 0x000c (RSN PTKSA Replay Counter Capab: 16)
+    """
+    if channel > 11:
+        raise ValueError('The mock TP-Link TLWR940N does not support 5Ghz. '
+                         'Invalid channel (%s)' % channel)
+    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST):
+        raise ValueError('Invalid interface name was passed.')
+
+    if security:
+        if security.security_mode is hostapd_constants.WPA2:
+            if not security.wpa2_cipher == 'CCMP':
+                raise ValueError('The mock TP-Link TLWR940N only supports a '
+                                 'WPA2 unicast and multicast cipher of CCMP.'
+                                 'Invalid cipher mode (%s)' %
+                                 security.security.wpa2_cipher)
+        else:
+            raise ValueError('The mock TP-Link TLWR940N only supports WPA2. '
+                             'Invalid security mode (%s)' %
+                             security.security_mode)
+
+    n_capabilities = [
+        hostapd_constants.N_CAPABILITY_SGI20,
+        hostapd_constants.N_CAPABILITY_TX_STBC,
+        hostapd_constants.N_CAPABILITY_RX_STBC1
+    ]
+
+    rates = {
+        'basic_rates': '10 20 55 110',
+        'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'
+    }
+
+    # Atheros Communications, Inc. IE
+    # WPS IE
+    vendor_elements = {
+        'vendor_elements':
+        'dd0900037f01010000ff7f'
+        'dd260050f204104a0001101044000102104900140024e2600200010160000002000160'
+        '0100020001'
+    }
+
+    additional_params = _merge_dicts(rates, vendor_elements,
+                                     hostapd_constants.UAPSD_ENABLED)
+
+    config = hostapd_config.HostapdConfig(
+        ssid=ssid,
+        channel=channel,
+        hidden=False,
+        security=security,
+        interface=iface_wlan_2g,
+        mode=hostapd_constants.MODE_11N_MIXED,
+        force_wmm=True,
+        beacon_interval=100,
+        dtim_period=1,
+        short_preamble=True,
+        n_capabilities=n_capabilities,
+        additional_parameters=additional_params)
+
+    return config
