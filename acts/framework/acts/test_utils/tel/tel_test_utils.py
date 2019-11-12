@@ -25,6 +25,7 @@ import os
 import urllib.parse
 import time
 import acts.controllers.iperf_server as ipf
+import shutil
 
 from acts import signals
 from acts import utils
@@ -6732,6 +6733,7 @@ def stop_adb_tcpdump(ad, interface="any"):
 def get_tcpdump_log(ad, test_name="", begin_time=None):
     """Stops tcpdump on any iface
        Pulls the tcpdump file in the tcpdump dir
+       Zips all tcpdump files
 
     Args:
         ad: android device object.
@@ -6741,9 +6743,12 @@ def get_tcpdump_log(ad, test_name="", begin_time=None):
     logs = ad.get_file_names("/data/local/tmp/tcpdump", begin_time=begin_time)
     if logs:
         ad.log.info("Pulling tcpdumps %s", logs)
-        log_path = os.path.join(ad.device_log_path, "TCPDUMP_%s" % ad.serial)
+        log_path = os.path.join(
+            ad.device_log_path, "TCPDUMP_%s_%s" % (ad.model, ad.serial))
         utils.create_dir(log_path)
         ad.pull_files(logs, log_path)
+        shutil.make_archive(log_path, "zip", log_path)
+        shutil.rmtree(log_path)
     return True
 
 
