@@ -29,15 +29,18 @@ class Tee(SequentialTransformer):
         _fd: the filestream written to.
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, measure_after_seconds=0):
         """Creates an OutputStream.
 
         Args:
             filename: the path to the file to write the collected data to.
+            measure_after_seconds: the number of seconds to skip before
+                logging data as part of the measurement.
         """
         super().__init__()
         self._filename = filename
         self._fd = None
+        self.measure_after_seconds = measure_after_seconds
 
     def on_begin(self):
         self._fd = open(self._filename, 'w+')
@@ -52,8 +55,11 @@ class Tee(SequentialTransformer):
             buffer: A list of HvpmReadings.
         """
         for sample in buffer:
-            self._fd.write(
-                '%.9fs %s\n' % (sample.sample_time, sample.main_current))
+            if sample.sample_time < self.measure_after_seconds:
+                continue
+            self._fd.write('%.9fs %.12f\n' %
+                           (sample.sample_time - self.measure_after_seconds,
+                            sample.main_current))
         self._fd.flush()
         return BufferList([buffer])
 

@@ -126,7 +126,7 @@ class Monsoon(BaseMonsoon):
         if hz != 5000:
             assembly_line_builder.into(DownSampler(int(5000 / hz)))
         if output_path:
-            assembly_line_builder.into(Tee(output_path))
+            assembly_line_builder.into(Tee(output_path, measure_after_seconds))
         assembly_line_builder.into(aggregator)
         if transformers:
             for transformer in transformers:
