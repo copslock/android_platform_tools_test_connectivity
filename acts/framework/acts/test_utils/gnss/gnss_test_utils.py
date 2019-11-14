@@ -753,6 +753,9 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                 ttff_cn = float(ttff_log[19].strip("]"))
                 ttff_lat = 0.0
                 ttff_lon = 0.0
+            ad.log.debug("TTFF Loop %d - (Lat, Lon) = (%s, %s)" % (ttff_loop,
+                                                                   ttff_lat,
+                                                                   ttff_lon))
             ttff_pe = calculate_position_error(ad, ttff_lat, ttff_lon,
                                                true_position)
             ttff_data[ttff_loop] = TTFF_REPORT(ttff_loop=ttff_loop,
