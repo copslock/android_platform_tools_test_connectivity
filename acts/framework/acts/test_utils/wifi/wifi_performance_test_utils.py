@@ -876,20 +876,22 @@ def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
     base_rssi = get_connected_rssi(dut, 4, 0.25, 1)
     chain0_base_rssi = base_rssi['chain_0_rssi']['mean']
     chain1_base_rssi = base_rssi['chain_1_rssi']['mean']
+    if chain0_base_rssi < -70 or chain1_base_rssi < -70:
+        logging.warning('RSSI might be too low to get reliable chain map.')
     # Compile chain map by attenuating one path at a time and seeing which
     # chain's RSSI degrades
     chain_map = []
     for test_atten in attenuators:
-        # Set one attenuator to 20 dB down
+        # Set one attenuator to 30 dB down
         test_atten.set_atten(30, strict=False)
         # Get new RSSI
         test_rssi = get_connected_rssi(dut, 4, 0.25, 1)
         # Assign attenuator to path that has lower RSSI
-        if chain0_base_rssi > -40 and chain0_base_rssi - test_rssi[
-                'chain_0_rssi']['mean'] > 15:
+        if chain0_base_rssi > -70 and chain0_base_rssi - test_rssi[
+                'chain_0_rssi']['mean'] > 10:
             chain_map.append('DUT-Chain-0')
-        elif chain1_base_rssi > -40 and chain1_base_rssi - test_rssi[
-                'chain_1_rssi']['mean'] > 15:
+        elif chain1_base_rssi > -70 and chain1_base_rssi - test_rssi[
+                'chain_1_rssi']['mean'] > 10:
             chain_map.append('DUT-Chain-1')
         else:
             chain_map.append(None)
