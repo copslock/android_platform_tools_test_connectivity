@@ -308,11 +308,15 @@ CENTER_CHANNEL_MAP = {
 
 OFDM_DATA_RATES = {'supported_rates': '60 90 120 180 240 360 480 540'}
 
-CCK_DATA_RATES = {'supported_rates': '10 20 55 11'}
+CCK_DATA_RATES = {'supported_rates': '10 20 55 110'}
+
+CCK_AND_OFDM_DATA_RATES = {
+    'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'
+}
 
 OFDM_ONLY_BASIC_RATES = {'basic_rates': '60 120 240'}
 
-CCK_AND_OFDM_BASIC_RATES = {'basic_rates': '10 20 55 11'}
+CCK_AND_OFDM_BASIC_RATES = {'basic_rates': '10 20 55 110'}
 
 WEP_AUTH = {
     'open': {

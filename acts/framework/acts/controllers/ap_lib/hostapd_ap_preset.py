@@ -24,6 +24,7 @@ import acts.controllers.ap_lib.third_party_ap_profiles.tplink as tplink
 
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.ap_lib import hostapd_utils
 
 
 def _get_or_default(var, default_value):
@@ -90,14 +91,11 @@ def create_ap_preset(profile_name='whirlwind',
     Returns: A hostapd_config object that can be used by the hostapd object.
     """
 
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('WLAN interface for 2G and/or 5G is missing.')
-
-    # The Onhub uses wlan0, wlan1 as the WAN interfaces, while the Gale uses
-    # wlan-2400mhz, wlan-5000mhz.
-    if iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST or \
-       iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST:
-        raise ValueError('Incorrect interface name was passed.')
+    # Verify interfaces
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
 
     if channel:
         frequency = hostapd_config.get_frequency_for_channel(channel)
