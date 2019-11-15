@@ -154,7 +154,7 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             modulation: the new DL modulation
         """
-        self.bts[bts_index].lte_dl_modulation_order = modulation
+        self.bts[bts_index].lte_dl_modulation_order = modulation.value
 
     def set_ul_modulation(self, bts_index, modulation):
         """ Sets the UL modulation for the indicated base station.
@@ -163,7 +163,7 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             modulation: the new UL modulation
         """
-        self.bts[bts_index].lte_ul_modulation_order = modulation
+        self.bts[bts_index].lte_ul_modulation_order = modulation.value
 
     def set_tbs_pattern_on(self, bts_index, tbs_pattern_on):
         """ Enables or disables TBS pattern in the indicated base station.
