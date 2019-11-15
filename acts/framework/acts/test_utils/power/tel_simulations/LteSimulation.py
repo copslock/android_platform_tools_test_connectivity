@@ -51,6 +51,14 @@ class DuplexMode(Enum):
     TDD = "TDD"
 
 
+class ModulationType(Enum):
+    """DL/UL Modulation order."""
+    QPSK = 'QPSK'
+    Q16 = '16QAM'
+    Q64 = '64QAM'
+    Q256 = '256QAM'
+
+
 class LteSimulation(BaseSimulation):
     """ Single-carrier LTE simulation. """
 
@@ -458,8 +466,12 @@ class LteSimulation(BaseSimulation):
                                  "order.".format(self.KEY_DL_256_QAM))
                 self.dl_256_qam = False
             else:
-                self.primary_config.dl_modulation_order = "256QAM"
+                self.primary_config.dl_modulation_order = ModulationType.Q256
 
+        else:
+            self.log.warning('dl modulation 256QAM is not specified in config, '
+                             'setting to default value 64QAM')
+            self.primary_config.dl_modulation_order = ModulationType.Q64
         # Get the 64-QAM setting from the test configuration
         if self.KEY_UL_64_QAM not in test_config:
             self.log.warning("The key '{}' is not set in the config file. "
@@ -475,7 +487,11 @@ class LteSimulation(BaseSimulation):
                                  "order.".format(self.KEY_UL_64_QAM))
                 self.ul_64_qam = False
             else:
-                self.primary_config.ul_modulation_order = "64QAM"
+                self.primary_config.ul_modulation_order = ModulationType.Q64
+        else:
+            self.log.warning('ul modulation 64QAM is not specified in config, '
+                             'setting to default value 16QAM')
+            self.primary_config.ul_modulation_order = ModulationType.Q16
 
         self.simulator.configure_bts(self.primary_config)
 
@@ -622,6 +638,10 @@ class LteSimulation(BaseSimulation):
                 self.allocation_percentages_to_rbs(
                     new_config.bandwidth, new_config.transmission_mode,
                     dl_pattern, ul_pattern))
+
+            new_config.ul_modulation_order, new_config.dl_modulation_order = (
+                self.primary_config.ul_modulation_order,
+                self.primary_config.dl_modulation_order)
 
             if self.dl_256_qam and new_config.bandwidth == 1.4:
                 new_config.dl_mcs = 26
