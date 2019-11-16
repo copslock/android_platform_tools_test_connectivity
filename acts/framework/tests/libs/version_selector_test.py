@@ -102,8 +102,7 @@ class VersionSelectorIntegrationTest(unittest.TestCase):
         test_tracker_info."""
         test_class = VersionedTestClass({
             'log': logging.getLogger(),
-            'summary_writer': mock.MagicMock(),
-            'cli_args': []
+            'summary_writer': mock.MagicMock()
         })
         test_class.run(['test_1', 'test_2'], 1)
 

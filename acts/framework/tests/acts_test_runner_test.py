@@ -39,7 +39,6 @@ class ActsTestRunnerTest(unittest.TestCase):
                 'name': 'SampleTestBed',
             },
             'logpath': self.tmp_dir,
-            'cli_args': None,
             'testpaths': [os.path.dirname(IntegrationTest.__file__)],
             'icecream': 42,
             'extra_param': 'haha'
