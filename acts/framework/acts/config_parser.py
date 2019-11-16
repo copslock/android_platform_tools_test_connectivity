@@ -43,8 +43,8 @@ def _validate_test_config(test_config):
     """
     for k in keys.Config.reserved_keys.value:
         if k not in test_config:
-            raise ActsConfigError(
-                "Required key %s missing in test config." % k)
+            raise ActsConfigError("Required key %s missing in test config." %
+                                  k)
 
 
 def _validate_testbed_name(name):
@@ -91,8 +91,9 @@ def _update_file_paths(config, config_path):
                 if not os.path.isfile(config_file):
                     config_file = os.path.join(config_path, config_file)
                 if not os.path.isfile(config_file):
-                    raise ActsConfigError("Unable to load config %s from test "
-                                          "config file.", config_file)
+                    raise ActsConfigError(
+                        "Unable to load config %s from test "
+                        "config file.", config_file)
                 config[file_path_key] = config_file
 
 
@@ -181,9 +182,9 @@ def test_randomizer(test_identifiers, test_case_iterations=10):
             postflight_tests.append((test_class, test_cases))
         else:
             for test_case in test_cases:
-                random_tests.append((test_class,
-                                     [test_case] * random.randrange(
-                                         1, test_case_iterations + 1)))
+                random_tests.append(
+                    (test_class, [test_case] *
+                     random.randrange(1, test_case_iterations + 1)))
     random.shuffle(random_tests)
     new_tests = []
     previous_class = None
@@ -270,12 +271,12 @@ def load_test_config_file(test_config_path,
             and _ENV_ACTS_TESTPATHS in os.environ):
         print('Using environment test paths: %s' %
               (os.environ[_ENV_ACTS_TESTPATHS]))
-        configs[keys.Config.key_test_paths.value] = os.environ[
-            _ENV_ACTS_TESTPATHS].split(_PATH_SEPARATOR)
+        configs[keys.Config.key_test_paths.
+                value] = os.environ[_ENV_ACTS_TESTPATHS].split(_PATH_SEPARATOR)
     if (keys.Config.key_test_failure_tracebacks not in configs
             and _ENV_TEST_FAILURE_TRACEBACKS in os.environ):
-        configs[keys.Config.key_test_failure_tracebacks.value] = os.environ[
-            _ENV_TEST_FAILURE_TRACEBACKS]
+        configs[keys.Config.key_test_failure_tracebacks.
+                value] = os.environ[_ENV_TEST_FAILURE_TRACEBACKS]
 
     # Add the global paths to the global config.
     k_log_path = keys.Config.key_log_path.value
