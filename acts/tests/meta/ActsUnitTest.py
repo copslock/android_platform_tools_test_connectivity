@@ -13,10 +13,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import logging
 import os
 import subprocess
 import sys
+
+from mobly import config_parser as mobly_config_parser
 
 import acts
 from acts import base_test
@@ -65,7 +66,6 @@ class ActsUnitTest(base_test.BaseTestClass):
     This is a hack to run the ACTS unit tests through CI. Please use the main
     function below if you need to run these tests.
     """
-
     def test_units(self):
         """Runs all the ACTS unit tests in parallel."""
         acts_unittest_path = os.path.dirname(acts.__path__[0])
@@ -76,10 +76,9 @@ class ActsUnitTest(base_test.BaseTestClass):
         for unittest_file in UNITTEST_FILES:
             file_path = os.path.join(acts_unittest_path, unittest_file)
             test_processes.append(
-                subprocess.Popen(
-                    [sys.executable, file_path],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT))
+                subprocess.Popen([sys.executable, file_path],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT))
 
         for test_process in test_processes:
             killed = False
@@ -111,7 +110,11 @@ class ActsUnitTest(base_test.BaseTestClass):
 
 
 def main():
-    ActsUnitTest({'log': logging.getLogger()}).test_units()
+    test_run_config = mobly_config_parser.TestRunConfig()
+    test_run_config.testbed_name = 'UnitTests'
+    # TODO(markdr): Remove after next Mobly release.
+    test_run_config.user_params = {}
+    ActsUnitTest(test_run_config).test_units()
 
 
 if __name__ == '__main__':
