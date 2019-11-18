@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import fnmatch
+import functools
 import importlib
 import logging
 import os
@@ -510,7 +511,7 @@ class BaseTestClass(MoblyBaseTest):
                                func.__name__, self.current_test_name)
             tr_record.add_error(func.__name__, e)
 
-    def exec_one_testcase(self, test_name, test_func, args, **kwargs):
+    def exec_one_testcase(self, test_name, test_func):
         """Executes one test case and update test results.
 
         Executes one test case, create a records.TestResultRecord object with
@@ -520,8 +521,6 @@ class BaseTestClass(MoblyBaseTest):
         Args:
             test_name: Name of the test.
             test_func: The test function.
-            args: A tuple of params.
-            kwargs: Extra kwargs.
         """
         class_name = self.__class__.__name__
         tr_record = records.TestResultRecord(test_name, class_name)
@@ -545,11 +544,7 @@ class BaseTestClass(MoblyBaseTest):
                 ret = self._setup_test(self.test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
-                if args or kwargs:
-                    verdict = test_func(*args, **kwargs)
-                else:
-                    verdict = test_func()
-
+                verdict = test_func()
             finally:
                 try:
                     self._teardown_test(self.test_name)
@@ -702,11 +697,13 @@ class BaseTestClass(MoblyBaseTest):
             previous_success_cnt = len(self.results.passed)
 
             if format_args:
-                self.exec_one_testcase(test_name, test_func,
-                                       args + (setting, ), **kwargs)
+                self.exec_one_testcase(
+                    test_name,
+                    functools.partial(test_func, args + (setting, ), **kwargs))
             else:
-                self.exec_one_testcase(test_name, test_func,
-                                       (setting, ) + args, **kwargs)
+                self.exec_one_testcase(
+                    test_name,
+                    functools.partial(test_func, (setting, ) + args, **kwargs))
 
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(setting)
@@ -885,7 +882,7 @@ class BaseTestClass(MoblyBaseTest):
         try:
             for test_name, test_func in tests:
                 for _ in range(test_case_iterations):
-                    self.exec_one_testcase(test_name, test_func, [])
+                    self.exec_one_testcase(test_name, test_func)
             return self.results
         except signals.TestAbortClass:
             self.log.exception('Test class %s aborted' % self.TAG)
