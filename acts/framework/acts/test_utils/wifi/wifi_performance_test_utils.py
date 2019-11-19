@@ -1057,7 +1057,26 @@ def get_dut_temperature(dut):
     return temperature
 
 
-def health_check(dut, batt_thresh=5, temp_threshold=50):
+def wait_for_dut_cooldown(dut, target_temp=50, timeout=300):
+    """Function to wait for a DUT to cool down.
+
+    Args:
+        dut: AndroidDevice of interest
+        target_temp: target cooldown temperature
+        timeout: maxt time to wait for cooldown
+    """
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        temperature = get_dut_temperature(dut)
+        if temperature < target_temp:
+            break
+        time.sleep(SHORT_SLEEP)
+    elapsed_time = time.time() - start_time
+    logging.debug("DUT Final Temperature: {}C. Cooldown duration: {}".format(
+        temperature, elapsed_time))
+
+
+def health_check(dut, batt_thresh=5, temp_threshold=53, cooldown=1):
     """Function to check health status of a DUT.
 
     The function checks both battery levels and temperature to avoid DUT
@@ -1067,6 +1086,7 @@ def health_check(dut, batt_thresh=5, temp_threshold=50):
         dut: AndroidDevice of interest
         batt_thresh: battery level threshold
         temp_threshold: temperature threshold
+        cooldown: flag to wait for DUT to cool down when overheating
     Returns:
         health_check: boolean confirming device is healthy
     """
@@ -1080,8 +1100,13 @@ def health_check(dut, batt_thresh=5, temp_threshold=50):
 
     temperature = get_dut_temperature(dut)
     if temperature > temp_threshold:
-        logging.warning("DUT Overheating ({} C)".format(temperature))
-        health_check = False
+        if cooldown:
+            logging.warning(
+                "Waiting for DUT to cooldown. ({} C)".format(temperature))
+            wait_for_dut_cooldown(dut, target_temp=temp_threshold - 5)
+        else:
+            logging.warning("DUT Overheating ({} C)".format(temperature))
+            health_check = False
     else:
         logging.debug("DUT Temperature = {}C".format(temperature))
     return health_check
