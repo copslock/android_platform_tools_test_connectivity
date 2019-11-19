@@ -20,6 +20,7 @@ import os
 
 from acts import logger
 from acts.controllers.ap_lib import ap_get_interface
+from acts.controllers.ap_lib import ap_iwconfig
 from acts.controllers.ap_lib import bridge_interface
 from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.ap_lib import dhcp_server
@@ -139,6 +140,7 @@ class AccessPoint(object):
         self._dhcp_bss = dict()
         self.bridge = bridge_interface.BridgeInterface(self)
         self.interfaces = ap_get_interface.ApInterfaces(self)
+        self.iwconfig = ap_iwconfig.ApIwconfig(self)
 
         # Get needed interface names and initialize the unneccessary ones.
         self.wan = self.interfaces.get_wan_interface()
