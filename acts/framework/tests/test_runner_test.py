@@ -32,7 +32,6 @@ class TestRunnerTest(unittest.TestCase):
                 "name": "SampleTestBed",
             },
             "logpath": self.tmp_dir,
-            "cli_args": None,
             "testpaths": ["./"],
             "icecream": 42,
             "extra_param": "haha"

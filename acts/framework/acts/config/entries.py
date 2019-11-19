@@ -34,15 +34,6 @@ config_entries = [
         help='Path to the test configuration file.',
     ),
     ConfigEntryMeta(
-        acts_config_key='cli_args',
-        cli_flags=['--test_args'],
-        cli_nargs='+',
-        type=str,
-        cli_metavar='Arg1 Arg2 ...',
-        help='Command-line arguments to be passed to every test case in a '
-        'test run. Use with caution.',
-    ),
-    ConfigEntryMeta(
         acts_config_key='parallel',
         cli_flags=['-p', '--parallel'],
         cli_action='store_true',
