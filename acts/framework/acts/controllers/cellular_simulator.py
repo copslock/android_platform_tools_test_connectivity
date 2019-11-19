@@ -102,6 +102,14 @@ class AbstractCellularSimulator:
         if config.transmission_mode:
             self.set_transmission_mode(bts_index, config.transmission_mode)
 
+        # Modulation order should be set before set_scheduling_mode being
+        # called.
+        if config.dl_modulation_order:
+            self.set_dl_modulation(bts_index, config.dl_modulation_order)
+
+        if config.ul_modulation_order:
+            self.set_ul_modulation(bts_index, config.ul_modulation_order)
+
         if config.scheduling_mode:
 
             if (config.scheduling_mode ==
@@ -121,12 +129,6 @@ class AbstractCellularSimulator:
         # differentiate False from None
         if config.dl_cc_enabled is not None:
             self.set_enabled_for_ca(bts_index, config.dl_cc_enabled)
-
-        if config.dl_modulation_order:
-            self.set_dl_modulation(bts_index, config.dl_modulation_order)
-
-        if config.ul_modulation_order:
-            self.set_ul_modulation(bts_index, config.ul_modulation_order)
 
         # This variable stores a boolean value so the following is needed to
         # differentiate False from None
