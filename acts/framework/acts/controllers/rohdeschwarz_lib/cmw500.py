@@ -98,8 +98,8 @@ class RbPosition(Enum):
 class ModulationType(Enum):
     """Supported Modulation Types."""
     QPSK = 'QPSK'
-    Q16 = 'Q16',
-    Q64 = 'Q64',
+    Q16 = 'Q16'
+    Q64 = 'Q64'
     Q256 = 'Q256'
 
 
@@ -696,11 +696,16 @@ class BaseStation(object):
         elif self.scheduling_mode == 'UDCH':
             rb, start_rb, modulation, tbs = rb_config
 
-            if not 0 <= rb <= 26:
-                raise ValueError('rb should be between 0 and 26 inclusive.')
+            if not 0 <= rb <= 50:
+                raise ValueError('rb should be between 0 and 50 inclusive.')
+
+            if not isinstance(modulation, ModulationType):
+                raise ValueError('Modulation should be of type '
+                                 'ModulationType.')
 
             cmd = ('CONFigure:LTE:SIGN:CONNection:{}:UDCHannels:DL {},{},'
-                   '{},{}'.format(self._bts, rb, start_rb, modulation, tbs))
+                   '{},{}'.format(self._bts, rb, start_rb, modulation.value,
+                                  tbs))
             self._cmw.send_and_recv(cmd)
 
     @property
@@ -733,11 +738,15 @@ class BaseStation(object):
         elif self.scheduling_mode == 'UDCH':
             rb, start_rb, modulation, tbs = rb_config
 
-            if not 0 <= rb <= 26:
-                raise ValueError('rb should be between 0 and 26 inclusive.')
+            if not 0 <= rb <= 50:
+                raise ValueError('rb should be between 0 and 50 inclusive.')
 
+            if not isinstance(modulation, ModulationType):
+                raise ValueError('Modulation should be of type '
+                                 'ModulationType.')
             cmd = ('CONFigure:LTE:SIGN:CONNection:{}:UDCHannels:UL {},{},'
-                   '{},{}'.format(self._bts, rb, start_rb, modulation, tbs))
+                   '{},{}'.format(self._bts, rb, start_rb, modulation.value,
+                                  tbs))
             self._cmw.send_and_recv(cmd)
 
     @property
