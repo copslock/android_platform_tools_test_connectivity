@@ -258,9 +258,14 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             input_power: the new input power
         """
-        # TODO:(@ganeshganesh) Add support to configure input power.
-        # As of now cmw sets this value by default
-        pass
+        bts = self.bts[bts_index]
+        if input_power > 23:
+            self.log.warning('Open loop supports-50dBm to 23 dBm. '
+                             'Setting it to max power 23 dBm')
+            input_power = 23
+        bts.uplink_power_control = input_power
+        bts.tpc_power_control = cmw500.TpcPowerControl.CLOSED_LOOP
+        bts.tpc_closed_loop_target_power = input_power
 
     def set_output_power(self, bts_index, output_power):
         """ Sets the output power for the indicated base station.
