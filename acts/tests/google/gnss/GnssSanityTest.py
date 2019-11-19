@@ -63,7 +63,8 @@ from acts.test_utils.gnss.gnss_test_utils import process_ttff_by_gtw_gpstool
 from acts.test_utils.gnss.gnss_test_utils import check_ttff_data
 from acts.test_utils.gnss.gnss_test_utils import start_youtube_video
 from acts.test_utils.gnss.gnss_test_utils import fastboot_factory_reset
-from acts.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr
+from acts.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr_by_adb
+from acts.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr_by_mds
 from acts.test_utils.gnss.gnss_test_utils import disable_supl_mode
 from acts.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
 from acts.test_utils.gnss.gnss_test_utils import check_xtra_download
@@ -550,7 +551,7 @@ class GnssSanityTest(BaseTestClass):
         kill_xtra_daemon(self.ad)
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
-            gnss_trigger_modem_ssr(self.ad)
+            gnss_trigger_modem_ssr_by_mds(self.ad)
             if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                               expected_state=True):
                 raise signals.TestFailure("Fail to connect to LTE network.")
@@ -865,7 +866,7 @@ class GnssSanityTest(BaseTestClass):
         start_adb_tcpdump(self.ad)
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
-            gnss_trigger_modem_ssr(self.ad)
+            gnss_trigger_modem_ssr_by_mds(self.ad)
             if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                               expected_state=True):
                 raise signals.TestFailure("Fail to connect to LTE network.")
