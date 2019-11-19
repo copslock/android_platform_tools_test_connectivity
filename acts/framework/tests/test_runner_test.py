@@ -50,8 +50,8 @@ class TestRunnerTest(unittest.TestCase):
     def test_class_name_pattern_single(self, *_):
         class_names = ['test_class_1', 'test_class_2']
         pattern = 'test*1'
-        tr = test_runner.TestRunner(self.base_mock_test_config, [(pattern,
-                                                                  None)])
+        tr = test_runner.TestRunner(self.base_mock_test_config,
+                                    [(pattern, None)])
 
         test_classes = self.create_test_classes(class_names)
         tr.import_test_modules = Mock(return_value=test_classes)
@@ -64,8 +64,8 @@ class TestRunnerTest(unittest.TestCase):
     def test_class_name_pattern_multi(self, *_):
         class_names = ['test_class_1', 'test_class_2', 'other_name']
         pattern = 'test_class*'
-        tr = test_runner.TestRunner(self.base_mock_test_config, [(pattern,
-                                                                  None)])
+        tr = test_runner.TestRunner(self.base_mock_test_config,
+                                    [(pattern, None)])
 
         test_classes = self.create_test_classes(class_names)
         tr.import_test_modules = Mock(return_value=test_classes)
@@ -79,8 +79,8 @@ class TestRunnerTest(unittest.TestCase):
     def test_class_name_pattern_question_mark(self, *_):
         class_names = ['test_class_1', 'test_class_12']
         pattern = 'test_class_?'
-        tr = test_runner.TestRunner(self.base_mock_test_config, [(pattern,
-                                                                  None)])
+        tr = test_runner.TestRunner(self.base_mock_test_config,
+                                    [(pattern, None)])
 
         test_classes = self.create_test_classes(class_names)
         tr.import_test_modules = Mock(return_value=test_classes)
@@ -93,8 +93,8 @@ class TestRunnerTest(unittest.TestCase):
     def test_class_name_pattern_char_seq(self, *_):
         class_names = ['test_class_1', 'test_class_2', 'test_class_3']
         pattern = 'test_class_[1357]'
-        tr = test_runner.TestRunner(self.base_mock_test_config, [(pattern,
-                                                                  None)])
+        tr = test_runner.TestRunner(self.base_mock_test_config,
+                                    [(pattern, None)])
 
         test_classes = self.create_test_classes(class_names)
         tr.import_test_modules = Mock(return_value=test_classes)

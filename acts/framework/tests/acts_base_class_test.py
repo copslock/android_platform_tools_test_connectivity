@@ -83,7 +83,7 @@ class ActsBaseClassTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):
                 super(MockBaseTest, self).__init__(controllers)
-                self.tests = ('test_something',)
+                self.tests = ('test_something', )
 
             def test_something(self):
                 pass
@@ -101,7 +101,7 @@ class ActsBaseClassTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):
                 super(MockBaseTest, self).__init__(controllers)
-                self.tests = ('not_a_test_something',)
+                self.tests = ('not_a_test_something', )
 
             def not_a_test_something(self):
                 pass
@@ -141,13 +141,16 @@ class ActsBaseClassTest(unittest.TestCase):
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        test_names = ['test_st*r1', 'test_*2', 'test_?uestion_mark',
-                      'test_c[fghi]ar_seq']
+        test_names = [
+            'test_st*r1', 'test_*2', 'test_?uestion_mark', 'test_c[fghi]ar_seq'
+        ]
         bt_cls.run(test_names=test_names)
         passed_names = [p.test_name for p in bt_cls.results.passed]
         self.assertEqual(len(passed_names), len(test_names))
-        for test in ['test_star1', 'test_star2', 'test_question_mark',
-                     'test_char_seq']:
+        for test in [
+                'test_star1', 'test_star2', 'test_question_mark',
+                'test_char_seq'
+        ]:
             self.assertIn(test, passed_names)
 
     def test_default_execution_of_all_tests(self):
@@ -169,7 +172,7 @@ class ActsBaseClassTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):
                 super(MockBaseTest, self).__init__(controllers)
-                self.tests = ('test_something',)
+                self.tests = ('test_something', )
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
@@ -195,8 +198,12 @@ class ActsBaseClassTest(unittest.TestCase):
         actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, 'test_something')
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
         call_check.assert_called_once_with('haha')
@@ -217,8 +224,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -238,8 +249,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 0, 'Executed': 1,
-            'Failed': 1, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 0,
+            'Executed': 1,
+            'Failed': 1,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -260,8 +275,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, expected_msg)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 0, 'Executed': 1,
-            'Failed': 1, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 0,
+            'Executed': 1,
+            'Failed': 1,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -276,8 +295,12 @@ class ActsBaseClassTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=['test_something'])
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -296,8 +319,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -316,8 +343,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -339,8 +370,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 0, 'Executed': 1,
-            'Failed': 0, 'Passed': 1, 'Requested': 1, 'Skipped': 0
+            'Error': 0,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 1,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -365,8 +400,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -388,8 +427,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -414,8 +457,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -437,8 +484,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 0, 'Executed': 1,
-            'Failed': 1, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 0,
+            'Executed': 1,
+            'Failed': 1,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -463,8 +514,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -490,8 +545,12 @@ class ActsBaseClassTest(unittest.TestCase):
                          'Setup for test_something failed.')
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 0, 'Executed': 1,
-            'Failed': 1, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 0,
+            'Executed': 1,
+            'Failed': 1,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -512,8 +571,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -534,8 +597,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -556,15 +623,18 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.extra_errors['teardown_test'].details,
                          'This is an expected exception.')
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
     def test_explicit_pass_but_teardown_test_raises_an_exception(self):
         """Test record result should be marked as UNKNOWN as opposed to PASS.
         """
-
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
                 asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
@@ -581,8 +651,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.extra_errors['teardown_test'].details,
                          'This is an expected exception.')
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -592,8 +666,8 @@ class ActsBaseClassTest(unittest.TestCase):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
 
             def test_something(self):
-                asserts.explicit_pass(
-                    MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                asserts.explicit_pass(MSG_EXPECTED_EXCEPTION,
+                                      extras=MOCK_EXTRA)
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
@@ -602,8 +676,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
         expected_summary = {
-            'Error': 1, 'Executed': 1,
-            'Failed': 0, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 1,
+            'Executed': 1,
+            'Failed': 0,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -623,8 +701,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
         expected_summary = {
-            'Error': 0, 'Executed': 1,
-            'Failed': 1, 'Passed': 0, 'Requested': 1, 'Skipped': 0
+            'Error': 0,
+            'Executed': 1,
+            'Failed': 1,
+            'Passed': 0,
+            'Requested': 1,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -646,8 +728,12 @@ class ActsBaseClassTest(unittest.TestCase):
         self.assertEqual(bt_cls.results.failed[0].details,
                          MSG_EXPECTED_EXCEPTION)
         expected_summary = {
-            'Error': 0, 'Executed': 2,
-            'Failed': 1, 'Passed': 1, 'Requested': 3, 'Skipped': 0
+            'Error': 0,
+            'Executed': 2,
+            'Failed': 1,
+            'Passed': 1,
+            'Requested': 3,
+            'Skipped': 0
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
@@ -680,8 +766,9 @@ class ActsBaseClassTest(unittest.TestCase):
     def test_assert_true(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.assert_true(
-                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                asserts.assert_true(False,
+                                    MSG_EXPECTED_EXCEPTION,
+                                    extras=MOCK_EXTRA)
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
@@ -718,8 +805,10 @@ class ActsBaseClassTest(unittest.TestCase):
     def test_assert_equal_fail_with_msg(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.assert_equal(
-                    1, 2, msg=MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                asserts.assert_equal(1,
+                                     2,
+                                     msg=MSG_EXPECTED_EXCEPTION,
+                                     extras=MOCK_EXTRA)
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
@@ -813,8 +902,8 @@ class ActsBaseClassTest(unittest.TestCase):
     def test_explicit_pass(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.explicit_pass(
-                    MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                asserts.explicit_pass(MSG_EXPECTED_EXCEPTION,
+                                      extras=MOCK_EXTRA)
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
@@ -853,8 +942,9 @@ class ActsBaseClassTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
                 asserts.skip_if(False, MSG_UNEXPECTED_EXCEPTION)
-                asserts.skip_if(
-                    True, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                asserts.skip_if(True,
+                                MSG_EXPECTED_EXCEPTION,
+                                extras=MOCK_EXTRA)
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
@@ -918,8 +1008,8 @@ class ActsBaseClassTest(unittest.TestCase):
         thrown.
         """
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
-        bc.unpack_userparams(
-            req_param_names=['a_kwarg_param'], a_kwarg_param='whatever')
+        bc.unpack_userparams(req_param_names=['a_kwarg_param'],
+                             a_kwarg_param='whatever')
         self.assertEqual(bc.a_kwarg_param, 'whatever')
 
     def test_unpack_userparams_optional_missing(self):
@@ -936,8 +1026,8 @@ class ActsBaseClassTest(unittest.TestCase):
         configs['user_params']['something'] = 42
         configs['user_params']['something_else'] = 53
         bc = base_test.BaseTestClass(configs)
-        bc.unpack_userparams(
-            req_param_names=required, opt_param_names=optional)
+        bc.unpack_userparams(req_param_names=required,
+                             opt_param_names=optional)
         self.assertEqual(bc.something, 42)
         self.assertEqual(bc.something_else, 53)
 
