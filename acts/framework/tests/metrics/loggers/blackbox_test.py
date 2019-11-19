@@ -178,7 +178,6 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
                 'name': 'SampleTestBed',
             },
             'logpath': tempfile.mkdtemp(),
-            'cli_args': None,
             'testpaths': ['./'],
         }
         mockModule = Mock()

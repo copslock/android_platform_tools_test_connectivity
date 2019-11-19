@@ -220,8 +220,6 @@ class TestRunner(object):
         self.test_run_info[keys.Config.ikey_logger.value] = self.log
         self.test_run_info[
             keys.Config.ikey_summary_writer.value] = self.summary_writer
-        cli_args = test_configs.get(keys.Config.ikey_cli_args.value)
-        self.test_run_info[keys.Config.ikey_cli_args.value] = cli_args
         user_param_pairs = []
         for item in test_configs.items():
             if item[0] not in keys.Config.reserved_keys.value:

@@ -97,7 +97,6 @@ class TestDecoratorIntegrationTests(unittest.TestCase):
                 "name": "SampleTestBed",
             },
             "logpath": tempfile.mkdtemp(),
-            "cli_args": None,
             "testpaths": ["./"],
         }
 
