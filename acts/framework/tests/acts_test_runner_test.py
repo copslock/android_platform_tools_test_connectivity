@@ -32,7 +32,6 @@ class ActsTestRunnerTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under acts.test_runner.
     """
-
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = {
@@ -78,17 +77,15 @@ class ActsTestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Executed'], 2)
         self.assertEqual(results['Passed'], 2)
 
-    @mock.patch(
-        'acts.controllers.adb.AdbProxy',
-        return_value=acts_android_device_test.MockAdbProxy(1, return_value=''))
-    @mock.patch(
-        'acts.controllers.fastboot.FastbootProxy',
-        return_value=acts_android_device_test.MockFastbootProxy(1))
-    @mock.patch(
-        'acts.controllers.android_device.list_adb_devices', return_value=['1'])
-    @mock.patch(
-        'acts.controllers.android_device.get_all_instances',
-        return_value=acts_android_device_test.get_mock_ads(1))
+    @mock.patch('acts.controllers.adb.AdbProxy',
+                return_value=acts_android_device_test.MockAdbProxy(
+                    1, return_value=''))
+    @mock.patch('acts.controllers.fastboot.FastbootProxy',
+                return_value=acts_android_device_test.MockFastbootProxy(1))
+    @mock.patch('acts.controllers.android_device.list_adb_devices',
+                return_value=['1'])
+    @mock.patch('acts.controllers.android_device.get_all_instances',
+                return_value=acts_android_device_test.get_mock_ads(1))
     @mock.patch(
         'acts.controllers.android_device.AndroidDevice.ensure_screen_on',
         return_value=True)

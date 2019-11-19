@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
 """The list of all metadata on special config entries to the test config.
 
 These values cover the 3 major sources of configuration data:
@@ -41,14 +40,14 @@ config_entries = [
         type=str,
         cli_metavar='Arg1 Arg2 ...',
         help='Command-line arguments to be passed to every test case in a '
-             'test run. Use with caution.',
+        'test run. Use with caution.',
     ),
     ConfigEntryMeta(
         acts_config_key='parallel',
         cli_flags=['-p', '--parallel'],
         cli_action='store_true',
         help='If set, tests will be executed on all testbeds in parallel. '
-             'Otherwise, tests are executed iteratively testbed by testbed.',
+        'Otherwise, tests are executed iteratively testbed by testbed.',
     ),
     ConfigEntryMeta(
         acts_config_key='campaign_iterations',
@@ -100,7 +99,7 @@ config_entries = [
         type=str,
         cli_metavar='<PATH>',
         help='Path to a file containing a comma delimited list of test '
-             'classes to run.',
+        'classes to run.',
     ),
     ConfigEntryMeta(
         acts_config_key='random',
