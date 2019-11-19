@@ -117,8 +117,8 @@ class BlackboxMetricLoggerTest(TestCase):
         self.proto_module.ActsBlackboxMetricResult.return_value = result
         metric_key = 'metric_key'
 
-        logger = BlackboxMetricLogger(
-            self.TEST_METRIC_NAME, metric_key=metric_key)
+        logger = BlackboxMetricLogger(self.TEST_METRIC_NAME,
+                                      metric_key=metric_key)
         logger.context = self.context
         logger.publisher = self.publisher
         logger._get_blackbox_identifier = self._get_blackbox_identifier
@@ -137,8 +137,8 @@ class BlackboxMetricLoggerTest(TestCase):
         self.proto_module.ActsBlackboxMetricResult.return_value = result
         metric_key = 'metric_key'
 
-        logger = BlackboxMetricLogger(
-            self.TEST_METRIC_NAME, metric_key=metric_key)
+        logger = BlackboxMetricLogger(self.TEST_METRIC_NAME,
+                                      metric_key=metric_key)
         logger.context = self.context
         logger.publisher = self.publisher
         logger._get_blackbox_identifier = self._get_blackbox_identifier
@@ -146,8 +146,8 @@ class BlackboxMetricLoggerTest(TestCase):
 
         logger.end(self.event)
 
-        proto_metric_cls.assert_called_once_with(
-            name=self.TEST_FILE_NAME, data=result)
+        proto_metric_cls.assert_called_once_with(name=self.TEST_FILE_NAME,
+                                                 data=result)
         self.publisher.publish.assert_called_once_with(
             [proto_metric_cls.return_value])
 
@@ -166,7 +166,6 @@ class _BaseTestClassWithCleanup(BaseTestClass):
 
 class BlackboxMetricLoggerIntegrationTest(TestCase):
     """Integration tests for BlackboxMetricLogger."""
-
     def setUp(self):
         warnings.simplefilter('ignore', ResourceWarning)
 
@@ -228,12 +227,10 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
             def __init__(self, controllers):
                 super().__init__(controllers)
                 self.tests = ('test_case', )
-                self.metric_1 = (
-                    BlackboxMetricLogger.for_test_case(
-                        'my_metric_1', compiler_out=self.proto_dir))
-                self.metric_2 = (
-                    BlackboxMetricLogger.for_test_case(
-                        'my_metric_2', compiler_out=self.proto_dir))
+                self.metric_1 = (BlackboxMetricLogger.for_test_case(
+                    'my_metric_1', compiler_out=self.proto_dir))
+                self.metric_2 = (BlackboxMetricLogger.for_test_case(
+                    'my_metric_2', compiler_out=self.proto_dir))
 
             def test_case(self):
                 self.metric_1.metric_value = result
@@ -265,7 +262,8 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
                 super().__init__(controllers)
                 self.tests = ('test_case', )
                 self.metrics = BlackboxMetricLogger.for_test_case(
-                    'my_metric', metric_key='my_metric_key',
+                    'my_metric',
+                    metric_key='my_metric_key',
                     compiler_out=self.proto_dir)
 
             def test_case(self):
