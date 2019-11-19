@@ -231,8 +231,6 @@ def load_test_config_file(test_config_path,
         configs[keys.Config.key_test_paths.value] = override_test_path
     if override_log_path:
         configs[keys.Config.key_log_path.value] = override_log_path
-    if override_test_args:
-        configs[keys.Config.ikey_cli_args.value] = override_test_args
     if override_random:
         configs[keys.Config.key_random.value] = override_random
     if override_test_case_iterations:

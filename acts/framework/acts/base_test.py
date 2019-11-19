@@ -885,7 +885,7 @@ class BaseTestClass(MoblyBaseTest):
         try:
             for test_name, test_func in tests:
                 for _ in range(test_case_iterations):
-                    self.exec_one_testcase(test_name, test_func, self.cli_args)
+                    self.exec_one_testcase(test_name, test_func, [])
             return self.results
         except signals.TestAbortClass:
             self.log.exception('Test class %s aborted' % self.TAG)
