@@ -639,10 +639,6 @@ class LteSimulation(BaseSimulation):
                     new_config.bandwidth, new_config.transmission_mode,
                     dl_pattern, ul_pattern))
 
-            new_config.ul_modulation_order, new_config.dl_modulation_order = (
-                self.primary_config.ul_modulation_order,
-                self.primary_config.dl_modulation_order)
-
             if self.dl_256_qam and new_config.bandwidth == 1.4:
                 new_config.dl_mcs = 26
             elif (not self.dl_256_qam and self.primary_config.tbs_pattern_on
