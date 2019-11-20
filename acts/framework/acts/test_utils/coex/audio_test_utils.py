@@ -34,7 +34,7 @@ ANALYSIS_FILE_TEMPLATE = "audio_analysis_%s.txt"
 bits_per_sample = 32
 
 
-def get_audio_capture_device(test_class_instance):
+def get_audio_capture_device(ad, audio_params):
     """Gets the device object of the audio capture device connected to server.
 
     The audio capture device returned is specified by the audio_params
@@ -42,7 +42,8 @@ def get_audio_capture_device(test_class_instance):
     is either "AndroidDevice" or "Local"
 
     Args:
-        test_class_instance: object self of test class.
+        ad: Android Device object.
+        audio_params: object containing variables to record audio.
 
     Returns:
         Object of the audio capture device.
@@ -50,20 +51,14 @@ def get_audio_capture_device(test_class_instance):
     Raises:
         ValueError if audio_params['type'] is not "AndroidDevice" or
             "Local".
-        ValueError if "AndroidDevice" is specified, but there is only one
-            AndroidDevice within the testbed.
     """
-    audio_params = test_class_instance.user_params.get('audio_params')
 
     if audio_params['type'] == 'AndroidDevice':
-        if len(test_class_instance.android_devices) > 1:
-            return CaptureAudioOverAdb(
-                test_class_instance.android_devices[-1], audio_params)
-        else:
-            raise ValueError('At least 2 or more AndroidDevice should be '
-                             'specified to use as audio capture endpoint.')
+        return CaptureAudioOverAdb(ad, audio_params)
+
     elif audio_params['type'] == 'Local':
         return CaptureAudioOverLocal(audio_params)
+
     else:
         raise ValueError('Unrecognized audio capture device '
                          '%s' % audio_params['type'])
