@@ -21,7 +21,6 @@ from acts import signals
 from acts import test_decorators
 from acts import test_runner
 
-
 TEST_TRACKER_UUID = '12345'
 UUID_KEY = 'test_tracker_uuid'
 
@@ -51,14 +50,15 @@ def raise_generic():
 
 
 class TestDecoratorUnitTests(unittest.TestCase):
-
     def _verify_test_tracker_info(self, func):
         try:
             test_decorators.test_tracker_info(uuid=TEST_TRACKER_UUID)(func)()
             self.assertTrue(False, 'Expected decorator to raise exception.')
         except Exception as e:
-            self.assertTrue(hasattr(e, 'extras'), 'Expected thrown exception to have extras.')
-            self.assertTrue(UUID_KEY in e.extras, 'Expected extras to have %s.' % UUID_KEY)
+            self.assertTrue(hasattr(e, 'extras'),
+                            'Expected thrown exception to have extras.')
+            self.assertTrue(UUID_KEY in e.extras,
+                            'Expected extras to have %s.' % UUID_KEY)
             self.assertEqual(e.extras[UUID_KEY], TEST_TRACKER_UUID)
 
     def test_test_tracker_info_on_return_true(self):
@@ -90,7 +90,6 @@ class MockTest(base_test.BaseTestClass):
 
 
 class TestDecoratorIntegrationTests(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.MOCK_CONFIG = {
@@ -98,7 +97,6 @@ class TestDecoratorIntegrationTests(unittest.TestCase):
                 "name": "SampleTestBed",
             },
             "logpath": tempfile.mkdtemp(),
-            "cli_args": None,
             "testpaths": ["./"],
         }
 
@@ -115,18 +113,22 @@ class TestDecoratorIntegrationTests(unittest.TestCase):
 
     def _validate_results_has_extra(self, result, extra_key, extra_value):
         results = self.test_runner.results
-        self.assertGreaterEqual(len(results.executed), 1, 'Expected at least one executed test.')
+        self.assertGreaterEqual(len(results.executed), 1,
+                                'Expected at least one executed test.')
         record = results.executed[0]
-        self.assertIsNotNone(record.extras, 'Expected the test record to have extras.')
+        self.assertIsNotNone(record.extras,
+                             'Expected the test record to have extras.')
         self.assertEqual(record.extras[extra_key], extra_value)
 
     def test_mock_test_with_raise_pass(self):
         self._run_with_test_logic(raise_pass)
-        self._validate_results_has_extra(self.test_runner.results, UUID_KEY, TEST_TRACKER_UUID)
+        self._validate_results_has_extra(self.test_runner.results, UUID_KEY,
+                                         TEST_TRACKER_UUID)
 
     def test_mock_test_with_raise_generic(self):
         self._run_with_test_logic(raise_generic)
-        self._validate_results_has_extra(self.test_runner.results, UUID_KEY, TEST_TRACKER_UUID)
+        self._validate_results_has_extra(self.test_runner.results, UUID_KEY,
+                                         TEST_TRACKER_UUID)
 
     @classmethod
     def tearDownClass(cls):

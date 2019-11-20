@@ -39,22 +39,145 @@ CMW_MIMO_MAPPING = {
     LteSimulation.MimoMode.MIMO_4x4: cmw500.MimoModes.MIMO4x4
 }
 
+CMW_MODULATION_MAPPING = {
+    LteSimulation.ModulationType.QPSK: cmw500.ModulationType.QPSK,
+    LteSimulation.ModulationType.Q16: cmw500.ModulationType.Q16,
+    LteSimulation.ModulationType.Q64: cmw500.ModulationType.Q64,
+    LteSimulation.ModulationType.Q256: cmw500.ModulationType.Q256
+}
+
+# get mcs vs tbsi map with 256-qam disabled(downlink)
+get_mcs_tbsi_map_dl = {
+    'QPSK': {
+        0: 0,
+        1: 1,
+        2: 2,
+        3: 3,
+        4: 4,
+        5: 5,
+        6: 6,
+        7: 7,
+        8: 8,
+        9: 9
+    },
+    'Q16': {
+        10: 9,
+        11: 10,
+        12: 11,
+        13: 12,
+        14: 13,
+        15: 14,
+        16: 15
+    },
+    'Q64': {
+        17: 15,
+        18: 16,
+        19: 17,
+        20: 18,
+        21: 19,
+        22: 20,
+        23: 21,
+        24: 22,
+        25: 23,
+        26: 24,
+        27: 25,
+        28: 26
+    }
+}
+
+# get mcs vs tbsi map with 256-qam enabled(downlink)
+get_mcs_tbsi_map_for_256qam_dl = {
+    'QPSK': {
+        0: 0,
+        1: 2,
+        2: 4,
+        3: 6,
+        4: 8,
+    },
+    'Q16': {
+        5: 10,
+        6: 11,
+        7: 12,
+        8: 13,
+        9: 14,
+        10: 15
+    },
+    'Q64': {
+        11: 16,
+        12: 17,
+        13: 18,
+        14: 19,
+        15: 20,
+        16: 21,
+        17: 22,
+        18: 23,
+        19: 24
+    },
+    'Q256': {
+        20: 25,
+        21: 27,
+        22: 28,
+        23: 29,
+        24: 30,
+        25: 31,
+        26: 32,
+        27: 33
+    }
+}
+
+# get mcs vs tbsi map (uplink)
+get_mcs_tbsi_map_ul = {
+    'QPSK': {
+        0: 0,
+        1: 1,
+        2: 2,
+        3: 3,
+        4: 4,
+        5: 5,
+        6: 6,
+        7: 7,
+        8: 8,
+        9: 9
+    },
+    '16QAM': {
+        10: 10,
+        11: 10,
+        12: 11,
+        13: 12,
+        14: 13,
+        15: 14,
+        16: 15,
+        17: 16,
+        18: 17,
+        19: 18,
+        20: 19,
+        21: 19,
+        22: 20,
+        23: 21,
+        24: 22,
+        25: 23,
+        26: 24,
+        27: 25,
+        28: 26
+    }
+}
+
 
 class CMW500CellularSimulator(cc.AbstractCellularSimulator):
     """ A cellular simulator for telephony simulations based on the CMW 500
     controller. """
 
     # Indicates if it is able to use 256 QAM as the downlink modulation for LTE
-    LTE_SUPPORTS_DL_256QAM = None
+    LTE_SUPPORTS_DL_256QAM = True
 
     # Indicates if it is able to use 64 QAM as the uplink modulation for LTE
-    LTE_SUPPORTS_UL_64QAM = None
+    LTE_SUPPORTS_UL_64QAM = True
 
     # Indicates if 4x4 MIMO is supported for LTE
-    LTE_SUPPORTS_4X4_MIMO = None
+    LTE_SUPPORTS_4X4_MIMO = True
 
     # The maximum number of carriers that this simulator can support for LTE
-    LTE_MAX_CARRIERS = None
+    LTE_MAX_CARRIERS = 1
 
     def __init__(self, ip_address, port):
         """ Initializes the cellular simulator.
@@ -81,6 +204,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
 
     def setup_lte_scenario(self):
         """ Configures the equipment for an LTE simulation. """
+        self.cmw.connection_type = cmw500.ConnectionType.DAU
         self.bts = [self.cmw.get_base_station()]
         self.cmw.switch_lte_signalling(cmw500.LteState.LTE_ON)
 
@@ -134,7 +258,9 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             input_power: the new input power
         """
-        raise NotImplementedError()
+        # TODO:(@ganeshganesh) Add support to configure input power.
+        # As of now cmw sets this value by default
+        pass
 
     def set_output_power(self, bts_index, output_power):
         """ Sets the output power for the indicated base station.
@@ -224,21 +350,21 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         bts = self.bts[bts_index]
 
         tmode = CMW_TM_MAPPING[tmode]
+
         if (tmode in [
             cmw500.TransmissionModes.TM1,
             cmw500.TransmissionModes.TM7
-        ] and bts.dl_antenna != cmw500.MimoModes.MIMO1x1):
+        ] and bts.dl_antenna == cmw500.MimoModes.MIMO1x1.value):
             bts.transmode = tmode
-        elif (tmode in cmw500.TransmissionModes.__members__ and
-              bts.dl_antenna != cmw500.MimoModes.MIMO2x2):
+        elif (tmode.value in cmw500.TransmissionModes.__members__ and
+              bts.dl_antenna == cmw500.MimoModes.MIMO2x2.value):
             bts.transmode = tmode
         elif (tmode in [
             cmw500.TransmissionModes.TM2,
             cmw500.TransmissionModes.TM3,
             cmw500.TransmissionModes.TM4,
-            cmw500.TransmissionModes.TM6,
             cmw500.TransmissionModes.TM9
-        ] and bts.dl_antenna == cmw500.MimoModes.MIMO4x4):
+        ] and bts.dl_antenna == cmw500.MimoModes.MIMO4x4.value):
             bts.transmode = tmode
 
         else:
@@ -258,9 +384,10 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             nrb_ul: Number of RBs for uplink.
         """
         bts = self.bts[bts_index]
-        bts.scheduling_mode = CMW_SCH_MAPPING[scheduling]
+        scheduling = CMW_SCH_MAPPING[scheduling]
+        bts.scheduling_mode = scheduling
 
-        if not self.ul_modulation and self.dl_modulation:
+        if not (self.ul_modulation and self.dl_modulation):
             raise ValueError('Modulation should be set prior to scheduling '
                              'call')
 
@@ -285,14 +412,27 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             if not all([nrb_ul, nrb_dl, mcs_dl, mcs_ul]):
                 raise ValueError('All parameters are mandatory.')
 
-            bts.rb_configuration_ul = (nrb_ul, 0, self.ul_modulation,
-                                       mcs_ul)
+            # Convert ul modulation type to CMW modulation type.
+            self.ul_modulation = CMW_MODULATION_MAPPING[self.ul_modulation]
+
+            tbs = get_mcs_tbsi_map_ul[self.ul_modulation.value][mcs_ul]
+
+            bts.rb_configuration_ul = (nrb_ul, 0, self.ul_modulation, tbs)
             self.log.info('ul rb configurations set to {}'.format(
                 bts.rb_configuration_ul))
 
             time.sleep(1)
 
-            bts.rb_configuration_dl = (nrb_dl, 0, self.dl_modulation, mcs_dl)
+            # Convert dl modulation type to CMW modulation type.
+            self.dl_modulation = CMW_MODULATION_MAPPING[self.dl_modulation]
+
+            if self.dl_modulation == cmw500.ModulationType.Q256:
+                tbs = get_mcs_tbsi_map_for_256qam_dl[
+                    self.dl_modulation.value][mcs_dl]
+            else:
+                tbs = get_mcs_tbsi_map_dl[self.dl_modulation.value][mcs_dl]
+
+            bts.rb_configuration_dl = (nrb_dl, 0, self.dl_modulation, tbs)
             self.log.info('dl rb configurations set to {}'.format(
                 bts.rb_configuration_dl))
 

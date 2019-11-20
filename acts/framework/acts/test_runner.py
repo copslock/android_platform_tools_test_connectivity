@@ -119,7 +119,6 @@ class TestRunner(object):
         self.running: A boolean signifies whether this test run is ongoing or
                       not.
     """
-
     def __init__(self, test_configs, run_list):
         self.test_run_info = {}
         self.test_configs = test_configs
@@ -167,7 +166,6 @@ class TestRunner(object):
             A dictionary where keys are test class name strings, values are
             actual test classes that can be instantiated.
         """
-
         def is_testfile_name(name, ext):
             if ext == ".py":
                 if name.endswith("Test") or name.endswith("_test"):
@@ -222,8 +220,6 @@ class TestRunner(object):
         self.test_run_info[keys.Config.ikey_logger.value] = self.log
         self.test_run_info[
             keys.Config.ikey_summary_writer.value] = self.summary_writer
-        cli_args = test_configs.get(keys.Config.ikey_cli_args.value)
-        self.test_run_info[keys.Config.ikey_cli_args.value] = cli_args
         user_param_pairs = []
         for item in test_configs.items():
             if item[0] not in keys.Config.reserved_keys.value:
@@ -370,8 +366,8 @@ class TestRunner(object):
         with open(path, 'w') as f:
             f.write(self.results.json_str())
         # New YAML format
-        self.summary_writer.dump(
-            self.results.summary_dict(), records.TestSummaryEntryType.SUMMARY)
+        self.summary_writer.dump(self.results.summary_dict(),
+                                 records.TestSummaryEntryType.SUMMARY)
 
     def dump_config(self):
         """Writes the test config to a JSON file under self.log_path"""

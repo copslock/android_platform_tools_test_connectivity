@@ -58,13 +58,13 @@ def _logcat_log_test_begin(event):
                 ad.start_adb_logcat()
             # Write test start token to adb log if android device is attached.
             if not ad.skip_sl4a:
-                ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN,
-                                               event.test_case_name))
+                ad.droid.logV("%s BEGIN %s" %
+                              (TEST_CASE_TOKEN, event.test_case_name))
 
     except error.ActsError as e:
         test_instance.results.error.append(
-            ExceptionRecord(
-                e, 'Logcat for test begin: %s' % event.test_case_name))
+            ExceptionRecord(e, 'Logcat for test begin: %s' %
+                            event.test_case_name))
         test_instance.log.error('BaseTest setup_test error: %s' % e.message)
 
     except Exception as e:
@@ -81,13 +81,13 @@ def _logcat_log_test_end(event):
         # Write test end token to adb log if android device is attached.
         for ad in getattr(test_instance, 'android_devices', []):
             if not ad.skip_sl4a:
-                ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN,
-                                             event.test_case_name))
+                ad.droid.logV("%s END %s" %
+                              (TEST_CASE_TOKEN, event.test_case_name))
 
     except error.ActsError as e:
         test_instance.results.error.append(
-            ExceptionRecord(
-                e, 'Logcat for test end: %s' % event.test_case_name))
+            ExceptionRecord(e,
+                            'Logcat for test end: %s' % event.test_case_name))
         test_instance.log.error('BaseTest teardown_test error: %s' % e.message)
 
     except Exception as e:
@@ -104,8 +104,8 @@ def _syslog_log_test_begin(event):
     try:
         for fd in getattr(test_instance, 'fuchsia_devices', []):
             if not fd.skip_sl4f:
-                fd.logging_lib.logI("%s BEGIN %s" % (TEST_CASE_TOKEN,
-                                                     event.test_case_name))
+                fd.logging_lib.logI("%s BEGIN %s" %
+                                    (TEST_CASE_TOKEN, event.test_case_name))
 
     except Exception as e:
         test_instance.log.warning(
@@ -121,8 +121,8 @@ def _syslog_log_test_end(event):
     try:
         for fd in getattr(test_instance, 'fuchsia_devices', []):
             if not fd.skip_sl4f:
-                fd.logging_lib.logI("%s END %s" % (TEST_CASE_TOKEN,
-                                                   event.test_case_name))
+                fd.logging_lib.logI("%s END %s" %
+                                    (TEST_CASE_TOKEN, event.test_case_name))
 
     except Exception as e:
         test_instance.log.warning(
@@ -213,8 +213,8 @@ class BaseTestClass(MoblyBaseTest):
         for ctrl_name in keys.Config.builtin_controller_names.value:
             if ctrl_name in self.testbed_configs:
                 module_name = keys.get_module_name(ctrl_name)
-                module = importlib.import_module(
-                    "acts.controllers.%s" % module_name)
+                module = importlib.import_module("acts.controllers.%s" %
+                                                 module_name)
                 builtin_controllers.append(module)
         return builtin_controllers
 
@@ -414,7 +414,6 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-
     def _on_pass(self, record):
         """Proxy function to guarantee the base implementation of on_pass is
         called.
@@ -439,7 +438,6 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-
     def _on_skip(self, record):
         """Proxy function to guarantee the base implementation of on_skip is
         called.
@@ -461,7 +459,6 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-
     def _on_exception(self, record):
         """Proxy function to guarantee the base implementation of on_exception
         is called.
@@ -483,7 +480,6 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-
     def on_retry():
         """Function to run before retrying a test through get_func_with_retry.
 
@@ -491,7 +487,6 @@ class BaseTestClass(MoblyBaseTest):
         can be used to modify internal test parameters, for example, to retry
         a test with slightly different input variables.
         """
-
     def _exec_procedure_func(self, func, tr_record):
         """Executes a procedure function like on_pass, on_fail etc.
 
@@ -590,8 +585,8 @@ class BaseTestClass(MoblyBaseTest):
         except error.ActsError as e:
             test_signal = e
             tr_record.test_error(e)
-            self.log.error(
-                'BaseTest execute_one_test_case error: %s' % e.message)
+            self.log.error('BaseTest execute_one_test_case error: %s' %
+                           e.message)
         except Exception as e:
             test_signal = e
             self.log.error(traceback.format_exc())
@@ -609,8 +604,8 @@ class BaseTestClass(MoblyBaseTest):
             self._exec_procedure_func(self._on_fail, tr_record)
         finally:
             self.results.add_record(tr_record)
-            self.summary_writer.dump(
-                tr_record.to_dict(), records.TestSummaryEntryType.RECORD)
+            self.summary_writer.dump(tr_record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
             self.current_test_name = None
             event_bus.post(TestCaseEndEvent(self, self.test_name, test_signal))
 
@@ -626,6 +621,7 @@ class BaseTestClass(MoblyBaseTest):
         Returns: result of the test method
         """
         exceptions = self.retryable_exceptions
+
         def wrapper(*args, **kwargs):
             error_msgs = []
             extras = {}
@@ -639,11 +635,11 @@ class BaseTestClass(MoblyBaseTest):
                     return func(*args, **kwargs)
                 except exceptions as e:
                     retry = True
-                    msg = 'Failure on attempt %d: %s' % (i+1, e.details)
+                    msg = 'Failure on attempt %d: %s' % (i + 1, e.details)
                     self.log.warning(msg)
                     error_msgs.append(msg)
                     if e.extras:
-                        extras['Attempt %d' % (i+1)] = e.extras
+                        extras['Attempt %d' % (i + 1)] = e.extras
             raise signals.TestFailure('\n'.join(error_msgs), extras)
 
         return wrapper
@@ -707,10 +703,10 @@ class BaseTestClass(MoblyBaseTest):
 
             if format_args:
                 self.exec_one_testcase(test_name, test_func,
-                                       args + (setting,), **kwargs)
+                                       args + (setting, ), **kwargs)
             else:
                 self.exec_one_testcase(test_name, test_func,
-                                       (setting,) + args, **kwargs)
+                                       (setting, ) + args, **kwargs)
 
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(setting)
@@ -818,8 +814,8 @@ class BaseTestClass(MoblyBaseTest):
                 signal.extras = test_func.gather()
             record.test_error(signal)
             self.results.add_record(record)
-            self.summary_writer.dump(
-                record.to_dict(), records.TestSummaryEntryType.RECORD)
+            self.summary_writer.dump(record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
             self._on_skip(record)
 
     def run(self, test_names=None, test_case_iterations=1):
@@ -889,7 +885,7 @@ class BaseTestClass(MoblyBaseTest):
         try:
             for test_name, test_func in tests:
                 for _ in range(test_case_iterations):
-                    self.exec_one_testcase(test_name, test_func, self.cli_args)
+                    self.exec_one_testcase(test_name, test_func, [])
             return self.results
         except signals.TestAbortClass:
             self.log.exception('Test class %s aborted' % self.TAG)

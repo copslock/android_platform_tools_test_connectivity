@@ -158,7 +158,7 @@ class PowerWiFiHotspotTest(PWBT.PowerWiFiBaseTest):
         time.sleep(2)
 
         # Measure power
-        self.collect_power_data()
+        result = self.collect_power_data()
 
         if traffic:
             # Wait for iperf to finish
@@ -168,7 +168,7 @@ class PowerWiFiHotspotTest(PWBT.PowerWiFiBaseTest):
             self.client_iperf_helper.process_iperf_results(
                 self.dut, self.log, self.iperf_servers, self.test_name)
 
-        self.pass_fail_check()
+        self.pass_fail_check(result.average_current)
 
     def power_idle_tethering_test(self):
         """ Start power test when Hotspot is idle

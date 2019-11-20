@@ -747,6 +747,57 @@ def get_bt_rssi(ad, duration=1, processed=True):
     return bqr_results["rssi"]
 
 
+def enable_bqr(
+        ad_list,
+        bqr_interval=10,
+        bqr_event_mask=15,
+):
+    """Sets up BQR reporting.
+
+       Sets up BQR to report BT metrics at the requested frequency and toggles
+       airplane mode for the bqr settings to take effect.
+
+    Args:
+        ad_list: an android_device or list of android devices.
+    """
+    # Converting a single android device object to list
+    if not isinstance(ad_list, list):
+        ad_list = [ad_list]
+
+    for ad in ad_list:
+        #Setting BQR parameters
+        ad.adb.shell("setprop persist.bluetooth.bqr.event_mask {}".format(
+            bqr_event_mask))
+        ad.adb.shell("setprop persist.bluetooth.bqr.min_interval_ms {}".format(
+            bqr_interval))
+
+        ## Toggle airplane mode
+        ad.droid.connectivityToggleAirplaneMode(True)
+        ad.droid.connectivityToggleAirplaneMode(False)
+
+
+def disable_bqr(ad_list):
+    """Disables BQR reporting.
+
+    Args:
+        ad_list: an android_device or list of android devices.
+    """
+    # Converting a single android device object to list
+    if not isinstance(ad_list, list):
+        ad_list = [ad_list]
+
+    DISABLE_BQR_MASK = 0
+
+    for ad in ad_list:
+        #Disabling BQR
+        ad.adb.shell("setprop persist.bluetooth.bqr.event_mask {}".format(
+            DISABLE_BQR_MASK))
+
+        ## Toggle airplane mode
+        ad.droid.connectivityToggleAirplaneMode(True)
+        ad.droid.connectivityToggleAirplaneMode(False)
+
+
 def get_device_selector_dictionary(android_device_list):
     """Create a dictionary of Bluetooth features vs Android devices.
 

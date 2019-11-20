@@ -194,7 +194,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
 
         Args:
             result: dict containing attenuation, throughput and other meta
-            data
+                data
         """
         try:
             golden_path = next(file_name
@@ -207,7 +207,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         except:
             golden_sensitivity = float('nan')
 
-        result_string = ('Througput = {}%, Sensitivity = {}.'
+        result_string = ('Throughput = {}%, Sensitivity = {}.'
                          'Target Sensitivity = {}'.format(
                              result['peak_throughput_pct'],
                              result['sensitivity'], golden_sensitivity))

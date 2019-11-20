@@ -250,7 +250,7 @@ def check_location_service(ad):
     location_mode = int(ad.adb.shell("settings get secure location_mode"))
     ad.log.info("Current Location Mode >> %d" % location_mode)
     if location_mode != 3:
-        raise signals.TestFailure("Failed to turn Location on")
+        raise signals.TestError("Failed to turn Location on")
 
 def clear_logd_gnss_qxdm_log(ad):
     """Clear /data/misc/logd,
@@ -331,12 +331,13 @@ def set_mobile_data(ad, state):
     else:
         ad.log.error("Mobile data is at unknown state and set to %d" % out)
 
-def gnss_trigger_modem_ssr(ad, dwelltime=60):
-    """Trigger modem SSR crash and verify if modem crash and recover
+def gnss_trigger_modem_ssr_by_adb(ad, dwelltime=60):
+    """Trigger modem SSR crash by adb and verify if modem crash and recover
     successfully.
 
     Args:
         ad: An AndroidDevice object.
+        dwelltime: Waiting time for modem reset. Default is 60 seconds.
 
     Returns:
         True if success.
@@ -361,8 +362,64 @@ def gnss_trigger_modem_ssr(ad, dwelltime=60):
                 ad.log.debug(ssr["log_message"])
                 ad.log.info("Triggering modem SSR crash successfully.")
                 return True
-        raise signals.TestFailure("Failed to trigger modem SSR crash")
-    raise signals.TestFailure("No SSRObserver found in logcat")
+        raise signals.TestError("Failed to trigger modem SSR crash")
+    raise signals.TestError("No SSRObserver found in logcat")
+
+def gnss_trigger_modem_ssr_by_mds(ad, dwelltime=60):
+    """Trigger modem SSR crash by mds tool and verify if modem crash and recover
+    successfully.
+
+    Args:
+        ad: An AndroidDevice object.
+        dwelltime: Waiting time for modem reset. Default is 60 seconds.
+    """
+    mds_check = ad.adb.shell("pm path com.google.mdstest")
+    if not mds_check:
+        raise signals.TestError("MDS Tool is not properly installed.")
+    ad.root_adb()
+    cmd = ('am instrument -w -e request "4b 25 03 00" '
+           '"com.google.mdstest/com.google.mdstest.instrument'
+           '.ModemCommandInstrumentation"')
+    ad.log.info("Triggering modem SSR crash by MDS")
+    output = ad.adb.shell(cmd, ignore_status=True)
+    ad.log.debug(output)
+    time.sleep(dwelltime)
+    ad.send_keycode("HOME")
+    if "SUCCESS" in output:
+        ad.log.info("Triggering modem SSR crash by MDS successfully.")
+    else:
+        raise signals.TestError(
+            "Failed to trigger modem SSR crash by MDS. \n%s" % output)
+
+def pull_mdstool(ad):
+    """Pull ModemDiagnosticSystemTest.apk from device.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    out = ad.adb.shell("pm path com.google.mdstest")
+    result = re.search(r"package:(.*)", out)
+    if not result:
+        raise signals.TestError("No ModemDiagnosticSystemTest.apk found.")
+    else:
+        mds_tool = result.group(1)
+        ad.log.info("Get ModemDiagnosticSystemTest.apk from %s" % mds_tool)
+        apkdir = "/tmp/MDS/"
+        utils.create_dir(apkdir)
+        ad.pull_files([mds_tool], apkdir)
+
+def reinstall_mdstool(ad):
+    """Reinstall ModemDiagnosticSystemTest.apk.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    ad.log.info("Re-install ModemDiagnosticSystemTest.apk")
+    ad.adb.install("-r -g -t /tmp/MDS/base.apk")
+    mds_check = ad.adb.shell("pm path com.google.mdstest")
+    if not mds_check:
+        raise signals.TestError("MDS Tool is not properly re-installed.")
+    ad.log.info("MDS Tool is re-installed successfully.")
 
 def check_xtra_download(ad, begin_time):
     """Verify XTRA download success log message in logcat.
@@ -410,6 +467,10 @@ def reinstall_gtw_gpstool(ad):
     """
     ad.log.info("Re-install GTW GPSTool")
     ad.adb.install("-r -g -t /tmp/GNSS/base.apk")
+    gpstool_check = ad.adb.shell("pm path com.android.gpstool")
+    if not gpstool_check:
+        raise signals.TestError("GTW GPSTool is not properly re-installed.")
+    ad.log.info("GTW GPSTool is re-installed successfully.")
 
 def init_gtw_gpstool(ad):
     """Init GTW_GPSTool apk.
@@ -447,6 +508,7 @@ def fastboot_factory_reset(ad):
         ad.log.info("Get sl4a apk from %s" % sl4a_apk)
         ad.pull_files([sl4a_apk], "/tmp/")
     pull_gtw_gpstool(ad)
+    pull_mdstool(ad)
     tutils.stop_qxdm_logger(ad)
     ad.stop_services()
     attempts = 3
@@ -472,6 +534,7 @@ def fastboot_factory_reset(ad):
             ad.adb.shell("settings put global verifier_verify_adb_installs 0")
             ad.adb.install("-r -g -t /tmp/base.apk")
             reinstall_gtw_gpstool(ad)
+            reinstall_mdstool(ad)
             time.sleep(10)
             break
         except Exception as e:
@@ -591,7 +654,7 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration):
             break
     else:
         check_currrent_focus_app(ad)
-        raise signals.TestFailure("Fail to send TTFF start_test_action.")
+        raise signals.TestError("Fail to send TTFF start_test_action.")
 
 def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
     """Start GNSS/FLP tracking tests for input testtime on GTW_GPSTool.
@@ -613,7 +676,7 @@ def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
                                         "com.android.gpstool/.GPSTool",
                                         begin_time)
         if crash_result:
-            raise signals.TestFailure("GPSTool crashed. Abort test.")
+            raise signals.TestError("GPSTool crashed. Abort test.")
     ad.log.info("Successfully tested for %d minutes" % testtime)
     start_gnss_by_gtw_gpstool(ad, False, type)
 
@@ -649,7 +712,7 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
                 continue
             test_logfile = logpath
     if not test_logfile:
-        raise signals.TestFailure("Failed to get test log file in device.")
+        raise signals.TestError("Failed to get test log file in device.")
     lines = ad.adb.shell("cat %s" % test_logfile).split("\n")
     for line in lines:
         if "History Avg Top4" in line:
@@ -706,8 +769,8 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
     ttff_loop_time = get_current_epoch_time()
     while True:
         if get_current_epoch_time() - ttff_loop_time >= 120000:
-            raise signals.TestFailure("Fail to search specific GPSService "
-                                      "message in logcat. Abort test.")
+            raise signals.TestError("Fail to search specific GPSService "
+                                    "message in logcat. Abort test.")
         if not ad.is_adb_logcat_on:
             ad.start_adb_logcat()
         stop_gps_results = ad.search_logcat("stop gps test", begin_time)
@@ -718,7 +781,7 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                                         "com.android.gpstool/.GPSTool",
                                         begin_time)
         if crash_result:
-            raise signals.TestFailure("GPSTool crashed. Abort test.")
+            raise signals.TestError("GPSTool crashed. Abort test.")
         logcat_results = ad.search_logcat("write TTFF log", begin_time)
         if logcat_results:
             ttff_log = logcat_results[-1]["log_message"].split()
@@ -753,6 +816,9 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                 ttff_cn = float(ttff_log[19].strip("]"))
                 ttff_lat = 0.0
                 ttff_lon = 0.0
+            ad.log.debug("TTFF Loop %d - (Lat, Lon) = (%s, %s)" % (ttff_loop,
+                                                                   ttff_lat,
+                                                                   ttff_lon))
             ttff_pe = calculate_position_error(ad, ttff_lat, ttff_lon,
                                                true_position)
             ttff_data[ttff_loop] = TTFF_REPORT(ttff_loop=ttff_loop,
@@ -868,7 +934,7 @@ def launch_google_map(ad):
                      "com.google.android.maps.MapsActivity")
     except Exception as e:
         ad.log.error(e)
-        raise signals.TestFailure("Failed to launch google map.")
+        raise signals.TestError("Failed to launch google map.")
     check_currrent_focus_app(ad)
 
 def check_currrent_focus_app(ad):
@@ -990,7 +1056,7 @@ def set_gnss_qxdm_mask(ad, masks):
             break
     except Exception as e:
         ad.log.error(e)
-        raise signals.TestFailure("Failed to set any QXDM masks.")
+        raise signals.TestError("Failed to set any QXDM masks.")
 
 def start_youtube_video(ad, url=None, retries=0):
     """Start youtube video and verify if audio is in music state.
@@ -1019,8 +1085,8 @@ def start_youtube_video(ad, url=None, retries=0):
         ad.log.info("Force-Stop youtube and reopen youtube again.")
         ad.force_stop_apk("com.google.android.youtube")
     check_currrent_focus_app(ad)
-    raise signals.TestFailure("Started a video in youtube, "
-                              "but audio is not in MUSIC state")
+    raise signals.TestError("Started a video in youtube, "
+                            "but audio is not in MUSIC state")
 
 def get_baseband_and_gms_version(ad, extra_msg=""):
     """Get current radio baseband and GMSCore version of AndroidDevice object.
@@ -1068,22 +1134,22 @@ def start_toggle_gnss_by_gtw_gpstool(ad, iteration):
                 break
         else:
             check_currrent_focus_app(ad)
-            raise signals.TestFailure("Fail to send ToggleGPS "
-                                      "start_test_action within 3 attempts.")
+            raise signals.TestError("Fail to send ToggleGPS "
+                                    "start_test_action within 3 attempts.")
         time.sleep(2)
         test_start = ad.search_logcat("GPSTool_ToggleGPS: startService",
                                       begin_time)
         if test_start:
             ad.log.info(test_start[-1]["log_message"].split(":")[-1].strip())
         else:
-            raise signals.TestFailure("Fail to start toggle GPS off/on test.")
+            raise signals.TestError("Fail to start toggle GPS off/on test.")
         # Every iteration is expected to finish within 4 minutes.
         while get_current_epoch_time() - begin_time <= iteration * 240000:
             crash_end = ad.search_logcat("Force finishing activity "
                                          "com.android.gpstool/.GPSTool",
                                          begin_time)
             if crash_end:
-                raise signals.TestFailure("GPSTool crashed. Abort test.")
+                raise signals.TestError("GPSTool crashed. Abort test.")
             toggle_results = ad.search_logcat("GPSTool : msg", begin_time)
             if toggle_results:
                 for toggle_result in toggle_results:

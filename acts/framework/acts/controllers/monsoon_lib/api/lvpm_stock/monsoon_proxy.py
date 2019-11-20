@@ -190,12 +190,16 @@ class MonsoonProxy(object):
                     continue
                 tmpname = '/tmp/monsoon.%s.%s' % (os.uname()[0], dev)
                 self._tempfile = open(tmpname, 'w')
-                try:
-                    os.chmod(tmpname, 0o666)
-                except OSError as e:
-                    # Only ignore file modification errors (i.e., allow file
-                    # not found errors to correctly raise).
-                    if e.errno != errno.EACCES:
+                if not os.access(tmpname, os.R_OK | os.W_OK):
+                    try:
+                        os.chmod(tmpname, 0o666)
+                    except OSError as e:
+                        if e.errno == errno.EACCES:
+                            raise ValueError(
+                                'Unable to set permissions to read/write to '
+                                '%s. This file is owned by another user; '
+                                'please grant o+wr access to this file, or '
+                                'run as that user.')
                         raise
 
                 try:  # Use a lock file to ensure exclusive access.

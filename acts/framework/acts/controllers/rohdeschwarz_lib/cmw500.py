@@ -98,8 +98,8 @@ class RbPosition(Enum):
 class ModulationType(Enum):
     """Supported Modulation Types."""
     QPSK = 'QPSK'
-    Q16 = 'Q16',
-    Q64 = 'Q64',
+    Q16 = 'Q16'
+    Q64 = 'Q64'
     Q256 = 'Q256'
 
 
@@ -132,6 +132,38 @@ class RrcState(Enum):
     """States to enable/disable rrc."""
     RRC_ON = 'ON'
     RRC_OFF = 'OFF'
+
+
+class MacPadding(Enum):
+    """Enables/Disables Mac Padding."""
+    ON = 'ON'
+    OFF = 'OFF'
+
+
+class ConnectionType(Enum):
+    """Supported Connection Types."""
+    TEST = 'TESTmode'
+    DAU = 'DAPPlication'
+
+
+class RepetitionMode(Enum):
+    """Specifies LTE Measurement Repetition Mode."""
+    SINGLESHOT = 'SINGleshot'
+    CONTINUOUS = 'CONTinuous'
+
+
+class TpcPowerControl(Enum):
+    """Specifies Up Link power control types."""
+    MIN_POWER = 'MINPower'
+    MAX_POWER = 'MAXPower'
+    CONSTANT = 'CONStant'
+    SINGLE = 'SINGle'
+    UDSINGLE = 'UDSingle'
+    UDCONTINUOUS = 'UDContinuous'
+    ALTERNATE = 'ALT0'
+    CLOSED_LOOP = 'CLOop'
+    RP_CONTROL = 'RPControl'
+    FLEX_POWER = 'FULPower'
 
 
 class Cmw500(abstract_inst.SocketInstrument):
@@ -348,6 +380,36 @@ class Cmw500(abstract_inst.SocketInstrument):
         cmd = 'CONFigure:LTE:SIGN:CONNection:RITimer {}'.format(time_in_secs)
         self.send_and_recv(cmd)
 
+    @property
+    def dl_mac_padding(self):
+        """Gets the state of mac padding."""
+        return self.send_and_recv('CONFigure:LTE:SIGN:CONNection:DLPadding?')
+
+    @dl_mac_padding.setter
+    def dl_mac_padding(self, state):
+        """Enables/Disables downlink padding at the mac layer.
+
+        Args:
+            state: ON/OFF
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:DLPadding {}'.format(state.value)
+        self.send_and_recv(cmd)
+
+    @property
+    def connection_type(self):
+        """Gets the connection type applied in callbox."""
+        return self.send_and_recv('CONFigure:LTE:SIGN:CONNection:CTYPe?')
+
+    @connection_type.setter
+    def connection_type(self, ctype):
+        """Sets the connection type to be applied.
+
+        Args:
+            ctype: Connection type.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CTYPe {}'.format(ctype.value)
+        self.send_and_recv(cmd)
+
     def get_base_station(self, bts_num=BtsNumber.BTS1):
         """Gets the base station object based on bts num. By default
         bts_num set to PCC
@@ -359,6 +421,15 @@ class Cmw500(abstract_inst.SocketInstrument):
             base station object.
         """
         return BaseStation(self, bts_num)
+
+    def init_lte_measurement(self):
+        """Gets the class object for lte measurement which can be used to
+        initiate measurements.
+
+        Returns:
+            lte measurement object.
+        """
+        return LteMeasurement(self)
 
 
 class BaseStation(object):
@@ -625,11 +696,16 @@ class BaseStation(object):
         elif self.scheduling_mode == 'UDCH':
             rb, start_rb, modulation, tbs = rb_config
 
-            if not 0 <= rb <= 26:
-                raise ValueError('rb should be between 0 and 26 inclusive.')
+            if not 0 <= rb <= 50:
+                raise ValueError('rb should be between 0 and 50 inclusive.')
+
+            if not isinstance(modulation, ModulationType):
+                raise ValueError('Modulation should be of type '
+                                 'ModulationType.')
 
             cmd = ('CONFigure:LTE:SIGN:CONNection:{}:UDCHannels:DL {},{},'
-                   '{},{}'.format(self._bts, rb, start_rb, modulation, tbs))
+                   '{},{}'.format(self._bts, rb, start_rb, modulation.value,
+                                  tbs))
             self._cmw.send_and_recv(cmd)
 
     @property
@@ -662,11 +738,15 @@ class BaseStation(object):
         elif self.scheduling_mode == 'UDCH':
             rb, start_rb, modulation, tbs = rb_config
 
-            if not 0 <= rb <= 26:
-                raise ValueError('rb should be between 0 and 26 inclusive.')
+            if not 0 <= rb <= 50:
+                raise ValueError('rb should be between 0 and 50 inclusive.')
 
+            if not isinstance(modulation, ModulationType):
+                raise ValueError('Modulation should be of type '
+                                 'ModulationType.')
             cmd = ('CONFigure:LTE:SIGN:CONNection:{}:UDCHannels:UL {},{},'
-                   '{},{}'.format(self._bts, rb, start_rb, modulation, tbs))
+                   '{},{}'.format(self._bts, rb, start_rb, modulation.value,
+                                  tbs))
             self._cmw.send_and_recv(cmd)
 
     @property
@@ -755,6 +835,76 @@ class BaseStation(object):
         cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas {}'.format(
             self._bts, num_antenna)
         self._cmw.send_and_recv(cmd)
+
+    def tpc_power_control(self, set_type):
+        """Set and execute the Up Link Power Control via TPC.
+
+        Args:
+            set_type: Type of tpc power control.
+        """
+
+        if not isinstance(set_type, TpcPowerControl):
+            raise ValueError('set_type should be the instance of '
+                             'TpCPowerControl.')
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:SET {}'.format(
+            self._bts, set_type.value)
+        self._cmw.send_and_recv(cmd)
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:PEXecute'.format(self._bts)
+        self._cmw.send_and_recv(cmd)
+
+
+class LteMeasurement(object):
+
+    def __init__(self, cmw):
+        self._cmw = cmw
+
+    def intitilize_measurement(self):
+        """Initialize measurement modules."""
+        self._cmw.send_and_recv('INIT:LTE:MEAS:MEValuation')
+
+    @property
+    def measurement_repetition(self):
+        """Returns the measurement repetition mode that has been set."""
+        return self._cmw.send_and_recv(
+            'CONFigure:LTE:MEAS:MEValuation:REPetition?')
+
+    @measurement_repetition.setter
+    def measurement_repetition(self, mode):
+        """Sets the mode for measuring power levels.
+
+        Args:
+            mode: Single shot/continuous.
+        """
+        if not isinstance(mode, RepetitionMode):
+            raise ValueError('mode should be the instance of Repetition Mode')
+
+        cmd = 'CONFigure:LTE:MEAS:MEValuation:REPetition {}'.format(mode.value)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def query_measurement_state(self):
+        """Returns the states and sub states of measurement."""
+        return self._cmw.send_and_recv('FETCh:LTE:MEAS:MEValuation:STATe:ALL?')
+
+    @property
+    def measure_tx_power(self):
+        """Return the current Tx power measurement."""
+        return self._cmw.send_and_recv(
+            'FETCh:LTE:MEAS:MEValuation:PMONitor:AVERage?')
+
+    def stop_measurement(self):
+        """Stops the on-going measurement.
+        This function call does not free up resources allocated for
+        measurement. Instead it moves from RUN to RDY state.
+        """
+        self._cmw.send_and_recv('STOP:LTE:MEAS:MEValuation')
+
+    def abort_measurement(self):
+        """Aborts the measurement abruptly.
+        This function call will free up the resources allocated for
+        measurement and all the results will be wiped off.
+        """
+        self._cmw.send_and_recv('ABORt:LTE:MEAS:MEValuation')
 
 
 class CmwError(Exception):

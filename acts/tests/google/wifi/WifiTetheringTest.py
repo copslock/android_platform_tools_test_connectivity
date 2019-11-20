@@ -21,6 +21,7 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import test_runner
+from acts import utils
 from acts.controllers import adb
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel import tel_defines
@@ -44,8 +45,10 @@ class WifiTetheringTest(base_test.BaseTestClass):
 
         self.hotspot_device = self.android_devices[0]
         self.tethered_devices = self.android_devices[1:]
-        req_params = ("network", "url", "open_network")
+        req_params = ("url", "open_network")
         self.unpack_userparams(req_params)
+        self.network = {"SSID": "hotspot_%s" % utils.rand_ascii_str(6),
+                        "password": "pass_%s" % utils.rand_ascii_str(6)}
         self.new_ssid = "wifi_tethering_test2"
 
         nutils.verify_lte_data_and_tethering_supported(self.hotspot_device)

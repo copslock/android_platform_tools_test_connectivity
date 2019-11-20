@@ -15,6 +15,10 @@
 import acts.controllers.ap_lib.third_party_ap_profiles.actiontec as actiontec
 import acts.controllers.ap_lib.third_party_ap_profiles.asus as asus
 import acts.controllers.ap_lib.third_party_ap_profiles.belkin as belkin
+import acts.controllers.ap_lib.third_party_ap_profiles.linksys as linksys
+import acts.controllers.ap_lib.third_party_ap_profiles.netgear as netgear
+import acts.controllers.ap_lib.third_party_ap_profiles.securifi as securifi
+import acts.controllers.ap_lib.third_party_ap_profiles.tplink as tplink
 
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
@@ -266,11 +270,81 @@ def create_ap_preset(profile_name='whirlwind',
                                     channel=channel,
                                     ssid=ssid,
                                     security=security)
+    elif profile_name == 'asus_rtn56u':
+        config = asus.asus_rtn56u(iface_wlan_2g=iface_wlan_2g,
+                                  iface_wlan_5g=iface_wlan_5g,
+                                  channel=channel,
+                                  ssid=ssid,
+                                  security=security)
+    elif profile_name == 'asus_rtn66u':
+        config = asus.asus_rtn66u(iface_wlan_2g=iface_wlan_2g,
+                                  iface_wlan_5g=iface_wlan_5g,
+                                  channel=channel,
+                                  ssid=ssid,
+                                  security=security)
     elif profile_name == 'belkin_f9k1001v5':
         config = belkin.belkin_f9k1001v5(iface_wlan_2g=iface_wlan_2g,
                                          channel=channel,
                                          ssid=ssid,
                                          security=security)
+    elif profile_name == 'linksys_ea4500':
+        config = linksys.linksys_ea4500(iface_wlan_2g=iface_wlan_2g,
+                                        iface_wlan_5g=iface_wlan_5g,
+                                        channel=channel,
+                                        ssid=ssid,
+                                        security=security)
+    elif profile_name == 'linksys_ea9500':
+        config = linksys.linksys_ea9500(iface_wlan_2g=iface_wlan_2g,
+                                        iface_wlan_5g=iface_wlan_5g,
+                                        channel=channel,
+                                        ssid=ssid,
+                                        security=security)
+    elif profile_name == 'linksys_wrt1900acv2':
+        config = linksys.linksys_wrt1900acv2(iface_wlan_2g=iface_wlan_2g,
+                                             iface_wlan_5g=iface_wlan_5g,
+                                             channel=channel,
+                                             ssid=ssid,
+                                             security=security)
+    elif profile_name == 'netgear_r7000':
+        config = netgear.netgear_r7000(iface_wlan_2g=iface_wlan_2g,
+                                       iface_wlan_5g=iface_wlan_5g,
+                                       channel=channel,
+                                       ssid=ssid,
+                                       security=security)
+    elif profile_name == 'netgear_wndr3400':
+        config = netgear.netgear_wndr3400(iface_wlan_2g=iface_wlan_2g,
+                                          iface_wlan_5g=iface_wlan_5g,
+                                          channel=channel,
+                                          ssid=ssid,
+                                          security=security)
+    elif profile_name == 'securifi_almond':
+        config = securifi.securifi_almond(iface_wlan_2g=iface_wlan_2g,
+                                          channel=channel,
+                                          ssid=ssid,
+                                          security=security)
+    elif profile_name == 'tplink_archerc5':
+        config = tplink.tplink_archerc5(iface_wlan_2g=iface_wlan_2g,
+                                        iface_wlan_5g=iface_wlan_5g,
+                                        channel=channel,
+                                        ssid=ssid,
+                                        security=security)
+    elif profile_name == 'tplink_archerc7':
+        config = tplink.tplink_archerc7(iface_wlan_2g=iface_wlan_2g,
+                                        iface_wlan_5g=iface_wlan_5g,
+                                        channel=channel,
+                                        ssid=ssid,
+                                        security=security)
+    elif profile_name == 'tplink_c1200':
+        config = tplink.tplink_c1200(iface_wlan_2g=iface_wlan_2g,
+                                     iface_wlan_5g=iface_wlan_5g,
+                                     channel=channel,
+                                     ssid=ssid,
+                                     security=security)
+    elif profile_name == 'tplink_tlwr940n':
+        config = tplink.tplink_tlwr940n(iface_wlan_2g=iface_wlan_2g,
+                                        channel=channel,
+                                        ssid=ssid,
+                                        security=security)
     else:
         raise ValueError('Invalid ap model specified (%s)' % profile_name)
 

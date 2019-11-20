@@ -291,7 +291,7 @@ class TsharkSnifferBase(OtaSnifferBase):
         scan_result = self._scan_for_networks()
 
         if network["SSID"] not in scan_result:
-            self.log.error("{} not found in scan".format(network["SSID"]))
+            self.log.warning("{} not found in scan".format(network["SSID"]))
 
         if "password" not in network.keys():
             network["password"] = ""
