@@ -28,6 +28,10 @@ PHONE_BATTERY_VOLTAGE = 4.2
 
 
 class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
+    def setup_class(self):
+        super().setup_class()
+        self.unpack_userparams(toggle_interval=20, toggle_times=10)
+
     def teardown_test(self):
         # Delete the brconfigs attributes as this is duplicated with one of the
         # ap's bridge interface config
@@ -46,8 +50,8 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
         network_aux = copy.deepcopy(self.aux_network)[hc.BAND_2G]
         self.log.info('Set attenuation to connect device to the aux AP')
         self.set_attenuation(self.atten_level[wc.AP_AUX])
-        self.brconfigs_aux = self.setup_ap_connection(
-            network_aux, ap=self.access_point_aux)
+        self.brconfigs_aux = self.setup_ap_connection(network_aux,
+                                                      ap=self.access_point_aux)
         self.log.info('Set attenuation to connect device to the main AP')
         self.set_attenuation(self.atten_level[wc.AP_MAIN])
         self.brconfigs_main = self.setup_ap_connection(
@@ -74,8 +78,8 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             network_main, ap=self.access_point_main)
         self.log.info('Set attenuation to connect device to the aux AP')
         self.set_attenuation(self.atten_level[wc.AP_AUX])
-        self.brconfigs_aux = self.setup_ap_connection(
-            network_aux, ap=self.access_point_aux)
+        self.brconfigs_aux = self.setup_ap_connection(network_aux,
+                                                      ap=self.access_point_aux)
         self.mon_info.duration = self.toggle_interval
         self.dut.droid.goToSleepNow()
         time.sleep(5)
@@ -98,8 +102,9 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             total_samples += result.num_samples
         average_current = total_current / total_samples
 
-        self.power_result.metric_value = [result.total_power for result in
-                                          results]
+        self.power_result.metric_value = [
+            result.total_power for result in results
+        ]
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)
@@ -121,8 +126,8 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             network_main, ap=self.access_point_main)
         self.log.info('Set attenuation to connect device to the aux AP')
         self.set_attenuation(self.atten_level[wc.AP_AUX])
-        self.brconfigs_aux = self.setup_ap_connection(
-            network_aux, ap=self.access_point_aux)
+        self.brconfigs_aux = self.setup_ap_connection(network_aux,
+                                                      ap=self.access_point_aux)
         self.mon_info.duration = self.toggle_interval
         time.sleep(5)
         # Toggle between two networks
@@ -144,8 +149,9 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             total_samples += result.num_samples
         average_current = total_current / total_samples
 
-        self.power_result.metric_value = [result.total_power for result in
-                                          results]
+        self.power_result.metric_value = [
+            result.total_power for result in results
+        ]
         # Take Bugreport
         if self.bug_report:
             self.dut.take_bug_report(self.test_name, begin_time)
@@ -167,8 +173,8 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             network_main, ap=self.access_point_main)
         self.log.info('Set attenuation to connect device to the aux AP')
         self.set_attenuation(self.atten_level[wc.AP_AUX])
-        self.brconfigs_aux = self.setup_ap_connection(
-            network_aux, ap=self.access_point_aux)
+        self.brconfigs_aux = self.setup_ap_connection(network_aux,
+                                                      ap=self.access_point_aux)
         self.log.info('Forget network {}'.format(network_aux[wc.SSID]))
         wutils.wifi_forget_network(self.dut, network_aux[wc.SSID])
         self.log.info('Set attenuation to trigger wedge condition')
