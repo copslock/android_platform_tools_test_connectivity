@@ -25,8 +25,8 @@ LTE_CONN_RESP = 'CONN'
 LTE_IDLE_RESP = 'IDLE'
 LTE_PSWITCHED_ON_RESP = 'ON'
 LTE_PSWITCHED_OFF_RESP = 'OFF'
-LTE_TURN_ON_RESP = 'ON,ADJ'
-LTE_TURN_OFF_RESP = 'OFF,ADJ'
+
+STATE_CHANGE_TIMEOUT = 20
 
 
 class LteState(Enum):
@@ -185,14 +185,33 @@ class Cmw500(abstract_inst.SocketInstrument):
         self._send('SYST:DISP:UPD ON')
 
     def switch_lte_signalling(self, state):
-        """Turns LTE signalling ON/OFF.
+        """ Turns LTE signalling ON/OFF.
 
         Args:
-              state: ON/OFF.
+              state: an instance of LteState indicating the state to which LTE
+                signal has to be set.
         """
-        cmd = 'SOURce:LTE:SIGN:CELL:STATe {}'.format(state.value)
+        if not isinstance(state, LteState):
+            raise ValueError('state should be the instance of LteState.')
+
+        state = state.value
+
+        cmd = 'SOURce:LTE:SIGN:CELL:STATe {}'.format(state)
         self.send_and_recv(cmd)
-        self.wait_for_lte_state_change()
+
+        time_elapsed = 0
+        while time_elapsed < STATE_CHANGE_TIMEOUT:
+            response = self.send_and_recv('SOURce:LTE:SIGN:CELL:STATe:ALL?')
+
+            if response == state + ',ADJ':
+                self._logger.info('LTE signalling is now {}.'.format(state))
+                break
+
+            # Wait for a second and increase time count by one
+            time.sleep(1)
+            time_elapsed += 1
+        else:
+            raise CmwError('Failed to turn {} LTE signalling.'.format(state))
 
     def enable_packet_switching(self):
         """Enable packet switching in call box."""
@@ -242,31 +261,6 @@ class Cmw500(abstract_inst.SocketInstrument):
         """
         cmd = 'ROUTe:LTE:SIGN:SCENario:{}'.format(mimo.value)
         self.send_and_recv(cmd)
-
-    def wait_for_lte_state_change(self, timeout=20):
-        """Waits until the state of LTE changes.
-
-        Args:
-            timeout: timeout for lte to be turned ON/OFF.
-
-        Raises:
-            CmwError on timeout.
-        """
-        while timeout > 0:
-            state = self.send_and_recv('SOURce:LTE:SIGN:CELL:STATe:ALL?')
-
-            if state == LTE_TURN_ON_RESP:
-                self._logger.debug('LTE turned ON.')
-                break
-            elif state == LTE_TURN_OFF_RESP:
-                self._logger.debug('LTE turned OFF.')
-                break
-
-            # Wait for a second and decrease count by one
-            time.sleep(1)
-            timeout -= 1
-        else:
-            raise CmwError('Failed to turn ON/OFF lte signalling.')
 
     def wait_for_pswitched_state(self, timeout=10):
         """Wait until pswitched state.
