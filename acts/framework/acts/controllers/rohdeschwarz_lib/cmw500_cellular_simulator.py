@@ -219,10 +219,11 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             enabled: a boolean indicating if the timer should be on or off.
             time: time in seconds for the timer to expire
         """
-        # Setting this method to pass instead of raising an exception as it
-        # it is required by LTE sims.
-        # TODO (b/141838145): Implement RRC status change timer for CMW500.
-        pass
+        if enabled:
+            self.cmw.rrc_connection = cmw500.RrcState.RRC_OFF
+            self.cmw.rrc_connection_timer = time
+        else:
+            self.cmw.rrc_connection = cmw500.RrcState.RRC_ON
 
     def set_band(self, bts_index, band):
         """ Sets the band for the indicated base station.
@@ -503,7 +504,7 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             self.cmw.wait_for_attached_state(timeout=timeout)
         except cmw500.CmwError:
             raise cc.CellularSimulatorError('The phone was not in '
-                                            'Communication state before '
+                                            'attached state before '
                                             'the timeout period ended.')
 
     def wait_until_communication_state(self, timeout=120):
@@ -513,7 +514,12 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             timeout: after this amount of time the method will raise a
                 CellularSimulatorError exception. Default is 120 seconds.
         """
-        self.cmw.wait_for_connected_state(timeout=timeout)
+        try:
+            self.cmw.wait_for_rrc_state(cmw500.LTE_CONN_RESP, timeout=timeout)
+        except cmw500.CmwError:
+            raise cc.CellularSimulatorError('The phone was not in '
+                                            'Communication state before '
+                                            'the timeout period ended.')
 
     def wait_until_idle_state(self, timeout=120):
         """ Waits until the DUT is in Idle state.
@@ -522,7 +528,12 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             timeout: after this amount of time the method will raise a
                 CellularSimulatorError exception. Default is 120 seconds.
         """
-        raise NotImplementedError()
+        try:
+            self.cmw.wait_for_rrc_state(cmw500.LTE_IDLE_RESP, timeout=timeout)
+        except cmw500.CmwError:
+            raise cc.CellularSimulatorError('The phone was not in '
+                                            'Idle state before '
+                                            'the timeout period ended.')
 
     def detach(self):
         """ Turns off all the base stations so the DUT loose connection."""
