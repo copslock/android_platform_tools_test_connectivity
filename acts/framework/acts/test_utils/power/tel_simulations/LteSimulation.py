@@ -653,8 +653,6 @@ class LteSimulation(BaseSimulation):
                 new_config.ul_mcs = 23
 
         # Setup LTE RRC status change function and timer for LTE idle test case
-        # TODO (b/141838145): setting RRC timer parameters requires unwrapping
-        # the simulator class as it still doesn't support these methods.
         values = self.consume_parameter(parameters,
                                         self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
         if not values:
@@ -664,7 +662,8 @@ class LteSimulation(BaseSimulation):
             self.simulator.set_lte_rrc_state_change_timer(False)
         else:
             timer = int(values[1])
-            self.simulator.anritsu.set_lte_rrc_status_change(True, timer)
+            self.simulator.set_lte_rrc_state_change_timer(True, timer)
+            self.rrc_sc_timer = timer
 
         # Get uplink power
 

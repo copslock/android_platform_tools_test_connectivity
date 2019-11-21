@@ -176,7 +176,7 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
         self.cmw.wait_for_attached_state()
         self.log.info('Device attached with callbox.')
         self.log.debug('Waiting for connected state.')
-        self.cmw.wait_for_connected_state()
+        self.cmw.wait_for_rrc_state(cmw500.LTE_CONN_RESP)
         self.log.info('Device connected with callbox')
 
     def initiate_wifi_tethering_and_connect(self, wifi_band=None):

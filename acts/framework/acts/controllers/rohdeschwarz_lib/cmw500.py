@@ -22,6 +22,7 @@ from acts.controllers import abstract_inst
 
 LTE_ATTACH_RESP = 'ATT'
 LTE_CONN_RESP = 'CONN'
+LTE_IDLE_RESP = 'IDLE'
 LTE_PSWITCHED_ON_RESP = 'ON'
 LTE_PSWITCHED_OFF_RESP = 'OFF'
 LTE_TURN_ON_RESP = 'ON,ADJ'
@@ -313,27 +314,33 @@ class Cmw500(abstract_inst.SocketInstrument):
         else:
             raise CmwError('Device could not be attached')
 
-    def wait_for_connected_state(self, timeout=120):
-        """Checks if controller connected with device.
+    def wait_for_rrc_state(self, state, timeout=120):
+        """ Waits until a certain RRC state is set.
 
         Args:
+            state: the RRC state that is being waited for.
             timeout: timeout for phone to be in connnected state.
 
         Raises:
             CmwError on time out.
         """
-        while timeout > 0:
-            conn_state = self.send_and_recv('SENSe:LTE:SIGN:RRCState?')
+        if state not in [LTE_CONN_RESP, LTE_IDLE_RESP]:
+            raise ValueError(
+                'The allowed values for state are {} and {}.'.format(
+                    LTE_CONN_RESP, LTE_IDLE_RESP))
 
-            if conn_state == LTE_CONN_RESP:
-                self._logger.debug('Call box connected with device')
+        while timeout > 0:
+            new_state = self.send_and_recv('SENSe:LTE:SIGN:RRCState?')
+
+            if new_state == state:
+                self._logger.debug('The RRC state is {}.'.format(new_state))
                 break
 
             # Wait for a second and decrease count by one
             time.sleep(1)
             timeout -= 1
         else:
-            raise CmwError('Call box could not be connected with device')
+            raise CmwError('Timeout before RRC state was {}.'.format(state))
 
     def reset(self):
         """System level reset"""
