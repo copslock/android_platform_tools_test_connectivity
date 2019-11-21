@@ -90,14 +90,24 @@ class HostapdConfig(object):
     @property
     def _get_default_config(self):
         """Returns: dict of default options for hostapd."""
-        return collections.OrderedDict([
-            ('logger_syslog', '-1'),
-            ('logger_syslog_level', '0'),
-            # default RTS and frag threshold to ``off''
-            ('rts_threshold', '2347'),
-            ('fragm_threshold', '2346'),
-            ('driver', hostapd_constants.DRIVER_NAME)
-        ])
+        if self.set_ap_defaults_profile == 'mistral':
+            return collections.OrderedDict([
+                ('logger_syslog', '-1'),
+                ('logger_syslog_level', '0'),
+                # default RTS and frag threshold to ``off''
+                ('rts_threshold', None),
+                ('fragm_threshold', None),
+                ('driver', hostapd_constants.DRIVER_NAME)
+            ])
+        else:
+            return collections.OrderedDict([
+                ('logger_syslog', '-1'),
+                ('logger_syslog_level', '0'),
+                # default RTS and frag threshold to ``off''
+                ('rts_threshold', '2347'),
+                ('fragm_threshold', '2346'),
+                ('driver', hostapd_constants.DRIVER_NAME)
+            ])
 
     @property
     def _hostapd_ht_capabilities(self):
@@ -325,7 +335,7 @@ class HostapdConfig(object):
                  min_streams=None,
                  bss_settings=[],
                  additional_parameters={},
-                 set_ap_defaults_model=None):
+                 set_ap_defaults_profile='whirlwind'):
         """Construct a HostapdConfig.
 
         You may specify channel or frequency, but not both.  Both options
@@ -368,7 +378,9 @@ class HostapdConfig(object):
             bss_settings: The settings for all bss.
             additional_parameters: A dictionary of additional parameters to add
                 to the hostapd config.
+            set_ap_defaults_profile: profile name to load defaults from
         """
+        self.set_ap_defaults_profile = set_ap_defaults_profile
         self._interface = interface
         if channel is not None and frequency is not None:
             raise ValueError('Specify either frequency or channel '
@@ -551,6 +563,7 @@ class HostapdConfig(object):
         """
         # Start with the default config parameters.
         conf = self._get_default_config
+
         if self._interface:
             conf['interface'] = self._interface
         if self._bssid:
