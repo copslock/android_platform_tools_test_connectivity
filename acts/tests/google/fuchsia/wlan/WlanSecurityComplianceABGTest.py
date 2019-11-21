@@ -27,6 +27,7 @@ from acts.utils import rand_hex_str
 
 AP_11ABG_PROFILE_NAME='whirlwind_11ag_legacy'
 
+
 def create_security_profile(test_func):
     """Decorator for generating hostapd security profile object based on the
     test name.
@@ -85,14 +86,10 @@ def create_security_profile(test_func):
             password = rand_ascii_str(5)
         elif 'wep_13_chars' in test_func.__name__:
             password = rand_ascii_str(13)
-        elif 'wep_16_chars' in test_func.__name__:
-            password = rand_ascii_str(16)
         elif 'wep_10_hex' in test_func.__name__:
             password = str(rand_hex_str(10)).lower()
         elif 'wep_26_hex' in test_func.__name__:
             password = str(rand_hex_str(26)).lower()
-        elif 'wep_32_hex' in test_func.__name__:
-            password = str(rand_hex_str(32)).lower()
         else:
             password = rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH)
         self.security_profile = Security(security_mode=security_mode,
@@ -185,20 +182,6 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
         )
 
     @create_security_profile
-    def test_associate_11a_sec_open_wep_16_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
-
-    @create_security_profile
     def test_associate_11a_sec_open_wep_10_hex_ptk_none(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
@@ -214,20 +197,6 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_26_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
-
-    @create_security_profile
-    def test_associate_11a_sec_open_wep_32_hex_ptk_none(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -269,20 +238,6 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
         )
 
     @create_security_profile
-    def test_associate_11a_sec_shared_wep_16_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
-
-    @create_security_profile
     def test_associate_11a_sec_shared_wep_10_hex_ptk_none(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
@@ -298,20 +253,6 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_26_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
-
-    @create_security_profile
-    def test_associate_11a_sec_shared_wep_32_hex_ptk_none(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1239,7 +1180,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.security_profile.password,
             force_wmm=False,
@@ -1253,21 +1194,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
-
-    @create_security_profile
-    def test_associate_11bg_sec_open_wep_16_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.security_profile.password,
             force_wmm=False,
@@ -1281,7 +1208,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.security_profile.password,
             force_wmm=False,
@@ -1295,21 +1222,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
-
-    @create_security_profile
-    def test_associate_11bg_sec_open_wep_32_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.security_profile.password,
             force_wmm=False,
@@ -1323,7 +1236,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.security_profile.password,
             force_wmm=False,
@@ -1337,21 +1250,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
-
-    @create_security_profile
-    def test_associate_11bg_sec_shared_wep_16_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.security_profile.password,
             force_wmm=False,
@@ -1365,7 +1264,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.security_profile.password,
             force_wmm=False,
@@ -1379,21 +1278,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
-
-    @create_security_profile
-    def test_associate_11bg_sec_shared_wep_32_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.security_profile.password,
             force_wmm=False,
