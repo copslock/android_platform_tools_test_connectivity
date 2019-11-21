@@ -74,6 +74,8 @@ class LteSimulation(BaseSimulation):
     PARAM_DL_PW = 'pdl'
     PARAM_BAND = "band"
     PARAM_MIMO = "mimo"
+    PARAM_DL_MCS = 'dlmcs'
+    PARAM_UL_MCS = 'ulmcs'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
     # Test config keywords
@@ -639,18 +641,39 @@ class LteSimulation(BaseSimulation):
                     new_config.bandwidth, new_config.transmission_mode,
                     dl_pattern, ul_pattern))
 
-            if self.dl_256_qam and new_config.bandwidth == 1.4:
-                new_config.dl_mcs = 26
-            elif (not self.dl_256_qam and self.primary_config.tbs_pattern_on
-                  and new_config.bandwidth != 1.4):
-                new_config.dl_mcs = 28
-            else:
-                new_config.dl_mcs = 27
+            # Look for a DL MCS configuration in the test parameters. If it is
+            # not present, use a default value.
+            dlmcs = self.consume_parameter(parameters, self.PARAM_DL_MCS, 1)
 
-            if self.ul_64_qam:
-                new_config.ul_mcs = 28
+            if dlmcs:
+                new_config.dl_mcs = int(dlmcs[1])
             else:
-                new_config.ul_mcs = 23
+                self.log.warning(
+                    'The test name does not include the {} parameter. Setting '
+                    'to the max value by default'.format(self.PARAM_DL_MCS))
+                if self.dl_256_qam and new_config.bandwidth == 1.4:
+                    new_config.dl_mcs = 26
+                elif (not self.dl_256_qam
+                      and self.primary_config.tbs_pattern_on
+                      and new_config.bandwidth != 1.4):
+                    new_config.dl_mcs = 28
+                else:
+                    new_config.dl_mcs = 27
+
+            # Look for an UL MCS configuration in the test parameters. If it is
+            # not present, use a default value.
+            ulmcs = self.consume_parameter(parameters, self.PARAM_UL_MCS, 1)
+
+            if ulmcs:
+                new_config.ul_mcs = int(ulmcs[1])
+            else:
+                self.log.warning(
+                    'The test name does not include the {} parameter. Setting '
+                    'to the max value by default'.format(self.PARAM_UL_MCS))
+                if self.ul_64_qam:
+                    new_config.ul_mcs = 28
+                else:
+                    new_config.ul_mcs = 23
 
         # Setup LTE RRC status change function and timer for LTE idle test case
         # TODO (b/141838145): setting RRC timer parameters requires unwrapping
