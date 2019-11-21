@@ -618,6 +618,23 @@ class BaseStation(object):
         self._cmw.send_and_recv(cmd)
 
     @property
+    def uplink_power_control(self):
+        """Gets open loop nominal power directly."""
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:OLNPower?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @uplink_power_control.setter
+    def uplink_power_control(self, ul_power):
+        """Sets open loop nominal power directly.
+
+        Args:
+            ul_power: uplink power level.
+        """
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:OLNPower {}'.format(
+            self._bts, ul_power)
+        self._cmw.send_and_recv(cmd)
+
+    @property
     def uldl_configuration(self):
         """Gets uldl configuration of the cell."""
         cmd = 'CONFigure:LTE:SIGN:CELL:{}:ULDL?'.format(self._bts)
@@ -708,8 +725,7 @@ class BaseStation(object):
         elif self.scheduling_mode == 'UDCH':
             rb, start_rb, modulation, tbs = rb_config
 
-            if not 0 <= rb <= 50:
-                raise ValueError('rb should be between 0 and 50 inclusive.')
+            self.validate_rb(rb)
 
             if not isinstance(modulation, ModulationType):
                 raise ValueError('Modulation should be of type '
@@ -750,8 +766,7 @@ class BaseStation(object):
         elif self.scheduling_mode == 'UDCH':
             rb, start_rb, modulation, tbs = rb_config
 
-            if not 0 <= rb <= 50:
-                raise ValueError('rb should be between 0 and 50 inclusive.')
+            self.validate_rb(rb)
 
             if not isinstance(modulation, ModulationType):
                 raise ValueError('Modulation should be of type '
@@ -760,6 +775,42 @@ class BaseStation(object):
                    '{},{}'.format(self._bts, rb, start_rb, modulation.value,
                                   tbs))
             self._cmw.send_and_recv(cmd)
+
+    def validate_rb(self, rb):
+        """Validates if rb is within the limits for bandwidth set.
+
+        Args:
+            rb: No. of resource blocks.
+
+        Raises:
+            ValueError if rb out of range.
+        """
+        bandwidth = self.bandwidth
+
+        if bandwidth == LteBandwidth.BANDWIDTH_1MHz.value:
+            if not 0 <= rb <= 6:
+                raise ValueError('RB should be between 0 to 6 inclusive'
+                                 ' for 1.4Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_3MHz.value:
+            if not 0 <= rb <= 10:
+                raise ValueError('RB should be between 0 to 10 inclusive'
+                                 ' for 3 Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_5MHz.value:
+            if not 0 <= rb <= 25:
+                raise ValueError('RB should be between 0 to 25 inclusive'
+                                 ' for 5 Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_10MHz.value:
+            if not 0 <= rb <= 50:
+                raise ValueError('RB should be between 0 to 50 inclusive'
+                                 ' for 10 Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_15MHz.value:
+            if not 0 <= rb <= 75:
+                raise ValueError('RB should be between 0 to 75 inclusive'
+                                 ' for 15 Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_20MHz.value:
+            if not 0 <= rb <= 100:
+                raise ValueError('RB should be between 0 to 100 inclusive'
+                                 ' for 20 Mhz.')
 
     @property
     def rb_position_dl(self):
@@ -862,6 +913,23 @@ class BaseStation(object):
             self._bts, set_type.value)
         self._cmw.send_and_recv(cmd)
         cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:PEXecute'.format(self._bts)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def tpc_closed_loop_target_power(self):
+        """Gets the target powers for power control with the TPC setup."""
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:CLTPower?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @tpc_closed_loop_target_power.setter
+    def tpc_closed_loop_target_power(self, cltpower):
+        """Sets the target powers for power control with the TPC setup.
+
+        Args:
+            tpower: Target power.
+        """
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:CLTPower {}'.format(
+            self._bts, cltpower)
         self._cmw.send_and_recv(cmd)
 
 
