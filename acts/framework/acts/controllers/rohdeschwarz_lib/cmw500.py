@@ -251,8 +251,7 @@ class Cmw500(abstract_inst.SocketInstrument):
         Raises:
             CmwError on timeout.
         """
-        end_time = time.time() + timeout
-        while time.time() <= end_time:
+        while timeout > 0:
             state = self.send_and_recv('SOURce:LTE:SIGN:CELL:STATe:ALL?')
 
             if state == LTE_TURN_ON_RESP:
@@ -261,6 +260,10 @@ class Cmw500(abstract_inst.SocketInstrument):
             elif state == LTE_TURN_OFF_RESP:
                 self._logger.debug('LTE turned OFF.')
                 break
+
+            # Wait for a second and decrease count by one
+            time.sleep(1)
+            timeout -= 1
         else:
             raise CmwError('Failed to turn ON/OFF lte signalling.')
 
@@ -273,8 +276,7 @@ class Cmw500(abstract_inst.SocketInstrument):
         Raises:
             CmwError on timeout.
         """
-        end_time = time.time() + timeout
-        while time.time() <= end_time:
+        while timeout > 0:
             state = self.send_and_recv('FETCh:LTE:SIGN:PSWitched:STATe?')
             if state == LTE_PSWITCHED_ON_RESP:
                 self._logger.debug('Connection to setup initiated.')
@@ -282,6 +284,10 @@ class Cmw500(abstract_inst.SocketInstrument):
             elif state == LTE_PSWITCHED_OFF_RESP:
                 self._logger.debug('Connection to setup detached.')
                 break
+
+            # Wait for a second and decrease count by one
+            time.sleep(1)
+            timeout -= 1
         else:
             raise CmwError('Failure in setting up/detaching connection')
 
@@ -294,13 +300,16 @@ class Cmw500(abstract_inst.SocketInstrument):
         Raises:
             CmwError on time out.
         """
-        end_time = time.time() + timeout
-        while time.time() <= end_time:
+        while timeout > 0:
             state = self.send_and_recv('FETCh:LTE:SIGN:PSWitched:STATe?')
 
             if state == LTE_ATTACH_RESP:
                 self._logger.debug('Call box attached with device')
                 break
+
+            # Wait for a second and decrease count by one
+            time.sleep(1)
+            timeout -= 1
         else:
             raise CmwError('Device could not be attached')
 
@@ -313,13 +322,16 @@ class Cmw500(abstract_inst.SocketInstrument):
         Raises:
             CmwError on time out.
         """
-        end_time = time.time() + timeout
-        while time.time() <= end_time:
+        while timeout > 0:
             conn_state = self.send_and_recv('SENSe:LTE:SIGN:RRCState?')
 
             if conn_state == LTE_CONN_RESP:
                 self._logger.debug('Call box connected with device')
                 break
+
+            # Wait for a second and decrease count by one
+            time.sleep(1)
+            timeout -= 1
         else:
             raise CmwError('Call box could not be connected with device')
 
