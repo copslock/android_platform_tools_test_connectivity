@@ -494,7 +494,12 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             timeout: after this amount of time the method will raise a
                 CellularSimulatorError exception. Default is 120 seconds.
         """
-        self.cmw.wait_for_attached_state(timeout=timeout)
+        try:
+            self.cmw.wait_for_attached_state(timeout=timeout)
+        except cmw500.CmwError:
+            raise cc.CellularSimulatorError('The phone was not in '
+                                            'Communication state before '
+                                            'the timeout period ended.')
 
     def wait_until_communication_state(self, timeout=120):
         """ Waits until the DUT is in Communication state.
