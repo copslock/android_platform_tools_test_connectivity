@@ -1148,6 +1148,7 @@ class GoogleWifiAP(WifiRetailAP):
             "region": "United States",
             "brand": "Google",
             "model": "Wifi",
+            "hostapd_profile": "whirlwind",
             "status_2G": 0,
             "status_5G_1": 0,
             "ssid_2G": "GoogleWifi_2G",
@@ -1249,9 +1250,11 @@ class GoogleWifiAP(WifiRetailAP):
 
         bss_settings = []
         ssid = self.ap_settings["ssid_{}".format(network)]
-        if "WPA" in self.ap_settings["security_type_{}".format(network)]:
+        security_mode = self.ap_settings["security_type_{}".format(
+            network)].lower()
+        if "wpa" in security_mode:
             password = self.ap_settings["password_{}".format(network)]
-            security = hostapd_security.Security(security_mode="wpa",
+            security = hostapd_security.Security(security_mode=security_mode,
                                                  password=password)
         else:
             security = hostapd_security.Security(security_mode=None,
@@ -1265,7 +1268,7 @@ class GoogleWifiAP(WifiRetailAP):
             security=security,
             bss_settings=bss_settings,
             vht_bandwidth=bandwidth,
-            profile_name='whirlwind',
+            profile_name=self.ap_settings["hostapd_profile"],
             iface_wlan_2g=self.access_point.wlan_2g,
             iface_wlan_5g=self.access_point.wlan_5g)
         config_bridge = self.access_point.generate_bridge_configs(channel)
