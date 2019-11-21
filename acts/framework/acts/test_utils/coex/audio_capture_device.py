@@ -102,7 +102,7 @@ class CaptureAudioOverAdb(AudioCaptureBase):
         cmd = 'ap2f --usage 1 --start --duration {} --target {}'.format(
             self.audio_params['duration'], self.adb_path,
         )
-        self._ad.adb.shell(cmd)
+        self._ad.adb.shell_nb(cmd)
 
     def stop(self):
         """Stops the audio capture and stores it in wave file.
