@@ -167,6 +167,12 @@ class TpcPowerControl(Enum):
     FLEX_POWER = 'FULPower'
 
 
+class ReducedPdcch(Enum):
+    """Enables/disables the reduction of PDCCH resources."""
+    ON = 'ON'
+    OFF = 'OFF'
+
+
 class Cmw500(abstract_inst.SocketInstrument):
 
     def __init__(self, ip_addr, port):
@@ -898,6 +904,24 @@ class BaseStation(object):
             raise ValueError('num_antenna should be an instance of MimoModes.')
         cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas {}'.format(
             self._bts, num_antenna)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def reduced_pdcch(self):
+        """Gets the reduction of PDCCH resources state."""
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:PDCCh:RPDCch?'.format(
+            self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @reduced_pdcch.setter
+    def reduced_pdcch(self, state):
+        """Sets the reduction of PDCCH resources state.
+
+        Args:
+            state: ON/OFF.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:PDCCh:RPDCch {}'.format(
+            self._bts, state.value)
         self._cmw.send_and_recv(cmd)
 
     def tpc_power_control(self, set_type):
