@@ -1273,7 +1273,7 @@ class GoogleWifiAP(WifiRetailAP):
             iface_wlan_5g=self.access_point.wlan_5g)
         config_bridge = self.access_point.generate_bridge_configs(channel)
         brconfigs = bridge_interface.BridgeInterfaceConfigs(
-            config_bridge[0], config_bridge[1], config_bridge[2])
+            config_bridge[0], "lan0", config_bridge[2])
         self.access_point.bridge.startup(brconfigs)
         self.access_point.start_ap(config)
         self.set_power(network, self.ap_settings["power_{}".format(network)])
