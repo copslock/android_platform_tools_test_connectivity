@@ -37,7 +37,7 @@ import urllib.request
 VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
 VPN_PARAMS = cconst.VpnReqParams
-TCPDUMP_PATH = "/data/local/tmp/tcpdump"
+TCPDUMP_PATH = "/data/local/tmp/"
 
 
 def verify_lte_data_and_tethering_supported(ad):
