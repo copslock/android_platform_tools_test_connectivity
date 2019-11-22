@@ -390,6 +390,8 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             nrb_ul: Number of RBs for uplink.
         """
         bts = self.bts[bts_index]
+        bts.reduced_pdcch = cmw500.ReducedPdcch.ON
+
         scheduling = CMW_SCH_MAPPING[scheduling]
         bts.scheduling_mode = scheduling
 
