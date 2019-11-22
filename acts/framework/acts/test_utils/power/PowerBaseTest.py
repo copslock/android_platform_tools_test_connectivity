@@ -119,23 +119,29 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon.set_voltage(self.mon_voltage)
         self.mon.attach_device(self.dut)
 
-        # Unpack the custom files based on the test configs
+        # Unpack the thresholds file or fail class setup if it can't be found
         for file in self.custom_files:
             if 'pass_fail_threshold_' + self.dut.model in file:
                 self.threshold_file = file
-            elif 'attenuator_setting' in file:
+                break
+        else:
+            raise RuntimeError('Required test pass/fail threshold file is '
+                               'missing')
+
+        # Unpack the rockbottom script or fail class setup if it can't be found
+        for file in self.custom_files:
+            if 'rockbottom_' + self.dut.model in file:
+                self.rockbottom_script = file
+                break
+        else:
+            raise RuntimeError('Required rockbottom script is missing.')
+
+        # Unpack optional custom files
+        for file in self.custom_files:
+            if 'attenuator_setting' in file:
                 self.attenuation_file = file
             elif 'network_config' in file:
                 self.network_file = file
-            elif 'rockbottom_' + self.dut.model in file:
-                self.rockbottom_script = file
-        # Abort the class if threshold and rockbottom file is missing
-        asserts.abort_class_if(
-            not self.threshold_file,
-            'Required test pass/fail threshold file is missing')
-        asserts.abort_class_if(
-            not self.rockbottom_script,
-            'Required rockbottom setting script is missing')
 
         if hasattr(self, 'attenuators'):
             self.num_atten = self.attenuators[0].instrument.num_atten
