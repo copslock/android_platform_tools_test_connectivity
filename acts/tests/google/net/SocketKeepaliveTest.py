@@ -663,7 +663,7 @@ class SocketKeepaliveTest(base_test.BaseTestClass):
         max_ka_net = self.dut.droid.getSupportedKeepalivesForNetwork()
         self.log.info("Max Keepalives supported: %s" % max_ka_net)
         state = True
-        for _ in range(max_ka_net+1):
+        for _ in range(1, max_ka_net+1):
             cport, interval = self._get_client_port_and_time_interval()
             sock, _ = self._open_tcp_socket_and_connect(cport)
             if _ == max_ka_net:
