@@ -274,6 +274,18 @@ class BaseSimulation():
         # Wait until it goes to communication state
         self.simulator.wait_until_communication_state()
 
+        # Set uplink power to a minimum before going to the actual desired
+        # value. This avoid inconsistencies produced by the hysteresis in the
+        # PA switching points.
+        self.log.info('Setting UL power to -30 dBm before going to the '
+                      'requested value to avoid incosistencies caused by '
+                      'hysteresis.')
+        new_config = self.BtsConfig()
+        new_config.input_power = self.calibrated_uplink_tx_power(
+            self.primary_config, -30)
+        self.simulator.configure_bts(new_config)
+        self.primary_config.incorporate(new_config)
+
         # Set signal levels obtained from the test parameters
         new_config = self.BtsConfig()
         new_config.output_power = self.calibrated_downlink_rx_power(
