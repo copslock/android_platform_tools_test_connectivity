@@ -404,10 +404,10 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                                 num_of_tries=5,
                                 check_connectivity=False)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
-        self.atten_dut_chain_map.setdefault(
-            testcase_params['channel'],
-            wputils.get_current_atten_dut_chain_map(self.attenuators, self.dut,
-                                                    self.ping_server))
+        if testcase_params['channel'] not in self.atten_dut_chain_map.keys():
+            self.atten_dut_chain_map[testcase_params[
+                'channel']] = wputils.get_current_atten_dut_chain_map(
+                    self.attenuators, self.dut, self.ping_server)
         self.log.info("Current Attenuator-DUT Chain Map: {}".format(
             self.atten_dut_chain_map[testcase_params['channel']]))
         for idx, atten in enumerate(self.attenuators):
