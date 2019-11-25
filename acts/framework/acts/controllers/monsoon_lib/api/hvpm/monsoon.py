@@ -49,7 +49,7 @@ class Monsoon(BaseMonsoon):
         self.serial = serial
         self._mon = HVPM.Monsoon()
         self._mon.setup_usb(serial)
-        if self._mon.Protocol is None:
+        if self._mon.Protocol.DEVICE is None:
             raise ValueError('HVPM Monsoon %s could not be found.' % serial)
 
     def set_voltage(self, voltage):
