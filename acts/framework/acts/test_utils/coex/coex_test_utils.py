@@ -56,6 +56,7 @@ from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts.test_utils.wifi.wifi_power_test_utils import bokeh_plot
+from acts.test_utils.wifi.wifi_power_test_utils import get_phone_ip
 from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
@@ -714,18 +715,6 @@ def music_play_and_check_via_app(pri_ad, headset_mac_address, duration=5):
     finally:
         pri_ad.adb.shell("am force-stop com.google.android.music")
         return True
-
-
-def get_phone_ip(ad):
-    """Get the WiFi IP address of the phone.
-
-    Args:
-        ad: the android device under test
-
-    Returns:
-        Ip address of the phone for WiFi, as a string
-    """
-    return ad.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
 
 def pair_dev_to_headset(pri_ad, dev_to_pair):
