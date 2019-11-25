@@ -33,10 +33,10 @@ from acts.test_utils.coex.coex_test_utils import (
 from acts.test_utils.coex.coex_test_utils import configure_and_start_ap
 from acts.test_utils.coex.coex_test_utils import check_wifi_status
 from acts.test_utils.coex.coex_test_utils import iperf_result
-from acts.test_utils.coex.coex_test_utils import get_phone_ip
 from acts.test_utils.coex.coex_test_utils import parse_fping_results
 from acts.test_utils.coex.coex_test_utils import wifi_connection_check
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
+from acts.test_utils.wifi.wifi_power_test_utils import get_phone_ip
 from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
