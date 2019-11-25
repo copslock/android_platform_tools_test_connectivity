@@ -196,7 +196,8 @@ class PowerBaseTest(base_test.BaseTestClass):
 
         """
         self.log.info('Tearing down the test class')
-        self.mon.usb('on')
+        if hasattr(self, 'monsoons'):
+            self.monsoons[0].usb('on')
 
     def dut_rockbottom(self):
         """Set the dut to rockbottom state
