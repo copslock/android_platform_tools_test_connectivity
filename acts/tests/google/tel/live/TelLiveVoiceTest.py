@@ -4208,5 +4208,4 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             hangup_call(self.log, ads[0])
             return result
 
-
 """ Tests End """
