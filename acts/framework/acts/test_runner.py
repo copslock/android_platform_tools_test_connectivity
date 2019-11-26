@@ -38,6 +38,7 @@ from acts import utils
 from acts import error
 
 from mobly.records import ExceptionRecord
+from mobly import config_parser as mobly_config_parser
 
 
 def _find_test_class():
@@ -120,7 +121,7 @@ class TestRunner(object):
                       not.
     """
     def __init__(self, test_configs, run_list):
-        self.test_run_info = {}
+        self.test_run_info = mobly_config_parser.TestRunConfig()
         self.test_configs = test_configs
         self.testbed_configs = self.test_configs[keys.Config.key_testbed.value]
         self.testbed_name = self.testbed_configs[
@@ -211,21 +212,17 @@ class TestRunner(object):
         Args:
             test_configs: A json object representing the test configurations.
         """
-        self.test_run_info[
-            keys.Config.ikey_testbed_name.value] = self.testbed_name
-        self.test_run_info['testbed_configs'] = copy.deepcopy(
+        self.test_run_info.testbed_name = self.testbed_name
+        self.test_run_info.controller_configs = copy.deepcopy(
             self.testbed_configs)
-        # Unpack other params.
-        self.test_run_info[keys.Config.ikey_logpath.value] = self.log_path
-        self.test_run_info[keys.Config.ikey_logger.value] = self.log
-        self.test_run_info[
-            keys.Config.ikey_summary_writer.value] = self.summary_writer
+        self.test_run_info.log_path = self.log_path
+        self.test_run_info.summary_writer = self.summary_writer
+
         user_param_pairs = []
         for item in test_configs.items():
             if item[0] not in keys.Config.reserved_keys.value:
                 user_param_pairs.append(item)
-        self.test_run_info[keys.Config.ikey_user_param.value] = copy.deepcopy(
-            dict(user_param_pairs))
+        self.test_run_info.user_params = copy.deepcopy(dict(user_param_pairs))
 
     def set_test_util_logs(self, module=None):
         """Sets the log object to each test util module.

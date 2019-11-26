@@ -16,13 +16,14 @@
 import shutil
 import tempfile
 import unittest
-from threading import RLock
 from unittest import TestCase
+
+import mobly.config_parser as mobly_config_parser
 
 from acts.base_test import BaseTestClass
 from acts.event import event_bus, subscription_bundle
-from acts.event.event import Event
 from acts.event.decorators import subscribe, subscribe_static
+from acts.event.event import Event
 from acts.test_runner import TestRunner
 
 
@@ -50,7 +51,6 @@ class TestClass(BaseTestClass):
 
 class EventBusIntegrationTest(TestCase):
     """Tests the EventBus E2E."""
-
     def setUp(self):
         """Clears the event bus of all state."""
         self.tmp_dir = tempfile.mkdtemp()
@@ -88,7 +88,11 @@ class EventBusIntegrationTest(TestCase):
 
     def test_subscribe_instance_bundles(self):
         """Tests that @subscribe bundles register only instance listeners."""
-        test_object = TestClass({})
+        test_run_config = mobly_config_parser.TestRunConfig()
+        test_run_config.testbed_name = ''
+        # TODO(markdr): Remove this line after the next Mobly release.
+        test_run_config.user_params = {}
+        test_object = TestClass(test_run_config)
         bundle = subscription_bundle.create_from_instance(test_object)
         bundle.register()
 
