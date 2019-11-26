@@ -22,6 +22,7 @@ sys.path[0] = os.path.join(sys.path[0], '../')
 import unittest
 import logging
 import mock
+import mobly.config_parser as mobly_config_parser
 
 from acts import base_test
 from acts.libs import version_selector
@@ -100,10 +101,15 @@ class VersionSelectorIntegrationTest(unittest.TestCase):
     def test_versioned_test_class_calls_both_functions(self):
         """Tests that VersionedTestClass (above) can be called with
         test_tracker_info."""
-        test_class = VersionedTestClass({
-            'log': logging.getLogger(),
-            'summary_writer': mock.MagicMock()
-        })
+        test_run_config = mobly_config_parser.TestRunConfig()
+        test_run_config.testbed_name = 'VersionSelectorUnitTests'
+        test_run_config.summary_writer = mock.MagicMock()
+
+        #TODO(markdr): Remove this stanza after the next Mobly release.
+        test_run_config.user_params = {}
+        test_run_config.controller_configs = {}
+
+        test_class = VersionedTestClass(test_run_config)
         test_class.run(['test_1', 'test_2'], 1)
 
         self.assertIn('Executed 2', test_class.results.summary_str(),
