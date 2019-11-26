@@ -14,6 +14,7 @@
 #   limitations under the License.
 
 import random
+import re
 import time
 from acts import asserts
 from acts import base_test
@@ -41,6 +42,7 @@ MAX_TEST_KA_INTERVAL = 60
 # after 181s.
 SLEEP_TIME = 181
 STRESS_COUNT = 5
+SUPPORTED_KERNEL_VERSION = 4.8
 TCP_SERVER_PORT = 853
 UDP_SERVER_PORT = 4500
 
@@ -84,6 +86,8 @@ class SocketKeepaliveTest(base_test.BaseTestClass):
         wutils.wifi_connect(self.dut, self.wifi_network)
         self.max_ka_wifi = self.dut.droid.getSupportedKeepalivesForNetwork()
         self.log.info("Max Keepalives on wifi network: %s" % self.max_ka_wifi)
+        self.kernel_version = self._get_kernel_version(self.dut)
+        self.log.info("Kernel version: %s" % self.kernel_version)
 
         self.host_ip = self.remote_server["ip_addr"]
         self.tcpdump_pid = None
@@ -93,6 +97,12 @@ class SocketKeepaliveTest(base_test.BaseTestClass):
         self.udp_encap = None
 
     def setup_test(self):
+        asserts.skip_if(
+            self.test_name.startswith("test_tcp") and \
+                self.kernel_version < SUPPORTED_KERNEL_VERSION,
+            "TCP Keepalive is not supported on kernel %s. Need at least %s" %
+            (self.kernel_version, SUPPORTED_KERNEL_VERSION))
+
         if self.test_name.endswith("_lte"):
             wutils.wifi_toggle_state(self.dut, False)
         time.sleep(3)
@@ -131,6 +141,19 @@ class SocketKeepaliveTest(base_test.BaseTestClass):
         self.dut.take_bug_report(test_name, begin_time)
 
     ### Helper functions
+
+    def _get_kernel_version(self, ad):
+        """Get the kernel version on the device.
+
+        Args:
+            ad: android device object.
+
+        Returns:
+            Kernel version on the device.
+        """
+        cmd_out = ad.adb.shell("cat /proc/version")
+        pattern_match = re.findall(r"^Linux version \d.\d", cmd_out)
+        return float(pattern_match[0].split()[-1]) if pattern_match else None
 
     def _verify_tcp_keepalives(self,
                                pcap,
