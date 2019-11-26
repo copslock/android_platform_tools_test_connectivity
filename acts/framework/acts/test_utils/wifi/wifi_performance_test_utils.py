@@ -1019,9 +1019,9 @@ def get_iperf_arg_string(duration,
         iperf_args: string of formatted iperf args
     """
     iperf_args = '-i {} -t {} -J '.format(interval, duration)
-    if traffic_type == 'UDP':
+    if traffic_type.upper() == 'UDP':
         iperf_args = iperf_args + '-u -b {} -l 1400'.format(udp_throughput)
-    elif traffic_type == 'TCP':
+    elif traffic_type.upper() == 'TCP':
         iperf_args = iperf_args + '-P {}'.format(tcp_processes)
         if tcp_window:
             iperf_args = iperf_args + '-w {}'.format(tcp_window)
