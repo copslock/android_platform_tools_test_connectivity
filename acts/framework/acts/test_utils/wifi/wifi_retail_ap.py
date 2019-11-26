@@ -426,7 +426,7 @@ class WifiRetailAP(object):
 class NetgearR7000AP(WifiRetailAP):
     """Class that implements Netgear R7500 AP."""
     def __init__(self, ap_settings):
-        super().__init__(self, ap_settings)
+        super().__init__(ap_settings)
         self.init_gui_data()
         # Read and update AP settings
         self.read_ap_settings()
