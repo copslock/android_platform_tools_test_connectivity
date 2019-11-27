@@ -263,8 +263,8 @@ def clear_logd_gnss_qxdm_log(ad):
     remount_device(ad)
     ad.log.info("Clear Logd, GNSS and QXDM Log from previous test item.")
     ad.adb.shell("rm -rf /data/misc/logd", ignore_status=True)
-    ad.adb.shell("rm -rf %s" % GNSSSTATUS_LOG_PATH, ignore_status=True)
-    output_path = os.path.join(DEFAULT_QXDM_LOG_PATH, "logs")
+    ad.adb.shell('find %s -name "*.txt" -type f -delete' % GNSSSTATUS_LOG_PATH)
+    output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs")
     ad.adb.shell("rm -rf %s" % output_path, ignore_status=True)
     reboot(ad)
 
@@ -279,19 +279,19 @@ def get_gnss_qxdm_log(ad, qdb_path):
     log_path = ad.device_log_path
     utils.create_dir(log_path)
     gnss_log_name = "gnssstatus_log_%s_%s" % (ad.model, ad.serial)
-    gnss_log_path = os.path.join(log_path, gnss_log_name)
+    gnss_log_path = posixpath.join(log_path, gnss_log_name)
     utils.create_dir(gnss_log_path)
     ad.log.info("Pull GnssStatus Log to %s" % gnss_log_path)
     ad.adb.pull("%s %s" % (GNSSSTATUS_LOG_PATH+".", gnss_log_path),
                 timeout=PULL_TIMEOUT, ignore_status=True)
     shutil.make_archive(gnss_log_path, "zip", gnss_log_path)
     shutil.rmtree(gnss_log_path)
-    output_path = os.path.join(DEFAULT_QXDM_LOG_PATH, "logs/.")
+    output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs/.")
     file_count = ad.adb.shell(
         "find %s -type f -iname *.qmdl | wc -l" % output_path)
     if not int(file_count) == 0:
         qxdm_log_name = "QXDM_%s_%s" % (ad.model, ad.serial)
-        qxdm_log_path = os.path.join(log_path, qxdm_log_name)
+        qxdm_log_path = posixpath.join(log_path, qxdm_log_name)
         utils.create_dir(qxdm_log_path)
         ad.log.info("Pull QXDM Log %s to %s" % (output_path, qxdm_log_path))
         ad.adb.pull("%s %s" % (output_path, qxdm_log_path),
