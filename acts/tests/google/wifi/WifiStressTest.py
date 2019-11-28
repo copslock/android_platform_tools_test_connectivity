@@ -322,14 +322,7 @@ class WifiStressTest(WifiBaseTest):
         dl_args = "-p {} -t {} -R".format(self.iperf_server_port, sec)
         dl = threading.Thread(target=self.run_long_traffic, args=(sec, dl_args, q))
         dl.start()
-        if(len(self.iperf_servers) > 1):
-            ul_args = "-p {} -t {}".format(self.iperf_servers[1].port, sec)
-            ul = threading.Thread(target=self.run_long_traffic, args=(sec, ul_args, q))
-            ul.start()
-
         dl.join()
-        if(len(self.iperf_servers) > 1):
-            ul.join()
 
         total_time = time.time() - start_time
         self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
