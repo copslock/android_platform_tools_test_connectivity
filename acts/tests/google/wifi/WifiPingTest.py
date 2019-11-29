@@ -555,7 +555,7 @@ class WifiPingTest(base_test.BaseTestClass):
 
 class WifiPing_LowPowerAP_Test(WifiPingTest):
     def __init__(self, controllers):
-        super().__init__(self, controllers)
+        super().__init__(controllers)
         self.tests = self.generate_test_cases(
             ap_power='low_power',
             channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
