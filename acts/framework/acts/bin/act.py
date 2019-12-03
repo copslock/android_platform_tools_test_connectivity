@@ -150,14 +150,13 @@ def main(argv):
     parser = argparse.ArgumentParser(
         description=("Specify tests to run. If nothing specified, "
                      "run all test cases found."))
-    parser.add_argument(
-        '-c',
-        '--config',
-        nargs=1,
-        type=str,
-        required=True,
-        metavar="<PATH>",
-        help="Path to the test configuration file.")
+    parser.add_argument('-c',
+                        '--config',
+                        nargs=1,
+                        type=str,
+                        required=True,
+                        metavar="<PATH>",
+                        help="Path to the test configuration file.")
     parser.add_argument(
         '--test_args',
         nargs='+',
@@ -180,19 +179,17 @@ def main(argv):
         const=1,
         default=1,
         help="Number of times to run the campaign or a group of test cases.")
-    parser.add_argument(
-        '-tb',
-        '--testbed',
-        nargs='+',
-        type=str,
-        metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
-        help="Specify which test beds to run tests on.")
-    parser.add_argument(
-        '-lp',
-        '--logpath',
-        type=str,
-        metavar="<PATH>",
-        help="Root path under which all logs will be placed.")
+    parser.add_argument('-tb',
+                        '--testbed',
+                        nargs='+',
+                        type=str,
+                        metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
+                        help="Specify which test beds to run tests on.")
+    parser.add_argument('-lp',
+                        '--logpath',
+                        type=str,
+                        metavar="<PATH>",
+                        help="Root path under which all logs will be placed.")
     parser.add_argument(
         '-tp',
         '--testpaths',
@@ -202,13 +199,12 @@ def main(argv):
         help="One or more non-recursive test class search paths.")
 
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        '-tc',
-        '--testclass',
-        nargs='+',
-        type=str,
-        metavar="[TestClass1 TestClass2:test_xxx ...]",
-        help="A list of test classes/cases to run.")
+    group.add_argument('-tc',
+                       '--testclass',
+                       nargs='+',
+                       type=str,
+                       metavar="[TestClass1 TestClass2:test_xxx ...]",
+                       help="A list of test classes/cases to run.")
     group.add_argument(
         '-tf',
         '--testfile',
@@ -217,18 +213,16 @@ def main(argv):
         metavar="<PATH>",
         help=("Path to a file containing a comma delimited list of test "
               "classes to run."))
-    parser.add_argument(
-        '-r',
-        '--random',
-        action="store_true",
-        help="If set, tests will be executed in random order.")
-    parser.add_argument(
-        '-ti',
-        '--test_case_iterations',
-        metavar="<TEST_CASE_ITERATIONS>",
-        nargs='?',
-        type=int,
-        help="Number of times to run every test case.")
+    parser.add_argument('-r',
+                        '--random',
+                        action="store_true",
+                        help="If set, tests will be executed in random order.")
+    parser.add_argument('-ti',
+                        '--test_case_iterations',
+                        metavar="<TEST_CASE_ITERATIONS>",
+                        nargs='?',
+                        type=int,
+                        help="Number of times to run every test case.")
 
     args = parser.parse_args(argv)
     test_list = None
