@@ -17,7 +17,6 @@
 from builtins import str
 
 import os
-import random
 import sys
 
 from acts import keys
@@ -163,46 +162,10 @@ def parse_test_list(test_list):
     return result
 
 
-def test_randomizer(test_identifiers, test_case_iterations=10):
-    """Generate test lists by randomizing user provided test list.
-
-    Args:
-        test_identifiers: A list of test classes/cases.
-        test_case_iterations: The range of random iterations for each case.
-    Returns:
-        A list of randomized test cases.
-    """
-    random_tests = []
-    preflight_tests = []
-    postflight_tests = []
-    for test_class, test_cases in test_identifiers:
-        if "Preflight" in test_class:
-            preflight_tests.append((test_class, test_cases))
-        elif "Postflight" in test_class:
-            postflight_tests.append((test_class, test_cases))
-        else:
-            for test_case in test_cases:
-                random_tests.append(
-                    (test_class, [test_case] *
-                     random.randrange(1, test_case_iterations + 1)))
-    random.shuffle(random_tests)
-    new_tests = []
-    previous_class = None
-    for test_class, test_cases in random_tests:
-        if test_class == previous_class:
-            previous_cases = new_tests[-1][1]
-            previous_cases.extend(test_cases)
-        else:
-            new_tests.append((test_class, test_cases))
-        previous_class = test_class
-    return preflight_tests + new_tests + postflight_tests
-
-
 def load_test_config_file(test_config_path,
                           tb_filters=None,
                           override_test_path=None,
                           override_log_path=None,
-                          override_random=None,
                           override_test_case_iterations=None):
     """Processes the test configuration file provided by the user.
 
@@ -216,7 +179,6 @@ def load_test_config_file(test_config_path,
                     file. If None, then all test beds will be selected.
         override_test_path: If not none the test path to use instead.
         override_log_path: If not none the log path to use instead.
-        override_random: If not None, override the config file value.
         override_test_case_iterations: If not None, override the config file
                                        value.
 
@@ -229,8 +191,6 @@ def load_test_config_file(test_config_path,
         configs[keys.Config.key_test_paths.value] = override_test_path
     if override_log_path:
         configs[keys.Config.key_log_path.value] = override_log_path
-    if override_random:
-        configs[keys.Config.key_random.value] = override_random
     if override_test_case_iterations:
         configs[keys.Config.key_test_case_iterations.value] = \
             override_test_case_iterations
