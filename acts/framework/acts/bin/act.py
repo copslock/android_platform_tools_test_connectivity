@@ -171,10 +171,6 @@ def main(argv):
         metavar="<PATH>",
         help=("Path to a file containing a comma delimited list of test "
               "classes to run."))
-    parser.add_argument('-r',
-                        '--random',
-                        action="store_true",
-                        help="If set, tests will be executed in random order.")
     parser.add_argument('-ti',
                         '--test_case_iterations',
                         metavar="<TEST_CASE_ITERATIONS>",
@@ -190,7 +186,7 @@ def main(argv):
         test_list = args.testclass
     parsed_configs = config_parser.load_test_config_file(
         args.config[0], args.testbed, args.testpaths, args.logpath,
-        args.random, args.test_case_iterations)
+        args.test_case_iterations)
 
     # Prepare args for test runs
     test_identifiers = config_parser.parse_test_list(test_list)
