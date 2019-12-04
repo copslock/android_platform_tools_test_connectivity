@@ -158,13 +158,6 @@ def main(argv):
                         metavar="<PATH>",
                         help="Path to the test configuration file.")
     parser.add_argument(
-        '--test_args',
-        nargs='+',
-        type=str,
-        metavar="Arg1 Arg2 ...",
-        help=("Command-line arguments to be passed to every test case in a "
-              "test run. Use with caution."))
-    parser.add_argument(
         '-p',
         '--parallel',
         action="store_true",
@@ -232,7 +225,7 @@ def main(argv):
         test_list = args.testclass
     parsed_configs = config_parser.load_test_config_file(
         args.config[0], args.testbed, args.testpaths, args.logpath,
-        args.test_args, args.random, args.test_case_iterations)
+        args.random, args.test_case_iterations)
 
     # Prepare args for test runs
     test_identifiers = config_parser.parse_test_list(test_list)
