@@ -29,7 +29,6 @@ UNITTEST_FILES = [
     'tests/acts_android_device_test.py',
     'tests/acts_asserts_test.py',
     'tests/acts_base_class_test.py',
-    'tests/config/unittest_bundle.py',
     'tests/acts_context_test.py',
     'tests/acts_error_test.py',
     'tests/acts_host_utils_test.py',
