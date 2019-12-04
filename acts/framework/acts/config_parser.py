@@ -202,7 +202,6 @@ def load_test_config_file(test_config_path,
                           tb_filters=None,
                           override_test_path=None,
                           override_log_path=None,
-                          override_test_args=None,
                           override_random=None,
                           override_test_case_iterations=None):
     """Processes the test configuration file provided by the user.
@@ -217,7 +216,6 @@ def load_test_config_file(test_config_path,
                     file. If None, then all test beds will be selected.
         override_test_path: If not none the test path to use instead.
         override_log_path: If not none the log path to use instead.
-        override_test_args: If not none the test args to use instead.
         override_random: If not None, override the config file value.
         override_test_case_iterations: If not None, override the config file
                                        value.
