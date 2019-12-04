@@ -72,7 +72,8 @@ def create_ssh_connection(ip_address,
                        username=ssh_username,
                        allow_agent=False,
                        pkey=ssh_key,
-                       timeout=connect_timeout)
+                       timeout=connect_timeout,
+                       banner_timeout=200)
     return ssh_client
 
 
