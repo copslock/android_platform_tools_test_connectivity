@@ -13,11 +13,13 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
-from builtins import str
-
+import copy
+import itertools
 import os
 import sys
+from builtins import str
+
+import mobly.config_parser as mobly_config_parser
 
 from acts import keys
 from acts import utils
@@ -187,13 +189,15 @@ def load_test_config_file(test_config_path,
         test_runner.TestRunner.
     """
     configs = utils.load_config(test_config_path)
+
+    test_paths_key = keys.Config.key_test_paths.value
     if override_test_path:
-        configs[keys.Config.key_test_paths.value] = override_test_path
+        configs[test_paths_key] = override_test_path
     if override_log_path:
         configs[keys.Config.key_log_path.value] = override_log_path
     if override_test_case_iterations:
-        configs[keys.Config.key_test_case_iterations.value] = \
-            override_test_case_iterations
+        configs[keys.Config.key_test_case_iterations.value] = (
+            override_test_case_iterations)
 
     testbeds = configs[keys.Config.key_testbed.value]
     if type(testbeds) is list:
@@ -245,18 +249,24 @@ def load_test_config_file(test_config_path,
     _validate_testbed_configs(testbeds, config_path)
     # Unpack testbeds into separate json objects.
     configs.pop(keys.Config.key_testbed.value)
-    config_jsons = []
+    test_run_configs = []
 
-    for _, original_bed_config in testbeds.items():
-        new_test_config = dict(configs)
-        new_test_config[keys.Config.key_testbed.value] = original_bed_config
-        # Keys in each test bed config will be copied to a level up to be
-        # picked up for user_params. If the key already exists in the upper
-        # level, the local one defined in test bed config overwrites the
-        # general one.
-        new_test_config.update(original_bed_config)
-        config_jsons.append(new_test_config)
-    return config_jsons
+    for _, testbed in testbeds.items():
+        test_run_config = mobly_config_parser.TestRunConfig()
+        test_run_config.testbed_name = testbed[
+            keys.Config.key_testbed_name.value]
+        test_run_config.log_path = configs[k_log_path]
+        test_run_config.controller_configs = testbed
+        test_run_config.controller_configs[test_paths_key] = (
+            configs[test_paths_key])
+        user_param_pairs = []
+        for item in itertools.chain(configs.items(), testbed.items()):
+            if item[0] not in keys.Config.reserved_keys.value:
+                user_param_pairs.append(item)
+        test_run_config.user_params = dict(user_param_pairs)
+
+        test_run_configs.append(test_run_config)
+    return test_run_configs
 
 
 def parse_test_file(fpath):
