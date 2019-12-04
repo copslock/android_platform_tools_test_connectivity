@@ -484,7 +484,7 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-    def on_retry():
+    def on_retry(self):
         """Function to run before retrying a test through get_func_with_retry.
 
         This function runs when a test is automatically retried. The function

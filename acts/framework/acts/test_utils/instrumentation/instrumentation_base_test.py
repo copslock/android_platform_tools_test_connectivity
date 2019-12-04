@@ -140,6 +140,11 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         """Clean up device after test completion."""
         pass
 
+    def teardown_test(self):
+        """Teardown test. Takes bugreport."""
+        self.log.info('Taking bugreport for test %s' % self.current_test_name)
+        self._take_bug_report(self.current_test_name, self.begin_time)
+
     def _get_merged_config(self, config_name):
         """Takes the configs with config_name from the base, testclass, and
         testcase levels and merges them together. When the same parameter is
