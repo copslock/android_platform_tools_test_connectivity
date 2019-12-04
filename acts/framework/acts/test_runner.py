@@ -137,17 +137,7 @@ class TestRunner(object):
         self.log = logging.getLogger()
         self.summary_writer = records.TestSummaryWriter(
             os.path.join(self.log_path, records.OUTPUT_FILE_SUMMARY))
-        if self.test_configs.get(keys.Config.key_random.value):
-            test_case_iterations = self.test_configs.get(
-                keys.Config.key_test_case_iterations.value, 10)
-            self.log.info(
-                "Campaign randomizer is enabled with test_case_iterations %s",
-                test_case_iterations)
-            self.run_list = config_parser.test_randomizer(
-                run_list, test_case_iterations=test_case_iterations)
-            self.write_test_campaign()
-        else:
-            self.run_list = run_list
+        self.run_list = run_list
         self.dump_config()
         self.results = records.TestResult()
         self.running = False
@@ -278,9 +268,8 @@ class TestRunner(object):
 
         for test_cls_name_match in matches:
             test_cls = self.test_classes[test_cls_name_match]
-            if self.test_configs.get(keys.Config.key_random.value) or (
-                    "Preflight" in test_cls_name_match) or (
-                        "Postflight" in test_cls_name_match):
+            if "Preflight" in test_cls_name_match or (
+                    "Postflight" in test_cls_name_match):
                 test_case_iterations = 1
             else:
                 test_case_iterations = self.test_configs.get(
