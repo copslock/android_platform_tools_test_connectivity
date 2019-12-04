@@ -64,14 +64,6 @@ class WifiPingTest(base_test.BaseTestClass):
             BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
 
-        self.tests = self.generate_test_cases(
-            ap_power='standard',
-            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
-            modes=['VHT20', 'VHT40', 'VHT80'],
-            test_types=[
-                'test_ping_range', 'test_fast_ping_rtt', 'test_slow_ping_rtt'
-            ])
-
     def setup_class(self):
         self.dut = self.android_devices[-1]
         req_params = [
@@ -108,6 +100,7 @@ class WifiPingTest(base_test.BaseTestClass):
             data_msc = [file for file in self.firmware
                         if "Data.msc" in file][0]
             wputils.push_firmware(self.dut, wlanmdsp, data_msc)
+        self.atten_dut_chain_map = {}
         self.testclass_results = []
 
         # Turn WiFi ON
@@ -441,6 +434,18 @@ class WifiPingTest(base_test.BaseTestClass):
                                 num_of_tries=5,
                                 check_connectivity=False)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
+        if testcase_params['channel'] not in self.atten_dut_chain_map.keys():
+            self.atten_dut_chain_map[testcase_params[
+                'channel']] = wputils.get_current_atten_dut_chain_map(
+                    self.attenuators, self.dut, self.ping_server)
+        self.log.info("Current Attenuator-DUT Chain Map: {}".format(
+            self.atten_dut_chain_map[testcase_params['channel']]))
+        for idx, atten in enumerate(self.attenuators):
+            if self.atten_dut_chain_map[testcase_params['channel']][
+                    idx] == testcase_params['attenuated_chain']:
+                atten.offset = atten.instrument.max_atten
+            else:
+                atten.offset = 0
 
     def setup_ping_test(self, testcase_params):
         """Function that gets devices ready for the test.
@@ -473,6 +478,13 @@ class WifiPingTest(base_test.BaseTestClass):
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         testcase_params['test_network'] = self.main_network[band]
+        if testcase_params['chain_mask'] in ['0', '1']:
+            testcase_params['attenuated_chain'] = 'DUT-Chain-{}'.format(
+                1 if testcase_params['chain_mask'] == '0' else 0)
+        else:
+            # Set attenuated chain to -1. Do not set to None as this will be
+            # compared to RF chain map which may include None
+            testcase_params['attenuated_chain'] = -1
         if testcase_params['test_type'] == 'test_ping_range':
             testcase_params.update(
                 ping_interval=self.testclass_params['range_ping_interval'],
@@ -526,7 +538,8 @@ class WifiPingTest(base_test.BaseTestClass):
         self.process_ping_results(testcase_params, ping_result)
         self.pass_fail_check(ping_result)
 
-    def generate_test_cases(self, ap_power, channels, modes, test_types):
+    def generate_test_cases(self, ap_power, channels, modes, chain_mask,
+                            test_types):
         test_cases = []
         allowed_configs = {
             'VHT20': [
@@ -536,21 +549,45 @@ class WifiPingTest(base_test.BaseTestClass):
             'VHT40': [36, 44, 149, 157],
             'VHT80': [36, 149]
         }
-        for channel, mode, test_type in itertools.product(
-                channels, modes, test_types):
+        for channel, mode, chain, test_type in itertools.product(
+                channels, modes, chain_mask, test_types):
             if channel not in allowed_configs[mode]:
                 continue
-            testcase_name = '{}_ch{}_{}'.format(test_type, channel, mode)
-            testcase_params = collections.OrderedDict(
-                test_type=test_type,
-                ap_power=ap_power,
-                channel=channel,
-                mode=mode,
-            )
+            testcase_name = '{}_ch{}_{}_ch{}'.format(test_type, channel, mode,
+                                                     chain)
+            testcase_params = collections.OrderedDict(test_type=test_type,
+                                                      ap_power=ap_power,
+                                                      channel=channel,
+                                                      mode=mode,
+                                                      chain_mask=chain)
             setattr(self, testcase_name,
                     partial(self._test_ping, testcase_params))
             test_cases.append(testcase_name)
         return test_cases
+
+
+class WifiPing_TwoChain_Test(WifiPingTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = self.generate_test_cases(
+            ap_power='standard',
+            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
+            modes=['VHT20', 'VHT40', 'VHT80'],
+            test_types=[
+                'test_ping_range', 'test_fast_ping_rtt', 'test_slow_ping_rtt'
+            ],
+            chain_mask=['2x2'])
+
+
+class WifiPing_PerChainRange_Test(WifiPingTest):
+    def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = self.generate_test_cases(
+            ap_power='standard',
+            chain_mask=['0', '1', '2x2'],
+            channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
+            modes=['VHT20', 'VHT40', 'VHT80'],
+            test_types=['test_ping_range'])
 
 
 class WifiPing_LowPowerAP_Test(WifiPingTest):
@@ -558,6 +595,7 @@ class WifiPing_LowPowerAP_Test(WifiPingTest):
         super().__init__(controllers)
         self.tests = self.generate_test_cases(
             ap_power='low_power',
+            chain_mask=['0', '1', '2x2'],
             channels=[1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161],
             modes=['VHT20', 'VHT40', 'VHT80'],
             test_types=['test_ping_range'])
@@ -707,6 +745,7 @@ class WifiOtaPingTest(WifiPingTest):
                 ap_power=ap_power,
                 channel=channel,
                 mode=mode,
+                chain_mask='2x2',
                 chamber_mode=chamber_mode,
                 total_positions=len(positions),
                 position=position)

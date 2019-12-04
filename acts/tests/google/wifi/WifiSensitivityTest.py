@@ -384,23 +384,22 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             asserts.skip('Battery level too low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
-        band = self.access_point.band_lookup_by_channel(
-            testcase_params['channel'])
         current_network = self.dut.droid.wifiGetConnectionInfo()
         try:
             connected = wutils.validate_connection(self.dut) is not None
         except:
             connected = False
-        if connected and current_network['SSID'] == self.main_network[band][
-                'SSID']:
+        if connected and current_network['SSID'] == testcase_params[
+                'test_network']['SSID']:
             self.log.info('Already connected to desired network')
         else:
             wutils.reset_wifi(self.dut)
             self.dut.droid.wifiSetCountryCode(
                 self.testclass_params['country_code'])
-            self.main_network[band]['channel'] = testcase_params['channel']
+            testcase_params['test_network']['channel'] = testcase_params[
+                'channel']
             wutils.wifi_connect(self.dut,
-                                self.main_network[band],
+                                testcase_params['test_network'],
                                 num_of_tries=5,
                                 check_connectivity=False)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
@@ -472,6 +471,9 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
 
     def compile_test_params(self, testcase_params):
         """Function that generates test params based on the test name."""
+        band = self.access_point.band_lookup_by_channel(
+            testcase_params['channel'])
+        testcase_params['test_network'] = self.main_network[band]
         if testcase_params['chain_mask'] in ['0', '1']:
             testcase_params['attenuated_chain'] = 'DUT-Chain-{}'.format(
                 1 if testcase_params['chain_mask'] == '0' else 0)
