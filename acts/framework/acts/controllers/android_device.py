@@ -973,7 +973,8 @@ class AndroidDevice:
         for skip_file in skip_files:
             cmd = "%s ! -iname %s" % (cmd, skip_file)
         out = self.adb.shell(cmd, ignore_status=True)
-        if not out or "No such" in out or "Permission denied" in out:
+        if not out or "No such" in out or "Permission denied" in out or \
+            "Not a directory" in out:
             return []
         files = out.split("\n")
         self.log.debug("Find files in directory %s: %s", directory, files)
