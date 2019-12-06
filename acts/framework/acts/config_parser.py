@@ -43,6 +43,12 @@ def _validate_test_config(test_config):
     Making sure all the required fields exist.
     """
     for k in keys.Config.reserved_keys.value:
+        # TODO(markdr): Remove this continue after merging this with the
+        # validation done in Mobly's load_test_config_file.
+        if (k == keys.Config.key_test_paths.value
+                or k == keys.Config.key_log_path.value):
+            continue
+
         if k not in test_config:
             raise ActsConfigError("Required key %s missing in test config." %
                                   k)
@@ -164,11 +170,7 @@ def parse_test_list(test_list):
     return result
 
 
-def load_test_config_file(test_config_path,
-                          tb_filters=None,
-                          override_test_path=None,
-                          override_log_path=None,
-                          override_test_case_iterations=None):
+def load_test_config_file(test_config_path, tb_filters=None):
     """Processes the test configuration file provided by the user.
 
     Loads the configuration file into a json object, unpacks each testbed
@@ -179,25 +181,12 @@ def load_test_config_file(test_config_path,
         test_config_path: Path to the test configuration file.
         tb_filters: A subset of test bed names to be pulled from the config
                     file. If None, then all test beds will be selected.
-        override_test_path: If not none the test path to use instead.
-        override_log_path: If not none the log path to use instead.
-        override_test_case_iterations: If not None, override the config file
-                                       value.
 
     Returns:
         A list of test configuration json objects to be passed to
         test_runner.TestRunner.
     """
     configs = utils.load_config(test_config_path)
-
-    test_paths_key = keys.Config.key_test_paths.value
-    if override_test_path:
-        configs[test_paths_key] = override_test_path
-    if override_log_path:
-        configs[keys.Config.key_log_path.value] = override_log_path
-    if override_test_case_iterations:
-        configs[keys.Config.key_test_case_iterations.value] = (
-            override_test_case_iterations)
 
     testbeds = configs[keys.Config.key_testbed.value]
     if type(testbeds) is list:
@@ -238,10 +227,6 @@ def load_test_config_file(test_config_path,
         configs[keys.Config.key_test_failure_tracebacks.
                 value] = os.environ[_ENV_TEST_FAILURE_TRACEBACKS]
 
-    # Add the global paths to the global config.
-    k_log_path = keys.Config.key_log_path.value
-    configs[k_log_path] = utils.abs_path(configs[k_log_path])
-
     # TODO: See if there is a better way to do this: b/29836695
     config_path, _ = os.path.split(utils.abs_path(test_config_path))
     configs[keys.Config.key_config_path.value] = config_path
@@ -255,10 +240,17 @@ def load_test_config_file(test_config_path,
         test_run_config = mobly_config_parser.TestRunConfig()
         test_run_config.testbed_name = testbed[
             keys.Config.key_testbed_name.value]
-        test_run_config.log_path = configs[k_log_path]
         test_run_config.controller_configs = testbed
-        test_run_config.controller_configs[test_paths_key] = (
-            configs[test_paths_key])
+        if keys.Config.key_test_paths.value in configs:
+            test_run_config.controller_configs[
+                keys.Config.key_test_paths.value] = configs[
+                    keys.Config.key_test_paths.value]
+
+        test_run_config.log_path = configs.get(keys.Config.key_log_path.value,
+                                               None)
+        if test_run_config.log_path is not None:
+            test_run_config.log_path = utils.abs_path(test_run_config.log_path)
+
         user_param_pairs = []
         for item in itertools.chain(configs.items(), testbed.items()):
             if item[0] not in keys.Config.reserved_keys.value:
