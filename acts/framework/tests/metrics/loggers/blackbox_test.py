@@ -19,6 +19,8 @@ import unittest
 import warnings
 from unittest import TestCase
 
+from mobly.config_parser import TestRunConfig
+
 from acts.base_test import BaseTestClass
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_runner import TestRunner
@@ -95,7 +97,7 @@ class BlackboxMetricLoggerTest(TestCase):
 
     @patch(COMPILE_PROTO)
     def test_end_uses_metric_value_on_metric_value_not_none(
-            self, compile_proto):
+        self, compile_proto):
         result = Mock()
         expected_result = Mock()
         compile_proto.return_value = self.proto_module
@@ -173,25 +175,26 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
     @patch('acts.test_runner.utils')
     @patch('acts.test_runner.importlib')
     def run_acts_test(self, test_class, importlib, utils, sys):
-        config = {
-            'testbed': {
-                'name': 'SampleTestBed',
-            },
-            'logpath': tempfile.mkdtemp(),
-            'testpaths': ['./'],
-        }
-        mockModule = Mock()
-        setattr(mockModule, test_class.__name__, test_class)
+        test_run_config = TestRunConfig()
+        test_run_config.testbed_name = 'SampleTestBed'
+        test_run_config.log_path = tempfile.mkdtemp()
+        test_run_config.controller_configs = {'testpaths': ['./']}
+
+        # TODO(markdr): remove after the next Mobly release.
+        test_run_config.user_params = {}
+
+        mock_module = Mock()
+        setattr(mock_module, test_class.__name__, test_class)
         utils.find_files.return_value = [(None, None, None)]
-        importlib.import_module.return_value = mockModule
-        runner = TestRunner(config, [(
+        importlib.import_module.return_value = mock_module
+        runner = TestRunner(test_run_config, [(
             test_class.__name__,
             None,
         )])
 
         runner.run()
         runner.stop()
-        shutil.rmtree(config['logpath'])
+        shutil.rmtree(test_run_config.log_path)
         return runner
 
     @patch('acts.metrics.logger.ProtoMetricPublisher')

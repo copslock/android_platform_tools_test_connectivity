@@ -13,12 +13,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import itertools
 from future import standard_library
 
 standard_library.install_aliases()
 
-import copy
 import importlib
 import inspect
 import fnmatch
@@ -29,7 +28,6 @@ import pkgutil
 import sys
 
 from acts import base_test
-from acts import config_parser
 from acts import keys
 from acts import logger
 from acts import records
@@ -38,7 +36,6 @@ from acts import utils
 from acts import error
 
 from mobly.records import ExceptionRecord
-from mobly import config_parser as mobly_config_parser
 
 
 def _find_test_class():
@@ -99,12 +96,8 @@ class TestRunner(object):
     report results.
 
     Attributes:
-        self.test_run_info: A dictionary containing the information needed by
-                            test classes for this test run, including params,
-                            controllers, and other objects. All of these will
-                            be passed to test classes.
-        self.test_configs: A dictionary that is the original test configuration
-                           passed in by user.
+        self.test_run_config: The TestRunConfig object specifying what tests to
+                              run.
         self.id: A string that is the unique identifier of this test run.
         self.log_path: A string representing the path of the dir under which
                        all logs from this test run should be written.
@@ -121,17 +114,13 @@ class TestRunner(object):
                       not.
     """
     def __init__(self, test_configs, run_list):
-        self.test_run_info = mobly_config_parser.TestRunConfig()
-        self.test_configs = test_configs
-        self.testbed_configs = self.test_configs[keys.Config.key_testbed.value]
-        self.testbed_name = self.testbed_configs[
-            keys.Config.key_testbed_name.value]
+        self.test_run_config = test_configs
+        self.testbed_name = self.test_run_config.testbed_name
         start_time = logger.get_log_file_timestamp()
         self.id = "{}@{}".format(self.testbed_name, start_time)
         # log_path should be set before parsing configs.
-        l_path = os.path.join(
-            self.test_configs[keys.Config.key_log_path.value],
-            self.testbed_name, start_time)
+        l_path = os.path.join(self.test_run_config.log_path, self.testbed_name,
+                              start_time)
         self.log_path = os.path.abspath(l_path)
         logger.setup_test_logger(self.log_path, self.testbed_name)
         self.log = logging.getLogger()
@@ -195,25 +184,6 @@ class TestRunner(object):
                             test_classes[member_name] = test_class
         return test_classes
 
-    def parse_config(self, test_configs):
-        """Parses the test configuration and unpacks objects and parameters
-        into a dictionary to be passed to test classes.
-
-        Args:
-            test_configs: A json object representing the test configurations.
-        """
-        self.test_run_info.testbed_name = self.testbed_name
-        self.test_run_info.controller_configs = copy.deepcopy(
-            self.testbed_configs)
-        self.test_run_info.log_path = self.log_path
-        self.test_run_info.summary_writer = self.summary_writer
-
-        user_param_pairs = []
-        for item in test_configs.items():
-            if item[0] not in keys.Config.reserved_keys.value:
-                user_param_pairs.append(item)
-        self.test_run_info.user_params = copy.deepcopy(dict(user_param_pairs))
-
     def set_test_util_logs(self, module=None):
         """Sets the log object to each test util module.
 
@@ -272,10 +242,10 @@ class TestRunner(object):
                     "Postflight" in test_cls_name_match):
                 test_case_iterations = 1
             else:
-                test_case_iterations = self.test_configs.get(
+                test_case_iterations = self.test_run_config.user_params.get(
                     keys.Config.key_test_case_iterations.value, 1)
 
-            test_cls_instance = test_cls(self.test_run_info)
+            test_cls_instance = test_cls(self.test_run_config)
             try:
                 cls_result = test_cls_instance.run(test_cases,
                                                    test_case_iterations)
@@ -302,13 +272,14 @@ class TestRunner(object):
         """
         if not self.running:
             self.running = True
-        # Initialize controller objects and pack appropriate objects/params
-        # to be passed to test class.
-        self.parse_config(self.test_configs)
+
+        self.test_run_config.summary_writer = self.summary_writer
+
         if test_class:
             self.test_classes = {test_class.__name__: test_class}
         else:
-            t_paths = self.test_configs[keys.Config.key_test_paths.value]
+            t_paths = self.test_run_config.controller_configs[
+                keys.Config.key_test_paths.value]
             self.test_classes = self.import_test_modules(t_paths)
         self.log.debug("Executing run list %s.", self.run_list)
         for test_cls_name, test_case_names in self.run_list:
@@ -359,7 +330,13 @@ class TestRunner(object):
         """Writes the test config to a JSON file under self.log_path"""
         config_path = os.path.join(self.log_path, 'test_configs.json')
         with open(config_path, 'a') as f:
-            json.dump(self.test_configs, f, skipkeys=True, indent=4)
+            json.dump(dict(
+                itertools.chain(
+                    self.test_run_config.user_params.items(),
+                    self.test_run_config.controller_configs.items())),
+                      f,
+                      skipkeys=True,
+                      indent=4)
 
     def write_test_campaign(self):
         """Log test campaign file."""

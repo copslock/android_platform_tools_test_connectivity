@@ -18,6 +18,7 @@ import shutil
 import tempfile
 import unittest
 
+from mobly.config_parser import TestRunConfig
 from mock import Mock
 from mock import patch
 
@@ -27,14 +28,13 @@ from acts import test_runner
 class TestRunnerTest(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
-        self.base_mock_test_config = {
-            "testbed": {
-                "name": "SampleTestBed",
-            },
-            "logpath": self.tmp_dir,
-            "testpaths": ["./"],
-            "icecream": 42,
-            "extra_param": "haha"
+        self.base_mock_test_config = TestRunConfig()
+        self.base_mock_test_config.testbed_name = 'SampleTestBed'
+        self.base_mock_test_config.log_path = self.tmp_dir
+        self.base_mock_test_config.controller_configs = {'testpaths': ['./']}
+        self.base_mock_test_config.user_params = {
+            'icecream': 42,
+            'extra_param': 'haha'
         }
 
     def tearDown(self):
