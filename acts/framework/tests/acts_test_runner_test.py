@@ -20,6 +20,8 @@ import shutil
 import tempfile
 import unittest
 
+from mobly.config_parser import TestRunConfig
+
 from acts import keys
 from acts import test_runner
 
@@ -34,12 +36,13 @@ class ActsTestRunnerTest(unittest.TestCase):
     """
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
-        self.base_mock_test_config = {
-            'testbed': {
-                'name': 'SampleTestBed',
-            },
-            'logpath': self.tmp_dir,
-            'testpaths': [os.path.dirname(IntegrationTest.__file__)],
+        self.base_mock_test_config = TestRunConfig()
+        self.base_mock_test_config.testbed_name = 'SampleTestBed'
+        self.base_mock_test_config.log_path = self.tmp_dir
+        self.base_mock_test_config.controller_configs = {
+            'testpaths': [os.path.dirname(IntegrationTest.__file__)]
+        }
+        self.base_mock_test_config.user_params = {
             'icecream': 42,
             'extra_param': 'haha'
         }
@@ -54,7 +57,7 @@ class ActsTestRunnerTest(unittest.TestCase):
         2. The original configuration is not altered if a test controller
            module modifies configuration.
         """
-        mock_test_config = dict(self.base_mock_test_config)
+        mock_test_config = self.base_mock_test_config.copy()
         tb_key = keys.Config.key_testbed.value
         mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
         my_config = [{
@@ -64,11 +67,10 @@ class ActsTestRunnerTest(unittest.TestCase):
             'serial': 'xxxx',
             'magic': 'Magic2'
         }]
-        mock_test_config[tb_key][mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
         tr = test_runner.TestRunner(mock_test_config,
                                     [('IntegrationTest', None)])
         tr.run()
-        self.assertTrue(mock_test_config[tb_key][mock_ctrlr_config_name][0])
         tr.run()
         tr.stop()
         results = tr.results.summary_dict()
@@ -91,16 +93,14 @@ class ActsTestRunnerTest(unittest.TestCase):
     @mock.patch(
         'acts.controllers.android_device.AndroidDevice.exit_setup_wizard',
         return_value=True)
-    def test_run_two_test_classes(self, mock_exit_setup_wizard,
-                                  mock_ensure_screen_on, mock_get_all,
-                                  mock_list_adb, mock_fastboot, mock_adb):
+    def test_run_two_test_classes(self, *_):
         """Verifies that running more than one test class in one test run works
         properly.
 
         This requires using a built-in controller module. Using AndroidDevice
         module since it has all the mocks needed already.
         """
-        mock_test_config = dict(self.base_mock_test_config)
+        mock_test_config = self.base_mock_test_config.copy()
         tb_key = keys.Config.key_testbed.value
         mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
         my_config = [{
@@ -110,10 +110,12 @@ class ActsTestRunnerTest(unittest.TestCase):
             'serial': 'xxxx',
             'magic': 'Magic2'
         }]
-        mock_test_config[tb_key][mock_ctrlr_config_name] = my_config
-        mock_test_config[tb_key]['AndroidDevice'] = [{
-            'serial': '1',
-            'skip_sl4a': True
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs['AndroidDevice'] = [{
+            'serial':
+            '1',
+            'skip_sl4a':
+            True
         }]
         tr = test_runner.TestRunner(mock_test_config,
                                     [('IntegrationTest', None),
