@@ -53,25 +53,23 @@ class EventBusIntegrationTest(TestCase):
     """Tests the EventBus E2E."""
     def setUp(self):
         """Clears the event bus of all state."""
-        self.tmp_dir = tempfile.mkdtemp()
-        self.config = {
-            'testbed': {
-                'name': 'SampleTestBed',
-            },
-            'logpath': self.tmp_dir,
-            'testpaths': ['./'],
-        }
         self.called_event = False
         event_bus._event_bus = event_bus._EventBus()
         TestClass.instance_event_received = []
         TestClass.static_event_received = []
 
-    def tearDown(self):
-        shutil.rmtree(self.tmp_dir)
-
     def test_test_class_subscribed_fn_receives_event(self):
         """Tests that TestClasses have their subscribed functions called."""
-        TestRunner(self.config, [('TestClass', [])]).run(TestClass)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            test_run_config = mobly_config_parser.TestRunConfig()
+            test_run_config.testbed_name = 'SampleTestBed'
+            test_run_config.log_path = tmp_dir
+
+            # TODO(markdr): Remove stanza the next Mobly release.
+            test_run_config.user_params = {}
+            test_run_config.controller_configs = {}
+
+            TestRunner(test_run_config, [('TestClass', [])]).run(TestClass)
 
         self.assertGreaterEqual(len(TestClass.instance_event_received), 1)
         self.assertEqual(len(TestClass.static_event_received), 0)
