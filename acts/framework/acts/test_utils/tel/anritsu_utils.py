@@ -1857,7 +1857,7 @@ def call_mt_setup_teardown(log,
 
     Args:
         ad: Android device object.
-        virtual_phone_handle: Anritus virtual phone handle
+        virtual_phone_handle: Anritsu virtual phone handle
         caller_number =  Caller number
         teardown_side = specifiy the side to end the call (Phone or remote)
 
