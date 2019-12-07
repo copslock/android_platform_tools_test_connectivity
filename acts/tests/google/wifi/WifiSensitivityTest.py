@@ -403,13 +403,8 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             asserts.skip('Battery level too low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
-        current_network = self.dut.droid.wifiGetConnectionInfo()
-        try:
-            connected = wutils.validate_connection(self.dut) is not None
-        except:
-            connected = False
-        if connected and current_network['SSID'] == testcase_params[
-                'test_network']['SSID']:
+        if wputils.validate_network(self.dut,
+                                    testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
             wutils.reset_wifi(self.dut)
