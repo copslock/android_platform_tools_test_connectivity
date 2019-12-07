@@ -227,9 +227,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         channels_tested = []
         for result in self.testclass_results:
             testcase_params = result['testcase_params']
-            test_id = collections.OrderedDict(
-                (key, value) for key, value in testcase_params.items()
-                if key in id_fields)
+            test_id = self.extract_test_id(testcase_params, id_fields)
             test_id = tuple(test_id.items())
             if test_id not in testclass_results_dict:
                 testclass_results_dict[test_id] = collections.OrderedDict()
@@ -241,6 +239,27 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                     'sensitivity']
             else:
                 testclass_results_dict[test_id][channel] = ''
+
+        # calculate average metrics
+        metrics_dict = collections.OrderedDict()
+        id_fields = ['channel', 'mode', 'num_streams', 'chain_mask']
+        for test_id, channel in itertools.product(
+                testclass_results_dict.keys(), channels_tested):
+            metric_tag = collections.OrderedDict(test_id, channel=channel)
+            metric_tag = self.extract_test_id(metric_tag, id_fields)
+            metric_tag = tuple(metric_tag.items())
+            metrics_dict.setdefault(metric_tag, [])
+            sensitivity_result = testclass_results_dict[test_id][channel]
+            if sensitivity_result != '':
+                metrics_dict[metric_tag].append(sensitivity_result)
+        for metric_tag_tuple, metric_data in metrics_dict.items():
+            metric_tag_dict = collections.OrderedDict(metric_tag_tuple)
+            metric_tag = 'ch{}_{}_nss{}_chain{}'.format(
+                metric_tag_dict['channel'], metric_tag_dict['mode'],
+                metric_tag_dict['num_streams'], metric_tag_dict['chain_mask'])
+            metric_key = "{}.avg_sensitivity".format(metric_tag)
+            metric_value = numpy.nanmean(metric_data)
+            self.testclass_metric_logger.add_metric(metric_key, metric_value)
 
         # write csv
         csv_header = ['Mode', 'MCS', 'Streams', 'Chain', 'Rate (Mbps)']
