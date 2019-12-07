@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import argparse
+import os
 import re
 import signal
 import sys
@@ -211,12 +212,16 @@ def main(argv):
             ti_key = keys.Config.key_test_case_iterations.value
             test_run_config.user_params[ti_key] = args.test_case_iterations
 
+        # Sets the --testpaths flag to the default test directory if left unset.
+        testpath_key = keys.Config.key_test_paths.value
+        if (testpath_key not in test_run_config.controller_configs
+                or test_run_config.controller_configs[testpath_key] is None):
+            test_run_config.controller_configs[testpath_key] = utils.abs_path(
+                utils.os.path.join(os.path.dirname(__file__),
+                                   '../../../tests/'))
+
         # TODO(markdr): Find a way to merge this with the validation done in
         # Mobly's load_test_config_file.
-        if (keys.Config.key_test_paths.value not in
-                test_run_config.controller_configs):
-            raise ActsConfigError("Required key %s missing in test config." %
-                                  keys.Config.key_test_paths.value)
         if not test_run_config.log_path:
             raise ActsConfigError("Required key %s missing in test config." %
                                   keys.Config.key_log_path.value)
