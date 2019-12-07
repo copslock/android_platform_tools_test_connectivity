@@ -52,7 +52,6 @@ class WifiRssiTest(base_test.BaseTestClass):
     configurable attenuation waveforms.For an example config file to run this
     test class see example_connectivity_performance_ap_sta.json.
     """
-
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.testcase_metric_logger = (
@@ -95,9 +94,8 @@ class WifiRssiTest(base_test.BaseTestClass):
         # Turn WiFi ON
         if self.testclass_params.get('airplane_mode', 1):
             self.log.info('Turning on airplane mode.')
-            asserts.assert_true(
-                utils.force_airplane_mode(self.dut, True),
-                "Can not turn on airplane mode.")
+            asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                                "Can not turn on airplane mode.")
         wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
@@ -304,35 +302,29 @@ class WifiRssiTest(base_test.BaseTestClass):
         Args:
             postprocessed_results: compiled arrays of RSSI data.
         """
-        figure = wputils.BokehFigure(
-            self.current_test_name,
-            x_label='Attenuation (dB)',
-            primary_y_label='RSSI (dBm)')
-        figure.add_line(
-            postprocessed_results['total_attenuation'],
-            postprocessed_results['signal_poll_rssi']['mean'],
-            'Signal Poll RSSI',
-            marker='circle')
-        figure.add_line(
-            postprocessed_results['total_attenuation'],
-            postprocessed_results['scan_rssi']['mean'],
-            'Scan RSSI',
-            marker='circle')
-        figure.add_line(
-            postprocessed_results['total_attenuation'],
-            postprocessed_results['chain_0_rssi']['mean'],
-            'Chain 0 RSSI',
-            marker='circle')
-        figure.add_line(
-            postprocessed_results['total_attenuation'],
-            postprocessed_results['chain_1_rssi']['mean'],
-            'Chain 1 RSSI',
-            marker='circle')
-        figure.add_line(
-            postprocessed_results['total_attenuation'],
-            postprocessed_results['predicted_rssi'],
-            'Predicted RSSI',
-            marker='circle')
+        figure = wputils.BokehFigure(self.current_test_name,
+                                     x_label='Attenuation (dB)',
+                                     primary_y_label='RSSI (dBm)')
+        figure.add_line(postprocessed_results['total_attenuation'],
+                        postprocessed_results['signal_poll_rssi']['mean'],
+                        'Signal Poll RSSI',
+                        marker='circle')
+        figure.add_line(postprocessed_results['total_attenuation'],
+                        postprocessed_results['scan_rssi']['mean'],
+                        'Scan RSSI',
+                        marker='circle')
+        figure.add_line(postprocessed_results['total_attenuation'],
+                        postprocessed_results['chain_0_rssi']['mean'],
+                        'Chain 0 RSSI',
+                        marker='circle')
+        figure.add_line(postprocessed_results['total_attenuation'],
+                        postprocessed_results['chain_1_rssi']['mean'],
+                        'Chain 1 RSSI',
+                        marker='circle')
+        figure.add_line(postprocessed_results['total_attenuation'],
+                        postprocessed_results['predicted_rssi'],
+                        'Predicted RSSI',
+                        marker='circle')
 
         output_file_path = os.path.join(self.log_path,
                                         self.current_test_name + '.html')
@@ -424,22 +416,19 @@ class WifiRssiTest(base_test.BaseTestClass):
                 cum_prob += prob
                 rssi_dist[rssi_key]['rssi_cdf'].append(cum_prob)
 
-        figure = wputils.BokehFigure(
-            self.current_test_name,
-            x_label='RSSI (dBm)',
-            primary_y_label='p(RSSI = x)',
-            secondary_y_label='p(RSSI <= x)')
+        figure = wputils.BokehFigure(self.current_test_name,
+                                     x_label='RSSI (dBm)',
+                                     primary_y_label='p(RSSI = x)',
+                                     secondary_y_label='p(RSSI <= x)')
         for rssi_key, rssi_data in rssi_dist.items():
-            figure.add_line(
-                x_data=rssi_data['rssi_values'],
-                y_data=rssi_data['rssi_pdf'],
-                legend='{} PDF'.format(rssi_key),
-                y_axis='default')
-            figure.add_line(
-                x_data=rssi_data['rssi_values'],
-                y_data=rssi_data['rssi_cdf'],
-                legend='{} CDF'.format(rssi_key),
-                y_axis='secondary')
+            figure.add_line(x_data=rssi_data['rssi_values'],
+                            y_data=rssi_data['rssi_pdf'],
+                            legend='{} PDF'.format(rssi_key),
+                            y_axis='default')
+            figure.add_line(x_data=rssi_data['rssi_values'],
+                            y_data=rssi_data['rssi_cdf'],
+                            legend='{} CDF'.format(rssi_key),
+                            y_axis='secondary')
         output_file_path = os.path.join(self.log_path,
                                         self.current_test_name + '_dist.html')
         figure.generate_figure(output_file_path)
@@ -464,8 +453,8 @@ class WifiRssiTest(base_test.BaseTestClass):
         rssi_result['attenuation'] = list(testcase_params['rssi_atten_range'])
         rssi_result['connected_bssid'] = self.main_network[
             testcase_params['band']].get('BSSID', '00:00:00:00')
-        channel_mode_combo = '{}_{}'.format(
-            str(testcase_params['channel']), testcase_params['mode'])
+        channel_mode_combo = '{}_{}'.format(str(testcase_params['channel']),
+                                            testcase_params['mode'])
         channel_str = str(testcase_params['channel'])
         if channel_mode_combo in self.testbed_params['ap_tx_power']:
             rssi_result['ap_tx_power'] = self.testbed_params['ap_tx_power'][
@@ -564,10 +553,8 @@ class WifiRssiTest(base_test.BaseTestClass):
             asserts.skip('Battery level too low. Skipping test.')
         # Turn screen off to preserve battery
         self.dut.go_to_sleep()
-        current_network = self.dut.droid.wifiGetConnectionInfo()
-        valid_connection = wutils.validate_connection(self.dut)
-        if valid_connection and current_network['SSID'] == self.main_network[
-                testcase_params['band']]['SSID']:
+        if wputils.validate_network(self.dut,
+                                    testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
             wutils.wifi_toggle_state(self.dut, True)
@@ -576,10 +563,9 @@ class WifiRssiTest(base_test.BaseTestClass):
                 'channel'] = testcase_params['channel']
             self.dut.droid.wifiSetCountryCode(
                 self.testclass_params['country_code'])
-            wutils.wifi_connect(
-                self.dut,
-                self.main_network[testcase_params['band']],
-                num_of_tries=5)
+            wutils.wifi_connect(self.dut,
+                                self.main_network[testcase_params['band']],
+                                num_of_tries=5)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def setup_rssi_test(self, testcase_params):
@@ -635,6 +621,8 @@ class WifiRssiTest(base_test.BaseTestClass):
 
         testcase_params['band'] = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
+        testcase_params['test_network'] = self.main_network[
+            testcase_params['band']]
         testcase_params['tracked_bssid'] = [
             self.main_network[testcase_params['band']].get(
                 'BSSID', '00:00:00:00')
@@ -674,6 +662,8 @@ class WifiRssiTest(base_test.BaseTestClass):
             rssi_atten_range=self.testclass_params['rssi_stability_atten'])
         testcase_params['band'] = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
+        testcase_params['test_network'] = self.main_network[
+            testcase_params['band']]
         testcase_params['tracked_bssid'] = [
             self.main_network[testcase_params['band']].get(
                 'BSSID', '00:00:00:00')
@@ -695,15 +685,16 @@ class WifiRssiTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing test-specific parameters
         """
-        testcase_params.update(
-            connected_measurements=int(
-                1 / self.testclass_params['polling_frequency']),
-            scan_measurements=0,
-            first_measurement_delay=0,
-            rssi_under_test=['signal_poll_rssi'],
-            absolute_accuracy=0)
+        testcase_params.update(connected_measurements=int(
+            1 / self.testclass_params['polling_frequency']),
+                               scan_measurements=0,
+                               first_measurement_delay=0,
+                               rssi_under_test=['signal_poll_rssi'],
+                               absolute_accuracy=0)
         testcase_params['band'] = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
+        testcase_params['test_network'] = self.main_network[
+            testcase_params['band']]
         testcase_params['tracked_bssid'] = [
             self.main_network[testcase_params['band']].get(
                 'BSSID', '00:00:00:00')
@@ -865,9 +856,10 @@ class WifiRssi_SampleChannels_NoTraffic_Test(WifiRssiTest):
 class WifiRssiTrackingTest(WifiRssiTest):
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.tests = self.generate_test_cases(
-            ['test_rssi_tracking'], [6, 36, 149], ['VHT20', 'VHT40', 'VHT80'],
-            ['ActiveTraffic', 'NoTraffic'])
+        self.tests = self.generate_test_cases(['test_rssi_tracking'],
+                                              [6, 36, 149],
+                                              ['VHT20', 'VHT40', 'VHT80'],
+                                              ['ActiveTraffic', 'NoTraffic'])
 
 
 # Over-the air version of RSSI tests
@@ -878,7 +870,6 @@ class WifiOtaRssiTest(WifiRssiTest):
     It allows setting orientation and other chamber parameters to study
     performance in varying channel conditions
     """
-
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         self.testcase_metric_logger = (
@@ -914,11 +905,11 @@ class WifiOtaRssiTest(WifiRssiTest):
             channel = current_params['channel']
             channel_data = testclass_data.setdefault(
                 channel,
-                collections.OrderedDict(
-                    orientation=[],
-                    rssi=collections.OrderedDict(
-                        signal_poll_rssi=[], chain_0_rssi=[],
-                        chain_1_rssi=[])))
+                collections.OrderedDict(orientation=[],
+                                        rssi=collections.OrderedDict(
+                                            signal_poll_rssi=[],
+                                            chain_0_rssi=[],
+                                            chain_1_rssi=[])))
 
             channel_data['orientation'].append(current_params['orientation'])
             channel_data['rssi']['signal_poll_rssi'].append(
@@ -1036,10 +1027,10 @@ class WifiOtaRssiTest(WifiRssiTest):
             'VHT80': [36, 149]
         }
 
-        for (channel, mode, traffic, chamber_mode,
-             orientation, test_type) in itertools.product(
-                 channels, modes, traffic_modes, chamber_modes, orientations,
-                 test_types):
+        for (channel, mode, traffic, chamber_mode, orientation,
+             test_type) in itertools.product(channels, modes, traffic_modes,
+                                             chamber_modes, orientations,
+                                             test_types):
             if channel not in allowed_configs[mode]:
                 continue
             test_name = test_type + '_ch{}_{}_{}_{}deg'.format(
@@ -1061,22 +1052,27 @@ class WifiOtaRssiTest(WifiRssiTest):
 class WifiOtaRssi_Accuracy_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         super().__init__(controllers)
-        self.tests = self.generate_test_cases(
-            ['test_rssi_vs_atten'], [6, 36, 149], ['VHT20'], ['ActiveTraffic'],
-            ['orientation'], list(range(0, 360, 45)))
+        self.tests = self.generate_test_cases(['test_rssi_vs_atten'],
+                                              [6, 36, 149], ['VHT20'],
+                                              ['ActiveTraffic'],
+                                              ['orientation'],
+                                              list(range(0, 360, 45)))
 
 
 class WifiOtaRssi_StirrerVariation_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases(
-            ['test_rssi_variation'], [6, 36, 149], ['VHT20'],
-            ['ActiveTraffic'], ['StirrersOn'], [0])
+        self.tests = self.generate_test_cases(['test_rssi_variation'],
+                                              [6, 36, 149], ['VHT20'],
+                                              ['ActiveTraffic'],
+                                              ['StirrersOn'], [0])
 
 
 class WifiOtaRssi_TenDegree_Test(WifiOtaRssiTest):
     def __init__(self, controllers):
         WifiRssiTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases(
-            ['test_rssi_over_orientation'], [6, 36, 149], ['VHT20'],
-            ['ActiveTraffic'], ['orientation'], list(range(0, 360, 10)))
+        self.tests = self.generate_test_cases(['test_rssi_over_orientation'],
+                                              [6, 36, 149], ['VHT20'],
+                                              ['ActiveTraffic'],
+                                              ['orientation'],
+                                              list(range(0, 360, 10)))
