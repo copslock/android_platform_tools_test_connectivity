@@ -988,6 +988,8 @@ class WifiOtaRssiTest(WifiRssiTest):
             ])
         testcase_params['band'] = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
+        testcase_params['test_network'] = self.main_network[
+            testcase_params['band']]
         testcase_params['tracked_bssid'] = [
             self.main_network[testcase_params['band']].get(
                 'BSSID', '00:00:00:00')
