@@ -442,6 +442,10 @@ def phone_setup_iwlan_for_subscription(log,
         if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd):
             ad.log.error("Fail to bring up WiFi connection on %s.", wifi_ssid)
             return False
+    else:
+        ad.log.info("WiFi network SSID not specified, available user "
+                    "parameters are: wifi_network_ssid, wifi_network_ssid_2g, "
+                    "wifi_network_ssid_5g")
 
     if not set_wfc_mode(log, ad, wfc_mode):
         ad.log.error("Unable to set WFC mode to %s.", wfc_mode)
