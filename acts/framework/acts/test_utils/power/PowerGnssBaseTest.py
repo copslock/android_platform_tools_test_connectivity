@@ -28,6 +28,7 @@ from bokeh.models import CustomJS, ColumnDataSource
 from bokeh.models import tools as bokeh_tools
 from bokeh.models.widgets import DataTable, TableColumn
 from bokeh.plotting import figure, output_file, save
+from acts.controllers.monsoon_lib.api.common import PassthroughStates
 
 LOGTIME_RETRY_COUNT = 3
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
@@ -38,6 +39,11 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
     """
     Base Class for all GNSS Power related tests
     """
+
+    def setup_class(self):
+        super().setup_class()
+        req_params = ['customjsfile', 'maskfile']
+        self.unpack_userparams(req_params)
 
     def collect_power_data(self):
         """Measure power and plot."""
@@ -144,10 +150,10 @@ class PowerGnssBaseTest(PBT.PowerBaseTest):
         self.dut.adb.shell(RESET_BATTERY_STATS)
         time.sleep(1)
         for _ in range(LOGTIME_RETRY_COUNT):
-            self.mon_info.dut.disconnect_dut()
+            self.mon_info.dut.usb(PassthroughStates.OFF)
             if not ad.is_connected():
                 time.sleep(sleeptime)
-                self.mon_info.dut.reconnect_dut()
+                self.mon_info.dut.usb(PassthroughStates.ON)
                 break
         else:
             self.log.error('Test failed after maximum retry')
