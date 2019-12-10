@@ -17,6 +17,7 @@
 import os
 import logging
 import paramiko
+import time
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
@@ -53,7 +54,8 @@ def get_private_key(ip_address, ssh_config):
 def create_ssh_connection(ip_address,
                           ssh_username,
                           ssh_config,
-                          connect_timeout=30):
+                          connect_timeout=30,
+                          retry_count=3):
     """Creates and ssh connection to a Fuchsia device
 
     Args:
@@ -61,6 +63,8 @@ def create_ssh_connection(ip_address,
         ssh_username: Username for ssh server.
         ssh_config: ssh_config location for the ssh server.
         connect_timeout: Timeout value for connecting to ssh_server.
+        retry_count: How many time to retry connecting assuming a
+            known error.
 
     Returns:
         A paramiko ssh object
@@ -68,12 +72,31 @@ def create_ssh_connection(ip_address,
     ssh_key = get_private_key(ip_address=ip_address, ssh_config=ssh_config)
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh_client.connect(hostname=ip_address,
-                       username=ssh_username,
-                       allow_agent=False,
-                       pkey=ssh_key,
-                       timeout=connect_timeout,
-                       banner_timeout=200)
+    retry_counter = 0
+    while retry_counter < retry_count:
+        try:
+            ssh_client.connect(hostname=ip_address,
+                               username=ssh_username,
+                               allow_agent=False,
+                               pkey=ssh_key,
+                               timeout=connect_timeout,
+                               banner_timeout=200)
+            retry_counter = retry_count + 1
+        except paramiko.ssh_exception.SSHException:
+            logging.info('Paramiko SSHException.  Retrying in 1 second.')
+            e = paramiko.ssh_exception.SSHException('Paramiko SSHException')
+            time.sleep(1)
+            retry_counter =+ 1
+        except ConnectionRefusedError:
+            logging.info('Connection Refused Error.  Retrying in 1 second.')
+            e = ConnectionRefusedError('Connection Refused Error')
+            time.sleep(1)
+            retry_counter =+ 1
+        except Exception as e:
+            raise e
+    if retry_counter is retry_count:
+        raise e
+
     return ssh_client
 
 
