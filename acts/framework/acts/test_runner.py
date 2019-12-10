@@ -98,11 +98,7 @@ class TestRunner(object):
     Attributes:
         test_run_config: The TestRunConfig object specifying what tests to run.
         id: A string that is the unique identifier of this test run.
-        log_path: A string representing the path of the dir under which all logs
-            from this test run should be written.
         log: The logger object used throughout this test run.
-        summary_writer: The TestSummaryWriter object used to stream test results
-            to a file.
         test_classes: A dictionary where we can look up the test classes by name
             to instantiate. Supports unix shell style wildcards.
         run_list: A list of tuples specifying what tests to run.
@@ -115,18 +111,27 @@ class TestRunner(object):
         self.testbed_name = self.test_run_config.testbed_name
         start_time = logger.get_log_file_timestamp()
         self.id = '{}@{}'.format(self.testbed_name, start_time)
-        # log_path should be set before parsing configs.
-        l_path = os.path.join(self.test_run_config.log_path, self.testbed_name,
-                              start_time)
-        self.log_path = os.path.abspath(l_path)
+        self.test_run_config.log_path = os.path.abspath(
+            os.path.join(self.test_run_config.log_path, self.testbed_name,
+                         start_time))
         logger.setup_test_logger(self.log_path, self.testbed_name)
         self.log = logging.getLogger()
-        self.summary_writer = records.TestSummaryWriter(
+        self.test_run_config.summary_writer = records.TestSummaryWriter(
             os.path.join(self.log_path, records.OUTPUT_FILE_SUMMARY))
         self.run_list = run_list
         self.dump_config()
         self.results = records.TestResult()
         self.running = False
+
+    @property
+    def log_path(self):
+        """The path to write logs of this test run to."""
+        return self.test_run_config.log_path
+
+    @property
+    def summary_writer(self):
+        """The object responsible for writing summary and results data."""
+        return self.test_run_config.summary_writer
 
     def import_test_modules(self, test_paths):
         """Imports test classes from test scripts.
@@ -269,8 +274,6 @@ class TestRunner(object):
         """
         if not self.running:
             self.running = True
-
-        self.test_run_config.summary_writer = self.summary_writer
 
         if test_class:
             self.test_classes = {test_class.__name__: test_class}
