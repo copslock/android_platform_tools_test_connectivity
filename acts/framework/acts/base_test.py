@@ -702,11 +702,13 @@ class BaseTestClass(MoblyBaseTest):
             if format_args:
                 self.exec_one_testcase(
                     test_name,
-                    functools.partial(test_func, args + (setting, ), **kwargs))
+                    functools.partial(test_func, *(args + (setting, )),
+                                      **kwargs))
             else:
                 self.exec_one_testcase(
                     test_name,
-                    functools.partial(test_func, (setting, ) + args, **kwargs))
+                    functools.partial(test_func, *((setting, ) + args),
+                                      **kwargs))
 
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(setting)
