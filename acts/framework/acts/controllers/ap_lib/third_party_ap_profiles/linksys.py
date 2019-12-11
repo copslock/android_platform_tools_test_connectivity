@@ -12,15 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts import utils
+
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
-
-
-def _merge_dicts(*dict_args):
-    result = {}
-    for dictionary in dict_args:
-        result.update(dictionary)
-    return result
+from acts.controllers.ap_lib import hostapd_utils
 
 
 def linksys_ea4500(iface_wlan_2g=None,
@@ -29,6 +25,7 @@ def linksys_ea4500(iface_wlan_2g=None,
                    security=None,
                    ssid=None):
     # TODO(b/143104825): Permit RIFS once it is supported
+    # TODO(b/144446076): Address non-whirlwind hardware capabilities.
     """A simulated implementation of what a Linksys EA4500 AP
     Args:
         iface_wlan_2g: The 2.4Ghz interface of the test AP.
@@ -45,36 +42,29 @@ def linksys_ea4500(iface_wlan_2g=None,
         HT Capab:
             Info:
                 EA4500: Green Field supported
-                Simulated: Green Field not supported by driver
+                Simulated: Green Field not supported on Whirlwind.
             A-MPDU
                 RTAC66U: MPDU Density 4
                 Simulated: MPDU Density 8
-        RSN Capab (only w/ WPA):
+        RSN Capab (w/ WPA2):
             EA4500:
-                RSN PTKSA Replay Counter capab: 16
+                RSN PTKSA Replay Counter Capab: 1
             Simulated:
-                RSN PTKSA Replay Counter capab: 1
+                RSN PTKSA Replay Counter Capab: 16
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
-
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock Linksys EA4500 only supports a '
-                                 'WPA2 unicast and multicast cipher of CCMP.'
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError('The mock Linksys EA4500 only supports WPA2. '
-                             'Invalid security mode (%s)' %
-                             security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
 
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_SGI20,
@@ -97,18 +87,18 @@ def linksys_ea4500(iface_wlan_2g=None,
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         obss_interval = 180
         n_capabilities.append(hostapd_constants.N_CAPABILITY_HT40_PLUS)
 
     # 5GHz
     else:
         interface = iface_wlan_5g
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
         obss_interval = None
 
-    additional_params = _merge_dicts(rates, vendor_elements,
-                                     hostapd_constants.UAPSD_ENABLED)
+    additional_params = utils.merge_dicts(rates, vendor_elements,
+                                          hostapd_constants.UAPSD_ENABLED)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
@@ -151,31 +141,25 @@ def linksys_ea9500(iface_wlan_2g=None,
                 Simulated:
                     Supported: 1, 2, 5.5, 11, 6, 9, 12, 18
                     Extended: 24, 36, 48, 54
-        RSN Capab (only w/ WPA):
+        RSN Capab (w/ WPA2):
             EA9500:
-                RSN PTKSA Replay Counter capab: 16
+                RSN PTKSA Replay Counter Capab: 16
             Simulated:
-                RSN PTKSA Replay Counter capab: 1
+                RSN PTKSA Replay Counter Capab: 1
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError(
-                    'The mock Linksys EA9500 only supports a WPA2 '
-                    'unicast and multicast cipher of CCMP. '
-                    'Invalid cipher mode (%s)' % security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The Linksys EA9500 only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     qbss = {'bss_load_update_period': 50, 'chan_util_avg_period': 600}
     # Measurement Pilot Transmission IE
     vendor_elements = {'vendor_elements': '42020000'}
@@ -184,15 +168,15 @@ def linksys_ea9500(iface_wlan_2g=None,
     if channel <= 11:
         interface = iface_wlan_2g
         mode = hostapd_constants.MODE_11G
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
 
     # 5GHz
     else:
         interface = iface_wlan_5g
         mode = hostapd_constants.MODE_11A
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
 
-    additional_params = _merge_dicts(rates, qbss, vendor_elements)
+    additional_params = utils.merge_dicts(rates, qbss, vendor_elements)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
@@ -214,6 +198,7 @@ def linksys_wrt1900acv2(iface_wlan_2g=None,
                         channel=None,
                         security=None,
                         ssid=None):
+    # TODO(b/144446076): Address non-whirlwind hardware capabilities.
     """A simulated implementation of what a Linksys WRT1900ACV2 AP
     Args:
         iface_wlan_2g: The 2.4Ghz interface of the test AP.
@@ -240,30 +225,26 @@ def linksys_wrt1900acv2(iface_wlan_2g=None,
                     Beamformee STS Capability: 4,
                     Number of Sounding Dimensions: 4,
                 Simulated:
-                    Above are not supported by driver
+                    Above are not supported on Whirlwind.
             RSN Capabilities (w/ WPA2):
-                WRT1900ACV2: 0x000c (RSN PTKSA Replay Counter Capab: 16)
-                Simulated: 0x000
+                WRT1900ACV2:
+                    RSN PTKSA Replay Counter Capab: 1
+                Simulated:
+                    RSN PTKSA Replay Counter Capab: 16
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError(
-                    'The mock Linksys WRT1900ACV2 only supports a WPA2 '
-                    'unicast and multicast cipher of CCMP. '
-                    'Invalid cipher mode (%s)' % security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The Linksys WRT1900ACV2 only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_LDPC,
         hostapd_constants.N_CAPABILITY_SGI20,
@@ -292,7 +273,7 @@ def linksys_wrt1900acv2(iface_wlan_2g=None,
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         obss_interval = 180
         spectrum_mgmt = False
         local_pwr_constraint = {}
@@ -300,7 +281,7 @@ def linksys_wrt1900acv2(iface_wlan_2g=None,
     # 5GHz
     else:
         interface = iface_wlan_5g
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
         obss_interval = None
         spectrum_mgmt = True,
         local_pwr_constraint = {'local_pwr_constraint': 3}
@@ -308,9 +289,9 @@ def linksys_wrt1900acv2(iface_wlan_2g=None,
         vendor_elements['vendor_elements'] += '071e5553202401112801112c011130' \
             '01119501179901179d0117a10117a50117'
 
-    additional_params = _merge_dicts(rates, vendor_elements,
-                                     hostapd_constants.UAPSD_ENABLED,
-                                     local_pwr_constraint)
+    additional_params = utils.merge_dicts(rates, vendor_elements,
+                                          hostapd_constants.UAPSD_ENABLED,
+                                          local_pwr_constraint)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
