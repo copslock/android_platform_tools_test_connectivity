@@ -1004,6 +1004,12 @@ class AndroidDevice:
         """check crash report on the device."""
         crash_reports = []
         for crash_path in CRASH_REPORT_PATHS:
+            try:
+                cmd = 'cd %s' % crash_path
+                self.adb.shell(cmd)
+            except Exception as e:
+                self.log.debug("received exception %s", e)
+                continue
             crashes = self.get_file_names(
                 crash_path,
                 skip_files=CRASH_REPORT_SKIPS,
