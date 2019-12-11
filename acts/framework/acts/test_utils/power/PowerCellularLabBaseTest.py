@@ -371,7 +371,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         number values
 
         """
-        if not calibration_table or not isinstance(calibration_table, dict):
+        if not isinstance(calibration_table, dict):
             raise TypeError('The calibration table must be a dictionary')
         for val in calibration_table.values():
             if isinstance(val, dict):
