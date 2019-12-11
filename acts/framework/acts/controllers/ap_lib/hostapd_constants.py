@@ -415,13 +415,13 @@ VENDOR_IE = {
         'vendor_elements': 'dd040050f203'
     },
     'correct_length_association_response': {
-        'assocresp_elements=': 'dd0411223301'
+        'assocresp_elements': 'dd0411223301'
     },
     'too_short_length_association_response': {
-        'assocresp_elements=': 'dd0311223301'
+        'assocresp_elements': 'dd0311223301'
     },
     'too_long_length_association_response': {
-        'assocresp_elements=': 'dd0511223301'
+        'assocresp_elements': 'dd0511223301'
     },
     'zero_length_association_response_with_data': {
         'assocresp_elements': 'dd0011223301'
