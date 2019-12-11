@@ -12,15 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts import utils
+
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
-
-
-def _merge_dicts(*dict_args):
-    result = {}
-    for dictionary in dict_args:
-        result.update(dictionary)
-    return result
+from acts.controllers.ap_lib import hostapd_utils
 
 
 def tplink_archerc5(iface_wlan_2g=None,
@@ -28,6 +24,7 @@ def tplink_archerc5(iface_wlan_2g=None,
                     channel=None,
                     security=None,
                     ssid=None):
+    # TODO(b/144446076): Address non-whirlwind hardware capabilities.
     """A simulated implementation of an TPLink ArcherC5 AP.
     Args:
         iface_wlan_2g: The 2.4Ghz interface of the test AP.
@@ -49,7 +46,7 @@ def tplink_archerc5(iface_wlan_2g=None,
             HT Capab:
                 Info:
                     ArcherC5: Green Field supported
-                    Simulated: Green Field not supported by driver
+                    Simulated: Green Field not supported on Whirlwind.
         5GHz:
             VHT Capab:
                 ArcherC5:
@@ -59,7 +56,7 @@ def tplink_archerc5(iface_wlan_2g=None,
                     Number of Sounding Dimensions: 3,
                     VHT Link Adaptation: Both
                 Simulated:
-                    Above are not supported by driver
+                    Above are not supported on Whirlwind.
             VHT Operation Info:
                 ArcherC5: Basic MCS Map (0x0000)
                 Simulated: Basic MCS Map (0xfffc)
@@ -75,25 +72,19 @@ def tplink_archerc5(iface_wlan_2g=None,
                 ArcherC5: RIFS Permitted
                 Simulated: RIFS Prohibited
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError(
-                    'The mock TPLink ArcherC5 only supports a WPA2 '
-                    'unicast and multicast cipher of CCMP. '
-                    'Invalid cipher mode (%s)' % security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The TPLink ArcherC5 only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_SGI20,
         hostapd_constants.N_CAPABILITY_TX_STBC,
@@ -113,7 +104,7 @@ def tplink_archerc5(iface_wlan_2g=None,
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         short_preamble = True
         mode = hostapd_constants.MODE_11N_MIXED
         n_capabilities.append(hostapd_constants.N_CAPABILITY_DSSS_CCK_40)
@@ -124,7 +115,7 @@ def tplink_archerc5(iface_wlan_2g=None,
     # 5GHz
     else:
         interface = iface_wlan_5g
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
         short_preamble = False
         mode = hostapd_constants.MODE_11AC_MIXED
         n_capabilities.append(hostapd_constants.N_CAPABILITY_LDPC)
@@ -139,7 +130,7 @@ def tplink_archerc5(iface_wlan_2g=None,
         vht_channel_width = 40
         vht_center_channel = 36
 
-    additional_params = _merge_dicts(
+    additional_params = utils.merge_dicts(
         rates, vendor_elements, qbss,
         hostapd_constants.ENABLE_RRM_BEACON_REPORT,
         hostapd_constants.ENABLE_RRM_NEIGHBOR_REPORT,
@@ -189,29 +180,25 @@ def tplink_archerc7(iface_wlan_2g=None,
             HT Info:
                 ArcherC7: RIFS Permitted
                 Simulated: RIFS Prohibited
-            RSN Capabilities:
-                ArcherC7: 0x000c (RSN PTKSA Replay Counter Capab: 16)
-                Simulated: 0x0000 (RSN PTKSA Replay Counter Capab: 1)
+            RSN Capabilities (w/ WPA2):
+                ArcherC7:
+                    RSN PTKSA Replay Counter Capab: 1
+                Simulated:
+                    RSN PTKSA Replay Counter Capab: 16
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError(
-                    'The mock TPLink ArcherC7 only supports a WPA2 '
-                    'unicast and multicast cipher of CCMP. '
-                    'Invalid cipher mode (%s)' % security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The TPLink ArcherC7 only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_LDPC,
         hostapd_constants.N_CAPABILITY_SGI20,
@@ -229,7 +216,7 @@ def tplink_archerc7(iface_wlan_2g=None,
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         short_preamble = True
         mode = hostapd_constants.MODE_11N_MIXED
         spectrum_mgmt = False
@@ -241,7 +228,7 @@ def tplink_archerc7(iface_wlan_2g=None,
     # 5GHz
     else:
         interface = iface_wlan_5g
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
         short_preamble = False
         mode = hostapd_constants.MODE_11AC_MIXED
         spectrum_mgmt = True
@@ -269,9 +256,9 @@ def tplink_archerc7(iface_wlan_2g=None,
         vht_channel_width = 80
         vht_center_channel = 42
 
-    additional_params = _merge_dicts(rates, vendor_elements,
-                                     hostapd_constants.UAPSD_ENABLED,
-                                     pwr_constraint)
+    additional_params = utils.merge_dicts(rates, vendor_elements,
+                                          hostapd_constants.UAPSD_ENABLED,
+                                          pwr_constraint)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
@@ -299,6 +286,7 @@ def tplink_c1200(iface_wlan_2g=None,
                  security=None,
                  ssid=None):
     # TODO(b/143104825): Permit RIFS once it is supported
+    # TODO(b/144446076): Address non-whirlwind hardware capabilities.
     """A simulated implementation of an TPLink C1200 AP.
     Args:
         iface_wlan_2g: The 2.4Ghz interface of the test AP.
@@ -320,7 +308,7 @@ def tplink_c1200(iface_wlan_2g=None,
             HT Capab:
                 Info:
                     C1200: Green Field supported
-                    Simulated: Green Field not supported by driver
+                    Simulated: Green Field not supported on Whirlwind.
         5GHz:
             VHT Operation Info:
                 C1200: Basic MCS Map (0x0000)
@@ -333,25 +321,19 @@ def tplink_c1200(iface_wlan_2g=None,
                 C1200: RIFS Permitted
                 Simulated: RIFS Prohibited
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock TPLink C1200 only supports a WPA2 '
-                                 'unicast and multicast cipher of CCMP. '
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The TPLink C1200 only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_SGI20,
         hostapd_constants.N_CAPABILITY_TX_STBC,
@@ -370,7 +352,7 @@ def tplink_c1200(iface_wlan_2g=None,
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         short_preamble = True
         mode = hostapd_constants.MODE_11N_MIXED
         ac_capabilities = None
@@ -380,7 +362,7 @@ def tplink_c1200(iface_wlan_2g=None,
     # 5GHz
     else:
         interface = iface_wlan_5g
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
         short_preamble = False
         mode = hostapd_constants.MODE_11AC_MIXED
         n_capabilities.append(hostapd_constants.N_CAPABILITY_LDPC)
@@ -395,7 +377,7 @@ def tplink_c1200(iface_wlan_2g=None,
         vht_channel_width = 40
         vht_center_channel = 36
 
-    additional_params = _merge_dicts(
+    additional_params = utils.merge_dicts(
         rates, vendor_elements, hostapd_constants.ENABLE_RRM_BEACON_REPORT,
         hostapd_constants.ENABLE_RRM_NEIGHBOR_REPORT,
         hostapd_constants.UAPSD_ENABLED)
@@ -434,27 +416,23 @@ def tplink_tlwr940n(iface_wlan_2g=None, channel=None, security=None,
         HT Info:
             TLWR940N: RIFS Permitted
             Simulated: RIFS Prohibited
-        RSN Capabilities:
-            TLWR940N: 0x0000 (RSN PTKSA Replay Counter Capab: 1)
-            Simulated: 0x000c (RSN PTKSA Replay Counter Capab: 16)
+        RSN Capabilities (w/ WPA2):
+            TLWR940N:
+                RSN PTKSA Replay Counter Capab: 1
+            Simulated:
+                RSN PTKSA Replay Counter Capab: 16
     """
     if channel > 11:
         raise ValueError('The mock TP-Link TLWR940N does not support 5Ghz. '
                          'Invalid channel (%s)' % channel)
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST):
-        raise ValueError('Invalid interface name was passed.')
-
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock TP-Link TLWR940N only supports a '
-                                 'WPA2 unicast and multicast cipher of CCMP.'
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError('The mock TP-Link TLWR940N only supports WPA2. '
-                             'Invalid security mode (%s)' %
-                             security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_SGI20,
@@ -462,10 +440,8 @@ def tplink_tlwr940n(iface_wlan_2g=None, channel=None, security=None,
         hostapd_constants.N_CAPABILITY_RX_STBC1
     ]
 
-    rates = {
-        'basic_rates': '10 20 55 110',
-        'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'
-    }
+    rates = utils.merge_dicts(hostapd_constants.CCK_AND_OFDM_BASIC_RATES,
+                              hostapd_constants.CCK_AND_OFDM_DATA_RATES)
 
     # Atheros Communications, Inc. IE
     # WPS IE
@@ -476,8 +452,8 @@ def tplink_tlwr940n(iface_wlan_2g=None, channel=None, security=None,
         '0100020001'
     }
 
-    additional_params = _merge_dicts(rates, vendor_elements,
-                                     hostapd_constants.UAPSD_ENABLED)
+    additional_params = utils.merge_dicts(rates, vendor_elements,
+                                          hostapd_constants.UAPSD_ENABLED)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,

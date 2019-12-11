@@ -12,15 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts import utils
+
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
-
-
-def _merge_dicts(*dict_args):
-    result = {}
-    for dictionary in dict_args:
-        result.update(dictionary)
-    return result
+from acts.controllers.ap_lib import hostapd_utils
 
 
 def asus_rtac66u(iface_wlan_2g=None,
@@ -29,6 +25,7 @@ def asus_rtac66u(iface_wlan_2g=None,
                  security=None,
                  ssid=None):
     # TODO(b/143104825): Permit RIFS once it is supported
+    # TODO(b/144446076): Address non-whirlwind hardware capabilities.
     """A simulated implementation of an Asus RTAC66U AP.
     Args:
         iface_wlan_2g: The 2.4Ghz interface of the test AP.
@@ -51,7 +48,7 @@ def asus_rtac66u(iface_wlan_2g=None,
             HT Capab:
                 Info
                     RTAC66U: Green Field supported
-                    Simulated: Green Field not supported by driver
+                    Simulated: Green Field not supported on Whirlwind.
         5GHz:
             VHT Capab:
                 RTAC66U:
@@ -61,7 +58,7 @@ def asus_rtac66u(iface_wlan_2g=None,
                     Number of Sounding Dimensions: 3,
                     VHT Link Adaptation: Both
                 Simulated:
-                    Above are not supported by driver
+                    Above are not supported on Whirlwind.
             VHT Operation Info:
                 RTAC66U: Basic MCS Map (0x0000)
                 Simulated: Basic MCS Map (0xfffc)
@@ -77,25 +74,19 @@ def asus_rtac66u(iface_wlan_2g=None,
                 RTAC66U: RIFS Permitted
                 Simulated: RIFS Prohibited
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock ASUS RT-AC66U only supports a WPA2 '
-                                 'unicast and multicast cipher of CCMP. '
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The Asus RT-AC66U only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_LDPC,
         hostapd_constants.N_CAPABILITY_TX_STBC,
@@ -116,7 +107,7 @@ def asus_rtac66u(iface_wlan_2g=None,
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         mode = hostapd_constants.MODE_11N_MIXED
         ac_capabilities = None
         vht_channel_width = None
@@ -125,7 +116,7 @@ def asus_rtac66u(iface_wlan_2g=None,
     # 5GHz
     else:
         interface = iface_wlan_5g
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
         mode = hostapd_constants.MODE_11AC_MIXED
         ac_capabilities = [
             hostapd_constants.AC_CAPABILITY_RXLDPC,
@@ -138,8 +129,8 @@ def asus_rtac66u(iface_wlan_2g=None,
         vht_channel_width = 40
         vht_center_channel = 36
 
-    additional_params = _merge_dicts(rates, vendor_elements,
-                                     hostapd_constants.UAPSD_ENABLED)
+    additional_params = utils.merge_dicts(rates, vendor_elements,
+                                          hostapd_constants.UAPSD_ENABLED)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
@@ -190,37 +181,33 @@ def asus_rtac86u(iface_wlan_2g=None,
                 Simulated: Has two country code IEs, one that matches
                 the actual, and another explicit IE that was required for
                 hostapd's 802.11d to work.
-        Both (w/ WPA2):
-            RSN Capabilities:
-                RTA86U: 0x000c (RSN PTKSA Replay Counter Capab: 16)
-                Simulated: 0x0000
+        Both:
+            RSN Capabilities (w/ WPA2):
+                RTAC86U:
+                    RSN PTKSA Replay Counter Capab: 16
+                Simulated:
+                    RSN PTKSA Replay Counter Capab: 1
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock ASUS RTAC86U only supports a WPA2 '
-                                 'unicast and multicast cipher of CCMP. '
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The Asus RTAC86U only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     qbss = {'bss_load_update_period': 50, 'chan_util_avg_period': 600}
 
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
         mode = hostapd_constants.MODE_11G
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         spectrum_mgmt = False
         # Measurement Pilot Transmission IE
         vendor_elements = {'vendor_elements': '42020000'}
@@ -229,7 +216,7 @@ def asus_rtac86u(iface_wlan_2g=None,
     else:
         interface = iface_wlan_5g
         mode = hostapd_constants.MODE_11A
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
         spectrum_mgmt = True,
         # Country Information IE (w/ individual channel info)
         # TPC Report Transmit Power IE
@@ -243,7 +230,7 @@ def asus_rtac86u(iface_wlan_2g=None,
             '42020000'
         }
 
-    additional_params = _merge_dicts(rates, qbss, vendor_elements)
+    additional_params = utils.merge_dicts(rates, qbss, vendor_elements)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
@@ -267,6 +254,7 @@ def asus_rtac5300(iface_wlan_2g=None,
                   security=None,
                   ssid=None):
     # TODO(b/143104825): Permit RIFS once it is supported
+    # TODO(b/144446076): Address non-whirlwind hardware capabilities.
     """A simulated implementation of an Asus RTAC5300 AP.
     Args:
         iface_wlan_2g: The 2.4Ghz interface of the test AP.
@@ -296,7 +284,7 @@ def asus_rtac5300(iface_wlan_2g=None,
                     MU Beamformer Supported,
                     VHT Link Adaptation: Both
                 Simulated:
-                    Above are not supported by driver
+                    Above are not supported on Whirlwind.
             VHT Operation Info:
                 RTAC5300: Basic MCS Map (0x0000)
                 Simulated: Basic MCS Map (0xfffc)
@@ -312,25 +300,19 @@ def asus_rtac5300(iface_wlan_2g=None,
                 RTAC5300: RIFS Permitted
                 Simulated: RIFS Prohibited
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock ASUS RTAC5300 only supports a WPA2 '
-                                 'unicast and multicast cipher of CCMP. '
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The Asus RTAC5300 only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     qbss = {'bss_load_update_period': 50, 'chan_util_avg_period': 600}
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_LDPC,
@@ -344,7 +326,7 @@ def asus_rtac5300(iface_wlan_2g=None,
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         mode = hostapd_constants.MODE_11N_MIXED
         # AsusTek IE
         # Epigram 2.4GHz IE
@@ -358,7 +340,7 @@ def asus_rtac5300(iface_wlan_2g=None,
     # 5GHz
     else:
         interface = iface_wlan_5g
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
         mode = hostapd_constants.MODE_11AC_MIXED
         # Epigram 5GHz IE
         vendor_elements['vendor_elements'] += 'dd0500904c0410'
@@ -373,8 +355,8 @@ def asus_rtac5300(iface_wlan_2g=None,
         vht_channel_width = 40
         vht_center_channel = 36
 
-    additional_params = _merge_dicts(rates, qbss, vendor_elements,
-                                     hostapd_constants.UAPSD_ENABLED)
+    additional_params = utils.merge_dicts(rates, qbss, vendor_elements,
+                                          hostapd_constants.UAPSD_ENABLED)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
@@ -427,29 +409,25 @@ def asus_rtn56u(iface_wlan_2g=None,
                 A-MPDU
                     RTN56U: MPDU Density 4
                     Simulated: MPDU Density 8
-            RSN Capabilities:
-                RTN56U: 0x0000 (RSN PTKSA Replay Counter Capab: 1)
-                Simulated: 0x000c (RSN PTKSA Replay Counter Capab: 16)
+            RSN Capabilities (w/ WPA2):
+                RTN56U:
+                    RSN PTKSA Replay Counter Capab: 1
+                Simulated:
+                    RSN PTKSA Replay Counter Capab: 16
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock Asus RTN56U only supports a WPA2 '
-                                 'unicast and multicast cipher of CCMP. '
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The Asus RTN56U only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     qbss = {'bss_load_update_period': 50, 'chan_util_avg_period': 600}
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_SGI20,
@@ -461,7 +439,7 @@ def asus_rtn56u(iface_wlan_2g=None,
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         # Ralink Technology IE
         # US Country Code IE
         # AP Channel Report IEs (2)
@@ -479,7 +457,7 @@ def asus_rtn56u(iface_wlan_2g=None,
     # 5GHz
     else:
         interface = iface_wlan_5g
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
         # Ralink Technology IE
         # US Country Code IE
         vendor_elements = {
@@ -487,8 +465,8 @@ def asus_rtn56u(iface_wlan_2g=None,
             '0706555320010b14'
         }
 
-    additional_params = _merge_dicts(rates, vendor_elements, qbss,
-                                     hostapd_constants.UAPSD_ENABLED)
+    additional_params = utils.merge_dicts(rates, vendor_elements, qbss,
+                                          hostapd_constants.UAPSD_ENABLED)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
@@ -539,30 +517,24 @@ def asus_rtn66u(iface_wlan_2g=None,
             HT Capab:
                 Info:
                     RTN66U: Green Field supported
-                    Simulated: Green Field not supported by driver
+                    Simulated: Green Field not supported on Whirlwind.
                 A-MPDU
                     RTN66U: MPDU Density 4
                     Simulated: MPDU Density 8
     """
-    if not iface_wlan_2g or not iface_wlan_5g:
-        raise ValueError('Wlan interface for 2G and/or 5G is missing.')
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST
-            or iface_wlan_5g not in hostapd_constants.INTERFACE_5G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_interface(iface_wlan_5g,
+                                   hostapd_constants.INTERFACE_5G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock Asus RTN66U only supports a WPA2 '
-                                 'unicast and multicast cipher of CCMP. '
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError(
-                'The Asus RTN66U only supports WPA2 or open. Invalid '
-                'security mode (%s)' % security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     # Common Parameters
-    rates = {'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'}
+    rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_LDPC,
         hostapd_constants.N_CAPABILITY_SGI20,
@@ -576,16 +548,16 @@ def asus_rtn66u(iface_wlan_2g=None,
     # 2.4GHz
     if channel <= 11:
         interface = iface_wlan_2g
-        rates['basic_rates'] = '10 20 55 110'
+        rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         n_capabilities.append(hostapd_constants.N_CAPABILITY_DSSS_CCK_40)
 
     # 5GHz
     else:
         interface = iface_wlan_5g
-        rates['basic_rates'] = '60 120 240'
+        rates.update(hostapd_constants.OFDM_ONLY_BASIC_RATES)
 
-    additional_params = _merge_dicts(rates, vendor_elements,
-                                     hostapd_constants.UAPSD_ENABLED)
+    additional_params = utils.merge_dicts(rates, vendor_elements,
+                                          hostapd_constants.UAPSD_ENABLED)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,

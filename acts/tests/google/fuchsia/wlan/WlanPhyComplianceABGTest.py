@@ -14,18 +14,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts import utils
+
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_constants
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-
-
-def _merge_dicts(*dict_args):
-    result = {}
-    for dictionary in dict_args:
-        result.update(dictionary)
-    return result
 
 
 class WlanPhyComplianceABGTest(WifiBaseTest):
@@ -204,7 +199,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=hostapd_constants.WMM_NON_DEFAULT_PARAMS)
 
     def test_associate_11b_only_with_WMM_ACM_on_BK(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK)
         validate_setup_ap_and_associate(
@@ -217,7 +212,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11b_only_with_WMM_ACM_on_BE(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE)
         validate_setup_ap_and_associate(
@@ -230,7 +225,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11b_only_with_WMM_ACM_on_VI(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VI)
         validate_setup_ap_and_associate(
@@ -243,7 +238,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11b_only_with_WMM_ACM_on_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VO)
         validate_setup_ap_and_associate(
@@ -256,7 +251,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11b_only_with_WMM_ACM_on_BK_BE_VI(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI)
@@ -270,7 +265,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11b_only_with_WMM_ACM_on_BK_BE_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VO)
@@ -284,7 +279,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11b_only_with_WMM_ACM_on_BK_VI_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
@@ -298,7 +293,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11b_only_with_WMM_ACM_on_BE_VI_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE, hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
@@ -312,7 +307,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11b_only_with_country_code(self):
-        country_info = _merge_dicts(
+        country_info = utils.merge_dicts(
             hostapd_constants.ENABLE_IEEE80211D,
             hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['UNITED_STATES'])
@@ -325,7 +320,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=country_info)
 
     def test_associate_11b_only_with_non_country_code(self):
-        country_info = _merge_dicts(
+        country_info = utils.merge_dicts(
             hostapd_constants.ENABLE_IEEE80211D,
             hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['NON_COUNTRY'])
@@ -493,7 +488,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=hostapd_constants.WMM_NON_DEFAULT_PARAMS)
 
     def test_associate_11a_only_with_WMM_ACM_on_BK(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK)
         validate_setup_ap_and_associate(
@@ -506,7 +501,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11a_only_with_WMM_ACM_on_BE(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE)
         validate_setup_ap_and_associate(
@@ -519,7 +514,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11a_only_with_WMM_ACM_on_VI(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VI)
         validate_setup_ap_and_associate(
@@ -532,7 +527,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11a_only_with_WMM_ACM_on_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VO)
         validate_setup_ap_and_associate(
@@ -545,7 +540,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11a_only_with_WMM_ACM_on_BK_BE_VI(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI)
@@ -559,7 +554,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11a_only_with_WMM_ACM_on_BK_BE_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VO)
@@ -573,7 +568,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11a_only_with_WMM_ACM_on_BK_VI_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
@@ -587,7 +582,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11a_only_with_WMM_ACM_on_BE_VI_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE, hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
@@ -601,7 +596,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11a_only_with_country_code(self):
-        country_info = _merge_dicts(
+        country_info = utils.merge_dicts(
             hostapd_constants.ENABLE_IEEE80211D,
             hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['UNITED_STATES'])
@@ -614,7 +609,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=country_info)
 
     def test_associate_11a_only_with_non_country_code(self):
-        country_info = _merge_dicts(
+        country_info = utils.merge_dicts(
             hostapd_constants.ENABLE_IEEE80211D,
             hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['NON_COUNTRY'])
@@ -677,8 +672,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
                 'response_without_data'])
 
     def test_associate_11g_only_long_preamble(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -689,8 +684,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_short_preamble(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -701,8 +696,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_minimal_beacon_interval(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -713,8 +708,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_maximum_beacon_interval(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -725,8 +720,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_frag_threshold_430(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -737,8 +732,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_rts_threshold_256(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -749,8 +744,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_rts_256_frag_430(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -762,8 +757,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_high_dtim_low_beacon_interval(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -775,8 +770,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_low_dtim_high_beacon_interval(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -788,7 +783,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_with_WMM_with_default_values(self):
-        data_rates = _merge_dicts(
+        data_rates = utils.merge_dicts(
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS)
@@ -802,9 +797,10 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_with_WMM_with_non_default_values(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES,
-                                  hostapd_constants.WMM_NON_DEFAULT_PARAMS)
+        data_rates = utils.merge_dicts(
+            hostapd_constants.OFDM_DATA_RATES,
+            hostapd_constants.OFDM_ONLY_BASIC_RATES,
+            hostapd_constants.WMM_NON_DEFAULT_PARAMS)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -815,9 +811,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_with_WMM_ACM_on_BK(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        wmm_acm_bits_enabled = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, data_rates)
         validate_setup_ap_and_associate(
@@ -830,9 +826,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11g_only_with_WMM_ACM_on_BE(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        wmm_acm_bits_enabled = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE, data_rates)
         validate_setup_ap_and_associate(
@@ -845,9 +841,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11g_only_with_WMM_ACM_on_VI(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        wmm_acm_bits_enabled = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VI, data_rates)
         validate_setup_ap_and_associate(
@@ -860,9 +856,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11g_only_with_WMM_ACM_on_VO(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        wmm_acm_bits_enabled = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VO, data_rates)
         validate_setup_ap_and_associate(
@@ -875,9 +871,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11g_only_with_WMM_ACM_on_BK_BE_VI(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        wmm_acm_bits_enabled = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI, data_rates)
@@ -891,9 +887,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11g_only_with_WMM_ACM_on_BK_BE_VO(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        wmm_acm_bits_enabled = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VO, data_rates)
@@ -907,9 +903,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11g_only_with_WMM_ACM_on_BK_VI_VO(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        wmm_acm_bits_enabled = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO, data_rates)
@@ -923,9 +919,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11g_only_with_WMM_ACM_on_BE_VI_VO(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        wmm_acm_bits_enabled = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE, hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO, data_rates)
@@ -939,9 +935,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11g_only_with_country_code(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        country_info = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        country_info = utils.merge_dicts(
             hostapd_constants.ENABLE_IEEE80211D,
             hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['UNITED_STATES'], data_rates)
@@ -954,9 +950,9 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=country_info)
 
     def test_associate_11g_only_with_non_country_code(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
-        country_info = _merge_dicts(
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        country_info = utils.merge_dicts(
             hostapd_constants.ENABLE_IEEE80211D,
             hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['NON_COUNTRY'], data_rates)
@@ -969,8 +965,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=country_info)
 
     def test_associate_11g_only_with_hidden_ssid(self):
-        data_rates = _merge_dicts(hostapd_constants.OFDM_DATA_RATES,
-                                  hostapd_constants.OFDM_ONLY_BASIC_RATES)
+        data_rates = utils.merge_dicts(hostapd_constants.OFDM_DATA_RATES,
+                                       hostapd_constants.OFDM_ONLY_BASIC_RATES)
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -981,7 +977,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_with_vendor_ie_in_beacon_correct_length(self):
-        data_rates = _merge_dicts(
+        data_rates = utils.merge_dicts(
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.VENDOR_IE['correct_length_beacon'])
@@ -994,7 +990,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_with_vendor_ie_in_beacon_zero_length(self):
-        data_rates = _merge_dicts(
+        data_rates = utils.merge_dicts(
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'])
@@ -1007,7 +1003,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_with_vendor_ie_in_assoc_correct_length(self):
-        data_rates = _merge_dicts(
+        data_rates = utils.merge_dicts(
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.VENDOR_IE['correct_length_association_response'])
@@ -1020,7 +1016,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_with_vendor_ie_in_assoc_zero_length(self):
-        data_rates = _merge_dicts(
+        data_rates = utils.merge_dicts(
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.VENDOR_IE['correct_length_association_response'],
@@ -1140,7 +1136,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=hostapd_constants.WMM_NON_DEFAULT_PARAMS)
 
     def test_associate_11bg_with_WMM_ACM_on_BK(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK)
         validate_setup_ap_and_associate(
@@ -1153,7 +1149,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11bg_with_WMM_ACM_on_BE(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE)
         validate_setup_ap_and_associate(
@@ -1166,7 +1162,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11bg_with_WMM_ACM_on_VI(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VI)
         validate_setup_ap_and_associate(
@@ -1179,7 +1175,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11bg_with_WMM_ACM_on_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_VO)
         validate_setup_ap_and_associate(
@@ -1192,7 +1188,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11bg_with_WMM_ACM_on_BK_BE_VI(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VI)
@@ -1206,7 +1202,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11bg_with_WMM_ACM_on_BK_BE_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_BE,
             hostapd_constants.WMM_ACM_VO)
@@ -1220,7 +1216,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11bg_with_WMM_ACM_on_BK_VI_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BK, hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
@@ -1234,7 +1230,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11bg_with_WMM_ACM_on_BE_VI_VO(self):
-        wmm_acm_bits_enabled = _merge_dicts(
+        wmm_acm_bits_enabled = utils.merge_dicts(
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             hostapd_constants.WMM_ACM_BE, hostapd_constants.WMM_ACM_VI,
             hostapd_constants.WMM_ACM_VO)
@@ -1248,7 +1244,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=wmm_acm_bits_enabled)
 
     def test_associate_11bg_with_country_code(self):
-        country_info = _merge_dicts(
+        country_info = utils.merge_dicts(
             hostapd_constants.ENABLE_IEEE80211D,
             hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['UNITED_STATES'])
@@ -1261,7 +1257,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=country_info)
 
     def test_associate_11bg_with_non_country_code(self):
-        country_info = _merge_dicts(
+        country_info = utils.merge_dicts(
             hostapd_constants.ENABLE_IEEE80211D,
             hostapd_constants.COUNTRY_STRING['ALL'],
             hostapd_constants.COUNTRY_CODE['NON_COUNTRY'])
@@ -1303,7 +1299,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             VENDOR_IE['zero_length_beacon_without_data'])
 
     def test_associate_11g_only_with_vendor_ie_in_assoc_correct_length(self):
-        data_rates = _merge_dicts(
+        data_rates = utils.merge_dicts(
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.VENDOR_IE['correct_length_association_response'])
@@ -1316,7 +1312,7 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=data_rates)
 
     def test_associate_11g_only_with_vendor_ie_in_assoc_zero_length(self):
-        data_rates = _merge_dicts(
+        data_rates = utils.merge_dicts(
             hostapd_constants.OFDM_DATA_RATES,
             hostapd_constants.OFDM_ONLY_BASIC_RATES,
             hostapd_constants.VENDOR_IE['correct_length_association_response'],
