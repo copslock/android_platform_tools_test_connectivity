@@ -177,6 +177,8 @@ class AdbProxy(object):
         if ret == 1 and (DEVICE_NOT_FOUND_REGEX.match(err)
                          or CANNOT_BIND_LISTENER_REGEX.match(err)):
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
+        if ret == 2:
+            raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
         else:
             return out
 
