@@ -12,15 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts import utils
+
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
-
-
-def _merge_dicts(*dict_args):
-    result = {}
-    for dictionary in dict_args:
-        result.update(dictionary)
-    return result
+from acts.controllers.ap_lib import hostapd_utils
 
 
 def securifi_almond(iface_wlan_2g=None, channel=None, security=None,
@@ -45,28 +41,23 @@ def securifi_almond(iface_wlan_2g=None, channel=None, security=None,
                 A-MPDU
                     Almond: MPDU Density 4
                     Simulated: MPDU Density 8
-            RSN Capab (only w/ WPA):
+            RSN Capab (w/ WPA2):
                 Almond:
-                    RSN PTKSA Replay Counter capab: 16
+                    RSN PTKSA Replay Counter Capab: 1
                 Simulated:
-                    RSN PTKSA Replay Counter capab: 1
+                    RSN PTKSA Replay Counter Capab: 16
     """
     if channel > 11:
         raise ValueError('The Securifi Almond does not support 5Ghz. '
                          'Invalid channel (%s)' % channel)
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST):
-        raise ValueError('Invalid interface name was passed.')
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock Securifi Almond only supports a '
-                                 'WPA2 unicast and multicast cipher of CCMP.'
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError('The mock Securifi Almond only supports WPA2. '
-                             'Invalid security mode (%s)' %
-                             security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_HT40_PLUS,
@@ -77,10 +68,8 @@ def securifi_almond(iface_wlan_2g=None, channel=None, security=None,
         hostapd_constants.N_CAPABILITY_DSSS_CCK_40
     ]
 
-    rates = {
-        'basic_rates': '10 20 55 110',
-        'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'
-    }
+    rates = utils.merge_dicts(hostapd_constants.CCK_AND_OFDM_BASIC_RATES,
+                              hostapd_constants.CCK_AND_OFDM_DATA_RATES)
 
     # Ralink Technology IE
     # Country Information IE
@@ -95,7 +84,7 @@ def securifi_almond(iface_wlan_2g=None, channel=None, security=None,
 
     qbss = {'bss_load_update_period': 50, 'chan_util_avg_period': 600}
 
-    additional_params = _merge_dicts(rates, vendor_elements, qbss)
+    additional_params = utils.merge_dicts(rates, vendor_elements, qbss)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,

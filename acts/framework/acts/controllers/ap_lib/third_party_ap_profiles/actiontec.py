@@ -12,15 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from acts import utils
+
 from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.ap_lib import hostapd_constants
-
-
-def _merge_dicts(*dict_args):
-    result = {}
-    for dictionary in dict_args:
-        result.update(dictionary)
-    return result
+from acts.controllers.ap_lib import hostapd_utils
 
 
 def actiontec_pk5000(iface_wlan_2g=None,
@@ -49,37 +45,24 @@ def actiontec_pk5000(iface_wlan_2g=None,
         # 11 is the highest allowable channel.
         raise ValueError('The Actiontec PK5000 does not support 5Ghz. '
                          'Invalid channel (%s)' % channel)
-    else:
-        interface = iface_wlan_2g
-        short_preamble = False
-        force_wmm = False
-        beacon_interval = 100
-        dtim_period = 3
-        # Sets the basic rates and supported rates of the PK5000
-        additional_params = {
-            'basic_rates': '10 20 55 110',
-            'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'
-        }
-
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The Actiontec PK5000 only supports a WPA2 '
-                                 'unicast and multicast cipher of CCMP. '
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-            # Fake WPS IE based on the PK5000
-            additional_params['vendor_elements'] = 'dd0e0050f204104a00011010' \
-                                                   '44000102'
-        else:
-            raise ValueError(
-                'The Actiontec PK5000 only supports WPA2. Invalid security '
-                'mode (%s)' % security.security_mode)
-    elif security is None:
-        pass
-    else:
-        raise ValueError('Only open or wpa2 are supported on the '
-                         'Actiontec PK5000.')
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
+
+    interface = iface_wlan_2g
+    short_preamble = False
+    force_wmm = False
+    beacon_interval = 100
+    dtim_period = 3
+    # Sets the basic rates and supported rates of the PK5000
+    additional_params = utils.merge_dicts(
+        hostapd_constants.CCK_AND_OFDM_BASIC_RATES,
+        hostapd_constants.CCK_AND_OFDM_DATA_RATES)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
@@ -126,32 +109,22 @@ def actiontec_mi424wr(iface_wlan_2g=None,
     if channel > 11:
         raise ValueError('The Actiontec MI424WR does not support 5Ghz. '
                          'Invalid channel (%s)' % channel)
-    if (iface_wlan_2g not in hostapd_constants.INTERFACE_2G_LIST):
-        raise ValueError('Invalid interface name was passed.')
-
+    # Verify interface and security
+    hostapd_utils.verify_interface(iface_wlan_2g,
+                                   hostapd_constants.INTERFACE_2G_LIST)
+    hostapd_utils.verify_security_mode(security,
+                                       [None, hostapd_constants.WPA2])
     if security:
-        if security.security_mode is hostapd_constants.WPA2:
-            if not security.wpa2_cipher == 'CCMP':
-                raise ValueError('The mock Actiontec MI424WR only supports a '
-                                 'WPA2 unicast and multicast cipher of CCMP.'
-                                 'Invalid cipher mode (%s)' %
-                                 security.security.wpa2_cipher)
-        else:
-            raise ValueError('The mock Actiontec MI424WR only supports WPA2. '
-                             'Invalid security mode (%s)' %
-                             security.security_mode)
+        hostapd_utils.verify_cipher(security,
+                                    [hostapd_constants.WPA2_DEFAULT_CIPER])
 
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_TX_STBC,
         hostapd_constants.N_CAPABILITY_DSSS_CCK_40,
         hostapd_constants.N_CAPABILITY_RX_STBC1
     ]
-
-    rates = {
-        'basic_rates': '10 20 55 110',
-        'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'
-    }
-
+    rates = utils.merge_dicts(hostapd_constants.CCK_AND_OFDM_DATA_RATES,
+                              hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
     # Proprietary Atheros Communication: Adv Capability IE
     # Proprietary Atheros Communication: Unknown IE
     # Country Info: US Only IE
@@ -162,7 +135,7 @@ def actiontec_mi424wr(iface_wlan_2g=None,
         '0706555320010b1b'
     }
 
-    additional_params = _merge_dicts(rates, vendor_elements)
+    additional_params = utils.merge_dicts(rates, vendor_elements)
 
     config = hostapd_config.HostapdConfig(
         ssid=ssid,
