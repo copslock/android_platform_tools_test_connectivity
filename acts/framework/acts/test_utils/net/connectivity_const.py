@@ -52,7 +52,7 @@ VPN_STATE_TIMEOUT = 4
 VPN_STATE_FAILED = 5
 # TODO gmoturu: determine the exact timeout value
 # This is a random value as of now
-VPN_TIMEOUT = 15
+VPN_TIMEOUT = 30
 
 # Connectiivty Manager constants
 TYPE_MOBILE = 0
