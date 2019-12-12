@@ -514,6 +514,16 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         # TODO (b/143497738): implement.
         raise NotImplementedError()
 
+    def set_paging_cycle(self, bts_index, cycle_duration):
+        """ Sets the paging cycle duration for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cycle_duration: the new paging cycle duration in milliseconds
+        """
+        # TODO (b/146068532): implement.
+        raise NotImplementedError()
+
     def set_phich_resource(self, bts_index, phich):
         """ Sets the PHICH Resource setting for the indicated base station.
 

@@ -2023,6 +2023,43 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def paging_duration(self):
+        """ Gets the paging cycle duration for this base station.
+
+        Args:
+            None
+
+        Returns:
+            The paging cycle duration in milliseconds.
+        """
+        cmd = "PCYCLE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @paging_duration.setter
+    def paging_duration(self, duration):
+        """ Sets the paging cycle duration for this base station.
+
+        Args:
+            duration: the paging cycle duration in milliseconds.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if duration's value is invalid
+        """
+
+        duration = int(duration)
+
+        valid_values = {320, 640, 1280, 2560}
+        if duration not in valid_values:
+            raise ValueError('Valid values for the paging cycle duration are '
+                             '%r.' % valid_values)
+
+        cmd = "PCYCLE {},{}".format(duration, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def phich_resource(self):
         """ Gets the PHICH Resource setting for this base station.
 

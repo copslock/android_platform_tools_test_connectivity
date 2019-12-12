@@ -197,6 +197,16 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.bts[bts_index].cfi = cfi
 
+    def set_paging_cycle(self, bts_index, cycle_duration):
+        """ Sets the paging cycle duration for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cycle_duration: the new paging cycle duration in milliseconds
+        """
+        # TODO (b/146068532): implement.
+        self.bts[bts_index].paging_duration = cycle_duration
+
     def set_phich_resource(self, bts_index, phich):
         """ Sets the PHICH Resource setting for the indicated base station.
 

@@ -141,6 +141,9 @@ class AbstractCellularSimulator:
         if config.cfi:
             self.set_cfi(bts_index, config.cfi)
 
+        if config.paging_cycle:
+            self.set_paging_cycle(bts_index, config.paging_cycle)
+
         if config.phich:
             self.set_phich_resource(bts_index, config.phich)
 
@@ -291,6 +294,15 @@ class AbstractCellularSimulator:
         Args:
             bts_index: the base station number
             cfi: the new CFI setting
+        """
+        raise NotImplementedError()
+
+    def set_paging_cycle(self, bts_index, cycle_duration):
+        """ Sets the paging cycle duration for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cycle_duration: the new paging cycle duration in milliseconds
         """
         raise NotImplementedError()
 

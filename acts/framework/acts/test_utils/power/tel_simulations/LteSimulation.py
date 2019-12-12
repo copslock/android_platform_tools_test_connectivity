@@ -78,6 +78,7 @@ class LteSimulation(BaseSimulation):
     PARAM_UL_MCS = 'ulmcs'
     PARAM_SSF = 'ssf'
     PARAM_CFI = 'cfi'
+    PARAM_PAGING = 'paging'
     PARAM_PHICH = 'phich'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
@@ -405,6 +406,8 @@ class LteSimulation(BaseSimulation):
                 should be used or not
             dl_channel: an integer indicating the downlink channel number
             cfi: an integer indicating the Control Format Indicator
+            paging_cycle: an integer indicating the paging cycle duration in
+                milliseconds
             phich: a string indicating the PHICH group size parameter
         """
         def __init__(self):
@@ -428,6 +431,7 @@ class LteSimulation(BaseSimulation):
             self.dl_channel = None
             self.dl_cc_enabled = None
             self.cfi = None
+            self.paging_cycle = None
             self.phich = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
@@ -739,6 +743,22 @@ class LteSimulation(BaseSimulation):
                 raise ValueError('The {} parameter can only be followed by 1,'
                                  '2, 1/2 (or 12) and 1/6 (or 16).'.format(
                                      self.PARAM_PHICH))
+
+        # Paging cycle duration
+        values = self.consume_parameter(parameters, self.PARAM_PAGING, 1)
+
+        if not values:
+            self.log.warning('The {} parameter was not provided. Setting '
+                             'paging cycle duration to 1280 ms by '
+                             'default.'.format(self.PARAM_PAGING))
+            new_config.paging_cycle = 1280
+        else:
+            try:
+                new_config.paging_cycle = int(values[1])
+            except ValueError:
+                raise ValueError(
+                    'The {} parameter has to be followed by the paging cycle '
+                    'duration in milliseconds.'.format(self.PARAM_PAGING))
 
         # Get uplink power
 
