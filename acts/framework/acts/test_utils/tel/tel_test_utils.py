@@ -432,7 +432,7 @@ def refresh_droid_config(log, ad):
             if carrier_id == 2340:
                 ad.log.info("SubId %s info: %s", sub_id, sorted(
                     sub_record.items()))
-                return
+                continue
             if not sub_info.get("number"):
                 sub_info[
                     "number"] = droid.telephonyGetLine1NumberForSubscription(
