@@ -7740,6 +7740,67 @@ def get_host_ip_address(ad):
     return destination_ip
 
 
+def load_scone_cat_simulate_data(ad, simulate_data, sub_id=None):
+    """ Load radio simulate data
+    ad: android device controller
+    simulate_data: JSON object of simulate data
+    sub_id: RIL sub id, should be 0 or 1
+    """
+    ad.log.info("load_scone_cat_simulate_data")
+
+    #Check RIL sub id
+    if sub_id is None or sub_id > 1:
+        ad.log.error("The value of RIL sub_id should be 0 or 1")
+        return False
+
+    action = "com.google.android.apps.scone.cat.action.SetSimulateData"
+
+    #add sub id
+    simulate_data["SubId"] = sub_id
+    try:
+        #dump json
+        extra = json.dumps(simulate_data)
+        ad.log.info("send simulate_data=[%s]" % extra)
+        #send data
+        ad.adb.shell("am broadcast -a " + action + " --es simulate_data '" + extra + "'")
+    except Exception as e:
+        ad.log.error("Exception error to send CAT: %s", e)
+        return False
+
+    return True
+
+
+def load_scone_cat_data_from_file(ad, simulate_file_path, sub_id=None):
+    """ Load radio simulate data
+    ad: android device controller
+    simulate_file_path: JSON file of simulate data
+    sub_id: RIL sub id, should be 0 or 1
+    """
+    ad.log.info("load_radio_simulate_data_from_file from %s" % simulate_file_path)
+    radio_simulate_data = {}
+
+    #Check RIL sub id
+    if sub_id is None or sub_id > 1:
+        ad.log.error("The value of RIL sub_id should be 0 or 1")
+        raise ValueError
+
+    with open(simulate_file_path, 'r') as f:
+        try:
+            radio_simulate_data = json.load(f)
+        except Exception as e:
+            self.log.error("Exception error to load %s: %s", f, e)
+            return False
+
+    for item in radio_simulate_data:
+        result = load_scone_cat_simulate_data(ad, item, sub_id)
+        if result == False:
+            ad.log.error("Load CAT command fail")
+            return False
+        time.sleep(0.1)
+
+    return True
+
+
 def toggle_connectivity_monitor_setting(ad, state=True):
     monitor_setting = ad.adb.getprop("persist.radio.enable_tel_mon")
     ad.log.info("radio.enable_tel_mon setting is %s", monitor_setting)
