@@ -56,6 +56,7 @@ log.tag.GnssVisibilityControl=VERBOSE"""
 class GnssTestUtilsError(Exception):
     pass
 
+
 def remount_device(ad):
     """Remount device file system to read and write.
 
@@ -72,6 +73,7 @@ def remount_device(ad):
             disable_verity_result = ad.adb.disable_verity()
             reboot(ad)
 
+
 def reboot(ad):
     """Reboot device and check if mobile data is available.
 
@@ -84,6 +86,7 @@ def reboot(ad):
     if not int(ad.adb.shell("settings get global mobile_data")) == 1:
         set_mobile_data(ad, True)
     utils.sync_device_time(ad)
+
 
 def enable_gnss_verbose_logging(ad):
     """Enable GNSS VERBOSE Logging and persistent logcat.
@@ -102,6 +105,7 @@ def enable_gnss_verbose_logging(ad):
     ad.adb.shell("setprop persist.logd.logpersistd logcatd")
     ad.adb.shell("setprop log.tag.copresGcore VERBOSE")
     ad.adb.shell("sync")
+
 
 def enable_compact_and_particle_fusion_log(ad):
     """Enable CompactLog and FLP particle fusion log.
@@ -133,6 +137,7 @@ def enable_compact_and_particle_fusion_log(ad):
     ad.adb.shell("dumpsys activity service com.google.android.location."
                  "internal.GoogleLocationManagerService")
 
+
 def disable_xtra_throttle(ad):
     """Disable XTRA throttle will have no limit to download XTRA data.
 
@@ -144,6 +149,7 @@ def disable_xtra_throttle(ad):
     ad.adb.shell("echo XTRA_TEST_ENABLED=1 >> /vendor/etc/gps.conf")
     ad.adb.shell("echo XTRA_THROTTLE_ENABLED=0 >> /vendor/etc/gps.conf")
 
+
 def enable_supl_mode(ad):
     """Enable SUPL back on for next test item.
 
@@ -153,6 +159,7 @@ def enable_supl_mode(ad):
     remount_device(ad)
     ad.log.info("Enable SUPL mode.")
     ad.adb.shell("echo SUPL_MODE=1 >> /etc/gps_debug.conf")
+
 
 def disable_supl_mode(ad):
     """Kill SUPL to test XTRA only test item.
@@ -165,6 +172,7 @@ def disable_supl_mode(ad):
     ad.adb.shell("echo SUPL_MODE=0 >> /etc/gps_debug.conf")
     reboot(ad)
 
+
 def kill_xtra_daemon(ad):
     """Kill XTRA daemon to test SUPL only test item.
 
@@ -174,6 +182,7 @@ def kill_xtra_daemon(ad):
     ad.root_adb()
     ad.log.info("Disable XTRA-daemon until next reboot.")
     ad.adb.shell("killall xtra-daemon")
+
 
 def disable_private_dns_mode(ad):
     """Due to b/118365122, it's better to disable private DNS mode while
@@ -187,6 +196,7 @@ def disable_private_dns_mode(ad):
     if ad.adb.shell("settings get global private_dns_mode") != "off":
         ad.log.info("Disable Private DNS mode.")
         ad.adb.shell("settings put global private_dns_mode off")
+
 
 def _init_device(ad):
     """Init GNSS test devices.
@@ -209,6 +219,7 @@ def _init_device(ad):
     init_gtw_gpstool(ad)
     reboot(ad)
 
+
 def connect_to_wifi_network(ad, network):
     """Connection logic for open and psk wifi networks.
 
@@ -219,6 +230,7 @@ def connect_to_wifi_network(ad, network):
     SSID = network[WifiEnums.SSID_KEY]
     wutils.start_wifi_connection_scan_and_return_status(ad)
     wutils.wifi_connect(ad, network, num_of_tries=5)
+
 
 def set_wifi_and_bt_scanning(ad, state=True):
     """Set Wi-Fi and Bluetooth scanning on/off in Settings -> Location
@@ -238,6 +250,7 @@ def set_wifi_and_bt_scanning(ad, state=True):
         ad.adb.shell("settings put global ble_scan_always_enabled 0")
         ad.log.info("Wi-Fi and Bluetooth scanning are disabled")
 
+
 def check_location_service(ad):
     """Set location service on.
        Verify if location service is available.
@@ -251,6 +264,7 @@ def check_location_service(ad):
     ad.log.info("Current Location Mode >> %d" % location_mode)
     if location_mode != 3:
         raise signals.TestError("Failed to turn Location on")
+
 
 def clear_logd_gnss_qxdm_log(ad):
     """Clear /data/misc/logd,
@@ -267,6 +281,7 @@ def clear_logd_gnss_qxdm_log(ad):
     output_path = posixpath.join(DEFAULT_QXDM_LOG_PATH, "logs")
     ad.adb.shell("rm -rf %s" % output_path, ignore_status=True)
     reboot(ad)
+
 
 def get_gnss_qxdm_log(ad, qdb_path):
     """Get /storage/emulated/0/Android/data/com.android.gpstool/files and
@@ -308,6 +323,7 @@ def get_gnss_qxdm_log(ad, qdb_path):
         ad.log.error("QXDM file count is %d. There is no QXDM log on device."
                      % int(file_count))
 
+
 def set_mobile_data(ad, state):
     """Set mobile data on or off and check mobile data state.
 
@@ -330,6 +346,7 @@ def set_mobile_data(ad, state):
         ad.log.info("Mobile data is disabled and set to %d" % out)
     else:
         ad.log.error("Mobile data is at unknown state and set to %d" % out)
+
 
 def gnss_trigger_modem_ssr_by_adb(ad, dwelltime=60):
     """Trigger modem SSR crash by adb and verify if modem crash and recover
@@ -365,6 +382,7 @@ def gnss_trigger_modem_ssr_by_adb(ad, dwelltime=60):
         raise signals.TestError("Failed to trigger modem SSR crash")
     raise signals.TestError("No SSRObserver found in logcat")
 
+
 def gnss_trigger_modem_ssr_by_mds(ad, dwelltime=60):
     """Trigger modem SSR crash by mds tool and verify if modem crash and recover
     successfully.
@@ -391,6 +409,7 @@ def gnss_trigger_modem_ssr_by_mds(ad, dwelltime=60):
         raise signals.TestError(
             "Failed to trigger modem SSR crash by MDS. \n%s" % output)
 
+
 def pull_mdstool(ad):
     """Pull ModemDiagnosticSystemTest.apk from device.
 
@@ -408,6 +427,7 @@ def pull_mdstool(ad):
         utils.create_dir(apkdir)
         ad.pull_files([mds_tool], apkdir)
 
+
 def reinstall_mdstool(ad):
     """Reinstall ModemDiagnosticSystemTest.apk.
 
@@ -420,6 +440,7 @@ def reinstall_mdstool(ad):
     if not mds_check:
         raise signals.TestError("MDS Tool is not properly re-installed.")
     ad.log.info("MDS Tool is re-installed successfully.")
+
 
 def check_xtra_download(ad, begin_time):
     """Verify XTRA download success log message in logcat.
@@ -442,6 +463,7 @@ def check_xtra_download(ad, begin_time):
     ad.log.error("XTRA downloaded FAIL.")
     return False
 
+
 def pull_gtw_gpstool(ad):
     """Pull GTW_GPSTool apk from device.
 
@@ -459,6 +481,7 @@ def pull_gtw_gpstool(ad):
         utils.create_dir(apkdir)
         ad.pull_files([GTW_GPSTool_apk], apkdir)
 
+
 def reinstall_gtw_gpstool(ad):
     """Reinstall GTW_GPSTool apk.
 
@@ -472,6 +495,7 @@ def reinstall_gtw_gpstool(ad):
         raise signals.TestError("GTW GPSTool is not properly re-installed.")
     ad.log.info("GTW GPSTool is re-installed successfully.")
 
+
 def init_gtw_gpstool(ad):
     """Init GTW_GPSTool apk.
 
@@ -482,6 +506,7 @@ def init_gtw_gpstool(ad):
     pull_gtw_gpstool(ad)
     ad.adb.shell("settings put global verifier_verify_adb_installs 0")
     reinstall_gtw_gpstool(ad)
+
 
 def fastboot_factory_reset(ad):
     """Factory reset the device in fastboot mode.
@@ -553,6 +578,7 @@ def fastboot_factory_reset(ad):
     tutils.bring_up_sl4a(ad)
     return status
 
+
 def clear_aiding_data_by_gtw_gpstool(ad):
     """Launch GTW GPSTool and Clear all GNSS aiding data.
        Wait 5 seconds for GTW GPStool to clear all GNSS aiding
@@ -580,8 +606,8 @@ def start_gnss_by_gtw_gpstool(ad, state, type="gnss", bgdisplay=False):
         ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool "
                      "--es mode gps --es type %s" % type)
     elif state and bgdisplay:
-        ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool --es mode"
-                         " gps --es type {} --ez BG {}".format(type, bgdisplay))
+        ad.adb.shell("am start -S -n com.android.gpstool/.GPSTool --es mode "
+                     "gps --es type {} --ez BG {}".format(type, bgdisplay))
     if not state:
         ad.log.info("Stop %s on GTW_GPSTool." % type)
         ad.adb.shell("am broadcast -a com.android.gpstool.stop_gps_action")
@@ -629,6 +655,7 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss"):
     raise signals.TestFailure("Fail to get %s location fixed within %d "
                               "attempts." % (type.upper(), retries))
 
+
 def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration):
     """Identify which TTFF mode for different test items.
 
@@ -656,6 +683,7 @@ def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration):
         check_currrent_focus_app(ad)
         raise signals.TestError("Fail to send TTFF start_test_action.")
 
+
 def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
     """Start GNSS/FLP tracking tests for input testtime on GTW_GPSTool.
 
@@ -679,6 +707,7 @@ def gnss_tracking_via_gtw_gpstool(ad, criteria, type="gnss", testtime=60):
             raise signals.TestError("GPSTool crashed. Abort test.")
     ad.log.info("Successfully tested for %d minutes" % testtime)
     start_gnss_by_gtw_gpstool(ad, False, type)
+
 
 def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
     """Process GNSS/FLP API logs from GTW GPSTool and output track_data to
@@ -751,6 +780,7 @@ def parse_gtw_gpstool_log(ad, true_position, type="gnss"):
     ad.log.info(prop_basename+"MaxDis %.1f" % max(pe_list))
     ad.log.info(prop_basename+"AvgTop4Signal %.1f" % top4cn_list[-1])
     ad.log.info(prop_basename+"AvgSignal %.1f" % cn_list[-1])
+
 
 def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
     """Process TTFF and record results in ttff_data.
@@ -831,6 +861,7 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                         % (ttff_loop, ttff_sec, ttff_pe, ttff_cn))
     return ttff_data
 
+
 def check_ttff_data(ad, ttff_data, ttff_mode, criteria):
     """Verify all TTFF results from ttff_data.
 
@@ -864,6 +895,7 @@ def check_ttff_data(ad, ttff_data, ttff_mode, criteria):
                 % (ttff_mode, criteria))
     return True
 
+
 def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     """Output ttff_data to test_run_info for ACTS plugin to parse and display
     on MobileHarness as Property.
@@ -896,6 +928,7 @@ def ttff_property_key_and_value(ad, ttff_data, ttff_mode):
     ad.log.info(prop_basename+"MaxDis %.1f" % maxdis)
     ad.log.info(prop_basename+"AvgSignal %.1f" % avgcn)
 
+
 def calculate_position_error(ad, latitude, longitude, true_position):
     """Use haversine formula to calculate position error base on true location
     coordinate.
@@ -918,6 +951,7 @@ def calculate_position_error(ad, latitude, longitude, true_position):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return radius * c
 
+
 def launch_google_map(ad):
     """Launch Google Map via intent.
 
@@ -937,6 +971,7 @@ def launch_google_map(ad):
         raise signals.TestError("Failed to launch google map.")
     check_currrent_focus_app(ad)
 
+
 def check_currrent_focus_app(ad):
     """Check to see current focused window and app.
 
@@ -947,6 +982,7 @@ def check_currrent_focus_app(ad):
     current = ad.adb.shell(
         "dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'")
     ad.log.debug("\n"+current)
+
 
 def check_location_api(ad, retries):
     """Verify if GnssLocationProvider API reports location.
@@ -974,6 +1010,7 @@ def check_location_api(ad, retries):
             ad.start_adb_logcat()
     ad.log.error("GnssLocationProvider is unable to report location.")
     return False
+
 
 def check_network_location(ad, retries, location_type):
     """Verify if NLP reports location after requesting via GPSTool.
@@ -1009,6 +1046,7 @@ def check_network_location(ad, retries, location_type):
     ad.log.error("Unable to report network location \"%s\"." % location_type)
     return False
 
+
 def set_attenuator_gnss_signal(ad, attenuator, atten_value):
     """Set attenuation value for different GNSS signal.
 
@@ -1023,6 +1061,7 @@ def set_attenuator_gnss_signal(ad, attenuator, atten_value):
         attenuator[0].set_atten(atten_value)
     except Exception as e:
         ad.log.error(e)
+
 
 def set_battery_saver_mode(ad, state):
     """Enable or diable battery saver mode via adb.
@@ -1041,6 +1080,7 @@ def set_battery_saver_mode(ad, state):
         ad.adb.shell("settings put global low_power 0")
         ad.adb.shell("cmd battery reset")
 
+
 def set_gnss_qxdm_mask(ad, masks):
     """Find defined gnss qxdm mask and set as default logging mask.
 
@@ -1057,6 +1097,7 @@ def set_gnss_qxdm_mask(ad, masks):
     except Exception as e:
         ad.log.error(e)
         raise signals.TestError("Failed to set any QXDM masks.")
+
 
 def start_youtube_video(ad, url=None, retries=0):
     """Start youtube video and verify if audio is in music state.
@@ -1088,6 +1129,7 @@ def start_youtube_video(ad, url=None, retries=0):
     raise signals.TestError("Started a video in youtube, "
                             "but audio is not in MUSIC state")
 
+
 def get_baseband_and_gms_version(ad, extra_msg=""):
     """Get current radio baseband and GMSCore version of AndroidDevice object.
 
@@ -1113,6 +1155,7 @@ def get_baseband_and_gms_version(ad, extra_msg=""):
                 "%s, Baseband_Version = %s" % (extra_msg, baseband_version))
     except Exception as e:
         ad.log.error(e)
+
 
 def start_toggle_gnss_by_gtw_gpstool(ad, iteration):
     """Send toggle gnss off/on start_test_action
