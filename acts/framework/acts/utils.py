@@ -1205,6 +1205,7 @@ def run_concurrent_actions(*calls):
 
     class WrappedException(Exception):
         """Raised when a passed-in callable raises an exception."""
+
     def call_wrapper(call):
         nonlocal first_exception
 
@@ -1375,3 +1376,8 @@ def merge_dicts(*dict_args):
     for dictionary in dict_args:
         result.update(dictionary)
     return result
+
+
+def ascii_string(uc_string):
+    """Converts unicode string to ascii"""
+    return str(uc_string).encode('ASCII')
