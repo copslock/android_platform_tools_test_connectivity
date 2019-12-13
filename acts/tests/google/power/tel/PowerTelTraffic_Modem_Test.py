@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from PowerTelTrafficTest import PowerTelTrafficTest
-from PowerTelIdleTest import PowerTelIdleTest
+import acts.test_utils.power.cellular.cellular_traffic_power_test as ctpt
 
-class PowerTelTraffic_Modem_Test(PowerTelTrafficTest):
+
+class PowerTelTraffic_Modem_Test(ctpt.PowerTelTrafficTest):
 
     def test_lte_band_13_pul_0_bw_10_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
         self.power_tel_traffic_test()
@@ -33,11 +33,3 @@ class PowerTelTraffic_Modem_Test(PowerTelTrafficTest):
 
     def test_lteca_band_3a7a20a_pul_0_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
         self.power_tel_traffic_test()
-
-class PowerTelIdle_Modem_Test(PowerTelIdleTest):
-
-    def test_lte_band_13_pul_0_bw_10_tm_3_dlmcs_28_mimo_2x2_paging_2560_rrcstatuschangetimer_10(self):
-        self.power_tel_idle_test()
-
-    def test_lte_band_41_pul_0_bw_10_tm_3_dlmcs_28_mimo_2x2_tddconfig_1_ssf_7_paging_2560_rrcstatuschangetimer_10(self):
-        self.power_tel_idle_test()
