@@ -19,7 +19,7 @@ import time
 import acts.test_utils.tel.anritsu_utils as anritsu_utils
 import acts.controllers.anritsu_lib.md8475a as md8475a
 
-from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
+import acts.test_utils.power.cellular.cellular_power_base_test as PWCEL
 from acts.test_utils.tel.tel_test_utils import initiate_call, hangup_call, set_phone_silent_mode
 
 

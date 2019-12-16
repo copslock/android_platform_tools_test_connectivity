@@ -21,7 +21,7 @@ import scapy.all as scapy
 from acts import asserts
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power import IperfHelper as IPH
-from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
+import acts.test_utils.power.cellular.cellular_power_base_test as PWCEL
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
 
