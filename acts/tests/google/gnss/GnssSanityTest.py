@@ -92,7 +92,7 @@ class GnssSanityTest(BaseTestClass):
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
                       "gnss_init_error_whitelist", "pixel_lab_location",
                       "legacy_wifi_xtra_cs_criteria", "legacy_projects",
-                      "qdsp6m_path"]
+                      "qdsp6m_path", "supl_capabilities"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -281,12 +281,16 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             CAPABILITIES=0x37 which supports MSA + MSB.
+            CAPABILITIES=0x17 = ON_DEMAND_TIME | MSA | MSB | SCHEDULING
         """
-        capabilities_state = str(self.ad.adb.shell("cat vendor/etc/gps.conf | "
-                                                   "grep CAPABILITIES"))
+        capabilities_state = str(
+            self.ad.adb.shell(
+                "cat vendor/etc/gps.conf | grep CAPABILITIES")).split("=")[-1]
         self.ad.log.info("SUPL capabilities - %s" % capabilities_state)
-        asserts.assert_true(capabilities_state == "CAPABILITIES=0x37",
-                            "Wrong default SUPL capabilities is set")
+        asserts.assert_true(capabilities_state in self.supl_capabilities,
+                            "Wrong default SUPL capabilities is set. Found %s, "
+                            "expected any of %r" % (capabilities_state,
+                                                    self.supl_capabilities))
 
     @test_tracker_info(uuid="dcae6979-ddb4-4cad-9d14-fbdd9439cf42")
     def test_sap_valid_modes(self):
