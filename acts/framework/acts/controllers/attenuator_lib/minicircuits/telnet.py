@@ -42,6 +42,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
         self._tnhelper = _tnhelper._TNHelper(tx_cmd_separator='\r\n',
                                              rx_cmd_separator='\r\n',
                                              prompt='')
+        self.address = None
 
     def __del__(self):
         if self.is_open():
@@ -57,6 +58,7 @@ class AttenuatorInstrument(attenuator.AttenuatorInstrument):
             port: An optional port number (defaults to telnet default 23)
         """
         self._tnhelper.open(host, port)
+        self.address = host
 
         if self.num_atten == 0:
             self.num_atten = 1
