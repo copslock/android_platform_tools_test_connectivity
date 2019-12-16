@@ -1987,6 +1987,116 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def cfi(self):
+        """ Gets the Control Format Indicator for this base station.
+
+        Args:
+            None
+
+        Returns:
+            The CFI number.
+        """
+        cmd = "CFI? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @cfi.setter
+    def cfi(self, cfi):
+        """ Sets the Control Format Indicator for this base station.
+
+        Args:
+            cfi: one of BESTEFFORT, AUTO, 1, 2 or 3.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if cfi's value is invalid
+        """
+
+        cfi = str(cfi)
+
+        valid_values = {'BESTEFFORT', 'AUTO', '1', '2', '3'}
+        if cfi not in valid_values:
+            raise ValueError('Valid values for CFI are %r' % valid_values)
+
+        cmd = "CFI {},{}".format(cfi, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def paging_duration(self):
+        """ Gets the paging cycle duration for this base station.
+
+        Args:
+            None
+
+        Returns:
+            The paging cycle duration in milliseconds.
+        """
+        cmd = "PCYCLE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @paging_duration.setter
+    def paging_duration(self, duration):
+        """ Sets the paging cycle duration for this base station.
+
+        Args:
+            duration: the paging cycle duration in milliseconds.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if duration's value is invalid
+        """
+
+        duration = int(duration)
+
+        valid_values = {320, 640, 1280, 2560}
+        if duration not in valid_values:
+            raise ValueError('Valid values for the paging cycle duration are '
+                             '%r.' % valid_values)
+
+        cmd = "PCYCLE {},{}".format(duration, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def phich_resource(self):
+        """ Gets the PHICH Resource setting for this base station.
+
+        Args:
+            None
+
+        Returns:
+            The PHICH Resource setting.
+        """
+        cmd = "PHICHRESOURCE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @phich_resource.setter
+    def phich_resource(self, phich):
+        """ Sets the PHICH Resource setting for this base station.
+
+        Args:
+            phich: one of 1/6, 1/2, 1, 2.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if phich's value is invalid
+        """
+
+        phich = str(phich)
+
+        valid_values = ['1/6', '1/2', '1', '2']
+        if phich not in valid_values:
+            raise ValueError('Valid values for PHICH Resource are %r' %
+                             valid_values)
+
+        cmd = "PHICHRESOURCE {},{}".format(phich, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def tdd_special_subframe(self):
         """ Gets SPECIALSUBFRAME of cell.
 

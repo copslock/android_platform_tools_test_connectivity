@@ -18,10 +18,10 @@ import time
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_2G
 from acts.test_utils.tel.tel_test_utils import WIFI_CONFIG_APBAND_5G
 from acts.test_utils.wifi import wifi_test_utils as wutils
-from PowerTelTrafficTest import PowerTelTrafficTest
+import acts.test_utils.power.cellular.cellular_traffic_power_test as ctpt
 
 
-class PowerTelHotspotTest(PowerTelTrafficTest):
+class PowerTelHotspotTest(ctpt.PowerTelTrafficTest):
     """ Cellular traffic over WiFi tethering power test.
 
     Treated as a different case of data traffic. Inherits from

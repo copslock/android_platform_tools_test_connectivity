@@ -18,7 +18,7 @@ import time
 
 from acts.controllers.anritsu_lib.md8475a import VirtualPhoneAutoAnswer
 
-from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
+import acts.test_utils.power.cellular.cellular_power_base_test as PWCEL
 from acts.test_utils.tel.tel_test_utils import initiate_call, hangup_call, set_phone_silent_mode
 
 

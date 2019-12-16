@@ -287,6 +287,20 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.bts[bts_index].uldl_configuration = tdd_config
 
+    def set_ssf_config(self, bts_index, ssf_config):
+        """ Sets the Special Sub-Frame config number for the indicated
+        base station.
+
+        Args:
+            bts_index: the base station number
+            ssf_config: the new ssf config number
+        """
+        if not 0 <= ssf_config <= 9:
+            raise ValueError('The Special Sub-Frame configuration has to be a '
+                             'number between 0 and 9.')
+
+        self.bts[bts_index].tdd_special_subframe = ssf_config
+
     def set_bandwidth(self, bts_index, bandwidth):
         """ Sets the bandwidth for the indicated base station.
 
@@ -489,6 +503,35 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
         """
         # TODO (b/143918664): CMW500 doesn't have an equivalent setting.
         pass
+
+    def set_cfi(self, bts_index, cfi):
+        """ Sets the Channel Format Indicator for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cfi: the new CFI setting
+        """
+        # TODO (b/143497738): implement.
+        raise NotImplementedError()
+
+    def set_paging_cycle(self, bts_index, cycle_duration):
+        """ Sets the paging cycle duration for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cycle_duration: the new paging cycle duration in milliseconds
+        """
+        # TODO (b/146068532): implement.
+        raise NotImplementedError()
+
+    def set_phich_resource(self, bts_index, phich):
+        """ Sets the PHICH Resource setting for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            phich: the new PHICH resource setting
+        """
+        raise NotImplementedError()
 
     def lte_attach_secondary_carriers(self):
         """ Activates the secondary carriers for CA. Requires the DUT to be
