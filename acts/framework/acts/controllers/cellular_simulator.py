@@ -90,6 +90,9 @@ class AbstractCellularSimulator:
         if config.dlul_config:
             self.set_tdd_config(bts_index, config.dlul_config)
 
+        if config.ssf_config:
+            self.set_ssf_config(bts_index, config.ssf_config)
+
         if config.bandwidth:
             self.set_bandwidth(bts_index, config.bandwidth)
 
@@ -135,6 +138,15 @@ class AbstractCellularSimulator:
         if config.tbs_pattern_on is not None:
             self.set_tbs_pattern_on(bts_index, config.tbs_pattern_on)
 
+        if config.cfi:
+            self.set_cfi(bts_index, config.cfi)
+
+        if config.paging_cycle:
+            self.set_paging_cycle(bts_index, config.paging_cycle)
+
+        if config.phich:
+            self.set_phich_resource(bts_index, config.phich)
+
     def set_lte_rrc_state_change_timer(self, enabled, time=10):
         """ Configures the LTE RRC state change timer.
 
@@ -177,6 +189,16 @@ class AbstractCellularSimulator:
         Args:
             bts_index: the base station number
             tdd_config: the new tdd configuration number
+        """
+        raise NotImplementedError()
+
+    def set_ssf_config(self, bts_index, ssf_config):
+        """ Sets the Special Sub-Frame config number for the indicated
+        base station.
+
+        Args:
+            bts_index: the base station number
+            ssf_config: the new ssf config number
         """
         raise NotImplementedError()
 
@@ -263,6 +285,33 @@ class AbstractCellularSimulator:
         Args:
             bts_index: the base station number
             tbs_pattern_on: the new TBS pattern setting
+        """
+        raise NotImplementedError()
+
+    def set_cfi(self, bts_index, cfi):
+        """ Sets the Channel Format Indicator for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cfi: the new CFI setting
+        """
+        raise NotImplementedError()
+
+    def set_paging_cycle(self, bts_index, cycle_duration):
+        """ Sets the paging cycle duration for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cycle_duration: the new paging cycle duration in milliseconds
+        """
+        raise NotImplementedError()
+
+    def set_phich_resource(self, bts_index, phich):
+        """ Sets the PHICH Resource setting for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            phich: the new PHICH resource setting
         """
         raise NotImplementedError()
 

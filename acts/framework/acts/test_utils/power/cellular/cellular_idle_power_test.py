@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
+import acts.test_utils.power.cellular.cellular_power_base_test as PWCEL
 
 
 class PowerTelIdleTest(PWCEL.PowerCellularLabBaseTest):

@@ -14,24 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from PowerTelVoiceCallTest import PowerTelVoiceCallTest
-from PowerTelVoLTECallTest import PowerTelVoLTECallTest
-
-class PowerTelVoiceCall_LTE_Test(PowerTelVoLTECallTest):
-    def test_lteims_voice_band_12_pul_low_bw_10_tm_1_mimo_1x1_1(self):
-        self.power_volte_call_test()
-
-    def test_lteims_voice_band_4_pul_low_bw_10_tm_1_mimo_1x1_2(self):
-        self.power_volte_call_test()
-
-    def test_lteims_voice_band_30_pul_low_bw_10_tm_1_mimo_1x1_3(self):
-        self.power_volte_call_test()
-
-    def test_lteims_voice_band_4_pul_low_bw_20_tm_3_mimo_2x2_4(self):
-        self.power_volte_call_test()
+import acts.test_utils.power.cellular.cellular_voice_call_power_test as cvcpt
 
 
-class PowerTelVoiceCall_UMTS_Test(PowerTelVoiceCallTest):
+class PowerTelVoiceCall_UMTS_Test(cvcpt.PowerTelVoiceCallTest):
     def test_umts_voice_r_8_band_1_pul_low_1(self):
         self.power_voice_call_test()
 

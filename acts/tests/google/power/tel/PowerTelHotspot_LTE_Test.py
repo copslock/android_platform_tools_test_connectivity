@@ -14,9 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from PowerTelHotspotTest import PowerTelHotspotTest
+import acts.test_utils.power.cellular.cellular_hotspot_traffic_power_test as chtpw
 
-class PowerTelHotspot_LTE_Test(PowerTelHotspotTest):
+
+class PowerTelHotspot_LTE_Test(chtpw.PowerTelHotspotTest):
 
     def test_lte_hotspot_band_13_pdl_excellent_pul_medium_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_wifiband_5g_1(self):
         self.power_tel_tethering_test()
