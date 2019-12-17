@@ -258,8 +258,7 @@ def linksys_wrt1900acv2(iface_wlan_2g=None,
         hostapd_constants.AC_CAPABILITY_TX_ANTENNA_PATTERN,
         hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7
     ]
-    vht_channel_width = 40
-    vht_center_channel = 0
+    vht_channel_width = 20
     # Epigram, Inc. HT Capabilities IE
     # Epigram, Inc. HT Additional Capabilities IE
     # Marvell Semiconductor IE
@@ -308,7 +307,6 @@ def linksys_wrt1900acv2(iface_wlan_2g=None,
         n_capabilities=n_capabilities,
         ac_capabilities=ac_capabilities,
         vht_channel_width=vht_channel_width,
-        vht_center_channel=vht_center_channel,
         spectrum_mgmt_required=spectrum_mgmt,
         additional_parameters=additional_params)
     return config

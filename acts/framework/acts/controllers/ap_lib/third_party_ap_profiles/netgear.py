@@ -91,6 +91,7 @@ def netgear_r7000(iface_wlan_2g=None,
 
     # Common Parameters
     rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
+    vht_channel_width = 80
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_LDPC,
         hostapd_constants.N_CAPABILITY_TX_STBC,
@@ -119,8 +120,6 @@ def netgear_r7000(iface_wlan_2g=None,
         mode = hostapd_constants.MODE_11N_MIXED
         obss_interval = 300
         ac_capabilities = None
-        vht_channel_width = None
-        vht_center_channel = None
 
     # 5GHz
     else:
@@ -129,8 +128,13 @@ def netgear_r7000(iface_wlan_2g=None,
         mode = hostapd_constants.MODE_11AC_MIXED
         n_capabilities += [
             hostapd_constants.N_CAPABILITY_SGI40,
-            hostapd_constants.N_CAPABILITY_HT40_PLUS
         ]
+
+        if hostapd_config.ht40_plus_allowed(channel):
+            n_capabilities.append(hostapd_constants.N_CAPABILITY_HT40_PLUS)
+        elif hostapd_config.ht40_minus_allowed(channel):
+            n_capabilities.append(hostapd_constants.N_CAPABILITY_HT40_MINUS)
+
         obss_interval = None
         ac_capabilities = [
             hostapd_constants.AC_CAPABILITY_RXLDPC,
@@ -140,8 +144,6 @@ def netgear_r7000(iface_wlan_2g=None,
             hostapd_constants.AC_CAPABILITY_MAX_MPDU_11454,
             hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7
         ]
-        vht_channel_width = 80
-        vht_center_channel = 42
 
     additional_params = utils.merge_dicts(
         rates, vendor_elements, qbss,
@@ -164,7 +166,6 @@ def netgear_r7000(iface_wlan_2g=None,
         n_capabilities=n_capabilities,
         ac_capabilities=ac_capabilities,
         vht_channel_width=vht_channel_width,
-        vht_center_channel=vht_center_channel,
         additional_parameters=additional_params)
     return config
 
