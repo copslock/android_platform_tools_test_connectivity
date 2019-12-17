@@ -14,6 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import inspect
+import logging
+
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
 from acts import asserts
@@ -33,8 +36,8 @@ def create_wlan_device(hardware_device):
     elif isinstance(hardware_device, AndroidDevice):
         return AndroidWlanDevice(hardware_device)
     else:
-        raise ValueError(
-            'Unable to create WlanDevice for type %s' % type(hardware_device))
+        raise ValueError('Unable to create WlanDevice for type %s' %
+                         type(hardware_device))
 
 
 class WlanDevice(object):
@@ -49,37 +52,42 @@ class WlanDevice(object):
 
     def __init__(self, device):
         self.device = device
+        self.log = logging
 
     def wifi_toggle_state(self, state):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
         """
-        raise NotImplementedError('wifi_toggle_state must be defined.')
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
 
     def reset_wifi(self):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
         """
-        raise NotImplementedError('reset_wifi must be defined.')
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
 
     def take_bug_report(self, test_name, begin_time):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
         """
-        raise NotImplementedError('take_bug_report must be defined.')
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
 
     def get_log(self, test_name, begin_time):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
         """
-        raise NotImplementedError('get_log( must be defined.')
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
 
     def turn_location_off_and_scan_toggle_off(self):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
         """
-        raise NotImplementedError('turn_location_off_and_scan_toggle_off'
-                                  ' must be defined.')
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
 
     def associate(self,
                   target_ssid,
@@ -89,13 +97,29 @@ class WlanDevice(object):
         """Base generic WLAN interface.  Only called if not overriden by
         another supported device.
         """
-        raise NotImplementedError('associate must be defined.')
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
 
     def disconnect(self):
         """Base generic WLAN interface.  Only called if not overridden by
         another supported device.
         """
-        raise NotImplementedError('disconnect must be defined.')
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def get_wlan_interface_id_list(self):
+        """Base generic WLAN interface.  Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def destroy_wlan_interface(self, iface_id):
+        """Base generic WLAN interface.  Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
 
 
 class AndroidWlanDevice(WlanDevice):
@@ -163,6 +187,12 @@ class AndroidWlanDevice(WlanDevice):
     def disconnect(self):
         wutils.turn_location_off_and_scan_toggle_off(self.device)
 
+    def get_wlan_interface_id_list(self):
+        pass
+
+    def destroy_wlan_interface(self, iface_id):
+        pass
+
 
 class FuchsiaWlanDevice(WlanDevice):
     """Class wrapper for an Fuchsia WLAN device.
@@ -215,24 +245,50 @@ class FuchsiaWlanDevice(WlanDevice):
         connection_response = self.device.wlan_lib.wlanConnectToNetwork(
             target_ssid, target_pwd=target_pwd)
 
-        return self.device.check_connect_response(
-            connection_response)
+        return self.device.check_connect_response(connection_response)
 
     def disconnect(self):
         """Function to disconnect from a Fuchsia WLAN device.
            Asserts if disconnect was not successful.
         """
         disconnect_response = self.device.wlan_lib.wlanDisconnect()
-        asserts.assert_true(self.device.check_disconnect_response(
-            disconnect_response), 'Failed to disconnect.')
+        asserts.assert_true(
+            self.device.check_disconnect_response(disconnect_response),
+            'Failed to disconnect.')
 
     def status(self):
         return self.device.wlan_lib.wlanStatus()
 
     def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
-        return self.device.ping(
-            dest_ip,
-            count=count,
-            interval=interval,
-            timeout=timeout,
-            size=size)
+        return self.device.ping(dest_ip,
+                                count=count,
+                                interval=interval,
+                                timeout=timeout,
+                                size=size)
+
+    def get_wlan_interface_id_list(self):
+        """Function to list available WLAN interfaces.
+
+        Returns:
+            A list of wlan interface IDs.
+        """
+        return self.device.wlan_lib.wlanGetIfaceIdList().get('result')
+
+    def destroy_wlan_interface(self, iface_id):
+        """Function to associate a Fuchsia WLAN device.
+
+        Args:
+            target_ssid: SSID to associate to.
+            target_pwd: Password for the SSID, if necessary.
+            check_connectivity: Whether to check for internet connectivity.
+            hidden: Whether the network is hidden.
+        Returns:
+            True if successfully destroyed wlan interface, False if not.
+        """
+        result = self.device.wlan_lib.wlanDestroyIface(iface_id)
+        if result.get('error') is None:
+            return True
+        else:
+            self.log.error("Failed to destroy interface with: {}".format(
+                result.get('error')))
+            return False
