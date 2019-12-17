@@ -68,8 +68,8 @@ class PtsBaseClass(BaseTestClass):
             "characteristic_read_invalid_handle")
         self.characteristic_attribute_not_found_uuid = self.user_params.get(
             "characteristic_attribute_not_found_uuid")
-        self.characteristic_write_not_permitted_handle = self.user_params.get(
-            "characteristic_write_not_permitted_handle")
+        self.write_characteristic_not_permitted_handle = self.user_params.get(
+            "write_characteristic_not_permitted_handle")
 
         self.pts = self.bluetooth_pts_device[0]
         # MMI functions commented out until implemented. Added for tracking
@@ -202,7 +202,7 @@ class PtsBaseClass(BaseTestClass):
         handle = int(raw_handle.group(1), 16)
         raw_size = re.search('with <= \'(.*)\' byte', description_to_parse)
         size = int(raw_size.group(1))
-        self.dut.gatt_client_write_char_with_no_response_to_input_handle(
+        self.dut.gatt_client_write_characteristic_without_response_by_handle(
             self.peer_identifier, handle,
             self.create_write_value_by_size(size))
 
@@ -213,7 +213,7 @@ class PtsBaseClass(BaseTestClass):
         raw_size = re.search('with <= \'(.*)\' byte', description_to_parse)
         size = int(raw_size.group(1))
         offset = 0
-        self.dut.gatt_client_write_to_input_handle(
+        self.dut.gatt_client_write_characteristic_by_handle(
             self.peer_identifier, handle, offset,
             self.create_write_value_by_size(size))
 
@@ -224,7 +224,7 @@ class PtsBaseClass(BaseTestClass):
         raw_size = re.search('<= \'(.*)\' byte', description_to_parse)
         size = int(math.floor(int(raw_size.group(1)) / 2))
         offset = int(size / 2)
-        self.dut.gatt_client_write_to_input_handle(
+        self.dut.gatt_client_write_characteristic_by_handle(
             self.peer_identifier, handle, offset,
             self.create_write_value_by_size(size))
 
@@ -236,7 +236,7 @@ class PtsBaseClass(BaseTestClass):
                                description_to_parse)
         offset = int(raw_offset.group(1))
         size = 1
-        self.dut.gatt_client_write_to_input_handle(
+        self.dut.gatt_client_write_characteristic_by_handle(
             self.peer_identifier, handle, offset,
             self.create_write_value_by_size(size))
 
@@ -248,7 +248,7 @@ class PtsBaseClass(BaseTestClass):
                              description_to_parse)
         size = int(raw_size.group(1))
         offset = 0
-        self.dut.gatt_client_write_to_input_handle(
+        self.dut.gatt_client_write_characteristic_by_handle(
             self.peer_identifier, handle, offset,
             self.create_write_value_by_size(size))
 
@@ -273,7 +273,7 @@ class PtsBaseClass(BaseTestClass):
 
     def mmi_iut_enter_handle_write_not_permitted(self):
         self.pts.extra_answers.append(
-            self.characteristic_write_not_permitted_handle)
+            self.write_characteristic_not_permitted_handle)
 
     def mmi_verify_secure_id(self):
         self.pts.extra_answers.append(self.dut.get_pairing_pin())
@@ -328,16 +328,18 @@ class PtsBaseClass(BaseTestClass):
         # \n ...
         return True
 
-    def _read_generic_handle(self):
+    def mmi_iut_send_read_characteristic_handle(self):
         description_to_parse = self.pts.current_implicit_send_description
         raw_handle = re.search('handle = \'(.*)\'O to', description_to_parse)
         handle = int(raw_handle.group(1), 16)
-        self.dut.gatt_client_read_input_handle(self.peer_identifier, handle)
-
-    def mmi_iut_send_read_characteristic_handle(self):
-        self._read_generic_handle()
+        self.dut.gatt_client_read_characteristic_by_handle(
+            self.peer_identifier, handle)
 
     def mmi_iut_send_read_descriptor_handle(self):
-        self._read_generic_handle()
+        description_to_parse = self.pts.current_implicit_send_description
+        raw_handle = re.search('handle = \'(.*)\'O to', description_to_parse)
+        handle = int(raw_handle.group(1), 16)
+        self.dut.gatt_client_descriptor_read_by_handle(self.peer_identifier,
+                                                       handle)
 
     ### END GATT MMI Actions ###

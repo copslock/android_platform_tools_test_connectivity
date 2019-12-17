@@ -190,7 +190,11 @@ AC_CAPABILITY_RX_STBC_1234 = object()
 AC_CAPABILITY_SU_BEAMFORMER = object()
 AC_CAPABILITY_SU_BEAMFORMEE = object()
 AC_CAPABILITY_BF_ANTENNA_2 = object()
+AC_CAPABILITY_BF_ANTENNA_3 = object()
+AC_CAPABILITY_BF_ANTENNA_4 = object()
 AC_CAPABILITY_SOUNDING_DIMENSION_2 = object()
+AC_CAPABILITY_SOUNDING_DIMENSION_3 = object()
+AC_CAPABILITY_SOUNDING_DIMENSION_4 = object()
 AC_CAPABILITY_MU_BEAMFORMER = object()
 AC_CAPABILITY_MU_BEAMFORMEE = object()
 AC_CAPABILITY_VHT_TXOP_PS = object()
@@ -223,7 +227,11 @@ AC_CAPABILITIES_MAPPING = {
     AC_CAPABILITY_SU_BEAMFORMER: '[SU-BEAMFORMER]',
     AC_CAPABILITY_SU_BEAMFORMEE: '[SU-BEAMFORMEE]',
     AC_CAPABILITY_BF_ANTENNA_2: '[BF-ANTENNA-2]',
+    AC_CAPABILITY_BF_ANTENNA_3: '[BF-ANTENNA-3]',
+    AC_CAPABILITY_BF_ANTENNA_4: '[BF-ANTENNA-4]',
     AC_CAPABILITY_SOUNDING_DIMENSION_2: '[SOUNDING-DIMENSION-2]',
+    AC_CAPABILITY_SOUNDING_DIMENSION_3: '[SOUNDING-DIMENSION-3]',
+    AC_CAPABILITY_SOUNDING_DIMENSION_4: '[SOUNDING-DIMENSION-4]',
     AC_CAPABILITY_MU_BEAMFORMER: '[MU-BEAMFORMER]',
     AC_CAPABILITY_MU_BEAMFORMEE: '[MU-BEAMFORMEE]',
     AC_CAPABILITY_VHT_TXOP_PS: '[VHT-TXOP-PS]',
@@ -300,11 +308,15 @@ CENTER_CHANNEL_MAP = {
 
 OFDM_DATA_RATES = {'supported_rates': '60 90 120 180 240 360 480 540'}
 
-CCK_DATA_RATES = {'supported_rates': '10 20 55 11'}
+CCK_DATA_RATES = {'supported_rates': '10 20 55 110'}
+
+CCK_AND_OFDM_DATA_RATES = {
+    'supported_rates': '10 20 55 110 60 90 120 180 240 360 480 540'
+}
 
 OFDM_ONLY_BASIC_RATES = {'basic_rates': '60 120 240'}
 
-CCK_AND_OFDM_BASIC_RATES = {'basic_rates': '10 20 55 11'}
+CCK_AND_OFDM_BASIC_RATES = {'basic_rates': '10 20 55 110'}
 
 WEP_AUTH = {
     'open': {
@@ -407,13 +419,13 @@ VENDOR_IE = {
         'vendor_elements': 'dd040050f203'
     },
     'correct_length_association_response': {
-        'assocresp_elements=': 'dd0411223301'
+        'assocresp_elements': 'dd0411223301'
     },
     'too_short_length_association_response': {
-        'assocresp_elements=': 'dd0311223301'
+        'assocresp_elements': 'dd0311223301'
     },
     'too_long_length_association_response': {
-        'assocresp_elements=': 'dd0511223301'
+        'assocresp_elements': 'dd0511223301'
     },
     'zero_length_association_response_with_data': {
         'assocresp_elements': 'dd0011223301'

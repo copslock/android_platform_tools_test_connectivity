@@ -27,6 +27,7 @@ from acts.utils import rand_hex_str
 
 AP_11ABG_PROFILE_NAME='whirlwind_11ag_legacy'
 
+
 def create_security_profile(test_func):
     """Decorator for generating hostapd security profile object based on the
     test name.
@@ -85,20 +86,17 @@ def create_security_profile(test_func):
             password = rand_ascii_str(5)
         elif 'wep_13_chars' in test_func.__name__:
             password = rand_ascii_str(13)
-        elif 'wep_16_chars' in test_func.__name__:
-            password = rand_ascii_str(16)
         elif 'wep_10_hex' in test_func.__name__:
             password = str(rand_hex_str(10)).lower()
         elif 'wep_26_hex' in test_func.__name__:
             password = str(rand_hex_str(26)).lower()
-        elif 'wep_32_hex' in test_func.__name__:
-            password = str(rand_hex_str(32)).lower()
         else:
             password = rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH)
         self.security_profile = Security(security_mode=security_mode,
                                          password=password,
                                          wpa_cipher=wpa_cipher,
                                          wpa2_cipher=wpa2_cipher)
+        self.client_password = password
         return test_func(self, *args, *kwargs)
     return security_profile_generator
 
@@ -132,6 +130,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
         self.secure_network_2g = secure_network['2g']
         self.secure_network_5g = secure_network['5g']
         self.security_profile = None
+        self.client_password = None
 
         self.access_point.stop_all_aps()
 
@@ -165,7 +164,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
         )
@@ -179,21 +178,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
-
-    @create_security_profile
-    def test_associate_11a_sec_open_wep_16_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
         )
@@ -207,7 +192,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
         )
@@ -221,21 +206,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
-
-    @create_security_profile
-    def test_associate_11a_sec_open_wep_32_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
         )
@@ -249,7 +220,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
         )
@@ -263,21 +234,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
-
-    @create_security_profile
-    def test_associate_11a_sec_shared_wep_16_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
         )
@@ -291,7 +248,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
         )
@@ -305,21 +262,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
-
-    @create_security_profile
-    def test_associate_11a_sec_shared_wep_32_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
         )
@@ -333,7 +276,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -346,7 +289,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -359,7 +302,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -372,7 +315,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -385,7 +328,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -398,7 +341,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -411,7 +354,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -424,7 +367,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -437,7 +380,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -450,7 +393,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -464,7 +407,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -478,7 +421,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -492,7 +435,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=430,
             force_wmm=False
         )
@@ -506,7 +449,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -520,7 +463,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -534,7 +477,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
             force_wmm=False
@@ -551,7 +494,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.HIGH_DTIM,
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -566,7 +509,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.LOW_DTIM,
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -582,7 +525,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -596,7 +539,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -610,7 +553,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -624,7 +567,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
 
@@ -637,7 +580,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -650,7 +593,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -663,7 +606,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -676,7 +619,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -689,7 +632,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -702,7 +645,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -715,7 +658,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -728,7 +671,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -741,7 +684,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -754,7 +697,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -768,7 +711,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -782,7 +725,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -796,7 +739,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=430,
             force_wmm=False
         )
@@ -810,7 +753,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -824,7 +767,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -838,7 +781,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
             force_wmm=False
@@ -855,7 +798,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.HIGH_DTIM,
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -870,7 +813,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.LOW_DTIM,
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -885,7 +828,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -899,7 +842,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -913,7 +856,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -927,7 +870,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -939,7 +882,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -952,7 +895,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -965,7 +908,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -978,7 +921,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -991,7 +934,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1004,7 +947,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1017,7 +960,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1030,7 +973,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1043,7 +986,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1056,7 +999,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -1070,7 +1013,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -1084,7 +1027,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -1098,7 +1041,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=430,
             force_wmm=False
         )
@@ -1112,7 +1055,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -1126,7 +1069,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -1140,7 +1083,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
             force_wmm=False
@@ -1157,7 +1100,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.HIGH_DTIM,
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1172,7 +1115,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.LOW_DTIM,
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1187,7 +1130,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1201,7 +1144,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1215,7 +1158,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1229,7 +1172,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1239,9 +1182,9 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
         )
@@ -1253,23 +1196,9 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
-
-    @create_security_profile
-    def test_associate_11bg_sec_open_wep_16_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
         )
@@ -1281,9 +1210,9 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
         )
@@ -1295,23 +1224,9 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
-
-    @create_security_profile
-    def test_associate_11bg_sec_open_wep_32_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
         )
@@ -1323,9 +1238,9 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
         )
@@ -1337,23 +1252,9 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
-
-    @create_security_profile
-    def test_associate_11bg_sec_shared_wep_16_chars_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
         )
@@ -1365,9 +1266,9 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
         )
@@ -1379,23 +1280,9 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
+            ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
-            force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
-
-    @create_security_profile
-    def test_associate_11bg_sec_shared_wep_32_hex_ptk_none(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False,
             additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
         )
@@ -1409,7 +1296,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1422,7 +1309,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1435,7 +1322,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1448,7 +1335,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1461,7 +1348,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1474,7 +1361,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1487,7 +1374,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1500,7 +1387,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1513,7 +1400,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1526,7 +1413,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -1540,7 +1427,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -1554,7 +1441,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -1568,7 +1455,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=430,
             force_wmm=False
         )
@@ -1582,7 +1469,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -1596,7 +1483,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -1610,7 +1497,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
             force_wmm=False
@@ -1627,7 +1514,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.HIGH_DTIM,
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1642,7 +1529,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.LOW_DTIM,
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1657,7 +1544,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1671,7 +1558,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1685,7 +1572,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1699,7 +1586,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1711,7 +1598,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1724,7 +1611,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1737,7 +1624,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1750,7 +1637,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1763,7 +1650,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1776,7 +1663,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1789,7 +1676,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1802,7 +1689,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1815,7 +1702,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1828,7 +1715,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -1842,7 +1729,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -1856,7 +1743,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -1870,7 +1757,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=430,
             force_wmm=False
         )
@@ -1884,7 +1771,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -1898,7 +1785,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -1912,7 +1799,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
             force_wmm=False
@@ -1929,7 +1816,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.HIGH_DTIM,
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1944,7 +1831,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.HIGH_DTIM,
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -1959,7 +1846,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1973,7 +1860,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -1987,7 +1874,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -2001,7 +1888,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -2013,7 +1900,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2026,7 +1913,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2039,7 +1926,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2052,7 +1939,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2065,7 +1952,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2078,7 +1965,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2091,7 +1978,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2104,7 +1991,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2117,7 +2004,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2130,7 +2017,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -2144,7 +2031,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -2158,7 +2045,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             frag_threshold=430,
             force_wmm=False
         )
@@ -2172,7 +2059,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=430,
             force_wmm=False
         )
@@ -2186,7 +2073,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -2200,7 +2087,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             force_wmm=False
         )
@@ -2214,7 +2101,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
             force_wmm=False
@@ -2231,7 +2118,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.HIGH_DTIM,
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2246,7 +2133,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             dtim_period=hostapd_constants.LOW_DTIM,
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
-            password=self.security_profile.password,
+            password=self.client_password,
             force_wmm=False
         )
 
@@ -2262,7 +2149,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -2276,7 +2163,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -2290,7 +2177,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )
 
     @create_security_profile
@@ -2304,5 +2191,5 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             additional_ap_parameters=
             hostapd_constants.VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.security_profile.password
+            password=self.client_password
         )

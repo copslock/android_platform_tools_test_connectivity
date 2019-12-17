@@ -426,7 +426,7 @@ class WifiRetailAP(object):
 class NetgearR7000AP(WifiRetailAP):
     """Class that implements Netgear R7500 AP."""
     def __init__(self, ap_settings):
-        super().__init__(self, ap_settings)
+        super().__init__(ap_settings)
         self.init_gui_data()
         # Read and update AP settings
         self.read_ap_settings()
@@ -1148,6 +1148,7 @@ class GoogleWifiAP(WifiRetailAP):
             "region": "United States",
             "brand": "Google",
             "model": "Wifi",
+            "hostapd_profile": "whirlwind",
             "status_2G": 0,
             "status_5G_1": 0,
             "ssid_2G": "GoogleWifi_2G",
@@ -1249,9 +1250,11 @@ class GoogleWifiAP(WifiRetailAP):
 
         bss_settings = []
         ssid = self.ap_settings["ssid_{}".format(network)]
-        if "WPA" in self.ap_settings["security_type_{}".format(network)]:
+        security_mode = self.ap_settings["security_type_{}".format(
+            network)].lower()
+        if "wpa" in security_mode:
             password = self.ap_settings["password_{}".format(network)]
-            security = hostapd_security.Security(security_mode="wpa",
+            security = hostapd_security.Security(security_mode=security_mode,
                                                  password=password)
         else:
             security = hostapd_security.Security(security_mode=None,
@@ -1265,12 +1268,12 @@ class GoogleWifiAP(WifiRetailAP):
             security=security,
             bss_settings=bss_settings,
             vht_bandwidth=bandwidth,
-            profile_name='whirlwind',
+            profile_name=self.ap_settings["hostapd_profile"],
             iface_wlan_2g=self.access_point.wlan_2g,
             iface_wlan_5g=self.access_point.wlan_5g)
         config_bridge = self.access_point.generate_bridge_configs(channel)
         brconfigs = bridge_interface.BridgeInterfaceConfigs(
-            config_bridge[0], config_bridge[1], config_bridge[2])
+            config_bridge[0], "lan0", config_bridge[2])
         self.access_point.bridge.startup(brconfigs)
         self.access_point.start_ap(config)
         self.set_power(network, self.ap_settings["power_{}".format(network)])

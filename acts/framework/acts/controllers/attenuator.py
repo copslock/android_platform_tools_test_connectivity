@@ -43,7 +43,7 @@ def create(configs):
 
         for attempt_number in range(1, _ATTENUATOR_OPEN_RETRIES + 1):
             try:
-                insts = attn_inst.open(ip_address, port)
+                attn_inst.open(ip_address, port)
             except Exception as e:
                 logging.error('Attempt %s to open connection to attenuator '
                               'failed: %s' % (attempt_number, e))
@@ -76,6 +76,73 @@ def destroy(objs):
     for attn in objs:
         attn.instrument.close()
 
+
+def get_attenuators_for_device(device_attenuator_configs,
+                               attenuators,
+                               attenuator_key):
+    """Gets the list of attenuators associated to a specified device and builds
+    a list of the attenuator objects associated to the ip address in the
+    device's section of the ACTS config and the Attenuator's IP address.  In the
+    example below the access point object has an attenuator dictionary with
+    IP address associated to an attenuator object.  The address is the only
+    mandatory field and the 'attenuator_ports_wifi_2g' and
+    'attenuator_ports_wifi_5g' are the attenuator_key specified above.  These
+    can be anything and is sent in as a parameter to this function.  The numbers
+    in the list are ports that are in the attenuator object.  Below is an
+    standard Access_Point object and the link to a standard Attenuator object.
+    Notice the link is the IP address, which is why the IP address is mandatory.
+
+    "AccessPoint": [
+        {
+          "ssh_config": {
+            "user": "root",
+            "host": "192.168.42.210"
+          },
+          "Attenuator": [
+            {
+              "Address": "192.168.42.200",
+              "attenuator_ports_wifi_2g": [
+                0,
+                1,
+                3
+              ],
+              "attenuator_ports_wifi_5g": [
+                0,
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "Attenuator": [
+        {
+          "Model": "minicircuits",
+          "InstrumentCount": 4,
+          "Address": "192.168.42.200",
+          "Port": 23
+        }
+      ]
+    Args:
+        device_attenuator_configs: A list of attenuators config information in
+            the acts config that are associated a particular device.
+        attenuators: A list of all of the available attenuators objects
+            in the testbed.
+        attenuator_key: A string that is the key to search in the device's
+            configuration.
+
+    Returns:
+        A list of attenuator objects for the specified device and the key in
+        that device's config.
+    """
+    attenuator_list = []
+    for device_attenuator_config in device_attenuator_configs:
+        for attenuator_port in device_attenuator_config[attenuator_key]:
+            for attenuator in attenuators:
+                if (attenuator.instrument.address ==
+                        device_attenuator_config['Address'] and
+                        attenuator.idx is attenuator_port):
+                    attenuator_list.append(attenuator)
+    return attenuator_list
 
 """Classes for accessing, managing, and manipulating attenuators.
 

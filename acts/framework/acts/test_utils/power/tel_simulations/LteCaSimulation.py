@@ -427,19 +427,44 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
             for bts_index in range(self.num_carriers):
 
-                if self.dl_256_qam and new_configs[bts_index].bandwidth == 1.4:
-                    mcs_dl = 26
-                elif (not self.dl_256_qam
-                      and self.primary_config.tbs_pattern_on
-                      and new_configs[bts_index].bandwidth != 1.4):
-                    mcs_dl = 28
+                # Look for a DL MCS configuration in the test parameters. If it
+                # is not present, use a default value.
+                dlmcs = self.consume_parameter(parameters, self.PARAM_DL_MCS,
+                                               1)
+                if dlmcs:
+                    mcs_dl = int(dlmcs[1])
                 else:
-                    mcs_dl = 27
+                    self.log.warning(
+                        'The test name does not include the {} parameter. '
+                        'Setting to the max value by default'.format(
+                            self.PARAM_DL_MCS))
 
-                if self.ul_64_qam:
-                    mcs_ul = 28
+                    if self.dl_256_qam and new_configs[
+                            bts_index].bandwidth == 1.4:
+                        mcs_dl = 26
+                    elif (not self.dl_256_qam
+                          and self.primary_config.tbs_pattern_on
+                          and new_configs[bts_index].bandwidth != 1.4):
+                        mcs_dl = 28
+                    else:
+                        mcs_dl = 27
+
+                # Look for an UL MCS configuration in the test parameters. If it
+                # is not present, use a default value.
+                ulmcs = self.consume_parameter(parameters, self.PARAM_UL_MCS,
+                                               1)
+                if ulmcs:
+                    mcs_ul = int(ulmcs[1])
                 else:
-                    mcs_ul = 23
+                    self.log.warning(
+                        'The test name does not include the {} parameter. '
+                        'Setting to the max value by default'.format(
+                            self.PARAM_UL_MCS))
+
+                    if self.ul_64_qam:
+                        mcs_ul = 28
+                    else:
+                        mcs_ul = 23
 
                 dl_rbs, ul_rbs = self.allocation_percentages_to_rbs(
                     new_configs[bts_index].bandwidth,

@@ -55,6 +55,10 @@ class WifiTetheringTest(base_test.BaseTestClass):
         for ad in self.tethered_devices:
             wutils.wifi_test_device_init(ad)
 
+    def teardown_test(self):
+        if self.hotspot_device.droid.wifiIsApEnabled():
+            wutils.stop_wifi_tethering(self.hotspot_device)
+
     def teardown_class(self):
         """ Reset devices """
         for ad in self.tethered_devices:
@@ -554,7 +558,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # turn on/off wifi hotspot, connect device
         for _ in range(9):
             self._turn_on_wifi_hotspot(self.hotspot_device)
-            wutils.wifi_connect(self.tethered_devices[0], self.open_network)
+            wutils.connect_to_wifi_network(self.tethered_devices[0], self.open_network)
             wutils.stop_wifi_tethering(self.hotspot_device)
             time.sleep(1) # wait for some time before turning on hotspot
 
@@ -578,6 +582,6 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # turn on/off wifi hotspot, connect device
         for _ in range(9):
             self._turn_on_wifi_hotspot(self.hotspot_device)
-            wutils.wifi_connect(self.tethered_devices[0], self.open_network)
+            wutils.connect_to_wifi_network(self.tethered_devices[0], self.open_network)
             wutils.stop_wifi_tethering(self.hotspot_device)
             time.sleep(1) # wait for some time before turning on hotspot

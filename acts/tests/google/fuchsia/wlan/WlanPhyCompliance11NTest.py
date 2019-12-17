@@ -57,10 +57,8 @@ def generate_test_name(settings):
     for cap in hostapd_constants.N_CAPABILITIES_MAPPING.keys():
         if cap in settings['n_capabilities']:
             ret.append(hostapd_constants.N_CAPABILITIES_MAPPING[cap])
-    return '%s_%s_%s_%s' % (settings['frequency'],
-                            settings['chbw'],
-                            settings['security'],
-                            ''.join(ret))
+    return '%s_%s_%s_%s' % (settings['frequency'], settings['chbw'],
+                            settings['security'], ''.join(ret))
 
 
 class WlanPhyCompliance11NTest(WifiBaseTest):
@@ -85,7 +83,6 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             'test_11n_capabilities_5_HT20_wpa2',
             'test_11n_capabilities_5_HT40_lower_wpa2',
             'test_11n_capabilities_5_HT40_upper_wpa2'
-
         ]
         if 'debug_11n_tests' in self.user_params:
             self.tests.append('test_11n_capabilities_debug')
@@ -98,8 +95,8 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             elif self.user_params['dut'] == 'android_devices':
                 self.dut = create_wlan_device(self.android_devices[0])
             else:
-                raise ValueError('Invalid DUT specified in config. (%s)'
-                                 % self.user_params['dut'])
+                raise ValueError('Invalid DUT specified in config. (%s)' %
+                                 self.user_params['dut'])
         else:
             # Default is an android device, just like the other tests
             self.dut = create_wlan_device(self.android_devices[0])
@@ -149,8 +146,8 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             elif ap_settings['frequency'] == '5GHz':
                 channel = 36
             else:
-                raise ValueError('Invalid frequence: %s'
-                                 % ap_settings['frequency'])
+                raise ValueError('Invalid frequence: %s' %
+                                 ap_settings['frequency'])
 
         if ap_settings['chbw'] == 'HT40-':
             if ap_settings['frequency'] == '2.4GHz':
@@ -158,8 +155,8 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             elif ap_settings['frequency'] == '5GHz':
                 channel = 60
             else:
-                raise ValueError('Invalid frequency: %s'
-                                 % ap_settings['frequency'])
+                raise ValueError('Invalid frequency: %s' %
+                                 ap_settings['frequency'])
 
         if ap_settings['chbw'] == 'HT40-' or ap_settings['chbw'] == 'HT40+':
             if hostapd_config.ht40_plus_allowed(channel):
@@ -167,8 +164,7 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
             elif hostapd_config.ht40_minus_allowed(channel):
                 extended_channel = hostapd_constants.N_CAPABILITY_HT40_MINUS
             else:
-                raise ValueError('Invalid channel: %s'
-                                 % channel)
+                raise ValueError('Invalid channel: %s' % channel)
             n_capabilities.append(extended_channel)
 
         if ap_settings['security'] == 'wpa2':
@@ -178,304 +174,247 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
                                         wpa2_cipher='CCMP')
             password = security_profile.password
 
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name='whirlwind',
-            mode=hostapd_constants.MODE_11N_MIXED,
-            channel=channel,
-            n_capabilities=n_capabilities,
-            ac_capabilities=[],
-            force_wmm=True,
-            ssid=utils.rand_ascii_str(20),
-            security=security_profile,
-            password=password
-        )
-
+        validate_setup_ap_and_associate(access_point=self.access_point,
+                                        client=self.dut,
+                                        profile_name='whirlwind',
+                                        mode=hostapd_constants.MODE_11N_MIXED,
+                                        channel=channel,
+                                        n_capabilities=n_capabilities,
+                                        ac_capabilities=[],
+                                        force_wmm=True,
+                                        ssid=utils.rand_ascii_str(20),
+                                        security=security_profile,
+                                        password=password)
 
     def test_11n_capabilities_24_HT20(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_24,
-                                             CHANNEL_BANDWIDTH_20,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             INTOLERANT_40,
-                                             MAX_AMPDU_7935,
+                                             CHANNEL_BANDWIDTH_20, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20,
+                                             INTOLERANT_40, MAX_AMPDU_7935,
                                              SMPS):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_OPEN,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_OPEN,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_24_HT40_lower(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_24,
-                                             CHANNEL_BANDWIDTH_40_LOWER,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             SGI_40,
-                                             MAX_AMPDU_7935,
-                                             SMPS,
-                                             DSSS_CCK):
+                                             CHANNEL_BANDWIDTH_40_LOWER, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20, SGI_40,
+                                             MAX_AMPDU_7935, SMPS, DSSS_CCK):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_OPEN,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_OPEN,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_24_HT40_upper(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_24,
-                                             CHANNEL_BANDWIDTH_40_UPPER,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             SGI_40,
-                                             MAX_AMPDU_7935,
-                                             SMPS,
-                                             DSSS_CCK):
+                                             CHANNEL_BANDWIDTH_40_UPPER, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20, SGI_40,
+                                             MAX_AMPDU_7935, SMPS, DSSS_CCK):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_OPEN,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_OPEN,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_5_HT20(self):
         test_list = []
-        for combination in itertools.product(FREQUENCY_5,
-                                             CHANNEL_BANDWIDTH_20,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             INTOLERANT_40,
-                                             MAX_AMPDU_7935,
+        for combination in itertools.product(FREQUENCY_5, CHANNEL_BANDWIDTH_20,
+                                             LDPC, TX_STBC, RX_STBC, SGI_20,
+                                             INTOLERANT_40, MAX_AMPDU_7935,
                                              SMPS):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_OPEN,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_OPEN,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_5_HT40_lower(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_5,
-                                             CHANNEL_BANDWIDTH_40_LOWER,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             SGI_40,
-                                             MAX_AMPDU_7935,
-                                             SMPS,
-                                             DSSS_CCK):
+                                             CHANNEL_BANDWIDTH_40_LOWER, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20, SGI_40,
+                                             MAX_AMPDU_7935, SMPS, DSSS_CCK):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_OPEN,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_OPEN,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_5_HT40_upper(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_5,
-                                             CHANNEL_BANDWIDTH_40_UPPER,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             SGI_40,
-                                             MAX_AMPDU_7935,
-                                             SMPS,
-                                             DSSS_CCK):
+                                             CHANNEL_BANDWIDTH_40_UPPER, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20, SGI_40,
+                                             MAX_AMPDU_7935, SMPS, DSSS_CCK):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_OPEN,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_OPEN,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_24_HT20_wpa2(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_24,
-                                             CHANNEL_BANDWIDTH_20,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             INTOLERANT_40,
-                                             MAX_AMPDU_7935,
+                                             CHANNEL_BANDWIDTH_20, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20,
+                                             INTOLERANT_40, MAX_AMPDU_7935,
                                              SMPS):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_WPA2,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_WPA2,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_24_HT40_lower_wpa2(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_24,
-                                             CHANNEL_BANDWIDTH_40_LOWER,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             SGI_40,
-                                             MAX_AMPDU_7935,
-                                             SMPS,
-                                             DSSS_CCK):
+                                             CHANNEL_BANDWIDTH_40_LOWER, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20, SGI_40,
+                                             MAX_AMPDU_7935, SMPS, DSSS_CCK):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_WPA2,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_WPA2,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_24_HT40_upper_wpa2(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_24,
-                                             CHANNEL_BANDWIDTH_40_UPPER,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             SGI_40,
-                                             MAX_AMPDU_7935,
-                                             SMPS,
-                                             DSSS_CCK):
+                                             CHANNEL_BANDWIDTH_40_UPPER, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20, SGI_40,
+                                             MAX_AMPDU_7935, SMPS, DSSS_CCK):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_WPA2,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_WPA2,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_5_HT20_wpa2(self):
         test_list = []
-        for combination in itertools.product(FREQUENCY_5,
-                                             CHANNEL_BANDWIDTH_20,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             INTOLERANT_40,
-                                             MAX_AMPDU_7935,
+        for combination in itertools.product(FREQUENCY_5, CHANNEL_BANDWIDTH_20,
+                                             LDPC, TX_STBC, RX_STBC, SGI_20,
+                                             INTOLERANT_40, MAX_AMPDU_7935,
                                              SMPS):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_WPA2,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_WPA2,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_5_HT40_lower_wpa2(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_5,
-                                             CHANNEL_BANDWIDTH_40_LOWER,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             SGI_40,
-                                             MAX_AMPDU_7935,
-                                             SMPS,
-                                             DSSS_CCK):
+                                             CHANNEL_BANDWIDTH_40_LOWER, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20, SGI_40,
+                                             MAX_AMPDU_7935, SMPS, DSSS_CCK):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_WPA2,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_WPA2,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_5_HT40_upper_wpa2(self):
         test_list = []
         for combination in itertools.product(FREQUENCY_5,
-                                             CHANNEL_BANDWIDTH_40_UPPER,
-                                             LDPC,
-                                             TX_STBC,
-                                             RX_STBC,
-                                             SGI_20,
-                                             SGI_40,
-                                             MAX_AMPDU_7935,
-                                             SMPS,
-                                             DSSS_CCK):
+                                             CHANNEL_BANDWIDTH_40_UPPER, LDPC,
+                                             TX_STBC, RX_STBC, SGI_20, SGI_40,
+                                             MAX_AMPDU_7935, SMPS, DSSS_CCK):
             test_frequency = combination[0]
             test_chbw = combination[1]
             n_capabilities = combination[2:]
-            test_list.append({'frequency': test_frequency,
-                              'chbw': test_chbw,
-                              'security': SECURITY_WPA2,
-                              'n_capabilities': n_capabilities})
-        self.run_generated_testcases(
-            self.setup_and_connect,
-            settings=test_list,
-            name_func=generate_test_name)
+            test_list.append({
+                'frequency': test_frequency,
+                'chbw': test_chbw,
+                'security': SECURITY_WPA2,
+                'n_capabilities': n_capabilities
+            })
+        self.run_generated_testcases(self.setup_and_connect,
+                                     settings=test_list,
+                                     name_func=generate_test_name)
 
     def test_11n_capabilities_debug(self):
         allowed_frequencies = FREQUENCY_5 + FREQUENCY_24
@@ -490,9 +429,9 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
                 test_frequency = test_to_run.group(1)
                 test_chbw = test_to_run.group(2)
                 security = test_to_run.group(3)
-                if (test_frequency in allowed_frequencies and
-                        test_chbw in allowed_chbw and
-                        security in allowed_security):
+                if (test_frequency in allowed_frequencies
+                        and test_chbw in allowed_chbw
+                        and security in allowed_security):
                     if test_to_run.group(4):
                         n_capabilities_str = test_to_run.group(4)
                     else:
@@ -526,17 +465,18 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
                         n_capabilities_list.append(
                             hostapd_constants.N_CAPABILITY_SMPS_STATIC)
                     n_capabilities = tuple(n_capabilities_list)
-                    test_list.append({'frequency': test_frequency,
-                                      'chbw': test_chbw,
-                                      'security': security,
-                                      'n_capabilities': n_capabilities})
-                    self.run_generated_testcases(
-                        self.setup_and_connect,
-                        settings=test_list,
-                        name_func=generate_test_name)
+                    test_list.append({
+                        'frequency': test_frequency,
+                        'chbw': test_chbw,
+                        'security': security,
+                        'n_capabilities': n_capabilities
+                    })
+                    self.run_generated_testcases(self.setup_and_connect,
+                                                 settings=test_list,
+                                                 name_func=generate_test_name)
                 else:
-                    self.log.error('Invalid test (%s). Trying the next one.'
-                                   % test_title)
+                    self.log.error('Invalid test (%s). Trying the next one.' %
+                                   test_title)
             else:
-                self.log.error('Invalid test (%s). Trying the next one.'
-                               % test_title)
+                self.log.error('Invalid test (%s). Trying the next one.' %
+                               test_title)

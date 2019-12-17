@@ -188,6 +188,34 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         if enabled:
             self.anritsu.set_lte_rrc_status_change_timer(time)
 
+    def set_cfi(self, bts_index, cfi):
+        """ Sets the Channel Format Indicator for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cfi: the new CFI setting
+        """
+        self.bts[bts_index].cfi = cfi
+
+    def set_paging_cycle(self, bts_index, cycle_duration):
+        """ Sets the paging cycle duration for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cycle_duration: the new paging cycle duration in milliseconds
+        """
+        # TODO (b/146068532): implement.
+        self.bts[bts_index].paging_duration = cycle_duration
+
+    def set_phich_resource(self, bts_index, phich):
+        """ Sets the PHICH Resource setting for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            phich: the new PHICH resource setting
+        """
+        self.bts[bts_index].phich_resource = phich
+
     def set_band(self, bts_index, band):
         """ Sets the right duplex mode before switching to a new band.
 
@@ -241,6 +269,23 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
 
         # Wait for the setting to propagate
         time.sleep(5)
+
+    def set_ssf_config(self, bts_index, ssf_config):
+        """ Sets the Special Sub-Frame config number for the indicated
+        base station.
+
+        Args:
+            bts_index: the base station number
+            ssf_config: the new ssf config number
+        """
+        # Cast to int in case it was passed as a string
+        ssf_config = int(ssf_config)
+
+        if not 0 <= ssf_config <= 9:
+            raise ValueError('The Special Sub-Frame configuration has to be a '
+                             'number between 0 and 9.')
+
+        self.bts[bts_index].tdd_special_subframe = ssf_config
 
     def set_bandwidth(self, bts_index, bandwidth):
         """ Sets the LTE channel bandwidth (MHz)

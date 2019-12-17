@@ -21,6 +21,7 @@ import acts.test_utils.power.PowerBTBaseTest as PBtBT
 
 BLE_LOCATION_SCAN_ENABLE = 'settings put secure location_mode 3'
 EXTRA_SCAN_TIME = 10
+MONSOON_TAIL_CUT = 5
 
 
 class PowerBLEscanTest(PBtBT.PowerBTBaseTest):
@@ -38,8 +39,8 @@ class PowerBLEscanTest(PBtBT.PowerBTBaseTest):
         super().setup_class()
         self.dut.adb.shell(BLE_LOCATION_SCAN_ENABLE)
         # Make sure during power measurement, scan is always on
-        self.mon_info.duration = (
-            self.scan_duration - self.mon_offset - EXTRA_SCAN_TIME)
+        self.mon_info.duration = (self.scan_duration - self.mon_offset -
+                                  EXTRA_SCAN_TIME - MONSOON_TAIL_CUT)
 
     def generate_test_case_no_devices_around(self, scan_mode, scan_duration):
         def test_case_fn():

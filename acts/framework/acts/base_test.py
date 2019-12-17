@@ -13,8 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import collections
 import fnmatch
+import functools
 import importlib
 import logging
 import os
@@ -157,6 +158,8 @@ class BaseTestClass(MoblyBaseTest):
         log: A logger object used for logging.
         results: A records.TestResult object for aggregating test results from
                  the execution of test cases.
+        controller_configs: A dict of controller configs provided by the user
+                            via the testbed config.
         consecutive_failures: Tracks the number of consecutive test case
                               failures within this class.
         consecutive_failure_limit: Number of consecutive test failures to allow
@@ -180,14 +183,15 @@ class BaseTestClass(MoblyBaseTest):
         if not self.TAG:
             self.TAG = self.__class__.__name__
         # Set all the controller objects and params.
-        self.user_params = {}
-        self.testbed_configs = {}
-        self.testbed_name = ''
-        for name, value in configs.items():
-            setattr(self, name, value)
+        self.controller_configs = configs.controller_configs
+        self.testbed_name = configs.testbed_name
+        self.user_params = configs.user_params
+        self.log_path = configs.log_path
+        self.summary_writer = configs.summary_writer
+
         self.results = records.TestResult()
         self.current_test_name = None
-        self.log = tracelogger.TraceLogger(self.log)
+        self.log = tracelogger.TraceLogger(logging.getLogger())
         self.consecutive_failures = 0
         self.consecutive_failure_limit = self.user_params.get(
             'consecutive_failure_limit', -1)
@@ -197,7 +201,7 @@ class BaseTestClass(MoblyBaseTest):
         # Initialize a controller manager (Mobly)
         self._controller_manager = controller_manager.ControllerManager(
             class_name=self.__class__.__name__,
-            controller_configs=self.testbed_configs)
+            controller_configs=self.controller_configs)
 
     def _import_builtin_controllers(self):
         """Import built-in controller modules.
@@ -211,7 +215,7 @@ class BaseTestClass(MoblyBaseTest):
         """
         builtin_controllers = []
         for ctrl_name in keys.Config.builtin_controller_names.value:
-            if ctrl_name in self.testbed_configs:
+            if ctrl_name in self.controller_configs:
                 module_name = keys.get_module_name(ctrl_name)
                 module = importlib.import_module("acts.controllers.%s" %
                                                  module_name)
@@ -480,7 +484,7 @@ class BaseTestClass(MoblyBaseTest):
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
         """
-    def on_retry():
+    def on_retry(self):
         """Function to run before retrying a test through get_func_with_retry.
 
         This function runs when a test is automatically retried. The function
@@ -510,7 +514,7 @@ class BaseTestClass(MoblyBaseTest):
                                func.__name__, self.current_test_name)
             tr_record.add_error(func.__name__, e)
 
-    def exec_one_testcase(self, test_name, test_func, args, **kwargs):
+    def exec_one_testcase(self, test_name, test_func):
         """Executes one test case and update test results.
 
         Executes one test case, create a records.TestResultRecord object with
@@ -520,8 +524,6 @@ class BaseTestClass(MoblyBaseTest):
         Args:
             test_name: Name of the test.
             test_func: The test function.
-            args: A tuple of params.
-            kwargs: Extra kwargs.
         """
         class_name = self.__class__.__name__
         tr_record = records.TestResultRecord(test_name, class_name)
@@ -545,11 +547,7 @@ class BaseTestClass(MoblyBaseTest):
                 ret = self._setup_test(self.test_name)
                 asserts.assert_true(ret is not False,
                                     "Setup for %s failed." % test_name)
-                if args or kwargs:
-                    verdict = test_func(*args, **kwargs)
-                else:
-                    verdict = test_func()
-
+                verdict = test_func()
             finally:
                 try:
                     self._teardown_test(self.test_name)
@@ -702,11 +700,15 @@ class BaseTestClass(MoblyBaseTest):
             previous_success_cnt = len(self.results.passed)
 
             if format_args:
-                self.exec_one_testcase(test_name, test_func,
-                                       args + (setting, ), **kwargs)
+                self.exec_one_testcase(
+                    test_name,
+                    functools.partial(test_func, *(args + (setting, )),
+                                      **kwargs))
             else:
-                self.exec_one_testcase(test_name, test_func,
-                                       (setting, ) + args, **kwargs)
+                self.exec_one_testcase(
+                    test_name,
+                    functools.partial(test_func, *((setting, ) + args),
+                                      **kwargs))
 
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(setting)
@@ -885,7 +887,7 @@ class BaseTestClass(MoblyBaseTest):
         try:
             for test_name, test_func in tests:
                 for _ in range(test_case_iterations):
-                    self.exec_one_testcase(test_name, test_func, [])
+                    self.exec_one_testcase(test_name, test_func)
             return self.results
         except signals.TestAbortClass:
             self.log.exception('Test class %s aborted' % self.TAG)

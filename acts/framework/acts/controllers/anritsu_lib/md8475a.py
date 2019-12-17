@@ -442,7 +442,6 @@ class Switch(Enum):
 class MD8475A(object):
     """Class to communicate with Anritsu MD8475A Signalling Tester.
        This uses GPIB command to interface with Anritsu MD8475A """
-
     def __init__(self, ip_address, wlan=False, md8475_version="A"):
         self._error_reporting = True
         self._ipaddr = ip_address
@@ -459,8 +458,8 @@ class MD8475A(object):
         self.log.info("Opening Socket Connection with "
                       "Signaling Tester ({}) ".format(self._ipaddr))
         try:
-            self._sock = socket.create_connection(
-                (self._ipaddr, port_number), timeout=120)
+            self._sock = socket.create_connection((self._ipaddr, port_number),
+                                                  timeout=120)
             self.send_query("*IDN?", 60)
             self.log.info("Communication with Signaling Tester OK.")
             self.log.info("Opened Socket connection to ({})"
@@ -1275,8 +1274,8 @@ class MD8475A(object):
             current Packet status
         """
         PACKET_STATUS_INDEX = 1
-        packet_status = self.send_query("CALLSTAT?").split(",")[
-            PACKET_STATUS_INDEX]
+        packet_status = self.send_query("CALLSTAT?").split(
+            ",")[PACKET_STATUS_INDEX]
         return _PROCESS_STATES[packet_status]
 
     def disconnect(self):
@@ -1588,7 +1587,6 @@ class MD8475A(object):
 
 class _AnritsuTestCases(object):
     '''Class to interact with the MD8475 supported test procedures '''
-
     def __init__(self, anritsu):
         self._anritsu = anritsu
         self.log = anritsu.log
@@ -1806,7 +1804,6 @@ class _AnritsuTestCases(object):
 
 class _BaseTransceiverStation(object):
     '''Class to interact different BTS supported by MD8475 '''
-
     def __init__(self, anritsu, btsnumber):
         if not isinstance(btsnumber, BtsNumber):
             raise ValueError(' The parameter should be of type "BtsNumber" ')
@@ -1987,6 +1984,116 @@ class _BaseTransceiverStation(object):
                              "number between 0 and 6 inclusive")
 
         cmd = "ULDLCONFIGURATION {},{}".format(configuration, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def cfi(self):
+        """ Gets the Control Format Indicator for this base station.
+
+        Args:
+            None
+
+        Returns:
+            The CFI number.
+        """
+        cmd = "CFI? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @cfi.setter
+    def cfi(self, cfi):
+        """ Sets the Control Format Indicator for this base station.
+
+        Args:
+            cfi: one of BESTEFFORT, AUTO, 1, 2 or 3.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if cfi's value is invalid
+        """
+
+        cfi = str(cfi)
+
+        valid_values = {'BESTEFFORT', 'AUTO', '1', '2', '3'}
+        if cfi not in valid_values:
+            raise ValueError('Valid values for CFI are %r' % valid_values)
+
+        cmd = "CFI {},{}".format(cfi, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def paging_duration(self):
+        """ Gets the paging cycle duration for this base station.
+
+        Args:
+            None
+
+        Returns:
+            The paging cycle duration in milliseconds.
+        """
+        cmd = "PCYCLE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @paging_duration.setter
+    def paging_duration(self, duration):
+        """ Sets the paging cycle duration for this base station.
+
+        Args:
+            duration: the paging cycle duration in milliseconds.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if duration's value is invalid
+        """
+
+        duration = int(duration)
+
+        valid_values = {320, 640, 1280, 2560}
+        if duration not in valid_values:
+            raise ValueError('Valid values for the paging cycle duration are '
+                             '%r.' % valid_values)
+
+        cmd = "PCYCLE {},{}".format(duration, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def phich_resource(self):
+        """ Gets the PHICH Resource setting for this base station.
+
+        Args:
+            None
+
+        Returns:
+            The PHICH Resource setting.
+        """
+        cmd = "PHICHRESOURCE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @phich_resource.setter
+    def phich_resource(self, phich):
+        """ Sets the PHICH Resource setting for this base station.
+
+        Args:
+            phich: one of 1/6, 1/2, 1, 2.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if phich's value is invalid
+        """
+
+        phich = str(phich)
+
+        valid_values = ['1/6', '1/2', '1', '2']
+        if phich not in valid_values:
+            raise ValueError('Valid values for PHICH Resource are %r' %
+                             valid_values)
+
+        cmd = "PHICHRESOURCE {},{}".format(phich, self._bts_number)
         self._anritsu.send_command(cmd)
 
     @property
@@ -2626,8 +2733,8 @@ class _BaseTransceiverStation(object):
         Returns:
             True if enabled, False if disabled
         """
-        return (self._anritsu.send_query("TESTDLCC?" + self._bts_number) ==
-                "ENABLE")
+        return (self._anritsu.send_query("TESTDLCC?" +
+                                         self._bts_number) == "ENABLE")
 
     @dl_cc_enabled.setter
     def dl_cc_enabled(self, enabled):
@@ -3566,7 +3673,6 @@ class _BaseTransceiverStation(object):
 
 class _VirtualPhone(object):
     '''Class to interact with virtual phone supported by MD8475 '''
-
     def __init__(self, anritsu):
         self._anritsu = anritsu
         self.log = anritsu.log
@@ -3824,7 +3930,6 @@ class _VirtualPhone(object):
 
 class _PacketDataNetwork(object):
     '''Class to configure PDN parameters'''
-
     def __init__(self, anritsu, pdnnumber):
         self._pdn_number = pdnnumber
         self._anritsu = anritsu
@@ -4231,7 +4336,6 @@ class _PacketDataNetwork(object):
 
 class _TriggerMessage(object):
     '''Class to interact with trigger message handling supported by MD8475 '''
-
     def __init__(self, anritsu):
         self._anritsu = anritsu
         self.log = anritsu.log
@@ -4276,7 +4380,6 @@ class _TriggerMessage(object):
 
 class _IMS_Services(object):
     '''Class to configure and operate IMS Services'''
-
     def __init__(self, anritsu, vnid):
         self._vnid = vnid
         self._anritsu = anritsu

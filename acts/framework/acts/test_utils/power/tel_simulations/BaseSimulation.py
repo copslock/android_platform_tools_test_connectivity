@@ -274,6 +274,18 @@ class BaseSimulation():
         # Wait until it goes to communication state
         self.simulator.wait_until_communication_state()
 
+        # Set uplink power to a minimum before going to the actual desired
+        # value. This avoid inconsistencies produced by the hysteresis in the
+        # PA switching points.
+        self.log.info('Setting UL power to -30 dBm before going to the '
+                      'requested value to avoid incosistencies caused by '
+                      'hysteresis.')
+        new_config = self.BtsConfig()
+        new_config.input_power = self.calibrated_uplink_tx_power(
+            self.primary_config, -30)
+        self.simulator.configure_bts(new_config)
+        self.primary_config.incorporate(new_config)
+
         # Set signal levels obtained from the test parameters
         new_config = self.BtsConfig()
         new_config.output_power = self.calibrated_downlink_rx_power(
@@ -337,14 +349,28 @@ class BaseSimulation():
 
         values = self.consume_parameter(parameters, self.PARAM_UL_PW, 1)
 
-        if not values or values[1] not in self.UPLINK_SIGNAL_LEVEL_DICTIONARY:
-            raise ValueError(
-                "The test name needs to include parameter {} followed by one "
-                "the following values: {}.".format(
-                    self.PARAM_UL_PW,
-                    list(self.UPLINK_SIGNAL_LEVEL_DICTIONARY.keys())))
+        if values:
+            if values[1] in self.UPLINK_SIGNAL_LEVEL_DICTIONARY:
+                return self.UPLINK_SIGNAL_LEVEL_DICTIONARY[values[1]]
+            else:
+                try:
+                    if values[1][0] == 'n':
+                        # Treat the 'n' character as a negative sign
+                        return -int(values[1][1:])
+                    else:
+                        return int(values[1])
+                except ValueError:
+                    pass
 
-        return self.UPLINK_SIGNAL_LEVEL_DICTIONARY[values[1]]
+        # If the method got to this point it is because PARAM_UL_PW was not
+        # included in the test parameters or the provided value was invalid.
+        raise ValueError(
+            "The test name needs to include parameter {} followed by the "
+            "desired uplink power expressed by an integer number in dBm "
+            "or by one the following values: {}. To indicate negative "
+            "values, use the letter n instead of - sign.".format(
+                self.PARAM_UL_PW,
+                list(self.UPLINK_SIGNAL_LEVEL_DICTIONARY.keys())))
 
     def get_downlink_power_from_parameters(self, parameters):
         """ Reads downlink power from a list of parameters. """

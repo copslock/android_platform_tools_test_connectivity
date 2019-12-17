@@ -25,6 +25,7 @@ from acts.logger import normalize_log_line_timestamp
 from acts.utils import start_standing_subprocess
 from acts.utils import stop_standing_subprocess
 from acts.test_utils.net import connectivity_const as cconst
+from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -37,7 +38,7 @@ import urllib.request
 VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
 VPN_PARAMS = cconst.VpnReqParams
-TCPDUMP_PATH = "/data/local/tmp/tcpdump"
+TCPDUMP_PATH = "/data/local/tmp/"
 
 
 def verify_lte_data_and_tethering_supported(ad):
@@ -284,3 +285,45 @@ def stop_tcpdump(ad,
     ad.adb.shell("rm -rf %s/*" % TCPDUMP_PATH, ignore_status=True)
     file_name = "tcpdump_%s_%s.pcap" % (ad.serial, test_name)
     return "%s/%s" % (log_path, file_name)
+
+def is_ipaddress_ipv6(ip_address):
+    """Verify if the given string is a valid IPv6 address.
+
+    Args:
+        ip_address: string containing the IP address
+
+    Returns:
+        True: if valid ipv6 address
+        False: if not
+    """
+    try:
+        socket.inet_pton(socket.AF_INET6, ip_address)
+        return True
+    except socket.error:
+        return False
+
+def carrier_supports_ipv6(dut):
+    """Verify if carrier supports ipv6.
+
+    Args:
+        dut: Android device that is being checked
+
+    Returns:
+        True: if carrier supports ipv6
+        False: if not
+    """
+
+    carrier_supports_ipv6 = ["vzw", "tmo", "Far EasTone", "Chunghwa Telecom"]
+    operator = get_operator_name("log", dut)
+    return operator in carrier_supports_ipv6
+
+def supports_ipv6_tethering(self, dut):
+    """ Check if provider supports IPv6 tethering.
+
+    Returns:
+        True: if provider supports IPv6 tethering
+        False: if not
+    """
+    carrier_supports_tethering = ["vzw", "tmo", "Far EasTone", "Chunghwa Telecom"]
+    operator = get_operator_name(self.log, dut)
+    return operator in carrier_supports_tethering

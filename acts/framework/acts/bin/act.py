@@ -84,36 +84,7 @@ def _create_test_runner(parsed_config, test_identifiers):
     return t
 
 
-def _run_tests_parallel(parsed_configs, test_identifiers, repeat):
-    """Executes requested tests in parallel.
-
-    Each test run will be in its own process.
-
-    Args:
-        parsed_configs: A list of dicts, each is a set of configs for one
-                        test_runner.TestRunner.
-        test_identifiers: A list of tuples, each identifies what test case to
-                          run on what test class.
-        repeat: Number of times to iterate the specified tests.
-
-    Returns:
-        True if all test runs executed successfully, False otherwise.
-    """
-    print("Executing {} concurrent test runs.".format(len(parsed_configs)))
-    arg_list = [(c, test_identifiers, repeat) for c in parsed_configs]
-    results = []
-    with multiprocessing.Pool(processes=len(parsed_configs)) as pool:
-        # Can't use starmap for py2 compatibility. One day, one day......
-        for args in arg_list:
-            results.append(pool.apply_async(_run_test, args))
-        pool.close()
-        pool.join()
-    for r in results:
-        if r.get() is False or isinstance(r, Exception):
-            return False
-
-
-def _run_tests_sequential(parsed_configs, test_identifiers, repeat):
+def _run_tests(parsed_configs, test_identifiers, repeat):
     """Executes requested tests sequentially.
 
     Requested test runs will commence one after another according to the order
@@ -150,27 +121,13 @@ def main(argv):
     parser = argparse.ArgumentParser(
         description=("Specify tests to run. If nothing specified, "
                      "run all test cases found."))
-    parser.add_argument(
-        '-c',
-        '--config',
-        nargs=1,
-        type=str,
-        required=True,
-        metavar="<PATH>",
-        help="Path to the test configuration file.")
-    parser.add_argument(
-        '--test_args',
-        nargs='+',
-        type=str,
-        metavar="Arg1 Arg2 ...",
-        help=("Command-line arguments to be passed to every test case in a "
-              "test run. Use with caution."))
-    parser.add_argument(
-        '-p',
-        '--parallel',
-        action="store_true",
-        help=("If set, tests will be executed on all testbeds in parallel. "
-              "Otherwise, tests are executed iteratively testbed by testbed."))
+    parser.add_argument('-c',
+                        '--config',
+                        nargs=1,
+                        type=str,
+                        required=True,
+                        metavar="<PATH>",
+                        help="Path to the test configuration file.")
     parser.add_argument(
         '-ci',
         '--campaign_iterations',
@@ -180,19 +137,17 @@ def main(argv):
         const=1,
         default=1,
         help="Number of times to run the campaign or a group of test cases.")
-    parser.add_argument(
-        '-tb',
-        '--testbed',
-        nargs='+',
-        type=str,
-        metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
-        help="Specify which test beds to run tests on.")
-    parser.add_argument(
-        '-lp',
-        '--logpath',
-        type=str,
-        metavar="<PATH>",
-        help="Root path under which all logs will be placed.")
+    parser.add_argument('-tb',
+                        '--testbed',
+                        nargs='+',
+                        type=str,
+                        metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
+                        help="Specify which test beds to run tests on.")
+    parser.add_argument('-lp',
+                        '--logpath',
+                        type=str,
+                        metavar="<PATH>",
+                        help="Root path under which all logs will be placed.")
     parser.add_argument(
         '-tp',
         '--testpaths',
@@ -202,13 +157,12 @@ def main(argv):
         help="One or more non-recursive test class search paths.")
 
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        '-tc',
-        '--testclass',
-        nargs='+',
-        type=str,
-        metavar="[TestClass1 TestClass2:test_xxx ...]",
-        help="A list of test classes/cases to run.")
+    group.add_argument('-tc',
+                       '--testclass',
+                       nargs='+',
+                       type=str,
+                       metavar="[TestClass1 TestClass2:test_xxx ...]",
+                       help="A list of test classes/cases to run.")
     group.add_argument(
         '-tf',
         '--testfile',
@@ -217,18 +171,12 @@ def main(argv):
         metavar="<PATH>",
         help=("Path to a file containing a comma delimited list of test "
               "classes to run."))
-    parser.add_argument(
-        '-r',
-        '--random',
-        action="store_true",
-        help="If set, tests will be executed in random order.")
-    parser.add_argument(
-        '-ti',
-        '--test_case_iterations',
-        metavar="<TEST_CASE_ITERATIONS>",
-        nargs='?',
-        type=int,
-        help="Number of times to run every test case.")
+    parser.add_argument('-ti',
+                        '--test_case_iterations',
+                        metavar="<TEST_CASE_ITERATIONS>",
+                        nargs='?',
+                        type=int,
+                        help="Number of times to run every test case.")
 
     args = parser.parse_args(argv)
     test_list = None
@@ -238,20 +186,13 @@ def main(argv):
         test_list = args.testclass
     parsed_configs = config_parser.load_test_config_file(
         args.config[0], args.testbed, args.testpaths, args.logpath,
-        args.test_args, args.random, args.test_case_iterations)
+        args.test_case_iterations)
 
     # Prepare args for test runs
     test_identifiers = config_parser.parse_test_list(test_list)
 
-    # Execute test runners.
-    if args.parallel and len(parsed_configs) > 1:
-        print('Running tests in parallel.')
-        exec_result = _run_tests_parallel(parsed_configs, test_identifiers,
-                                          args.campaign_iterations)
-    else:
-        print('Running tests sequentially.')
-        exec_result = _run_tests_sequential(parsed_configs, test_identifiers,
-                                            args.campaign_iterations)
+    exec_result = _run_tests(parsed_configs, test_identifiers,
+                             args.campaign_iterations)
     if exec_result is False:
         # return 1 upon test failure.
         sys.exit(1)

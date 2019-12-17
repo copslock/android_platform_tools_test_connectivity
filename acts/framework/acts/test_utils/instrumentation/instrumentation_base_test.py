@@ -17,6 +17,10 @@
 import os
 
 import yaml
+
+from acts import base_test
+from acts import context
+from acts import utils
 from acts.keys import Config
 from acts.test_utils.instrumentation import app_installer
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
@@ -25,9 +29,6 @@ from acts.test_utils.instrumentation.adb_commands import common
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationCommandBuilder
-
-from acts import base_test
-from acts import context
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -129,7 +130,9 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self._prepare_device()
 
     def teardown_class(self):
-        """Class teardown"""
+        """Class teardown. Takes bugreport and cleans up device."""
+        self._ad_take_bugreport(self.ad_dut, 'teardown_class',
+                                utils.get_current_epoch_time())
         self._cleanup_device()
 
     def _prepare_device(self):

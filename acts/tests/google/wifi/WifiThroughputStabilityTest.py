@@ -48,7 +48,6 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
     example config file to run this test class see
     example_connectivity_performance_ap_sta.json.
     """
-
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         # Define metrics to be uploaded to BlackBox
@@ -58,9 +57,10 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             BlackboxMappedMetricLogger.for_test_class())
         self.publish_testcase_metrics = True
         # Generate test cases
-        self.tests = self.generate_test_cases(
-            [6, 36, 149], ['VHT20', 'VHT40', 'VHT80'], ['TCP', 'UDP'],
-            ['DL', 'UL'], ['high', 'low'])
+        self.tests = self.generate_test_cases([6, 36, 149],
+                                              ['VHT20', 'VHT40', 'VHT80'],
+                                              ['TCP', 'UDP'], ['DL', 'UL'],
+                                              ['high', 'low'])
 
     def generate_test_cases(self, channels, modes, traffic_types,
                             traffic_directions, signal_levels):
@@ -135,9 +135,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         # Turn WiFi ON
         if self.testclass_params.get('airplane_mode', 1):
             self.log.info('Turning on airplane mode.')
-            asserts.assert_true(
-                utils.force_airplane_mode(self.dut, True),
-                "Can not turn on airplane mode.")
+            asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                                "Can not turn on airplane mode.")
         wutils.wifi_toggle_state(self.dut, True)
 
     def teardown_test(self):
@@ -226,14 +225,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         with open(results_file_path, 'w') as results_file:
             json.dump(test_result_dict, results_file)
         # Plot and save
-        figure = wputils.BokehFigure(
-            test_name, x_label='Time (s)', primary_y_label='Throughput (Mbps)')
+        figure = wputils.BokehFigure(test_name,
+                                     x_label='Time (s)',
+                                     primary_y_label='Throughput (Mbps)')
         time_data = list(range(0, len(instantaneous_rates_Mbps)))
-        figure.add_line(
-            time_data,
-            instantaneous_rates_Mbps,
-            legend=self.current_test_name,
-            marker='circle')
+        figure.add_line(time_data,
+                        instantaneous_rates_Mbps,
+                        legend=self.current_test_name,
+                        marker='circle')
         output_file_path = os.path.join(self.log_path,
                                         '{}.html'.format(test_name))
         figure.generate_figure(output_file_path)
@@ -275,13 +274,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.dut.go_to_sleep()
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
-        current_network = self.dut.droid.wifiGetConnectionInfo()
-        try:
-            connected = wutils.validate_connection(self.dut) is not None
-        except:
-            connected = False
-        if connected and current_network['SSID'] == self.main_network[band][
-                'SSID']:
+        if wputils.validate_network(self.dut,
+                                    testcase_params['test_network']['SSID']):
             self.log.info('Already connected to desired network')
         else:
             wutils.wifi_toggle_state(self.dut, True)
@@ -289,11 +283,10 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             self.dut.droid.wifiSetCountryCode(
                 self.testclass_params['country_code'])
             self.main_network[band]['channel'] = testcase_params['channel']
-            wutils.wifi_connect(
-                self.dut,
-                self.main_network[band],
-                num_of_tries=5,
-                check_connectivity=False)
+            wutils.wifi_connect(self.dut,
+                                testcase_params['test_network'],
+                                num_of_tries=5,
+                                check_connectivity=False)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
     def setup_throughput_stability_test(self, testcase_params):
@@ -404,6 +397,9 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
 
     def compile_test_params(self, testcase_params):
         """Function that completes setting the test case parameters."""
+        band = self.access_point.band_lookup_by_channel(
+            testcase_params['channel'])
+        testcase_params['test_network'] = self.main_network[band]
         testcase_params['test_target'] = self.get_target_atten_tput(
             testcase_params)
         testcase_params['atten_level'] = testcase_params['test_target'][
@@ -452,7 +448,6 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
     setting turntable orientation and other chamber parameters to study
     performance in varying channel conditions
     """
-
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
         # Define metrics to be uploaded to BlackBox
@@ -598,8 +593,8 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         return test_cases
 
 
-class WifiOtaThroughputStability_TenDegree_Test(
-        WifiOtaThroughputStabilityTest):
+class WifiOtaThroughputStability_TenDegree_Test(WifiOtaThroughputStabilityTest
+                                                ):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
         self.tests = self.generate_test_cases([6, 36, 149], ['VHT20', 'VHT80'],
@@ -621,6 +616,8 @@ class WifiOtaThroughputStability_SteppedStirrers_Test(
         WifiOtaThroughputStabilityTest):
     def __init__(self, controllers):
         WifiOtaThroughputStabilityTest.__init__(self, controllers)
-        self.tests = self.generate_test_cases(
-            [6, 36, 149], ['VHT20', 'VHT80'], ['TCP'], ['DL', 'UL'],
-            ['high', 'low'], 'stepped stirrers', list(range(100)))
+        self.tests = self.generate_test_cases([6, 36, 149], ['VHT20', 'VHT80'],
+                                              ['TCP'], ['DL', 'UL'],
+                                              ['high', 'low'],
+                                              'stepped stirrers',
+                                              list(range(100)))

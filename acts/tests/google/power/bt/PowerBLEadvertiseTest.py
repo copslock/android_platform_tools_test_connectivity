@@ -21,6 +21,7 @@ import acts.test_utils.power.PowerBTBaseTest as PBtBT
 
 BLE_LOCATION_SCAN_ENABLE = 'settings put secure location_mode 3'
 EXTRA_ADV_TIME = 10
+MONSOON_TAIL_CUT = 5
 
 
 class PowerBLEadvertiseTest(PBtBT.PowerBTBaseTest):
@@ -39,8 +40,8 @@ class PowerBLEadvertiseTest(PBtBT.PowerBTBaseTest):
         super().setup_class()
         self.dut.adb.shell(BLE_LOCATION_SCAN_ENABLE)
         # Make sure during power measurement, advertisement is always on
-        self.mon_info.duration = (
-            self.adv_duration - self.mon_offset - EXTRA_ADV_TIME)
+        self.mon_info.duration = (self.adv_duration - self.mon_offset -
+                                  EXTRA_ADV_TIME - MONSOON_TAIL_CUT)
 
     def generate_test_case(self, adv_mode, adv_power_level, adv_duration):
         def test_case_fn():

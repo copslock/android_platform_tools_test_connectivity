@@ -144,7 +144,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             self.rvr[bt_atten]["fixed_attenuation"] = (
                 self.test_params["fixed_attenuation"][str(
                     self.network["channel"])])
-            self.log.info("Setting bt attenuation = {}".format(bt_atten))
+            self.log.info('Setting bt attenuation to: {} dB'.format(bt_atten))
             self.attenuators[self.num_atten - 1].set_atten(bt_atten)
             for i in range(self.num_atten - 1):
                 self.attenuators[i].set_atten(0)
@@ -154,7 +154,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             adb_rssi_results = self.pri_ad.search_logcat(RSSI_RESULTS)
             if adb_rssi_results:
                 self.log.debug(adb_rssi_results[-1])
-                self.log.info("Android device RSSI = {}".format(
+                self.log.info('Android device: {}'.format(
                     (adb_rssi_results[-1]['log_message']).split(',')[5]))
             (self.rvr[bt_atten]["throughput_received"],
              self.rvr[bt_atten]["a2dp_packet_drop"],
@@ -201,9 +201,10 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         self.rvr[bt_atten]["attenuation"] = []
         self.rvr["bt_gap_analysis"][bt_atten] = {}
         for atten in self.wifi_atten_range:
+            tag = '{}_{}'.format(bt_atten, atten)
             self.rvr[bt_atten]["attenuation"].append(
                 atten + self.rvr[bt_atten]["fixed_attenuation"])
-            self.log.info("Setting attenuation = {}".format(atten))
+            self.log.info('Setting wifi attenuation to: {} dB'.format(atten))
             for i in range(self.num_atten - 1):
                 self.attenuators[i].set_atten(atten)
             if not wifi_connection_check(self.pri_ad, self.network["SSID"]):
@@ -213,12 +214,12 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             begin_time = get_current_epoch_time()
             if called_func:
                 if not multithread_func(self.log, called_func):
-                    self.teardown_result()
                     self.iperf_received.append(float(str(
                         self.iperf_variables.received[-1]).strip("Mb/s")))
                     return self.iperf_received, self.a2dp_dropped_list, False
             else:
                 self.run_iperf_and_get_result()
+
             adb_rssi_poll_results = self.pri_ad.search_logcat(
                 RSSI_POLL_RESULTS, begin_time)
             adb_rssi_results = self.pri_ad.search_logcat(
@@ -226,7 +227,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             if adb_rssi_results:
                 self.log.debug(adb_rssi_poll_results)
                 self.log.debug(adb_rssi_results[-1])
-                self.log.info("Android device RSSI = {}".format((
+                self.log.info('Android device: {}'.format((
                     adb_rssi_results[-1]['log_message']).split(',')[5]))
             if self.a2dp_streaming:
                 analysis_path = self.audio.audio_quality_analysis(self.log_path)
@@ -245,9 +246,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                     self.pri_ad, self.current_test_name)
                 self.a2dp_dropped_list.append(
                     self.a2dp_dumpsys.parse(file_path))
-            self.teardown_result()
             self.iperf_received.append(
-                    float(str(self.iperf_variables.received[-1]).strip("Mb/s")))
+                    float(str(self.iperf_variables.throughput[-1]).strip("Mb/s")))
         for i in range(self.num_atten - 1):
             self.attenuators[i].set_atten(0)
         return self.iperf_received, self.a2dp_dropped_list, True
@@ -264,14 +264,16 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                 json.dump({str(k): v for k, v in self.rvr.items()},
                           results_file, indent=4, sort_keys=True)
             self.bt_range_metric.metric_value = self.rvr["bt_range"][0]
-            self.log.info("BT range where gap has occurred = %s" %
-                          self.bt_range_metric.metric_value)
-            self.log.info("BT min range = %s" % min(self.rvr["bt_attenuation"]))
-            self.log.info("BT max range = %s" % max(self.rvr["bt_attenuation"]))
+            self.log.info('First occurrence of audio gap in bt '
+                          'range: {}'.format(self.bt_range_metric.metric_value))
+            self.log.info('Bluetooth min range: '
+                          '{} dB'.format(min(self.rvr['bt_attenuation'])))
+            self.log.info('Bluetooth max range: '
+                          '{} dB'.format(max(self.rvr['bt_attenuation'])))
             self.plot_graph_for_attenuation()
             if not self.performance_files_list:
-                self.log.warning("Performance file list is empty. Couldn't"
-                                 "calculate throughput limits")
+                self.log.warning('Performance file list is empty. Could not '
+                                 'calculate throughput limits')
                 return
             self.throughput_pass_fail_check()
         else:

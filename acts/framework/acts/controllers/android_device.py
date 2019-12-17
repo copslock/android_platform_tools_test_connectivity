@@ -973,7 +973,8 @@ class AndroidDevice:
         for skip_file in skip_files:
             cmd = "%s ! -iname %s" % (cmd, skip_file)
         out = self.adb.shell(cmd, ignore_status=True)
-        if not out or "No such" in out or "Permission denied" in out:
+        if not out or "No such" in out or "Permission denied" in out or \
+            "Not a directory" in out:
             return []
         files = out.split("\n")
         self.log.debug("Find files in directory %s: %s", directory, files)
@@ -1003,6 +1004,12 @@ class AndroidDevice:
         """check crash report on the device."""
         crash_reports = []
         for crash_path in CRASH_REPORT_PATHS:
+            try:
+                cmd = 'cd %s' % crash_path
+                self.adb.shell(cmd)
+            except Exception as e:
+                self.log.debug("received exception %s", e)
+                continue
             crashes = self.get_file_names(
                 crash_path,
                 skip_files=CRASH_REPORT_SKIPS,

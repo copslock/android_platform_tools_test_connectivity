@@ -407,7 +407,7 @@ class BokehFigure():
             if line['width'] > 0:
                 self.plot.line(x='x',
                                y='y',
-                               legend=line['legend'],
+                               legend_label=line['legend'],
                                line_width=line['width'],
                                color=line['color'],
                                line_dash=line['style'],
@@ -429,7 +429,7 @@ class BokehFigure():
                 marker_func(x='x',
                             y='y',
                             size=line['marker_size'],
-                            legend=line['legend'],
+                            legend_label=line['legend'],
                             line_color=line['color'],
                             fill_color=line['color'],
                             name=line['y_axis'],
@@ -1019,9 +1019,9 @@ def get_iperf_arg_string(duration,
         iperf_args: string of formatted iperf args
     """
     iperf_args = '-i {} -t {} -J '.format(interval, duration)
-    if traffic_type == 'UDP':
+    if traffic_type.upper() == 'UDP':
         iperf_args = iperf_args + '-u -b {} -l 1400'.format(udp_throughput)
-    elif traffic_type == 'TCP':
+    elif traffic_type.upper() == 'TCP':
         iperf_args = iperf_args + '-P {}'.format(tcp_processes)
         if tcp_window:
             iperf_args = iperf_args + '-w {}'.format(tcp_window)
