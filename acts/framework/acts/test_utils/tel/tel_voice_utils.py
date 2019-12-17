@@ -55,6 +55,7 @@ from acts.test_utils.tel.tel_subscription_utils import get_subid_from_slot_index
 from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_test_utils import call_reject_leave_message
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
+from acts.test_utils.tel.tel_test_utils import call_setup_teardown_for_call_forwarding
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
@@ -366,6 +367,96 @@ def two_phone_call_long_seq(log,
 
     return tel_result
 
+def three_phone_call_forwarding_short_seq(log,
+                             phone_a,
+                             phone_a_idle_func,
+                             phone_a_in_call_check_func,
+                             phone_b,
+                             phone_c,
+                             wait_time_in_call=WAIT_TIME_IN_CALL,
+                             call_forwarding_type="unconditional",
+                             retry=2):
+    """Short sequence of call process with call forwarding.
+    Test steps:
+        1. Ensure all phones are initially in idle state.
+        2. Enable call forwarding on Phone A.
+        3. Make a call from Phone B to Phone A, The call should be forwarded to
+           PhoneC. Accept the call on Phone C.
+        4. Ensure the call is connected and in correct phone state.
+        5. Hang up the call on Phone B.
+        6. Ensure all phones are in idle state.
+        7. Disable call forwarding on Phone A.
+        7. Make a call from Phone B to Phone A, The call should NOT be forwarded
+           to PhoneC. Accept the call on Phone A.
+        8. Ensure the call is connected and in correct phone state.
+        9. Hang up the call on Phone B.
+
+    Args:
+        phone_a: android object of Phone A
+        phone_a_idle_func: function to check idle state on Phone A
+        phone_a_in_call_check_func: function to check in-call state on Phone A
+        phone_b: android object of Phone B
+        phone_c: android object of Phone C
+        wait_time_in_call: time to wait in call.
+            This is optional, default is WAIT_TIME_IN_CALL
+        call_forwarding_type:
+            - "unconditional"
+            - "busy"
+            - "not_answered"
+            - "not_reachable"
+        retry: times of retry
+
+    Returns:
+        True: if call sequence succeed.
+        False: for errors
+    """
+    ads = [phone_a, phone_b, phone_c]
+
+    call_params = [
+        (ads[1], ads[0], ads[2], ads[1], phone_a_in_call_check_func, False)
+    ]
+
+    if call_forwarding_type != "unconditional":
+        call_params.append((
+            ads[1],
+            ads[0],
+            ads[2],
+            ads[1],
+            phone_a_in_call_check_func,
+            True))
+
+    for param in call_params:
+        ensure_phones_idle(log, ads)
+        if phone_a_idle_func and not phone_a_idle_func(log, phone_a):
+            phone_a.log.error("Phone A Failed to Reselect")
+            return False
+
+        time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
+
+        log.info(
+            "---> Call forwarding %s (caller: %s, callee: %s, callee forwarded:"
+            " %s) <---",
+            call_forwarding_type,
+            param[0].serial,
+            param[1].serial,
+            param[2].serial)
+        while not call_setup_teardown_for_call_forwarding(
+                log,
+                *param,
+                wait_time_in_call=wait_time_in_call,
+                call_forwarding_type=call_forwarding_type) and retry >= 0:
+
+            if retry <= 0:
+                log.error("Call forwarding %s failed." % call_forwarding_type)
+                return False
+            else:
+                log.info(
+                    "RERUN the test case: 'Call forwarding %s'" %
+                    call_forwarding_type)
+
+            retry = retry - 1
+
+    return True
 
 def phone_setup_iwlan(log,
                       ad,

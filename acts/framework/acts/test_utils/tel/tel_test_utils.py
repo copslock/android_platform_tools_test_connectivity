@@ -492,6 +492,8 @@ def get_user_config_profile(ad):
         ad.droid.imsIsVtEnabledByUser(),
         "VT Platform Enabled":
         ad.droid.imsIsVtEnabledByPlatform(),
+        "WiFi State":
+        ad.droid.wifiCheckState(),
         "WFC Available":
         ad.droid.telephonyIsWifiCallingAvailable(),
         "WFC Enabled":
@@ -2437,6 +2439,485 @@ def call_setup_teardown_for_subscription(
                         'CALL_ID_CLEANUP_FAIL')
     return tel_result_wrapper
 
+def call_setup_teardown_for_call_forwarding(
+    log,
+    ad_caller,
+    ad_callee,
+    forwarded_callee,
+    ad_hangup=None,
+    verify_callee_func=None,
+    verify_after_cf_disabled=None,
+    wait_time_in_call=WAIT_TIME_IN_CALL,
+    incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+    dialing_number_length=None,
+    video_state=None,
+    call_forwarding_type="unconditional"):
+    """ Call process for call forwarding, including make a phone call from
+    caller, forward from callee, accept from the forwarded callee and hang up.
+    The call is on default voice subscription
+
+    In call process, call from <ad_caller> to <ad_callee>, forwarded to
+    <forwarded_callee>, accept the call, (optional) and then hang up from
+    <ad_hangup>.
+
+    Args:
+        ad_caller: Caller Android Device Object.
+        ad_callee: Callee Android Device Object which forwards the call.
+        forwarded_callee: Callee Android Device Object which answers the call.
+        ad_hangup: Android Device Object end the phone call.
+            Optional. Default value is None, and phone call will continue.
+        verify_callee_func: func_ptr to verify callee in correct mode
+            Optional. Default is None
+        verify_after_cf_disabled: If True the test of disabling call forwarding
+        will be appended.
+        wait_time_in_call: the call duration of a connected call
+        incall_ui_display: after answer the call, bring in-call UI to foreground
+        or background.
+            Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
+            if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
+            if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
+            else, do nothing.
+        dialing_number_length: the number of digits used for dialing
+        video_state: video call or voice call. Default is voice call.
+        call_forwarding_type: type of call forwarding listed below:
+            - unconditional
+            - busy
+            - not_answered
+            - not_reachable
+
+    Returns:
+        True if call process without any error.
+        False if error happened.
+
+    """
+    subid_caller = get_outgoing_voice_sub_id(ad_caller)
+    subid_callee = get_incoming_voice_sub_id(ad_callee)
+    subid_forwarded_callee = get_incoming_voice_sub_id(forwarded_callee)
+    return call_setup_teardown_for_call_forwarding_for_subscription(
+        log,
+        ad_caller,
+        ad_callee,
+        forwarded_callee,
+        subid_caller,
+        subid_callee,
+        subid_forwarded_callee,
+        ad_hangup,
+        verify_callee_func,
+        wait_time_in_call,
+        incall_ui_display,
+        dialing_number_length,
+        video_state,
+        call_forwarding_type,
+        verify_after_cf_disabled)
+
+def call_setup_teardown_for_call_forwarding_for_subscription(
+        log,
+        ad_caller,
+        ad_callee,
+        forwarded_callee,
+        subid_caller,
+        subid_callee,
+        subid_forwarded_callee,
+        ad_hangup=None,
+        verify_callee_func=None,
+        wait_time_in_call=WAIT_TIME_IN_CALL,
+        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+        dialing_number_length=None,
+        video_state=None,
+        call_forwarding_type="unconditional",
+        verify_after_cf_disabled=None):
+    """ Call process for call forwarding, including make a phone call from caller,
+    forward from callee, accept from the forwarded callee and hang up.
+    The call is on specified subscription
+
+    In call process, call from <ad_caller> to <ad_callee>, forwarded to
+    <forwarded_callee>, accept the call, (optional) and then hang up from
+    <ad_hangup>.
+
+    Args:
+        ad_caller: Caller Android Device Object.
+        ad_callee: Callee Android Device Object which forwards the call.
+        forwarded_callee: Callee Android Device Object which answers the call.
+        subid_caller: Caller subscription ID
+        subid_callee: Callee subscription ID
+        subid_forwarded_callee: Forwarded callee subscription ID
+        ad_hangup: Android Device Object end the phone call.
+            Optional. Default value is None, and phone call will continue.
+        verify_callee_func: func_ptr to verify callee in correct mode
+            Optional. Default is None
+        wait_time_in_call: the call duration of a connected call
+        incall_ui_display: after answer the call, bring in-call UI to foreground
+        or background. Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
+            if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
+            if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
+            else, do nothing.
+        dialing_number_length: the number of digits used for dialing
+        video_state: video call or voice call. Default is voice call.
+        call_forwarding_type: type of call forwarding listed below:
+            - unconditional
+            - busy
+            - not_answered
+            - not_reachable
+        verify_after_cf_disabled: If True the call forwarding will not be
+        enabled. This argument is used to verify if the call can be received
+        successfully after call forwarding was disabled.
+
+    Returns:
+        True if call process without any error.
+        False if error happened.
+
+    """
+    CHECK_INTERVAL = 5
+    begin_time = get_current_epoch_time()
+    verify_caller_func = is_phone_in_call
+    if not verify_callee_func:
+        verify_callee_func = is_phone_in_call
+    verify_forwarded_callee_func = is_phone_in_call
+
+    caller_number = ad_caller.telephony['subscription'][subid_caller][
+        'phone_num']
+    callee_number = ad_callee.telephony['subscription'][subid_callee][
+        'phone_num']
+    forwarded_callee_number = forwarded_callee.telephony['subscription'][
+        subid_forwarded_callee]['phone_num']
+
+    if dialing_number_length:
+        skip_test = False
+        trunc_position = 0 - int(dialing_number_length)
+        try:
+            caller_area_code = caller_number[:trunc_position]
+            callee_area_code = callee_number[:trunc_position]
+            callee_dial_number = callee_number[trunc_position:]
+        except:
+            skip_test = True
+        if caller_area_code != callee_area_code:
+            skip_test = True
+        if skip_test:
+            msg = "Cannot make call from %s to %s by %s digits" % (
+                caller_number, callee_number, dialing_number_length)
+            ad_caller.log.info(msg)
+            raise signals.TestSkip(msg)
+        else:
+            callee_number = callee_dial_number
+
+    result = True
+    msg = "Call from %s to %s (forwarded to %s)" % (
+        caller_number, callee_number, forwarded_callee_number)
+    if video_state:
+        msg = "Video %s" % msg
+        video = True
+    else:
+        video = False
+    if ad_hangup:
+        msg = "%s for duration of %s seconds" % (msg, wait_time_in_call)
+    ad_caller.log.info(msg)
+
+    for ad in (ad_caller, forwarded_callee):
+        call_ids = ad.droid.telecomCallGetCallIds()
+        setattr(ad, "call_ids", call_ids)
+        if call_ids:
+            ad.log.info("Pre-exist CallId %s before making call", call_ids)
+
+    if not verify_after_cf_disabled:
+        if not set_call_forwarding_by_mmi(
+            log,
+            ad_callee,
+            forwarded_callee,
+            call_forwarding_type=call_forwarding_type):
+            raise signals.TestFailure(
+                    "Failed to register or activate call forwarding.",
+                    extras={"fail_reason": "Failed to register or activate call"
+                    " forwarding."})
+
+    if call_forwarding_type == "not_reachable":
+        if not toggle_airplane_mode_msim(
+            log,
+            ad_callee,
+            new_state=True,
+            strict_checking=True):
+            return False
+
+    if call_forwarding_type == "busy":
+        ad_callee.log.info("Callee is making a phone call to 0000000000 to make"
+            " itself busy.")
+        ad_callee.droid.telecomCallNumber("0000000000", False)
+        time.sleep(2)
+
+        if check_call_state_idle_by_adb(ad_callee):
+            ad_callee.log.error("Call state of the callee is idle.")
+            if not verify_after_cf_disabled:
+                erase_call_forwarding_by_mmi(
+                    log,
+                    ad_callee,
+                    call_forwarding_type=call_forwarding_type)
+            return False
+
+    try:
+        if not initiate_call(
+                log,
+                ad_caller,
+                callee_number,
+                incall_ui_display=incall_ui_display,
+                video=video):
+
+            ad_caller.log.error("Caller failed to initiate the call.")
+            result = False
+
+            if call_forwarding_type == "not_reachable":
+                if toggle_airplane_mode_msim(
+                    log,
+                    ad_callee,
+                    new_state=False,
+                    strict_checking=True):
+                    time.sleep(10)
+            elif call_forwarding_type == "busy":
+                hangup_call(log, ad_callee)
+
+            if not verify_after_cf_disabled:
+                erase_call_forwarding_by_mmi(
+                    log,
+                    ad_callee,
+                    call_forwarding_type=call_forwarding_type)
+            return False
+        else:
+            ad_caller.log.info("Caller initated the call successfully.")
+
+        if call_forwarding_type == "not_answered":
+            if not wait_for_ringing_call_for_subscription(
+                    log,
+                    ad_callee,
+                    subid_callee,
+                    incoming_number=caller_number,
+                    caller=ad_caller,
+                    event_tracking_started=True):
+                ad.log.info("Incoming call ringing check failed.")
+                return False
+
+            _timeout = 30
+            while check_call_state_ring_by_adb(ad_callee) == 1 and _timeout >= 0:
+                time.sleep(1)
+                _timeout = _timeout - 1
+
+        if not wait_and_answer_call_for_subscription(
+                log,
+                forwarded_callee,
+                subid_forwarded_callee,
+                incoming_number=caller_number,
+                caller=ad_caller,
+                incall_ui_display=incall_ui_display,
+                video_state=video_state):
+
+            if not verify_after_cf_disabled:
+                forwarded_callee.log.error("Forwarded callee failed to receive"
+                    "or answer the call.")
+                result = False
+            else:
+                forwarded_callee.log.info("Forwarded callee did not receive or"
+                    " answer the call.")
+
+            if call_forwarding_type == "not_reachable":
+                if toggle_airplane_mode_msim(
+                    log,
+                    ad_callee,
+                    new_state=False,
+                    strict_checking=True):
+                    time.sleep(10)
+            elif call_forwarding_type == "busy":
+                hangup_call(log, ad_callee)
+
+            if not verify_after_cf_disabled:
+                erase_call_forwarding_by_mmi(
+                    log,
+                    ad_callee,
+                    call_forwarding_type=call_forwarding_type)
+                return False
+
+        else:
+            if not verify_after_cf_disabled:
+                forwarded_callee.log.info("Forwarded callee answered the call"
+                    " successfully.")
+            else:
+                forwarded_callee.log.error("Forwarded callee should not be able"
+                    " to answer the call.")
+                hangup_call(log, ad_caller)
+                result = False
+
+        for ad, subid, call_func in zip(
+                [ad_caller, forwarded_callee],
+                [subid_caller, subid_forwarded_callee],
+                [verify_caller_func, verify_forwarded_callee_func]):
+            call_ids = ad.droid.telecomCallGetCallIds()
+            new_call_ids = set(call_ids) - set(ad.call_ids)
+            if not new_call_ids:
+                if not verify_after_cf_disabled:
+                    ad.log.error(
+                        "No new call ids are found after call establishment")
+                    ad.log.error("telecomCallGetCallIds returns %s",
+                                 ad.droid.telecomCallGetCallIds())
+                result = False
+            for new_call_id in new_call_ids:
+                if not verify_after_cf_disabled:
+                    if not wait_for_in_call_active(ad, call_id=new_call_id):
+                        result = False
+                    else:
+                        ad.log.info("callProperties = %s",
+                            ad.droid.telecomCallGetProperties(new_call_id))
+                else:
+                    ad.log.error("No new call id should be found.")
+
+            if not ad.droid.telecomCallGetAudioState():
+                if not verify_after_cf_disabled:
+                    ad.log.error("Audio is not in call state")
+                    result = False
+
+            if call_func(log, ad):
+                if not verify_after_cf_disabled:
+                    ad.log.info("Call is in %s state", call_func.__name__)
+                else:
+                    ad.log.error("Call is in %s state", call_func.__name__)
+            else:
+                if not verify_after_cf_disabled:
+                    ad.log.error(
+                        "Call is not in %s state, voice in RAT %s",
+                        call_func.__name__,
+                        ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                    result = False
+
+        if not result:
+            if call_forwarding_type == "not_reachable":
+                if toggle_airplane_mode_msim(
+                    log,
+                    ad_callee,
+                    new_state=False,
+                    strict_checking=True):
+                    time.sleep(10)
+            elif call_forwarding_type == "busy":
+                hangup_call(log, ad_callee)
+
+            if not verify_after_cf_disabled:
+                erase_call_forwarding_by_mmi(
+                    log,
+                    ad_callee,
+                    call_forwarding_type=call_forwarding_type)
+                return False
+
+        elapsed_time = 0
+        while (elapsed_time < wait_time_in_call):
+            CHECK_INTERVAL = min(CHECK_INTERVAL,
+                                 wait_time_in_call - elapsed_time)
+            time.sleep(CHECK_INTERVAL)
+            elapsed_time += CHECK_INTERVAL
+            time_message = "at <%s>/<%s> second." % (elapsed_time,
+                                                     wait_time_in_call)
+            for ad, subid, call_func in [
+                (ad_caller, subid_caller, verify_caller_func),
+                (forwarded_callee, subid_forwarded_callee,
+                    verify_forwarded_callee_func)]:
+                if not call_func(log, ad):
+                    if not verify_after_cf_disabled:
+                        ad.log.error(
+                            "NOT in correct %s state at %s, voice in RAT %s",
+                            call_func.__name__, time_message,
+                            ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                    result = False
+                else:
+                    if not verify_after_cf_disabled:
+                        ad.log.info("In correct %s state at %s",
+                                    call_func.__name__, time_message)
+                    else:
+                        ad.log.error("In correct %s state at %s",
+                                    call_func.__name__, time_message)
+
+                if not ad.droid.telecomCallGetAudioState():
+                    if not verify_after_cf_disabled:
+                        ad.log.error("Audio is not in call state at %s",
+                                     time_message)
+                    result = False
+
+            if not result:
+                if call_forwarding_type == "not_reachable":
+                    if toggle_airplane_mode_msim(
+                        log,
+                        ad_callee,
+                        new_state=False,
+                        strict_checking=True):
+                        time.sleep(10)
+                elif call_forwarding_type == "busy":
+                    hangup_call(log, ad_callee)
+
+                if not verify_after_cf_disabled:
+                    erase_call_forwarding_by_mmi(
+                        log,
+                        ad_callee,
+                        call_forwarding_type=call_forwarding_type)
+                    return False
+
+        if ad_hangup:
+            if not hangup_call(log, ad_hangup):
+                ad_hangup.log.info("Failed to hang up the call")
+                result = False
+                if call_forwarding_type == "not_reachable":
+                    if toggle_airplane_mode_msim(
+                        log,
+                        ad_callee,
+                        new_state=False,
+                        strict_checking=True):
+                        time.sleep(10)
+                elif call_forwarding_type == "busy":
+                    hangup_call(log, ad_callee)
+
+                if not verify_after_cf_disabled:
+                    erase_call_forwarding_by_mmi(
+                        log,
+                        ad_callee,
+                        call_forwarding_type=call_forwarding_type)
+                return False
+    finally:
+        if not result:
+            if verify_after_cf_disabled:
+                result = True
+            else:
+                for ad in (ad_caller, forwarded_callee):
+                    last_call_drop_reason(ad, begin_time)
+                    try:
+                        if ad.droid.telecomIsInCall():
+                            ad.log.info("In call. End now.")
+                            ad.droid.telecomEndCall()
+                    except Exception as e:
+                        log.error(str(e))
+
+        if ad_hangup or not result:
+            for ad in (ad_caller, forwarded_callee):
+                if not wait_for_call_id_clearing(
+                        ad, getattr(ad, "caller_ids", [])):
+                    result = False
+
+    if call_forwarding_type == "not_reachable":
+        if toggle_airplane_mode_msim(
+            log,
+            ad_callee,
+            new_state=False,
+            strict_checking=True):
+            time.sleep(10)
+    elif call_forwarding_type == "busy":
+        hangup_call(log, ad_callee)
+
+    if not verify_after_cf_disabled:
+        erase_call_forwarding_by_mmi(
+            log,
+            ad_callee,
+            call_forwarding_type=call_forwarding_type)
+
+    if not result:
+        return result
+
+    ad_caller.log.info(
+        "Make a normal call to callee to ensure the call can be connected after"
+        " call forwarding was disabled")
+    return call_setup_teardown_for_subscription(
+        log, ad_caller, ad_callee, subid_caller, subid_callee, ad_caller,
+        verify_caller_func, verify_callee_func, wait_time_in_call,
+        incall_ui_display, dialing_number_length, video_state)
 
 def wait_for_call_id_clearing(ad,
                               previous_ids,
@@ -7819,3 +8300,287 @@ def toggle_connectivity_monitor_setting(ad, state=True):
     monitor_setting = ad.adb.getprop("persist.radio.enable_tel_mon")
     ad.log.info("radio.enable_tel_mon setting is %s", monitor_setting)
     return monitor_setting == expected_monitor_setting
+
+def get_call_forwarding_by_adb(log, ad, call_forwarding_type="unconditional"):
+    """ Get call forwarding status by adb shell command
+        'dumpsys telephony.registry'.
+
+        Args:
+            log: log object
+            ad: android object
+            call_forwarding_type:
+                - "unconditional"
+                - "busy" (todo)
+                - "not_answered" (todo)
+                - "not_reachable" (todo)
+        Returns:
+            - "true": if call forwarding unconditional is enabled.
+            - "false": if call forwarding unconditional is disabled.
+            - "unknown": if the type is other than 'unconditional'.
+            - False: any case other than above 3 cases.
+    """
+    if call_forwarding_type != "unconditional":
+        return "unknown"
+
+    slot_index_of_default_voice_subid = get_slot_index_from_subid(log, ad,
+        get_incoming_voice_sub_id(ad))
+    output = ad.adb.shell("dumpsys telephony.registry | grep mCallForwarding")
+    if "mCallForwarding" in output:
+        result_list = re.findall(r"mCallForwarding=(true|false)", output)
+        if result_list:
+            result = result_list[slot_index_of_default_voice_subid]
+            ad.log.info("mCallForwarding is %s", result)
+
+            if re.search("false", result, re.I):
+                return "false"
+            elif re.search("true", result, re.I):
+                return "true"
+            else:
+                return False
+        else:
+            return False
+    else:
+        ad.log.error("'mCallForwarding' cannot be found in dumpsys.")
+        return False
+
+def erase_call_forwarding_by_mmi(
+        log,
+        ad,
+        retry=2,
+        call_forwarding_type="unconditional"):
+    """ Erase setting of call forwarding (erase the number and disable call
+    forwarding) by MMI code.
+
+    Args:
+        log: log object
+        ad: android object
+        retry: times of retry if the erasure failed.
+        call_forwarding_type:
+            - "unconditional"
+            - "busy"
+            - "not_answered"
+            - "not_reachable"
+    Returns:
+        True by successful erasure. Otherwise False.
+    """
+    res = get_call_forwarding_by_adb(log, ad,
+        call_forwarding_type=call_forwarding_type)
+    if res == "false":
+        return True
+
+    user_config_profile = get_user_config_profile(ad)
+    is_airplane_mode = user_config_profile["Airplane Mode"]
+    is_wfc_enabled = user_config_profile["WFC Enabled"]
+    wfc_mode = user_config_profile["WFC Mode"]
+    is_wifi_on = user_config_profile["WiFi State"]
+
+    if is_airplane_mode:
+        if not toggle_airplane_mode(log, ad, False):
+            ad.log.error("Failed to disable airplane mode.")
+            return False
+
+    operator_name = get_operator_name(log, ad)
+
+    code_dict = {
+        "Verizon": {
+            "unconditional": "73",
+            "busy": "73",
+            "not_answered": "73",
+            "not_reachable": "73",
+            "mmi": "*%s"
+        },
+        "Sprint": {
+            "unconditional": "720",
+            "busy": "740",
+            "not_answered": "730",
+            "not_reachable": "720",
+            "mmi": "*%s"
+        },
+        'Generic': {
+            "unconditional": "21",
+            "busy": "67",
+            "not_answered": "61",
+            "not_reachable": "62",
+            "mmi": "##%s#"
+        }
+    }
+
+    if operator_name in code_dict:
+        code = code_dict[operator_name][call_forwarding_type]
+        mmi = code_dict[operator_name]["mmi"]
+    else:
+        code = code_dict['Generic'][call_forwarding_type]
+        mmi = code_dict['Generic']["mmi"]
+
+    result = False
+    while retry >= 0:
+        res = get_call_forwarding_by_adb(
+            log, ad, call_forwarding_type=call_forwarding_type)
+        if res == "false":
+            ad.log.info("Call forwarding is already disabled.")
+            result = True
+            break
+
+        ad.log.info("Erasing and deactivating call forwarding %s..." %
+            call_forwarding_type)
+
+        ad.droid.telecomDialNumber(mmi % code)
+
+        time.sleep(3)
+        ad.send_keycode("ENTER")
+        time.sleep(15)
+
+        # To dismiss the pop-out dialog
+        ad.send_keycode("BACK")
+        time.sleep(5)
+        ad.send_keycode("BACK")
+
+        res = get_call_forwarding_by_adb(
+            log, ad, call_forwarding_type=call_forwarding_type)
+        if res == "false" or res == "unknown":
+            result = True
+            break
+        else:
+            ad.log.error("Failed to erase and deactivate call forwarding by "
+                "MMI code ##%s#." % code)
+            retry = retry - 1
+            time.sleep(30)
+
+    if is_airplane_mode:
+        if not toggle_airplane_mode(log, ad, True):
+            ad.log.error("Failed to enable airplane mode again.")
+        else:
+            if is_wifi_on:
+                ad.droid.wifiToggleState(True)
+                if is_wfc_enabled:
+                    if not wait_for_wfc_enabled(
+                        log, ad,max_time=MAX_WAIT_TIME_WFC_ENABLED):
+                        ad.log.error("WFC is not enabled")
+
+    return result
+
+def set_call_forwarding_by_mmi(
+        log,
+        ad,
+        ad_forwarded,
+        call_forwarding_type="unconditional",
+        retry=2):
+    """ Set up the forwarded number and enable call forwarding by MMI code.
+
+    Args:
+        log: log object
+        ad: android object of the device forwarding the call (primary device)
+        ad_forwarded: android object of the device receiving forwarded call.
+        retry: times of retry if the erasure failed.
+        call_forwarding_type:
+            - "unconditional"
+            - "busy"
+            - "not_answered"
+            - "not_reachable"
+    Returns:
+        True by successful erasure. Otherwise False.
+    """
+
+    res = get_call_forwarding_by_adb(log, ad,
+        call_forwarding_type=call_forwarding_type)
+    if res == "true":
+        return True
+
+    if ad.droid.connectivityCheckAirplaneMode():
+        ad.log.warning("%s is now in airplane mode.", ad.serial)
+        return False
+
+    operator_name = get_operator_name(log, ad)
+
+    code_dict = {
+        "Verizon": {
+            "unconditional": "72",
+            "busy": "71",
+            "not_answered": "71",
+            "not_reachable": "72",
+            "mmi": "*%s%s"
+        },
+        "Sprint": {
+            "unconditional": "72",
+            "busy": "74",
+            "not_answered": "73",
+            "not_reachable": "72",
+            "mmi": "*%s%s"
+        },
+        'Generic': {
+            "unconditional": "21",
+            "busy": "67",
+            "not_answered": "61",
+            "not_reachable": "62",
+            "mmi": "*%s*%s#",
+            "mmi_for_plus_sign": "*%s*"
+        }
+    }
+
+    if operator_name in code_dict:
+        code = code_dict[operator_name][call_forwarding_type]
+        mmi = code_dict[operator_name]["mmi"]
+    else:
+        code = code_dict['Generic'][call_forwarding_type]
+        mmi = code_dict['Generic']["mmi"]
+        mmi_for_plus_sign = code_dict['Generic']["mmi_for_plus_sign"]
+
+    while retry >= 0:
+        if not erase_call_forwarding_by_mmi(
+            log, ad, call_forwarding_type=call_forwarding_type):
+            retry = retry - 1
+            continue
+
+        forwarded_number = ad_forwarded.telephony['subscription'][
+            ad_forwarded.droid.subscriptionGetDefaultVoiceSubId()][
+            'phone_num']
+        ad.log.info("Registering and activating call forwarding %s to %s..." %
+            (call_forwarding_type, forwarded_number))
+
+        (forwarded_number_no_prefix, _) = _phone_number_remove_prefix(
+            forwarded_number)
+
+        _found_plus_sign = 0
+        if re.search("^\+", forwarded_number):
+            _found_plus_sign = 1
+            forwarded_number.replace("+", "")
+
+        if operator_name in code_dict:
+            ad.droid.telecomDialNumber(mmi % (code, forwarded_number_no_prefix))
+        else:
+            if _found_plus_sign == 0:
+                ad.droid.telecomDialNumber(mmi % (code, forwarded_number))
+            else:
+                ad.droid.telecomDialNumber(mmi_for_plus_sign % code)
+                ad.send_keycode("PLUS")
+                dial_phone_number(ad, forwarded_number + "#")
+
+        time.sleep(3)
+        ad.send_keycode("ENTER")
+        time.sleep(15)
+
+        # To dismiss the pop-out dialog
+        ad.send_keycode("BACK")
+        time.sleep(5)
+        ad.send_keycode("BACK")
+
+        result = get_call_forwarding_by_adb(
+            log, ad, call_forwarding_type=call_forwarding_type)
+        if result == "false":
+            retry = retry - 1
+        elif result == "true":
+            return True
+        elif result == "unknown":
+            return True
+        else:
+            retry = retry - 1
+
+        if retry >= 0:
+            ad.log.warning("Failed to register or activate call forwarding %s "
+                "to %s. Retry after 15 seconds." % (call_forwarding_type,
+                    forwarded_number))
+            time.sleep(15)
+
+    ad.log.error("Failed to register or activate call forwarding %s to %s." %
+        (call_forwarding_type, forwarded_number))
+    return False
