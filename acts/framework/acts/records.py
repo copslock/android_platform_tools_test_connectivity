@@ -172,7 +172,6 @@ class TestResult(MoblyTestResult):
     def __init__(self):
         super().__init__()
         self.controller_info = {}
-        self.extras = {}
 
     def __add__(self, r):
         """Overrides '+' operator for TestResult class.
@@ -211,15 +210,6 @@ class TestResult(MoblyTestResult):
             return
         self.controller_info[name] = info
 
-    def set_extra_data(self, name, info):
-        try:
-            json.dumps(info)
-        except TypeError:
-            logging.warning("Controller info for %s is not JSON serializable! "
-                            "Coercing it to string." % name)
-            info = str(info)
-        self.extras[name] = info
-
     def json_str(self):
         """Converts this test result to a string in json format.
 
@@ -240,7 +230,6 @@ class TestResult(MoblyTestResult):
         d["ControllerInfo"] = self.controller_info
         d["Results"] = [record.to_dict() for record in self.executed]
         d["Summary"] = self.summary_dict()
-        d["Extras"] = self.extras
         d["Error"] = self.errors_list()
         json_str = json.dumps(d, indent=4)
         return json_str
