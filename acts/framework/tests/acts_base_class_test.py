@@ -1131,7 +1131,7 @@ class ActsBaseClassTest(unittest.TestCase):
             ]
             base_cls = base_test.BaseTestClass(mock_test_config)
             base_cls.register_controller(mock_controller)
-            self.assertEqual(base_cls.results.controller_info, {})
+            self.assertEqual(base_cls.results.controller_info, [])
         finally:
             setattr(mock_controller, 'get_info', get_info)
 

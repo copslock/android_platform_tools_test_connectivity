@@ -317,34 +317,19 @@ class BaseTestClass(MoblyBaseTest):
         if not controllers:
             return None
 
-        # Collect controller information and write to test result.
+        # Log controller information
         # Implementation of "get_info" is optional for a controller module.
         if hasattr(controller_module, "get_info"):
             controller_info = controller_module.get_info(controllers)
             self.log.info("Controller %s: %s", module_config_name,
                           controller_info)
-            self.results.add_controller_info(module_config_name,
-                                             controller_info)
         else:
             self.log.warning("No controller info obtained for %s",
                              module_config_name)
-        self._record_controller_info()
 
         if builtin:
             setattr(self, module_ref_name, controllers)
         return controllers
-
-    def _record_controller_info(self):
-        """Collect controller information and write to summary file."""
-        try:
-            manager = self._controller_manager
-            for record in manager.get_controller_info_records():
-                self.summary_writer.dump(
-                    record.to_dict(),
-                    records.TestSummaryEntryType.CONTROLLER_INFO)
-        except Exception:
-            self.log.exception('Unable to write controller info records to'
-                               ' summary file')
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
