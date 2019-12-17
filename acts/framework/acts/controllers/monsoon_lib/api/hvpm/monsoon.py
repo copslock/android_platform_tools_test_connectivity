@@ -122,7 +122,8 @@ class Monsoon(BaseMonsoon):
 
         assembly_line_builder = AssemblyLineBuilder(manager.Queue,
                                                     ThreadAssemblyLine)
-        assembly_line_builder.source(HvpmTransformer(self.serial, duration))
+        assembly_line_builder.source(
+            HvpmTransformer(self.serial, duration + measure_after_seconds))
         if hz != 5000:
             assembly_line_builder.into(DownSampler(int(5000 / hz)))
         if output_path:
