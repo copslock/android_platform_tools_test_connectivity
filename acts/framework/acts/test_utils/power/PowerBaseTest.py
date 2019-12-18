@@ -52,7 +52,6 @@ class ObjNew():
     """Create a random obj with unknown attributes and value.
 
     """
-
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -71,7 +70,6 @@ class PowerBaseTest(base_test.BaseTestClass):
     """Base class for all wireless power related tests.
 
     """
-
     def __init__(self, controllers):
 
         base_test.BaseTestClass.__init__(self, controllers)
@@ -80,7 +78,12 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.start_meas_time = 0
         self.rockbottom_script = None
         self.img_name = ''
+        self.dut = None
         self.power_logger = PowerMetricLogger.for_test_case()
+
+    @property
+    def final_test(self):
+        return self.current_test_name == self.results.requested[-1]
 
     def setup_class(self):
 
@@ -150,7 +153,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.mon_info = self.create_monsoon_info()
 
         # Sync device time, timezone and country code
-        utils.require_sl4a((self.dut,))
+        utils.require_sl4a((self.dut, ))
         utils.sync_device_time(self.dut)
         self.dut.droid.wifiSetCountryCode('US')
 
@@ -192,9 +195,8 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.dut.take_bug_report(self.test_name, begin_time)
 
         # Allow the device to cooldown before executing the next test
-        last_test = self.current_test_name == self.results.requested[-1]
         cooldown = self.test_params.get('cooldown', None)
-        if cooldown and not last_test:
+        if cooldown and not self.final_test:
             time.sleep(cooldown)
 
     def teardown_class(self):
@@ -391,14 +393,13 @@ class PowerBaseTest(base_test.BaseTestClass):
                                      '%s_%s.txt' % (tag, highest_value + 1))
 
         total_expected_samples = self.mon_info.freq * self.mon_info.duration
-        min_required_samples = (total_expected_samples
-                                * MIN_PERCENT_SAMPLE / 100)
+        min_required_samples = (total_expected_samples * MIN_PERCENT_SAMPLE /
+                                100)
         for retry_measure in range(1, MEASUREMENT_RETRY_COUNT + 1):
             # Resets the battery status right before the test starts.
             self.dut.adb.shell(RESET_BATTERY_STATS)
-            self.log.info(
-                'Starting power measurement, attempt #{}.'.format(
-                    retry_measure))
+            self.log.info('Starting power measurement, attempt #{}.'.format(
+                retry_measure))
             # Start the power measurement using monsoon.
             self.mon_info.dut.usb(PassthroughStates.AUTO)
             result = self.mon_info.dut.measure_power(
@@ -431,7 +432,8 @@ class PowerBaseTest(base_test.BaseTestClass):
             except AttributeError:
                 # This attribute does not exist for HVPMs.
                 pass
-            self.log.error('Unable to gather enough samples to run validation.')
+            self.log.error(
+                'Unable to gather enough samples to run validation.')
 
     def process_iperf_results(self):
         """Get the iperf results and process.
@@ -456,7 +458,7 @@ class PowerBaseTest(base_test.BaseTestClass):
             throughput = (math.fsum(
                 iperf_result.instantaneous_rates[self.start_meas_time:-1]
             ) / len(iperf_result.instantaneous_rates[self.start_meas_time:-1])
-                          ) * 8 * (1.024 ** 2)
+                          ) * 8 * (1.024**2)
 
             self.log.info('The average throughput is {}'.format(throughput))
         except ValueError:

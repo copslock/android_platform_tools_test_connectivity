@@ -52,6 +52,12 @@ UNITTEST_FILES = [
     'tests/controllers/sl4a_lib/test_suite.py',
     'tests/test_runner_test.py',
     'tests/libs/version_selector_test.py',
+    'tests/test_utils/power/tel/lab/consume_parameter_test.py',
+    'tests/test_utils/power/tel/lab/ensure_valid_calibration_table_test.py',
+    'tests/test_utils/power/tel/lab/init_simulation_test.py',
+    'tests/test_utils/power/tel/lab/initialize_simulator_test.py',
+    'tests/test_utils/power/tel/lab/save_summary_to_file_test.py',
+    'tests/test_utils/power/tel/lab/power_tel_traffic_e2e_test.py'
 ]
 
 # The number of seconds to wait before considering the unit test to have timed
