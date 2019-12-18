@@ -360,8 +360,7 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
 
         # Instantiate a new simulation
         self.simulation = simulation_class(self.cellular_simulator, self.log,
-                                           self.dut,
-                                           self.test_params,
+                                           self.dut, self.test_params,
                                            self.calibration_table[sim_type])
 
     def ensure_valid_calibration_table(self, calibration_table):
