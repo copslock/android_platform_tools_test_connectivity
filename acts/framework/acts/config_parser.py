@@ -174,8 +174,8 @@ def load_test_config_file(test_config_path, tb_filters=None):
     """Processes the test configuration file provided by the user.
 
     Loads the configuration file into a json object, unpacks each testbed
-    config into its own json object, and validate the configuration in the
-    process.
+    config into its own TestRunConfig object, and validate the configuration in
+    the process.
 
     Args:
         test_config_path: Path to the test configuration file.
@@ -183,7 +183,7 @@ def load_test_config_file(test_config_path, tb_filters=None):
                     file. If None, then all test beds will be selected.
 
     Returns:
-        A list of test configuration json objects to be passed to
+        A list of mobly.config_parser.TestRunConfig objects to be passed to
         test_runner.TestRunner.
     """
     configs = utils.load_config(test_config_path)

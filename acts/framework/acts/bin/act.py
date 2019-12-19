@@ -37,8 +37,8 @@ def _run_test(parsed_config, test_identifiers, repeat=1):
     This is the function to start separate processes with.
 
     Args:
-        parsed_config: A dict that is a set of configs for one
-                       test_runner.TestRunner.
+        parsed_config: A mobly.config_parser.TestRunConfig that is a set of
+                       configs for one test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
@@ -66,8 +66,8 @@ def _create_test_runner(parsed_config, test_identifiers):
     signal handlers that properly shut down the test_runner.TestRunner run.
 
     Args:
-        parsed_config: A dict that is a set of configs for one
-                       test_runner.TestRunner.
+        parsed_config: A mobly.config_parser.TestRunConfig that is a set of
+                       configs for one test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
 
@@ -94,8 +94,8 @@ def _run_tests(parsed_configs, test_identifiers, repeat):
     of their corresponding configs.
 
     Args:
-        parsed_configs: A list of dicts, each is a set of configs for one
-                        test_runner.TestRunner.
+        parsed_configs: A list of mobly.config_parser.TestRunConfig, each is a
+                        set of configs for one test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
@@ -110,7 +110,7 @@ def _run_tests(parsed_configs, test_identifiers, repeat):
             ok = ok and ret
         except Exception as e:
             print("Exception occurred when executing test bed %s. %s" %
-                  (c[keys.Config.key_testbed.value], e))
+                  (c.testbed_name, e))
     return ok
 
 
