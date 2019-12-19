@@ -130,11 +130,6 @@ class AbstractCellularSimulator:
 
         # This variable stores a boolean value so the following is needed to
         # differentiate False from None
-        if config.dl_cc_enabled is not None:
-            self.set_enabled_for_ca(bts_index, config.dl_cc_enabled)
-
-        # This variable stores a boolean value so the following is needed to
-        # differentiate False from None
         if config.tbs_pattern_on is not None:
             self.set_tbs_pattern_on(bts_index, config.tbs_pattern_on)
 
@@ -252,15 +247,6 @@ class AbstractCellularSimulator:
         """
         raise NotImplementedError()
 
-    def set_enabled_for_ca(self, bts_index, enabled):
-        """ Enables or disables the base station during carrier aggregation.
-
-        Args:
-            bts_index: the base station number
-            enabled: whether the base station should be enabled for ca.
-        """
-        raise NotImplementedError()
-
     def set_dl_modulation(self, bts_index, modulation):
         """ Sets the DL modulation for the indicated base station.
 
@@ -315,9 +301,14 @@ class AbstractCellularSimulator:
         """
         raise NotImplementedError()
 
-    def lte_attach_secondary_carriers(self):
+    def lte_attach_secondary_carriers(self, ue_capability_enquiry):
         """ Activates the secondary carriers for CA. Requires the DUT to be
-        attached to the primary carrier first. """
+        attached to the primary carrier first.
+
+        Args:
+            ue_capability_enquiry: UE capability enquiry message to be sent to
+        the UE before starting carrier aggregation.
+        """
         raise NotImplementedError()
 
     def wait_until_attached(self, timeout=120):
