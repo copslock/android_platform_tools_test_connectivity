@@ -14,18 +14,21 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from builtins import str
-
 import argparse
-import multiprocessing
+import re
 import signal
 import sys
 import traceback
+from builtins import str
+
+from mobly import config_parser as mobly_config_parser
 
 from acts import config_parser
 from acts import keys
 from acts import signals
 from acts import test_runner
+from acts import utils
+from acts.config_parser import ActsConfigError
 
 
 def _run_test(parsed_config, test_identifiers, repeat=1):
@@ -34,8 +37,8 @@ def _run_test(parsed_config, test_identifiers, repeat=1):
     This is the function to start separate processes with.
 
     Args:
-        parsed_config: A dict that is a set of configs for one
-                       test_runner.TestRunner.
+        parsed_config: A mobly.config_parser.TestRunConfig that is a set of
+                       configs for one test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
@@ -63,8 +66,8 @@ def _create_test_runner(parsed_config, test_identifiers):
     signal handlers that properly shut down the test_runner.TestRunner run.
 
     Args:
-        parsed_config: A dict that is a set of configs for one
-                       test_runner.TestRunner.
+        parsed_config: A mobly.config_parser.TestRunConfig that is a set of
+                       configs for one test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
 
@@ -91,8 +94,8 @@ def _run_tests(parsed_configs, test_identifiers, repeat):
     of their corresponding configs.
 
     Args:
-        parsed_configs: A list of dicts, each is a set of configs for one
-                        test_runner.TestRunner.
+        parsed_configs: A list of mobly.config_parser.TestRunConfig, each is a
+                        set of configs for one test_runner.TestRunner.
         test_identifiers: A list of tuples, each identifies what test case to
                           run on what test class.
         repeat: Number of times to iterate the specified tests.
@@ -107,7 +110,7 @@ def _run_tests(parsed_configs, test_identifiers, repeat):
             ok = ok and ret
         except Exception as e:
             print("Exception occurred when executing test bed %s. %s" %
-                  (c[keys.Config.key_testbed.value], e))
+                  (c.testbed_name, e))
     return ok
 
 
@@ -123,7 +126,6 @@ def main(argv):
                      "run all test cases found."))
     parser.add_argument('-c',
                         '--config',
-                        nargs=1,
                         type=str,
                         required=True,
                         metavar="<PATH>",
@@ -184,9 +186,41 @@ def main(argv):
         test_list = config_parser.parse_test_file(args.testfile[0])
     elif args.testclass:
         test_list = args.testclass
-    parsed_configs = config_parser.load_test_config_file(
-        args.config[0], args.testbed, args.testpaths, args.logpath,
-        args.test_case_iterations)
+    if re.search(r'\.ya?ml$', args.config):
+        parsed_configs = mobly_config_parser.load_test_config_file(
+            args.config, args.testbed)
+    else:
+        parsed_configs = config_parser.load_test_config_file(
+            args.config, args.testbed)
+
+    for test_run_config in parsed_configs:
+        # TODO(markdr): Remove this statement after the next Mobly release.
+        test_run_config.testbed_name = getattr(test_run_config, 'testbed_name',
+                                               test_run_config.test_bed_name)
+
+        if args.testpaths:
+            tp_key = keys.Config.key_test_paths.value
+            test_run_config.controller_configs[tp_key] = args.testpaths
+        if args.logpath:
+            test_run_config.log_path = args.logpath
+        if args.test_case_iterations:
+            # TODO(markdr): Remove this check after the next Mobly release.
+            if test_run_config.user_params is None:
+                test_run_config.user_params = {}
+
+            ti_key = keys.Config.key_test_case_iterations.value
+            test_run_config.user_params[ti_key] = args.test_case_iterations
+
+        # TODO(markdr): Find a way to merge this with the validation done in
+        # Mobly's load_test_config_file.
+        if (keys.Config.key_test_paths.value not in
+                test_run_config.controller_configs):
+            raise ActsConfigError("Required key %s missing in test config." %
+                                  keys.Config.key_test_paths.value)
+        if not test_run_config.log_path:
+            raise ActsConfigError("Required key %s missing in test config." %
+                                  keys.Config.key_log_path.value)
+        test_run_config.log_path = utils.abs_path(test_run_config.log_path)
 
     # Prepare args for test runs
     test_identifiers = config_parser.parse_test_list(test_list)
