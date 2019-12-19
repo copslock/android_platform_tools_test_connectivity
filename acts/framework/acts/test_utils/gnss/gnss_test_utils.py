@@ -655,17 +655,17 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss"):
     raise signals.TestFailure("Fail to get %s location fixed within %d "
                               "attempts." % (type.upper(), retries))
 
-
-def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration):
+def start_ttff_by_gtw_gpstool(ad, ttff_mode, iteration, aid_data=False):
     """Identify which TTFF mode for different test items.
 
     Args:
         ad: An AndroidDevice object.
         ttff_mode: TTFF Test mode for current test item.
         iteration: Iteration of TTFF cycles.
+        aid_data: Boolean for identify aid_data existed or not
     """
     begin_time = get_current_epoch_time()
-    if ttff_mode == "hs" or ttff_mode == "ws":
+    if (ttff_mode == "hs" or ttff_mode == "ws") and not aid_data:
         ad.log.info("Wait 5 minutes to start TTFF %s..." % ttff_mode.upper())
         time.sleep(300)
     if ttff_mode == "cs":
@@ -1011,26 +1011,27 @@ def check_location_api(ad, retries):
     ad.log.error("GnssLocationProvider is unable to report location.")
     return False
 
-
-def check_network_location(ad, retries, location_type):
+def check_network_location(ad, retries, location_type, criteria=30):
     """Verify if NLP reports location after requesting via GPSTool.
 
     Args:
         ad: An AndroidDevice object.
         retries: Retry time.
         location_type: neworkLocationType of cell or wifi.
+        criteria: expected nlp return time, default 30 seconds
 
     Returns:
         True: NLP reports location.
         otherwise return False.
     """
+    criteria = criteria * 1000
     for i in range(retries):
         time.sleep(1)
         begin_time = get_current_epoch_time()
         ad.log.info("Try to get NLP status - attempt %d" % (i+1))
         ad.adb.shell(
             "am start -S -n com.android.gpstool/.GPSTool --es mode nlp")
-        while get_current_epoch_time() - begin_time <= 30000:
+        while get_current_epoch_time() - begin_time <= criteria:
             logcat_results = ad.search_logcat("LocationManagerService: "
                                               "incoming location: Location",
                                               begin_time)
