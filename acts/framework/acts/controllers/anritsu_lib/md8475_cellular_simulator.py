@@ -516,7 +516,7 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
     def stop(self):
         """ Stops current simulation. After calling this method, the simulator
         will need to be set up again. """
-        self.simulator.stop()
+        self.anritsu.stop_simulation()
 
     def start_data_traffic(self):
         """ Starts transmitting data from the instrument to the DUT. """
