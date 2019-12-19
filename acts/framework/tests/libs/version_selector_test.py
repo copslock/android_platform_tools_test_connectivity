@@ -110,7 +110,7 @@ class VersionSelectorIntegrationTest(unittest.TestCase):
         test_run_config.controller_configs = {}
 
         test_class = VersionedTestClass(test_run_config)
-        test_class.run(['test_1', 'test_2'], 1)
+        test_class.run(['test_1', 'test_2'])
 
         self.assertIn('Executed 2', test_class.results.summary_str(),
                       'One or more of the test cases did not execute.')
