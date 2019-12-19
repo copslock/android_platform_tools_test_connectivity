@@ -427,7 +427,7 @@ class WifiPingTest(base_test.BaseTestClass):
             wutils.wifi_connect(self.dut,
                                 testcase_params['test_network'],
                                 num_of_tries=5,
-                                check_connectivity=False)
+                                check_connectivity=True)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         if testcase_params['channel'] not in self.atten_dut_chain_map.keys():
             self.atten_dut_chain_map[testcase_params[
