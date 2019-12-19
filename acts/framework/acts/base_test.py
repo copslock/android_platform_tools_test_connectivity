@@ -805,7 +805,7 @@ class BaseTestClass(MoblyBaseTest):
                                      records.TestSummaryEntryType.RECORD)
             self._on_skip(record)
 
-    def run(self, test_names=None, test_case_iterations=1):
+    def run(self, test_names=None):
         """Runs test cases within a test class by the order they appear in the
         execution list.
 
@@ -869,6 +869,11 @@ class BaseTestClass(MoblyBaseTest):
             return self.results
 
         # Run tests in order.
+        test_case_iterations = self.user_params.get(
+            keys.Config.key_test_case_iterations.value, 1)
+        if any([substr in self.__class__.__name__ for substr in
+                ['Preflight', 'Postflight']]):
+            test_case_iterations = 1
         try:
             for test_name, test_func in tests:
                 for _ in range(test_case_iterations):

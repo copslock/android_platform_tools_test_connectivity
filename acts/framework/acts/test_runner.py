@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import itertools
+
 from future import standard_library
 
 standard_library.install_aliases()
@@ -240,17 +241,9 @@ class TestRunner(object):
 
         for test_cls_name_match in matches:
             test_cls = self.test_classes[test_cls_name_match]
-            if 'Preflight' in test_cls_name_match or (
-                    'Postflight' in test_cls_name_match):
-                test_case_iterations = 1
-            else:
-                test_case_iterations = self.test_run_config.user_params.get(
-                    keys.Config.key_test_case_iterations.value, 1)
-
             test_cls_instance = test_cls(self.test_run_config)
             try:
-                cls_result = test_cls_instance.run(test_cases,
-                                                   test_case_iterations)
+                cls_result = test_cls_instance.run(test_cases)
                 self.results += cls_result
             except signals.TestAbortAll as e:
                 self.results += e.results
