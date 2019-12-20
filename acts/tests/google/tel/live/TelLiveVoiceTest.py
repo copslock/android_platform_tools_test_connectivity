@@ -38,6 +38,7 @@ from acts.test_utils.tel.tel_defines import PHONE_TYPE_CDMA
 from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
+from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
@@ -136,9 +137,12 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         for iteration in range(3):
             result = True
             ad.log.info("Attempt %d", iteration + 1)
-            if not initiate_call(ad.log, ad, STORY_LINE) and \
-                                 wait_for_in_call_active(ad, 60, 3):
+            if not initiate_call(ad.log, ad, STORY_LINE):
                 ad.log.error("Call Failed to Initiate")
+                result = False
+                continue
+            if not wait_for_in_call_active(ad, 60, 3):
+                ad.log.error("Waiting for Call in Active Failed")
                 result = False
             time.sleep(WAIT_TIME_IN_CALL)
             if not is_phone_in_call(ad.log, ad):
@@ -150,6 +154,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             if result:
                 ad.log.info("Call test PASS in iteration %d", iteration + 1)
                 return True
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ad.log.info("Call test FAIL in all 3 iterations")
         return False
 
