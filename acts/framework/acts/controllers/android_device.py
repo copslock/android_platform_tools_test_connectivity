@@ -473,7 +473,8 @@ class AndroidDevice:
             'serial': self.serial,
             'model': self.model,
             'build_info': self.build_info,
-            'user_added_info': self._user_added_device_info
+            'user_added_info': self._user_added_device_info,
+            'flavor': self.flavor
         }
         return info
 
@@ -524,6 +525,11 @@ class AndroidDevice:
             return model
         else:
             return self.adb.getprop("ro.product.name").lower()
+
+    @property
+    def flavor(self):
+        """Returns the specific flavor of Android build the device is using."""
+        return self.adb.getprop("ro.build.flavor").lower()
 
     @property
     def droid(self):
