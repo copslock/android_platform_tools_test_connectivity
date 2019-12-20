@@ -96,6 +96,7 @@ from acts.test_utils.tel.tel_subscription_utils import get_carrierid_from_slot_i
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_subscription_utils import set_slways_allow_mms_data
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
@@ -960,6 +961,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         if not call_verification_func:
             call_verification_func = is_phone_in_call
         self.finishing_time = time.time() + self.max_run_time
+        # CBRS setup
         if self.cbrs_esim:
             cbrs_sub_count = 0
             for ad in self.android_devices:
@@ -976,6 +978,15 @@ class TelLiveStressTest(TelephonyBaseTest):
             if cbrs_sub_count != 2:
                 self.log.error("Expecting - 2 CBRS subs, found - %d", cbrs_sub_count)
                 raise signals.TestAbortClass("Cannot find all expected CBRS subs")
+        # DSDS setup
+        if self.dsds_esim:
+            for ad in self.android_devices:
+                for i in range(0, 2):
+                    sub_id = get_subid_from_slot_index(ad.log, ad, i)
+                    set_slways_allow_mms_data(ad, sub_id)
+                    operator = get_operatorname_from_slot_index(ad, i)
+                    ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
+        # Actual test trigger
         if not self.dsds_esim and self.check_incall_data():
             self.log.info(
                 "==== Start parallel voice/message/data stress test ====")
