@@ -189,6 +189,14 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.power_logger.set_avg_power(self.power_result.metric_value)
         self.power_logger.set_testbed(self.testbed_name)
 
+        build_id = self.dut.build_info.get('incremental_build_id')
+        branch = self.user_params.get('branch')
+        target = self.dut.device_info.get('flavor')
+
+        self.power_logger.set_branch(branch)
+        self.power_logger.set_build_id(build_id)
+        self.power_logger.set_target(target)
+
         # Take Bugreport
         if self.bug_report:
             begin_time = utils.get_current_epoch_time()
