@@ -19,6 +19,9 @@ message PowerMetric {
   optional float avg_power = 1; // Required
   optional string testbed = 2; // Required
   optional PowerCellularMetric cellular_metric = 3;
+  optional string branch = 4;
+  optional string build_id = 5;
+  optional string target = 6;
 }
 
 message PowerCellularMetric {
