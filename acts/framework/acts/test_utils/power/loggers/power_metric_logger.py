@@ -48,6 +48,15 @@ class PowerMetricLogger(MetricLogger):
     def set_testbed(self, testbed):
         self.proto.testbed = testbed
 
+    def set_branch(self, branch):
+        self.proto.branch = branch
+
+    def set_build_id(self, build_id):
+        self.proto.build_id = build_id
+
+    def set_target(self, target):
+        self.proto.target = target
+
     def end(self, event):
         metric = ProtoMetric(name='spanner_power_metric', data=self.proto)
         return self.publisher.publish(metric)
