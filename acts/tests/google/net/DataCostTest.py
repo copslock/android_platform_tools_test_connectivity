@@ -65,6 +65,34 @@ class DataCostTest(base_test.BaseTestClass):
 
     """ Helper functions """
 
+    def _clear_netstats(self, ad):
+        """ Clear netstats stored on device
+
+        Args:
+            ad: Android device object
+        """
+        ad.log.info("Clear netstats record.")
+        ad.adb.shell("rm /data/system/netstats/*")
+        asserts.assert_equal("", ad.adb.shell("ls /data/system/netstats/"),
+                             "Fail to clear netstats.")
+        ad.reboot()
+        time.sleep(10)
+        self.check_multipath_preference_from_dumpsys(ad)
+
+    def _check_multipath_preference_from_dumpsys(self, ad):
+        """ Check cell multipath_preference from dumpsys
+
+        Args:
+            ad: Android device object
+        """
+        out = ad.adb.shell("dumpsys connectivity | grep budget")
+        asserts.assert_true(out, "Fail to get status from dumpsys.")
+        ad.log.info("MultipathPolicyTracker: %s" % out)
+        asserts.assert_true(
+            "HANDOVER|RELIABILITY" in out,
+            "Cell multipath preference should be HANDOVER|RELIABILITY."
+        )
+
     def _get_total_data_usage_for_device(self, ad, conn_type, sub_id):
         """ Get total data usage in MB for device
 
@@ -138,6 +166,8 @@ class DataCostTest(base_test.BaseTestClass):
         """
         # set vars
         ad = self.android_devices[0]
+        self._clear_netstats(ad)
+
         sub_id = str(ad.droid.telephonyGetSubscriberId())
         cell_network = ad.droid.connectivityGetActiveNetwork()
         self.log.info("cell network %s" % cell_network)
@@ -182,6 +212,8 @@ class DataCostTest(base_test.BaseTestClass):
         """
         # set vars
         ad = self.android_devices[1]
+        self._clear_netstats(ad)
+
         cell_network = ad.droid.connectivityGetActiveNetwork()
         self.log.info("cell network %s" % cell_network)
         wutils.wifi_connect(ad, self.wifi_network)
