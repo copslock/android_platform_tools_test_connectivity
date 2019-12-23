@@ -272,14 +272,15 @@ class WifiMacRandomizationTest(WifiBaseTest):
     @test_tracker_info(uuid="2dd0a05e-a318-45a6-81cd-962e098fa242")
     def test_set_mac_randomization_to_none(self):
         self.pcap_procs = wutils.start_pcap(
-            self.packet_capture, 'dual', self.log_path, self.test_name)
+            self.packet_capture, 'dual', self.test_name)
         network = self.wpapsk_2g
         # Set macRandomizationSetting to RANDOMIZATION_NONE.
         network["macRand"] = RANDOMIZATION_NONE
         self.connect_to_network_and_verify_mac_randomization(network,
             status=RANDOMIZATION_NONE)
-        pcap_fname = os.path.join(self.log_path, self.test_name,
-                                  (self.test_name + '_2G.pcap'))
+        pcap_fname = '%s_%s.pcap' % \
+            (self.pcap_procs[hostapd_constants.BAND_2G][1],
+             hostapd_constants.BAND_2G.upper())
         time.sleep(SHORT_TIMEOUT)
         wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         packets = rdpcap(pcap_fname)
@@ -461,14 +462,15 @@ class WifiMacRandomizationTest(WifiBaseTest):
         if not result:
             raise ValueError("Failed to configure channel for 2G band")
         self.pcap_procs = wutils.start_pcap(
-            self.packet_capture, 'dual', self.log_path, self.test_name)
+            self.packet_capture, 'dual', self.test_name)
         # re-connect to the softAp network after sniffer is started
         wutils.connect_to_wifi_network(self.dut_client, self.wpapsk_2g)
         wutils.connect_to_wifi_network(self.dut_client, softap)
         time.sleep(SHORT_TIMEOUT)
         wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
-        pcap_fname = os.path.join(self.log_path, self.test_name,
-                                  (self.test_name + '_2G.pcap'))
+        pcap_fname = '%s_%s.pcap' % \
+            (self.pcap_procs[hostapd_constants.BAND_2G][1],
+             hostapd_constants.BAND_2G.upper())
         packets = rdpcap(pcap_fname)
         self.verify_mac_not_found_in_pcap(self.soft_ap_factory_mac, packets)
         self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)
@@ -520,13 +522,14 @@ class WifiMacRandomizationTest(WifiBaseTest):
 
         """
         self.pcap_procs = wutils.start_pcap(
-            self.packet_capture, 'dual', self.log_path, self.test_name)
+            self.packet_capture, 'dual', self.test_name)
         time.sleep(SHORT_TIMEOUT)
         network = self.wpapsk_5g
         rand_mac = self.connect_to_network_and_verify_mac_randomization(network)
         wutils.send_link_probes(self.dut, 3, 3)
-        pcap_fname = os.path.join(self.log_path, self.test_name,
-                         (self.test_name + '_5G.pcap'))
+        pcap_fname = '%s_%s.pcap' % \
+            (self.pcap_procs[hostapd_constants.BAND_5G][1],
+             hostapd_constants.BAND_5G.upper())
         wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         time.sleep(SHORT_TIMEOUT)
         packets = rdpcap(pcap_fname)
@@ -546,11 +549,12 @@ class WifiMacRandomizationTest(WifiBaseTest):
 
         """
         self.pcap_procs = wutils.start_pcap(
-            self.packet_capture, 'dual', self.log_path, self.test_name)
+            self.packet_capture, 'dual', self.test_name)
         wutils.start_wifi_connection_scan(self.dut)
         time.sleep(SHORT_TIMEOUT)
         wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
-        pcap_fname = os.path.join(self.log_path, self.test_name,
-                                  (self.test_name + '_2G.pcap'))
+        pcap_fname = '%s_%s.pcap' % \
+            (self.pcap_procs[hostapd_constants.BAND_2G][1],
+             hostapd_constants.BAND_2G.upper())
         packets = rdpcap(pcap_fname)
         self.verify_mac_not_found_in_pcap(self.sta_factory_mac, packets)

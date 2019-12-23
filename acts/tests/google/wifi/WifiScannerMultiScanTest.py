@@ -231,6 +231,14 @@ class WifiScannerMultiScanTest(WifiBaseTest):
 
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
+        self.tests = (
+            'test_wifi_two_scans_at_same_interval',
+            'test_wifi_two_scans_at_different_interval',
+            'test_wifi_scans_24GHz_and_both',
+            'test_wifi_scans_5GHz_and_both',
+            'test_wifi_scans_batch_and_24GHz',
+            'test_wifi_scans_batch_and_5GHz',
+            'test_wifi_scans_24GHz_5GHz_full_result',)
 
     def setup_class(self):
         # If running in a setup with attenuators, set attenuation on all

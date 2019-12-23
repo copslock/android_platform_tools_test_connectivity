@@ -25,7 +25,7 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.wifi.p2p.WifiP2pBaseTest import WifiP2pBaseTest
 from acts.test_utils.wifi.p2p import wifi_p2p_test_utils as wp2putils
 from acts.test_utils.wifi.p2p import wifi_p2p_const as p2pconsts
-from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.ap_lib.hostapd_constants import BAND_2G
 from scapy.all import *
 
 WPS_PBC = wp2putils.WifiP2PEnums.WpsInfo.WIFI_WPS_INFO_PBC
@@ -53,7 +53,7 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
     def setup_test(self):
         super(WifiP2pSnifferTest, self).setup_test()
         self.pcap_procs = wutils.start_pcap(
-            self.packet_capture, '2g', self.log_path, self.test_name)
+            self.packet_capture, '2g', self.test_name)
 
     def teardown_test(self):
         self.verify_mac_no_leakage()
@@ -62,8 +62,7 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
     def configure_packet_capture(self):
         """Configure packet capture on the social channels."""
         self.packet_capture = self.packet_capture[0]
-        result = self.packet_capture.configure_monitor_mode(
-            hostapd_constants.BAND_2G, 6)
+        result = self.packet_capture.configure_monitor_mode(BAND_2G, 6)
         if not result:
             raise ValueError("Failed to configure channel for 2G band")
 
@@ -72,8 +71,8 @@ class WifiP2pSnifferTest(WifiP2pBaseTest):
         self.log.info("Stopping packet capture")
         wutils.stop_pcap(self.packet_capture, self.pcap_procs, False)
         # Verify factory MAC is not leaked in 2G pcaps
-        pcap_fname = os.path.join(self.log_path, self.test_name,
-                                  (self.test_name + '_2G.pcap'))
+        pcap_fname = '%s_%s.pcap' % (self.pcap_procs[BAND_2G][1],
+                                     BAND_2G.upper())
         packets = rdpcap(pcap_fname)
         wutils.verify_mac_not_found_in_pcap(self.dut1_mac, packets)
         wutils.verify_mac_not_found_in_pcap(self.dut2_mac, packets)

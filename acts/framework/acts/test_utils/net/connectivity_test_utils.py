@@ -14,6 +14,7 @@
 #   limitations under the License.
 
 from acts import asserts
+from acts.test_utils.net import connectivity_const as cconst
 
 def start_natt_keepalive(ad, src_ip, src_port, dst_ip, interval = 10):
     """ Start NAT-T keep alive on dut """
@@ -61,3 +62,17 @@ def stop_natt_keepalive(ad, key):
 
     ad.droid.connectivityRemovePacketKeepaliveReceiverKey(key)
     return status
+
+def set_private_dns(ad, dns_mode, hostname=None):
+    """ Set private DNS mode on dut """
+    if dns_mode == cconst.PRIVATE_DNS_MODE_OFF:
+        ad.droid.setPrivateDnsMode(False)
+    else:
+        ad.droid.setPrivateDnsMode(True, hostname)
+
+    mode = ad.droid.getPrivateDnsMode()
+    host = ad.droid.getPrivateDnsSpecifier()
+    ad.log.info("DNS mode is %s and DNS server is %s" % (mode, host))
+    asserts.assert_true(dns_mode == mode and host == hostname,
+                        "Failed to set DNS mode to %s and DNS to %s" % \
+                        (dns_mode, hostname))

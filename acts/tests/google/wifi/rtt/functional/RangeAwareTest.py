@@ -274,22 +274,22 @@ class RangeAwareTest(AwareBaseTest, RttBaseTest):
                 "Missing (timed-out) results",
                 extras=extras)
             asserts.assert_false(
-                stats['any_lci_mismatch'], "LCI mismatch", extras=extras)
+                stats_reverse_direction['any_lci_mismatch'], "LCI mismatch", extras=extras)
             asserts.assert_false(
-                stats['any_lcr_mismatch'], "LCR mismatch", extras=extras)
+                stats_reverse_direction['any_lcr_mismatch'], "LCR mismatch", extras=extras)
             asserts.assert_equal(
-                stats['num_invalid_rssi'], 0, "Invalid RSSI", extras=extras)
+                stats_reverse_direction['num_invalid_rssi'], 0, "Invalid RSSI", extras=extras)
             asserts.assert_true(
                 stats_reverse_direction['num_failures'] <=
                 self.rtt_max_failure_rate_two_sided_rtt_percentage *
-                stats['num_results'] / 100,
+                stats_reverse_direction['num_results'] / 100,
                 "Failure rate is too high",
                 extras=extras)
             if accuracy_evaluation:
                 asserts.assert_true(
                     stats_reverse_direction['num_range_out_of_margin'] <=
                     self.rtt_max_margin_exceeded_rate_two_sided_rtt_percentage *
-                    stats['num_success_results'] / 100,
+                    stats_reverse_direction['num_success_results'] / 100,
                     "Results exceeding error margin rate is too high",
                     extras=extras)
 
