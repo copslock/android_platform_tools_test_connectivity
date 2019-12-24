@@ -77,7 +77,7 @@ class DataCostTest(base_test.BaseTestClass):
                              "Fail to clear netstats.")
         ad.reboot()
         time.sleep(10)
-        self.check_multipath_preference_from_dumpsys(ad)
+        self._check_multipath_preference_from_dumpsys(ad)
 
     def _check_multipath_preference_from_dumpsys(self, ad):
         """ Check cell multipath_preference from dumpsys
