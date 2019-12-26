@@ -17,6 +17,7 @@
 import json
 import logging
 import math
+import IPy
 import os
 import shlex
 import subprocess
@@ -36,6 +37,10 @@ from acts.libs.proc import job
 
 ACTS_CONTROLLER_CONFIG_NAME = 'IPerfServer'
 ACTS_CONTROLLER_REFERENCE_NAME = 'iperf_servers'
+KILOBITS = 1024
+MEGABITS = KILOBITS * 1024
+GIGABITS = MEGABITS * 1024
+BITS_IN_BYTE = 8
 
 
 def create(configs):
@@ -56,12 +61,24 @@ def create(configs):
         elif type(c) is dict and 'AndroidDevice' in c and 'port' in c:
             results.append(IPerfServerOverAdb(c['AndroidDevice'], c['port']))
         elif type(c) is dict and 'ssh_config' in c and 'port' in c:
-            results.append(IPerfServerOverSsh(c['ssh_config'], c['port']))
+            results.append(
+                IPerfServerOverSsh(c['ssh_config'],
+                                   c['port'],
+                                   test_interface=c.get('test_interface')))
         else:
             raise ValueError(
                 'Config entry %s in %s is not a valid IPerfServer '
                 'config.' % (repr(c), configs))
     return results
+
+
+def get_info(iperf_servers):
+    """Placeholder for info about iperf servers
+
+    Returns:
+        None
+    """
+    return None
 
 
 def destroy(iperf_server_list):
@@ -73,7 +90,7 @@ def destroy(iperf_server_list):
 
 
 class IPerfResult(object):
-    def __init__(self, result_path):
+    def __init__(self, result_path, reporting_speed_units='Mbytes'):
         """Loads iperf result from file.
 
         Loads iperf result from JSON formatted server log. File can be accessed
@@ -82,6 +99,7 @@ class IPerfResult(object):
         containing multiple iperf client runs.
         """
         # if result_path isn't a path, treat it as JSON
+        self.reporting_speed_units = reporting_speed_units
         if not os.path.exists(result_path):
             self.result = json.loads(result_path)
         else:
@@ -89,8 +107,8 @@ class IPerfResult(object):
                 with open(result_path, 'r') as f:
                     iperf_output = f.readlines()
                     if '}\n' in iperf_output:
-                        iperf_output = iperf_output[:iperf_output.index('}\n')
-                                                    + 1]
+                        iperf_output = iperf_output[:iperf_output.index('}\n'
+                                                                        ) + 1]
                     iperf_string = ''.join(iperf_output)
                     iperf_string = iperf_string.replace('nan', '0')
                     self.result = json.loads(iperf_string)
@@ -109,6 +127,33 @@ class IPerfResult(object):
         """
         return ('end' in self.result) and ('sum_received' in self.result['end']
                                            or 'sum' in self.result['end'])
+
+    def _get_reporting_speed(self, network_speed_in_bits_per_second):
+        """Sets the units for the network speed reporting based on how the
+        object was initiated.  Defaults to Megabytes per second.  Currently
+        supported, bits per second (bits), kilobits per second (kbits), megabits
+        per second (mbits), gigabits per second (gbits), bytes per second
+        (bytes), kilobits per second (kbytes), megabits per second (mbytes),
+        gigabytes per second (gbytes).
+
+        Args:
+            network_speed_in_bits_per_second: The network speed from iperf in
+                bits per second.
+
+        Returns:
+            The value of the throughput in the appropriate units.
+        """
+        speed_divisor = 1
+        print(self.reporting_speed_units)
+        if self.reporting_speed_units[1:].lower() == 'bytes':
+            speed_divisor = speed_divisor * BITS_IN_BYTE
+        if self.reporting_speed_units[0:1].lower() == 'k':
+            speed_divisor = speed_divisor * KILOBITS
+        if self.reporting_speed_units[0:1].lower() == 'm':
+            speed_divisor = speed_divisor * MEGABITS
+        if self.reporting_speed_units[0:1].lower() == 'g':
+            speed_divisor = speed_divisor * GIGABITS
+        return network_speed_in_bits_per_second / speed_divisor
 
     def get_json(self):
         """Returns the raw json output from iPerf."""
@@ -131,7 +176,7 @@ class IPerfResult(object):
         if not self._has_data() or 'sum' not in self.result['end']:
             return None
         bps = self.result['end']['sum']['bits_per_second']
-        return bps / 8 / 1024 / 1024
+        return self._get_reporting_speed(bps)
 
     @property
     def avg_receive_rate(self):
@@ -143,7 +188,7 @@ class IPerfResult(object):
         if not self._has_data() or 'sum_received' not in self.result['end']:
             return None
         bps = self.result['end']['sum_received']['bits_per_second']
-        return bps / 8 / 1024 / 1024
+        return self._get_reporting_speed(bps)
 
     @property
     def avg_send_rate(self):
@@ -155,7 +200,7 @@ class IPerfResult(object):
         if not self._has_data() or 'sum_sent' not in self.result['end']:
             return None
         bps = self.result['end']['sum_sent']['bits_per_second']
-        return bps / 8 / 1024 / 1024
+        return self._get_reporting_speed(bps)
 
     @property
     def instantaneous_rates(self):
@@ -167,7 +212,7 @@ class IPerfResult(object):
         if not self._has_data():
             return None
         intervals = [
-            interval['sum']['bits_per_second'] / 8 / 1024 / 1024
+            self._get_reporting_speed(interval['sum']['bits_per_second'])
             for interval in self.result['intervals']
         ]
         return intervals
@@ -199,10 +244,11 @@ class IPerfResult(object):
         """
         if not self._has_data():
             return None
-        instantaneous_rates = self.instantaneous_rates[iperf_ignored_interval:
-                                                       -1]
+        instantaneous_rates = self.instantaneous_rates[
+            iperf_ignored_interval:-1]
         avg_rate = math.fsum(instantaneous_rates) / len(instantaneous_rates)
-        sqd_deviations = [(rate - avg_rate) ** 2 for rate in instantaneous_rates]
+        sqd_deviations = ([(rate - avg_rate)**2
+                           for rate in instantaneous_rates])
         std_dev = math.sqrt(
             math.fsum(sqd_deviations) / (len(sqd_deviations) - 1))
         return std_dev
@@ -256,7 +302,7 @@ class IPerfServerBase(object):
         Note: If the directory for the file path does not exist, it will be
         created.
 
-        Args:
+        Args:s
             tag: The tag passed in to the server run.
         """
         out_dir = self.log_path
@@ -297,7 +343,6 @@ def _get_port_from_ss_output(ss_output, pid):
 
 class IPerfServer(IPerfServerBase):
     """Class that handles iperf server commands on localhost."""
-
     def __init__(self, port=5201):
         super().__init__(port)
         self._hinted_port = port
@@ -335,8 +380,9 @@ class IPerfServer(IPerfServerBase):
         if self._last_opened_file:
             self._last_opened_file.close()
         self._last_opened_file = open(self._current_log_file, 'w')
-        self._iperf_process = subprocess.Popen(
-            command, stdout=self._last_opened_file, stderr=subprocess.DEVNULL)
+        self._iperf_process = subprocess.Popen(command,
+                                               stdout=self._last_opened_file,
+                                               stderr=subprocess.DEVNULL)
         for attempts_left in reversed(range(3)):
             try:
                 self._port = int(
@@ -374,15 +420,22 @@ class IPerfServer(IPerfServerBase):
 
 class IPerfServerOverSsh(IPerfServerBase):
     """Class that handles iperf3 operations on remote machines."""
-
-    def __init__(self, ssh_config, port):
+    def __init__(self, ssh_config, port, test_interface=None):
         super().__init__(port)
         ssh_settings = settings.from_config(ssh_config)
         self._ssh_session = connection.SshConnection(ssh_settings)
 
-        self._iperf_command = 'iperf3 -s -J -p {}'.format(self.port)
         self._iperf_pid = None
         self._current_tag = None
+        self.hostname = ssh_settings.hostname
+        try:
+            # A test interface can only be found if an ip address is specified.
+            # A fully qualified hostname will return None for the
+            # test_interface.
+            self.test_interface = self._get_test_interface_based_on_ip(
+                test_interface)
+        except Exception:
+            self.test_interface = None
 
     @property
     def port(self):
@@ -395,20 +448,69 @@ class IPerfServerOverSsh(IPerfServerBase):
     def _get_remote_log_path(self):
         return 'iperf_server_port%s.log' % self.port
 
-    def start(self, extra_args='', tag=''):
+    def _get_test_interface_based_on_ip(self, test_interface):
+        """Gets the test interface for a particular IP if the test interface
+            passed in test_interface is None
+
+        Args:
+            test_interface: Either a interface name, ie eth0, or None
+
+        Returns:
+            The name of the test interface.
+        """
+        if test_interface:
+            return test_interface
+        return utils.get_interface_based_on_ip(self._ssh_session,
+                                               self.hostname)
+
+    def get_interface_ip_addresses(self, interface):
+        """Gets all of the ip addresses, ipv4 and ipv6, associated with a
+           particular interface name.
+
+        Args:
+            interface: The interface name on the device, ie eth0
+
+    Returns:
+        A list of dictionaries of the the various IP addresses:
+            ipv4_private_local_addresses: Any 192.168, 172.16, or 10
+                addresses
+            ipv4_public_addresses: Any IPv4 public addresses
+            ipv6_link_local_addresses: Any fe80:: addresses
+            ipv6_private_local_addresses: Any fd00:: addresses
+            ipv6_public_addresses: Any publicly routable addresses
+    """
+        return utils.get_interface_ip_addresses(self._ssh_session, interface)
+
+    def renew_test_interface_ip_address(self):
+        """Renews the test interface's IP address.  Necessary for changing
+           DHCP scopes during a test.
+        """
+        utils.renew_linux_ip_address(self._ssh_session, self.test_interface)
+
+    def start(self, extra_args='', iperf_binary=None, tag=''):
         """Starts iperf server on specified machine and port.
 
         Args:
             extra_args: A string representing extra arguments to start iperf
                 server with.
+            iperf_binary: Location of iperf3 binary. If none, it is assumed the
+                the binary is in the path.
             tag: Appended to log file name to identify logs from different
                 iperf runs.
         """
         if self.started:
             return
 
+        if not iperf_binary:
+            logging.debug('No iperf3 binary specified.  '
+                          'Assuming iperf3 is in the path.')
+            iperf_binary = 'iperf3'
+        else:
+            logging.debug('Using iperf3 binary located at %s' % iperf_binary)
+        iperf_command = '{} -s -J -p {}'.format(iperf_binary, self.port)
+
         cmd = '{cmd} {extra_flags} > {log_file}'.format(
-            cmd=self._iperf_command,
+            cmd=iperf_command,
             extra_flags=extra_args,
             log_file=self._get_remote_log_path())
 
@@ -463,8 +565,10 @@ class _AndroidDeviceBridge(object):
         """
         if not _AndroidDeviceBridge._test_class:
             return {}
-        return {device.serial: device
-                for device in _AndroidDeviceBridge._test_class.android_devices}
+        return {
+            device.serial: device
+            for device in _AndroidDeviceBridge._test_class.android_devices
+        }
 
 
 event_bus.register_subscription(
@@ -474,7 +578,6 @@ event_bus.register_subscription(_AndroidDeviceBridge.on_test_end.subscription)
 
 class IPerfServerOverAdb(IPerfServerBase):
     """Class that handles iperf3 operations over ADB devices."""
-
     def __init__(self, android_device_or_serial, port):
         """Creates a new IPerfServerOverAdb object.
 
@@ -488,7 +591,6 @@ class IPerfServerOverAdb(IPerfServerBase):
         super().__init__(port)
         self._android_device_or_serial = android_device_or_serial
 
-        self._iperf_command = 'iperf3 -s -J -p {}'.format(self.port)
         self._iperf_process = None
         self._current_tag = ''
 
@@ -511,21 +613,31 @@ class IPerfServerOverAdb(IPerfServerBase):
     def _get_device_log_path(self):
         return '~/data/iperf_server_port%s.log' % self.port
 
-    def start(self, extra_args='', tag=''):
+    def start(self, extra_args='', iperf_binary=None, tag=''):
         """Starts iperf server on an ADB device.
 
         Args:
             extra_args: A string representing extra arguments to start iperf
                 server with.
+            iperf_binary: Location of iperf3 binary. If none, it is assumed the
+                the binary is in the path.
             tag: Appended to log file name to identify logs from different
                 iperf runs.
         """
         if self._iperf_process is not None:
             return
 
+        if not iperf_binary:
+            logging.debug('No iperf3 binary specified.  '
+                          'Assuming iperf3 is in the path.')
+            iperf_binary = 'iperf3'
+        else:
+            logging.debug('Using iperf3 binary located at %s' % iperf_binary)
+        iperf_command = '{} -s -J -p {}'.format(iperf_binary, self.port)
+
         self._iperf_process = self._android_device.adb.shell_nb(
             '{cmd} {extra_flags} > {log_file}'.format(
-                cmd=self._iperf_command,
+                cmd=iperf_command,
                 extra_flags=extra_args,
                 log_file=self._get_device_log_path()))
         self._iperf_process_adb_pid = ''
