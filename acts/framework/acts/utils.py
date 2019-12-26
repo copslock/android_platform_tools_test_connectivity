@@ -19,6 +19,7 @@ import concurrent.futures
 import copy
 import datetime
 import functools
+import IPy
 import json
 import logging
 import os
@@ -1381,3 +1382,97 @@ def merge_dicts(*dict_args):
 def ascii_string(uc_string):
     """Converts unicode string to ascii"""
     return str(uc_string).encode('ASCII')
+
+
+def get_interface_ip_addresses(comm_channel, interface):
+    """Gets all of the ip addresses, ipv4 and ipv6, associated with a
+       particular interface name.
+
+    Args:
+        comm_channel: How to send commands to a device.  Can be ssh, adb serial,
+            etc.  Must have the run function implemented.
+        interface: The interface name on the device, ie eth0
+
+    Returns:
+        A list of dictionaries of the the various IP addresses:
+            ipv4_private_local_addresses: Any 192.168, 172.16, or 10
+                addresses
+            ipv4_public_addresses: Any IPv4 public addresses
+            ipv6_link_local_addresses: Any fe80:: addresses
+            ipv6_private_local_addresses: Any fd00:: addresses
+            ipv6_public_addresses: Any publicly routable addresses
+    """
+    ipv4_private_local_addresses = []
+    ipv4_public_addresses = []
+    ipv6_link_local_addresses = []
+    ipv6_private_local_addresses = []
+    ipv6_public_addresses = []
+    all_interfaces_and_addresses = comm_channel.run(
+        'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
+        'print $2" "$4}\'').stdout
+    ifconfig_output = comm_channel.run('ifconfig %s' % interface).stdout
+    for interface_line in all_interfaces_and_addresses.split('\n'):
+        if interface != interface_line.split()[0]:
+            continue
+        on_device_ip = IPy.IP(interface_line.split()[1])
+        if on_device_ip.version() is 4:
+            if on_device_ip.iptype() == 'PRIVATE':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv4_private_local_addresses.append(
+                        on_device_ip.strNormal())
+            elif on_device_ip.iptype() == 'PUBLIC':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv4_public_addresses.append(on_device_ip.strNormal())
+        elif on_device_ip.version() is 6:
+            if on_device_ip.iptype() == 'LINKLOCAL':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_link_local_addresses.append(on_device_ip.strNormal())
+            elif on_device_ip.iptype() == 'ULA':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_private_local_addresses.append(
+                        on_device_ip.strNormal())
+            elif 'ALLOCATED' in on_device_ip.iptype():
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_public_addresses.append(on_device_ip.strNormal())
+    return {
+        'ipv4_private': ipv4_private_local_addresses,
+        'ipv4_public': ipv4_public_addresses,
+        'ipv6_link_local': ipv6_link_local_addresses,
+        'ipv6_private_local': ipv6_private_local_addresses,
+        'ipv6_public': ipv6_public_addresses
+    }
+
+
+def get_interface_based_on_ip(comm_channel, desired_ip_address):
+    """Gets the interface for a particular IP
+
+    Args:
+        comm_channel: How to send commands to a device.  Can be ssh, adb serial,
+            etc.  Must have the run function implemented.
+        desired_ip_address: The IP address that is being looked for on a device.
+
+    Returns:
+        The name of the test interface.
+    """
+
+    desired_ip_address = desired_ip_address.split('%', 1)[0]
+    all_ips_and_interfaces = comm_channel.run(
+        '(ip -o -4 addr show; ip -o -6 addr show) | '
+        'awk \'{print $2" "$4}\'').stdout
+    #ipv4_addresses = comm_channel.run(
+    #    'ip -o -4 addr show| awk \'{print $2": "$4}\'').stdout
+    #ipv6_addresses = comm_channel._ssh_session.run(
+    #    'ip -o -6 addr show| awk \'{print $2": "$4}\'').stdout
+    #if desired_ip_address in ipv4_addresses:
+    #    ip_addresses_to_search = ipv4_addresses
+    #elif desired_ip_address in ipv6_addresses:
+    #    ip_addresses_to_search = ipv6_addresses
+    for ip_address_and_interface in all_ips_and_interfaces.split('\n'):
+        if desired_ip_address in ip_address_and_interface:
+            return ip_address_and_interface.split()[1][:-1]
+    return None
+
+
+def renew_linux_ip_address(comm_channel, interface):
+    comm_channel.run('sudo dhclient -r %s' % interface)
+    comm_channel.run('sudo dhclient %s' % interface)
