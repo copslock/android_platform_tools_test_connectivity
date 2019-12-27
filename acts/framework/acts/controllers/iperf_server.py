@@ -487,16 +487,16 @@ class IPerfServerOverSsh(IPerfServerBase):
         """
         utils.renew_linux_ip_address(self._ssh_session, self.test_interface)
 
-    def start(self, extra_args='', iperf_binary=None, tag=''):
+    def start(self, extra_args='', tag='', iperf_binary=None):
         """Starts iperf server on specified machine and port.
 
         Args:
             extra_args: A string representing extra arguments to start iperf
                 server with.
-            iperf_binary: Location of iperf3 binary. If none, it is assumed the
-                the binary is in the path.
             tag: Appended to log file name to identify logs from different
                 iperf runs.
+            iperf_binary: Location of iperf3 binary. If none, it is assumed the
+                the binary is in the path.
         """
         if self.started:
             return
@@ -613,16 +613,16 @@ class IPerfServerOverAdb(IPerfServerBase):
     def _get_device_log_path(self):
         return '~/data/iperf_server_port%s.log' % self.port
 
-    def start(self, extra_args='', iperf_binary=None, tag=''):
+    def start(self, extra_args='', tag='', iperf_binary=None):
         """Starts iperf server on an ADB device.
 
         Args:
             extra_args: A string representing extra arguments to start iperf
                 server with.
-            iperf_binary: Location of iperf3 binary. If none, it is assumed the
-                the binary is in the path.
             tag: Appended to log file name to identify logs from different
                 iperf runs.
+            iperf_binary: Location of iperf3 binary. If none, it is assumed the
+                the binary is in the path.
         """
         if self._iperf_process is not None:
             return
