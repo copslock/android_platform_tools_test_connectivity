@@ -25,8 +25,8 @@ def validate_setup_ap_and_associate(*args, **kwargs):
 
        Args: Args match setup_ap_and_associate
     """
-    asserts.assert_true(
-        setup_ap_and_associate(*args, **kwargs), 'Failed to associate.')
+    asserts.assert_true(setup_ap_and_associate(*args, **kwargs),
+                        'Failed to associate.')
     asserts.explicit_pass('Successfully associated.')
 
 
@@ -49,7 +49,8 @@ def setup_ap_and_associate(access_point,
                            check_connectivity=False,
                            n_capabilities=None,
                            ac_capabilities=None,
-                           vht_bandwidth=None):
+                           vht_bandwidth=None,
+                           setup_bridge=False):
     """Sets up the AP and associates a client.
 
     Args:
@@ -73,14 +74,13 @@ def setup_ap_and_associate(access_point,
              beacon_interval, dtim_period, frag_threshold, rts_threshold,
              force_wmm, hidden, security, additional_ap_parameters, password,
              check_connectivity, n_capabilities, ac_capabilities,
-             vht_bandwidth)
+             vht_bandwidth, setup_bridge)
 
-    return associate(
-        client,
-        ssid,
-        password,
-        check_connectivity=check_connectivity,
-        hidden=hidden)
+    return associate(client,
+                     ssid,
+                     password,
+                     check_connectivity=check_connectivity,
+                     hidden=hidden)
 
 
 def setup_ap(access_point,
@@ -101,7 +101,8 @@ def setup_ap(access_point,
              check_connectivity=False,
              n_capabilities=None,
              ac_capabilities=None,
-             vht_bandwidth=None):
+             vht_bandwidth=None,
+             setup_bridge=False):
     """Sets up the AP.
 
     Args:
@@ -120,27 +121,27 @@ def setup_ap(access_point,
         password: Password to connect to WLAN if necessary.
         check_connectivity: Whether to check for internet connectivity.
     """
-    ap = hostapd_ap_preset.create_ap_preset(
-        profile_name=profile_name,
-        iface_wlan_2g=access_point.wlan_2g,
-        iface_wlan_5g=access_point.wlan_5g,
-        channel=channel,
-        ssid=ssid,
-        mode=mode,
-        short_preamble=preamble,
-        beacon_interval=beacon_interval,
-        dtim_period=dtim_period,
-        frag_threshold=frag_threshold,
-        rts_threshold=rts_threshold,
-        force_wmm=force_wmm,
-        hidden=hidden,
-        bss_settings=[],
-        security=security,
-        n_capabilities=n_capabilities,
-        ac_capabilities=ac_capabilities,
-        vht_bandwidth=vht_bandwidth)
-    access_point.start_ap(
-        hostapd_config=ap, additional_parameters=additional_ap_parameters)
+    ap = hostapd_ap_preset.create_ap_preset(profile_name=profile_name,
+                                            iface_wlan_2g=access_point.wlan_2g,
+                                            iface_wlan_5g=access_point.wlan_5g,
+                                            channel=channel,
+                                            ssid=ssid,
+                                            mode=mode,
+                                            short_preamble=preamble,
+                                            beacon_interval=beacon_interval,
+                                            dtim_period=dtim_period,
+                                            frag_threshold=frag_threshold,
+                                            rts_threshold=rts_threshold,
+                                            force_wmm=force_wmm,
+                                            hidden=hidden,
+                                            bss_settings=[],
+                                            security=security,
+                                            n_capabilities=n_capabilities,
+                                            ac_capabilities=ac_capabilities,
+                                            vht_bandwidth=vht_bandwidth)
+    access_point.start_ap(hostapd_config=ap,
+                          setup_bridge=setup_bridge,
+                          additional_parameters=additional_ap_parameters)
 
 
 def associate(client,
@@ -157,8 +158,10 @@ def associate(client,
         check_connectivity: Whether to check internet connectivity.
         hidden: If the WLAN is hidden or not.
     """
-    return client.associate(
-        ssid, password, check_connectivity=check_connectivity, hidden=hidden)
+    return client.associate(ssid,
+                            password,
+                            check_connectivity=check_connectivity,
+                            hidden=hidden)
 
 
 def status(client):
