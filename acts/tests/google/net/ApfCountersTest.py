@@ -26,6 +26,7 @@ import acts.test_utils.wifi.wifi_test_utils as wutils
 import copy
 import os
 import random
+import threading
 import time
 
 WifiEnums = wutils.WifiEnums
@@ -37,6 +38,8 @@ PROC_NET_SNMP6 = '/proc/net/snmp6'
 LIFETIME_FRACTION = 6
 LIFETIME = 180
 INTERVAL = 2
+APF_THRESHOLD = 150 * 1024
+MONITOR_TRAFFIC = threading.Lock()
 
 
 class ApfCountersTest(WifiBaseTest):
@@ -74,14 +77,18 @@ class ApfCountersTest(WifiBaseTest):
         self.tcpdump_pid = None
 
     def setup_test(self):
+        self.dut.adb.shell("pm disable com.android.vending")
         self.tcpdump_pid = start_tcpdump(self.dut, self.test_name)
 
     def teardown_test(self):
+        self.dut.adb.shell("pm enable com.android.vending")
         stop_tcpdump(self.dut, self.tcpdump_pid, self.test_name)
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
+        if MONITOR_TRAFFIC.locked():
+            self.stop_monitor_rx_traffic_in_bytes()
 
     def teardown_class(self):
         if "AccessPoint" in self.user_params:
@@ -105,6 +112,53 @@ class ApfCountersTest(WifiBaseTest):
         self.dut.log.info("RA Count %s:" % ra_count)
         return ra_count
 
+    def _monitor_rx_traffic_in_bytes(self,
+                                     threshold=APF_THRESHOLD,
+                                     interval_second=INTERVAL):
+        """ Monitor if traffic over threshold that will disable apf.
+
+            Args:
+                threshold: the traffic that will disable apf
+                interval_second: the interval time to report
+        """
+        rx_bytes = self.dut.droid.getTotalRxBytes()
+        if MONITOR_TRAFFIC.locked():
+            self.dut.log.info("Start monitor traffic in the background.")
+        while MONITOR_TRAFFIC.locked():
+            time.sleep(interval_second)
+            rx_bytes_update = self.dut.droid.getTotalRxBytes()
+            rx_traffic = rx_bytes_update - rx_bytes
+            if rx_traffic > threshold:
+                self.log.warning("rx traffic : %s byte in %s second(s)" %
+                                 (rx_traffic, interval_second))
+            else:
+                self.log.debug(
+                    "rx traffic over threshold, %s byte in %s second(s)" %
+                    (rx_traffic, interval_second))
+            rx_bytes = rx_bytes_update
+
+    def start_monitor_rx_traffic_in_bytes(self):
+        """ Start thread for monitor traffic
+
+        Returns:
+            t : thread for monitor traffic
+        """
+        MONITOR_TRAFFIC.acquire()
+        t = threading.Thread(
+            target=self._monitor_rx_traffic_in_bytes, args=())
+        t.start()
+        return t
+
+    def stop_monitor_rx_traffic_in_bytes(self, thread=None):
+        """ Stop thread for monitor traffic
+
+        Args:
+            thread: thread for monitor traffic
+        """
+        if thread:
+            thread.join()
+        MONITOR_TRAFFIC.release()
+
     """ Tests """
 
     @test_tracker_info(uuid="bc8d3f27-582a-464a-be30-556f07b77ee1")
@@ -117,6 +171,9 @@ class ApfCountersTest(WifiBaseTest):
              for the next 30 seconds (1/6th of RA lifetime)
           3. The next RA packets should be accepted
         """
+
+        monitor_t = self.start_monitor_rx_traffic_in_bytes()
+
         # get mac address of the dut
         ap = self.access_points[0]
         wifi_network = copy.deepcopy(self.wpapsk_5g)
@@ -124,7 +181,7 @@ class ApfCountersTest(WifiBaseTest):
         wutils.connect_to_wifi_network(self.dut, wifi_network)
         mac_addr = self.dut.droid.wifiGetConnectionInfo()['mac_address']
         self.log.info("mac_addr %s" % mac_addr)
-        time.sleep(30) # wait 30 sec before sending RAs
+        time.sleep(30)  # wait 30 sec before sending RAs
 
         # get the current ra count
         ra_count = self._get_icmp6intype134()
@@ -160,6 +217,8 @@ class ApfCountersTest(WifiBaseTest):
                             "Device did not accept new RA after 1/6th time "
                             "interval. Device dropped a valid RA in sequence.")
 
+        self.stop_monitor_rx_traffic_in_bytes(monitor_t)
+
     @test_tracker_info(uuid="d2a0aff0-048c-475f-9bba-d90d8d9ebae3")
     def test_IPv6_RA_with_RTT(self):
         """Test if the device filters IPv6 RA packets with different re-trans time
@@ -178,7 +237,7 @@ class ApfCountersTest(WifiBaseTest):
         wutils.connect_to_wifi_network(self.dut, self.wpapsk_5g)
         mac_addr = self.dut.droid.wifiGetConnectionInfo()['mac_address']
         self.log.info("mac_addr %s" % mac_addr)
-        time.sleep(30) # wait 30 sec before sending RAs
+        time.sleep(30)  # wait 30 sec before sending RAs
 
         # get the current ra count
         ra_count = self._get_icmp6intype134()
