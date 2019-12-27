@@ -150,6 +150,7 @@ class AccessPoint(object):
         self.lan = self.interfaces.get_lan_interface()
         self.__initial_ap()
         self.scapy_install_path = None
+        self.setup_bridge = False
 
     def __initial_ap(self):
         """Initial AP interfaces.
@@ -179,7 +180,10 @@ class AccessPoint(object):
                 self.ssh.run(BRIDGE_DOWN)
                 self.ssh.run(BRIDGE_DEL)
 
-    def start_ap(self, hostapd_config, additional_parameters=None):
+    def start_ap(self,
+                 hostapd_config,
+                 setup_bridge=False,
+                 additional_parameters=None):
         """Starts as an ap using a set of configurations.
 
         This will start an ap on this host. To start an ap the controller
@@ -190,11 +194,13 @@ class AccessPoint(object):
 
         Args:
             hostapd_config: hostapd_config.HostapdConfig, The configurations
-                            to use when starting up the ap.
+                to use when starting up the ap.
+            setup_bridge: Whether to bridge the LAN interface WLAN interface.
+                Only one WLAN interface can be bridged with the LAN interface
+                and none of the guest networks can be bridged.
             additional_parameters: A dictionary of parameters that can sent
-                                   directly into the hostapd config file.  This
-                                   can be used for debugging and or adding one
-                                   off parameters into the config.
+                directly into the hostapd config file.  This can be used for
+                debugging and or adding one off parameters into the config.
 
         Returns:
             An identifier for each ssid being started. These identifiers can be
@@ -203,7 +209,6 @@ class AccessPoint(object):
         Raises:
             Error: When the ap can't be brought up.
         """
-
         if hostapd_config.frequency < 5000:
             interface = self.wlan_2g
             subnet = self._AP_2G_SUBNET
@@ -275,7 +280,12 @@ class AccessPoint(object):
         # the server will come up.
         interface_ip = ipaddress.ip_interface(
             '%s/%s' % (subnet.router, subnet.network.netmask))
-        self._ip_cmd.set_ipv4_address(interface, interface_ip)
+        if setup_bridge is True:
+            bridge_interface_name = 'br_lan'
+            self.create_bridge(bridge_interface_name, [interface, self.lan])
+            self._ip_cmd.set_ipv4_address(bridge_interface_name, interface_ip)
+        else:
+            self._ip_cmd.set_ipv4_address(interface, interface_ip)
         if hostapd_config.bss_lookup:
             # This loop goes through each interface that was setup for
             # hostapd and assigns the DHCP scopes that were defined but
@@ -442,6 +452,13 @@ class AccessPoint(object):
         del self._aps[identifier]
         if configured_subnets:
             self.start_dhcp(subnets=configured_subnets)
+        bridge_interfaces = self.interfaces.get_bridge_interface()
+        if bridge_interfaces:
+            for iface in bridge_interfaces:
+                BRIDGE_DOWN = 'ifconfig {} down'.format(iface)
+                BRIDGE_DEL = 'brctl delbr {}'.format(iface)
+                self.ssh.run(BRIDGE_DOWN)
+                self.ssh.run(BRIDGE_DEL)
 
     def stop_all_aps(self):
         """Stops all running aps on this device."""
