@@ -112,7 +112,7 @@ class IPerfClientBase(object):
 
         return os.path.join(full_out_dir, out_file_name)
 
-    def start(self, ip, iperf_args, tag, iperf_binary=None, timeout=3600):
+    def start(self, ip, iperf_args, tag, timeout=3600, iperf_binary=None):
         """Starts iperf client, and waits for completion.
 
         Args:
@@ -120,9 +120,9 @@ class IPerfClientBase(object):
             iperf_args: A string representing arguments to start iperf
                 client. Eg: iperf_args = "-t 10 -p 5001 -w 512k/-u -b 200M -J".
             tag: A string to further identify iperf results file
+            timeout: the maximum amount of time the iperf client can run.
             iperf_binary: Location of iperf3 binary. If none, it is assumed the
                 the binary is in the path.
-            timeout: the maximum amount of time the iperf client can run.
 
         Returns:
             full_out_path: iperf result path.
@@ -132,7 +132,7 @@ class IPerfClientBase(object):
 
 class IPerfClient(IPerfClientBase):
     """Class that handles iperf3 client operations."""
-    def start(self, ip, iperf_args, tag, iperf_binary=None, timeout=3600):
+    def start(self, ip, iperf_args, tag, timeout=3600, iperf_binary=None):
         """Starts iperf client, and waits for completion.
 
         Args:
@@ -140,9 +140,9 @@ class IPerfClient(IPerfClientBase):
             iperf_args: A string representing arguments to start iperf
             client. Eg: iperf_args = "-t 10 -p 5001 -w 512k/-u -b 200M -J".
             tag: tag to further identify iperf results file
+            timeout: unused.
             iperf_binary: Location of iperf3 binary. If none, it is assumed the
                 the binary is in the path.
-            timeout: unused.
 
         Returns:
             full_out_path: iperf result path.
@@ -178,7 +178,7 @@ class IPerfClientOverSsh(IPerfClientBase):
         self.hostname = self._ssh_settings.hostname
         self.test_interface = test_interface
 
-    def start(self, ip, iperf_args, tag, iperf_binary=None, timeout=3600):
+    def start(self, ip, iperf_args, tag, timeout=3600, iperf_binary=None):
         """Starts iperf client, and waits for completion.
 
         Args:
@@ -186,9 +186,9 @@ class IPerfClientOverSsh(IPerfClientBase):
             iperf_args: A string representing arguments to start iperf
             client. Eg: iperf_args = "-t 10 -p 5001 -w 512k/-u -b 200M -J".
             tag: tag to further identify iperf results file
+            timeout: the maximum amount of time to allow the iperf client to run
             iperf_binary: Location of iperf3 binary. If none, it is assumed the
                 the binary is in the path.
-            timeout: the maximum amount of time to allow the iperf client to run
 
         Returns:
             full_out_path: iperf result path.
@@ -244,7 +244,7 @@ class IPerfClientOverAdb(IPerfClientBase):
             return _AndroidDeviceBridge.android_devices()[
                 self._android_device_or_serial]
 
-    def start(self, ip, iperf_args, tag, iperf_binary=None, timeout=3600):
+    def start(self, ip, iperf_args, tag, timeout=3600, iperf_binary=None):
         """Starts iperf client, and waits for completion.
 
         Args:
@@ -252,9 +252,9 @@ class IPerfClientOverAdb(IPerfClientBase):
             iperf_args: A string representing arguments to start iperf
             client. Eg: iperf_args = "-t 10 -p 5001 -w 512k/-u -b 200M -J".
             tag: tag to further identify iperf results file
+            timeout: the maximum amount of time to allow the iperf client to run
             iperf_binary: Location of iperf3 binary. If none, it is assumed the
                 the binary is in the path.
-            timeout: the maximum amount of time to allow the iperf client to run
 
         Returns:
             The iperf result file path.
