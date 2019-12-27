@@ -48,17 +48,16 @@ def create(configs):
                 logging.error('Attempt %s to open connection to attenuator '
                               'failed: %s' % (attempt_number, e))
                 if attempt_number == _ATTENUATOR_OPEN_RETRIES:
-                    ping_output = job.run(
-                        'ping %s -c 1 -w 1' % ip_address, ignore_status=True)
+                    ping_output = job.run('ping %s -c 1 -w 1' % ip_address,
+                                          ignore_status=True)
                     if ping_output.exit_status == 1:
-                        logging.error(
-                            'Unable to ping attenuator at %s' % ip_address)
+                        logging.error('Unable to ping attenuator at %s' %
+                                      ip_address)
                     else:
-                        logging.error(
-                            'Able to ping attenuator at %s' % ip_address)
-                        job.run(
-                            'echo "q" | telnet %s %s' % (ip_address, port),
-                            ignore_status=True)
+                        logging.error('Able to ping attenuator at %s' %
+                                      ip_address)
+                        job.run('echo "q" | telnet %s %s' % (ip_address, port),
+                                ignore_status=True)
                     raise
         for i in range(inst_cnt):
             attn = Attenuator(attn_inst, idx=i)
@@ -72,13 +71,31 @@ def create(configs):
     return objs
 
 
+def get_info(attenuators):
+    """Get information on a list of Attenuator objects.
+
+    Args:
+        attenuators: A list of Attenuator objects.
+
+    Returns:
+        A list of dict, each representing info for Attenuator objects.
+    """
+    device_info = []
+    for attenuator in attenuators:
+        info = {
+            "Address": attenuator.instrument.address,
+            "Attenuator_Port": attenuator.idx
+        }
+        device_info.append(info)
+    return device_info
+
+
 def destroy(objs):
     for attn in objs:
         attn.instrument.close()
 
 
-def get_attenuators_for_device(device_attenuator_configs,
-                               attenuators,
+def get_attenuators_for_device(device_attenuator_configs, attenuators,
                                attenuator_key):
     """Gets the list of attenuators associated to a specified device and builds
     a list of the attenuator objects associated to the ip address in the
@@ -139,10 +156,11 @@ def get_attenuators_for_device(device_attenuator_configs,
         for attenuator_port in device_attenuator_config[attenuator_key]:
             for attenuator in attenuators:
                 if (attenuator.instrument.address ==
-                        device_attenuator_config['Address'] and
-                        attenuator.idx is attenuator_port):
+                        device_attenuator_config['Address']
+                        and attenuator.idx is attenuator_port):
                     attenuator_list.append(attenuator)
     return attenuator_list
+
 
 """Classes for accessing, managing, and manipulating attenuators.
 
@@ -244,7 +262,6 @@ class Attenuator(object):
     the physical implementation and allows the user to think only of attenuators
     regardless of their location.
     """
-
     def __init__(self, instrument, idx=0, offset=0):
         """This is the constructor for Attenuator
 
@@ -313,7 +330,6 @@ class AttenuatorGroup(object):
     convenience to the user and avoid re-implementation of helper functions and
     small loops scattered throughout user code.
     """
-
     def __init__(self, name=''):
         """This constructor for AttenuatorGroup
 
