@@ -23,6 +23,7 @@ from setuptools.command import test
 import sys
 
 install_requires = [
+    'backoff',
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',
     'mock',
