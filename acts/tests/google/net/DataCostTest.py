@@ -51,6 +51,8 @@ class DataCostTest(base_test.BaseTestClass):
         for ad in self.android_devices:
             nutils.verify_lte_data_and_tethering_supported(ad)
 
+        self.tcpdump_pid = None
+
     def teardown_class(self):
         """ Reset settings to default """
         for ad in self.android_devices:
@@ -58,6 +60,12 @@ class DataCostTest(base_test.BaseTestClass):
             ad.droid.connectivityFactoryResetNetworkPolicies(sub_id)
             ad.droid.connectivitySetDataWarningLimit(sub_id, -1)
             wutils.reset_wifi(ad)
+
+
+    def teardown_test(self):
+        if self.tcpdump_pid:
+            nutils.stop_tcpdump(self.dut, self.tcpdump_pid, self.test_name)
+            self.tcpdump_pid = None
 
     def on_fail(self, test_name, begin_time):
         for ad in self.android_devices:
@@ -168,6 +176,9 @@ class DataCostTest(base_test.BaseTestClass):
         ad = self.android_devices[0]
         self._clear_netstats(ad)
 
+        self.dut = ad
+        self.tcpdump_pid = nutils.start_tcpdump(ad, self.test_name)
+
         sub_id = str(ad.droid.telephonyGetSubscriberId())
         cell_network = ad.droid.connectivityGetActiveNetwork()
         self.log.info("cell network %s" % cell_network)
@@ -213,6 +224,9 @@ class DataCostTest(base_test.BaseTestClass):
         # set vars
         ad = self.android_devices[1]
         self._clear_netstats(ad)
+
+        self.dut = ad
+        self.tcpdump_pid = nutils.start_tcpdump(ad, self.test_name)
 
         cell_network = ad.droid.connectivityGetActiveNetwork()
         self.log.info("cell network %s" % cell_network)
