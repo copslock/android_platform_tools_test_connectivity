@@ -241,11 +241,9 @@ def load_test_config_file(test_config_path, tb_filters=None):
         test_run_config.testbed_name = testbed[
             keys.Config.key_testbed_name.value]
         test_run_config.controller_configs = testbed
-        if keys.Config.key_test_paths.value in configs:
-            test_run_config.controller_configs[
-                keys.Config.key_test_paths.value] = configs[
-                    keys.Config.key_test_paths.value]
-
+        test_run_config.controller_configs[
+            keys.Config.key_test_paths.value] = configs.get(
+                keys.Config.key_test_paths.value, None)
         test_run_config.log_path = configs.get(keys.Config.key_log_path.value,
                                                None)
         if test_run_config.log_path is not None:
