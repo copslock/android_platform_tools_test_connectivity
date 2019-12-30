@@ -228,7 +228,9 @@ def connect_to_wifi_network(ad, network):
         network: Dictionary with network info.
     """
     SSID = network[WifiEnums.SSID_KEY]
-    wutils.start_wifi_connection_scan_and_return_status(ad)
+    ad.ed.clear_all_events()
+    wutils.reset_wifi(ad)
+    wutils.start_wifi_connection_scan_and_ensure_network_found(ad, SSID)
     wutils.wifi_connect(ad, network, num_of_tries=5)
 
 
