@@ -24,81 +24,96 @@ PM_PATH_PATTERN = r"^package:(?P<apk_path>.*)"
 
 
 class AppInstaller(object):
-    """Class for installing apps on an Android device."""
-    def __init__(self, device):
-        self.ad = device
-        self._pkgs = {}
-
-    def install(self, apk_path, *extra_args):
-        """Installs an apk on the device.
+    """Class that represents an app on an Android device. Includes methods
+    for install, uninstall, and getting info.
+    """
+    def __init__(self, ad, apk_path):
+        """Initializes an AppInstaller.
 
         Args:
-            apk_path: Path to the apk to install
+            ad: device to install the apk
+            apk_path: path to the apk
+        """
+        self._ad = ad
+        self._apk_path = apk_path
+        self._pkg_name = None
+
+    @staticmethod
+    def pull_from_device(ad, pkg_name, dest):
+        """Initializes an AppInstaller by pulling the apk file from the device,
+        given the package name
+
+        Args:
+            ad: device on which the apk is installed
+            pkg_name: package name
+            dest: destination directory
+                (Note: If path represents a directory, it must already exist as
+                 a directory)
+
+        Returns: AppInstaller object representing the pulled apk, or None if
+            package not installed
+        """
+        if not ad.is_apk_installed(pkg_name):
+            ad.log.warning('Unable to find package %s on device. Pull aborted.'
+                           % pkg_name)
+            return None
+        path_on_device = re.compile(PM_PATH_PATTERN).search(
+            ad.adb.shell('pm path %s' % pkg_name)).group('apk_path')
+        ad.pull_files(path_on_device, dest)
+        if os.path.isdir(dest):
+            dest = os.path.join(dest, os.path.basename(path_on_device))
+        return AppInstaller(ad, dest)
+
+    @property
+    def apk_path(self):
+        return self._apk_path
+
+    @property
+    def pkg_name(self):
+        """Get the package name corresponding to the apk from aapt
+
+        Returns: The package name, or empty string if not found.
+        """
+        if self._pkg_name is None:
+            dump = job.run(
+                'aapt dump badging %s' % self.apk_path,
+                ignore_status=True).stdout
+            match = re.compile(PKG_NAME_PATTERN).search(dump)
+            self._pkg_name = match.group('pkg_name') if match else ''
+        return self._pkg_name
+
+    def install(self, *extra_args):
+        """Installs the apk on the device.
+
+        Args:
             extra_args: Additional flags to the ADB install command.
                 Note that '-r' is included by default.
         """
-        self.ad.log.info('Installing app %s' % apk_path)
-        self.ad.ensure_screen_on()
+        self._ad.log.info('Installing app %s' % self.apk_path)
+        self._ad.ensure_screen_on()
         args = '-r %s' % ' '.join(extra_args)
-        self.ad.adb.install('%s %s' % (args, apk_path))
+        self._ad.adb.install('%s %s' % (args, self.apk_path))
 
-    def uninstall(self, apk_path, *extra_args):
-        """Finds the package corresponding to the apk and uninstalls it from the
-        device.
+    def uninstall(self, *extra_args):
+        """Uninstalls the apk from the device.
 
         Args:
-            apk_path: Path to the apk
             extra_args: Additional flags to the uninstall command.
         """
-        if self.is_installed(apk_path):
-            pkg_name = self.get_package_name(apk_path)
-            self.ad.log.info('Uninstalling app %s' % pkg_name)
-            self.ad.adb.shell(
-                'pm uninstall %s %s' % (' '.join(extra_args), pkg_name))
+        self._ad.log.info('Uninstalling app %s' % self.pkg_name)
+        if not self.is_installed():
+            self._ad.log.warning('Unable to uninstall app %s. App is not '
+                                 'installed.' % self.pkg_name)
+            return
+        self._ad.adb.shell(
+            'pm uninstall %s %s' % (' '.join(extra_args), self.pkg_name))
 
-    def is_installed(self, apk_path):
-        """Verifies that an apk is installed on the device.
-
-        Args:
-            apk_path: Path to the apk
+    def is_installed(self):
+        """Verifies that the apk is installed on the device.
 
         Returns: True if the apk is installed on the device.
         """
-        pkg_name = self.get_package_name(apk_path)
-        if not pkg_name:
-            self.ad.log.warning('No package name found for %s' % apk_path)
+        if not self.pkg_name:
+            self._ad.log.warning('No package name found for %s' % self.apk_path)
             return False
-        return self.ad.is_apk_installed(pkg_name)
-
-    def get_package_name(self, apk_path):
-        """Get the package name corresponding to the apk from aapt
-
-        Args:
-            apk_path: Path to the apk
-
-        Returns: The package name
-        """
-        if apk_path not in self._pkgs:
-            dump = job.run(
-                'aapt dump badging %s' % apk_path, ignore_status=True).stdout
-            match = re.compile(PKG_NAME_PATTERN).search(dump)
-            self._pkgs[apk_path] = match.group('pkg_name') if match else ''
-        return self._pkgs[apk_path]
-
-    def pull_apk(self, package_name, dest):
-        """Pull the corresponding apk file from device given the package name
-
-        Args:
-            package_name: Package name
-            dest: Destination directory
-
-        Returns: Path to the pulled apk, or None if package not installed
-        """
-        if not self.ad.is_apk_installed(package_name):
-            self.ad.log.warning('Unable to find package %s on device. Pull '
-                                'aborted.' % package_name)
-            return None
-        apk_path = re.compile(PM_PATH_PATTERN).search(
-            self.ad.adb.shell('pm path %s' % package_name)).group('apk_path')
-        self.ad.pull_files(apk_path, dest)
-        return os.path.join(dest, os.path.basename(apk_path))
+        return self._ad.is_apk_installed(self.pkg_name)
