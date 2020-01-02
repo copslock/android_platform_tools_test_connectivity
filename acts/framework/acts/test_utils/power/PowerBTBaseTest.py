@@ -37,14 +37,14 @@ def ramp_attenuation(obj_atten, attenuation_target):
         obj_atten: attenuator object, a single port attenuator
         attenuation_target: target attenuation level to reach to.
     """
-    attenuation_step_max = 5
+    attenuation_step_max = 20
     sign = lambda x: copysign(1, x)
     attenuation_delta = obj_atten.get_atten() - attenuation_target
     while abs(attenuation_delta) > attenuation_step_max:
         attenuation_intermediate = obj_atten.get_atten(
         ) - sign(attenuation_delta) * attenuation_step_max
         obj_atten.set_atten(attenuation_intermediate)
-        time.sleep(2)
+        time.sleep(5)
         attenuation_delta = obj_atten.get_atten() - attenuation_target
     obj_atten.set_atten(attenuation_target)
 
