@@ -22,10 +22,10 @@ from acts import base_test
 from acts import context
 from acts import utils
 from acts.keys import Config
-from acts.test_utils.instrumentation import app_installer
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.adb_commands import common
+from acts.test_utils.instrumentation.app_installer import AppInstaller
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 from acts.test_utils.instrumentation.instrumentation_command_builder import \
     InstrumentationCommandBuilder
@@ -126,7 +126,6 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
     def setup_class(self):
         """Class setup"""
         self.ad_dut = self.android_devices[0]
-        self.ad_apps = app_installer.AppInstaller(self.ad_dut)
         self._prepare_device()
 
     def teardown_class(self):
@@ -274,15 +273,15 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         # Install PermissionUtils.apk
         permissions_apk_path = self._instrumentation_config.get_file(
             'permissions_apk')
-        self.ad_apps.install(permissions_apk_path)
-        if not self.ad_apps.is_installed(permissions_apk_path):
+        permission_utils = AppInstaller(self.ad_dut, permissions_apk_path)
+        permission_utils.install()
+        if not permission_utils.is_installed():
             raise InstrumentationTestError(
                 'Failed to install PermissionUtils.apk, abort!')
-        package_name = self.ad_apps.get_package_name(permissions_apk_path)
 
         # Run the instrumentation command
         cmd_builder = InstrumentationCommandBuilder()
-        cmd_builder.set_manifest_package(package_name)
+        cmd_builder.set_manifest_package(permission_utils.pkg_name)
         cmd_builder.set_runner('.PermissionInstrumentation')
         cmd_builder.add_flag('-w')
         cmd_builder.add_flag('-r')
@@ -292,4 +291,4 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.adb_run(cmd)
 
         # Uninstall PermissionUtils.apk
-        self.ad_apps.uninstall(permissions_apk_path)
+        permission_utils.uninstall()
