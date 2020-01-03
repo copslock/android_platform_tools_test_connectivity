@@ -87,6 +87,7 @@ def asus_rtac66u(iface_wlan_2g=None,
 
     # Common Parameters
     rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
+    vht_channel_width = 20
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_LDPC,
         hostapd_constants.N_CAPABILITY_TX_STBC,
@@ -110,8 +111,6 @@ def asus_rtac66u(iface_wlan_2g=None,
         rates.update(hostapd_constants.CCK_AND_OFDM_BASIC_RATES)
         mode = hostapd_constants.MODE_11N_MIXED
         ac_capabilities = None
-        vht_channel_width = None
-        vht_center_channel = None
 
     # 5GHz
     else:
@@ -126,8 +125,6 @@ def asus_rtac66u(iface_wlan_2g=None,
             hostapd_constants.AC_CAPABILITY_MAX_MPDU_11454,
             hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7
         ]
-        vht_channel_width = 40
-        vht_center_channel = 36
 
     additional_params = utils.merge_dicts(rates, vendor_elements,
                                           hostapd_constants.UAPSD_ENABLED)
@@ -146,7 +143,6 @@ def asus_rtac66u(iface_wlan_2g=None,
         n_capabilities=n_capabilities,
         ac_capabilities=ac_capabilities,
         vht_channel_width=vht_channel_width,
-        vht_center_channel=vht_center_channel,
         additional_parameters=additional_params)
 
     return config
@@ -313,6 +309,7 @@ def asus_rtac5300(iface_wlan_2g=None,
 
     # Common Parameters
     rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
+    vht_channel_width = 20
     qbss = {'bss_load_update_period': 50, 'chan_util_avg_period': 600}
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_LDPC,
@@ -320,6 +317,7 @@ def asus_rtac5300(iface_wlan_2g=None,
         hostapd_constants.N_CAPABILITY_RX_STBC1,
         hostapd_constants.N_CAPABILITY_SGI20
     ]
+
     # Broadcom IE
     vendor_elements = {'vendor_elements': 'dd090010180200009c0000'}
 
@@ -334,8 +332,6 @@ def asus_rtac5300(iface_wlan_2g=None,
         '2fd437509c30b3d7f5cf5754fb125aed3b8507045aed3b85' \
         'dd1e00904c0418bf0cb2798b0faaff0000aaff0000c0050001000000c3020002'
         ac_capabilities = None
-        vht_channel_width = None
-        vht_center_channel = None
 
     # 5GHz
     else:
@@ -352,8 +348,6 @@ def asus_rtac5300(iface_wlan_2g=None,
             hostapd_constants.AC_CAPABILITY_MAX_MPDU_11454,
             hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7
         ]
-        vht_channel_width = 40
-        vht_center_channel = 36
 
     additional_params = utils.merge_dicts(rates, qbss, vendor_elements,
                                           hostapd_constants.UAPSD_ENABLED)
@@ -372,7 +366,6 @@ def asus_rtac5300(iface_wlan_2g=None,
         n_capabilities=n_capabilities,
         ac_capabilities=ac_capabilities,
         vht_channel_width=vht_channel_width,
-        vht_center_channel=vht_center_channel,
         additional_parameters=additional_params)
     return config
 
