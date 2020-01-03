@@ -85,6 +85,7 @@ def tplink_archerc5(iface_wlan_2g=None,
 
     # Common Parameters
     rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
+    vht_channel_width = 20
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_SGI20,
         hostapd_constants.N_CAPABILITY_TX_STBC,
@@ -109,8 +110,6 @@ def tplink_archerc5(iface_wlan_2g=None,
         mode = hostapd_constants.MODE_11N_MIXED
         n_capabilities.append(hostapd_constants.N_CAPABILITY_DSSS_CCK_40)
         ac_capabilities = None
-        vht_channel_width = None
-        vht_center_channel = None
 
     # 5GHz
     else:
@@ -127,8 +126,6 @@ def tplink_archerc5(iface_wlan_2g=None,
             hostapd_constants.AC_CAPABILITY_RX_STBC_1,
             hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7,
         ]
-        vht_channel_width = 40
-        vht_center_channel = 36
 
     additional_params = utils.merge_dicts(
         rates, vendor_elements, qbss,
@@ -150,7 +147,6 @@ def tplink_archerc5(iface_wlan_2g=None,
         n_capabilities=n_capabilities,
         ac_capabilities=ac_capabilities,
         vht_channel_width=vht_channel_width,
-        vht_center_channel=vht_center_channel,
         additional_parameters=additional_params)
     return config
 
@@ -199,6 +195,7 @@ def tplink_archerc7(iface_wlan_2g=None,
 
     # Common Parameters
     rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
+    vht_channel_width = 80
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_LDPC,
         hostapd_constants.N_CAPABILITY_SGI20,
@@ -223,7 +220,6 @@ def tplink_archerc7(iface_wlan_2g=None,
         pwr_constraint = {}
         ac_capabilities = None
         vht_channel_width = None
-        vht_center_channel = None
 
     # 5GHz
     else:
@@ -239,10 +235,15 @@ def tplink_archerc7(iface_wlan_2g=None,
             '8801178c011795011e99011e9d011ea1011ea5011e')
         pwr_constraint = {'local_pwr_constraint': 3}
         n_capabilities += [
-            hostapd_constants.N_CAPABILITY_HT40_PLUS,
             hostapd_constants.N_CAPABILITY_SGI40,
             hostapd_constants.N_CAPABILITY_MAX_AMSDU_7935
         ]
+
+        if hostapd_config.ht40_plus_allowed(channel):
+            n_capabilities.append(hostapd_constants.N_CAPABILITY_HT40_PLUS)
+        elif hostapd_config.ht40_minus_allowed(channel):
+            n_capabilities.append(hostapd_constants.N_CAPABILITY_HT40_MINUS)
+
         ac_capabilities = [
             hostapd_constants.AC_CAPABILITY_MAX_MPDU_11454,
             hostapd_constants.AC_CAPABILITY_RXLDPC,
@@ -253,8 +254,6 @@ def tplink_archerc7(iface_wlan_2g=None,
             hostapd_constants.AC_CAPABILITY_RX_ANTENNA_PATTERN,
             hostapd_constants.AC_CAPABILITY_TX_ANTENNA_PATTERN
         ]
-        vht_channel_width = 80
-        vht_center_channel = 42
 
     additional_params = utils.merge_dicts(rates, vendor_elements,
                                           hostapd_constants.UAPSD_ENABLED,
@@ -274,7 +273,6 @@ def tplink_archerc7(iface_wlan_2g=None,
         n_capabilities=n_capabilities,
         ac_capabilities=ac_capabilities,
         vht_channel_width=vht_channel_width,
-        vht_center_channel=vht_center_channel,
         spectrum_mgmt_required=spectrum_mgmt,
         additional_parameters=additional_params)
     return config
@@ -334,6 +332,7 @@ def tplink_c1200(iface_wlan_2g=None,
 
     # Common Parameters
     rates = hostapd_constants.CCK_AND_OFDM_DATA_RATES
+    vht_channel_width = 20
     n_capabilities = [
         hostapd_constants.N_CAPABILITY_SGI20,
         hostapd_constants.N_CAPABILITY_TX_STBC,
@@ -356,8 +355,6 @@ def tplink_c1200(iface_wlan_2g=None,
         short_preamble = True
         mode = hostapd_constants.MODE_11N_MIXED
         ac_capabilities = None
-        vht_channel_width = None
-        vht_center_channel = None
 
     # 5GHz
     else:
@@ -374,8 +371,6 @@ def tplink_c1200(iface_wlan_2g=None,
             hostapd_constants.AC_CAPABILITY_RX_STBC_1,
             hostapd_constants.AC_CAPABILITY_MAX_A_MPDU_LEN_EXP7,
         ]
-        vht_channel_width = 40
-        vht_center_channel = 36
 
     additional_params = utils.merge_dicts(
         rates, vendor_elements, hostapd_constants.ENABLE_RRM_BEACON_REPORT,
@@ -396,12 +391,13 @@ def tplink_c1200(iface_wlan_2g=None,
         n_capabilities=n_capabilities,
         ac_capabilities=ac_capabilities,
         vht_channel_width=vht_channel_width,
-        vht_center_channel=vht_center_channel,
         additional_parameters=additional_params)
     return config
 
 
-def tplink_tlwr940n(iface_wlan_2g=None, channel=None, security=None,
+def tplink_tlwr940n(iface_wlan_2g=None,
+                    channel=None,
+                    security=None,
                     ssid=None):
     # TODO(b/143104825): Permit RIFS once it is supported
     """A simulated implementation of an TPLink TLWR940N AP.
