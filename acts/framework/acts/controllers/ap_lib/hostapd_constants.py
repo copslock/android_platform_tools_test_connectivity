@@ -270,11 +270,11 @@ VHT_CHANNEL = {
 HT40_ALLOW_MAP = {
     N_CAPABILITY_HT40_MINUS_CHANNELS:
     tuple(
-        itertools.chain(range(6, 14), range(40, 65, 8), range(104, 137, 8),
+        itertools.chain(range(6, 14), range(40, 65, 8), range(104, 145, 8),
                         [153, 161])),
     N_CAPABILITY_HT40_PLUS_CHANNELS:
     tuple(
-        itertools.chain(range(1, 8), range(36, 61, 8), range(100, 133, 8),
+        itertools.chain(range(1, 8), range(36, 61, 8), range(100, 141, 8),
                         [149, 157]))
 }
 

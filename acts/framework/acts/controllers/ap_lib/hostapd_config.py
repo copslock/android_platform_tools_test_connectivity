@@ -463,11 +463,13 @@ class HostapdConfig(object):
                 logging.warning(
                     'No channel bandwidth specified.  Using 80MHz for 11ac.')
                 self._vht_oper_chwidth = 1
-            if not vht_channel_width == 20 and vht_center_channel is None:
+            if vht_center_channel is not None:
+                self._vht_oper_centr_freq_seg0_idx = vht_center_channel
+            elif vht_channel_width == 20:
+                self._vht_oper_centr_freq_seg0_idx = channel
+            else:
                 self._vht_oper_centr_freq_seg0_idx = self._get_11ac_center_channel_from_channel(
                     self.channel)
-            else:
-                self._vht_oper_centr_freq_seg0_idx = vht_center_channel
             self._ac_capabilities = set(ac_capabilities)
         self._beacon_footer = beacon_footer
         self._spectrum_mgmt_required = spectrum_mgmt_required
