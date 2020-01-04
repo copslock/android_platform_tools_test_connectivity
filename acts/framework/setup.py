@@ -66,9 +66,14 @@ class PyTest(test.test):
         self.test_suite = True
 
     def run_tests(self):
-        import pytest
-        errno = pytest.main(self.test_args)
-        sys.exit(errno)
+        test_path = os.path.join(os.path.dirname(__file__),
+                                 '../tests/meta/ActsUnitTest.py')
+        result = subprocess.Popen('python3 %s' % test_path,
+                                  stdout=sys.stdout,
+                                  stderr=sys.stderr,
+                                  shell=True)
+        result.communicate()
+        sys.exit(result.returncode)
 
 
 class ActsInstallDependencies(cmd.Command):
