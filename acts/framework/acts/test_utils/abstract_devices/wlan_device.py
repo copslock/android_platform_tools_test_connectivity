@@ -49,7 +49,6 @@ class WlanDevice(object):
     Attributes:
         device: A generic WLAN device.
     """
-
     def __init__(self, device):
         self.device = device
         self.log = logging
@@ -131,7 +130,6 @@ class AndroidWlanDevice(WlanDevice):
     Attributes:
         android_device: An Android WLAN device.
     """
-
     def __init__(self, android_device):
         super().__init__(android_device)
 
@@ -153,6 +151,7 @@ class AndroidWlanDevice(WlanDevice):
     def associate(self,
                   target_ssid,
                   target_pwd=None,
+                  key_mgmt=None,
                   check_connectivity=True,
                   hidden=False):
         """Function to associate an Android WLAN device.
@@ -160,19 +159,18 @@ class AndroidWlanDevice(WlanDevice):
         Args:
             target_ssid: SSID to associate to.
             target_pwd: Password for the SSID, if necessary.
+            key_mgmt: The hostapd wpa_key_mgmt value, distinguishes wpa3 from
+                wpa2 for android tests.
             check_connectivity: Whether to check for internet connectivity.
             hidden: Whether the network is hidden.
         Returns:
             True if successfully connected to WLAN, False if not.
         """
+        network = {'SSID': target_ssid, 'hiddenSSID': hidden}
         if target_pwd:
-            network = {
-                'SSID': target_ssid,
-                'password': target_pwd,
-                'hiddenSSID': hidden
-            }
-        else:
-            network = {'SSID': target_ssid, 'hiddenSSID': hidden}
+            network['password'] = target_pwd
+        if key_mgmt:
+            network['security'] = key_mgmt
         try:
             wutils.connect_to_wifi_network(
                 self.device,
@@ -203,7 +201,6 @@ class FuchsiaWlanDevice(WlanDevice):
     Attributes:
         fuchsia_device: A Fuchsia WLAN device.
     """
-
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
 
@@ -230,6 +227,7 @@ class FuchsiaWlanDevice(WlanDevice):
     def associate(self,
                   target_ssid,
                   target_pwd=None,
+                  key_mgmt=None,
                   check_connectivity=True,
                   hidden=False):
         """Function to associate a Fuchsia WLAN device.
@@ -237,6 +235,7 @@ class FuchsiaWlanDevice(WlanDevice):
         Args:
             target_ssid: SSID to associate to.
             target_pwd: Password for the SSID, if necessary.
+            key_mgmt: the hostapd wpa_key_mgmt, if specified.
             check_connectivity: Whether to check for internet connectivity.
             hidden: Whether the network is hidden.
         Returns:
