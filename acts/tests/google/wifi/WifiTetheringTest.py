@@ -50,14 +50,23 @@ class WifiTetheringTest(base_test.BaseTestClass):
         self.network = {"SSID": "hotspot_%s" % utils.rand_ascii_str(6),
                         "password": "pass_%s" % utils.rand_ascii_str(6)}
         self.new_ssid = "wifi_tethering_test2"
+        self.tcpdump_pid=[]
 
         nutils.verify_lte_data_and_tethering_supported(self.hotspot_device)
         for ad in self.tethered_devices:
             wutils.wifi_test_device_init(ad)
 
+    def setup_test(self):
+        for ad in self.android_devices:
+            self.tcpdump_pid.append(nutils.start_tcpdump(ad, self.test_name))
+
     def teardown_test(self):
         if self.hotspot_device.droid.wifiIsApEnabled():
             wutils.stop_wifi_tethering(self.hotspot_device)
+        for ad, pid in zip(self.android_devices, self.tcpdump_pid):
+            nutils.stop_tcpdump(ad, pid, self.test_name)
+        self.tcpdump_pid = []
+
 
     def teardown_class(self):
         """ Reset devices """
