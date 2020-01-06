@@ -18,10 +18,10 @@ import time
 import re
 import os
 import math
-import collections
 import shutil
 import fnmatch
 import posixpath
+from collections import namedtuple
 
 from acts import utils
 from acts import signals
@@ -38,9 +38,8 @@ PULL_TIMEOUT = 300
 GNSSSTATUS_LOG_PATH = (
     "/storage/emulated/0/Android/data/com.android.gpstool/files/")
 QXDM_MASKS = ["GPS.cfg", "GPS-general.cfg", "default.cfg"]
-TTFF_REPORT = collections.namedtuple(
-    "TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
-TRACK_REPORT = collections.namedtuple(
+TTFF_REPORT = namedtuple("TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
+TRACK_REPORT = namedtuple(
     "TRACK_REPORT", "track_l5flag track_pe track_top4cn track_cn")
 LOCAL_PROP_FILE_CONTENTS =  """\
 log.tag.LocationManagerService=VERBOSE
@@ -107,35 +106,45 @@ def enable_gnss_verbose_logging(ad):
     ad.adb.shell("sync")
 
 
+def get_am_flags(value):
+    """Returns the (value, type) flags for a given python value."""
+    if type(value) is bool:
+        return str(value).lower(), 'boolean'
+    elif type(value) is str:
+        return value, 'string'
+    raise ValueError("%s should be either 'boolean' or 'string'" % value)
+
+
 def enable_compact_and_particle_fusion_log(ad):
-    """Enable CompactLog and FLP particle fusion log.
+    """Enable CompactLog, FLP particle fusion log and disable gms
+    location-based quake monitoring.
 
     Args:
         ad: An AndroidDevice object.
     """
     ad.root_adb()
-    ad.log.info("Enable CompactLog and FLP particle fusion log.")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:compact_log_enabled true")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:proks_config 28")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:flp_use_particle_fusion true")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e "
-                 "location:flp_particle_fusion_extended_bug_report true")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:flp_event_log_size 86400")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e "
-                 "location:flp_particle_fusion_bug_report_window_sec 86400")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:"
-                 "flp_particle_fusion_bug_report_max_buffer_size 86400")
+    ad.log.info("Enable FLP flags and Disable GMS location-based quake "
+                "monitoring.")
+    overrides = {
+        'compact_log_enabled': True,
+        'flp_use_particle_fusion': True,
+        'flp_particle_fusion_extended_bug_report': True,
+        'flp_event_log_size': '86400',
+        'proks_config': '28',
+        'flp_particle_fusion_bug_report_window_sec': '86400',
+        'flp_particle_fusion_bug_report_max_buffer_size': '86400',
+        'seismic_data_collection': False,
+        'Ealert__enable': False,
+    }
+    for flag, python_value in overrides.items():
+        value, type = get_am_flags(python_value)
+        cmd = ("am broadcast -a com.google.android.gms.phenotype.FLAG_OVERRIDE "
+               "--es package com.google.android.location --es user \* "
+               "--esa flags %s --esa values %s --esa types %s "
+               "com.google.android.gms" % (flag, value, type))
+        ad.adb.shell(cmd)
     ad.adb.shell("am force-stop com.google.android.gms")
     ad.adb.shell("am broadcast -a com.google.android.gms.INITIALIZE")
-    ad.adb.shell("dumpsys activity service com.google.android.location."
-                 "internal.GoogleLocationManagerService")
 
 
 def disable_xtra_throttle(ad):
