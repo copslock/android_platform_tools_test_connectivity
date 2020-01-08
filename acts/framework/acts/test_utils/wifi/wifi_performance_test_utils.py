@@ -1041,7 +1041,7 @@ def get_dut_temperature(dut):
     Returns:
         temperature: device temperature. 0 if temperature could not be read
     """
-    candidate_zones = ['sdm-therm-monitor', 'sdm-therm-adc', 'back_therm']
+    candidate_zones = ['skin-therm', 'sdm-therm-monitor', 'sdm-therm-adc', 'back_therm']
     for zone in candidate_zones:
         try:
             temperature = int(
