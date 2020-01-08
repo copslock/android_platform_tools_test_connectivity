@@ -144,7 +144,6 @@ class IPerfResult(object):
             The value of the throughput in the appropriate units.
         """
         speed_divisor = 1
-        print(self.reporting_speed_units)
         if self.reporting_speed_units[1:].lower() == 'bytes':
             speed_divisor = speed_divisor * BITS_IN_BYTE
         if self.reporting_speed_units[0:1].lower() == 'k':
@@ -244,8 +243,8 @@ class IPerfResult(object):
         """
         if not self._has_data():
             return None
-        instantaneous_rates = self.instantaneous_rates[
-            iperf_ignored_interval:-1]
+        instantaneous_rates = self.instantaneous_rates[iperf_ignored_interval:
+                                                       -1]
         avg_rate = math.fsum(instantaneous_rates) / len(instantaneous_rates)
         sqd_deviations = ([(rate - avg_rate)**2
                            for rate in instantaneous_rates])
@@ -302,7 +301,7 @@ class IPerfServerBase(object):
         Note: If the directory for the file path does not exist, it will be
         created.
 
-        Args:s
+        Args:
             tag: The tag passed in to the server run.
         """
         out_dir = self.log_path
