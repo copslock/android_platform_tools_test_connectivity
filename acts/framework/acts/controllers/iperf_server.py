@@ -335,7 +335,7 @@ def _get_port_from_ss_output(ss_output, pid):
         if pid in line:
             # Expected format:
             # tcp LISTEN  0 5 *:<PORT>  *:* users:(("cmd",pid=<PID>,fd=3))
-            return line.split()[4].split(':')[1]
+            return line.split()[4].split(':')[-1]
     else:
         raise ProcessLookupError('Could not find started iperf3 process.')
 
