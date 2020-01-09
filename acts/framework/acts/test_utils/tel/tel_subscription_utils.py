@@ -354,7 +354,12 @@ def set_slways_allow_mms_data(ad, sub_id, state=True):
         ad.log.info("Always allow MMS Data is not supported on platform")
     else:
         ad.log.debug("Setting MMS Data Always ON %s sub_id %s", state, sub_id)
-        return ad.droid.subscriptionSetAlwaysAllowMmsData(sub_id, state)
+        try:
+            ad.droid.subscriptionSetAlwaysAllowMmsData(sub_id, state)
+        except Exception as e:
+            ad.log.error(e)
+            ad.droid.telephonySetAlwaysAllowMmsData(sub_id, state)
+    return True
 
 
 def get_cbrs_and_default_sub_id(ad):
