@@ -20,8 +20,9 @@ import unittest
 import mock
 
 from acts import context
+from acts.context import ContextLevel
+from acts.context import NewTestClassContextEvent
 from acts.event import event_bus
-from acts.event.event import TestClassBeginEvent
 from acts.libs.logging import log_stream
 from acts.libs.logging.log_stream import AlsoToLogHandler
 from acts.libs.logging.log_stream import _LogStream
@@ -31,6 +32,7 @@ from acts.libs.logging.log_stream import LogStyles
 
 class TestClass(object):
     """Dummy class for TestEvents"""
+
     def __init__(self):
         self.test_name = self.test_case.__name__
 
@@ -341,24 +343,27 @@ class LogStreamTest(unittest.TestCase):
 
     # update_handlers
 
+    @mock.patch('acts.libs.logging.log_stream.context.get_current_context')
     @mock.patch('os.makedirs')
-    def test_update_handlers_updates_filehandler_target(self, *_):
+    def test_update_handlers_updates_filehandler_target(self, _,
+                                                        mock_get_current_context):
         """Tests that update_handlers invokes the underlying
         MovableFileHandler.set_file method on the correct path.
         """
         info_testclass_log = LogStyles.LOG_INFO + LogStyles.TESTCLASS_LOG
-        base_path = 'BASEPATH'
         file_name = 'FILENAME'
         with self.patch('MovableFileHandler'):
             log = log_stream.create_logger(
-                self._testMethodName, log_styles=info_testclass_log,
-                base_path=base_path)
+                self._testMethodName, log_styles=info_testclass_log)
             handler = log.handlers[-1]
             handler.baseFilename = file_name
-            event_bus.post(TestClassBeginEvent(TestClass()))
-            expected = os.path.join(
-                base_path, TestClass.__name__, file_name)
-            handler.set_file.assert_called_with(expected)
+            mock_get_current_context(
+                ContextLevel.TESTCLASS).get_full_output_path.side_effect = [
+                'BASEPATH/TestClass']
+
+            event_bus.post(NewTestClassContextEvent())
+
+            handler.set_file.assert_called_with('BASEPATH/TestClass/FILENAME')
 
     # cleanup
 
