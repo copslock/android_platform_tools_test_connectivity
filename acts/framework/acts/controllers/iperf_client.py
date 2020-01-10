@@ -259,6 +259,7 @@ class IPerfClientOverAdb(IPerfClientBase):
         Returns:
             The iperf result file path.
         """
+        clean_out = ''
         try:
             if not iperf_binary:
                 logging.debug('No iperf3 binary specified.  '
