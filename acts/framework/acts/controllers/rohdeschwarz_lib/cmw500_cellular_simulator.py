@@ -512,7 +512,8 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             cfi: the new CFI setting
         """
         # TODO (b/143497738): implement.
-        raise NotImplementedError()
+        self.log.error('Setting CFI is not yet implemented in the CMW500 '
+                       'controller.')
 
     def set_paging_cycle(self, bts_index, cycle_duration):
         """ Sets the paging cycle duration for the indicated base station.
@@ -522,7 +523,8 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             cycle_duration: the new paging cycle duration in milliseconds
         """
         # TODO (b/146068532): implement.
-        raise NotImplementedError()
+        self.log.error('Setting the paging cycle duration is not yet '
+                       'implemented in the CMW500 controller.')
 
     def set_phich_resource(self, bts_index, phich):
         """ Sets the PHICH Resource setting for the indicated base station.
@@ -531,7 +533,8 @@ class CMW500CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             phich: the new PHICH resource setting
         """
-        raise NotImplementedError()
+        self.log.error('Configuring the PHICH resource setting is not yet '
+                       'implemented in the CMW500 controller.')
 
     def lte_attach_secondary_carriers(self):
         """ Activates the secondary carriers for CA. Requires the DUT to be
