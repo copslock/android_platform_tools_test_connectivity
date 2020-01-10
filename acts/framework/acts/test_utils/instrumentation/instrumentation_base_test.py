@@ -17,15 +17,15 @@
 import os
 
 import yaml
+from acts.keys import Config
+from acts.test_utils.instrumentation import instrumentation_proto_parser \
+    as proto_parser
+from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
+from acts.test_utils.instrumentation.device.command.adb_commands import common
 
 from acts import base_test
 from acts import context
 from acts import utils
-from acts.keys import Config
-from acts.test_utils.instrumentation import instrumentation_proto_parser \
-    as proto_parser
-from acts.test_utils.instrumentation.adb_commands import common
-from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
