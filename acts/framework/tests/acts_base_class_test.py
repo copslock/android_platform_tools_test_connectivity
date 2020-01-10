@@ -797,7 +797,7 @@ class ActsBaseClassTest(unittest.TestCase):
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
         self.assertEqual(actual_record.test_name, 'test_func')
-        self.assertEqual(actual_record.details, '1 != 2')
+        self.assertIn('1 != 2', actual_record.details)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
 
     def test_assert_equal_fail_with_msg(self):
@@ -813,7 +813,7 @@ class ActsBaseClassTest(unittest.TestCase):
         actual_record = bt_cls.results.failed[0]
         self.assertEqual(actual_record.test_name, 'test_func')
         expected_msg = '1 != 2 ' + MSG_EXPECTED_EXCEPTION
-        self.assertEqual(actual_record.details, expected_msg)
+        self.assertIn(expected_msg, actual_record.details)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
 
     def test_assert_raises_pass(self):
