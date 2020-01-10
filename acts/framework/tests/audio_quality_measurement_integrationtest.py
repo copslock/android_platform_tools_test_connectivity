@@ -14,15 +14,20 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import logging
+# Note: This test has been labelled as an integration test due to its use of
+# real data, and the 12+ second execution time. It also generates sine waves
+# during the test, rather than using data that has been pre-calculated.
+
 import math
 import numpy
 import unittest
 
-import acts.test_utils.audio_analysis_lib.audio_data as audio_data
-import acts.test_utils.audio_analysis_lib.audio_analysis as audio_analysis
-import acts.test_utils.audio_analysis_lib.audio_quality_measurement as \
-    audio_quality_measurement
+# TODO(markdr): Remove this after soundfile is added to setup.py
+import sys
+import mock
+sys.modules['soundfile'] = mock.Mock()
+
+import acts.test_utils.audio_analysis_lib.audio_quality_measurement as audio_quality_measurement
 
 
 class NoiseLevelTest(unittest.TestCase):
@@ -30,7 +35,7 @@ class NoiseLevelTest(unittest.TestCase):
         """Uses the same seed to generate noise for each test."""
         numpy.random.seed(0)
 
-    def testNoiseLevel(self):
+    def test_noise_level(self):
         # Generates the standard sin wave with standard_noise portion of noise.
         rate = 48000
         length_in_secs = 2
@@ -61,7 +66,7 @@ class NoiseLevelTest(unittest.TestCase):
 
 
 class ErrorTest(unittest.TestCase):
-    def testError(self):
+    def test_error(self):
         value1 = [0.2, 0.4, 0.1, 0.01, 0.01, 0.01]
         value2 = [0.3, 0.3, 0.08, 0.0095, 0.0098, 0.0099]
         error = [0.5, 0.25, 0.2, 0.05, 0.02, 0.01]
@@ -138,7 +143,7 @@ class QualityMeasurementTest(unittest.TestCase):
                 self.y[j] = self.amplitude * (3 + numpy.random.uniform(-1, 1))
 
     def generate_volume_changing(self):
-        "Generates volume changing during playing."
+        """Generates volume changing during playing."""
         start_time = [0.300, 1.400]
         end_time = [0.600, 1.700]
         for i in range(len(start_time)):
@@ -149,7 +154,7 @@ class QualityMeasurementTest(unittest.TestCase):
         self.volume_changing = [+1, -1, +1, -1]
         self.volume_changing_time = [0.3, 0.6, 1.4, 1.7]
 
-    def testGoodSignal(self):
+    def test_good_signal(self):
         """Sine wave signal with no noise or artifacts."""
         result = audio_quality_measurement.quality_measurement(self.y,
                                                                self.rate)
@@ -160,7 +165,7 @@ class QualityMeasurementTest(unittest.TestCase):
         self.assertTrue(len(result['volume_changes']) == 0)
         self.assertTrue(result['equivalent_noise_level'] < 0.005)
 
-    def testGoodSignalNoise(self):
+    def test_good_signal_with_noise(self):
         """Sine wave signal with noise."""
         self.add_noise()
         result = audio_quality_measurement.quality_measurement(self.y,
@@ -170,10 +175,9 @@ class QualityMeasurementTest(unittest.TestCase):
         self.assertTrue(len(result['artifacts']['delay_during_playback']) == 0)
         self.assertTrue(len(result['artifacts']['burst_during_playback']) == 0)
         self.assertTrue(len(result['volume_changes']) == 0)
-        self.assertTrue(0.009 < result['equivalent_noise_level'] and
-                        result['equivalent_noise_level'] < 0.011)
+        self.assertTrue(0.009 < result['equivalent_noise_level'] < 0.011)
 
-    def testDelay(self):
+    def test_delay(self):
         """Sine wave with delay during playing."""
         self.generate_delay()
         result = audio_quality_measurement.quality_measurement(self.y,
@@ -196,7 +200,7 @@ class QualityMeasurementTest(unittest.TestCase):
                         duration)
             self.assertTrue(delta < 0.001)
 
-    def testArtifactsBeforePlayback(self):
+    def test_artifacts_before_playback(self):
         """Sine wave with artifacts before playback."""
         self.generate_artifacts_before_playback()
         result = audio_quality_measurement.quality_measurement(self.y,
@@ -212,7 +216,7 @@ class QualityMeasurementTest(unittest.TestCase):
         self.assertTrue(len(result['volume_changes']) == 0)
         self.assertTrue(result['equivalent_noise_level'] < 0.005)
 
-    def testArtifactsAfterPlayback(self):
+    def test_artifacts_after_playback(self):
         """Sine wave with artifacts after playback."""
         self.generate_artifacts_after_playback()
         result = audio_quality_measurement.quality_measurement(self.y,
@@ -228,7 +232,7 @@ class QualityMeasurementTest(unittest.TestCase):
         self.assertTrue(len(result['volume_changes']) == 0)
         self.assertTrue(result['equivalent_noise_level'] < 0.005)
 
-    def testBurstDuringPlayback(self):
+    def test_burst_during_playback(self):
         """Sine wave with burst during playback."""
         self.generate_burst_during_playback()
         result = audio_quality_measurement.quality_measurement(self.y,
@@ -244,7 +248,7 @@ class QualityMeasurementTest(unittest.TestCase):
                 'burst_during_playback'][i])
             self.assertTrue(delta < 0.002)
 
-    def testVolumeChanging(self):
+    def test_volume_changing(self):
         """Sine wave with volume changing during playback."""
         self.generate_volume_changing()
         result = audio_quality_measurement.quality_measurement(self.y,
