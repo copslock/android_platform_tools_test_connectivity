@@ -15,11 +15,13 @@ import shutil
 import tempfile
 import unittest
 
-from acts.controllers.sl4a_lib import rpc_client
+from mobly import config_parser as mobly_config_parser
+
 from acts import base_test
 from acts import signals
 from acts import test_decorators
 from acts import test_runner
+from acts.controllers.sl4a_lib import rpc_client
 
 TEST_TRACKER_UUID = '12345'
 UUID_KEY = 'test_tracker_uuid'
@@ -92,16 +94,21 @@ class MockTest(base_test.BaseTestClass):
 class TestDecoratorIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.MOCK_CONFIG = {
-            "testbed": {
-                "name": "SampleTestBed",
-            },
-            "logpath": tempfile.mkdtemp(),
-            "testpaths": ["./"],
-        }
+        cls.tmp_dir = tempfile.mkdtemp()
+        cls.MOCK_CONFIG = mobly_config_parser.TestRunConfig()
+        cls.MOCK_CONFIG.testbed_name = 'SampleTestBed'
+        cls.MOCK_CONFIG.log_path = cls.tmp_dir
+
+        # TODO(markdr): Remove after the next Mobly release.
+        cls.MOCK_CONFIG.user_params = {}
+        cls.MOCK_CONFIG.controller_configs = {}
 
         cls.MOCK_TEST_RUN_LIST = [(MockTest.__name__,
                                    [MockTest.TEST_CASE_LIST])]
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp_dir)
 
     def _run_with_test_logic(self, func):
         if hasattr(MockTest, MockTest.TEST_LOGIC_ATTR):
@@ -129,10 +136,6 @@ class TestDecoratorIntegrationTests(unittest.TestCase):
         self._run_with_test_logic(raise_generic)
         self._validate_results_has_extra(self.test_runner.results, UUID_KEY,
                                          TEST_TRACKER_UUID)
-
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.MOCK_CONFIG['logpath'])
 
 
 if __name__ == "__main__":
