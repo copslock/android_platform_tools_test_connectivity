@@ -20,14 +20,11 @@ import unittest
 import mock
 
 from acts import context
-from acts.context import ContextLevel
-from acts.context import NewTestClassContextEvent
-from acts.event import event_bus
 from acts.libs.logging import log_stream
 from acts.libs.logging.log_stream import AlsoToLogHandler
-from acts.libs.logging.log_stream import _LogStream
 from acts.libs.logging.log_stream import InvalidStyleSetError
 from acts.libs.logging.log_stream import LogStyles
+from acts.libs.logging.log_stream import _LogStream
 
 
 class TestClass(object):
@@ -343,10 +340,8 @@ class LogStreamTest(unittest.TestCase):
 
     # update_handlers
 
-    @mock.patch('acts.libs.logging.log_stream.context.get_current_context')
     @mock.patch('os.makedirs')
-    def test_update_handlers_updates_filehandler_target(self, _,
-                                                        mock_get_current_context):
+    def test_update_handlers_updates_filehandler_target(self, _):
         """Tests that update_handlers invokes the underlying
         MovableFileHandler.set_file method on the correct path.
         """
@@ -357,11 +352,12 @@ class LogStreamTest(unittest.TestCase):
                 self._testMethodName, log_styles=info_testclass_log)
             handler = log.handlers[-1]
             handler.baseFilename = file_name
-            mock_get_current_context(
-                ContextLevel.TESTCLASS).get_full_output_path.side_effect = [
-                'BASEPATH/TestClass']
+            stream = log_stream._log_streams[log.name]
+            stream._LogStream__get_current_output_dir = (
+                lambda: 'BASEPATH/TestClass'
+            )
 
-            event_bus.post(NewTestClassContextEvent())
+            stream.update_handlers(context.NewTestClassContextEvent())
 
             handler.set_file.assert_called_with('BASEPATH/TestClass/FILENAME')
 
