@@ -34,9 +34,6 @@ class SocketInstrumentTest(unittest.TestCase):
         test_inst._connect_socket()
 
         mock_connect.assert_called_with(('192.168.1.11', '5050'), timeout=120)
-        mock_connect.return_value.sendall.assert_called_with(b'*IDN?;*OPC?\n')
-        mock_connect.return_value.recv.assert_called_with(
-            test_inst._socket_buffer_size)
 
     @patch('socket.create_connection')
     def test__connect_socket_timeout(self, mock_connect):
