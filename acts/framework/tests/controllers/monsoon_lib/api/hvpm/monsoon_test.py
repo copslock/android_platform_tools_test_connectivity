@@ -127,7 +127,7 @@ class BaseMonsoonTest(unittest.TestCase):
 
         monsoon.measure_power(1, output_path='foo', **unimportant_kwargs)
 
-        tee.assert_called_once_with('foo')
+        tee.assert_called_once_with('foo', 0)
         # Assert Tee() is the first element within the assembly into calls.
         self.assertEqual(assembly_line().into.call_args_list[0][ARGS][0],
                          tee())
