@@ -90,7 +90,6 @@ class AppInstaller(object):
                 Note that '-r' is included by default.
         """
         self._ad.log.info('Installing app %s' % self.apk_path)
-        self._ad.ensure_screen_on()
         args = '-r %s' % ' '.join(extra_args)
         self._ad.adb.install('%s %s' % (args, self.apk_path))
 
