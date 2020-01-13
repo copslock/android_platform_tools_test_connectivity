@@ -14,11 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import shutil
 import tempfile
 import unittest
 
-import os
 from mobly.config_parser import TestRunConfig
 from mock import Mock
 from mock import patch
@@ -122,5 +122,5 @@ class TestRunnerTest(unittest.TestCase):
                          expected_timestamp))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
