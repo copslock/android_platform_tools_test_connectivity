@@ -14,10 +14,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+# Note: This test has been labelled as an integration test due to its use of
+# real data, and the five to six second execution time.
 import logging
 import numpy
 import os
 import unittest
+
+# TODO(markdr): Remove this after soundfile is added to setup.py
+import sys
+import mock
+sys.modules['soundfile'] = mock.Mock()
 
 import acts.test_utils.audio_analysis_lib.audio_analysis as audio_analysis
 import acts.test_utils.audio_analysis_lib.audio_data as audio_data
@@ -83,13 +90,13 @@ class SpectralAnalysisTest(unittest.TestCase):
         # Sort the peaks by values.
         return sorted(results, key=lambda x: x[1], reverse=True)
 
-    def testPeakDetection(self):
+    def test_peak_detection(self):
         array = [0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3, 5, 3, 2, 1, 1, 1, 1, 1]
         result = audio_analysis.peak_detection(array, 4)
         golden_answer = [(12, 5), (4, 4)]
         self.assertEqual(result, golden_answer)
 
-    def testPeakDetectionLarge(self):
+    def test_peak_detection_large(self):
         array = numpy.random.uniform(0, 1, 1000000)
         window_size = 100
         logging.debug('Test large array using dummy peak detection')
@@ -99,7 +106,7 @@ class SpectralAnalysisTest(unittest.TestCase):
         logging.debug('Compare the result')
         self.assertEqual(dummy_answer, improved_answer)
 
-    def testSpectralAnalysis(self):
+    def test_spectral_analysis(self):
         rate = 48000
         length_in_secs = 0.5
         freq_1 = 490.0
@@ -123,7 +130,7 @@ class SpectralAnalysisTest(unittest.TestCase):
         self.assertTrue(
             abs(results[0][1] / results[1][1] - coeff_1 / coeff_2) < 0.01)
 
-    def testSpectralAnalysisRealData(self):
+    def test_spectral_snalysis_real_data(self):
         """This unittest checks the spectral analysis works on real data."""
         file_path = os.path.join(
             os.path.dirname(__file__), 'test_data', '1k_2k.raw')
@@ -142,7 +149,7 @@ class SpectralAnalysisTest(unittest.TestCase):
                 abs(spectral[0][0] - golden_frequency[channel]) < 5,
                 'Dominant frequency is not correct')
 
-    def testNotMeaningfulData(self):
+    def test_not_meaningful_data(self):
         """Checks that sepectral analysis handles un-meaningful data."""
         rate = 48000
         length_in_secs = 0.5
@@ -159,7 +166,7 @@ class SpectralAnalysisTest(unittest.TestCase):
 
 
 class NormalizeTest(unittest.TestCase):
-    def testNormalize(self):
+    def test_normalize(self):
         y = [1, 2, 3, 4, 5]
         normalized_y = audio_analysis.normalize_signal(y, 10)
         expected = numpy.array([0.1, 0.2, 0.3, 0.4, 0.5])
@@ -251,16 +258,16 @@ class AnomalyTest(unittest.TestCase):
             self.assertTrue(detected_secs <= expected_detected_range_secs[1])
             self.assertTrue(detected_secs >= expected_detected_range_secs[0])
 
-    def testGoodSignal(self):
+    def test_good_signal(self):
         """Sine wave signal with no noise or anomaly."""
         self.check_no_anomaly()
 
-    def testGoodSignalNoise(self):
+    def test_good_signal_noise(self):
         """Sine wave signal with noise."""
         self.add_noise()
         self.check_no_anomaly()
 
-    def testZeroAnomaly(self):
+    def test_zero_anomaly(self):
         """Sine wave signal with no noise but with anomaly.
 
         This test case simulates underrun in digital data where there will be
@@ -271,7 +278,7 @@ class AnomalyTest(unittest.TestCase):
         self.insert_anomaly()
         self.check_anomaly()
 
-    def testZeroAnomalyNoise(self):
+    def test_zero_anomaly_noise(self):
         """Sine wave signal with noise and anomaly.
 
         This test case simulates underrun in analog data where there will be
@@ -283,7 +290,7 @@ class AnomalyTest(unittest.TestCase):
         self.add_noise()
         self.check_anomaly()
 
-    def testLowConstantAnomaly(self):
+    def test_low_constant_anomaly(self):
         """Sine wave signal with low constant anomaly.
 
         The anomaly is one block of constant values.
@@ -293,7 +300,7 @@ class AnomalyTest(unittest.TestCase):
         self.insert_anomaly()
         self.check_anomaly()
 
-    def testLowConstantAnomalyNoise(self):
+    def test_low_constant_anomaly_noise(self):
         """Sine wave signal with low constant anomaly and noise.
 
         The anomaly is one block of constant values.
@@ -304,7 +311,7 @@ class AnomalyTest(unittest.TestCase):
         self.add_noise()
         self.check_anomaly()
 
-    def testHighConstantAnomaly(self):
+    def test_high_constant_anomaly(self):
         """Sine wave signal with high constant anomaly.
 
         The anomaly is one block of constant values.
@@ -314,7 +321,7 @@ class AnomalyTest(unittest.TestCase):
         self.insert_anomaly()
         self.check_anomaly()
 
-    def testHighConstantAnomalyNoise(self):
+    def test_high_constant_anomaly_noise(self):
         """Sine wave signal with high constant anomaly and noise.
 
         The anomaly is one block of constant values.
@@ -325,7 +332,7 @@ class AnomalyTest(unittest.TestCase):
         self.add_noise()
         self.check_anomaly()
 
-    def testSkippedAnomaly(self):
+    def test_skipped_anomaly(self):
         """Sine wave signal with skipped anomaly.
 
         The anomaly simulates the symptom where a block is skipped.
@@ -334,7 +341,7 @@ class AnomalyTest(unittest.TestCase):
         self.generate_skip_anomaly()
         self.check_anomaly()
 
-    def testSkippedAnomalyNoise(self):
+    def test_skipped_anomaly_noise(self):
         """Sine wave signal with skipped anomaly with noise.
 
         The anomaly simulates the symptom where a block is skipped.
@@ -344,7 +351,7 @@ class AnomalyTest(unittest.TestCase):
         self.add_noise()
         self.check_anomaly()
 
-    def testEmptyData(self):
+    def test_empty_data(self):
         """Checks that anomaly detection rejects empty data."""
         self.y = []
         with self.assertRaises(audio_analysis.EmptyDataError):
