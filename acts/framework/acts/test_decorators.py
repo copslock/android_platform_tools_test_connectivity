@@ -95,6 +95,8 @@ class _TestInfoDecoratorFunc(object):
                 new_signal = signals.TestPass('')
             else:
                 new_signal = signals.TestFailure('')
+        except signals.TestSignal as signal:
+            new_signal = signal
         except Exception as cause:
             new_signal = signals.TestError(cause)
 
