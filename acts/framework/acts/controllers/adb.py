@@ -18,7 +18,7 @@ from builtins import str
 
 import logging
 import re
-import shellescape
+import shlex
 
 from acts import error
 from acts.libs.proc import job
@@ -87,7 +87,7 @@ class AdbProxy(object):
         self.serial = serial
         self._server_local_port = None
         adb_path = job.run("which adb").stdout
-        adb_cmd = [shellescape.quote(adb_path)]
+        adb_cmd = [shlex.quote(adb_path)]
         if serial:
             adb_cmd.append("-s %s" % serial)
         if ssh_connection is not None:
@@ -261,12 +261,12 @@ class AdbProxy(object):
     def shell(self, command, ignore_status=False, timeout=DEFAULT_ADB_TIMEOUT):
         return self._exec_adb_cmd(
             'shell',
-            shellescape.quote(command),
+            shlex.quote(command),
             ignore_status=ignore_status,
             timeout=timeout)
 
     def shell_nb(self, command):
-        return self._exec_adb_cmd_nb('shell', shellescape.quote(command))
+        return self._exec_adb_cmd_nb('shell', shlex.quote(command))
 
     def pull(self,
              command,
