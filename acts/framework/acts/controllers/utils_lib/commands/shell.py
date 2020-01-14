@@ -16,7 +16,6 @@ import shlex
 import signal
 import time
 
-from acts.controllers.utils_lib.ssh import connection
 from acts.libs.proc import job
 
 
