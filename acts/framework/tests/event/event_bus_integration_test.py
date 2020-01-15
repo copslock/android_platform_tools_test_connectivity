@@ -65,10 +65,6 @@ class EventBusIntegrationTest(TestCase):
             test_run_config.testbed_name = 'SampleTestBed'
             test_run_config.log_path = tmp_dir
 
-            # TODO(markdr): Remove stanza the next Mobly release.
-            test_run_config.user_params = {}
-            test_run_config.controller_configs = {}
-
             TestRunner(test_run_config, [('TestClass', [])]).run(TestClass)
 
         self.assertGreaterEqual(len(TestClass.instance_event_received), 1)
@@ -89,8 +85,6 @@ class EventBusIntegrationTest(TestCase):
         test_run_config = mobly_config_parser.TestRunConfig()
         test_run_config.testbed_name = ''
         test_run_config.log_path = ''
-        # TODO(markdr): Remove this line after the next Mobly release.
-        test_run_config.user_params = {}
         test_object = TestClass(test_run_config)
         bundle = subscription_bundle.create_from_instance(test_object)
         bundle.register()

@@ -158,10 +158,6 @@ class TestDecoratorIntegrationTests(unittest.TestCase):
         cls.MOCK_CONFIG.testbed_name = 'SampleTestBed'
         cls.MOCK_CONFIG.log_path = cls.tmp_dir
 
-        # TODO(markdr): Remove after the next Mobly release.
-        cls.MOCK_CONFIG.user_params = {}
-        cls.MOCK_CONFIG.controller_configs = {}
-
         cls.MOCK_TEST_RUN_LIST = [(MockTest.__name__,
                                    [MockTest.TEST_CASE_LIST])]
 
