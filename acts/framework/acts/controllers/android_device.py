@@ -986,6 +986,13 @@ class AndroidDevice:
         self.log.debug("Find files in directory %s: %s", directory, files)
         return files
 
+    @property
+    def external_storage_path(self):
+        """
+        The $EXTERNAL_STORAGE path on the device. Most commonly set to '/sdcard'
+        """
+        return self.adb.shell('echo $EXTERNAL_STORAGE')
+
     def pull_files(self, device_paths, host_path=None):
         """Pull files from devices.
 
