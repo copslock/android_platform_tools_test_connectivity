@@ -36,6 +36,7 @@ class InstrumentationProtoParserTest(unittest.TestCase):
 
     def setUp(self):
         self.ad = mock.MagicMock()
+        self.ad.external_storage_path = ''
 
     @mock.patch('os.path.exists', return_value=True)
     def test_pull_proto_returns_correct_path_given_source(self, *_):
@@ -44,12 +45,12 @@ class InstrumentationProtoParserTest(unittest.TestCase):
 
     @mock.patch('os.path.exists', return_value=True)
     def test_pull_proto_returns_correct_path_from_default_location(self, *_):
-        self.ad.adb.shell.side_effect = ['', 'default']
+        self.ad.adb.shell.return_value = 'default'
         self.assertEqual(parser.pull_proto(self.ad, DEST_DIR),
                          'dest/proto_dir/default')
 
     def test_pull_proto_fails_if_no_default_proto_found(self, *_):
-        self.ad.adb.shell.side_effect = ['', None]
+        self.ad.adb.shell.return_value = None
         with self.assertRaisesRegex(
                 ProtoParserError, 'No instrumentation result'):
             parser.pull_proto(self.ad, DEST_DIR)
