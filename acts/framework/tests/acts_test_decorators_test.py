@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -55,8 +56,8 @@ class TestDecoratorUnitTests(unittest.TestCase):
     def _verify_test_tracker_info(self, func):
         try:
             test_decorators.test_tracker_info(uuid=TEST_TRACKER_UUID)(func)()
-            self.assertTrue(False, 'Expected decorator to raise exception.')
-        except Exception as e:
+            self.fail('Expected decorator to raise exception.')
+        except signals.TestSignal as e:
             self.assertTrue(hasattr(e, 'extras'),
                             'Expected thrown exception to have extras.')
             self.assertTrue(UUID_KEY in e.extras,
@@ -80,6 +81,64 @@ class TestDecoratorUnitTests(unittest.TestCase):
 
     def test_test_tracker_info_on_raise_generic(self):
         self._verify_test_tracker_info(raise_generic)
+
+    def test_tti_returns_existing_test_pass(self):
+        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        def test_raises_test_pass():
+            raise signals.TestPass('Expected Message')
+
+        with self.assertRaises(signals.TestPass) as context:
+            test_raises_test_pass()
+
+        self.assertEqual(context.exception.details, 'Expected Message')
+
+    def test_tti_returns_existing_test_failure(self):
+        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        def test_raises_test_failure():
+            raise signals.TestFailure('Expected Message')
+
+        with self.assertRaises(signals.TestFailure) as context:
+            test_raises_test_failure()
+
+        self.assertEqual(context.exception.details, 'Expected Message')
+
+    def test_tti_returns_test_error_on_non_signal_error(self):
+        expected_error = ValueError('Some Message')
+
+        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        def test_raises_non_signal():
+            raise expected_error
+
+        with self.assertRaises(signals.TestError) as context:
+            test_raises_non_signal()
+
+        self.assertEqual(context.exception.details, expected_error)
+
+    def test_tti_returns_test_pass_if_no_return_value_specified(self):
+        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        def test_returns_nothing():
+            pass
+
+        with self.assertRaises(signals.TestPass):
+            test_returns_nothing()
+
+    def test_tti_returns_test_fail_if_return_value_is_truthy(self):
+        """This is heavily frowned upon. Use signals.TestPass instead!"""
+        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        def test_returns_truthy():
+            return True
+
+        with self.assertRaises(signals.TestPass):
+            test_returns_truthy()
+
+    def test_tti_returns_test_fail_if_return_value_is_falsy(self):
+        """This is heavily frowned upon. Use signals.TestFailure instead!"""
+        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        def test_returns_falsy_but_not_none():
+            return False
+
+        with self.assertRaises(signals.TestFailure):
+            test_returns_falsy_but_not_none()
 
 
 class MockTest(base_test.BaseTestClass):
@@ -138,5 +197,5 @@ class TestDecoratorIntegrationTests(unittest.TestCase):
                                          TEST_TRACKER_UUID)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
