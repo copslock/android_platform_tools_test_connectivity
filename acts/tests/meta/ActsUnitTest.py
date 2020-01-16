@@ -71,6 +71,7 @@ class ActsUnitTest(base_test.BaseTestClass):
 def main():
     test_run_config = mobly_config_parser.TestRunConfig()
     test_run_config.testbed_name = 'UnitTests'
+    test_run_config.log_path = ''
     # TODO(markdr): Remove after next Mobly release.
     test_run_config.user_params = {}
     ActsUnitTest(test_run_config).test_units()
