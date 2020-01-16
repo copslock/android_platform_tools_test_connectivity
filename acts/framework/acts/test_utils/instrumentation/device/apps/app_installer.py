@@ -89,7 +89,8 @@ class AppInstaller(object):
             extra_args: Additional flags to the ADB install command.
                 Note that '-r' is included by default.
         """
-        self._ad.log.info('Installing app %s' % self.apk_path)
+        self._ad.log.info('Installing app %s from %s' %
+                          (self.pkg_name, self.apk_path))
         args = '-r %s' % ' '.join(extra_args)
         self._ad.adb.install('%s %s' % (args, self.apk_path))
 
