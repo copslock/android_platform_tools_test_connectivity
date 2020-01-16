@@ -104,7 +104,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertTrue(test_classes[class_names[2]].called)
 
     @patch('acts.records.TestResult')
-    @patch('acts.test_runner.open')
+    @patch.object(test_runner.TestRunner, 'dump_config')
     @patch.object(test_runner.TestRunner, '_write_results_to_file')
     @patch('acts.test_runner.logger')
     def test_class_logpath_contains_proper_directory(self, logger_mock, *_):
