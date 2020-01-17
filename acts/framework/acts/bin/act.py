@@ -195,20 +195,12 @@ def main(argv):
             args.config, args.testbed)
 
     for test_run_config in parsed_configs:
-        # TODO(markdr): Remove this statement after the next Mobly release.
-        test_run_config.testbed_name = getattr(test_run_config, 'testbed_name',
-                                               test_run_config.test_bed_name)
-
         if args.testpaths:
             tp_key = keys.Config.key_test_paths.value
             test_run_config.controller_configs[tp_key] = args.testpaths
         if args.logpath:
             test_run_config.log_path = args.logpath
         if args.test_case_iterations:
-            # TODO(markdr): Remove this check after the next Mobly release.
-            if test_run_config.user_params is None:
-                test_run_config.user_params = {}
-
             ti_key = keys.Config.key_test_case_iterations.value
             test_run_config.user_params[ti_key] = args.test_case_iterations
 
