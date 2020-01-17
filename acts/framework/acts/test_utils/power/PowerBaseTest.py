@@ -83,7 +83,9 @@ class PowerBaseTest(base_test.BaseTestClass):
 
     @property
     def final_test(self):
-        return self.current_test_name == self.results.requested[-1]
+        return len(
+            self.results.requested
+        ) > 0 and self.current_test_name == self.results.requested[-1]
 
     def setup_class(self):
 
