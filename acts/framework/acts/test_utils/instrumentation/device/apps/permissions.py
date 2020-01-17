@@ -14,9 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from acts.test_utils.instrumentation.app_installer import AppInstaller
-from acts.test_utils.instrumentation.instrumentation_command_builder import \
-    InstrumentationCommandBuilder
+from acts.test_utils.instrumentation.device.apps.app_installer import \
+    AppInstaller
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
+    import InstrumentationCommandBuilder
 
 PERMISSION_RUNNER = '.PermissionInstrumentation'
 
