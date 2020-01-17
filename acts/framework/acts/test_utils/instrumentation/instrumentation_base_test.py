@@ -25,10 +25,7 @@ from acts.keys import Config
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
 from acts.test_utils.instrumentation.adb_commands import common
-from acts.test_utils.instrumentation.app_installer import AppInstaller
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation.instrumentation_command_builder import \
-    InstrumentationCommandBuilder
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -265,30 +262,3 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.adb_run(common.location_network.toggle(False))
         self.adb_run(common.wifi.toggle(False))
         self.adb_run(common.bluetooth.toggle(True))
-
-    def grant_permissions(self):
-        """Grant all runtime permissions with PermissionUtils."""
-        self.log.info('Granting all revoked runtime permissions.')
-
-        # Install PermissionUtils.apk
-        permissions_apk_path = self._instrumentation_config.get_file(
-            'permissions_apk')
-        permission_utils = AppInstaller(self.ad_dut, permissions_apk_path)
-        permission_utils.install()
-        if not permission_utils.is_installed():
-            raise InstrumentationTestError(
-                'Failed to install PermissionUtils.apk, abort!')
-
-        # Run the instrumentation command
-        cmd_builder = InstrumentationCommandBuilder()
-        cmd_builder.set_manifest_package(permission_utils.pkg_name)
-        cmd_builder.set_runner('.PermissionInstrumentation')
-        cmd_builder.add_flag('-w')
-        cmd_builder.add_flag('-r')
-        cmd_builder.add_key_value_param('command', 'grant-all')
-        cmd = cmd_builder.build()
-        self.log.debug('Instrumentation call: %s' % cmd)
-        self.adb_run(cmd)
-
-        # Uninstall PermissionUtils.apk
-        permission_utils.uninstall()
