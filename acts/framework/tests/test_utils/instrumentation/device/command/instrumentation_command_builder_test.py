@@ -16,9 +16,9 @@
 
 import unittest
 
-from acts.test_utils.instrumentation.instrumentation_command_builder \
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
     import InstrumentationCommandBuilder
-from acts.test_utils.instrumentation.instrumentation_command_builder \
+from acts.test_utils.instrumentation.device.command.instrumentation_command_builder \
     import InstrumentationTestCommandBuilder
 
 

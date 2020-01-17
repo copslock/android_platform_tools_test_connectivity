@@ -16,11 +16,14 @@
 
 import unittest
 
-from acts.test_utils.instrumentation.adb_command_types import DeviceState
-from acts.test_utils.instrumentation.adb_command_types import DeviceSetprop
-from acts.test_utils.instrumentation.adb_command_types import DeviceSetting
-from acts.test_utils.instrumentation.adb_command_types import \
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
     DeviceBinaryCommandSeries
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+    DeviceSetprop
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+    DeviceSetting
+from acts.test_utils.instrumentation.device.command.adb_command_types import \
+    DeviceState
 
 
 class AdbCommandTypesTest(unittest.TestCase):
