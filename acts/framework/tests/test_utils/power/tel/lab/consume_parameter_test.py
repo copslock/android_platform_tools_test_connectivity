@@ -35,9 +35,7 @@ class ConsumeParameterTest(unittest.TestCase):
         self.tb_key = 'testbed_configs'
         test_run_config = mobly_config_parser.TestRunConfig()
         test_run_config.testbed_name = 'MockTestBed'
-        test_run_config.controller_configs = {}
         test_run_config.log_path = '/tmp'
-        test_run_config.user_params = {}
         test_run_config.summary_writer = mock.MagicMock()
         test = self.PCBT(test_run_config)
         self.test = test

@@ -180,9 +180,6 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         test_run_config.log_path = tempfile.mkdtemp()
         test_run_config.controller_configs = {'testpaths': ['./']}
 
-        # TODO(markdr): remove after the next Mobly release.
-        test_run_config.user_params = {}
-
         mock_module = Mock()
         setattr(mock_module, test_class.__name__, test_class)
         utils.find_files.return_value = [(None, None, None)]

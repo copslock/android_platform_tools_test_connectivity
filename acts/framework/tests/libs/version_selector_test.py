@@ -106,6 +106,7 @@ class VersionSelectorIntegrationTest(unittest.TestCase):
         test_run_config = TestRunConfig()
         test_run_config.log_path = ''
         test_run_config.summary_writer = mock.MagicMock()
+
         test_class = VersionedTestClass(test_run_config)
         test_class.run(['test_1', 'test_2'])
 
