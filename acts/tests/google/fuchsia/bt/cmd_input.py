@@ -85,7 +85,6 @@ class CmdInput(cmd.Cmd):
         return True
 
     """ Useful Helper functions and cmd line tooling """
-
     def str_to_bool(self, s):
         if s.lower() == 'true':
             return True
@@ -198,7 +197,6 @@ class CmdInput(cmd.Cmd):
         self.target_device_name = line
 
     """Begin BLE advertise wrappers"""
-
     def do_ble_start_generic_connectable_advertisement(self, line):
         """
         Description: Start a connectable LE advertisement
@@ -238,7 +236,6 @@ class CmdInput(cmd.Cmd):
 
     """End BLE advertise wrappers"""
     """Begin GATT client wrappers"""
-
     def complete_gattc_connect_by_id(self, text, line, begidx, endidx):
         if not text:
             completions = list(self.le_ids)[:]
@@ -946,7 +943,6 @@ class CmdInput(cmd.Cmd):
 
     """End GATT client wrappers"""
     """Begin LE scan wrappers"""
-
     def _update_scan_results(self, scan_results):
         self.le_ids = []
         for scan in scan_results['result']:
@@ -1003,7 +999,6 @@ class CmdInput(cmd.Cmd):
 
     """End LE scan wrappers"""
     """Begin GATT Server wrappers"""
-
     def do_gatts_close(self, line):
         """
         Description: Close active GATT server.
@@ -1051,7 +1046,6 @@ class CmdInput(cmd.Cmd):
 
     """End GATT Server wrappers"""
     """Begin Bluetooth Controller wrappers"""
-
     def do_btc_accept_pairing(self, line):
         """
         Description: Accept all incoming pairing requests.
@@ -1346,7 +1340,6 @@ class CmdInput(cmd.Cmd):
 
     """End Bluetooth Control wrappers"""
     """Begin Profile Server wrappers"""
-
     def do_sdp_pts_example(self, num_of_records):
         """
         Description: An example of how to setup a generic SDP record
@@ -1481,3 +1474,293 @@ class CmdInput(cmd.Cmd):
             self.log.error(FAILURE.format(cmd, err))
 
     """End Profile Server wrappers"""
+    """Begin AVDTP wrappers"""
+    def complete_avdtp_init(self, text, line, begidx, endidx):
+        roles = ["sink", "source"]
+        if not text:
+            completions = roles
+        else:
+            completions = [s for s in roles if s.startswith(text)]
+        return completions
+
+    def do_avdtp_init(self, role):
+        """
+        Description: Init the AVDTP and A2DP service corresponding to the input
+        role.
+
+        Input(s):
+            role: The specified role. Either 'source' or 'sink'.
+
+        Usage:
+          Examples:
+            avdtp_init source
+            avdtp_init sink
+        """
+        cmd = "Initialize AVDTP proxy"
+        try:
+            result = self.pri_dut.avdtp_lib.init(role)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_kill_a2dp_sink(self, line):
+        """
+        Description: Quickly kill any A2DP sink service currently running on the
+        device.
+
+        Usage:
+          Examples:
+            avdtp_kill_a2dp_sink
+        """
+        cmd = "Killing A2DP sink"
+        try:
+            result = self.pri_dut.control_daemon("bt-a2dp-sink.cmx", "stop")
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_kill_a2dp_source(self, line):
+        """
+        Description: Quickly kill any A2DP source service currently running on
+        the device.
+
+        Usage:
+          Examples:
+            avdtp_kill_a2dp_source
+        """
+        cmd = "Killing A2DP source"
+        try:
+            result = self.pri_dut.control_daemon("bt-a2dp-source.cmx", "stop")
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_get_connected_peers(self, line):
+        """
+        Description: Get the connected peers for the AVDTP service
+
+        Usage:
+          Examples:
+            avdtp_get_connected_peers
+        """
+        cmd = "AVDTP get connected peers"
+        try:
+            result = self.pri_dut.avdtp_lib.getConnectedPeers()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_set_configuration(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: set configuration
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_set_configuration <peer_id>
+        """
+        cmd = "Send AVDTP set configuration to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.setConfiguration(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_get_configuration(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: get configuration
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_get_configuration <peer_id>
+        """
+        cmd = "Send AVDTP get configuration to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.getConfiguration(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_get_capabilities(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: get capabilities
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_get_capabilities <peer_id>
+        """
+        cmd = "Send AVDTP get capabilities to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.getCapabilities(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_get_all_capabilities(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: get all capabilities
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_get_all_capabilities <peer_id>
+        """
+        cmd = "Send AVDTP get all capabilities to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.getAllCapabilities(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_reconfigure_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: reconfigure stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_reconfigure_stream <peer_id>
+        """
+        cmd = "Send AVDTP reconfigure stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.reconfigureStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_suspend_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: suspend stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_suspend_stream <peer_id>
+        """
+        cmd = "Send AVDTP suspend stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.suspendStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_suspend_reconfigure(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: suspend reconfigure
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_suspend_reconfigure <peer_id>
+        """
+        cmd = "Send AVDTP suspend reconfigure to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.suspendAndReconfigure(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_release_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: release stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_release_stream <peer_id>
+        """
+        cmd = "Send AVDTP release stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.releaseStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_establish_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: establish stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_establish_stream <peer_id>
+        """
+        cmd = "Send AVDTP establish stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.establishStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_start_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: start stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_start_stream <peer_id>
+        """
+        cmd = "Send AVDTP start stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.startStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_abort_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: abort stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_abort_stream <peer_id>
+        """
+        cmd = "Send AVDTP abort stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.abortStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_remove_service(self, line):
+        """
+        Description: Removes the AVDTP service in use.
+
+        Usage:
+          Examples:
+            avdtp_establish_stream <peer_id>
+        """
+        cmd = "Remove AVDTP service"
+        try:
+            result = self.pri_dut.avdtp_lib.removeService()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End AVDTP wrappers"""
