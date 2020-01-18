@@ -61,7 +61,6 @@ BLACKLIST = [
     'acts/test_utils/coex/coex_test_utils.py',
     'acts/test_utils/tel/twilio_client.py',
     'acts/test_utils/bt/A2dpCodecBaseTest.py',
-    'acts/test_utils/bt/BtRangeBaseTest.py',
     'acts/test_utils/bt/BtSarBaseTest.py',
     'tests/google/ble/beacon_tests/BeaconSwarmTest.py',
     'tests/google/bt/pts/BtCmdLineTest.py',
