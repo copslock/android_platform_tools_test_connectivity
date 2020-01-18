@@ -1473,6 +1473,49 @@ class CmdInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_sdp_connect_l2cap(self, psm):
+        """
+        Description: Send an l2cap connection request over an input psm value.
+
+        Note: Must be already connected to a peer.
+
+        Input(s):
+            psm: The int hex value to connect over. Available PSMs:
+                SDP 0x0001  See Bluetooth Service Discovery Protocol (SDP)
+                RFCOMM  0x0003  See RFCOMM with TS 07.10
+                TCS-BIN 0x0005  See Bluetooth Telephony Control Specification /
+                    TCS Binary
+                TCS-BIN-CORDLESS    0x0007  See Bluetooth Telephony Control
+                    Specification / TCS Binary
+                BNEP    0x000F  See Bluetooth Network Encapsulation Protocol
+                HID_Control 0x0011  See Human Interface Device
+                HID_Interrupt   0x0013  See Human Interface Device
+                UPnP    0x0015  See [ESDP]
+                AVCTP   0x0017  See Audio/Video Control Transport Protocol
+                AVDTP   0x0019  See Audio/Video Distribution Transport Protocol
+                AVCTP_Browsing  0x001B  See Audio/Video Remote Control Profile
+                UDI_C-Plane 0x001D  See the Unrestricted Digital Information
+                    Profile [UDI]
+                ATT 0x001F  See Bluetooth Core Specification​
+                ​3DSP   0x0021​ ​​See 3D Synchronization Profile.
+                ​LE_PSM_IPSP    ​0x0023 ​See Internet Protocol Support Profile
+                    (IPSP)
+                OTS 0x0025  See Object Transfer Service (OTS)
+                EATT    0x0027  See Bluetooth Core Specification
+
+        Usage:
+          Examples:
+            sdp_connect_l2cap 0001
+            sdp_connect_l2cap 0015
+        """
+        cmd = "Connect l2cap"
+        try:
+            result = self.pri_dut.sdp_lib.connectL2cap(self.unique_mac_addr_id,
+                                                       int(psm, 16))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     """End Profile Server wrappers"""
     """Begin AVDTP wrappers"""
     def complete_avdtp_init(self, text, line, begidx, endidx):
