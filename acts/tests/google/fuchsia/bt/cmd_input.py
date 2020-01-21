@@ -1046,6 +1046,87 @@ class CmdInput(cmd.Cmd):
 
     """End GATT Server wrappers"""
     """Begin Bluetooth Controller wrappers"""
+    def complete_btc_pair(self, text, line, begidx, endidx):
+        """ Provides auto-complete for btc_pair cmd.
+
+        See Cmd module for full description.
+        """
+        arg_completion = len(line.split(" ")) - 1
+        pairing_security_level_options = ['ENCRYPTED', 'AUTHENTICATED', 'NONE']
+        non_bondable_options = ['BONDABLE', 'NON_BONDABLE', 'NONE']
+        transport_options = ['BREDR', 'LE']
+        if arg_completion == 1:
+            if not text:
+                completions = pairing_security_level_options
+            else:
+                completions = [
+                    s for s in pairing_security_level_options
+                    if s.startswith(text)
+                ]
+            return completions
+        if arg_completion == 2:
+            if not text:
+                completions = non_bondable_options
+            else:
+                completions = [
+                    s for s in non_bondable_options if s.startswith(text)
+                ]
+            return completions
+        if arg_completion == 3:
+            if not text:
+                completions = transport_options
+            else:
+                completions = [
+                    s for s in transport_options if s.startswith(text)
+                ]
+            return completions
+
+    def do_btc_pair(self, line):
+        """
+        Description: Sends an outgoing pairing request.
+
+        Input(s):
+            pairing security level: ENCRYPTED, AUTHENTICATED, or NONE
+            non_bondable: BONDABLE, NON_BONDABLE, or NONE
+            transport: BREDR or LE
+
+        Usage:
+          Examples:
+            btc_pair NONE NONE BREDR
+            btc_pair ENCRYPTED NONE LE
+            btc_pair AUTHENTICATED NONE LE
+            btc_pair NONE NON_BONDABLE BREDR
+        """
+        cmd = "Send an outgoing pairing request."
+        pairing_security_level_mapping = {
+            "ENCRYPTED": 1,
+            "AUTHENTICATED": 2,
+            "NONE": None,
+        }
+
+        non_bondable_mapping = {
+            "BONDABLE": False,  # Note: Reversed on purpose
+            "NON_BONDABLE": True,  # Note: Reversed on purpose
+            "NONE": None,
+        }
+
+        transport_mapping = {
+            "BREDR": 1,
+            "LE": 2,
+        }
+
+        try:
+            options = line.split(" ")
+            result = self.test_dut.init_pair(
+                self.unique_mac_addr_id,
+                pairing_security_level_mapping.get(options[0]),
+                non_bondable_mapping.get(options[1]),
+                transport_mapping.get(options[2]),
+            )
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_btc_accept_pairing(self, line):
         """
         Description: Accept all incoming pairing requests.
