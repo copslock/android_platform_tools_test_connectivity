@@ -25,7 +25,7 @@ from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 from acts.utils import rand_hex_str
 
-AP_11ABG_PROFILE_NAME='whirlwind_11ag_legacy'
+AP_11ABG_PROFILE_NAME = 'whirlwind_11ag_legacy'
 
 
 def create_security_profile(test_func):
@@ -54,20 +54,21 @@ def create_security_profile(test_func):
         Returns:
             The original fuction that was called
         """
-        security = re.search(r'sec_(.*?)_ptk_(.*)',
-                             test_func.__name__)
+        security = re.search(r'sec(.*?)ptk_(.*)', test_func.__name__)
         security_mode = security.group(1)
         ptk_type = security.group(2)
         wpa_cipher = None
         wpa2_cipher = None
-        if 'wpa' in security_mode and 'wpa2' in security_mode:
+        if '_wpa_' in security_mode and '_wpa2_' in security_mode:
             security_mode = 'wpa/wpa2'
-        elif 'wep' in security_mode:
+        elif '_wep_' in security_mode:
             security_mode = 'wep'
-        elif 'wpa' in security_mode:
+        elif '_wpa_' in security_mode:
             security_mode = 'wpa'
-        elif 'wpa2' in security_mode:
+        elif '_wpa2_' in security_mode:
             security_mode = 'wpa2'
+        elif '_wpa3_' in security_mode:
+            security_mode = 'wpa3'
         if 'tkip' in ptk_type and 'ccmp' in ptk_type:
             wpa_cipher = 'TKIP CCMP'
             wpa2_cipher = 'TKIP CCMP'
@@ -78,7 +79,8 @@ def create_security_profile(test_func):
             wpa_cipher = 'CCMP'
             wpa2_cipher = 'CCMP'
         if 'max_length_password' in test_func.__name__:
-            password = rand_ascii_str(hostapd_constants.MAX_WPA_PASSWORD_LENGTH)
+            password = rand_ascii_str(
+                hostapd_constants.MAX_WPA_PASSWORD_LENGTH)
         elif 'max_length_psk' in test_func.__name__:
             password = str(rand_hex_str(
                 hostapd_constants.MAX_WPA_PSK_LENGTH)).lower()
@@ -98,6 +100,7 @@ def create_security_profile(test_func):
                                          wpa2_cipher=wpa2_cipher)
         self.client_password = password
         return test_func(self, *args, *kwargs)
+
     return security_profile_generator
 
 
@@ -116,15 +119,14 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             elif self.user_params['dut'] == 'android_devices':
                 self.dut = create_wlan_device(self.android_devices[0])
             else:
-                raise ValueError('Invalid DUT specified in config. (%s)'
-                                 % self.user_params['dut'])
+                raise ValueError('Invalid DUT specified in config. (%s)' %
+                                 self.user_params['dut'])
         else:
             # Default is an android device, just like the other tests
             self.dut = create_wlan_device(self.android_devices[0])
 
         self.access_point = self.access_points[0]
-        secure_network = self.get_psk_network(False,
-                                              [],
+        secure_network = self.get_psk_network(False, [],
                                               ssid_length_2g=15,
                                               ssid_length_5g=15)
         self.secure_network_2g = secure_network['2g']
@@ -166,8 +168,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_13_chars_ptk_none(self):
@@ -180,8 +181,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_10_hex_ptk_none(self):
@@ -194,8 +194,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_26_hex_ptk_none(self):
@@ -208,8 +207,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_5_chars_ptk_none(self):
@@ -222,8 +220,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_13_chars_ptk_none(self):
@@ -236,8 +233,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_10_hex_ptk_none(self):
@@ -250,8 +246,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
     @create_security_profile
     def test_associate_11a_sec_shared_wep_26_hex_ptk_none(self):
@@ -264,8 +259,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
     @create_security_profile
     def test_associate_11a_sec_wpa_psk_ptk_tkip(self):
@@ -277,8 +271,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_sec_wpa_psk_ptk_ccmp(self):
@@ -290,8 +283,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_sec_wpa_psk_ptk_tkip_or_ccmp(self):
@@ -303,8 +295,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_psk_ptk_tkip(self):
@@ -316,8 +307,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_psk_ptk_ccmp(self):
@@ -329,11 +319,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_max_length_password_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_max_length_password_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -342,8 +332,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_psk_ptk_tkip(self):
@@ -355,8 +344,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_psk_ptk_ccmp(self):
@@ -368,8 +356,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_psk_ptk_tkip_or_ccmp(self):
@@ -381,8 +368,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_psk_ptk_tkip(self):
@@ -395,8 +381,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_psk_ptk_ccmp(self):
@@ -409,8 +394,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
@@ -423,25 +407,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_rts_430_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.client_password,
-            rts_threshold=430,
-            force_wmm=False
-        )
-
-    @create_security_profile
-    def test_associate_11a_rts_430_sec_wpa_psk_ptk_ccmp(self):
+    def test_associate_11a_rts_256_sec_wpa_psk_ptk_tkip(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -451,11 +420,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_rts_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_rts_256_sec_wpa_psk_ptk_ccmp(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -465,8 +433,20 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_rts_256_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_rts_256_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
@@ -480,11 +460,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_high_dtim_low_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_high_dtim_low_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -495,11 +475,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_low_dtim_high_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_low_dtim_high_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -510,11 +490,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_with_WMM_with_default_values_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_WMM_with_default_values_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -522,54 +502,52 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
             force_wmm=True,
-            additional_ap_parameters=
-            hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+            additional_ap_parameters=hostapd_constants.
+            WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['correct_length_beacon'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['simliar_to_wpa'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.client_password
-        )
-
+            password=self.client_password)
 
     @create_security_profile
     def test_associate_11a_sec_wpa2_psk_ptk_tkip(self):
@@ -581,8 +559,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_sec_wpa2_psk_ptk_ccmp(self):
@@ -594,8 +571,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -607,8 +583,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_tkip(self):
@@ -620,8 +595,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_ccmp(self):
@@ -633,11 +607,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -646,8 +620,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa2_psk_ptk_tkip(self):
@@ -659,8 +632,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa2_psk_ptk_ccmp(self):
@@ -672,8 +644,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -685,8 +656,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa2_psk_ptk_tkip(self):
@@ -699,8 +669,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa2_psk_ptk_ccmp(self):
@@ -713,8 +682,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -727,25 +695,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_rts_430_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.client_password,
-            rts_threshold=430,
-            force_wmm=False
-        )
-
-    @create_security_profile
-    def test_associate_11a_rts_430_sec_wpa2_psk_ptk_ccmp(self):
+    def test_associate_11a_rts_256_sec_wpa2_psk_ptk_tkip(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -755,11 +708,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_rts_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_rts_256_sec_wpa2_psk_ptk_ccmp(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -769,11 +721,24 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_rts_256_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -784,11 +749,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -799,11 +764,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -814,11 +779,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -828,50 +793,49 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['correct_length_beacon'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['simliar_to_wpa'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
     def test_associate_11a_sec_wpa_wpa2_psk_ptk_tkip(self):
@@ -883,8 +847,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_sec_wpa_wpa2_psk_ptk_ccmp(self):
@@ -896,8 +859,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -909,8 +871,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_tkip(self):
@@ -922,8 +883,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_ccmp(self):
@@ -935,11 +895,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_max_length_password_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -948,8 +908,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip(self):
@@ -961,8 +920,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_ccmp(self):
@@ -974,11 +932,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -987,8 +945,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_5g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_wpa2_psk_ptk_tkip(self):
@@ -1001,8 +958,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
@@ -1015,8 +971,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11a_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -1029,25 +984,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_rts_430_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
-            ssid=self.secure_network_5g['SSID'],
-            security=self.security_profile,
-            password=self.client_password,
-            rts_threshold=430,
-            force_wmm=False
-        )
-
-    @create_security_profile
-    def test_associate_11a_rts_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
+    def test_associate_11a_rts_256_sec_wpa_wpa2_psk_ptk_tkip(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1057,11 +997,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_rts_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_rts_256_sec_wpa_wpa2_psk_ptk_ccmp(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1071,11 +1010,24 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_rts_256_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_rts_256_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_rts_256_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1086,11 +1038,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_high_dtim_low_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_high_dtim_low_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1101,11 +1053,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_low_dtim_high_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_low_dtim_high_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1116,11 +1068,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11a_with_WMM_with_default_values_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_WMM_with_default_values_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1130,50 +1082,252 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['correct_length_beacon'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.secure_network_5g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['simliar_to_wpa'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
+
+    @create_security_profile
+    def test_associate_11a_sec_wpa3_sae_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_max_length_password_sec_wpa3_sae_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_max_length_password_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_frag_430_sec_wpa3_sae_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            frag_threshold=430,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_frag_430_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            frag_threshold=430,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_rts_256_sec_wpa3_sae_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_rts_256_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_rts_256_frag_430_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            frag_threshold=430,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_high_dtim_low_beacon_int_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            dtim_period=hostapd_constants.HIGH_DTIM,
+            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_low_dtim_high_beacon_int_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            dtim_period=hostapd_constants.LOW_DTIM,
+            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11a_with_WMM_with_default_values_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            force_wmm=True,
+            additional_ap_parameters=hostapd_constants.
+            WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+            security=self.security_profile,
+            password=self.client_password)
+
+    @create_security_profile
+    def test_associate_11a_with_vendor_ie_in_beacon_correct_length_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['correct_length_beacon'],
+            security=self.security_profile,
+            password=self.client_password)
+
+    @create_security_profile
+    def test_associate_11a_with_vendor_ie_in_beacon_zero_length_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['zero_length_beacon_without_data'],
+            security=self.security_profile,
+            password=self.client_password)
+
+    @create_security_profile
+    def test_associate_11a_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
+            ssid=self.secure_network_5g['SSID'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['simliar_to_wpa'],
+            security=self.security_profile,
+            password=self.client_password)
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_5_chars_ptk_none(self):
@@ -1186,8 +1340,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_13_chars_ptk_none(self):
@@ -1200,8 +1353,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_10_hex_ptk_none(self):
@@ -1214,8 +1366,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
     @create_security_profile
     def test_associate_11bg_sec_open_wep_26_hex_ptk_none(self):
@@ -1228,8 +1379,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['open']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['open'])
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_5_chars_ptk_none(self):
@@ -1242,8 +1392,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_13_chars_ptk_none(self):
@@ -1256,8 +1405,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_10_hex_ptk_none(self):
@@ -1270,8 +1418,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
     @create_security_profile
     def test_associate_11bg_sec_shared_wep_26_hex_ptk_none(self):
@@ -1284,8 +1431,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             force_wmm=False,
-            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared']
-        )
+            additional_ap_parameters=hostapd_constants.WEP_AUTH['shared'])
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_psk_ptk_tkip(self):
@@ -1297,8 +1443,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_psk_ptk_ccmp(self):
@@ -1310,8 +1455,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_psk_ptk_tkip_or_ccmp(self):
@@ -1323,8 +1467,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_tkip(self):
@@ -1336,8 +1479,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_ccmp(self):
@@ -1349,11 +1491,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_max_length_password_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1362,8 +1504,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_psk_ptk_tkip(self):
@@ -1375,8 +1516,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_psk_ptk_ccmp(self):
@@ -1388,8 +1528,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_psk_ptk_tkip_or_ccmp(self):
@@ -1401,8 +1540,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_psk_ptk_tkip(self):
@@ -1415,8 +1553,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_psk_ptk_ccmp(self):
@@ -1429,8 +1566,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
@@ -1443,25 +1579,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_rts_430_sec_wpa_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            password=self.client_password,
-            rts_threshold=430,
-            force_wmm=False
-        )
-
-    @create_security_profile
-    def test_associate_11bg_rts_430_sec_wpa_psk_ptk_ccmp(self):
+    def test_associate_11bg_rts_256_sec_wpa_psk_ptk_tkip(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1471,11 +1592,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_rts_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_rts_256_sec_wpa_psk_ptk_ccmp(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1485,11 +1605,24 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_rts_256_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_rts_256_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_frag_430_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1500,11 +1633,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1515,11 +1648,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1530,11 +1663,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_with_WMM_with_default_values_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_WMM_with_default_values_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1544,50 +1677,49 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['correct_length_beacon'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['simliar_to_wpa'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
     def test_associate_11bg_sec_wpa2_psk_ptk_tkip(self):
@@ -1599,8 +1731,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_sec_wpa2_psk_ptk_ccmp(self):
@@ -1612,8 +1743,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -1625,8 +1755,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_tkip(self):
@@ -1638,8 +1767,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_ccmp(self):
@@ -1651,11 +1779,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_max_length_password_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1664,8 +1792,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa2_psk_ptk_tkip(self):
@@ -1677,8 +1804,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa2_psk_ptk_ccmp(self):
@@ -1690,8 +1816,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -1703,8 +1828,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa2_psk_ptk_tkip(self):
@@ -1717,8 +1841,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa2_psk_ptk_ccmp(self):
@@ -1731,8 +1854,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -1745,25 +1867,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_rts_430_sec_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            password=self.client_password,
-            rts_threshold=430,
-            force_wmm=False
-        )
-
-    @create_security_profile
-    def test_associate_11bg_rts_430_sec_wpa2_psk_ptk_ccmp(self):
+    def test_associate_11bg_rts_256_sec_wpa2_psk_ptk_tkip(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1773,11 +1880,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_rts_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_rts_256_sec_wpa2_psk_ptk_ccmp(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1787,11 +1893,24 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_rts_256_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_frag_430_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1802,11 +1921,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1817,11 +1936,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1832,11 +1951,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_WMM_with_default_values_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1846,50 +1965,49 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             force_wmm=True,
             additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['correct_length_beacon'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['simliar_to_wpa'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_wpa2_psk_ptk_tkip(self):
@@ -1901,8 +2019,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_wpa2_psk_ptk_ccmp(self):
@@ -1914,8 +2031,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -1927,11 +2043,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_tkip(self):
+    def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_tkip(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1940,11 +2056,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_ccmp(self):
+    def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1953,11 +2069,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_max_length_password_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -1966,8 +2082,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip(self):
@@ -1979,8 +2094,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_ccmp(self):
@@ -1992,11 +2106,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_max_length_psk_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -2005,8 +2119,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             ssid=self.secure_network_2g['SSID'],
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_wpa2_psk_ptk_tkip(self):
@@ -2019,8 +2132,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
@@ -2033,8 +2145,7 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
     def test_associate_11bg_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
@@ -2047,25 +2158,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_rts_430_sec_wpa_wpa2_psk_ptk_tkip(self):
-        validate_setup_ap_and_associate(
-            access_point=self.access_point,
-            client=self.dut,
-            profile_name=AP_11ABG_PROFILE_NAME,
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.secure_network_2g['SSID'],
-            security=self.security_profile,
-            password=self.client_password,
-            rts_threshold=430,
-            force_wmm=False
-        )
-
-    @create_security_profile
-    def test_associate_11bg_rts_430_sec_wpa_wpa2_psk_ptk_ccmp(self):
+    def test_associate_11bg_rts_256_sec_wpa_wpa2_psk_ptk_tkip(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -2075,11 +2171,10 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_rts_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_rts_256_sec_wpa_wpa2_psk_ptk_ccmp(self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -2089,11 +2184,24 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             security=self.security_profile,
             password=self.client_password,
             rts_threshold=256,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_rts_256_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_rts_256_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_frag_430_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -2104,11 +2212,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             password=self.client_password,
             rts_threshold=256,
             frag_threshold=430,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -2119,11 +2227,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -2134,11 +2242,11 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
             security=self.security_profile,
             password=self.client_password,
-            force_wmm=False
-        )
+            force_wmm=False)
 
     @create_security_profile
-    def test_associate_11bg_with_WMM_with_default_values_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_WMM_with_default_values_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
@@ -2146,50 +2254,251 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
             force_wmm=True,
-            additional_ap_parameters=
-            hostapd_constants.WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
+            additional_ap_parameters=hostapd_constants.
+            WMM_PHYS_11A_11G_11N_11AC_DEFAULT_PARAMS,
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['correct_length_beacon'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['correct_length_beacon'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['zero_length_beacon_without_data'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['zero_length_beacon_without_data'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
 
     @create_security_profile
-    def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(self):
+    def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa_wpa2_psk_ptk_tkip_or_ccmp(
+        self):
         validate_setup_ap_and_associate(
             access_point=self.access_point,
             client=self.dut,
             profile_name=AP_11ABG_PROFILE_NAME,
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
             ssid=self.secure_network_2g['SSID'],
-            additional_ap_parameters=
-            hostapd_constants.VENDOR_IE['simliar_to_wpa'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
-            password=self.client_password
-        )
+            password=self.client_password)
+
+    @create_security_profile
+    def test_associate_11bg_sec_wpa3_sae_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_max_length_password_sec_wpa3_sae_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_max_length_password_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_frag_430_sec_wpa3_sae_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            frag_threshold=430,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_frag_430_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            frag_threshold=430,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_sec_wpa3_sae_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_sec_wpa3_sae_ptk_tkip_or_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_rts_256_frag_430_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            rts_threshold=256,
+            frag_threshold=430,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_high_dtim_low_beacon_int_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            dtim_period=hostapd_constants.HIGH_DTIM,
+            beacon_interval=hostapd_constants.LOW_BEACON_INTERVAL,
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_low_dtim_high_beacon_int_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            dtim_period=hostapd_constants.LOW_DTIM,
+            beacon_interval=hostapd_constants.HIGH_BEACON_INTERVAL,
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_11bg_with_WMM_with_default_values_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            force_wmm=True,
+            additional_ap_parameters=hostapd_constants.WMM_11B_DEFAULT_PARAMS,
+            security=self.security_profile,
+            password=self.client_password)
+
+    @create_security_profile
+    def test_associate_11bg_with_vendor_ie_in_beacon_correct_length_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['correct_length_beacon'],
+            security=self.security_profile,
+            password=self.client_password)
+
+    @create_security_profile
+    def test_associate_11bg_with_vendor_ie_in_beacon_zero_length_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['zero_length_beacon_without_data'],
+            security=self.security_profile,
+            password=self.client_password)
+
+    @create_security_profile
+    def test_associate_11bg_with_vendor_ie_in_beacon_similar_to_wpa_ie_sec_wpa3_sae_ptk_tkip_or_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            additional_ap_parameters=hostapd_constants.
+            VENDOR_IE['simliar_to_wpa'],
+            security=self.security_profile,
+            password=self.client_password)
