@@ -324,7 +324,7 @@ class HostapdConfig(object):
                  security=None,
                  bssid=None,
                  force_wmm=None,
-                 pmf_support=hostapd_constants.PMF_SUPPORT_DISABLED,
+                 pmf_support=None,
                  obss_interval=None,
                  vht_channel_width=None,
                  vht_center_channel=None,
@@ -361,7 +361,8 @@ class HostapdConfig(object):
             force_wmm: True if we should force WMM on, False if we should
                 force it off, None if we shouldn't force anything.
             pmf_support: one of PMF_SUPPORT_* above.  Controls whether the
-                client supports/must support 802.11w.
+                client supports/must support 802.11w. If None, defaults to
+                required with wpa3, else defaults to disabled.
             obss_interval: int, interval in seconds that client should be
                 required to do background scans for overlapping BSSes.
             vht_channel_width: object channel width
@@ -442,10 +443,18 @@ class HostapdConfig(object):
                 self._wmm_enabled = 1
             else:
                 self._wmm_enabled = 0
-        if pmf_support not in hostapd_constants.PMF_SUPPORT_VALUES:
+        if pmf_support is None:
+            if self.security.wpa3:
+                self._pmf_support = hostapd_constants.PMF_SUPPORT_REQUIRED
+            else:
+                self._pmf_support = hostapd_constants.PMF_SUPPORT_DISABLED
+        elif pmf_support not in hostapd_constants.PMF_SUPPORT_VALUES:
             raise ValueError('Invalid value for pmf_support: %r' % pmf_support)
-
-        self._pmf_support = pmf_support
+        elif (pmf_support != hostapd_constants.PMF_SUPPORT_REQUIRED
+              and self.security.wpa3):
+            raise ValueError('PMF support must be required with wpa3.')
+        else:
+            self._pmf_support = pmf_support
         self._obss_interval = obss_interval
         if self.is_11ac:
             if str(vht_channel_width) == '40' or str(

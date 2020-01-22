@@ -76,11 +76,19 @@ def setup_ap_and_associate(access_point,
              check_connectivity, n_capabilities, ac_capabilities,
              vht_bandwidth, setup_bridge)
 
-    return associate(client,
-                     ssid,
-                     password,
-                     check_connectivity=check_connectivity,
-                     hidden=hidden)
+    if security and security.wpa3:
+        return associate(client,
+                         ssid,
+                         password,
+                         key_mgmt='SAE',
+                         check_connectivity=check_connectivity,
+                         hidden=hidden)
+    else:
+        return associate(client,
+                         ssid,
+                         password=password,
+                         check_connectivity=check_connectivity,
+                         hidden=hidden)
 
 
 def setup_ap(access_point,
@@ -147,6 +155,7 @@ def setup_ap(access_point,
 def associate(client,
               ssid,
               password=None,
+              key_mgmt=None,
               check_connectivity=True,
               hidden=False):
     """Associates a client to a WLAN network.
@@ -155,11 +164,13 @@ def associate(client,
         client: A WlanDevice
         ssid: SSID of the ap we are looking for.
         password: The password for the WLAN, if applicable.
+        key_mgmt: The hostapd wpa_key_mgmt value.
         check_connectivity: Whether to check internet connectivity.
         hidden: If the WLAN is hidden or not.
     """
     return client.associate(ssid,
                             password,
+                            key_mgmt=key_mgmt,
                             check_connectivity=check_connectivity,
                             hidden=hidden)
 
