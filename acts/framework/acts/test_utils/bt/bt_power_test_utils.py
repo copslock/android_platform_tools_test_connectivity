@@ -17,7 +17,7 @@
 import logging
 import time
 import acts.test_utils.bt.BleEnum as bleenum
-import acts.test_utils.instrumentation.instrumentation_command_builder as icb
+import acts.test_utils.instrumentation.device.command.instrumentation_command_builder as icb
 
 BLE_LOCATION_SCAN_ENABLE = 'settings put global ble_scan_always_enabled 1'
 BLE_LOCATION_SCAN_DISABLE = 'settings put global ble_scan_always_enabled 0'
