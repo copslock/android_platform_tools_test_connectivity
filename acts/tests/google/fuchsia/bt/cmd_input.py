@@ -74,6 +74,7 @@ class CmdInput(cmd.Cmd):
         # Tool to an abstract_device tool. Only commands that use test_dut will work
         # Otherwise this tool is primarially targeted at Fuchsia devices.
         self.test_dut = create_bluetooth_device(self.pri_dut)
+        self.test_dut.initialize_bluetooth_controller()
         self.target_device_name = target_device_name
         self.log = log
 
