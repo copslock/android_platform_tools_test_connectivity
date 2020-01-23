@@ -23,11 +23,9 @@ import multiprocessing
 
 def run_tests(test_suite, output_file):
     # Redirects stdout and stderr to the given output file.
-    stdout_fd = os.open(output_file, os.O_WRONLY | os.O_CREAT)
-    stderr_fd = os.dup(stdout_fd)
-    os.dup2(stdout_fd, 1)
-    os.dup2(stderr_fd, 2)
-    test_run = unittest.TextTestRunner(verbosity=2).run(test_suite)
+    new_stdout = open(output_file, 'w+')
+    os.dup2(new_stdout.fileno(), 1)
+    test_run = unittest.TextTestRunner(stream=new_stdout, verbosity=2).run(test_suite)
     return test_run.wasSuccessful()
 
 
@@ -65,7 +63,7 @@ def run_all_unit_tests():
                 success = False
                 print('Received the following test failure:')
                 with open(result.output_file, 'r') as out_file:
-                    print(out_file.read())
+                    print(out_file.read(), file=sys.stderr)
         except multiprocessing.TimeoutError:
             success = False
             print('The following test timed out: %r' % result.test_suite,
