@@ -37,6 +37,10 @@ ACTS_CONTROLLER_CONFIG_NAME = 'IPerfClient'
 ACTS_CONTROLLER_REFERENCE_NAME = 'iperf_clients'
 
 
+class IPerfError(Exception):
+    """Raised on execution errors of iPerf."""
+
+
 def create(configs):
     """Factory method for iperf clients.
 
@@ -272,8 +276,8 @@ class IPerfClientOverAdb(IPerfClientBase):
             out = self._android_device.adb.shell(str(iperf_cmd),
                                                  timeout=timeout)
             clean_out = out.split('\n')
-            if "error" in clean_out[0].lower():
-                raise Exception('clean_out')
+            if 'error' in clean_out[0].lower():
+                raise IPerfError(clean_out)
         except job.TimeoutError:
             logging.warning('TimeoutError: Iperf measurement timed out.')
 
