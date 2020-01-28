@@ -444,14 +444,14 @@ class HostapdConfig(object):
             else:
                 self._wmm_enabled = 0
         if pmf_support is None:
-            if self.security.wpa3:
+            if self.security and self.security.wpa3:
                 self._pmf_support = hostapd_constants.PMF_SUPPORT_REQUIRED
             else:
                 self._pmf_support = hostapd_constants.PMF_SUPPORT_DISABLED
         elif pmf_support not in hostapd_constants.PMF_SUPPORT_VALUES:
             raise ValueError('Invalid value for pmf_support: %r' % pmf_support)
         elif (pmf_support != hostapd_constants.PMF_SUPPORT_REQUIRED
-              and self.security.wpa3):
+              and self.security and self.security.wpa3):
             raise ValueError('PMF support must be required with wpa3.')
         else:
             self._pmf_support = pmf_support
