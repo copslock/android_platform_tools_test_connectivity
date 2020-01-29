@@ -248,7 +248,7 @@ class TelephonyBaseTest(BaseTestClass):
                 postfix=build_postfix)
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
-        if "sdm" in ad.model or "msm" in ad.model:
+        if "sdm" in ad.model or "msm" in ad.model or "kon" in ad.model:
             phone_mode = "ssss"
             if hasattr(ad, "mtp_dsds"):
                 phone_mode = "dsds"
