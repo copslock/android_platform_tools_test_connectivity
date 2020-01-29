@@ -914,11 +914,11 @@ def toggle_airplane_mode_msim(log, ad, new_state=None, strict_checking=True):
         new_state = not cur_state
         ad.log.info("Toggle APM mode, from current tate %s to %s", cur_state,
                     new_state)
-
     sub_id_list = []
     active_sub_info = ad.droid.subscriptionGetAllSubInfoList()
-    for info in active_sub_info:
-        sub_id_list.append(info['subscriptionId'])
+    if active_sub_info:
+        for info in active_sub_info:
+            sub_id_list.append(info['subscriptionId'])
 
     ad.ed.clear_all_events()
     time.sleep(0.1)
