@@ -20,6 +20,7 @@ import time
 from acts import logger
 from acts import utils
 
+SHORT_SLEEP = 1
 CHAMBER_SLEEP = 30
 
 
@@ -234,6 +235,8 @@ class BluetestChamber(OtaChamber):
 
     def reset_chamber(self):
         if self.current_mode == 'continuous':
+            self._init_continuous_mode()
+            time.sleep(SHORT_SLEEP)
             self._init_continuous_mode()
         else:
             self._init_manual_mode()
