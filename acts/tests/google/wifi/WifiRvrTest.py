@@ -20,6 +20,7 @@ import json
 import logging
 import numpy
 import os
+import time
 from acts import asserts
 from acts import base_test
 from acts import utils
@@ -492,7 +493,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         else:
             wutils.reset_wifi(self.dut)
             wutils.set_wifi_country_code(self.dut,
-                self.testclass_params['country_code'])
+                                         self.testclass_params['country_code'])
             testcase_params['test_network']['channel'] = testcase_params[
                 'channel']
             wutils.wifi_connect(self.dut,
@@ -514,6 +515,11 @@ class WifiRvrTest(base_test.BaseTestClass):
             attenuator.set_atten(0, strict=False)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
+        # Wait before running the first wifi test
+        if len(self.testclass_results) == 0:
+            self.log.info('Waiting before the first RvR test.')
+            time.sleep(600)
+            self.setup_dut(testcase_params)
         # Get iperf_server address
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
             testcase_params['iperf_server_address'] = self.dut_ip
