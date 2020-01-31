@@ -23,14 +23,13 @@ class HwinfoTest(BaseTestClass):
     def setup_class(self):
         super().setup_class()
         self.dut = self.fuchsia_devices[0]
-        self.dut.hwinfo_lib.init()
 
-    def test_get_info(self):
-        """Verify that getting the hardware information of a Fuchsia
+    def test_get_device_info(self):
+        """Verify that getting the hardware device information of a Fuchsia
         device does not return an error.
 
         Steps:
-        1. Get the hardware info of a Fuchsia device.
+        1. Get the hardware device info of a Fuchsia device.
 
         Expected Result:
         No errors in getting the hardware info.
@@ -42,7 +41,55 @@ class HwinfoTest(BaseTestClass):
         TAGS: Hardware
         Priority: 2
         """
-        result = self.dut.hwinfo_lib.getInfo()
+        result = self.dut.hwinfo_lib.getDeviceInfo()
+        if result.get("error") is None:
+            self.log.info("HW info found: {}".format(result))
+            signals.TestPass(result.get("result"))
+        else:
+            signals.TestFailure(result.get("error"))
+
+    def test_get_product_info(self):
+        """Verify that getting the hardware product information of a Fuchsia
+        device does not return an error.
+
+        Steps:
+        1. Get the hardware product info of a Fuchsia device.
+
+        Expected Result:
+        No errors in getting the hardware product info.
+
+        Returns:
+          signals.TestPass if no errors
+          signals.TestFailure if there are any errors during the test.
+
+        TAGS: Hardware
+        Priority: 2
+        """
+        result = self.dut.hwinfo_lib.getProductInfo()
+        if result.get("error") is None:
+            self.log.info("HW info found: {}".format(result))
+            signals.TestPass(result.get("result"))
+        else:
+            signals.TestFailure(result.get("error"))
+
+    def test_get_board_info(self):
+        """Verify that getting the hardware board information of a Fuchsia
+        device does not return an error.
+
+        Steps:
+        1. Get the hardware board info of a Fuchsia device.
+
+        Expected Result:
+        No errors in getting the hardware board info.
+
+        Returns:
+          signals.TestPass if no errors
+          signals.TestFailure if there are any errors during the test.
+
+        TAGS: Hardware
+        Priority: 2
+        """
+        result = self.dut.hwinfo_lib.getBoardInfo()
         if result.get("error") is None:
             self.log.info("HW info found: {}".format(result))
             signals.TestPass(result.get("result"))
