@@ -25,26 +25,39 @@ class FuchsiaHwinfoLib(BaseLib):
         self.test_counter = tc
         self.client_id = client_id
 
-    def init(self):
-        """Initializes the Hwinfo facade
+    def getDeviceInfo(self):
+        """Get's the hw info of the Fuchsia device under test.
 
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "hwinfo_facade.HwinfoInit"
+        test_cmd = "hwinfo_facade.HwinfoGetDeviceInfo"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def getInfo(self):
+    def getProductInfo(self):
         """Get's the hw info of the Fuchsia device under test.
 
         Returns:
             Dictionary, None if success, error if error.
         """
-        test_cmd = "hwinfo_facade.HwinfoGetInfo"
+        test_cmd = "hwinfo_facade.HwinfoGetProductInfo"
+        test_args = {}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def getBoardInfo(self):
+        """Get's the hw info of the Fuchsia device under test.
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "hwinfo_facade.HwinfoGetBoardInfo"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
