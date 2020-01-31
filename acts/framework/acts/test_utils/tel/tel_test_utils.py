@@ -6946,12 +6946,12 @@ def start_sdm_logger(ad):
     # Delete existing SDM logs which were created 15 mins prior
     ad.sdm_log_path = DEFAULT_SDM_LOG_PATH
     file_count = ad.adb.shell(
-        "find %s -type f -iname *.sdm* | wc -l" % ad.sdm_log_path)
+        "find %s -type f -iname sbuff_[0-9]*.sdm* | wc -l" % ad.sdm_log_path)
     if int(file_count) > 3:
         seconds = 15 * 60
         # Remove sdm logs modified more than specified seconds ago
         ad.adb.shell(
-            "find %s -type f -iname [!.]*.sdm* -not -mtime -%ss -delete" %
+            "find %s -type f -iname sbuff_[0-9]*.sdm* -not -mtime -%ss -delete" %
             (ad.sdm_log_path, seconds))
     # start logging
     cmd = "setprop vendor.sys.modem.logging.enable true"
