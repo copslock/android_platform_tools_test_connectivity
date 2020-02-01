@@ -817,7 +817,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                 mode for mode in modes
                 if mode in self.VALID_TEST_CONFIGS[channel]
             ]
-            for mode in requested_modes:
+            for chain, mode in itertools.product(chain_mask, requested_modes):
                 if 'VHT' in mode:
                     valid_rates = self.VALID_RATES[mode]
                 elif 'HT' in mode:
@@ -828,8 +828,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                     valid_rates = self.VALID_RATES['legacy_5GHz']
                 else:
                     raise ValueError('Invalid test mode.')
-                for chain, rate, angle in itertools.product(
-                        chain_mask, valid_rates, angles):
+                for rate, angle in itertools.product(valid_rates, angles):
                     testcase_params = collections.OrderedDict(
                         channel=channel,
                         mode=mode,
