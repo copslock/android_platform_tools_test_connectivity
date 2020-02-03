@@ -680,6 +680,7 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
         if testcase_params['chain_mask'] != self.current_chain_mask:
             self.log.info('Updating WiFi chain mask to: {}'.format(
                 testcase_params['chain_mask']))
+            self.current_chain_mask = testcase_params['chain_mask']
             if testcase_params['chain_mask'] in ['0', '1']:
                 wputils.set_ini_single_chain_mode(
                     self.dut, int(testcase_params['chain_mask']))
