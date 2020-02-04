@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import math
 import ntpath
 import time
 import acts.controllers.cellular_simulator as cc
@@ -113,7 +114,16 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             input_power: the new input power
         """
-        self.bts[bts_index].input_level = input_power
+        nrb_ul = int(self.bts[bts_index].nrb_ul)
+        max_nrb_ul = self.bts[bts_index].max_nrb_ul
+        input_level = str(
+            round(input_power - 10 * math.log10(nrb_ul / max_nrb_ul), 1))
+        if nrb_ul < max_nrb_ul:
+            self.log.info('Number of UL RBs ({}) is less than the maximum RB '
+                          'allocation ({}). Increasing UL reference power to '
+                          '{} dbm to compensate'.format(
+                              nrb_ul, max_nrb_ul, input_level))
+        self.bts[bts_index].input_level = input_level
 
     def set_output_power(self, bts_index, output_power):
         """ Sets the output power for the indicated base station.
