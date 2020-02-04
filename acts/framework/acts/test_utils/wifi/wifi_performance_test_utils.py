@@ -1156,8 +1156,7 @@ def _set_ini_fields(ini_file_path, ini_field_dict):
                     ini_lines[idx] = "{}={}".format(field_name, field_value)
                     print(ini_lines[idx])
     with open(ini_file_path, 'w') as f:
-        f.write("\n".join(ini_lines))
-
+        f.write("\n".join(ini_lines) + "\n")
 
 def _edit_dut_ini(dut, ini_fields):
     """Function to edit Wifi ini files."""
@@ -1174,8 +1173,8 @@ def _edit_dut_ini(dut, ini_fields):
 def set_ini_single_chain_mode(dut, chain):
     ini_fields = {
         'gEnable2x2': 0,
-        'gSetTxChainmask1x1': chain,
-        'gSetRxChainmask1x1': chain,
+        'gSetTxChainmask1x1': chain+1,
+        'gSetRxChainmask1x1': chain+1,
         'gDualMacFeatureDisable': 1,
         'gDot11Mode': 0
     }
