@@ -168,6 +168,16 @@ class BtsBandwidth(Enum):
                 'Could not map {} to a bandwidth value.'.format(bandwidth_str))
 
 
+MAX_NRB_FOR_BANDWIDTH = {
+    BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 6,
+    BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 15,
+    BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 25,
+    BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 50,
+    BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 75,
+    BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 100
+}
+
+
 class LteMimoMode(Enum):
     """ Values for LTE MIMO modes. """
     NONE = "MIMONOT"
@@ -3249,6 +3259,17 @@ class _BaseTransceiverStation(object):
         """
         cmd = "ULNRB {},{}".format(blocks, self._bts_number)
         self._anritsu.send_command(cmd)
+
+    @property
+    def max_nrb_ul(self):
+        ul_bandwidth = self.ul_bandwidth
+        if ul_bandwidth == 'SAMEASDL':
+            ul_bandwidth = self.dl_bandwidth
+        max_nrb = MAX_NRB_FOR_BANDWIDTH.get(ul_bandwidth, None)
+        if not max_nrb:
+            raise ValueError('Could not get maximum RB allocation'
+                             'for bandwidth: {}'.format(ul_bandwidth))
+        return max_nrb
 
     @property
     def mimo_support(self):
