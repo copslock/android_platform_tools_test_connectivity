@@ -68,8 +68,7 @@ class DataCostTest(base_test.BaseTestClass):
             self.tcpdump_pid = None
 
     def on_fail(self, test_name, begin_time):
-        for ad in self.android_devices:
-            ad.take_bug_report(test_name, begin_time)
+        self.dut.take_bug_report(test_name, begin_time)
 
     """ Helper functions """
 
@@ -84,7 +83,8 @@ class DataCostTest(base_test.BaseTestClass):
         asserts.assert_equal("", ad.adb.shell("ls /data/system/netstats/"),
                              "Fail to clear netstats.")
         ad.reboot()
-        time.sleep(10)
+        time.sleep(30)
+        nutils.verify_lte_data_and_tethering_supported(ad)
         self._check_multipath_preference_from_dumpsys(ad)
 
     def _check_multipath_preference_from_dumpsys(self, ad):
@@ -174,9 +174,8 @@ class DataCostTest(base_test.BaseTestClass):
         """
         # set vars
         ad = self.android_devices[0]
-        self._clear_netstats(ad)
-
         self.dut = ad
+        self._clear_netstats(ad)
         self.tcpdump_pid = nutils.start_tcpdump(ad, self.test_name)
 
         sub_id = str(ad.droid.telephonyGetSubscriberId())
@@ -223,9 +222,8 @@ class DataCostTest(base_test.BaseTestClass):
         """
         # set vars
         ad = self.android_devices[1]
-        self._clear_netstats(ad)
-
         self.dut = ad
+        self._clear_netstats(ad)
         self.tcpdump_pid = nutils.start_tcpdump(ad, self.test_name)
 
         cell_network = ad.droid.connectivityGetActiveNetwork()
