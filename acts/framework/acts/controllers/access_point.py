@@ -345,6 +345,7 @@ class AccessPoint(object):
         self.ssh.run('iptables -t nat -A POSTROUTING -o %s -j MASQUERADE' %
                      self.wan)
         self.ssh.run('echo 1 > /proc/sys/net/ipv4/ip_forward')
+        self.ssh.run('echo 1 > /proc/sys/net/ipv6/conf/all/forwarding')
 
     def stop_nat(self):
         """Stop NAT on the AP.
@@ -357,6 +358,7 @@ class AccessPoint(object):
         """
         self.ssh.run('iptables -t nat -F')
         self.ssh.run('echo 0 > /proc/sys/net/ipv4/ip_forward')
+        self.ssh.run('echo 0 > /proc/sys/net/ipv6/conf/all/forwarding')
 
     def create_bridge(self, bridge_name, interfaces):
         """Create the specified bridge and bridge the specified interfaces.
