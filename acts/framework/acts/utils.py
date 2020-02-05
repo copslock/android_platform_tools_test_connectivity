@@ -1474,5 +1474,7 @@ def get_interface_based_on_ip(comm_channel, desired_ip_address):
 
 
 def renew_linux_ip_address(comm_channel, interface):
+    comm_channel.run('sudo ifconfig %s down' % interface)
+    comm_channel.run('sudo ifconfig %s up' % interface)
     comm_channel.run('sudo dhclient -r %s' % interface)
     comm_channel.run('sudo dhclient %s' % interface)
