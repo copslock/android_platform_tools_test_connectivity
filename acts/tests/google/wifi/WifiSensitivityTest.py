@@ -709,61 +709,65 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
     def process_testclass_results(self):
         """Saves and plots test results from all executed test cases."""
         testclass_results_dict = collections.OrderedDict()
-        id_fields = ['mode', 'rate', 'num_streams', 'chain_mask']
+        id_fields = ['channel', 'mode', 'rate']
         plots = []
         for result in self.testclass_results:
             test_id = self.extract_test_id(result['testcase_params'],
                                            id_fields)
             test_id = tuple(test_id.items())
-            channel = result['testcase_params']['channel']
+            chain_mask = result['testcase_params']['chain_mask']
+            num_streams = result['testcase_params']['num_streams']
+            line_id = (chain_mask, num_streams)
             if test_id not in testclass_results_dict:
                 testclass_results_dict[test_id] = collections.OrderedDict()
-            if channel not in testclass_results_dict[test_id]:
-                testclass_results_dict[test_id][channel] = {
+            if line_id not in testclass_results_dict[test_id]:
+                testclass_results_dict[test_id][line_id] = {
                     'orientation': [],
                     'sensitivity': []
                 }
-            testclass_results_dict[test_id][channel]['orientation'].append(
+            testclass_results_dict[test_id][line_id]['orientation'].append(
                 result['testcase_params']['orientation'])
             if result['peak_throughput_pct'] >= 95:
-                testclass_results_dict[test_id][channel]['sensitivity'].append(
+                testclass_results_dict[test_id][line_id]['sensitivity'].append(
                     result['sensitivity'])
             else:
-                testclass_results_dict[test_id][channel]['sensitivity'].append(
+                testclass_results_dict[test_id][line_id]['sensitivity'].append(
                     float('nan'))
 
         for test_id, test_data in testclass_results_dict.items():
             test_id_dict = dict(test_id)
             if 'legacy' in test_id_dict['mode']:
-                test_id_str = '{} {}Mbps, Chain Mask = {}'.format(
-                    test_id_dict['mode'], test_id_dict['rate'],
-                    test_id_dict['chain_mask'])
-                metric_test_config = '{}_{}_ch{}'.format(
-                    test_id_dict['mode'], test_id_dict['rate'],
-                    test_id_dict['chain_mask'])
+                test_id_str = 'Channel {} - {} {}Mbps'.format(
+                    test_id_dict['channel'], test_id_dict['mode'],
+                    test_id_dict['rate'])
             else:
-                test_id_str = '{} MCS{} Nss{}, Chain Mask = {}'.format(
-                    test_id_dict['mode'], test_id_dict['rate'],
-                    test_id_dict['num_streams'], test_id_dict['chain_mask'])
-                metric_test_config = '{}_mcs{}_nss{}_ch{}'.format(
-                    test_id_dict['mode'], test_id_dict['rate'],
-                    test_id_dict['num_streams'], test_id_dict['chain_mask'])
+                test_id_str = 'Channel {} - {} MCS{}'.format(
+                    test_id_dict['channel'], test_id_dict['mode'],
+                    test_id_dict['rate'])
             curr_plot = wputils.BokehFigure(
                 title=str(test_id_str),
                 x_label='Orientation (deg)',
                 primary_y_label='Sensitivity (dBm)')
-            for channel, channel_results in test_data.items():
-                curr_plot.add_line(channel_results['orientation'],
-                                   channel_results['sensitivity'],
-                                   legend='Channel {}'.format(channel),
+            for line_id, line_results in test_data.items():
+                curr_plot.add_line(line_results['orientation'],
+                                   line_results['sensitivity'],
+                                   legend='Nss{} - Chain Mask {}'.format(
+                                       line_id[1], line_id[0]),
                                    marker='circle')
-                metric_tag = 'ota_summary_ch{}_{}'.format(
-                    channel, metric_test_config)
+                if 'legacy' in test_id_dict['mode']:
+                    metric_tag = 'ota_summary_ch{}_{}_{}_ch{}'.format(
+                        test_id_dict['channel'], test_id_dict['mode'],
+                        test_id_dict['rate'], line_id[0])
+                else:
+                    metric_tag = 'ota_summary_ch{}_{}_mcs{}_nss{}_ch{}'.format(
+                        test_id_dict['channel'], test_id_dict['mode'],
+                        test_id_dict['rate'], line_id[1], line_id[0])
+
                 metric_name = metric_tag + '.avg_sensitivity'
-                metric_value = numpy.nanmean(channel_results['sensitivity'])
+                metric_value = numpy.nanmean(line_results['sensitivity'])
                 self.testclass_metric_logger.add_metric(
                     metric_name, metric_value)
-                self.log.info(("Average Sensitivity for {}: {:.2f}").format(
+                self.log.info(("Average Sensitivity for {}: {:.1f}").format(
                     metric_tag, metric_value))
             current_context = (
                 context.get_current_context().get_full_output_path())
@@ -880,7 +884,10 @@ class WifiOtaSensitivity_PerChain_TenDegree_Test(WifiOtaSensitivityTest):
     def __init__(self, controllers):
         WifiOtaSensitivityTest.__init__(self, controllers)
         requested_channels = [6, 36, 149]
-        requested_rates = [self.RateTuple(2, 1, 21.7)]
+        requested_rates = [
+            self.RateTuple(2, 1, 21.7),
+            self.RateTuple(2, 2, 43.3)
+        ]
         self.tests = self.generate_test_cases(requested_channels, ['VHT20'],
                                               requested_rates,
                                               ['0', '1', '2x2'],

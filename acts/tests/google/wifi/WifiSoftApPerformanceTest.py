@@ -2,14 +2,14 @@
 #
 #   Copyright 2018 - The Android Open Source Project
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
+#   Licensed under the Apache License, Version 2.0 (the 'License');
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
 #
 #       http://www.apache.org/licenses/LICENSE-2.0
 #
 #   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
+#   distributed under the License is distributed on an 'AS IS' BASIS,
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
@@ -17,6 +17,7 @@
 import collections
 import logging
 import os
+from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import iperf_server as ipf
@@ -33,8 +34,8 @@ AccessPointTuple = collections.namedtuple(('AccessPointTuple'),
 class WifiSoftApRvrTest(WifiRvrTest):
     def __init__(self, controllers):
         base_test.BaseTestClass.__init__(self, controllers)
-        self.tests = ("test_rvr_TCP_DL_2GHz", "test_rvr_TCP_UL_2GHz",
-                      "test_rvr_TCP_DL_5GHz", "test_rvr_TCP_UL_5GHz")
+        self.tests = ('test_rvr_TCP_DL_2GHz', 'test_rvr_TCP_UL_2GHz',
+                      'test_rvr_TCP_DL_5GHz', 'test_rvr_TCP_UL_5GHz')
         self.testcase_metric_logger = (
             BlackboxMappedMetricLogger.for_test_case())
         self.testclass_metric_logger = (
@@ -54,16 +55,16 @@ class WifiSoftApRvrTest(WifiRvrTest):
         self.testclass_params = self.sap_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.iperf_server = ipf.create([{
-            "AndroidDevice":
+            'AndroidDevice':
             self.android_devices[0].serial,
-            "port":
-            "5201"
+            'port':
+            '5201'
         }])[0]
         self.iperf_client = ipc.create([{
-            "AndroidDevice":
+            'AndroidDevice':
             self.android_devices[1].serial,
-            "port":
-            "5201"
+            'port':
+            '5201'
         }])[0]
 
         self.log_path = os.path.join(logging.log_path, 'results')
@@ -80,10 +81,10 @@ class WifiSoftApRvrTest(WifiRvrTest):
         if hasattr(self, 'firmware'):
             self.log.info('Pushing WiFi firmware to DUT.')
             wlanmdsp = [
-                file for file in self.firmware if "wlanmdsp.mbn" in file
+                file for file in self.firmware if 'wlanmdsp.mbn' in file
             ][0]
             data_msc = [file for file in self.firmware
-                        if "Data.msc" in file][0]
+                        if 'Data.msc' in file][0]
             wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         self.testclass_results = []
 
@@ -103,14 +104,14 @@ class WifiSoftApRvrTest(WifiRvrTest):
 
     def get_sap_connection_info(self):
         info = {}
-        info["client_ip_address"] = self.android_devices[
+        info['client_ip_address'] = self.android_devices[
             1].droid.connectivityGetIPv4Addresses('wlan0')[0]
-        info["ap_ip_address"] = self.android_devices[
+        info['ap_ip_address'] = self.android_devices[
             0].droid.connectivityGetIPv4Addresses('wlan1')[0]
-        info["frequency"] = self.android_devices[1].adb.shell(
-            "wpa_cli status | grep freq").split("=")[1]
-        info["channel"] = wutils.WifiEnums.freq_to_channel[int(
-            info["frequency"])]
+        info['frequency'] = self.android_devices[1].adb.shell(
+            'wpa_cli status | grep freq').split('=')[1]
+        info['channel'] = wutils.WifiEnums.freq_to_channel[int(
+            info['frequency'])]
         return info
 
     def setup_sap_rvr_test(self, testcase_params):
@@ -119,6 +120,9 @@ class WifiSoftApRvrTest(WifiRvrTest):
         Args:
             testcase_params: dict containing test-specific parameters
         """
+        for dev in self.android_devices:
+            if not wputils.health_check(dev, 20):
+                asserts.skip('DUT health check failed. Skipping test.')
         # Reset WiFi on all devices
         for dev in self.android_devices:
             wutils.reset_wifi(dev)
@@ -126,7 +130,7 @@ class WifiSoftApRvrTest(WifiRvrTest):
 
         # Setup Soft AP
         sap_config = wutils.create_softap_config()
-        self.log.info("SoftAP Config: {}".format(sap_config))
+        self.log.info('SoftAP Config: {}'.format(sap_config))
         wutils.start_wifi_tethering(self.android_devices[0],
                                     sap_config[wutils.WifiEnums.SSID_KEY],
                                     sap_config[wutils.WifiEnums.PWD_KEY],
@@ -135,25 +139,24 @@ class WifiSoftApRvrTest(WifiRvrTest):
         [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
         # Connect DUT to Network
         network = {
-            "SSID": sap_config[wutils.WifiEnums.SSID_KEY],
-            "password": sap_config[wutils.WifiEnums.PWD_KEY]
+            'SSID': sap_config[wutils.WifiEnums.SSID_KEY],
+            'password': sap_config[wutils.WifiEnums.PWD_KEY]
         }
-        wutils.wifi_connect(
-            self.android_devices[1],
-            network,
-            num_of_tries=5,
-            check_connectivity=False)
+        wutils.wifi_connect(self.android_devices[1],
+                            network,
+                            num_of_tries=5,
+                            check_connectivity=False)
         # Compile meta data
         self.access_point = AccessPointTuple(sap_config)
         testcase_params['connection_info'] = self.get_sap_connection_info()
-        testcase_params["channel"] = testcase_params['connection_info'][
+        testcase_params['channel'] = testcase_params['connection_info'][
             'channel']
-        if testcase_params["channel"] < 13:
-            testcase_params["mode"] = "VHT20"
+        if testcase_params['channel'] < 13:
+            testcase_params['mode'] = 'VHT20'
         else:
-            testcase_params["mode"] = "VHT80"
-        testcase_params["iperf_server_address"] = testcase_params[
-            'connection_info']["ap_ip_address"]
+            testcase_params['mode'] = 'VHT80'
+        testcase_params['iperf_server_address'] = testcase_params[
+            'connection_info']['ap_ip_address']
 
     def compile_test_params(self, testcase_params):
         """Function that completes all test params based on the test name.
