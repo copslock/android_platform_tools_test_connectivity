@@ -717,19 +717,6 @@ class BaseTestClass(MoblyBaseTest):
                                func.__name__, self.TAG)
             return False
 
-    def _get_all_test_names(self):
-        """Finds all the function names that match the test case naming
-        convention in this class.
-
-        Returns:
-            A list of strings, each is a test case name.
-        """
-        test_names = []
-        for name in dir(self):
-            if name.startswith("test_"):
-                test_names.append(name)
-        return test_names
-
     def _get_test_funcs(self, test_names):
         """Obtain the actual functions of test cases based on test names.
 
