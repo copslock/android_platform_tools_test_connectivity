@@ -97,7 +97,16 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         values = self.consume_parameter(self.PARAM_DIRECTION, 1)
 
-        if values:
+        if not values:
+            self.log.warning("The keyword {} was not included in the testname "
+                             "parameters. Setting to {} by default.".format(
+                                 self.PARAM_DIRECTION,
+                                 self.PARAM_DIRECTION_DL_UL))
+            self.traffic_direction = self.PARAM_DIRECTION_DL_UL
+        elif values[1] in [
+                self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_UL,
+                self.PARAM_DIRECTION_DL_UL
+        ]:
             self.traffic_direction = values[1]
         else:
             self.log.error("The test name has to include parameter {} "
