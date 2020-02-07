@@ -76,6 +76,18 @@ LIST_LOCINFO = [
     'Bearing'
 ]
 
+# GPS TTFF Log Reading Config
+CONFIG_GPSTTFFLOG = {
+    'ttff_info':
+    r'Loop:(?P<loop>\d+)\s+'
+    r'(?P<start_datetime>\d+\/\d+\/\d+-\d+:\d+:\d+.\d+)\s+'
+    r'(?P<stop_datetime>\d+\/\d+\/\d+-\d+:\d+:\d+.\d+)\s+'
+    r'(?P<ttff>\d+.\d+)\s+'
+    r'\[Avg Top4 : (?P<avg_top4_cn0>\d+.\d+)\]\s'
+    r'\[Avg : (?P<avg_cn0>\d+.\d+)\]\s+\[(?P<fix_type>\d+\w+ fix)\]\s+'
+    r'\[Satellites used for fix : (?P<satnum_for_fix>\d+)\]'
+}
+
 LOGPARSE_UTIL_LOGGER = logger.create_logger()
 
 
@@ -145,6 +157,37 @@ def parse_log_to_df(filename, configs, index_rownum=True):
     return parsed_data
 
 
+def parse_gpstool_ttfflog_to_df(filename):
+    """Parse GPSTool ttff log to Pandas dataframes.
+
+    Args:
+      filename: full log file name.
+        Type, String.
+
+    Returns:
+      ttff_df: TTFF Data Frame.
+        Type, Pandas DataFrame.
+    """
+    # Get parsed dataframe list
+    parsed_data = lputil.parse_log_to_df(
+        filename=filename,
+        configs=CONFIG_GPSTTFFLOG,
+    )
+    ttff_df = parsed_data['ttff_info']
+
+    # Data Conversion
+    ttff_df['loop'] = ttff_df['loop'].astype(int)
+    ttff_df['start_datetime'] = pds.to_datetime(ttff_df['start_datetime'])
+    ttff_df['stop_datetime'] = pds.to_datetime(ttff_df['stop_datetime'])
+    ttff_df['ttff'] = ttff_df['ttff'].astype(float)
+    ttff_df['avg_top4_cn0'] = ttff_df['avg_top4_cn0'].astype(float)
+    ttff_df['avg_cn0'] = ttff_df['avg_cn0'].astype(float)
+    ttff_df['satnum_for_fix'] = ttff_df['satnum_for_fix'].astype(int)
+
+    # return ttff dataframe
+    return ttff_df
+
+
 def parse_gpsapilog_to_df(filename):
     """Parse GPS API log to Pandas dataframes.
 
@@ -161,7 +204,6 @@ def parse_gpsapilog_to_df(filename):
         Type, Pandas DataFrame.
         include Provider, Latitude, Longitude, Altitude, GNSSTime, Speed, Bearing
     """
-
     def get_phone_time(target_df_row, timestamp_df):
         """subfunction to get the phone_time."""
 
@@ -196,7 +238,7 @@ def parse_gpsapilog_to_df(filename):
                                               axis=1,
                                               timestamp_df=timestamp_df)
             current_df[['phone_time', 'time_row_num'
-                       ]] = pds.DataFrame(time_n_row_num.apply(pds.Series))
+                        ]] = pds.DataFrame(time_n_row_num.apply(pds.Series))
 
     # Get space vehicle info dataframe
     sv_info_df = parsed_data['SpaceVehicle']
