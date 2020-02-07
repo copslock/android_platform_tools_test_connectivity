@@ -26,6 +26,7 @@ import urllib.parse
 import time
 import acts.controllers.iperf_server as ipf
 import shutil
+import struct
 
 from acts import signals
 from acts import utils
@@ -8615,3 +8616,70 @@ def set_call_forwarding_by_mmi(
     ad.log.error("Failed to register or activate call forwarding %s to %s." %
         (call_forwarding_type, forwarded_number))
     return False
+
+
+def get_rx_tx_power_levels(log, ad):
+    """ Obtains Rx and Tx power levels from the MDS application.
+
+    The method requires the MDS app to be installed in the DUT.
+
+    Args:
+        log: logger object
+        ad: an android device
+
+    Return:
+        A tuple where the first element is an array array with the RSRP value
+        in Rx chain, and the second element is the transmitted power in dBm.
+        Values for invalid Rx / Tx chains are set to None.
+    """
+    cmd = ('am instrument -w -e request "80 00 e8 03 00 08 00 00 00" -e '
+           'response wait "com.google.mdstest/com.google.mdstest.instrument.'
+           'ModemCommandInstrumentation"')
+    output = ad.adb.shell(cmd)
+
+    if 'result=SUCCESS' not in output:
+        raise RuntimeError('Could not obtain Tx/Rx power levels from MDS. Is '
+                           'the MDS app installed?')
+
+    response = re.search(r"(?<=response=).+", output)
+
+    if not response:
+        raise RuntimeError('Invalid response from the MDS app:\n' + output)
+
+    # Obtain a list of bytes in hex format from the response string
+    response_hex = response.group(0).split(' ')
+
+    def get_bool(pos):
+        """ Obtain a boolean variable from the byte array. """
+        return response_hex[pos] == '01'
+
+    def get_int32(pos):
+        """ Obtain an int from the byte array. Bytes are printed in
+        little endian format."""
+        return struct.unpack(
+            '<i', bytearray.fromhex(''.join(response_hex[pos:pos + 4])))[0]
+
+    rx_power = []
+    RX_CHAINS = 4
+
+    for i in range(RX_CHAINS):
+        # Calculate starting position for the Rx chain data structure
+        start = 12 + i * 22
+
+        # The first byte in the data structure indicates if the rx chain is
+        # valid.
+        if get_bool(start):
+            rx_power.append(get_int32(start + 2) / 10)
+        else:
+            rx_power.append(None)
+
+    # Calculate the position for the tx chain data structure
+    tx_pos = 12 + RX_CHAINS * 22
+
+    tx_valid = get_bool(tx_pos)
+    if tx_valid:
+        tx_power = get_int32(tx_pos + 2) / -10
+    else:
+        tx_power = None
+
+    return rx_power, tx_power
