@@ -40,9 +40,9 @@ class LocationPlatinumTest(BaseTestClass):
         self.ad = self.android_devices[0]
         req_params = [
             # A { SSID, password } dictionary. Password is optional.
-            'pixel_lab_network',
+            'wifi_network',
             # A [latitude, longitude] list to identify test location.
-            'pixel_lab_location',
+            'test_location',
             # Cold Start Criteria, a int to define the criteria.
             'cs_criteria',
             # Warm Start Criteria, a int to define the criteria.
@@ -75,7 +75,7 @@ class LocationPlatinumTest(BaseTestClass):
             self.ad.adb.shell('settings put secure location_mode 3')
         if not self.ad.droid.wifiCheckState():
             wutils.wifi_toggle_state(self.ad, True)
-            gutils.connect_to_wifi_network(self.ad, self.pixel_lab_network)
+            gutils.connect_to_wifi_network(self.ad, self.wifi_network)
         if int(self.ad.adb.shell('settings get global mobile_data')) != 1:
             gutils.set_mobile_data(self.ad, True)
         self.grant_location_permission(True)
@@ -128,7 +128,7 @@ class LocationPlatinumTest(BaseTestClass):
         gutils.start_ttff_by_gtw_gpstool(
             self.ad, ttff_mode=mode, iteration=1, aid_data=True)
         ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                       self.pixel_lab_location)
+                                                       self.test_location)
         result = gutils.check_ttff_data(
             self.ad,
             ttff_data,
@@ -251,9 +251,10 @@ class LocationPlatinumTest(BaseTestClass):
         asserts.assert_true(
             gutils.check_location_api(self.ad, retries=1),
             'APP failed to receive location fix in foreground')
-        # Press HOME and let GPStool go background
+        self.ad.log.info('Trun GPSTool from foreground to background')
         self.ad.adb.shell('input keyevent 3')
         begin_time = utils.get_current_epoch_time()
+        self.ad.log.info('Wait 60 seconds for app clean up')
         time.sleep(60)
         result = self.ad.search_logcat(
             'skipping loc update for no op app: com.android.gpstool',
