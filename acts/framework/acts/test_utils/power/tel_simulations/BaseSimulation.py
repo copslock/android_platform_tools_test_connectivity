@@ -22,6 +22,7 @@ from acts.controllers import cellular_simulator
 from acts.test_utils.tel.tel_test_utils import get_telephony_signal_strength
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_cell_data_roaming
+from acts.test_utils.tel.tel_test_utils import get_rx_tx_power_levels
 
 
 class BaseSimulation():
@@ -294,6 +295,22 @@ class BaseSimulation():
             self.primary_config, self.sim_ul_power)
         self.simulator.configure_bts(new_config)
         self.primary_config.incorporate(new_config)
+
+        # Verify signal level
+        try:
+            rx_power, tx_power = get_rx_tx_power_levels(self.log, self.dut)
+
+            if not tx_power or not rx_power[0]:
+                raise RuntimeError('The method return invalid Tx/Rx values.')
+
+            self.log.info('Signal level reported by the DUT in dBm: Tx = {}, '
+                          'Rx = {}.'.format(tx_power, rx_power))
+
+            if abs(self.sim_ul_power - tx_power) > 1:
+                self.log.warning('Tx power at the UE is off by more than 1 dB')
+
+        except RuntimeError as e:
+            self.log.error('Could not verify Rx / Tx levels: %s.' % e)
 
         # Stop IP traffic after setting the UL power level
         self.stop_traffic_for_calibration()
