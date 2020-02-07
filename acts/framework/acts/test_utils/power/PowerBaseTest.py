@@ -90,7 +90,7 @@ class PowerBaseTest(base_test.BaseTestClass):
     def setup_class(self):
 
         self.log = logging.getLogger()
-        self.tests = self._get_all_test_names()
+        self.tests = self.get_existing_test_names()
 
         # Obtain test parameters from user_params
         TEST_PARAMS = self.TAG + '_params'
