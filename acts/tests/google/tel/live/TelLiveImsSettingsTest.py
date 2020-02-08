@@ -995,7 +995,7 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
                                 wfc_enabled, wfc_mode):
                             result = False
                         self.dut.log.info("Call IMS factory reset")
-                        self.dut.droid.imsFactoryReset()
+                        self.dut.droid.telephonyFactoryReset()
                         if not self.verify_default_ims_setting():
                             result = False
         return result
