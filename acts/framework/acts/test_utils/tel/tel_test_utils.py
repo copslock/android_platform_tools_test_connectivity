@@ -4393,17 +4393,43 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
 
 
 def toggle_wfc(log, ad, new_state=None):
-    """ Toggle WFC enable/disable"""
+    """ Toggle WFC enable/disable
+
+    Args:
+        log: Log object
+        ad: Android device object.
+        new_state: True or False
+    """
     if not ad.droid.imsIsWfcEnabledByPlatform():
         ad.log.info("WFC is not enabled by platform")
         return False
     current_state = ad.droid.imsIsWfcEnabledByUser()
-    if current_state == None:
+    if current_state is None:
         new_state = not current_state
     if new_state != current_state:
         ad.log.info("Toggle WFC user enabled from %s to %s", current_state,
                     new_state)
         ad.droid.imsSetWfcSetting(new_state)
+    return True
+
+
+def toggle_wfc_for_subscription(ad, new_state=None, sub_id=None):
+    """ Toggle WFC enable/disable
+
+    Args:
+        ad: Android device object.
+        sub_id: subscription Id
+        new_state: True or False
+    """
+    if sub_id is None:
+        sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+    current_state = ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id)
+    if current_state is None:
+        new_state = not current_state
+    if new_state != current_state:
+        ad.log.info("SubId %s - Toggle WFC from %s to %s", sub_id,
+                    current_state, new_state)
+        ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, new_state)
     return True
 
 
@@ -4464,6 +4490,107 @@ def set_wfc_mode(log, ad, wfc_mode):
         return False
     return True
 
+
+def set_wfc_mode_for_subscription(ad, wfc_mode, sub_id=None):
+    """Set WFC enable/disable and mode subscription based
+
+    Args:
+        ad: Android device object.
+        wfc_mode: WFC mode to set to.
+            Valid mode includes: WFC_MODE_WIFI_ONLY, WFC_MODE_CELLULAR_PREFERRED,
+            WFC_MODE_WIFI_PREFERRED.
+        sub_id: subscription Id
+
+    Returns:
+        True if success. False if ad does not support WFC or error happened.
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        if not ad.droid.imsMmTelIsVoWiFiSettingEnabled(sub_id):
+            ad.log.info("SubId %s - Enabling WiFi Calling", sub_id)
+            ad.droid.imsMmTelSetVoWiFiSettingEnabled(sub_id, True)
+        ad.log.info("SubId %s - setwfcmode to %s", sub_id, wfc_mode)
+        ad.droid.imsMmTelSetVoWiFiModeSetting(sub_id, wfc_mode)
+        mode = ad.droid.imsMmTelGetVoWiFiModeSetting(sub_id)
+        if mode != wfc_mode:
+            ad.log.error("SubId %s - getwfcmode shows %s", sub_id, mode)
+            return False
+    except Exception as e:
+        ad.log.error(e)
+        return False
+    return True
+
+
+def set_ims_provisioning_for_subscription(ad, feature_flag, value, sub_id=None):
+    """ Sets Provisioning Values for Subscription Id
+
+    Args:
+        ad: Android device object.
+        sub_id: Subscription Id
+        feature_flag: voice or video
+        value: enable or disable
+
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        ad.log.info("SubId %s - setprovisioning for %s to %s",
+                    sub_id, feature_flag, value)
+        result = ad.droid.provisioningSetProvisioningIntValue(sub_id,
+                    feature_flag, value)
+        if result == 0:
+            return True
+        return False
+    except Exception as e:
+        ad.log.error(e)
+        return False
+
+
+def get_ims_provisioning_for_subscription(ad, feature_flag, tech, sub_id=None):
+    """ Gets Provisioning Values for Subscription Id
+
+    Args:
+        ad: Android device object.
+        sub_id: Subscription Id
+        feature_flag: voice, video, ut, sms
+        tech: lte, iwlan
+
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        result = ad.droid.provisioningGetProvisioningStatusForCapability(
+                    sub_id, feature_flag, tech)
+        ad.log.info("SubId %s - getprovisioning for %s on %s - %s",
+                    sub_id, feature_flag, tech, result)
+        return result
+    except Exception as e:
+        ad.log.error(e)
+        return False
+
+
+def get_carrier_provisioning_for_subscription(ad, feature_flag,
+                                              tech, sub_id=None):
+    """ Gets Provisioning Values for Subscription Id
+
+    Args:
+        ad: Android device object.
+        sub_id: Subscription Id
+        feature_flag: voice, video, ut, sms
+        tech: wlan, wwan
+
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        result = ad.droid.imsMmTelIsSupported(sub_id, feature_flag, tech)
+        ad.log.info("SubId %s - imsMmTelIsSupported for %s on %s - %s",
+                    sub_id, feature_flag, tech, result)
+        return result
+    except Exception as e:
+        ad.log.error(e)
+        return False
 
 def activate_wfc_on_device(log, ad):
     """ Activates WiFi calling on device.
@@ -4540,6 +4667,33 @@ def toggle_video_calling(log, ad, new_state=None):
         new_state = not current_state
     if new_state != current_state:
         ad.droid.imsSetVtSetting(new_state)
+    return True
+
+
+def toggle_video_calling_for_subscription(ad, new_state=None, sub_id=None):
+    """Toggle enable/disable Video calling for subscription.
+
+    Args:
+        ad: Android device object.
+        new_state: Video mode state to set to.
+            True for enable, False for disable.
+            If None, opposite of the current state.
+        sub_id: subscription Id
+
+    """
+    try:
+        if sub_id is None:
+            sub_id = ad.droid.subscriptionGetDefaultVoiceSubId()
+        current_state = ad.droid.imsMmTelIsVtSettingEnabled(sub_id)
+        if new_state is None:
+            new_state = not current_state
+        if new_state != current_state:
+            ad.log.info("SubId %s - Toggle VT from %s to %s", sub_id,
+                        current_state, new_state)
+            ad.droid.imsMmTelSetVtSettingEnabled(sub_id, new_state)
+    except Exception as e:
+        ad.log.error(e)
+        return False
     return True
 
 
@@ -6193,7 +6347,6 @@ def ensure_phone_default_state(log, ad, check_subscription=True, retry=2):
         if not wait_for_droid_not_in_call(log, ad):
             ad.log.error("Failed to end call")
         ad.droid.telephonyFactoryReset()
-        ad.droid.imsFactoryReset()
         data_roaming = getattr(ad, 'roaming', False)
         if get_cell_data_roaming_state_by_adb(ad) != data_roaming:
             set_cell_data_roaming_state_by_adb(ad, data_roaming)
