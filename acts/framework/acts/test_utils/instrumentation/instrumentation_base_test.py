@@ -18,16 +18,14 @@ import os
 
 import yaml
 from acts.keys import Config
-from acts.test_utils.instrumentation import app_installer
 from acts.test_utils.instrumentation import instrumentation_proto_parser \
     as proto_parser
-from acts.test_utils.instrumentation.adb_commands import common
 from acts.test_utils.instrumentation.config_wrapper import ConfigWrapper
-from acts.test_utils.instrumentation.instrumentation_command_builder import \
-    InstrumentationCommandBuilder
+from acts.test_utils.instrumentation.device.command.adb_commands import common
 
 from acts import base_test
 from acts import context
+from acts import utils
 
 RESOLVE_FILE_MARKER = 'FILE'
 FILE_NOT_FOUND = 'File is missing from ACTS config'
@@ -125,11 +123,12 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
     def setup_class(self):
         """Class setup"""
         self.ad_dut = self.android_devices[0]
-        self.ad_apps = app_installer.AppInstaller(self.ad_dut)
         self._prepare_device()
 
     def teardown_class(self):
-        """Class teardown"""
+        """Class teardown. Takes bugreport and cleans up device."""
+        self._ad_take_bugreport(self.ad_dut, 'teardown_class',
+                                utils.get_current_epoch_time())
         self._cleanup_device()
 
     def _prepare_device(self):
@@ -263,30 +262,3 @@ class InstrumentationBaseTest(base_test.BaseTestClass):
         self.adb_run(common.location_network.toggle(False))
         self.adb_run(common.wifi.toggle(False))
         self.adb_run(common.bluetooth.toggle(True))
-
-    def grant_permissions(self):
-        """Grant all runtime permissions with PermissionUtils."""
-        self.log.info('Granting all revoked runtime permissions.')
-
-        # Install PermissionUtils.apk
-        permissions_apk_path = self._instrumentation_config.get_file(
-            'permissions_apk')
-        self.ad_apps.install(permissions_apk_path)
-        if not self.ad_apps.is_installed(permissions_apk_path):
-            raise InstrumentationTestError(
-                'Failed to install PermissionUtils.apk, abort!')
-        package_name = self.ad_apps.get_package_name(permissions_apk_path)
-
-        # Run the instrumentation command
-        cmd_builder = InstrumentationCommandBuilder()
-        cmd_builder.set_manifest_package(package_name)
-        cmd_builder.set_runner('.PermissionInstrumentation')
-        cmd_builder.add_flag('-w')
-        cmd_builder.add_flag('-r')
-        cmd_builder.add_key_value_param('command', 'grant-all')
-        cmd = cmd_builder.build()
-        self.log.debug('Instrumentation call: %s' % cmd)
-        self.adb_run(cmd)
-
-        # Uninstall PermissionUtils.apk
-        self.ad_apps.uninstall(permissions_apk_path)

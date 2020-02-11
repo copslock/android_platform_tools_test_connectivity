@@ -128,13 +128,11 @@ class IPerfClientOverAdbTest(unittest.TestCase):
 
         with mock.patch('acts.controllers.iperf_client.'
                         'IPerfClientOverAdb._android_device') as adb_device:
-            adb_device.run_iperf_client.return_value = ('', [expected_output])
+            adb_device.adb.shell.return_value = 'output'
             client.start('127.0.0.1', 'IPERF_ARGS', 'TAG')
 
         mock_open.assert_called_with(file_path, 'w')
-        mock_open().__enter__().write.assert_called_with(
-            expected_output
-        )
+        mock_open().__enter__().write.assert_called_with('output')
 
 
 if __name__ == '__main__':

@@ -56,6 +56,7 @@ from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts.test_utils.wifi.wifi_power_test_utils import bokeh_plot
+from acts.test_utils.wifi.wifi_power_test_utils import get_phone_ip
 from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
@@ -72,41 +73,38 @@ BLUETOOTH_WAIT_TIME = 2
 AVRCP_WAIT_TIME = 3
 
 
-def avrcp_actions(pri_ad, audio_receiver):
+def avrcp_actions(pri_ad, bt_device):
     """Performs avrcp controls like volume up, volume down, skip next and
     skip previous.
 
     Args:
         pri_ad: Android device.
-        audio_receiver: Relay instance.
+        bt_device: bt device instance.
 
     Returns:
         True if successful, otherwise False.
     """
-    if "Volume_up" and "Volume_down" in (audio_receiver.relays.keys()):
-        current_volume = pri_ad.droid.getMediaVolume()
-        audio_receiver.press_volume_up()
+    current_volume = pri_ad.droid.getMediaVolume()
+    for _ in range(5):
+        bt_device.volume_up()
         time.sleep(AVRCP_WAIT_TIME)
-        if current_volume == pri_ad.droid.getMediaVolume():
-            pri_ad.log.error("Increase volume failed")
-            return False
+    if current_volume == pri_ad.droid.getMediaVolume():
+        pri_ad.log.error("Increase volume failed")
+        return False
+    time.sleep(AVRCP_WAIT_TIME)
+    current_volume = pri_ad.droid.getMediaVolume()
+    for _ in range(5):
+        bt_device.volume_down()
         time.sleep(AVRCP_WAIT_TIME)
-        current_volume = pri_ad.droid.getMediaVolume()
-        audio_receiver.press_volume_down()
-        time.sleep(AVRCP_WAIT_TIME)
-        if current_volume == pri_ad.droid.getMediaVolume():
-            pri_ad.log.error("Decrease volume failed")
-            return False
-    else:
-        pri_ad.log.warning("No volume control pins specfied in relay config.")
+    if current_volume == pri_ad.droid.getMediaVolume():
+        pri_ad.log.error("Decrease volume failed")
+        return False
 
-    if "Next" and "Previous" in audio_receiver.relays.keys():
-        audio_receiver.press_next()
-        time.sleep(AVRCP_WAIT_TIME)
-        audio_receiver.press_previous()
-        time.sleep(AVRCP_WAIT_TIME)
-    else:
-        pri_ad.log.warning("No track change pins specfied in relay config.")
+    #TODO: (sairamganesh) validate next and previous calls.
+    bt_device.next()
+    time.sleep(AVRCP_WAIT_TIME)
+    bt_device.previous()
+    time.sleep(AVRCP_WAIT_TIME)
     return True
 
 
@@ -714,18 +712,6 @@ def music_play_and_check_via_app(pri_ad, headset_mac_address, duration=5):
     finally:
         pri_ad.adb.shell("am force-stop com.google.android.music")
         return True
-
-
-def get_phone_ip(ad):
-    """Get the WiFi IP address of the phone.
-
-    Args:
-        ad: the android device under test
-
-    Returns:
-        Ip address of the phone for WiFi, as a string
-    """
-    return ad.droid.connectivityGetIPv4Addresses('wlan0')[0]
 
 
 def pair_dev_to_headset(pri_ad, dev_to_pair):

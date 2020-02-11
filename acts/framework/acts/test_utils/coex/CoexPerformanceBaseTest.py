@@ -21,6 +21,8 @@ from collections import defaultdict
 
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.bt.bt_test_utils import disable_bluetooth
+from acts.test_utils.coex.audio_test_utils import AudioCaptureResult
+from acts.test_utils.coex.audio_test_utils import get_audio_capture_device
 from acts.test_utils.coex.CoexBaseTest import CoexBaseTest
 from acts.test_utils.coex.coex_test_utils import bokeh_chart_plot
 from acts.test_utils.coex.coex_test_utils import collect_bluetooth_manager_dumpsys_logs
@@ -30,8 +32,8 @@ from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
 from acts.utils import get_current_epoch_time
 
-RSSI_POLL_RESULTS = "Monitoring , Handle: 0x0003, POLL"
-RSSI_RESULTS = "Monitoring , Handle: 0x0003, "
+RSSI_POLL_RESULTS = 'Monitoring , Handle: 0x0003, POLL'
+RSSI_RESULTS = 'Monitoring , Handle: 0x0003, '
 
 
 def get_atten_range(start, stop, step):
@@ -70,12 +72,13 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             metric_name='wifi_range_metric')
 
     def setup_class(self):
-        req_params = ["test_params", "Attenuator"]
-        self.unpack_userparams(req_params)
-        if hasattr(self, "Attenuator"):
+        req_params = ['test_params', 'Attenuator']
+        opt_params = ['audio_params']
+        self.unpack_userparams(req_params, opt_params)
+        if hasattr(self, 'Attenuator'):
             self.num_atten = self.attenuators[0].instrument.num_atten
         else:
-            self.log.error("Attenuator should be connected to run tests.")
+            self.log.error('Attenuator should be connected to run tests.')
             return False
         for i in range(self.num_atten):
             self.attenuators[i].set_atten(0)
@@ -97,7 +100,9 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                             self.test_params["attenuation_step"]))
 
     def setup_test(self):
-        if "a2dp_streaming" in self.current_test_name:
+        if ('a2dp_streaming' in self.current_test_name and
+                hasattr(self, 'audio_params')):
+            self.audio = get_audio_capture_device(self.sec_ad, self.audio_params)
             self.a2dp_streaming = True
         for i in range(self.num_atten):
             self.attenuators[i].set_atten(0)
@@ -144,7 +149,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             self.rvr[bt_atten]["fixed_attenuation"] = (
                 self.test_params["fixed_attenuation"][str(
                     self.network["channel"])])
-            self.log.info("Setting bt attenuation = {}".format(bt_atten))
+            self.log.info('Setting bt attenuation to: {} dB'.format(bt_atten))
             self.attenuators[self.num_atten - 1].set_atten(bt_atten)
             for i in range(self.num_atten - 1):
                 self.attenuators[i].set_atten(0)
@@ -154,7 +159,7 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             adb_rssi_results = self.pri_ad.search_logcat(RSSI_RESULTS)
             if adb_rssi_results:
                 self.log.debug(adb_rssi_results[-1])
-                self.log.info("Android device RSSI = {}".format(
+                self.log.info('Android device: {}'.format(
                     (adb_rssi_results[-1]['log_message']).split(',')[5]))
             (self.rvr[bt_atten]["throughput_received"],
              self.rvr[bt_atten]["a2dp_packet_drop"],
@@ -201,9 +206,10 @@ class CoexPerformanceBaseTest(CoexBaseTest):
         self.rvr[bt_atten]["attenuation"] = []
         self.rvr["bt_gap_analysis"][bt_atten] = {}
         for atten in self.wifi_atten_range:
+            tag = '{}_{}'.format(bt_atten, atten)
             self.rvr[bt_atten]["attenuation"].append(
                 atten + self.rvr[bt_atten]["fixed_attenuation"])
-            self.log.info("Setting attenuation = {}".format(atten))
+            self.log.info('Setting wifi attenuation to: {} dB'.format(atten))
             for i in range(self.num_atten - 1):
                 self.attenuators[i].set_atten(atten)
             if not wifi_connection_check(self.pri_ad, self.network["SSID"]):
@@ -211,14 +217,16 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                 return self.iperf_received, self.a2dp_dropped_list, False
             time.sleep(5)  # Time for attenuation to set.
             begin_time = get_current_epoch_time()
+            if self.a2dp_streaming:
+                self.audio.start()
             if called_func:
                 if not multithread_func(self.log, called_func):
-                    self.teardown_result()
                     self.iperf_received.append(float(str(
                         self.iperf_variables.received[-1]).strip("Mb/s")))
                     return self.iperf_received, self.a2dp_dropped_list, False
             else:
                 self.run_iperf_and_get_result()
+
             adb_rssi_poll_results = self.pri_ad.search_logcat(
                 RSSI_POLL_RESULTS, begin_time)
             adb_rssi_results = self.pri_ad.search_logcat(
@@ -226,10 +234,12 @@ class CoexPerformanceBaseTest(CoexBaseTest):
             if adb_rssi_results:
                 self.log.debug(adb_rssi_poll_results)
                 self.log.debug(adb_rssi_results[-1])
-                self.log.info("Android device RSSI = {}".format((
+                self.log.info('Android device: {}'.format((
                     adb_rssi_results[-1]['log_message']).split(',')[5]))
             if self.a2dp_streaming:
-                analysis_path = self.audio.audio_quality_analysis(self.log_path)
+                self.path = self.audio.stop()
+                analysis_path = AudioCaptureResult(
+                    self.path).audio_quality_analysis(self.audio_params)
                 with open(analysis_path) as f:
                     self.rvr[bt_atten]["audio_artifacts"][atten] = f.readline()
                 content = json.loads(self.rvr[bt_atten]["audio_artifacts"][atten])
@@ -245,9 +255,8 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                     self.pri_ad, self.current_test_name)
                 self.a2dp_dropped_list.append(
                     self.a2dp_dumpsys.parse(file_path))
-            self.teardown_result()
             self.iperf_received.append(
-                    float(str(self.iperf_variables.received[-1]).strip("Mb/s")))
+                    float(str(self.iperf_variables.throughput[-1]).strip("Mb/s")))
         for i in range(self.num_atten - 1):
             self.attenuators[i].set_atten(0)
         return self.iperf_received, self.a2dp_dropped_list, True
@@ -264,14 +273,16 @@ class CoexPerformanceBaseTest(CoexBaseTest):
                 json.dump({str(k): v for k, v in self.rvr.items()},
                           results_file, indent=4, sort_keys=True)
             self.bt_range_metric.metric_value = self.rvr["bt_range"][0]
-            self.log.info("BT range where gap has occurred = %s" %
-                          self.bt_range_metric.metric_value)
-            self.log.info("BT min range = %s" % min(self.rvr["bt_attenuation"]))
-            self.log.info("BT max range = %s" % max(self.rvr["bt_attenuation"]))
+            self.log.info('First occurrence of audio gap in bt '
+                          'range: {}'.format(self.bt_range_metric.metric_value))
+            self.log.info('Bluetooth min range: '
+                          '{} dB'.format(min(self.rvr['bt_attenuation'])))
+            self.log.info('Bluetooth max range: '
+                          '{} dB'.format(max(self.rvr['bt_attenuation'])))
             self.plot_graph_for_attenuation()
             if not self.performance_files_list:
-                self.log.warning("Performance file list is empty. Couldn't"
-                                 "calculate throughput limits")
+                self.log.warning('Performance file list is empty. Could not '
+                                 'calculate throughput limits')
                 return
             self.throughput_pass_fail_check()
         else:

@@ -248,7 +248,7 @@ class TelephonyBaseTest(BaseTestClass):
                 postfix=build_postfix)
         if self.enable_radio_log_on:
             enable_radio_log_on(ad)
-        if "sdm" in ad.model or "msm" in ad.model:
+        if "sdm" in ad.model or "msm" in ad.model or "kon" in ad.model:
             phone_mode = "ssss"
             if hasattr(ad, "mtp_dsds"):
                 phone_mode = "dsds"
@@ -334,8 +334,7 @@ class TelephonyBaseTest(BaseTestClass):
         if getattr(ad, "telephony_test_setup", None):
             return True
 
-        if "enable_wifi_verbose_logging" in self.user_params:
-            ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
+        ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
 
         # Disable Emergency alerts
         # Set chrome browser start with no-first-run verification and
@@ -413,9 +412,7 @@ class TelephonyBaseTest(BaseTestClass):
             force_connectivity_metrics_upload(ad)
             time.sleep(30)
         try:
-            if "enable_wifi_verbose_logging" in self.user_params:
-                ad.droid.wifiEnableVerboseLogging(
-                    WIFI_VERBOSE_LOGGING_DISABLED)
+            ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_DISABLED)
         except Exception as e:
             self.log.error("Failure with %s", e)
         try:

@@ -20,6 +20,7 @@ import itertools
 import json
 import logging
 import math
+import os
 import re
 import statistics
 import time
@@ -407,7 +408,7 @@ class BokehFigure():
             if line['width'] > 0:
                 self.plot.line(x='x',
                                y='y',
-                               legend=line['legend'],
+                               legend_label=line['legend'],
                                line_width=line['width'],
                                color=line['color'],
                                line_dash=line['style'],
@@ -429,7 +430,7 @@ class BokehFigure():
                 marker_func(x='x',
                             y='y',
                             size=line['marker_size'],
-                            legend=line['legend'],
+                            legend_label=line['legend'],
                             line_color=line['color'],
                             fill_color=line['color'],
                             name=line['y_axis'],
@@ -697,7 +698,7 @@ def get_connected_rssi(dut,
          ('chain_0_rssi', empty_rssi_result()),
          ('chain_1_rssi', empty_rssi_result())])
     # yapf: enable
-    previous_bssid = None
+    previous_bssid = 'disconnected'
     t0 = time.time()
     time.sleep(first_measurement_delay)
     for idx in range(num_measurements):
@@ -709,12 +710,10 @@ def get_connected_rssi(dut,
         if match:
             current_bssid = match.group(0).split('=')[1]
             connected_rssi['bssid'].append(current_bssid)
-            if disconnect_warning and current_bssid != previous_bssid:
-                logging.info('CONNECT to {} detected.'.format(current_bssid))
         else:
-            current_bssid = RSSI_ERROR_VAL
+            current_bssid = 'disconnected'
             connected_rssi['bssid'].append(current_bssid)
-            if disconnect_warning and not math.isnan(previous_bssid):
+            if disconnect_warning and previous_bssid != 'disconnected':
                 logging.warning('WIFI DISCONNECT DETECTED!')
         previous_bssid = current_bssid
         signal_poll_output = dut.adb.shell(SIGNAL_POLL)
@@ -878,20 +877,22 @@ def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
     base_rssi = get_connected_rssi(dut, 4, 0.25, 1)
     chain0_base_rssi = base_rssi['chain_0_rssi']['mean']
     chain1_base_rssi = base_rssi['chain_1_rssi']['mean']
+    if chain0_base_rssi < -70 or chain1_base_rssi < -70:
+        logging.warning('RSSI might be too low to get reliable chain map.')
     # Compile chain map by attenuating one path at a time and seeing which
     # chain's RSSI degrades
     chain_map = []
     for test_atten in attenuators:
-        # Set one attenuator to 20 dB down
+        # Set one attenuator to 30 dB down
         test_atten.set_atten(30, strict=False)
         # Get new RSSI
         test_rssi = get_connected_rssi(dut, 4, 0.25, 1)
         # Assign attenuator to path that has lower RSSI
-        if chain0_base_rssi > -40 and chain0_base_rssi - test_rssi[
-                'chain_0_rssi']['mean'] > 15:
+        if chain0_base_rssi > -70 and chain0_base_rssi - test_rssi[
+                'chain_0_rssi']['mean'] > 10:
             chain_map.append('DUT-Chain-0')
-        elif chain1_base_rssi > -40 and chain1_base_rssi - test_rssi[
-                'chain_1_rssi']['mean'] > 15:
+        elif chain1_base_rssi > -70 and chain1_base_rssi - test_rssi[
+                'chain_1_rssi']['mean'] > 10:
             chain_map.append('DUT-Chain-1')
         else:
             chain_map.append(None)
@@ -1019,9 +1020,9 @@ def get_iperf_arg_string(duration,
         iperf_args: string of formatted iperf args
     """
     iperf_args = '-i {} -t {} -J '.format(interval, duration)
-    if traffic_type == 'UDP':
+    if traffic_type.upper() == 'UDP':
         iperf_args = iperf_args + '-u -b {} -l 1400'.format(udp_throughput)
-    elif traffic_type == 'TCP':
+    elif traffic_type.upper() == 'TCP':
         iperf_args = iperf_args + '-P {}'.format(tcp_processes)
         if tcp_window:
             iperf_args = iperf_args + '-w {}'.format(tcp_window)
@@ -1041,7 +1042,9 @@ def get_dut_temperature(dut):
     Returns:
         temperature: device temperature. 0 if temperature could not be read
     """
-    candidate_zones = ['sdm-therm-monitor', 'sdm-therm-adc', 'back_therm']
+    candidate_zones = [
+        'skin-therm', 'sdm-therm-monitor', 'sdm-therm-adc', 'back_therm'
+    ]
     for zone in candidate_zones:
         try:
             temperature = int(
@@ -1057,7 +1060,26 @@ def get_dut_temperature(dut):
     return temperature
 
 
-def health_check(dut, batt_thresh=5, temp_threshold=50):
+def wait_for_dut_cooldown(dut, target_temp=50, timeout=300):
+    """Function to wait for a DUT to cool down.
+
+    Args:
+        dut: AndroidDevice of interest
+        target_temp: target cooldown temperature
+        timeout: maxt time to wait for cooldown
+    """
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        temperature = get_dut_temperature(dut)
+        if temperature < target_temp:
+            break
+        time.sleep(SHORT_SLEEP)
+    elapsed_time = time.time() - start_time
+    logging.debug("DUT Final Temperature: {}C. Cooldown duration: {}".format(
+        temperature, elapsed_time))
+
+
+def health_check(dut, batt_thresh=5, temp_threshold=53, cooldown=1):
     """Function to check health status of a DUT.
 
     The function checks both battery levels and temperature to avoid DUT
@@ -1067,6 +1089,7 @@ def health_check(dut, batt_thresh=5, temp_threshold=50):
         dut: AndroidDevice of interest
         batt_thresh: battery level threshold
         temp_threshold: temperature threshold
+        cooldown: flag to wait for DUT to cool down when overheating
     Returns:
         health_check: boolean confirming device is healthy
     """
@@ -1080,8 +1103,13 @@ def health_check(dut, batt_thresh=5, temp_threshold=50):
 
     temperature = get_dut_temperature(dut)
     if temperature > temp_threshold:
-        logging.warning("DUT Overheating ({} C)".format(temperature))
-        health_check = False
+        if cooldown:
+            logging.warning(
+                "Waiting for DUT to cooldown. ({} C)".format(temperature))
+            wait_for_dut_cooldown(dut, target_temp=temp_threshold - 5)
+        else:
+            logging.warning("DUT Overheating ({} C)".format(temperature))
+            health_check = False
     else:
         logging.debug("DUT Temperature = {}C".format(temperature))
     return health_check
@@ -1115,3 +1143,74 @@ def push_firmware(dut, wlanmdsp_file, datamsc_file):
     dut.push_system_file(wlanmdsp_file, '/vendor/firmware/wlanmdsp.mbn')
     dut.push_system_file(datamsc_file, '/vendor/firmware/Data.msc')
     dut.reboot()
+
+
+def _set_ini_fields(ini_file_path, ini_field_dict):
+    template_regex = r'^{}=[0-9,.x-]+'
+    with open(ini_file_path, 'r') as f:
+        ini_lines = f.read().splitlines()
+        for idx, line in enumerate(ini_lines):
+            for field_name, field_value in ini_field_dict.items():
+                line_regex = re.compile(template_regex.format(field_name))
+                if re.match(line_regex, line):
+                    ini_lines[idx] = "{}={}".format(field_name, field_value)
+                    print(ini_lines[idx])
+    with open(ini_file_path, 'w') as f:
+        f.write("\n".join(ini_lines) + "\n")
+
+def _edit_dut_ini(dut, ini_fields):
+    """Function to edit Wifi ini files."""
+    dut_ini_path = '/vendor/firmware/wlan/qca_cld/WCNSS_qcom_cfg.ini'
+    local_ini_path = os.path.expanduser('~/WCNSS_qcom_cfg.ini')
+    dut.pull_files(dut_ini_path, local_ini_path)
+
+    _set_ini_fields(local_ini_path, ini_fields)
+
+    dut.push_system_file(local_ini_path, dut_ini_path)
+    dut.reboot()
+
+
+def set_ini_single_chain_mode(dut, chain):
+    ini_fields = {
+        'gEnable2x2': 0,
+        'gSetTxChainmask1x1': chain+1,
+        'gSetRxChainmask1x1': chain+1,
+        'gDualMacFeatureDisable': 1,
+        'gDot11Mode': 0
+    }
+    _edit_dut_ini(dut, ini_fields)
+
+
+def set_ini_two_chain_mode(dut):
+    ini_fields = {
+        'gEnable2x2': 2,
+        'gSetTxChainmask1x1': 1,
+        'gSetRxChainmask1x1': 1,
+        'gDualMacFeatureDisable': 6,
+        'gDot11Mode': 0
+    }
+    _edit_dut_ini(dut, ini_fields)
+
+
+def set_ini_tx_mode(dut, mode):
+    TX_MODE_DICT = {
+        "Auto": 0,
+        "11n": 4,
+        "11ac": 9,
+        "11abg": 1,
+        "11b": 2,
+        "11g": 3,
+        "11g only": 5,
+        "11n only": 6,
+        "11b only": 7,
+        "11ac only": 8
+    }
+
+    ini_fields = {
+        'gEnable2x2': 2,
+        'gSetTxChainmask1x1': 1,
+        'gSetRxChainmask1x1': 1,
+        'gDualMacFeatureDisable': 6,
+        'gDot11Mode': TX_MODE_DICT[mode]
+    }
+    _edit_dut_ini(dut, ini_fields)

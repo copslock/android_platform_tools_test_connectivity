@@ -13,50 +13,18 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import logging
 import os
 import subprocess
 import sys
+
+from mobly import config_parser as mobly_config_parser
 
 import acts
 from acts import base_test
 from acts import signals
 
-# The files under acts/framework to consider as unit tests.
-UNITTEST_FILES = [
-    'tests/acts_adb_test.py',
-    'tests/acts_android_device_test.py',
-    'tests/acts_asserts_test.py',
-    'tests/acts_base_class_test.py',
-    'tests/config/unittest_bundle.py',
-    'tests/acts_context_test.py',
-    'tests/acts_error_test.py',
-    'tests/acts_host_utils_test.py',
-    'tests/acts_import_test_utils_test.py',
-    'tests/acts_import_unit_test.py',
-    'tests/acts_job_test.py',
-    'tests/libs/ota/unittest_bundle.py',
-    'tests/acts_logger_test.py',
-    'tests/libs/metrics/unittest_bundle.py',
-    'tests/acts_records_test.py',
-    'tests/acts_relay_controller_test.py',
-    'tests/acts_test_runner_test.py',
-    'tests/acts_unittest_suite.py',
-    'tests/acts_utils_test.py',
-    'tests/controllers/android_lib/android_lib_unittest_bundle.py',
-    'tests/event/event_unittest_bundle.py',
-    'tests/test_utils/instrumentation/unit_test_suite.py',
-    'tests/libs/logging/logging_unittest_bundle.py',
-    'tests/metrics/unittest_bundle.py',
-    'tests/libs/proc/proc_unittest_bundle.py',
-    'tests/controllers/sl4a_lib/test_suite.py',
-    'tests/test_runner_test.py',
-    'tests/libs/version_selector_test.py',
-]
-
-# The number of seconds to wait before considering the unit test to have timed
-# out.
-UNITTEST_TIMEOUT = 60
+# The number of seconds to wait before considering the test to have timed out.
+TIMEOUT = 60
 
 
 class ActsUnitTest(base_test.BaseTestClass):
@@ -67,51 +35,44 @@ class ActsUnitTest(base_test.BaseTestClass):
     """
 
     def test_units(self):
-        """Runs all the ACTS unit tests in parallel."""
-        acts_unittest_path = os.path.dirname(acts.__path__[0])
-        test_processes = []
+        """Runs all the ACTS unit tests in test_suite.py."""
+        test_script = os.path.join(os.path.dirname(acts.__path__[0]),
+                                   'tests/test_suite.py')
+        test_process = subprocess.Popen([sys.executable, test_script],
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT)
 
-        fail_test = False
+        killed = False
+        try:
+            stdout, _ = test_process.communicate(timeout=TIMEOUT)
+        except subprocess.TimeoutExpired:
+            killed = True
+            self.log.error('Test %s timed out after %s seconds.' %
+                           (test_process.args, TIMEOUT))
+            test_process.kill()
+            stdout, _ = test_process.communicate()
 
-        for unittest_file in UNITTEST_FILES:
-            file_path = os.path.join(acts_unittest_path, unittest_file)
-            test_processes.append(
-                subprocess.Popen(
-                    [sys.executable, file_path],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT))
-
-        for test_process in test_processes:
-            killed = False
-            try:
-                stdout, _ = test_process.communicate(timeout=UNITTEST_TIMEOUT)
-            except subprocess.TimeoutExpired:
-                killed = True
-                self.log.error('Unit test %s timed out after %s seconds.' %
-                               (test_process.args, UNITTEST_TIMEOUT))
-                test_process.kill()
-                stdout, _ = test_process.communicate()
-            if test_process.returncode != 0 or killed:
-                self.log.error('=' * 79)
-                self.log.error('Unit Test %s failed with error %s.' %
-                               (test_process.args, test_process.returncode))
-                self.log.error('=' * 79)
-                self.log.error('Failure for `%s`:\n%s' %
-                               (test_process.args,
-                                stdout.decode('utf-8', errors='replace')))
-                fail_test = True
-            else:
-                self.log.debug('Output for `%s`:\n%s' %
-                               (test_process.args,
-                                stdout.decode('utf-8', errors='replace')))
-
-        if fail_test:
+        if test_process.returncode != 0 or killed:
+            self.log.error('=' * 79)
+            self.log.error('Test %s failed with error %s.' %
+                           (test_process.args, test_process.returncode))
+            self.log.error('=' * 79)
+            self.log.error('Failure for `%s`:\n%s' %
+                           (test_process.args,
+                            stdout.decode('utf-8', errors='replace')))
             raise signals.TestFailure(
                 'One or more unit tests failed. See the logs.')
+        else:
+            self.log.debug('Output for `%s`:\n%s' %
+                           (test_process.args,
+                            stdout.decode('utf-8', errors='replace')))
 
 
 def main():
-    ActsUnitTest({'log': logging.getLogger()}).test_units()
+    test_run_config = mobly_config_parser.TestRunConfig()
+    test_run_config.testbed_name = 'UnitTests'
+    test_run_config.log_path = ''
+    ActsUnitTest(test_run_config).test_units()
 
 
 if __name__ == '__main__':

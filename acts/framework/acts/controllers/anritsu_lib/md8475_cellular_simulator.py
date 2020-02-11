@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import math
 import ntpath
 import time
 import acts.controllers.cellular_simulator as cc
@@ -113,7 +114,16 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             input_power: the new input power
         """
-        self.bts[bts_index].input_level = input_power
+        nrb_ul = int(self.bts[bts_index].nrb_ul)
+        max_nrb_ul = self.bts[bts_index].max_nrb_ul
+        input_level = str(
+            round(input_power - 10 * math.log10(nrb_ul / max_nrb_ul), 1))
+        if nrb_ul < max_nrb_ul:
+            self.log.info('Number of UL RBs ({}) is less than the maximum RB '
+                          'allocation ({}). Increasing UL reference power to '
+                          '{} dbm to compensate'.format(
+                              nrb_ul, max_nrb_ul, input_level))
+        self.bts[bts_index].input_level = input_level
 
     def set_output_power(self, bts_index, output_power):
         """ Sets the output power for the indicated base station.
@@ -154,7 +164,7 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             modulation: the new DL modulation
         """
-        self.bts[bts_index].lte_dl_modulation_order = modulation
+        self.bts[bts_index].lte_dl_modulation_order = modulation.value
 
     def set_ul_modulation(self, bts_index, modulation):
         """ Sets the UL modulation for the indicated base station.
@@ -163,7 +173,7 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             bts_index: the base station number
             modulation: the new UL modulation
         """
-        self.bts[bts_index].lte_ul_modulation_order = modulation
+        self.bts[bts_index].lte_ul_modulation_order = modulation.value
 
     def set_tbs_pattern_on(self, bts_index, tbs_pattern_on):
         """ Enables or disables TBS pattern in the indicated base station.
@@ -176,6 +186,45 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             self.bts[bts_index].tbs_pattern = 'FULLALLOCATION'
         else:
             self.bts[bts_index].tbs_pattern = 'OFF'
+
+    def set_lte_rrc_state_change_timer(self, enabled, time=10):
+        """ Configures the LTE RRC state change timer.
+
+        Args:
+            enabled: a boolean indicating if the timer should be on or off.
+            time: time in seconds for the timer to expire
+        """
+        self.anritsu.set_lte_rrc_status_change(enabled)
+        if enabled:
+            self.anritsu.set_lte_rrc_status_change_timer(time)
+
+    def set_cfi(self, bts_index, cfi):
+        """ Sets the Channel Format Indicator for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cfi: the new CFI setting
+        """
+        self.bts[bts_index].cfi = cfi
+
+    def set_paging_cycle(self, bts_index, cycle_duration):
+        """ Sets the paging cycle duration for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            cycle_duration: the new paging cycle duration in milliseconds
+        """
+        # TODO (b/146068532): implement.
+        self.bts[bts_index].paging_duration = cycle_duration
+
+    def set_phich_resource(self, bts_index, phich):
+        """ Sets the PHICH Resource setting for the indicated base station.
+
+        Args:
+            bts_index: the base station number
+            phich: the new PHICH resource setting
+        """
+        self.bts[bts_index].phich_resource = phich
 
     def set_band(self, bts_index, band):
         """ Sets the right duplex mode before switching to a new band.
@@ -230,6 +279,23 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
 
         # Wait for the setting to propagate
         time.sleep(5)
+
+    def set_ssf_config(self, bts_index, ssf_config):
+        """ Sets the Special Sub-Frame config number for the indicated
+        base station.
+
+        Args:
+            bts_index: the base station number
+            ssf_config: the new ssf config number
+        """
+        # Cast to int in case it was passed as a string
+        ssf_config = int(ssf_config)
+
+        if not 0 <= ssf_config <= 9:
+            raise ValueError('The Special Sub-Frame configuration has to be a '
+                             'number between 0 and 9.')
+
+        self.bts[bts_index].tdd_special_subframe = ssf_config
 
     def set_bandwidth(self, bts_index, bandwidth):
         """ Sets the LTE channel bandwidth (MHz)
@@ -460,7 +526,7 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
     def stop(self):
         """ Stops current simulation. After calling this method, the simulator
         will need to be set up again. """
-        self.simulator.stop()
+        self.anritsu.stop_simulation()
 
     def start_data_traffic(self):
         """ Starts transmitting data from the instrument to the DUT. """

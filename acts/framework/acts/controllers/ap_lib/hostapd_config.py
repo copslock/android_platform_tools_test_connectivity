@@ -71,7 +71,6 @@ class HostapdConfig(object):
 
     All the settings for a router that are not part of an ssid.
     """
-
     def _get_11ac_center_channel_from_channel(self, channel):
         """Returns the center channel of the selected channel band based
            on the channel and channel bandwidth provided.
@@ -91,14 +90,24 @@ class HostapdConfig(object):
     @property
     def _get_default_config(self):
         """Returns: dict of default options for hostapd."""
-        return collections.OrderedDict([
-            ('logger_syslog', '-1'),
-            ('logger_syslog_level', '0'),
-            # default RTS and frag threshold to ``off''
-            ('rts_threshold', '2347'),
-            ('fragm_threshold', '2346'),
-            ('driver', hostapd_constants.DRIVER_NAME)
-        ])
+        if self.set_ap_defaults_profile == 'mistral':
+            return collections.OrderedDict([
+                ('logger_syslog', '-1'),
+                ('logger_syslog_level', '0'),
+                # default RTS and frag threshold to ``off''
+                ('rts_threshold', None),
+                ('fragm_threshold', None),
+                ('driver', hostapd_constants.DRIVER_NAME)
+            ])
+        else:
+            return collections.OrderedDict([
+                ('logger_syslog', '-1'),
+                ('logger_syslog_level', '0'),
+                # default RTS and frag threshold to ``off''
+                ('rts_threshold', '2347'),
+                ('fragm_threshold', '2346'),
+                ('driver', hostapd_constants.DRIVER_NAME)
+            ])
 
     @property
     def _hostapd_ht_capabilities(self):
@@ -315,7 +324,7 @@ class HostapdConfig(object):
                  security=None,
                  bssid=None,
                  force_wmm=None,
-                 pmf_support=hostapd_constants.PMF_SUPPORT_DISABLED,
+                 pmf_support=None,
                  obss_interval=None,
                  vht_channel_width=None,
                  vht_center_channel=None,
@@ -326,7 +335,7 @@ class HostapdConfig(object):
                  min_streams=None,
                  bss_settings=[],
                  additional_parameters={},
-                 set_ap_defaults_model=None):
+                 set_ap_defaults_profile='whirlwind'):
         """Construct a HostapdConfig.
 
         You may specify channel or frequency, but not both.  Both options
@@ -352,7 +361,8 @@ class HostapdConfig(object):
             force_wmm: True if we should force WMM on, False if we should
                 force it off, None if we shouldn't force anything.
             pmf_support: one of PMF_SUPPORT_* above.  Controls whether the
-                client supports/must support 802.11w.
+                client supports/must support 802.11w. If None, defaults to
+                required with wpa3, else defaults to disabled.
             obss_interval: int, interval in seconds that client should be
                 required to do background scans for overlapping BSSes.
             vht_channel_width: object channel width
@@ -369,7 +379,9 @@ class HostapdConfig(object):
             bss_settings: The settings for all bss.
             additional_parameters: A dictionary of additional parameters to add
                 to the hostapd config.
+            set_ap_defaults_profile: profile name to load defaults from
         """
+        self.set_ap_defaults_profile = set_ap_defaults_profile
         self._interface = interface
         if channel is not None and frequency is not None:
             raise ValueError('Specify either frequency or channel '
@@ -431,10 +443,18 @@ class HostapdConfig(object):
                 self._wmm_enabled = 1
             else:
                 self._wmm_enabled = 0
-        if pmf_support not in hostapd_constants.PMF_SUPPORT_VALUES:
+        if pmf_support is None:
+            if self.security and self.security.wpa3:
+                self._pmf_support = hostapd_constants.PMF_SUPPORT_REQUIRED
+            else:
+                self._pmf_support = hostapd_constants.PMF_SUPPORT_DISABLED
+        elif pmf_support not in hostapd_constants.PMF_SUPPORT_VALUES:
             raise ValueError('Invalid value for pmf_support: %r' % pmf_support)
-
-        self._pmf_support = pmf_support
+        elif (pmf_support != hostapd_constants.PMF_SUPPORT_REQUIRED
+              and self.security and self.security.wpa3):
+            raise ValueError('PMF support must be required with wpa3.')
+        else:
+            self._pmf_support = pmf_support
         self._obss_interval = obss_interval
         if self.is_11ac:
             if str(vht_channel_width) == '40' or str(
@@ -452,12 +472,13 @@ class HostapdConfig(object):
                 logging.warning(
                     'No channel bandwidth specified.  Using 80MHz for 11ac.')
                 self._vht_oper_chwidth = 1
-            if not vht_channel_width == 20:
-                if not vht_center_channel:
-                    self._vht_oper_centr_freq_seg0_idx = self._get_11ac_center_channel_from_channel(
-                        self.channel)
-            else:
+            if vht_center_channel is not None:
                 self._vht_oper_centr_freq_seg0_idx = vht_center_channel
+            elif vht_channel_width == 20:
+                self._vht_oper_centr_freq_seg0_idx = channel
+            else:
+                self._vht_oper_centr_freq_seg0_idx = self._get_11ac_center_channel_from_channel(
+                    self.channel)
             self._ac_capabilities = set(ac_capabilities)
         self._beacon_footer = beacon_footer
         self._spectrum_mgmt_required = spectrum_mgmt_required
@@ -473,16 +494,16 @@ class HostapdConfig(object):
             self._bss_lookup[bss.name] = bss
 
     def __repr__(self):
-        return ('%s(mode=%r, channel=%r, frequency=%r, '
-                'n_capabilities=%r, beacon_interval=%r, '
-                'dtim_period=%r, frag_threshold=%r, ssid=%r, bssid=%r, '
-                'wmm_enabled=%r, security_config=%r, '
-                'spectrum_mgmt_required=%r)' %
-                (self.__class__.__name__, self._mode, self.channel,
-                 self.frequency, self._n_capabilities, self._beacon_interval,
-                 self._dtim_period, self._frag_threshold, self._ssid,
-                 self._bssid, self._wmm_enabled, self._security,
-                 self._spectrum_mgmt_required))
+        return (
+            '%s(mode=%r, channel=%r, frequency=%r, '
+            'n_capabilities=%r, beacon_interval=%r, '
+            'dtim_period=%r, frag_threshold=%r, ssid=%r, bssid=%r, '
+            'wmm_enabled=%r, security_config=%r, '
+            'spectrum_mgmt_required=%r)' %
+            (self.__class__.__name__, self._mode, self.channel, self.frequency,
+             self._n_capabilities, self._beacon_interval, self._dtim_period,
+             self._frag_threshold, self._ssid, self._bssid, self._wmm_enabled,
+             self._security, self._spectrum_mgmt_required))
 
     def supports_channel(self, value):
         """Check whether channel is supported by the current hardware mode.
@@ -553,6 +574,7 @@ class HostapdConfig(object):
         """
         # Start with the default config parameters.
         conf = self._get_default_config
+
         if self._interface:
             conf['interface'] = self._interface
         if self._bssid:

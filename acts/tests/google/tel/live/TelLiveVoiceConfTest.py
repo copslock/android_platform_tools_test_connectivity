@@ -62,6 +62,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_iwlan
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import swap_calls
+from acts.test_utils.tel.tel_voice_utils import three_phone_call_forwarding_short_seq
 
 
 class TelLiveVoiceConfTest(TelephonyBaseTest):
@@ -1340,85 +1341,12 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         return call_ab_id, call_ac_id
 
-    def _test_ims_conference_merge_drop_second_call_no_cep(
-            self, call_ab_id, call_ac_id):
-        """Test conference merge and drop in VoLTE call.
+    def _merge_ims_conference_call(self, call_ab_id, call_ac_id):
+        """Merge IMS conference call for both cases of CEP enabled and disabled.
 
         PhoneA in IMS (VoLTE or WiFi Calling) call with PhoneB.
         PhoneA in IMS (VoLTE or WiFi Calling) call with PhoneC.
         Merge calls to conference on PhoneA.
-        Hangup on PhoneC, check call continues between AB.
-        Hangup on PhoneB, check A ends.
-
-        Args:
-            call_ab_id: call id for call_AB on PhoneA.
-            call_ac_id: call id for call_AC on PhoneA.
-
-        Returns:
-            True if succeed;
-            False if failed.
-        """
-        ads = self.android_devices
-
-        self.log.info("Step4: Merge to Conf Call and verify Conf Call.")
-        ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
-        time.sleep(WAIT_TIME_IN_CALL)
-        calls = ads[0].droid.telecomCallGetCallIds()
-        ads[0].log.info("Calls in PhoneA %s", calls)
-        if num_active_calls(self.log, ads[0]) != 1:
-            ads[0].log.error("Total number of call lists is not 1.")
-            if get_cep_conference_call_id(ads[0]) is not None:
-                self.log.error("CEP enabled.")
-            else:
-                self.log.error("Merge failed.")
-            return False
-        call_conf_id = None
-        for call_id in calls:
-            if call_id != call_ab_id and call_id != call_ac_id:
-                call_conf_id = call_id
-        if not call_conf_id:
-            self.log.error("Merge call fail, no new conference call id.")
-            return False
-        if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
-            return False
-
-        # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(
-                call_conf_id) != CALL_STATE_ACTIVE:
-            ads[0].log.error(
-                "Call_id:%s, state:%s, expected: STATE_ACTIVE", call_conf_id,
-                ads[0].droid.telecomCallGetCallState(call_conf_id))
-            return False
-
-        self.log.info("Step5: End call on PhoneC and verify call continues.")
-        if not self._hangup_call(ads[2], "PhoneC"):
-            return False
-        time.sleep(WAIT_TIME_IN_CALL)
-        calls = ads[0].droid.telecomCallGetCallIds()
-        ads[0].log.info("Calls in PhoneA %s", calls)
-        if not verify_incall_state(self.log, [ads[0], ads[1]], True):
-            return False
-        if not verify_incall_state(self.log, [ads[2]], False):
-            return False
-
-        # Because of b/18413009, VZW VoLTE conference host will not drop call
-        # even if all participants drop. The reason is VZW network is not
-        # providing such information to DUT.
-        # So this test probably will fail on the last step for VZW.
-        self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
-        if not self._hangup_call(ads[1], "PhoneB"):
-            return False
-        time.sleep(WAIT_TIME_IN_CALL)
-        if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
-            return False
-        return True
-
-    def _merge_cep_conference_call(self, call_ab_id, call_ac_id):
-        """Merge CEP conference call.
-
-        PhoneA in IMS (VoLTE or WiFi Calling) call with PhoneB.
-        PhoneA in IMS (VoLTE or WiFi Calling) call with PhoneC.
-        Merge calls to conference on PhoneA (CEP enabled IMS conference).
 
         Args:
             call_ab_id: call id for call_AB on PhoneA.
@@ -1428,48 +1356,58 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             call_id for conference
         """
         ads = self.android_devices
-
         self.log.info("Step4: Merge to Conf Call and verify Conf Call.")
         ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         ads[0].log.info("Calls in PhoneA %s", calls)
 
-        call_conf_id = get_cep_conference_call_id(ads[0])
-        if call_conf_id is None:
-            self.log.error(
-                "No call with children. Probably CEP not enabled or merge failed."
-            )
-            return None
-        calls.remove(call_conf_id)
-        if (set(ads[0].droid.telecomCallGetCallChildren(call_conf_id)) !=
-                set(calls)):
-            ads[0].log.error(
-                "Children list %s for conference call is not correct.",
-                ads[0].droid.telecomCallGetCallChildren(call_conf_id))
-            return None
+        call_conf_id = None
+        if num_active_calls(self.log, ads[0]) != 1:
+            ads[0].log.info("Total number of call ids is not 1.")
+            call_conf_id = get_cep_conference_call_id(ads[0])
+            if call_conf_id is not None:
+                self.log.info("New conference call id is found. CEP enabled.")
+                calls.remove(call_conf_id)
+                if (set(ads[0].droid.telecomCallGetCallChildren(
+                    call_conf_id)) != set(calls)):
+                    ads[0].log.error(
+                        "Children list %s for conference call is not correct.",
+                        ads[0].droid.telecomCallGetCallChildren(call_conf_id))
+                    return None
 
-        if (CALL_PROPERTY_CONFERENCE not in ads[0]
-                .droid.telecomCallGetProperties(call_conf_id)):
-            ads[0].log.error(
-                "Conf call id % properties wrong: %s", call_conf_id,
-                ads[0].droid.telecomCallGetProperties(call_conf_id))
-            return None
+                if (CALL_PROPERTY_CONFERENCE not in ads[0]
+                        .droid.telecomCallGetProperties(call_conf_id)):
+                    ads[0].log.error(
+                        "Conf call id % properties wrong: %s", call_conf_id,
+                        ads[0].droid.telecomCallGetProperties(call_conf_id))
+                    return None
 
-        if (CALL_CAPABILITY_MANAGE_CONFERENCE not in ads[0]
-                .droid.telecomCallGetCapabilities(call_conf_id)):
-            ads[0].log.error(
-                "Conf call id %s capabilities wrong: %s", call_conf_id,
-                ads[0].droid.telecomCallGetCapabilities(call_conf_id))
-            return None
+                if (CALL_CAPABILITY_MANAGE_CONFERENCE not in ads[0]
+                        .droid.telecomCallGetCapabilities(call_conf_id)):
+                    ads[0].log.error(
+                        "Conf call id %s capabilities wrong: %s", call_conf_id,
+                        ads[0].droid.telecomCallGetCapabilities(call_conf_id))
+                    return None
 
-        if (call_ab_id in calls) or (call_ac_id in calls):
-            self.log.error(
-                "Previous call ids should not in new call list after merge.")
-            return None
+                if (call_ab_id in calls) or (call_ac_id in calls):
+                    self.log.error("Previous call ids should not in new call"
+                    " list after merge.")
+                    return None
+        else:
+            for call_id in calls:
+                if call_id != call_ab_id and call_id != call_ac_id:
+                    call_conf_id = call_id
+                    self.log.info("CEP not enabled.")
 
+        if not call_conf_id:
+            self.log.error("Merge call fail, no new conference call id.")
+            raise signals.TestFailure(
+                "Calls were not merged. Failed to merge calls.",
+                extras={"fail_reason": "Calls were not merged."
+                    " Failed to merge calls."})
         if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
-            return None
+            return False
 
         # Check if Conf Call is currently active
         if ads[0].droid.telecomCallGetCallState(
@@ -1481,7 +1419,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         return call_conf_id
 
-    def _test_ims_conference_merge_drop_second_call_from_participant_cep(
+    def _test_ims_conference_merge_drop_second_call_from_participant(
             self, call_ab_id, call_ac_id):
         """Test conference merge and drop in IMS (VoLTE or WiFi Calling) call.
         (CEP enabled).
@@ -1502,7 +1440,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_conf_id = self._merge_cep_conference_call(call_ab_id, call_ac_id)
+        call_conf_id = self._merge_ims_conference_call(call_ab_id, call_ac_id)
         if call_conf_id is None:
             return False
 
@@ -1525,7 +1463,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
         return True
 
-    def _test_ims_conference_merge_drop_first_call_from_participant_cep(
+    def _test_ims_conference_merge_drop_first_call_from_participant(
             self, call_ab_id, call_ac_id):
         """Test conference merge and drop in IMS (VoLTE or WiFi Calling) call.
         (CEP enabled).
@@ -1546,7 +1484,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         """
         ads = self.android_devices
 
-        call_conf_id = self._merge_cep_conference_call(call_ab_id, call_ac_id)
+        call_conf_id = self._merge_ims_conference_call(call_ab_id, call_ac_id)
         if call_conf_id is None:
             return False
 
@@ -1567,7 +1505,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
         return True
 
-    def _test_ims_conference_merge_drop_second_call_from_host_cep(
+    def _test_ims_conference_merge_drop_second_call_from_host(
             self, call_ab_id, call_ac_id):
         """Test conference merge and drop in IMS (VoLTE or WiFi Calling) call.
         (CEP enabled).
@@ -1591,7 +1529,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_uri = get_call_uri(ads[0], call_ab_id)
         call_ac_uri = get_call_uri(ads[0], call_ac_id)
 
-        call_conf_id = self._merge_cep_conference_call(call_ab_id, call_ac_id)
+        call_conf_id = self._merge_ims_conference_call(call_ab_id, call_ac_id)
         if call_conf_id is None:
             return False
 
@@ -1635,7 +1573,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
         return True
 
-    def _test_ims_conference_merge_drop_first_call_from_host_cep(
+    def _test_ims_conference_merge_drop_first_call_from_host(
             self, call_ab_id, call_ac_id):
         """Test conference merge and drop in IMS (VoLTE or WiFi Calling) call.
         (CEP enabled).
@@ -1659,7 +1597,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         call_ab_uri = get_call_uri(ads[0], call_ab_id)
         call_ac_uri = get_call_uri(ads[0], call_ac_id)
 
-        call_conf_id = self._merge_cep_conference_call(call_ab_id, call_ac_id)
+        call_conf_id = self._merge_ims_conference_call(call_ab_id, call_ac_id)
         if call_conf_id is None:
             return False
 
@@ -2407,103 +2345,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
                 return None, None
 
         return call_ab_id, call_ac_id
-
-    def _test_epdg_conference_merge_drop(self, call_ab_id, call_ac_id):
-        """Test conference merge and drop in epdg call.
-
-        PhoneA in epdg call with PhoneB.
-        PhoneA in epdg call with PhoneC.
-        Merge calls to conference on PhoneA.
-        Hangup on PhoneC, check call continues between AB.
-        Hangup on PhoneB, check A ends.
-
-        Args:
-            call_ab_id: call id for call_AB on PhoneA.
-            call_ac_id: call id for call_AC on PhoneA.
-
-        Returns:
-            True if succeed;
-            False if failed.
-        """
-        ads = self.android_devices
-        self.log.info("Step4: Merge to Conf Call and verify Conf Call.")
-        ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
-        time.sleep(WAIT_TIME_IN_CALL)
-        calls = ads[0].droid.telecomCallGetCallIds()
-        ads[0].log.info("Calls in PhoneA %s", calls)
-
-        call_conf_id = None
-        if num_active_calls(self.log, ads[0]) != 1:
-            ads[0].log.info("Total number of call ids is not 1.")
-            call_conf_id = get_cep_conference_call_id(ads[0])
-            if call_conf_id is not None:
-                self.log.info("New conference call id is found. CEP enabled.")
-
-                calls.remove(call_conf_id)
-                if (set(ads[0].droid.telecomCallGetCallChildren(
-                    call_conf_id)) != set(calls)):
-                    ads[0].log.error(
-                        "Children list %s for conference call is not correct.",
-                        ads[0].droid.telecomCallGetCallChildren(call_conf_id))
-                    return False
-
-                if (CALL_PROPERTY_CONFERENCE not in ads[0]
-                        .droid.telecomCallGetProperties(call_conf_id)):
-                    ads[0].log.error(
-                        "Conf call id % properties wrong: %s", call_conf_id,
-                        ads[0].droid.telecomCallGetProperties(call_conf_id))
-                    return False
-
-                if (CALL_CAPABILITY_MANAGE_CONFERENCE not in ads[0]
-                        .droid.telecomCallGetCapabilities(call_conf_id)):
-                    ads[0].log.error(
-                        "Conf call id %s capabilities wrong: %s", call_conf_id,
-                        ads[0].droid.telecomCallGetCapabilities(call_conf_id))
-                    return False
-
-                if (call_ab_id in calls) or (call_ac_id in calls):
-                    self.log.error(
-                        "Previous call ids should not in new call list after "
-                        "merge.")
-                    return False
-        else:
-            for call_id in calls:
-                if call_id != call_ab_id and call_id != call_ac_id:
-                    call_conf_id = call_id
-                    self.log.info("CEP not enabled.")
-
-        if not call_conf_id:
-            self.log.error("Merge call fail, no new conference call id.")
-            return False
-        if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], True):
-            return False
-
-        # Check if Conf Call is currently active
-        if ads[0].droid.telecomCallGetCallState(
-                call_conf_id) != CALL_STATE_ACTIVE:
-            ads[0].log.error(
-                "Call_id: %s, state: %s, expected: STATE_ACTIVE", call_conf_id,
-                ads[0].droid.telecomCallGetCallState(call_conf_id))
-            return False
-
-        self.log.info("Step5: End call on PhoneC and verify call continues.")
-        if not self._hangup_call(ads[2], "PhoneC"):
-            return False
-        time.sleep(WAIT_TIME_IN_CALL)
-        calls = ads[0].droid.telecomCallGetCallIds()
-        ads[0].log.info("Calls in PhoneA %s", calls)
-        if not verify_incall_state(self.log, [ads[0], ads[1]], True):
-            return False
-        if not verify_incall_state(self.log, [ads[2]], False):
-            return False
-
-        self.log.info("Step6: End call on PhoneB and verify PhoneA end.")
-        if not self._hangup_call(ads[1], "PhoneB"):
-            return False
-        time.sleep(WAIT_TIME_IN_CALL)
-        if not verify_incall_state(self.log, [ads[0], ads[1], ads[2]], False):
-            return False
-        return True
 
     """ Tests Begin """
 
@@ -3337,7 +3178,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3359,7 +3200,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3380,7 +3221,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3402,7 +3243,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3423,7 +3264,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3445,7 +3286,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3467,7 +3308,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3488,7 +3329,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3510,7 +3351,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3531,7 +3372,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3553,7 +3394,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3575,7 +3416,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3596,7 +3437,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3618,7 +3459,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3639,7 +3480,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3661,7 +3502,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3683,7 +3524,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3704,7 +3545,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3726,7 +3567,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3747,7 +3588,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3769,7 +3610,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3791,7 +3632,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3812,7 +3653,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3834,7 +3675,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3855,7 +3696,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3877,7 +3718,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3899,7 +3740,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3920,7 +3761,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3942,7 +3783,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3963,7 +3804,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -3985,7 +3826,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4007,7 +3848,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4028,7 +3869,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4050,7 +3891,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4071,7 +3912,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4093,7 +3934,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4115,7 +3956,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4136,7 +3977,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4158,7 +3999,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4179,7 +4020,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4201,7 +4042,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4223,7 +4064,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4244,7 +4085,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4266,7 +4107,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4287,7 +4128,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4898,7 +4739,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4921,7 +4762,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4944,7 +4785,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4967,7 +4808,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -4990,7 +4831,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5014,7 +4855,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5038,7 +4879,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5062,7 +4903,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5086,7 +4927,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5110,7 +4951,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5133,7 +4974,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5156,7 +4997,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5179,7 +5020,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5202,7 +5043,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5225,7 +5066,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5249,7 +5090,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5273,7 +5114,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5297,7 +5138,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5321,7 +5162,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5345,7 +5186,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5368,7 +5209,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5391,7 +5232,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5414,7 +5255,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5437,7 +5278,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5460,7 +5301,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5484,7 +5325,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5508,7 +5349,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5532,7 +5373,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5556,7 +5397,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5580,7 +5421,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5603,7 +5444,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5626,7 +5467,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5649,7 +5490,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5672,7 +5513,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5695,7 +5536,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5719,7 +5560,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5743,7 +5584,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5767,7 +5608,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5791,7 +5632,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5815,7 +5656,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5838,7 +5679,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5861,7 +5702,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5884,7 +5725,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5907,7 +5748,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5930,7 +5771,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5954,7 +5795,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -5978,7 +5819,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6002,7 +5843,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6026,7 +5867,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6050,7 +5891,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6073,7 +5914,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6096,7 +5937,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6119,7 +5960,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6142,7 +5983,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6165,7 +6006,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6189,7 +6030,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6213,7 +6054,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6237,7 +6078,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6261,7 +6102,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6285,7 +6126,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6308,7 +6149,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6331,7 +6172,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6354,7 +6195,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6377,7 +6218,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6400,7 +6241,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6424,7 +6265,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6448,7 +6289,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6472,7 +6313,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6496,7 +6337,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6520,7 +6361,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6543,7 +6384,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6566,7 +6407,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6589,7 +6430,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6612,7 +6453,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6635,7 +6476,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6659,7 +6500,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6683,7 +6524,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6707,7 +6548,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6731,7 +6572,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6755,7 +6596,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6778,7 +6619,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6801,7 +6642,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6824,7 +6665,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6847,7 +6688,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6870,7 +6711,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6894,7 +6735,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6918,7 +6759,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6942,7 +6783,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6966,7 +6807,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -6990,7 +6831,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -7317,7 +7158,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="89b9f228-97a6-4e5c-96b9-a7f87d847c22")
@@ -7352,7 +7193,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="2c6dc281-59b0-4ea4-b811-e4c3a4d654ab")
@@ -7387,7 +7229,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="f6727241-b727-4eb8-8c0d-f61d3a14a635")
@@ -7422,7 +7265,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c9e54db0-2b0b-428b-ba63-619ad0b8637b")
@@ -7457,7 +7301,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="a478cc82-d95c-43fc-9735-d8333b8937e2")
@@ -7492,7 +7337,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b1acb263-1481-44a5-b18e-58bdeff7bc1e")
@@ -7523,7 +7369,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="03b8a0d2-80dd-465a-ad14-5db94cdbcc53")
@@ -7554,7 +7401,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="9eb1a816-1e2c-41da-b083-2026163a3893")
@@ -7585,7 +7433,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="3d66a1b6-916f-4221-bd99-21ff4d40ebb8")
@@ -7616,7 +7465,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="9d8e8b2f-e2b9-4607-8c54-6233b3096123")
@@ -7647,7 +7497,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="0884206b-2471-4a7e-95aa-228379416ff8")
@@ -7678,7 +7529,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c7706af6-dc77-4002-b295-66c60aeace6b")
@@ -7709,7 +7561,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b079618f-e32b-4ba0-9009-06e013805c39")
@@ -7740,7 +7593,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="571fe98b-354f-4038-8441-0e4b1840eb7a")
@@ -7771,7 +7625,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="8f531f3c-493e-43d6-9d6d-f4990b5feba4")
@@ -7802,7 +7657,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="00e1194b-3c06-46c4-8764-0339c0aa9f9e")
@@ -7833,7 +7689,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="c94f6444-d265-4277-9555-57041e3c4ff4")
@@ -7864,7 +7721,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="0980745e-dcdc-4c56-84e3-e2ee076059ee")
@@ -7898,7 +7756,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="6bf0b152-fb1c-4edc-9525-b39e8640b967")
@@ -7932,7 +7791,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e3013df6-98ca-4318-85ba-04011ba0a24f")
@@ -7967,7 +7827,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e88bf042-8799-44c7-bc50-66ac1e1fb2ac")
@@ -8003,7 +7864,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="a8302e73-82a4-4409-b038-5c604fb4c66c")
@@ -8037,7 +7899,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="80f69baf-1649-4858-b35c-b25baf79b42c")
@@ -8071,7 +7934,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="1ac0c067-49fb-41d9-8649-cc709bdd8926")
@@ -8106,7 +7970,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="b20b1a94-048c-4f10-9261-dde79e1edb00")
@@ -8142,7 +8007,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="402b175f-1510-4e2a-97c2-7c9ea5ce40f6")
@@ -8172,7 +8038,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="7c710fbf-4b77-4b46-9719-e17b3d047cfc")
@@ -8203,7 +8070,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="642afbac-30c1-4dbf-bf3e-758ab6c3a306")
@@ -8234,7 +8102,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="a4ae1e39-ed6d-412e-b821-321c715a5d47")
@@ -8266,7 +8135,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="7b8431f2-8a49-4aa9-b84d-77f16a6a2c30")
@@ -8296,7 +8166,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="5b4d7444-32a1-4e82-8847-1c4ae002edca")
@@ -8327,7 +8198,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="88c6c179-0b56-4d03-b5e4-76a147a40995")
@@ -8358,7 +8230,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="7f744ab3-f919-4a7a-83ce-e38487d619cc")
@@ -8390,7 +8263,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="5c861a99-a1b8-45fc-ba67-f8fde4575efc")
@@ -8420,7 +8294,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="fdb32a13-302c-4c1c-a77e-f78ed7e90911")
@@ -8451,7 +8326,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="a2cf3366-ae66-4e8f-a682-df506173f282")
@@ -8482,7 +8358,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="fc5f0f1c-9610-4d0f-adce-9c8db351e7da")
@@ -8514,7 +8391,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="05332b1e-c36b-4874-b13b-f8e49d0d9bca")
@@ -8544,7 +8422,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="2421d340-f9cb-47e7-ac3e-8581e141a6d0")
@@ -8575,7 +8454,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="7c1f6008-cf59-4e63-9285-3cf1c26bc0aa")
@@ -8606,7 +8486,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="be153f3d-0707-45d0-9ddd-4aa696e0e536")
@@ -8638,7 +8519,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="7235c917-a2d4-4561-bda5-630171053f8f")
@@ -8668,7 +8550,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="8e52b9a4-c0d1-4dcd-9359-746354124763")
@@ -8698,7 +8581,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="49a4440f-40a1-4518-810a-6ba9f1fbc243")
@@ -8729,7 +8613,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="9d05bde3-50ac-4a49-a0db-2181c9b5a10f")
@@ -8760,7 +8645,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="5c44eb64-b184-417a-97c9-8c22c48fb731")
@@ -8790,7 +8676,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="e16e2e81-1b59-4b02-b601-bb27b62d6468")
@@ -8820,7 +8707,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="fd4c3b72-ea2d-4cd4-af79-b93635eda8b8")
@@ -8851,7 +8739,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="a33d7b2b-cc22-40c3-9689-a2a14642396d")
@@ -8882,7 +8771,8 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_epdg_conference_merge_drop(call_ab_id, call_ac_id)
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
+            call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="7839c6a3-6797-4cd0-a918-c7d317881e3d")
@@ -9899,7 +9789,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -9945,7 +9835,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -9991,7 +9881,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10037,7 +9927,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10083,7 +9973,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10129,7 +10019,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10175,7 +10065,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10221,7 +10111,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10267,7 +10157,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10313,7 +10203,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10359,7 +10249,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10405,7 +10295,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10451,7 +10341,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10497,7 +10387,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10543,7 +10433,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_first_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_first_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10591,7 +10481,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_no_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10639,7 +10529,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_host_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_host(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10687,7 +10577,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         if call_ab_id is None or call_ac_id is None:
             return False
 
-        return self._test_ims_conference_merge_drop_second_call_from_participant_cep(
+        return self._test_ims_conference_merge_drop_second_call_from_participant(
             call_ab_id, call_ac_id)
 
     @TelephonyBaseTest.tel_test_wrap
@@ -10867,5 +10757,93 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             [ads[0], ads[1], ads[2]], [is_phone_in_call_iwlan, None], False):
             return False
         return True
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f4990e20-4a40-4238-9a2a-a75d9be3d354")
+    def test_call_forwarding_unconditional(self):
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_forwarding_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_forwarding_type="unconditional")
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="26b85c3f-5a38-465a-a6e3-dfd03c6ea315")
+    def test_call_forwarding_busy(self):
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_forwarding_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_forwarding_type="busy")
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="96638a39-efe2-40e2-afb6-6a97f87c4af5")
+    def test_call_forwarding_not_answered(self):
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_forwarding_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_forwarding_type="not_answered")
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="a13e586a-3345-49d8-9e84-ca33bd3fbd7d")
+    def test_call_forwarding_not_reachable(self):
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_forwarding_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_forwarding_type="not_reachable")
 
     """ Tests End """

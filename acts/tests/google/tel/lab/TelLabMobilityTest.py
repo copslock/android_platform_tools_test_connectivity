@@ -49,6 +49,7 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL_FOR_IMS
 from acts.test_utils.tel.tel_test_utils import ensure_network_rat
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
+from acts.test_utils.tel.tel_test_utils import get_host_ip_address
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
@@ -246,11 +247,7 @@ class TelLabMobilityTest(TelephonyBaseTest):
 
     def iperf_setup(self):
         # Fetch IP address of the host machine
-        cmd = "|".join(("ifconfig", "grep eth0 -A1", "grep inet",
-                        "cut -d ':' -f2", "cut -d ' ' -f 1"))
-        destination_ip = exe_cmd(cmd)
-        destination_ip = (destination_ip.decode("utf-8")).split("\n")[0]
-        self.log.info("Dest IP is %s", destination_ip)
+        destination_ip = get_host_ip_address(self)
 
         if not adb_shell_ping(self.ad, DEFAULT_PING_DURATION, destination_ip):
             self.log.error("Pings failed to Destination.")

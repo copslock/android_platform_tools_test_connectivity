@@ -96,6 +96,7 @@ from acts.test_utils.tel.tel_subscription_utils import get_carrierid_from_slot_i
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_data
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_subscription_utils import set_slways_allow_mms_data
 from acts.utils import get_current_epoch_time
 from acts.utils import rand_ascii_str
 
@@ -251,6 +252,19 @@ class TelLiveStressTest(TelephonyBaseTest):
             ad.log.info("RAT 2G is enabled successfully.")
         return True
 
+    def _get_network_rat(self, slot_id):
+        rat = self.dut.adb.getprop("gsm.network.type")
+        if "," in rat:
+            if self.dsds_esim:
+                rat = rat.split(',')[slot_id]
+            else:
+                (rat1, rat2) = rat.split(',')
+                if rat1 == "Unknown":
+                    rat = rat2
+                else:
+                    rat = rat1
+        return rat
+
     def _send_message(self, max_wait_time=2 * MAX_WAIT_TIME_SMS_RECEIVE):
         slot_id_rx = None
         if self.single_phone_test:
@@ -276,12 +290,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             0: sms_send_receive_verify,
             1: mms_send_receive_verify
         }
-        rat = self.dut.adb.getprop("gsm.network.type")
-        if "," in rat:
-            if self.dsds_esim:
-                rat = rat.split(',')[slot_id]
-            else:
-                rat = rat.split(',')[0]
+        rat = self._get_network_rat(slot_id)
         self.dut.log.info("Network in RAT %s", rat)
         if self.dut_incall and not is_rat_svd_capable(rat.upper()):
             self.dut.log.info("In call data not supported, test SMS only")
@@ -336,12 +345,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                 self.log.error("%s fails", log_msg)
                 self.result_info["%s Failure" % message_type] += 1
             else:
-                rat = self.dut.adb.getprop("gsm.network.type")
-                if "," in rat:
-                    if self.dsds_esim:
-                        rat = rat.split(',')[slot_id]
-                    else:
-                        rat = rat.split(',')[0]
+                rat = self._get_network_rat(slot_id)
                 self.dut.log.info("Network in RAT %s", rat)
                 if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                     self.dut.log.info(
@@ -782,13 +786,8 @@ class TelLiveStressTest(TelephonyBaseTest):
         file_name = file_names[selection]
         self.result_info["Internet Connection Check Total"] += 1
 
+        rat = self._get_network_rat(slot_id)
         if not self.internet_connection_check_method(self.log, self.dut):
-            rat = self.dut.adb.getprop("gsm.network.type")
-            if "," in rat:
-                if self.dsds_esim:
-                    rat = rat.split(',')[slot_id]
-                else:
-                    rat = rat.split(',')[0]
             self.dut.log.info("Network in RAT %s", rat)
             if self.dut_incall and not is_rat_svd_capable(rat.upper()):
                 self.result_info[
@@ -962,6 +961,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         if not call_verification_func:
             call_verification_func = is_phone_in_call
         self.finishing_time = time.time() + self.max_run_time
+        # CBRS setup
         if self.cbrs_esim:
             cbrs_sub_count = 0
             for ad in self.android_devices:
@@ -978,6 +978,15 @@ class TelLiveStressTest(TelephonyBaseTest):
             if cbrs_sub_count != 2:
                 self.log.error("Expecting - 2 CBRS subs, found - %d", cbrs_sub_count)
                 raise signals.TestAbortClass("Cannot find all expected CBRS subs")
+        # DSDS setup
+        if self.dsds_esim:
+            for ad in self.android_devices:
+                for i in range(0, 2):
+                    sub_id = get_subid_from_slot_index(ad.log, ad, i)
+                    set_slways_allow_mms_data(ad, sub_id)
+                    operator = get_operatorname_from_slot_index(ad, i)
+                    ad.log.info("Slot %d - Sub %s - %s", i, sub_id, operator)
+        # Actual test trigger
         if not self.dsds_esim and self.check_incall_data():
             self.log.info(
                 "==== Start parallel voice/message/data stress test ====")
@@ -1102,8 +1111,6 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_lte_volte_parallel_stress(self):
         """ VoLTE on stress test"""
-        if CAPABILITY_VOLTE not in self.dut_capabilities:
-            raise signals.TestAbortClass("VoLTE is not supported")
         return self.parallel_tests(
             setup_func=self._setup_lte_volte_enabled,
             call_verification_func=is_phone_in_call_volte)
@@ -1120,8 +1127,6 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_parallel_stress(self):
         """ Wifi calling APM mode off stress test"""
-        if CAPABILITY_WFC not in self.dut_capabilities:
-            raise signals.TestAbortClass("WFC is not supported")
         if WFC_MODE_WIFI_PREFERRED not in self.dut_wfc_modes:
             raise signals.TestSkip("WFC_MODE_WIFI_PREFERRED is not supported")
         return self.parallel_tests(
@@ -1132,8 +1137,6 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_wfc_apm_parallel_stress(self):
         """ Wifi calling in APM mode on stress test"""
-        if CAPABILITY_WFC not in self.dut_capabilities:
-            raise signals.TestAbortClass("WFC is not supported")
         return self.parallel_tests(
             setup_func=self._setup_wfc_apm,
             call_verification_func=is_phone_in_call_iwlan)
@@ -1158,8 +1161,6 @@ class TelLiveStressTest(TelephonyBaseTest):
     @TelephonyBaseTest.tel_test_wrap
     def test_volte_modeprefchange_parallel_stress(self):
         """ VoLTE Mode Pref call stress test"""
-        if CAPABILITY_VOLTE not in self.dut_capabilities:
-            raise signals.TestAbortClass("VoLTE is not supported")
         return self.parallel_with_network_change_tests(
             setup_func=self._setup_lte_volte_enabled)
 

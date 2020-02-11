@@ -63,6 +63,7 @@ class WifiRoamingTest(WifiBaseTest):
             del self.user_params["open_network"]
 
     def setup_test(self):
+        self.dut.ed.clear_all_events()
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 

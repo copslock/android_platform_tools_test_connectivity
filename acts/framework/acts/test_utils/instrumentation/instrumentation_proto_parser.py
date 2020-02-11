@@ -45,7 +45,7 @@ def pull_proto(ad, dest_dir, source_path=None):
         filename = os.path.basename(source_path)
     else:
         default_full_proto_dir = os.path.join(
-            ad.adb.shell('echo $EXTERNAL_STORAGE'), DEFAULT_INST_LOG_DIR)
+            ad.external_storage_path, DEFAULT_INST_LOG_DIR)
         filename = ad.adb.shell('ls %s -t | head -n1' % default_full_proto_dir)
         if not filename:
             raise ProtoParserError(

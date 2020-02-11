@@ -60,8 +60,8 @@ BLACKLIST = [
     'acts/test_utils/bt/bt_power_test_utils.py',
     'acts/test_utils/coex/coex_test_utils.py',
     'acts/test_utils/tel/twilio_client.py',
-    'acts/test_utils/bt/A2dpCodecBaseTest.py',
-    'acts/test_utils/bt/BtRangeBaseTest.py',
+    'acts/test_utils/bt/A2dpBaseTest.py',
+    'acts/test_utils/bt/BtSarBaseTest.py',
     'tests/google/ble/beacon_tests/BeaconSwarmTest.py',
     'tests/google/bt/pts/BtCmdLineTest.py',
     'tests/google/bt/headphone_automation/SineWaveQualityTest.py',
@@ -86,19 +86,20 @@ BLACKLIST = [
     'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
     'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
     'tests/google/fuchsia/wlan/RebootStressTest.py',
+    'acts/test_utils/gnss/gnss_testlog_utils.py',
+    'tests/google/fuchsia/bt/BluetoothCmdLineTest.py',
 ]
 
 BLACKLIST_DIRECTORIES = [
     'acts/controllers/buds_lib',
-    # TODO: remove monsoon_lib after HVPM and LVPM sampling libraries are merged
-    'acts/controllers/monsoon_lib',
     'acts/test_utils/audio_analysis_lib/',
     'acts/test_utils/coex/',
     'acts/test_utils/power/',
     'tests/google/coex/',
     'tests/google/gnss/',
     'tests/google/power/',
-    'tests/google/bt/performance/'
+    'tests/google/bt/performance/',
+    'tests/google/bt/sar/',
 ]
 
 BANNED_IMPORTS = ['mobly.controllers']

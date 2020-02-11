@@ -137,18 +137,6 @@ def get_info(ads):
     return device_info
 
 
-def get_post_job_info(ads):
-    """Returns the tracked build id to test_run_summary.json
-
-    Args:
-        ads: A list of AndroidDevice objects.
-
-    Returns:
-        A dict consisting of {'build_id': ads[0].build_info}
-    """
-    return 'Build Info', ads[0].build_info
-
-
 def _start_services_on_ads(ads):
     """Starts long running services on multiple AndroidDevice objects.
 
@@ -485,7 +473,8 @@ class AndroidDevice:
             'serial': self.serial,
             'model': self.model,
             'build_info': self.build_info,
-            'user_added_info': self._user_added_device_info
+            'user_added_info': self._user_added_device_info,
+            'flavor': self.flavor
         }
         return info
 
@@ -536,6 +525,11 @@ class AndroidDevice:
             return model
         else:
             return self.adb.getprop("ro.product.name").lower()
+
+    @property
+    def flavor(self):
+        """Returns the specific flavor of Android build the device is using."""
+        return self.adb.getprop("ro.build.flavor").lower()
 
     @property
     def droid(self):
@@ -985,11 +979,19 @@ class AndroidDevice:
         for skip_file in skip_files:
             cmd = "%s ! -iname %s" % (cmd, skip_file)
         out = self.adb.shell(cmd, ignore_status=True)
-        if not out or "No such" in out or "Permission denied" in out:
+        if not out or "No such" in out or "Permission denied" in out or \
+            "Not a directory" in out:
             return []
         files = out.split("\n")
         self.log.debug("Find files in directory %s: %s", directory, files)
         return files
+
+    @property
+    def external_storage_path(self):
+        """
+        The $EXTERNAL_STORAGE path on the device. Most commonly set to '/sdcard'
+        """
+        return self.adb.shell('echo $EXTERNAL_STORAGE')
 
     def pull_files(self, device_paths, host_path=None):
         """Pull files from devices.
@@ -1015,6 +1017,12 @@ class AndroidDevice:
         """check crash report on the device."""
         crash_reports = []
         for crash_path in CRASH_REPORT_PATHS:
+            try:
+                cmd = 'cd %s' % crash_path
+                self.adb.shell(cmd)
+            except Exception as e:
+                self.log.debug("received exception %s", e)
+                continue
             crashes = self.get_file_names(
                 crash_path,
                 skip_files=CRASH_REPORT_SKIPS,

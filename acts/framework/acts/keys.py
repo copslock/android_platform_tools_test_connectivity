@@ -36,7 +36,6 @@ class Config(enum.Enum):
     key_test_paths = 'testpaths'
     key_port = 'Port'
     key_address = 'Address'
-    key_random = 'random'
     key_test_case_iterations = 'test_case_iterations'
     key_test_failure_tracebacks = 'test_failure_tracebacks'
     # Config names for controllers packaged in ACTS.
@@ -62,7 +61,6 @@ class Config(enum.Enum):
     ikey_logger = 'log'
     ikey_logpath = 'log_path'
     ikey_summary_writer = 'summary_writer'
-    ikey_cli_args = 'cli_args'
     # module name of controllers packaged in ACTS.
     m_key_monsoon = 'monsoon'
     m_key_android_device = 'android_device'

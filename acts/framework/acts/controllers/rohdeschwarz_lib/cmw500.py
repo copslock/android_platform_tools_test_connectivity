@@ -22,10 +22,11 @@ from acts.controllers import abstract_inst
 
 LTE_ATTACH_RESP = 'ATT'
 LTE_CONN_RESP = 'CONN'
+LTE_IDLE_RESP = 'IDLE'
 LTE_PSWITCHED_ON_RESP = 'ON'
 LTE_PSWITCHED_OFF_RESP = 'OFF'
-LTE_TURN_ON_RESP = 'ON,ADJ'
-LTE_TURN_OFF_RESP = 'OFF,ADJ'
+
+STATE_CHANGE_TIMEOUT = 20
 
 
 class LteState(Enum):
@@ -73,7 +74,6 @@ class TransmissionModes(Enum):
     TM2 = 'TM2'
     TM3 = 'TM3'
     TM4 = 'TM4'
-    TM6 = 'TM6'
     TM7 = 'TM7'
     TM8 = 'TM8'
     TM9 = 'TM9'
@@ -99,8 +99,8 @@ class RbPosition(Enum):
 class ModulationType(Enum):
     """Supported Modulation Types."""
     QPSK = 'QPSK'
-    Q16 = 'Q16',
-    Q64 = 'Q64',
+    Q16 = 'Q16'
+    Q64 = 'Q64'
     Q256 = 'Q256'
 
 
@@ -122,10 +122,55 @@ class MimoModes(Enum):
     MIMO4x4 = 'FOUR'
 
 
+class MimoScenario(Enum):
+    """Supportted mimo scenarios"""
+    SCEN1x1 = 'SCELl:FLEXible SUA1,RF1C,RX1,RF1C,TX1'
+    SCEN2x2 = 'TRO:FLEXible SUA1,RF1C,RX1,RF1C,TX1,RF3C,TX2'
+    SCEN4x4 = 'FRO FLEXible SUA1,RF1C,RX1,RF1C,TX1,RF3C,TX2,RF2C,TX3,RF4C,TX4'
+
+
 class RrcState(Enum):
     """States to enable/disable rrc."""
     RRC_ON = 'ON'
     RRC_OFF = 'OFF'
+
+
+class MacPadding(Enum):
+    """Enables/Disables Mac Padding."""
+    ON = 'ON'
+    OFF = 'OFF'
+
+
+class ConnectionType(Enum):
+    """Supported Connection Types."""
+    TEST = 'TESTmode'
+    DAU = 'DAPPlication'
+
+
+class RepetitionMode(Enum):
+    """Specifies LTE Measurement Repetition Mode."""
+    SINGLESHOT = 'SINGleshot'
+    CONTINUOUS = 'CONTinuous'
+
+
+class TpcPowerControl(Enum):
+    """Specifies Up Link power control types."""
+    MIN_POWER = 'MINPower'
+    MAX_POWER = 'MAXPower'
+    CONSTANT = 'CONStant'
+    SINGLE = 'SINGle'
+    UDSINGLE = 'UDSingle'
+    UDCONTINUOUS = 'UDContinuous'
+    ALTERNATE = 'ALT0'
+    CLOSED_LOOP = 'CLOop'
+    RP_CONTROL = 'RPControl'
+    FLEX_POWER = 'FULPower'
+
+
+class ReducedPdcch(Enum):
+    """Enables/disables the reduction of PDCCH resources."""
+    ON = 'ON'
+    OFF = 'OFF'
 
 
 class Cmw500(abstract_inst.SocketInstrument):
@@ -146,14 +191,33 @@ class Cmw500(abstract_inst.SocketInstrument):
         self._send('SYST:DISP:UPD ON')
 
     def switch_lte_signalling(self, state):
-        """Turns LTE signalling ON/OFF.
+        """ Turns LTE signalling ON/OFF.
 
         Args:
-              state: ON/OFF.
+              state: an instance of LteState indicating the state to which LTE
+                signal has to be set.
         """
-        cmd = 'SOURce:LTE:SIGN:CELL:STATe {}'.format(state.value)
+        if not isinstance(state, LteState):
+            raise ValueError('state should be the instance of LteState.')
+
+        state = state.value
+
+        cmd = 'SOURce:LTE:SIGN:CELL:STATe {}'.format(state)
         self.send_and_recv(cmd)
-        self.wait_for_lte_state_change()
+
+        time_elapsed = 0
+        while time_elapsed < STATE_CHANGE_TIMEOUT:
+            response = self.send_and_recv('SOURce:LTE:SIGN:CELL:STATe:ALL?')
+
+            if response == state + ',ADJ':
+                self._logger.info('LTE signalling is now {}.'.format(state))
+                break
+
+            # Wait for a second and increase time count by one
+            time.sleep(1)
+            time_elapsed += 1
+        else:
+            raise CmwError('Failed to turn {} LTE signalling.'.format(state))
 
     def enable_packet_switching(self):
         """Enable packet switching in call box."""
@@ -195,33 +259,14 @@ class Cmw500(abstract_inst.SocketInstrument):
             status = self._recv()
             return status
 
-    def set_mimo(self):
-        """Sets the scenario for the test."""
-        # TODO:(ganeshganesh) Create a common function to set mimo modes.
-        self.send_and_recv('ROUTe:LTE:SIGN:SCENario:SCELl:FLEXible SUW1,RF1C,'
-                           'RX1,RF1C,TX1')
-
-    def wait_for_lte_state_change(self, timeout=20):
-        """Waits until the state of LTE changes.
+    def configure_mimo_settings(self, mimo):
+        """Sets the mimo scenario for the test.
 
         Args:
-            timeout: timeout for lte to be turned ON/OFF.
-
-        Raises:
-            CmwError on timeout.
+            mimo: mimo scenario to set.
         """
-        end_time = time.time() + timeout
-        while time.time() <= end_time:
-            state = self.send_and_recv('SOURce:LTE:SIGN:CELL:STATe:ALL?')
-
-            if state == LTE_TURN_ON_RESP:
-                self._logger.debug('LTE turned ON.')
-                break
-            elif state == LTE_TURN_OFF_RESP:
-                self._logger.debug('LTE turned OFF.')
-                break
-        else:
-            raise CmwError('Failed to turn ON/OFF lte signalling.')
+        cmd = 'ROUTe:LTE:SIGN:SCENario:{}'.format(mimo.value)
+        self.send_and_recv(cmd)
 
     def wait_for_pswitched_state(self, timeout=10):
         """Wait until pswitched state.
@@ -232,8 +277,7 @@ class Cmw500(abstract_inst.SocketInstrument):
         Raises:
             CmwError on timeout.
         """
-        end_time = time.time() + timeout
-        while time.time() <= end_time:
+        while timeout > 0:
             state = self.send_and_recv('FETCh:LTE:SIGN:PSWitched:STATe?')
             if state == LTE_PSWITCHED_ON_RESP:
                 self._logger.debug('Connection to setup initiated.')
@@ -241,10 +285,14 @@ class Cmw500(abstract_inst.SocketInstrument):
             elif state == LTE_PSWITCHED_OFF_RESP:
                 self._logger.debug('Connection to setup detached.')
                 break
+
+            # Wait for a second and decrease count by one
+            time.sleep(1)
+            timeout -= 1
         else:
             raise CmwError('Failure in setting up/detaching connection')
 
-    def wait_for_connected_state(self, timeout=120):
+    def wait_for_attached_state(self, timeout=120):
         """Attach the controller with device.
 
         Args:
@@ -253,22 +301,46 @@ class Cmw500(abstract_inst.SocketInstrument):
         Raises:
             CmwError on time out.
         """
-        end_time = time.time() + timeout
-        while time.time() <= end_time:
+        while timeout > 0:
             state = self.send_and_recv('FETCh:LTE:SIGN:PSWitched:STATe?')
 
             if state == LTE_ATTACH_RESP:
                 self._logger.debug('Call box attached with device')
                 break
+
+            # Wait for a second and decrease count by one
+            time.sleep(1)
+            timeout -= 1
         else:
             raise CmwError('Device could not be attached')
 
-        conn_state = self.send_and_recv('SENSe:LTE:SIGN:RRCState?')
+    def wait_for_rrc_state(self, state, timeout=120):
+        """ Waits until a certain RRC state is set.
 
-        if conn_state == LTE_CONN_RESP:
-            self._logger.debug('Call box connected with device')
+        Args:
+            state: the RRC state that is being waited for.
+            timeout: timeout for phone to be in connnected state.
+
+        Raises:
+            CmwError on time out.
+        """
+        if state not in [LTE_CONN_RESP, LTE_IDLE_RESP]:
+            raise ValueError(
+                'The allowed values for state are {} and {}.'.format(
+                    LTE_CONN_RESP, LTE_IDLE_RESP))
+
+        while timeout > 0:
+            new_state = self.send_and_recv('SENSe:LTE:SIGN:RRCState?')
+
+            if new_state == state:
+                self._logger.debug('The RRC state is {}.'.format(new_state))
+                break
+
+            # Wait for a second and decrease count by one
+            time.sleep(1)
+            timeout -= 1
         else:
-            raise CmwError('Call box could not be connected with device')
+            raise CmwError('Timeout before RRC state was {}.'.format(state))
 
     def reset(self):
         """System level reset"""
@@ -280,7 +352,7 @@ class Cmw500(abstract_inst.SocketInstrument):
         return self.send_and_recv('*IDN?')
 
     def disconnect(self):
-        """Detach controller from device and switch to local mode."""
+        """Disconnect controller from device and switch to local mode."""
         self.switch_lte_signalling(LteState.LTE_OFF)
         self.close_remote_mode()
         self._close_socket()
@@ -288,6 +360,10 @@ class Cmw500(abstract_inst.SocketInstrument):
     def close_remote_mode(self):
         """Exits remote mode to local mode."""
         self.send_and_recv('&GTL')
+
+    def detach(self):
+        """Detach callbox and controller."""
+        self.send_and_recv('CALL:LTE:SIGN:PSWitched:ACTion DETach')
 
     @property
     def rrc_connection(self):
@@ -323,6 +399,36 @@ class Cmw500(abstract_inst.SocketInstrument):
         cmd = 'CONFigure:LTE:SIGN:CONNection:RITimer {}'.format(time_in_secs)
         self.send_and_recv(cmd)
 
+    @property
+    def dl_mac_padding(self):
+        """Gets the state of mac padding."""
+        return self.send_and_recv('CONFigure:LTE:SIGN:CONNection:DLPadding?')
+
+    @dl_mac_padding.setter
+    def dl_mac_padding(self, state):
+        """Enables/Disables downlink padding at the mac layer.
+
+        Args:
+            state: ON/OFF
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:DLPadding {}'.format(state.value)
+        self.send_and_recv(cmd)
+
+    @property
+    def connection_type(self):
+        """Gets the connection type applied in callbox."""
+        return self.send_and_recv('CONFigure:LTE:SIGN:CONNection:CTYPe?')
+
+    @connection_type.setter
+    def connection_type(self, ctype):
+        """Sets the connection type to be applied.
+
+        Args:
+            ctype: Connection type.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:CTYPe {}'.format(ctype.value)
+        self.send_and_recv(cmd)
+
     def get_base_station(self, bts_num=BtsNumber.BTS1):
         """Gets the base station object based on bts num. By default
         bts_num set to PCC
@@ -334,6 +440,15 @@ class Cmw500(abstract_inst.SocketInstrument):
             base station object.
         """
         return BaseStation(self, bts_num)
+
+    def init_lte_measurement(self):
+        """Gets the class object for lte measurement which can be used to
+        initiate measurements.
+
+        Returns:
+            lte measurement object.
+        """
+        return LteMeasurement(self)
 
 
 class BaseStation(object):
@@ -510,6 +625,23 @@ class BaseStation(object):
         self._cmw.send_and_recv(cmd)
 
     @property
+    def uplink_power_control(self):
+        """Gets open loop nominal power directly."""
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:OLNPower?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @uplink_power_control.setter
+    def uplink_power_control(self, ul_power):
+        """Sets open loop nominal power directly.
+
+        Args:
+            ul_power: uplink power level.
+        """
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:OLNPower {}'.format(
+            self._bts, ul_power)
+        self._cmw.send_and_recv(cmd)
+
+    @property
     def uldl_configuration(self):
         """Gets uldl configuration of the cell."""
         cmd = 'CONFigure:LTE:SIGN:CELL:{}:ULDL?'.format(self._bts)
@@ -570,19 +702,18 @@ class BaseStation(object):
             self._bts, mode.value)
         self._cmw.send_and_recv(cmd)
 
-    # TODO: (@sairamganesh) find a common way to set parameters for rmc and
-    # user defined channels(udch) scheduling.
     @property
-    def rmc_rb_configuration_dl(self):
+    def rb_configuration_dl(self):
         """Gets rmc's rb configuration for down link. This function returns
         Number of Resource blocks, Resource block position and Modulation type.
         """
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:DL?'.format(self._bts)
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:{}:DL?'.format(
+            self._bts, self.scheduling_mode)
         return self._cmw.send_and_recv(cmd)
 
-    @rmc_rb_configuration_dl.setter
-    def rmc_rb_configuration_dl(self, rb_config):
-        """Sets the rb configuration for down link with scheduling type RMC.
+    @rb_configuration_dl.setter
+    def rb_configuration_dl(self, rb_config):
+        """Sets the rb configuration for down link for scheduling type.
 
         Args:
             rb_config: Tuple containing Number of resource blocks, resource
@@ -591,23 +722,39 @@ class BaseStation(object):
         Raises:
             ValueError: If tuple unpacking fails.
         """
-        rb, rb_pos, modulation = rb_config
+        if self.scheduling_mode == 'RMC':
+            rb, rb_pos, modulation = rb_config
 
-        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:DL {},{},'
-               '{}'.format(self._bts, rb, rb_pos, modulation))
-        self._cmw.send_and_recv(cmd)
+            cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:DL {},{},'
+                   '{}'.format(self._bts, rb, rb_pos, modulation))
+            self._cmw.send_and_recv(cmd)
+
+        elif self.scheduling_mode == 'UDCH':
+            rb, start_rb, modulation, tbs = rb_config
+
+            self.validate_rb(rb)
+
+            if not isinstance(modulation, ModulationType):
+                raise ValueError('Modulation should be of type '
+                                 'ModulationType.')
+
+            cmd = ('CONFigure:LTE:SIGN:CONNection:{}:UDCHannels:DL {},{},'
+                   '{},{}'.format(self._bts, rb, start_rb, modulation.value,
+                                  tbs))
+            self._cmw.send_and_recv(cmd)
 
     @property
-    def rmc_rb_configuration_ul(self):
-        """Gets rmc's rb configuration for up link. This function returns
+    def rb_configuration_ul(self):
+        """Gets rb configuration for up link. This function returns
         Number of Resource blocks, Resource block position and Modulation type.
         """
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:RMC:UL?'.format(self._bts)
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:{}:UL?'.format(
+            self._bts, self.scheduling_mode)
         return self._cmw.send_and_recv(cmd)
 
-    @rmc_rb_configuration_ul.setter
-    def rmc_rb_configuration_ul(self, rb_config):
-        """Sets the rb configuration for up link with scheduling type RMC.
+    @rb_configuration_ul.setter
+    def rb_configuration_ul(self, rb_config):
+        """Sets the rb configuration for down link for scheduling mode.
 
         Args:
             rb_config: Tuple containing Number of resource blocks, resource
@@ -616,75 +763,61 @@ class BaseStation(object):
         Raises:
             ValueError: If tuple unpacking fails.
         """
-        rb, rb_pos, modulation = rb_config
+        if self.scheduling_mode == 'RMC':
+            rb, rb_pos, modulation = rb_config
 
-        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:UL {},{},'
-               '{}'.format(self._bts, rb, rb_pos, modulation))
-        self._cmw.send_and_recv(cmd)
+            cmd = ('CONFigure:LTE:SIGN:CONNection:{}:RMC:UL {},{},'
+                   '{}'.format(self._bts, rb, rb_pos, modulation))
+            self._cmw.send_and_recv(cmd)
 
-    @property
-    def udch_rb_configuration_dl(self):
-        """Gets udch's rb configuration for down link. This function returns
-        Number of Resource blocks, Resource block position, Modulation type and
-        tbs.
-        """
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:UDCH:DL?'.format(self._bts)
-        return self._cmw.send_and_recv(cmd)
+        elif self.scheduling_mode == 'UDCH':
+            rb, start_rb, modulation, tbs = rb_config
 
-    @udch_rb_configuration_dl.setter
-    def udch_rb_configuration_dl(self, rb_config):
-        """Sets the rb configuration for down link with scheduling type RMC.
+            self.validate_rb(rb)
 
-        Args:
-            rb_config: Tuple containing Number of resource blocks, resource
-            block position, modulation type and tbs value.
+            if not isinstance(modulation, ModulationType):
+                raise ValueError('Modulation should be of type '
+                                 'ModulationType.')
+            cmd = ('CONFigure:LTE:SIGN:CONNection:{}:UDCHannels:UL {},{},'
+                   '{},{}'.format(self._bts, rb, start_rb, modulation.value,
+                                  tbs))
+            self._cmw.send_and_recv(cmd)
 
-        Raises:
-            ValueError: If tuple unpacking fails.
-        """
-        rb, start_rb, md_type, tbs = rb_config
-
-        if rb not in range(0, 51):
-            raise ValueError('rb should be between 0 and 50 inclusive.')
-
-        if not isinstance(md_type, ModulationType):
-            raise ValueError('md_type should be the instance of ModulationType.')
-
-        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:udch:DL {},{},'
-               '{},{}'.format(self._bts, rb, start_rb, md_type, tbs))
-        self._cmw.send_and_recv(cmd)
-
-    @property
-    def udch_rb_configuration_ul(self):
-        """Gets udch's rb configuration for up link. This function returns
-        Number of Resource blocks, Resource block position, Modulation type
-        and tbs.
-        """
-        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:UDCH:UL?'.format(self._bts)
-        return self._cmw.send_and_recv(cmd)
-
-    @udch_rb_configuration_ul.setter
-    def udch_rb_configuration_ul(self, rb_config):
-        """Sets the rb configuration for up link with scheduling type RMC.
+    def validate_rb(self, rb):
+        """Validates if rb is within the limits for bandwidth set.
 
         Args:
-            rb_config: Tuple containing Number of resource blocks, resource
-            block position, modulation type and tbs value.
+            rb: No. of resource blocks.
 
         Raises:
-            ValueError: If tuple unpacking fails/Specified out of range.
+            ValueError if rb out of range.
         """
-        rb, start_rb, md_type, tbs = rb_config
+        bandwidth = self.bandwidth
 
-        if rb not in range(0, 51):
-            raise ValueError('rb should be between 0 and 50 inclusive.')
-
-        if not isinstance(md_type, ModulationType):
-            raise ValueError('md_type should be the instance of ModulationType.')
-
-        cmd = ('CONFigure:LTE:SIGN:CONNection:{}:udch:UL {},{},'
-               '{},{}'.format(self._bts, rb, start_rb, md_type, tbs))
-        self._cmw.send_and_recv(cmd)
+        if bandwidth == LteBandwidth.BANDWIDTH_1MHz.value:
+            if not 0 <= rb <= 6:
+                raise ValueError('RB should be between 0 to 6 inclusive'
+                                 ' for 1.4Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_3MHz.value:
+            if not 0 <= rb <= 10:
+                raise ValueError('RB should be between 0 to 10 inclusive'
+                                 ' for 3 Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_5MHz.value:
+            if not 0 <= rb <= 25:
+                raise ValueError('RB should be between 0 to 25 inclusive'
+                                 ' for 5 Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_10MHz.value:
+            if not 0 <= rb <= 50:
+                raise ValueError('RB should be between 0 to 50 inclusive'
+                                 ' for 10 Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_15MHz.value:
+            if not 0 <= rb <= 75:
+                raise ValueError('RB should be between 0 to 75 inclusive'
+                                 ' for 15 Mhz.')
+        elif bandwidth == LteBandwidth.BANDWIDTH_20MHz.value:
+            if not 0 <= rb <= 100:
+                raise ValueError('RB should be between 0 to 100 inclusive'
+                                 ' for 20 Mhz.')
 
     @property
     def rb_position_dl(self):
@@ -767,9 +900,116 @@ class BaseStation(object):
         Args:
             num_antenna: Count of number of dl antennas to use.
         """
+        if not isinstance(num_antenna, MimoModes):
+            raise ValueError('num_antenna should be an instance of MimoModes.')
         cmd = 'CONFigure:LTE:SIGN:CONNection:{}:NENBantennas {}'.format(
             self._bts, num_antenna)
         self._cmw.send_and_recv(cmd)
+
+    @property
+    def reduced_pdcch(self):
+        """Gets the reduction of PDCCH resources state."""
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:PDCCh:RPDCch?'.format(
+            self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @reduced_pdcch.setter
+    def reduced_pdcch(self, state):
+        """Sets the reduction of PDCCH resources state.
+
+        Args:
+            state: ON/OFF.
+        """
+        cmd = 'CONFigure:LTE:SIGN:CONNection:{}:PDCCh:RPDCch {}'.format(
+            self._bts, state.value)
+        self._cmw.send_and_recv(cmd)
+
+    def tpc_power_control(self, set_type):
+        """Set and execute the Up Link Power Control via TPC.
+
+        Args:
+            set_type: Type of tpc power control.
+        """
+
+        if not isinstance(set_type, TpcPowerControl):
+            raise ValueError('set_type should be the instance of '
+                             'TpCPowerControl.')
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:SET {}'.format(
+            self._bts, set_type.value)
+        self._cmw.send_and_recv(cmd)
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:PEXecute'.format(self._bts)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def tpc_closed_loop_target_power(self):
+        """Gets the target powers for power control with the TPC setup."""
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:CLTPower?'.format(self._bts)
+        return self._cmw.send_and_recv(cmd)
+
+    @tpc_closed_loop_target_power.setter
+    def tpc_closed_loop_target_power(self, cltpower):
+        """Sets the target powers for power control with the TPC setup.
+
+        Args:
+            tpower: Target power.
+        """
+        cmd = 'CONFigure:LTE:SIGN:UL:{}:PUSCh:TPC:CLTPower {}'.format(
+            self._bts, cltpower)
+        self._cmw.send_and_recv(cmd)
+
+
+class LteMeasurement(object):
+
+    def __init__(self, cmw):
+        self._cmw = cmw
+
+    def intitilize_measurement(self):
+        """Initialize measurement modules."""
+        self._cmw.send_and_recv('INIT:LTE:MEAS:MEValuation')
+
+    @property
+    def measurement_repetition(self):
+        """Returns the measurement repetition mode that has been set."""
+        return self._cmw.send_and_recv(
+            'CONFigure:LTE:MEAS:MEValuation:REPetition?')
+
+    @measurement_repetition.setter
+    def measurement_repetition(self, mode):
+        """Sets the mode for measuring power levels.
+
+        Args:
+            mode: Single shot/continuous.
+        """
+        if not isinstance(mode, RepetitionMode):
+            raise ValueError('mode should be the instance of Repetition Mode')
+
+        cmd = 'CONFigure:LTE:MEAS:MEValuation:REPetition {}'.format(mode.value)
+        self._cmw.send_and_recv(cmd)
+
+    @property
+    def query_measurement_state(self):
+        """Returns the states and sub states of measurement."""
+        return self._cmw.send_and_recv('FETCh:LTE:MEAS:MEValuation:STATe:ALL?')
+
+    @property
+    def measure_tx_power(self):
+        """Return the current Tx power measurement."""
+        return self._cmw.send_and_recv(
+            'FETCh:LTE:MEAS:MEValuation:PMONitor:AVERage?')
+
+    def stop_measurement(self):
+        """Stops the on-going measurement.
+        This function call does not free up resources allocated for
+        measurement. Instead it moves from RUN to RDY state.
+        """
+        self._cmw.send_and_recv('STOP:LTE:MEAS:MEValuation')
+
+    def abort_measurement(self):
+        """Aborts the measurement abruptly.
+        This function call will free up the resources allocated for
+        measurement and all the results will be wiped off.
+        """
+        self._cmw.send_and_recv('ABORt:LTE:MEAS:MEValuation')
 
 
 class CmwError(Exception):

@@ -14,8 +14,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 import inspect
-
+import time
+from acts import asserts
 from acts.controllers.buds_lib.dev_utils import apollo_sink_events
+from acts.test_utils.bt.bt_constants import bt_default_timeout
+
 
 
 def validate_controller(controller, abstract_device_class):
@@ -29,8 +32,8 @@ def validate_controller(controller, abstract_device_class):
          NotImplementedError: if controller is missing one or more methods.
     """
     ctlr_methods = inspect.getmembers(controller, predicate=callable)
-    reqd_methods = inspect.getmembers(abstract_device_class,
-                                      predicate=inspect.ismethod)
+    reqd_methods = inspect.getmembers(
+        abstract_device_class, predicate=inspect.ismethod)
     expected_func_names = {method[0] for method in reqd_methods}
     controller_func_names = {method[0] for method in ctlr_methods}
 
@@ -47,8 +50,7 @@ def validate_controller(controller, abstract_device_class):
         if inspect.signature(controller_func) != required_signature:
             raise NotImplementedError(
                 'Method {} must have the signature {}{}.'.format(
-                    controller_func.__qualname__,
-                    controller_func.__name__,
+                    controller_func.__qualname__, controller_func.__name__,
                     required_signature))
 
 
@@ -58,6 +60,7 @@ class BluetoothHandsfreeAbstractDevice:
     Desired controller classes should have a corresponding Bluetooth handsfree
     abstract device class defined in this module.
     """
+
     @property
     def mac_address(self):
         raise NotImplementedError
@@ -115,7 +118,8 @@ class PixelBudsBluetoothHandsfreeAbstractDevice(
         return self.pixel_buds_controller.bluetooth_address
 
     def accept_call(self):
-        return self.pixel_buds_controller.cmd(self.format_cmd('EventUsrAnswer'))
+        return self.pixel_buds_controller.cmd(
+            self.format_cmd('EventUsrAnswer'))
 
     def end_call(self):
         return self.pixel_buds_controller.cmd(
@@ -147,7 +151,8 @@ class PixelBudsBluetoothHandsfreeAbstractDevice(
             self.format_cmd('EventUsrAvrcpSkipBackward'))
 
     def reject_call(self):
-        return self.pixel_buds_controller.cmd(self.format_cmd('EventUsrReject'))
+        return self.pixel_buds_controller.cmd(
+            self.format_cmd('EventUsrReject'))
 
     def volume_down(self):
         return self.pixel_buds_controller.volume('Down')
@@ -158,7 +163,6 @@ class PixelBudsBluetoothHandsfreeAbstractDevice(
 
 class EarstudioReceiverBluetoothHandsfreeAbstractDevice(
         BluetoothHandsfreeAbstractDevice):
-
     def __init__(self, earstudio_controller):
         self.earstudio_controller = earstudio_controller
 
@@ -205,7 +209,6 @@ class EarstudioReceiverBluetoothHandsfreeAbstractDevice(
 
 class JaybirdX3EarbudsBluetoothHandsfreeAbstractDevice(
         BluetoothHandsfreeAbstractDevice):
-
     def __init__(self, jaybird_controller):
         self.jaybird_controller = jaybird_controller
 
@@ -252,13 +255,23 @@ class JaybirdX3EarbudsBluetoothHandsfreeAbstractDevice(
 
 class AndroidHeadsetBluetoothHandsfreeAbstractDevice(
         BluetoothHandsfreeAbstractDevice):
-
     def __init__(self, ad_controller):
         self.ad_controller = ad_controller
 
     @property
     def mac_address(self):
-        return self.ad_controller.droid.bluetoothGetLocalAddress()
+        """Getting device mac with more stability ensurance.
+
+        Sometime, getting mac address is flaky that it returns None. Adding a
+        loop to add more ensurance of getting correct mac address.
+        """
+        device_mac = None
+        start_time = time.time()
+        end_time = start_time + bt_default_timeout
+        while not device_mac and time.time() < end_time:
+            device_mac = self.ad_controller.droid.bluetoothGetLocalAddress()
+        asserts.assert_true(device_mac, 'Can not get the MAC address')
+        return device_mac
 
     def accept_call(self):
         return self.ad_controller.droid.telecomAcceptRingingCall(None)
@@ -271,8 +284,7 @@ class AndroidHeadsetBluetoothHandsfreeAbstractDevice(
         return self.ad_controller.droid.bluetoothMakeDiscoverable()
 
     def next_track(self):
-        return (self.ad_controller.droid.
-                bluetoothMediaPassthrough("skipNext"))
+        return (self.ad_controller.droid.bluetoothMediaPassthrough("skipNext"))
 
     def pause(self):
         return self.ad_controller.droid.bluetoothMediaPassthrough("pause")
@@ -287,12 +299,14 @@ class AndroidHeadsetBluetoothHandsfreeAbstractDevice(
         return self.ad_controller.droid.bluetoothToggleState(True)
 
     def previous_track(self):
-        return (self.ad_controller.droid.
-                bluetoothMediaPassthrough("skipPrev"))
+        return (self.ad_controller.droid.bluetoothMediaPassthrough("skipPrev"))
 
     def reject_call(self):
         return self.ad_controller.droid.telecomCallDisconnect(
             self.ad_controller.droid.telecomCallGetCallIds()[0])
+
+    def reset(self):
+        return self.ad_controller.droid.bluetoothFactoryReset()
 
     def volume_down(self):
         target_step = self.ad_controller.droid.getMediaVolume() - 1

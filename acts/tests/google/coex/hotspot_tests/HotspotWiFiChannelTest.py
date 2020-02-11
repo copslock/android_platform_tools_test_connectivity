@@ -173,8 +173,11 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
 
         toggle_airplane_mode(self.log, self.pri_ad, False)
         self.log.info('Waiting for device to attach.')
-        self.cmw.wait_for_connected_state()
+        self.cmw.wait_for_attached_state()
         self.log.info('Device attached with callbox.')
+        self.log.debug('Waiting for connected state.')
+        self.cmw.wait_for_rrc_state(cmw500.LTE_CONN_RESP)
+        self.log.info('Device connected with callbox')
 
     def initiate_wifi_tethering_and_connect(self, wifi_band=None):
         """Initiates wifi tethering and connects wifi.
@@ -185,8 +188,8 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
         if wifi_band == '2g':
             wband = WifiEnums.WIFI_CONFIG_APBAND_2G
         elif wifi_band == '5g':
-            self.pri_ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
-            self.sec_ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
+            wutils.set_wifi_country_code(self.pri_ad, WifiEnums.CountryCode.US)
+            wutils.set_wifi_country_code(self.sec_ad, WifiEnums.CountryCode.US)
             wband = WifiEnums.WIFI_CONFIG_APBAND_5G
         elif wifi_band == 'auto':
             wband = WifiEnums.WIFI_CONFIG_APBAND_AUTO

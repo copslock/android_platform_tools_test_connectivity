@@ -198,8 +198,8 @@ class WifiStressTest(WifiBaseTest):
         else:
             # force start a single scan so we don't have to wait for the scheduled scan.
             wutils.start_wifi_connection_scan_and_return_status(self.dut)
-            self.log.info("Wait 20s for network selection.")
-            time.sleep(20)
+            self.log.info("Wait 60s for network selection.")
+            time.sleep(60)
         try:
             self.log.info("Connected to %s network after network selection"
                           % self.dut.droid.wifiGetConnectionInfo())
@@ -322,14 +322,7 @@ class WifiStressTest(WifiBaseTest):
         dl_args = "-p {} -t {} -R".format(self.iperf_server_port, sec)
         dl = threading.Thread(target=self.run_long_traffic, args=(sec, dl_args, q))
         dl.start()
-        if(len(self.iperf_servers) > 1):
-            ul_args = "-p {} -t {}".format(self.iperf_servers[1].port, sec)
-            ul = threading.Thread(target=self.run_long_traffic, args=(sec, ul_args, q))
-            ul.start()
-
         dl.join()
-        if(len(self.iperf_servers) > 1):
-            ul.join()
 
         total_time = time.time() - start_time
         self.log.debug("WiFi state = %d" %self.dut.droid.wifiCheckState())
@@ -431,17 +424,14 @@ class WifiStressTest(WifiBaseTest):
             4. Verify softAP is turned down and WiFi is up.
 
         """
-        # Set country code explicitly to "US".
-        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
-        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
         ap_ssid = "softap_" + utils.rand_ascii_str(8)
         ap_password = utils.rand_ascii_str(8)
         self.dut.log.info("softap setup: %s %s", ap_ssid, ap_password)
         config = {wutils.WifiEnums.SSID_KEY: ap_ssid}
         config[wutils.WifiEnums.PWD_KEY] = ap_password
         # Set country code explicitly to "US".
-        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
-        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
+        wutils.set_wifi_country_code(self.dut_client, wutils.WifiEnums.CountryCode.US)
         for count in range(self.stress_count):
             initial_wifi_state = self.dut.droid.wifiCheckState()
             wutils.start_wifi_tethering(self.dut,

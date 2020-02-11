@@ -19,6 +19,7 @@ import concurrent.futures
 import copy
 import datetime
 import functools
+import IPy
 import json
 import logging
 import os
@@ -402,8 +403,10 @@ def exe_cmd(*cmds):
         OSError is raised if an error occurred during the command execution.
     """
     cmd = ' '.join(cmds)
-    proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen(cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            shell=True)
     (out, err) = proc.communicate()
     if not err:
         return out
@@ -462,12 +465,11 @@ def start_standing_subprocess(cmd, check_health_delay=0, shell=True):
     Returns:
         The subprocess that got started.
     """
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=shell,
-        preexec_fn=os.setpgrp)
+    proc = subprocess.Popen(cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            shell=shell,
+                            preexec_fn=os.setpgrp)
     logging.debug("Start standing subprocess with cmd: %s", cmd)
     if check_health_delay > 0:
         time.sleep(check_health_delay)
@@ -562,7 +564,6 @@ def timeout(sec):
     Raises:
         TimeoutError is raised when time out happens.
     """
-
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -641,6 +642,7 @@ def force_airplane_mode(ad, new_state, timeout_value=60):
         return False
     return True
 
+
 def get_battery_level(ad):
     """Gets battery level from device
 
@@ -651,6 +653,7 @@ def get_battery_level(ad):
     match = re.search(r"level: (?P<battery_level>\S+)", output)
     battery_level = int(match.group("battery_level"))
     return battery_level
+
 
 def get_device_usb_charging_status(ad):
     """ Returns the usb charging status of the device.
@@ -874,8 +877,8 @@ def bypass_setup_wizard(ad):
         if adb_error.stdout == "ADB_CMD_OUTPUT:0":
             if adb_error.stderr and \
                     not adb_error.stderr.startswith("Error type 3\n"):
-                logging.error(
-                    "ADB_CMD_OUTPUT:0, but error is %s " % adb_error.stderr)
+                logging.error("ADB_CMD_OUTPUT:0, but error is %s " %
+                              adb_error.stderr)
                 raise adb_error
             logging.debug("Bypass wizard call received harmless error 3: "
                           "No setup to bypass.")
@@ -1011,6 +1014,20 @@ def get_directory_size(path):
         for filename in filenames:
             total += os.path.getsize(os.path.join(dirpath, filename))
     return total
+
+
+def get_command_uptime(command_regex):
+    """Returns the uptime for a given command.
+
+    Args:
+        command_regex: A regex that matches the command line given. Must be
+            pgrep compatible.
+    """
+    pid = job.run('pgrep -f %s' % command_regex).stdout
+    runtime = ''
+    if pid:
+        runtime = job.run('ps -o etime= -p "%s"' % pid).stdout
+    return runtime
 
 
 def get_process_uptime(process):
@@ -1227,7 +1244,7 @@ def run_concurrent_actions(*calls):
     return results
 
 
-def test_concurrent_actions(*calls, failure_exceptions=(Exception,)):
+def test_concurrent_actions(*calls, failure_exceptions=(Exception, )):
     """Concurrently runs all passed in calls using multithreading.
 
     If any callable raises an Exception found within failure_exceptions, the
@@ -1275,7 +1292,6 @@ class SuppressLogOutput(object):
     """Context manager used to suppress all logging output for the specified
     logger and level(s).
     """
-
     def __init__(self, logger=logging.getLogger(), log_levels=None):
         """Create a SuppressLogOutput context manager
 
@@ -1285,9 +1301,10 @@ class SuppressLogOutput(object):
         """
 
         self._logger = logger
-        self._log_levels = log_levels or [logging.DEBUG, logging.INFO,
-                                          logging.WARNING, logging.ERROR,
-                                          logging.CRITICAL]
+        self._log_levels = log_levels or [
+            logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR,
+            logging.CRITICAL
+        ]
         if isinstance(self._log_levels, int):
             self._log_levels = [self._log_levels]
         self._handlers = copy.copy(self._logger.handlers)
@@ -1307,7 +1324,6 @@ class BlockingTimer(object):
     """Context manager used to block until a specified amount of time has
      elapsed.
      """
-
     def __init__(self, secs):
         """Initializes a BlockingTimer
 
@@ -1347,3 +1363,118 @@ def is_valid_ipv6_address(address):
     except socket.error:  # not a valid address
         return False
     return True
+
+
+def merge_dicts(*dict_args):
+    """ Merges args list of dictionaries into a single dictionary.
+
+    Args:
+        dict_args: an args list of dictionaries to be merged. If multiple
+            dictionaries share a key, the last in the list will appear in the
+            final result.
+    """
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
+
+
+def ascii_string(uc_string):
+    """Converts unicode string to ascii"""
+    return str(uc_string).encode('ASCII')
+
+
+def get_interface_ip_addresses(comm_channel, interface):
+    """Gets all of the ip addresses, ipv4 and ipv6, associated with a
+       particular interface name.
+
+    Args:
+        comm_channel: How to send commands to a device.  Can be ssh, adb serial,
+            etc.  Must have the run function implemented.
+        interface: The interface name on the device, ie eth0
+
+    Returns:
+        A list of dictionaries of the the various IP addresses:
+            ipv4_private_local_addresses: Any 192.168, 172.16, or 10
+                addresses
+            ipv4_public_addresses: Any IPv4 public addresses
+            ipv6_link_local_addresses: Any fe80:: addresses
+            ipv6_private_local_addresses: Any fd00:: addresses
+            ipv6_public_addresses: Any publicly routable addresses
+    """
+    ipv4_private_local_addresses = []
+    ipv4_public_addresses = []
+    ipv6_link_local_addresses = []
+    ipv6_private_local_addresses = []
+    ipv6_public_addresses = []
+    all_interfaces_and_addresses = comm_channel.run(
+        'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
+        'print $2" "$4}\'').stdout
+    ifconfig_output = comm_channel.run('ifconfig %s' % interface).stdout
+    for interface_line in all_interfaces_and_addresses.split('\n'):
+        if interface != interface_line.split()[0]:
+            continue
+        on_device_ip = IPy.IP(interface_line.split()[1])
+        if on_device_ip.version() is 4:
+            if on_device_ip.iptype() == 'PRIVATE':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv4_private_local_addresses.append(
+                        on_device_ip.strNormal())
+            elif on_device_ip.iptype() == 'PUBLIC':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv4_public_addresses.append(on_device_ip.strNormal())
+        elif on_device_ip.version() is 6:
+            if on_device_ip.iptype() == 'LINKLOCAL':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_link_local_addresses.append(on_device_ip.strNormal())
+            elif on_device_ip.iptype() == 'ULA':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_private_local_addresses.append(
+                        on_device_ip.strNormal())
+            elif 'ALLOCATED' in on_device_ip.iptype():
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_public_addresses.append(on_device_ip.strNormal())
+    return {
+        'ipv4_private': ipv4_private_local_addresses,
+        'ipv4_public': ipv4_public_addresses,
+        'ipv6_link_local': ipv6_link_local_addresses,
+        'ipv6_private_local': ipv6_private_local_addresses,
+        'ipv6_public': ipv6_public_addresses
+    }
+
+
+def get_interface_based_on_ip(comm_channel, desired_ip_address):
+    """Gets the interface for a particular IP
+
+    Args:
+        comm_channel: How to send commands to a device.  Can be ssh, adb serial,
+            etc.  Must have the run function implemented.
+        desired_ip_address: The IP address that is being looked for on a device.
+
+    Returns:
+        The name of the test interface.
+    """
+
+    desired_ip_address = desired_ip_address.split('%', 1)[0]
+    all_ips_and_interfaces = comm_channel.run(
+        '(ip -o -4 addr show; ip -o -6 addr show) | '
+        'awk \'{print $2" "$4}\'').stdout
+    #ipv4_addresses = comm_channel.run(
+    #    'ip -o -4 addr show| awk \'{print $2": "$4}\'').stdout
+    #ipv6_addresses = comm_channel._ssh_session.run(
+    #    'ip -o -6 addr show| awk \'{print $2": "$4}\'').stdout
+    #if desired_ip_address in ipv4_addresses:
+    #    ip_addresses_to_search = ipv4_addresses
+    #elif desired_ip_address in ipv6_addresses:
+    #    ip_addresses_to_search = ipv6_addresses
+    for ip_address_and_interface in all_ips_and_interfaces.split('\n'):
+        if desired_ip_address in ip_address_and_interface:
+            return ip_address_and_interface.split()[1][:-1]
+    return None
+
+
+def renew_linux_ip_address(comm_channel, interface):
+    comm_channel.run('sudo ifconfig %s down' % interface)
+    comm_channel.run('sudo ifconfig %s up' % interface)
+    comm_channel.run('sudo dhclient -r %s' % interface)
+    comm_channel.run('sudo dhclient %s' % interface)

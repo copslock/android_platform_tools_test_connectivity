@@ -57,6 +57,21 @@ class AudioCaptureBase(object):
     def last_fileno(self):
         return self.next_fileno - 1
 
+    @property
+    def get_last_record_duration_millis(self):
+        """Get duration of most recently recorded file.
+
+        Returns:
+            duration (float): duration of recorded file in milliseconds.
+        """
+        latest_file_path = self.wave_file % self.last_fileno
+        print (latest_file_path)
+        with wave.open(latest_file_path, 'r') as f:
+            frames = f.getnframes()
+            rate = f.getframerate()
+            duration = (frames / float(rate)) * 1000
+        return duration
+
     def write_record_file(self, audio_params, frames):
         """Writes the recorded audio into the file.
 
@@ -102,7 +117,7 @@ class CaptureAudioOverAdb(AudioCaptureBase):
         cmd = 'ap2f --usage 1 --start --duration {} --target {}'.format(
             self.audio_params['duration'], self.adb_path,
         )
-        self._ad.adb.shell(cmd)
+        self._ad.adb.shell_nb(cmd)
 
     def stop(self):
         """Stops the audio capture and stores it in wave file.

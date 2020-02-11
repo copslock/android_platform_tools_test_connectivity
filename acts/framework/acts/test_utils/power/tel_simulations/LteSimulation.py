@@ -17,7 +17,6 @@
 import math
 from enum import Enum
 
-from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsusim
 from acts.test_utils.power.tel_simulations.BaseSimulation import BaseSimulation
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_LTE_ONLY
 
@@ -52,6 +51,14 @@ class DuplexMode(Enum):
     TDD = "TDD"
 
 
+class ModulationType(Enum):
+    """DL/UL Modulation order."""
+    QPSK = 'QPSK'
+    Q16 = '16QAM'
+    Q64 = '64QAM'
+    Q256 = '256QAM'
+
+
 class LteSimulation(BaseSimulation):
     """ Single-carrier LTE simulation. """
 
@@ -67,6 +74,12 @@ class LteSimulation(BaseSimulation):
     PARAM_DL_PW = 'pdl'
     PARAM_BAND = "band"
     PARAM_MIMO = "mimo"
+    PARAM_DL_MCS = 'dlmcs'
+    PARAM_UL_MCS = 'ulmcs'
+    PARAM_SSF = 'ssf'
+    PARAM_CFI = 'cfi'
+    PARAM_PAGING = 'paging'
+    PARAM_PHICH = 'phich'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
 
     # Test config keywords
@@ -372,9 +385,10 @@ class LteSimulation(BaseSimulation):
         """ Extension of the BaseBtsConfig to implement parameters that are
          exclusive to LTE.
 
-        Atributes:
+        Attributes:
             band: an integer indicating the required band number.
             dlul_config: an integer indicating the TDD config number.
+            ssf_config: an integer indicating the Special Sub-Frame config.
             bandwidth: a float indicating the required channel bandwidth.
             mimo_mode: an instance of LteSimulation.MimoMode indicating the
                 required MIMO mode for the downlink signal.
@@ -391,6 +405,10 @@ class LteSimulation(BaseSimulation):
             tbs_pattern_on: a boolean indicating whether full allocation mode
                 should be used or not
             dl_channel: an integer indicating the downlink channel number
+            cfi: an integer indicating the Control Format Indicator
+            paging_cycle: an integer indicating the paging cycle duration in
+                milliseconds
+            phich: a string indicating the PHICH group size parameter
         """
         def __init__(self):
             """ Initialize the base station config by setting all its
@@ -398,6 +416,7 @@ class LteSimulation(BaseSimulation):
             super().__init__()
             self.band = None
             self.dlul_config = None
+            self.ssf_config = None
             self.bandwidth = None
             self.mimo_mode = None
             self.transmission_mode = None
@@ -411,6 +430,9 @@ class LteSimulation(BaseSimulation):
             self.tbs_pattern_on = None
             self.dl_channel = None
             self.dl_cc_enabled = None
+            self.cfi = None
+            self.paging_cycle = None
+            self.phich = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier LTE simulation.
@@ -428,11 +450,6 @@ class LteSimulation(BaseSimulation):
         """
 
         super().__init__(simulator, log, dut, test_config, calibration_table)
-
-        # The LTE simulation relies on the cellular simulator to be a MD8475
-        if not isinstance(self.simulator, anritsusim.MD8475CellularSimulator):
-            raise ValueError('The LTE simulation relies on the simulator to '
-                             'be an Anritsu MD8475 A/B instrument.')
 
         if not dut.droid.telephonySetPreferredNetworkTypesForSubscription(
                 NETWORK_MODE_LTE_ONLY,
@@ -464,8 +481,12 @@ class LteSimulation(BaseSimulation):
                                  "order.".format(self.KEY_DL_256_QAM))
                 self.dl_256_qam = False
             else:
-                self.primary_config.dl_modulation_order = "256QAM"
+                self.primary_config.dl_modulation_order = ModulationType.Q256
 
+        else:
+            self.log.warning('dl modulation 256QAM is not specified in config, '
+                             'setting to default value 64QAM')
+            self.primary_config.dl_modulation_order = ModulationType.Q64
         # Get the 64-QAM setting from the test configuration
         if self.KEY_UL_64_QAM not in test_config:
             self.log.warning("The key '{}' is not set in the config file. "
@@ -481,7 +502,11 @@ class LteSimulation(BaseSimulation):
                                  "order.".format(self.KEY_UL_64_QAM))
                 self.ul_64_qam = False
             else:
-                self.primary_config.ul_modulation_order = "64QAM"
+                self.primary_config.ul_modulation_order = ModulationType.Q64
+        else:
+            self.log.warning('ul modulation 64QAM is not specified in config, '
+                             'setting to default value 16QAM')
+            self.primary_config.ul_modulation_order = ModulationType.Q16
 
         self.simulator.configure_bts(self.primary_config)
 
@@ -512,9 +537,10 @@ class LteSimulation(BaseSimulation):
 
         new_config.band = values[1]
 
-        # Set DL/UL frame configuration
+        # Set TDD-only configs
         if self.get_duplex_mode(new_config.band) == DuplexMode.TDD:
 
+            # Sub-frame DL/UL config
             values = self.consume_parameter(parameters,
                                             self.PARAM_FRAME_CONFIG, 1)
             if not values:
@@ -525,6 +551,18 @@ class LteSimulation(BaseSimulation):
                         self.PARAM_FRAME_CONFIG))
 
             new_config.dlul_config = int(values[1])
+
+            # Special Sub-Frame configuration
+            values = self.consume_parameter(parameters, self.PARAM_SSF, 1)
+
+            if not values:
+                self.log.warning(
+                    'The {} parameter was not provided. Setting '
+                    'Special Sub-Frame config to 6 by default.'.format(
+                        self.PARAM_SSF))
+                new_config.ssf_config = 6
+            else:
+                new_config.ssf_config = int(values[1])
 
         # Setup bandwidth
 
@@ -629,34 +667,98 @@ class LteSimulation(BaseSimulation):
                     new_config.bandwidth, new_config.transmission_mode,
                     dl_pattern, ul_pattern))
 
-            if self.dl_256_qam and new_config.bandwidth == 1.4:
-                new_config.dl_mcs = 26
-            elif (not self.dl_256_qam and self.primary_config.tbs_pattern_on
-                  and new_config.bandwidth != 1.4):
-                new_config.dl_mcs = 28
-            else:
-                new_config.dl_mcs = 27
+            # Look for a DL MCS configuration in the test parameters. If it is
+            # not present, use a default value.
+            dlmcs = self.consume_parameter(parameters, self.PARAM_DL_MCS, 1)
 
-            if self.ul_64_qam:
-                new_config.ul_mcs = 28
+            if dlmcs:
+                new_config.dl_mcs = int(dlmcs[1])
             else:
-                new_config.ul_mcs = 23
+                self.log.warning(
+                    'The test name does not include the {} parameter. Setting '
+                    'to the max value by default'.format(self.PARAM_DL_MCS))
+                if self.dl_256_qam and new_config.bandwidth == 1.4:
+                    new_config.dl_mcs = 26
+                elif (not self.dl_256_qam
+                      and self.primary_config.tbs_pattern_on
+                      and new_config.bandwidth != 1.4):
+                    new_config.dl_mcs = 28
+                else:
+                    new_config.dl_mcs = 27
+
+            # Look for an UL MCS configuration in the test parameters. If it is
+            # not present, use a default value.
+            ulmcs = self.consume_parameter(parameters, self.PARAM_UL_MCS, 1)
+
+            if ulmcs:
+                new_config.ul_mcs = int(ulmcs[1])
+            else:
+                self.log.warning(
+                    'The test name does not include the {} parameter. Setting '
+                    'to the max value by default'.format(self.PARAM_UL_MCS))
+                if self.ul_64_qam:
+                    new_config.ul_mcs = 28
+                else:
+                    new_config.ul_mcs = 23
 
         # Setup LTE RRC status change function and timer for LTE idle test case
-        # TODO (b/141838145): setting RRC timer parameters requires unwrapping
-        # the simulator class as it still doesn't support these methods.
         values = self.consume_parameter(parameters,
                                         self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
         if not values:
             self.log.info(
                 "The test name does not include the '{}' parameter. Disabled "
                 "by default.".format(self.PARAM_RRC_STATUS_CHANGE_TIMER))
-            self.simulator.anritsu.set_lte_rrc_status_change(False)
+            self.simulator.set_lte_rrc_state_change_timer(False)
         else:
-            self.rrc_sc_timer = int(values[1])
-            self.simulator.anritsu.set_lte_rrc_status_change(True)
-            self.simulator.anritsu.set_lte_rrc_status_change_timer(
-                self.rrc_sc_timer)
+            timer = int(values[1])
+            self.simulator.set_lte_rrc_state_change_timer(True, timer)
+            self.rrc_sc_timer = timer
+
+        # Channel Control Indicator
+        values = self.consume_parameter(parameters, self.PARAM_CFI, 1)
+
+        if not values:
+            self.log.warning('The {} parameter was not provided. Setting '
+                             'CFI to BESTEFFORT.'.format(self.PARAM_CFI))
+            new_config.cfi = 'BESTEFFORT'
+        else:
+            new_config.cfi = values[1]
+
+        # PHICH group size
+        values = self.consume_parameter(parameters, self.PARAM_PHICH, 1)
+
+        if not values:
+            self.log.warning('The {} parameter was not provided. Setting '
+                             'PHICH group size to 1 by default.'.format(
+                                 self.PARAM_PHICH))
+            new_config.phich = '1'
+        else:
+            if values[1] == '16':
+                new_config.phich = '1/6'
+            elif values[1] == '12':
+                new_config.phich = '1/2'
+            elif values[1] in ['1/6', '1/2', '1', '2']:
+                new_config.phich = values[1]
+            else:
+                raise ValueError('The {} parameter can only be followed by 1,'
+                                 '2, 1/2 (or 12) and 1/6 (or 16).'.format(
+                                     self.PARAM_PHICH))
+
+        # Paging cycle duration
+        values = self.consume_parameter(parameters, self.PARAM_PAGING, 1)
+
+        if not values:
+            self.log.warning('The {} parameter was not provided. Setting '
+                             'paging cycle duration to 1280 ms by '
+                             'default.'.format(self.PARAM_PAGING))
+            new_config.paging_cycle = 1280
+        else:
+            try:
+                new_config.paging_cycle = int(values[1])
+            except ValueError:
+                raise ValueError(
+                    'The {} parameter has to be followed by the paging cycle '
+                    'duration in milliseconds.'.format(self.PARAM_PAGING))
 
         # Get uplink power
 

@@ -21,6 +21,7 @@ import time
 from acts import asserts
 from acts import base_test
 from acts import test_runner
+from acts import utils
 from acts.controllers import adb
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel import tel_defines
@@ -44,13 +45,28 @@ class WifiTetheringTest(base_test.BaseTestClass):
 
         self.hotspot_device = self.android_devices[0]
         self.tethered_devices = self.android_devices[1:]
-        req_params = ("network", "url", "open_network")
+        req_params = ("url", "open_network")
         self.unpack_userparams(req_params)
+        self.network = {"SSID": "hotspot_%s" % utils.rand_ascii_str(6),
+                        "password": "pass_%s" % utils.rand_ascii_str(6)}
         self.new_ssid = "wifi_tethering_test2"
+        self.tcpdump_pid=[]
 
         nutils.verify_lte_data_and_tethering_supported(self.hotspot_device)
         for ad in self.tethered_devices:
             wutils.wifi_test_device_init(ad)
+
+    def setup_test(self):
+        for ad in self.android_devices:
+            self.tcpdump_pid.append(nutils.start_tcpdump(ad, self.test_name))
+
+    def teardown_test(self):
+        if self.hotspot_device.droid.wifiIsApEnabled():
+            wutils.stop_wifi_tethering(self.hotspot_device)
+        for ad, pid in zip(self.android_devices, self.tcpdump_pid):
+            nutils.stop_tcpdump(ad, pid, self.test_name)
+        self.tcpdump_pid = []
+
 
     def teardown_class(self):
         """ Reset devices """
@@ -551,7 +567,7 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # turn on/off wifi hotspot, connect device
         for _ in range(9):
             self._turn_on_wifi_hotspot(self.hotspot_device)
-            wutils.wifi_connect(self.tethered_devices[0], self.open_network)
+            wutils.connect_to_wifi_network(self.tethered_devices[0], self.open_network)
             wutils.stop_wifi_tethering(self.hotspot_device)
             time.sleep(1) # wait for some time before turning on hotspot
 
@@ -575,6 +591,6 @@ class WifiTetheringTest(base_test.BaseTestClass):
         # turn on/off wifi hotspot, connect device
         for _ in range(9):
             self._turn_on_wifi_hotspot(self.hotspot_device)
-            wutils.wifi_connect(self.tethered_devices[0], self.open_network)
+            wutils.connect_to_wifi_network(self.tethered_devices[0], self.open_network)
             wutils.stop_wifi_tethering(self.hotspot_device)
             time.sleep(1) # wait for some time before turning on hotspot

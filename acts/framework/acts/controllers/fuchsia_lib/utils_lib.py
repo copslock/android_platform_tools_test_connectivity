@@ -14,9 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import backoff
 import os
 import logging
 import paramiko
+import socket
+import time
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
@@ -30,23 +33,33 @@ def get_private_key(ip_address, ssh_config):
     Returns:
         The ssh private key
     """
+    exceptions = []
     try:
         logging.debug('Trying to load SSH key type: ed25519')
         return paramiko.ed25519key.Ed25519Key(
             filename=get_ssh_key_for_host(ip_address, ssh_config))
-    except paramiko.SSHException:
+    except paramiko.SSHException as e:
+        exceptions.append(e)
         logging.debug('Failed loading SSH key type: ed25519')
 
     try:
         logging.debug('Trying to load SSH key type: rsa')
         return paramiko.RSAKey.from_private_key_file(
             filename=get_ssh_key_for_host(ip_address, ssh_config))
-    except paramiko.SSHException:
+    except paramiko.SSHException as e:
+        exceptions.append(e)
         logging.debug('Failed loading SSH key type: rsa')
 
-    raise paramiko.SSHException('No valid ssh key type found')
+    raise Exception('No valid ssh key type found', exceptions)
 
 
+@backoff.on_exception(
+    backoff.constant,
+    (paramiko.ssh_exception.SSHException,
+     paramiko.ssh_exception.AuthenticationException, socket.timeout,
+     socket.error, ConnectionRefusedError, ConnectionResetError),
+    interval=1.5,
+    max_tries=4)
 def create_ssh_connection(ip_address,
                           ssh_username,
                           ssh_config,
@@ -69,7 +82,8 @@ def create_ssh_connection(ip_address,
                        username=ssh_username,
                        allow_agent=False,
                        pkey=ssh_key,
-                       timeout=connect_timeout)
+                       timeout=connect_timeout,
+                       banner_timeout=200)
     return ssh_client
 
 

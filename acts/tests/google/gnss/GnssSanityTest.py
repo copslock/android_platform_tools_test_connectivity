@@ -63,7 +63,8 @@ from acts.test_utils.gnss.gnss_test_utils import process_ttff_by_gtw_gpstool
 from acts.test_utils.gnss.gnss_test_utils import check_ttff_data
 from acts.test_utils.gnss.gnss_test_utils import start_youtube_video
 from acts.test_utils.gnss.gnss_test_utils import fastboot_factory_reset
-from acts.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr
+from acts.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr_by_adb
+from acts.test_utils.gnss.gnss_test_utils import gnss_trigger_modem_ssr_by_mds
 from acts.test_utils.gnss.gnss_test_utils import disable_supl_mode
 from acts.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
 from acts.test_utils.gnss.gnss_test_utils import check_xtra_download
@@ -71,6 +72,9 @@ from acts.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
 from acts.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 from acts.test_utils.gnss.gnss_test_utils import enable_supl_mode
 from acts.test_utils.gnss.gnss_test_utils import start_toggle_gnss_by_gtw_gpstool
+from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
 
 
 class GnssSanityTest(BaseTestClass):
@@ -88,7 +92,7 @@ class GnssSanityTest(BaseTestClass):
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
                       "gnss_init_error_whitelist", "pixel_lab_location",
                       "legacy_wifi_xtra_cs_criteria", "legacy_projects",
-                      "qdsp6m_path"]
+                      "qdsp6m_path", "supl_capabilities"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -115,6 +119,7 @@ class GnssSanityTest(BaseTestClass):
 
     def teardown_test(self):
         stop_qxdm_logger(self.ad)
+        stop_adb_tcpdump(self.ad)
         if check_call_state_connected_by_adb(self.ad):
             hangup_call(self.ad.log, self.ad)
         if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
@@ -133,10 +138,12 @@ class GnssSanityTest(BaseTestClass):
     def on_pass(self, test_name, begin_time):
         self.ad.take_bug_report(test_name, begin_time)
         get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+        get_tcpdump_log(self.ad, test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
         self.ad.take_bug_report(test_name, begin_time)
         get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+        get_tcpdump_log(self.ad, test_name, begin_time)
 
     def flash_new_radio_or_mbn(self):
         paths = {}
@@ -229,6 +236,7 @@ class GnssSanityTest(BaseTestClass):
             DUT could finish 60 minutes test and output track data.
         """
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
                                       type="gnss", testtime=60)
         parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
@@ -273,12 +281,16 @@ class GnssSanityTest(BaseTestClass):
 
         Expected Results:
             CAPABILITIES=0x37 which supports MSA + MSB.
+            CAPABILITIES=0x17 = ON_DEMAND_TIME | MSA | MSB | SCHEDULING
         """
-        capabilities_state = str(self.ad.adb.shell("cat vendor/etc/gps.conf | "
-                                                   "grep CAPABILITIES"))
+        capabilities_state = str(
+            self.ad.adb.shell(
+                "cat vendor/etc/gps.conf | grep CAPABILITIES")).split("=")[-1]
         self.ad.log.info("SUPL capabilities - %s" % capabilities_state)
-        asserts.assert_true(capabilities_state == "CAPABILITIES=0x37",
-                            "Wrong default SUPL capabilities is set")
+        asserts.assert_true(capabilities_state in self.supl_capabilities,
+                            "Wrong default SUPL capabilities is set. Found %s, "
+                            "expected any of %r" % (capabilities_state,
+                                                    self.supl_capabilities))
 
     @test_tracker_info(uuid="dcae6979-ddb4-4cad-9d14-fbdd9439cf42")
     def test_sap_valid_modes(self):
@@ -312,6 +324,7 @@ class GnssSanityTest(BaseTestClass):
         """
         test_result_all = []
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         set_wifi_and_bt_scanning(self.ad, False)
         for i in range(1, 6):
             test_result = check_network_location(
@@ -337,6 +350,7 @@ class GnssSanityTest(BaseTestClass):
         """
         test_result_all = []
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         set_wifi_and_bt_scanning(self.ad, True)
         for i in range(1, 6):
             test_result = check_network_location(
@@ -362,6 +376,7 @@ class GnssSanityTest(BaseTestClass):
         """
         test_result_all = []
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         for i in range(1, 6):
             launch_google_map(self.ad)
             test_result = check_location_api(self.ad, retries=3)
@@ -387,6 +402,7 @@ class GnssSanityTest(BaseTestClass):
         """
         test_result_all = []
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         self.ad.adb.shell("settings put secure location_mode 1")
         out = int(self.ad.adb.shell("settings get secure location_mode"))
         self.ad.log.info("Modify current Location Mode to %d" % out)
@@ -417,6 +433,7 @@ class GnssSanityTest(BaseTestClass):
         """
         test_result_all = []
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         set_battery_saver_mode(self.ad, True)
         for i in range(1, 6):
             launch_google_map(self.ad)
@@ -443,6 +460,7 @@ class GnssSanityTest(BaseTestClass):
         """
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
+        start_adb_tcpdump(self.ad)
         kill_xtra_daemon(self.ad)
         self.ad.droid.setVoiceCallVolume(25)
         initiate_call(self.ad.log, self.ad, "99117")
@@ -472,6 +490,7 @@ class GnssSanityTest(BaseTestClass):
         """
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
+        start_adb_tcpdump(self.ad)
         kill_xtra_daemon(self.ad)
         download = Process(target=http_file_download_by_sl4a,
                            args=(self.ad, "https://speed.hetzner.de/10GB.bin",
@@ -503,6 +522,7 @@ class GnssSanityTest(BaseTestClass):
         """
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
+        start_adb_tcpdump(self.ad)
         kill_xtra_daemon(self.ad)
         self.ad.droid.setMediaVolume(25)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
@@ -531,10 +551,11 @@ class GnssSanityTest(BaseTestClass):
         """
         supl_ssr_test_result_all = []
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         kill_xtra_daemon(self.ad)
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
-            gnss_trigger_modem_ssr(self.ad)
+            gnss_trigger_modem_ssr_by_mds(self.ad)
             if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                               expected_state=True):
                 raise signals.TestFailure("Fail to connect to LTE network.")
@@ -566,6 +587,7 @@ class GnssSanityTest(BaseTestClass):
         """
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
+        start_adb_tcpdump(self.ad)
         self.ad.log.info("Turn airplane mode on")
         force_airplane_mode(self.ad, True)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
@@ -591,6 +613,7 @@ class GnssSanityTest(BaseTestClass):
         """
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
+        start_adb_tcpdump(self.ad)
         kill_xtra_daemon(self.ad)
         set_mobile_data(self.ad, False)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
@@ -620,6 +643,7 @@ class GnssSanityTest(BaseTestClass):
         """
         supl_no_gnss_signal_all = []
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         for times in range(1, 6):
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             self.ad.log.info("Let device do GNSS tracking for 1 minute.")
@@ -655,6 +679,7 @@ class GnssSanityTest(BaseTestClass):
                                    self.weak_gnss_signal_attenuation)
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
+        start_adb_tcpdump(self.ad)
         kill_xtra_daemon(self.ad)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
@@ -683,6 +708,7 @@ class GnssSanityTest(BaseTestClass):
             _init_device(self.ad)
             begin_time = get_current_epoch_time()
             start_qxdm_logger(self.ad, begin_time)
+            start_adb_tcpdump(self.ad)
             kill_xtra_daemon(self.ad)
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
@@ -712,6 +738,7 @@ class GnssSanityTest(BaseTestClass):
         disable_supl_mode(self.ad)
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
+        start_adb_tcpdump(self.ad)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
@@ -755,6 +782,7 @@ class GnssSanityTest(BaseTestClass):
                                    self.weak_gnss_signal_attenuation)
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
+        start_adb_tcpdump(self.ad)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
         start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
         ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
@@ -795,6 +823,7 @@ class GnssSanityTest(BaseTestClass):
         disable_supl_mode(self.ad)
         begin_time = get_current_epoch_time()
         start_qxdm_logger(self.ad, begin_time)
+        start_adb_tcpdump(self.ad)
         self.ad.log.info("Turn airplane mode on")
         force_airplane_mode(self.ad, True)
         wifi_toggle_state(self.ad, True)
@@ -838,9 +867,10 @@ class GnssSanityTest(BaseTestClass):
         disable_supl_mode(self.ad)
         xtra_ssr_test_result_all = []
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
-            gnss_trigger_modem_ssr(self.ad)
+            gnss_trigger_modem_ssr_by_mds(self.ad)
             if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                               expected_state=True):
                 raise signals.TestFailure("Fail to connect to LTE network.")
@@ -873,6 +903,7 @@ class GnssSanityTest(BaseTestClass):
         mobile_xtra_result_all = []
         disable_supl_mode(self.ad)
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
@@ -901,6 +932,7 @@ class GnssSanityTest(BaseTestClass):
         wifi_xtra_result_all = []
         disable_supl_mode(self.ad)
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         self.ad.log.info("Turn airplane mode on")
         force_airplane_mode(self.ad, True)
         wifi_toggle_state(self.ad, True)
@@ -935,4 +967,5 @@ class GnssSanityTest(BaseTestClass):
         enable_supl_mode(self.ad)
         reboot(self.ad)
         start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
         start_toggle_gnss_by_gtw_gpstool(self.ad, iteration=10)

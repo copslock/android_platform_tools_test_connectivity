@@ -20,7 +20,7 @@ import time
 from Monsoon import HVPM
 from Monsoon import Operations as op
 
-from acts.controllers.monsoon_lib.api.common import MonsoonData
+from acts.controllers.monsoon_lib.api.common import MonsoonResult
 from acts.controllers.monsoon_lib.api.monsoon import BaseMonsoon
 from acts.controllers.monsoon_lib.sampling.engine.assembly_line import AssemblyLineBuilder
 from acts.controllers.monsoon_lib.sampling.engine.assembly_line import ThreadAssemblyLine
@@ -49,7 +49,7 @@ class Monsoon(BaseMonsoon):
         self.serial = serial
         self._mon = HVPM.Monsoon()
         self._mon.setup_usb(serial)
-        if self._mon.Protocol is None:
+        if self._mon.Protocol.DEVICE is None:
             raise ValueError('HVPM Monsoon %s could not be found.' % serial)
 
     def set_voltage(self, voltage):
@@ -122,11 +122,12 @@ class Monsoon(BaseMonsoon):
 
         assembly_line_builder = AssemblyLineBuilder(manager.Queue,
                                                     ThreadAssemblyLine)
-        assembly_line_builder.source(HvpmTransformer(self.serial, duration))
+        assembly_line_builder.source(
+            HvpmTransformer(self.serial, duration + measure_after_seconds))
         if hz != 5000:
             assembly_line_builder.into(DownSampler(int(5000 / hz)))
         if output_path:
-            assembly_line_builder.into(Tee(output_path))
+            assembly_line_builder.into(Tee(output_path, measure_after_seconds))
         assembly_line_builder.into(aggregator)
         if transformers:
             for transformer in transformers:
@@ -137,8 +138,9 @@ class Monsoon(BaseMonsoon):
         manager.shutdown()
 
         self._mon.setup_usb(self.serial)
-        monsoon_data = MonsoonData(aggregator.num_samples,
-                                   aggregator.sum_currents, hz, voltage)
+        monsoon_data = MonsoonResult(aggregator.num_samples,
+                                     aggregator.sum_currents, hz, voltage,
+                                     output_path)
         self._log.info('Measurement summary:\n%s', str(monsoon_data))
         return monsoon_data
 
