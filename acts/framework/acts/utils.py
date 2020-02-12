@@ -37,6 +37,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 from acts import signals
 from acts.controllers import adb
+from acts.controllers.android_device import AndroidDevice
+from acts.controllers.fuchsia_device import FuchsiaDevice
+from acts.controllers.utils_lib.ssh.connection import SshConnection
 from acts.libs.proc import job
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
@@ -959,7 +962,10 @@ def adb_shell_ping(ad,
                  default www.google.com
         timeout: timeout for icmp pings to complete.
     """
-    ping_cmd = "ping -W 1"
+    if is_valid_ipv6_address(dest_ip):
+        ping_cmd = "ping6 -W 1"
+    else:
+        ping_cmd = "ping -W 1"
     if count:
         ping_cmd += " -c %d" % count
     if dest_ip:
@@ -1395,7 +1401,7 @@ def get_interface_ip_addresses(comm_channel, interface):
 
     Returns:
         A list of dictionaries of the the various IP addresses:
-            ipv4_private_local_addresses: Any 192.168, 172.16, or 10
+            ipv4_private_local_addresses: Any 192.168, 172.16, 10, or 169.254
                 addresses
             ipv4_public_addresses: Any IPv4 public addresses
             ipv6_link_local_addresses: Any fe80:: addresses
@@ -1407,10 +1413,44 @@ def get_interface_ip_addresses(comm_channel, interface):
     ipv6_link_local_addresses = []
     ipv6_private_local_addresses = []
     ipv6_public_addresses = []
-    all_interfaces_and_addresses = comm_channel.run(
-        'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
-        'print $2" "$4}\'').stdout
-    ifconfig_output = comm_channel.run('ifconfig %s' % interface).stdout
+    is_local = comm_channel == job
+    if type(comm_channel) is AndroidDevice:
+        all_interfaces_and_addresses = comm_channel.adb.shell(
+            'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
+            'print $2" "$4}\'')
+        ifconfig_output = comm_channel.adb.shell('ifconfig %s' % interface)
+    elif (type(comm_channel) is SshConnection or is_local):
+        all_interfaces_and_addresses = comm_channel.run(
+            'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
+            'print $2" "$4}\'').stdout
+        ifconfig_output = comm_channel.run('ifconfig %s' % interface).stdout
+    elif type(comm_channel) is FuchsiaDevice:
+        all_interfaces_and_addresses = []
+        comm_channel.netstack_lib.init()
+        interfaces = comm_channel.netstack_lib.netstackListInterfaces()
+        if interfaces.get('error') is not None:
+            raise ActsUtilsError('Failed with {}'.format(
+                interfaces.get('error')))
+        for item in interfaces.get('result'):
+            for ipv4_address in item['ipv4_addresses']:
+                ipv4_address = '.'.join(map(str, ipv4_address))
+                all_interfaces_and_addresses.append(
+                    '%s %s' % (item['name'], ipv4_address))
+            for ipv6_address in item['ipv6_addresses']:
+                converted_ipv6_address = []
+                for octet in ipv6_address:
+                    converted_ipv6_address.append(format(octet, 'x').zfill(2))
+                ipv6_address = ''.join(converted_ipv6_address)
+                ipv6_address = (':'.join(
+                    ipv6_address[i:i + 4]
+                    for i in range(0, len(ipv6_address), 4)))
+                all_interfaces_and_addresses.append(
+                    '%s %s' % (item['name'], str(IPy.IP(ipv6_address))))
+        all_interfaces_and_addresses = '\n'.join(all_interfaces_and_addresses)
+        ifconfig_output = all_interfaces_and_addresses
+    else:
+        raise ValueError('Unsupported method to send command to device.')
+
     for interface_line in all_interfaces_and_addresses.split('\n'):
         if interface != interface_line.split()[0]:
             continue
@@ -1420,7 +1460,8 @@ def get_interface_ip_addresses(comm_channel, interface):
                 if str(on_device_ip) in ifconfig_output:
                     ipv4_private_local_addresses.append(
                         on_device_ip.strNormal())
-            elif on_device_ip.iptype() == 'PUBLIC':
+            elif (on_device_ip.iptype() == 'PUBLIC'
+                  or on_device_ip.iptype() == 'CARRIER_GRADE_NAT'):
                 if str(on_device_ip) in ifconfig_output:
                     ipv4_public_addresses.append(on_device_ip.strNormal())
         elif on_device_ip.version() is 6:
@@ -1459,14 +1500,6 @@ def get_interface_based_on_ip(comm_channel, desired_ip_address):
     all_ips_and_interfaces = comm_channel.run(
         '(ip -o -4 addr show; ip -o -6 addr show) | '
         'awk \'{print $2" "$4}\'').stdout
-    #ipv4_addresses = comm_channel.run(
-    #    'ip -o -4 addr show| awk \'{print $2": "$4}\'').stdout
-    #ipv6_addresses = comm_channel._ssh_session.run(
-    #    'ip -o -6 addr show| awk \'{print $2": "$4}\'').stdout
-    #if desired_ip_address in ipv4_addresses:
-    #    ip_addresses_to_search = ipv4_addresses
-    #elif desired_ip_address in ipv6_addresses:
-    #    ip_addresses_to_search = ipv6_addresses
     for ip_address_and_interface in all_ips_and_interfaces.split('\n'):
         if desired_ip_address in ip_address_and_interface:
             return ip_address_and_interface.split()[1][:-1]
@@ -1476,5 +1509,18 @@ def get_interface_based_on_ip(comm_channel, desired_ip_address):
 def renew_linux_ip_address(comm_channel, interface):
     comm_channel.run('sudo ifconfig %s down' % interface)
     comm_channel.run('sudo ifconfig %s up' % interface)
+    comm_channel.run('sudo killall dhcpcd 2>/dev/null; echo""')
+    is_dhcpcd_dead = False
+    dhcpcd_counter = 0
+    dhcpcd_checker_max_times = 3
+    while not is_dhcpcd_dead:
+        if dhcpcd_counter == dhcpcd_checker_max_times:
+            raise TimeoutError('Unable to stop dhcpcd')
+        time.sleep(1)
+        if 'dhcpcd' in comm_channel.run('ps axu').stdout:
+            dhcpcd_counter += 1
+        else:
+            is_dhcpcd_dead = True
+    comm_channel.run('sudo dhcpcd -q -b')
     comm_channel.run('sudo dhclient -r %s' % interface)
     comm_channel.run('sudo dhclient %s' % interface)
