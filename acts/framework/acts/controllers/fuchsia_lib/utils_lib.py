@@ -94,7 +94,7 @@ def ssh_is_connected(ssh_client):
     Returns:
           True if connected, False or None if not connected.
     """
-    return ssh_client and ssh_client.get_transport.is_active()
+    return ssh_client and ssh_client.get_transport().is_active()
 
 
 def get_ssh_key_for_host(host, ssh_config_file):
