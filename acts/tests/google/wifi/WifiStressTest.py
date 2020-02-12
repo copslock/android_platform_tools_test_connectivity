@@ -521,9 +521,12 @@ class WifiStressTest(WifiBaseTest):
         self.dut.droid.goToSleepNow()
         for count in range(self.stress_count):
             self.connect_and_verify_connected_ssid(self.reference_networks[0]['2g'], is_pno=True)
+            wutils.wifi_forget_network(
+                    self.dut, networks[0][WifiEnums.SSID_KEY])
             # move the DUT out of range
             self.attenuators[0].set_atten(95)
             time.sleep(10)
+            self.add_networks(self.dut, networks)
         wutils.set_attns(self.attenuators, "default")
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})
