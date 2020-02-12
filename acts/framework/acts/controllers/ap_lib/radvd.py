@@ -168,11 +168,12 @@ class Radvd(object):
         lines = ['interface %s {' % self._interface]
         for (interface_option_key,
              interface_option) in conf['interface_options'].items():
-            lines.append('\t%s %s;' % (interface_option_key, interface_option))
+            lines.append('\t%s %s;' %
+                         (str(interface_option_key), str(interface_option)))
         lines.append('\tprefix %s' % conf['prefix'])
         lines.append('\t{')
         for prefix_option in conf['prefix_options'].items():
-            lines.append('\t\t%s;' % ' '.join(prefix_option))
+            lines.append('\t\t%s;' % ' '.join(map(str, prefix_option)))
         lines.append('\t};')
         if conf['clients']:
             lines.append('\tclients')
@@ -183,13 +184,13 @@ class Radvd(object):
         if conf['route']:
             lines.append('\troute %s {' % conf['route'])
             for route_option in conf['route_options'].items():
-                lines.append('\t\t%s;' % ' '.join(route_option))
+                lines.append('\t\t%s;' % ' '.join(map(str, route_option)))
             lines.append('\t};')
         if conf['rdnss']:
             lines.append('\tRDNSS %s {' %
                          ' '.join([str(elem) for elem in conf['rdnss']]))
             for rdnss_option in conf['rdnss_options'].items():
-                lines.append('\t\t%s;' % ' '.join(rdnss_option))
+                lines.append('\t\t%s;' % ' '.join(map(str, rdnss_option)))
             lines.append('\t};')
         lines.append('};')
         output_config = '\n'.join(lines)
