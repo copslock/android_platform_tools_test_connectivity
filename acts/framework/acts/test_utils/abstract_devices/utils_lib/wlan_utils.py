@@ -188,7 +188,7 @@ def status(client):
         # No error, so get the result
         status = status_response['result']
 
-    logging.info('status: %s' % status)
+    logging.debug('status: %s' % status)
     return status
 
 
