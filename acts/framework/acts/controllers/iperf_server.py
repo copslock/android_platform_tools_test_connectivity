@@ -243,8 +243,8 @@ class IPerfResult(object):
         """
         if not self._has_data():
             return None
-        instantaneous_rates = self.instantaneous_rates[iperf_ignored_interval:
-                                                       -1]
+        instantaneous_rates = self.instantaneous_rates[
+            iperf_ignored_interval:-1]
         avg_rate = math.fsum(instantaneous_rates) / len(instantaneous_rates)
         sqd_deviations = ([(rate - avg_rate)**2
                            for rate in instantaneous_rates])
@@ -294,6 +294,25 @@ class IPerfServerBase(object):
             The name of the log file generated from the terminated session.
         """
         raise NotImplementedError('stop() must be specified.')
+
+    def get_interface_ip_addresses(self, interface):
+        """Gets all of the ip addresses, ipv4 and ipv6, associated with a
+           particular interface name.
+
+        Args:
+            interface: The interface name on the device, ie eth0
+
+        Returns:
+            A list of dictionaries of the the various IP addresses:
+                ipv4_private_local_addresses: Any 192.168, 172.16, or 10
+                    addresses
+                ipv4_public_addresses: Any IPv4 public addresses
+                ipv6_link_local_addresses: Any fe80:: addresses
+                ipv6_private_local_addresses: Any fd00:: addresses
+                ipv6_public_addresses: Any publicly routable addresses
+        """
+        raise NotImplementedError('get_interface_ip_addresses'
+                                  ' must be specified.')
 
     def _get_full_file_path(self, tag=None):
         """Returns the full file path for the IPerfServer log file.
@@ -413,6 +432,24 @@ class IPerfServer(IPerfServerBase):
 
         return self._current_log_file
 
+    def get_interface_ip_addresses(self, interface):
+        """Gets all of the ip addresses, ipv4 and ipv6, associated with a
+           particular interface name.
+
+        Args:
+            interface: The interface name on the device, ie eth0
+
+        Returns:
+            A list of dictionaries of the the various IP addresses:
+                ipv4_private_local_addresses: Any 192.168, 172.16, or 10
+                    addresses
+                ipv4_public_addresses: Any IPv4 public addresses
+                ipv6_link_local_addresses: Any fe80:: addresses
+                ipv6_private_local_addresses: Any fd00:: addresses
+                ipv6_public_addresses: Any publicly routable addresses
+        """
+        return utils.get_interface_ip_addresses(job, interface)
+
     def __del__(self):
         self.stop()
 
@@ -469,15 +506,15 @@ class IPerfServerOverSsh(IPerfServerBase):
         Args:
             interface: The interface name on the device, ie eth0
 
-    Returns:
-        A list of dictionaries of the the various IP addresses:
-            ipv4_private_local_addresses: Any 192.168, 172.16, or 10
-                addresses
-            ipv4_public_addresses: Any IPv4 public addresses
-            ipv6_link_local_addresses: Any fe80:: addresses
-            ipv6_private_local_addresses: Any fd00:: addresses
-            ipv6_public_addresses: Any publicly routable addresses
-    """
+        Returns:
+            A list of dictionaries of the the various IP addresses:
+                ipv4_private_local_addresses: Any 192.168, 172.16, or 10
+                    addresses
+                ipv4_public_addresses: Any IPv4 public addresses
+                ipv6_link_local_addresses: Any fe80:: addresses
+                ipv6_private_local_addresses: Any fd00:: addresses
+                ipv6_public_addresses: Any publicly routable addresses
+        """
         return utils.get_interface_ip_addresses(self._ssh_session, interface)
 
     def renew_test_interface_ip_address(self):
@@ -679,3 +716,22 @@ class IPerfServerOverAdb(IPerfServerBase):
 
         self._iperf_process = None
         return log_file
+
+    def get_interface_ip_addresses(self, interface):
+        """Gets all of the ip addresses, ipv4 and ipv6, associated with a
+           particular interface name.
+
+        Args:
+            interface: The interface name on the device, ie eth0
+
+        Returns:
+            A list of dictionaries of the the various IP addresses:
+                ipv4_private_local_addresses: Any 192.168, 172.16, or 10
+                    addresses
+                ipv4_public_addresses: Any IPv4 public addresses
+                ipv6_link_local_addresses: Any fe80:: addresses
+                ipv6_private_local_addresses: Any fd00:: addresses
+                ipv6_public_addresses: Any publicly routable addresses
+        """
+        return utils.get_interface_ip_addresses(self._android_device_or_serial,
+                                                interface)
