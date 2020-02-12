@@ -28,6 +28,7 @@ import time
 
 from acts import context
 from acts import logger as acts_logger
+from acts import utils
 from acts import signals
 
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
@@ -45,9 +46,6 @@ from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.libs.proc.job import Error
-from acts.utils import is_valid_ipv4_address
-from acts.utils import is_valid_ipv6_address
-from acts.utils import SuppressLogOutput
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -175,9 +173,9 @@ class FuchsiaDevice:
         self.log = acts_logger.create_tagged_trace_logger(
             "FuchsiaDevice | %s" % self.ip)
 
-        if is_valid_ipv4_address(self.ip):
+        if utils.is_valid_ipv4_address(self.ip):
             self.address = "http://{}:{}".format(self.ip, self.port)
-        elif is_valid_ipv6_address(self.ip):
+        elif utils.is_valid_ipv6_address(self.ip):
             self.address = "http://[{}]:{}".format(self.ip, self.port)
         else:
             raise ValueError('Invalid IP: %s' % self.ip)
@@ -314,7 +312,7 @@ class FuchsiaDevice:
         # because the ssh session does not disconnect cleanly and therefore
         # would throw an error.  This is expected and thus the error logging
         # is disabled for this call to not confuse the user.
-        with SuppressLogOutput():
+        with utils.SuppressLogOutput():
             self.send_command_ssh('dm reboot',
                                   timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
                                   skip_status_code_check=True)
@@ -406,12 +404,10 @@ class FuchsiaDevice:
                 cmd_result_stdin, cmd_result_stdout, cmd_result_stderr = (
                     ssh_conn.exec_command(test_cmd, timeout=timeout))
                 if not skip_status_code_check:
-                    cmd_result_exit_status = (
-                        cmd_result_stdout.channel.recv_exit_status())
                     command_result = SshResults(cmd_result_stdin,
                                                 cmd_result_stdout,
                                                 cmd_result_stderr,
-                                                cmd_result_exit_status)
+                                                cmd_result_stdout.channel)
             except Exception as e:
                 self.log.warning("Problem running ssh command: %s"
                                  "\n Exception: %s" % (test_cmd, e))
@@ -445,7 +441,7 @@ class FuchsiaDevice:
         rtt_min = None
         rtt_max = None
         rtt_avg = None
-        self.log.info("Pinging %s..." % dest_ip)
+        self.log.debug("Pinging %s..." % dest_ip)
         ping_result = self.send_command_ssh(
             'ping -c %s -i %s -t %s -s %s %s' %
             (count, interval, timeout, size, dest_ip))
@@ -624,14 +620,14 @@ class FuchsiaDevice:
             if not connection_result:
                 # Ideally the error would be present but just outputting a log
                 # message until available.
-                self.log.error("Connect call failed, aborting!")
+                self.log.debug("Connect call failed, aborting!")
                 return False
             else:
                 # Returns True if connection was successful.
                 return True
         else:
             # the response indicates an error - log and raise failure
-            self.log.error("Aborting! - Connect call failed with error: %s" %
+            self.log.debug("Aborting! - Connect call failed with error: %s" %
                            connect_response.get("error"))
             return False
 
@@ -641,7 +637,7 @@ class FuchsiaDevice:
             return True
         else:
             # the response indicates an error - log and raise failure
-            self.log.error("Disconnect call failed with error: %s" %
+            self.log.debug("Disconnect call failed with error: %s" %
                            disconnect_response.get("error"))
             return False
 
