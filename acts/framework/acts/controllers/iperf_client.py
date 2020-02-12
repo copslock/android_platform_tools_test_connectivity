@@ -21,7 +21,6 @@ import socket
 import threading
 
 from acts import context
-from acts import utils
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.iperf_server import _AndroidDeviceBridge
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
@@ -112,7 +111,7 @@ class IPerfClientBase(object):
                                     'iperf_client_files')
 
         with IPerfClientBase.__log_file_lock:
-            utils.create_dir(full_out_dir)
+            os.makedirs(full_out_dir, exist_ok=True)
             tags = ['IPerfClient', tag, IPerfClientBase.__log_file_counter]
             out_file_name = '%s.log' % (','.join(
                 [str(x) for x in tags if x != '' and x is not None]))

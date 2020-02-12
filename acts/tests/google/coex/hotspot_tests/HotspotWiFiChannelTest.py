@@ -35,7 +35,6 @@ from acts.test_utils.wifi.wifi_test_utils import start_wifi_tethering
 from acts.test_utils.wifi.wifi_test_utils import stop_wifi_tethering
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import WifiEnums
-from acts.utils import create_dir
 
 BANDWIDTH_2G = 20
 CNSS_LOG_PATH = '/data/vendor/wifi/wlan_logs'
@@ -74,7 +73,7 @@ class HotspotWiFiChannelTest(acts.base_test.BaseTestClass):
         stop_wifi_tethering(self.pri_ad)
         reset_wifi(self.sec_ad)
         cnss_path = os.path.join(self.log_path, 'wlan_logs')
-        create_dir(cnss_path)
+        os.makedirs(cnss_path, exist_ok=True)
         self.pri_ad.pull_files([CNSS_LOG_PATH], os.path.join(
             cnss_path, self.current_test_name))
         self.pri_ad.adb.shell('rm -rf {}'.format(CNSS_LOG_PATH))

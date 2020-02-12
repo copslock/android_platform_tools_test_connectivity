@@ -303,10 +303,10 @@ def get_gnss_qxdm_log(ad, qdb_path):
         qdb_path: The path of qdsp6m.qdb on different projects.
     """
     log_path = ad.device_log_path
-    utils.create_dir(log_path)
+    os.makedirs(log_path, exist_ok=True)
     gnss_log_name = "gnssstatus_log_%s_%s" % (ad.model, ad.serial)
     gnss_log_path = posixpath.join(log_path, gnss_log_name)
-    utils.create_dir(gnss_log_path)
+    os.makedirs(gnss_log_path, exist_ok=True)
     ad.log.info("Pull GnssStatus Log to %s" % gnss_log_path)
     ad.adb.pull("%s %s" % (GNSSSTATUS_LOG_PATH+".", gnss_log_path),
                 timeout=PULL_TIMEOUT, ignore_status=True)
@@ -318,7 +318,7 @@ def get_gnss_qxdm_log(ad, qdb_path):
     if not int(file_count) == 0:
         qxdm_log_name = "QXDM_%s_%s" % (ad.model, ad.serial)
         qxdm_log_path = posixpath.join(log_path, qxdm_log_name)
-        utils.create_dir(qxdm_log_path)
+        os.makedirs(qxdm_log_path, exist_ok=True)
         ad.log.info("Pull QXDM Log %s to %s" % (output_path, qxdm_log_path))
         ad.adb.pull("%s %s" % (output_path, qxdm_log_path),
                     timeout=PULL_TIMEOUT, ignore_status=True)
@@ -435,7 +435,7 @@ def pull_mdstool(ad):
         mds_tool = result.group(1)
         ad.log.info("Get ModemDiagnosticSystemTest.apk from %s" % mds_tool)
         apkdir = "/tmp/MDS/"
-        utils.create_dir(apkdir)
+        os.makedirs(apkdir, exist_ok=True)
         ad.pull_files([mds_tool], apkdir)
 
 
@@ -489,7 +489,7 @@ def pull_gtw_gpstool(ad):
         GTW_GPSTool_apk = result.group(1)
         ad.log.info("Get GTW GPSTool apk from %s" % GTW_GPSTool_apk)
         apkdir = "/tmp/GNSS/"
-        utils.create_dir(apkdir)
+        os.makedirs(apkdir, exist_ok=True)
         ad.pull_files([GTW_GPSTool_apk], apkdir)
 
 

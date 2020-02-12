@@ -155,7 +155,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, 'results')
-        utils.create_dir(self.log_path)
+        os.makedirs(self.log_path, exist_ok=True)
         if not hasattr(self, 'golden_files_list'):
             self.golden_files_list = [
                 os.path.join(self.testbed_params['golden_results_path'], file)

@@ -21,10 +21,8 @@ import threading
 import time
 import traceback
 import os
-from acts import utils
 from acts.base_test import BaseTestClass
 from acts.signals import TestSignal
-from acts.utils import create_dir
 from acts.utils import dump_string_to_file
 
 from acts.controllers import android_device
@@ -160,7 +158,7 @@ class BluetoothBaseTest(BaseTestClass):
                     return False
             for ad in self.android_devices:
                 ad.metrics_path = os.path.join(ad.log_path, "BluetoothMetrics")
-                create_dir(ad.metrics_path)
+                os.makedirs(ad.metrics_path, exist_ok=True)
                 ad.bluetooth_proto_module = \
                     compile_import_proto(ad.metrics_path, self.bluetooth_proto_path)
                 if not ad.bluetooth_proto_module:

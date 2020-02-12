@@ -107,7 +107,7 @@ class OtaSnifferBase(object):
                                     'sniffer_captures')
 
         # Ensure the directory exists.
-        utils.create_dir(full_out_dir)
+        os.makedirs(full_out_dir, exist_ok=True)
 
         return full_out_dir
 

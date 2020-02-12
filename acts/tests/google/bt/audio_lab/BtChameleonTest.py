@@ -38,8 +38,6 @@ from acts.test_utils.bt.bt_constants import fpga_linein_bus_endpoint
 from acts.test_utils.bt.bt_constants import headphone_bus_endpoint
 from acts.test_utils.bt.bt_constants import silence_wait_seconds
 
-from acts import utils
-
 
 class BtChameleonTest(BtFunhausBaseTest):
 
@@ -53,7 +51,7 @@ class BtChameleonTest(BtFunhausBaseTest):
         self.dut = self.android_devices[0]
         self.raw_audio_dest = "{}/{}".format(self.android_devices[0].log_path,
                                              "Chameleon_audio")
-        utils.create_dir(self.raw_audio_dest)
+        os.makedirs(self.raw_audio_dest, exist_ok=True)
         self.chameleon.audio_board_connect(1, headphone_bus_endpoint)
         self.chameleon.audio_board_connect(1, fpga_linein_bus_endpoint)
         time.sleep(delay_after_binding_seconds)

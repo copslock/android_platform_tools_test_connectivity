@@ -17,7 +17,6 @@ import logging
 
 from acts.controllers import adb
 from acts import asserts
-from acts import utils
 from acts.controllers.adb import AdbError
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
@@ -284,7 +283,7 @@ def stop_tcpdump(ad,
     except Exception as e:
         ad.log.warning(e)
     log_path = os.path.join(ad.log_path, test_name)
-    utils.create_dir(log_path)
+    os.makedirs(log_path, exist_ok=True)
     ad.adb.pull("%s/. %s" % (TCPDUMP_PATH, log_path), timeout=adb_pull_timeout)
     ad.adb.shell("rm -rf %s/*" % TCPDUMP_PATH, ignore_status=True)
     file_name = "tcpdump_%s_%s.pcap" % (ad.serial, test_name)
