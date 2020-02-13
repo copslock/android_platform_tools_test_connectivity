@@ -142,6 +142,62 @@ class TelLiveDataTest(TelephonyBaseTest):
     def teardown_class(self):
         TelephonyBaseTest.teardown_class(self)
 
+
+    """ Tests Begin """
+
+
+    @test_tracker_info(uuid="ba24f9a3-0126-436c-8a5c-9f88859c273c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_data_browsing_for_single_phone(self):
+        """ Browsing websites on cellular.
+
+        Ensure phone attach, data on, WiFi off
+        Verify 5 websites on cellular.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        wifi_toggle_state(ad.log, ad, False)
+        for iteration in range(3):
+            ad.log.info("Attempt %d", iteration + 1)
+            if test_data_browsing_success_using_sl4a(ad.log, ad):
+                ad.log.info("Call test PASS in iteration %d", iteration + 1)
+                return True
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        ad.log.info("Data Browsing test FAIL for all 3 iterations")
+        return False
+
+
+    @test_tracker_info(uuid="0679214b-9002-476d-83a7-3532b3cca209")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_browsing_for_single_phone(self):
+        """ Browsing websites on wifi.
+
+        Ensure phone attach, data on, WiFi On, WiFi Connected.
+        Verify 5 websites on WiFi.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        wifi_toggle_state(ad.log, ad, True)
+        if not ensure_wifi_connected(ad.log, ad, self.wifi_network_ssid,
+                                     self.wifi_network_pass):
+            ad.log.error("WiFi connect fail.")
+            return False
+        for iteration in range(3):
+            ad.log.info("Attempt %d", iteration + 1)
+            if test_data_browsing_success_using_sl4a(ad.log, ad):
+                ad.log.info("Call test PASS in iteration %d", iteration + 1)
+                wifi_toggle_state(ad.log, ad, False)
+                return True
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        ad.log.info("Data Browsing test FAIL for all 3 iterations")
+        wifi_toggle_state(ad.log, ad, False)
+        return False
+
+
     @test_tracker_info(uuid="1b0354f3-8668-4a28-90a5-3b3d2b2756d3")
     @TelephonyBaseTest.tel_test_wrap
     def test_airplane_mode(self):
