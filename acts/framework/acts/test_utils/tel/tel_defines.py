@@ -169,6 +169,9 @@ WAIT_TIME_AFTER_REBOOT = 10
 # Time to wait for radio to up and running after force crash
 WAIT_TIME_AFTER_CRASH = 60
 
+# Time to wait for factory data reset
+WAIT_TIME_AFTER_FDR = 60
+
 # Time to wait for boot complete after reboot
 WAIT_TIME_FOR_BOOT_COMPLETE = 75
 
@@ -316,6 +319,7 @@ CAPABILITY_WFC_MODE_CHANGE = 'wfc_mode_change'
 CAPABILITY_CONFERENCE = 'conference'
 CAPABILITY_VOLTE_PROVISIONING = 'volte_provisioning'
 CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING = 'volte_override_wfc_provisioning'
+CAPABILITY_HIDE_ENHANCED_4G_LTE_BOOL = 'hide_enhanced_4g_lte'
 
 # Carrier Config Versions
 VZW_CARRIER_CONFIG_VERSION = "29999999999.1"
@@ -785,6 +789,7 @@ class CarrierConfigs:
     VOLTE_OVERRIDE_WFC_BOOL = "carrier_volte_override_wfc_provisioning_bool"
     VT_AVAILABLE_BOOL = "carrier_vt_available_bool"
     ENHANCED_4G_LTE_ON_BY_DEFAULT_BOOL = "enhanced_4g_lte_on_by_default_bool"
+    HIDE_ENHANCED_4G_LTE_BOOL = "hide_enhanced_4g_lte_bool"
     WFC_IMS_AVAILABLE_BOOL = "carrier_wfc_ims_available_bool"
     WFC_SUPPORTS_WIFI_ONLY_BOOL = "carrier_wfc_supports_wifi_only_bool"
     EDITABLE_ENHANCED_4G_LTE_BOOL = "editable_enhanced_4g_lte_bool"
