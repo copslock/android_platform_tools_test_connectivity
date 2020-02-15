@@ -723,7 +723,7 @@ class AndroidDevice:
             self.log.warning("Logcat file %s does not exist." % logcat_path)
             return
         adb_excerpt_dir = os.path.join(self.log_path, dest_path)
-        utils.create_dir(adb_excerpt_dir)
+        os.makedirs(adb_excerpt_dir, exist_ok=True)
         out_name = '%s,%s.txt' % (acts_logger.normalize_log_line_timestamp(
             log_begin_time), self.serial)
         tag_len = utils.MAX_FILENAME_LEN - len(out_name)
@@ -938,7 +938,7 @@ class AndroidDevice:
         except adb.AdbError:
             new_br = False
         br_path = self.device_log_path
-        utils.create_dir(br_path)
+        os.makedirs(br_path, exist_ok=True)
         time_stamp = acts_logger.normalize_log_line_timestamp(
             acts_logger.epoch_to_log_line_timestamp(begin_time))
         out_name = "AndroidDevice%s_%s" % (
@@ -1040,7 +1040,7 @@ class AndroidDevice:
             test_name = test_name or time.strftime("%Y-%m-%d-%Y-%H-%M-%S")
             crash_log_path = os.path.join(self.log_path, test_name,
                                           "Crashes_%s" % self.serial)
-            utils.create_dir(crash_log_path)
+            os.makedirs(crash_log_path, exist_ok=True)
             self.pull_files(crash_reports, crash_log_path)
         return crash_reports
 
@@ -1054,7 +1054,7 @@ class AndroidDevice:
         if qxdm_logs:
             qxdm_log_path = os.path.join(self.device_log_path,
                                          "QXDM_%s" % self.serial)
-            utils.create_dir(qxdm_log_path)
+            os.makedirs(qxdm_log_path, exist_ok=True)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
             self.adb.pull(
@@ -1066,7 +1066,7 @@ class AndroidDevice:
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)
-            utils.create_dir(omadm_log_path)
+            os.makedirs(omadm_log_path, exist_ok=True)
             self.log.info("Pull OMADM Log")
             self.adb.pull(
                 "/data/data/com.android.omadm.service/files/dm/log/ %s" %
@@ -1084,7 +1084,7 @@ class AndroidDevice:
         if sdm_logs:
             sdm_log_path = os.path.join(self.device_log_path,
                                         "SDM_%s" % self.serial)
-            utils.create_dir(sdm_log_path)
+            os.makedirs(sdm_log_path, exist_ok=True)
             self.log.info("Pull SDM Log %s to %s", sdm_logs, sdm_log_path)
             self.pull_files(sdm_logs, sdm_log_path)
         else:
@@ -1092,7 +1092,7 @@ class AndroidDevice:
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)
-            utils.create_dir(omadm_log_path)
+            os.makedirs(omadm_log_path, exist_ok=True)
             self.log.info("Pull OMADM Log")
             self.adb.pull(
                 "/data/data/com.android.omadm.service/files/dm/log/ %s" %

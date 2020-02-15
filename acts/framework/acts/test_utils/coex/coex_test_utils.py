@@ -61,7 +61,7 @@ from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
 from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
-from acts.utils import exe_cmd, create_dir
+from acts.utils import exe_cmd
 from bokeh.layouts import column
 from bokeh.models import tools as bokeh_tools
 from bokeh.plotting import figure, output_file, save
@@ -151,7 +151,7 @@ def collect_bluetooth_manager_dumpsys_logs(pri_ad, test_name):
     """
     dump_counter = 0
     dumpsys_path = os.path.join(pri_ad.log_path, test_name, "BluetoothDumpsys")
-    create_dir(dumpsys_path)
+    os.makedirs(dumpsys_path, exist_ok=True)
     while os.path.exists(
             os.path.join(dumpsys_path,
                          "bluetooth_dumpsys_%s.txt" % dump_counter)):
@@ -941,7 +941,7 @@ def start_fping(pri_ad, duration, fping_params):
     """
     counter = 0
     fping_path = ''.join((pri_ad.log_path, "/Fping"))
-    create_dir(fping_path)
+    os.makedirs(fping_path, exist_ok=True)
     while os.path.isfile(fping_path + "/fping_%s.txt" % counter):
         counter += 1
     out_file_name = "{}".format("fping_%s.txt" % counter)

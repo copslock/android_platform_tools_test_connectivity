@@ -547,7 +547,7 @@ class TelephonyBaseTest(BaseTestClass):
         # Zip log folder
         if not self.user_params.get("zip_log", False): return
         src_dir = os.path.join(self.log_path, test_name)
-        utils.create_dir(src_dir)
+        os.makedirs(src_dir, exist_ok=True)
         file_name = "%s_%s" % (src_dir, begin_time)
         self.log.info("Zip folder %s to %s.zip", src_dir, file_name)
         shutil.make_archive(file_name, "zip", src_dir)
