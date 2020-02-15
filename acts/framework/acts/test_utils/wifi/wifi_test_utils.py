@@ -2103,7 +2103,7 @@ def get_ssrdumps(ad, test_name=""):
         ad.log.info("Pulling ssrdumps %s", logs)
         log_path = os.path.join(ad.log_path, test_name,
                                 "SSRDUMP_%s" % ad.serial)
-        utils.create_dir(log_path)
+        os.makedirs(log_path, exist_ok=True)
         ad.pull_files(logs, log_path)
     ad.adb.shell("find /data/vendor/ssrdump/ -type f -delete")
 
@@ -2121,7 +2121,7 @@ def start_pcap(pcap, wifi_band, test_name):
     """
     log_dir = os.path.join(
         context.get_current_context().get_full_output_path(), 'PacketCapture')
-    utils.create_dir(log_dir)
+    os.makedirs(log_dir, exist_ok=True)
     if wifi_band == 'dual':
         bands = [BAND_2G, BAND_5G]
     else:
@@ -2224,7 +2224,7 @@ def get_cnss_diag_log(ad, test_name=""):
     if logs:
         ad.log.info("Pulling cnss_diag logs %s", logs)
         log_path = os.path.join(ad.device_log_path, "CNSS_DIAG_%s" % ad.serial)
-        utils.create_dir(log_path)
+        os.makedirs(log_path, exist_ok=True)
         ad.pull_files(logs, log_path)
 
 

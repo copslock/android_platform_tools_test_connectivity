@@ -23,7 +23,6 @@ import os
 import re
 
 from acts import signals
-from acts.utils import create_dir
 from acts.utils import unzip_maintain_permissions
 from acts.utils import exe_cmd
 from acts.controllers.android_device import SL4A_APK_NAME

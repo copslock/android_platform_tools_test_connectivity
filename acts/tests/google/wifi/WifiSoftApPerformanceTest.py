@@ -19,7 +19,6 @@ import logging
 import os
 from acts import asserts
 from acts import base_test
-from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers import iperf_client as ipc
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
@@ -68,7 +67,7 @@ class WifiSoftApRvrTest(WifiRvrTest):
         }])[0]
 
         self.log_path = os.path.join(logging.log_path, 'results')
-        utils.create_dir(self.log_path)
+        os.makedirs(self.log_path, exist_ok=True)
         if not hasattr(self, 'golden_files_list'):
             self.golden_files_list = [
                 os.path.join(self.testbed_params['golden_results_path'], file)

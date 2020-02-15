@@ -978,7 +978,7 @@ class BaseTestClass(MoblyBaseTest):
             mylogger.stop(session)
             diag_path = os.path.join(
                 self.log_path, logger.epoch_to_log_line_timestamp(begin_time))
-            utils.create_dir(diag_path)
+            os.makedirs(diag_path, exist_ok=True)
             mylogger.pull(session, diag_path)
 
     def register_test_class_event_subscriptions(self):

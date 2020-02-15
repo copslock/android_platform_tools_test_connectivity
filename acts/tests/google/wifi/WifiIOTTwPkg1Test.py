@@ -78,7 +78,7 @@ class WifiIOTTwPkg1Test(WifiBaseTest):
 
         # create folder for IOT test result
         self.log_path = os.path.join(logging.log_path, "IOT_results")
-        utils.create_dir(self.log_path)
+        os.makedirs(self.log_path, exist_ok=True)
 
         Header=("test_name","throughput_TX","throughput_RX")
         self.csv_write(Header)

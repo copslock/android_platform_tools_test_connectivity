@@ -166,7 +166,7 @@ class WifiIFSTwTest(WifiBaseTest):
         self.log.info("Get log for regular capture.")
         file_name = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
         current_path = os.path.join(self.dut.log_path, file_name)
-        utils.create_dir(current_path)
+        os.makedirs(current_path, exist_ok=True)
         serial_number = self.dut.serial
 
         try:

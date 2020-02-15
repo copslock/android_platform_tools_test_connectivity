@@ -342,7 +342,7 @@ class IPerfServerBase(object):
                                     'IPerfServer%s' % self.port)
 
         # Ensure the directory exists.
-        utils.create_dir(full_out_dir)
+        os.makedirs(full_out_dir, exist_ok=True)
 
         return full_out_dir
 

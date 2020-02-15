@@ -22,7 +22,6 @@ import re
 import time
 
 from acts import signals
-from acts import utils
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VT
@@ -150,7 +149,7 @@ class TelLiveConnectivityMonitorBaseTest(TelephonyBaseTest):
         self.dut.log.info("Pulling %s", CALL_DATA_LOGS)
         log_path = os.path.join(self.dut.log_path, test_name,
                                 "ConnectivityMonitorLogs_%s" % self.dut.serial)
-        utils.create_dir(log_path)
+        os.makedirs(log_path, exist_ok=True)
         self.dut.pull_files([CALL_DATA_LOGS], log_path)
 
         self._take_bug_report(test_name, begin_time)

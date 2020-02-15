@@ -19,7 +19,6 @@ import os
 import time
 import acts.test_utils.bt.bt_test_utils as btutils
 import acts.test_utils.power.PowerBTBaseTest as PBtBT
-from acts import utils
 
 EXTRA_PLAY_TIME = 30
 
@@ -40,7 +39,7 @@ class PowerBTcalibrationTest(PBtBT.PowerBTBaseTest):
 
         self.cal_data_path = os.path.join(self.log_path, 'Calibration')
         self.log_file = os.path.join(self.cal_data_path, 'Cal_data.csv')
-        utils.create_dir(os.path.dirname(self.log_file))
+        os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
 
     def test_calibrate(self):
         """Run calibration to get attenuation value at each power level

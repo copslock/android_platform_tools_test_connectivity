@@ -25,7 +25,6 @@ import time
 
 from acts import context
 from acts import signals
-from acts import utils
 from acts.libs.proc import job
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
@@ -524,7 +523,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     "tail %s" % self.gps_log_file, ignore_status=True)
                 if gps_info.stdout:
                     gps_log_path = os.path.join(self.log_path, test_name)
-                    utils.create_dir(gps_log_path)
+                    os.makedirs(gps_log_path, exist_ok=True)
                     job.run(
                         "tail %s > %s" %
                         (self.gps_log_file,
@@ -539,7 +538,7 @@ class TelLiveStressTest(TelephonyBaseTest):
             for ad in ads:
                 log_path = os.path.join(self.log_path, test_name,
                                         "%s_binder_logs" % ad.serial)
-                utils.create_dir(log_path)
+                os.makedirs(log_path, exist_ok=True)
                 ad.pull_files(BINDER_LOGS, log_path)
             try:
                 self._take_bug_report(test_name, begin_time)
@@ -558,7 +557,7 @@ class TelLiveStressTest(TelephonyBaseTest):
                     if self.get_binder_logs:
                         log_path = os.path.join(self.log_path, test_name,
                                                 "%s_binder_logs" % ad.serial)
-                        utils.create_dir(log_path)
+                        os.makedirs(log_path, exist_ok=True)
                         ad.pull_files(BINDER_LOGS, log_path)
         return result
 

@@ -123,15 +123,6 @@ def abs_path(path):
     return os.path.abspath(os.path.expanduser(path))
 
 
-def create_dir(path):
-    """Creates a directory if it does not exist already.
-
-    Args:
-        path: The path of the directory to create.
-    """
-    os.makedirs(path, exist_ok=True)
-
-
 def get_current_epoch_time():
     """Current epoch time in milliseconds.
 

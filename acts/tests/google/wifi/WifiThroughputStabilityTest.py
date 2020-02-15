@@ -110,7 +110,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.iperf_client = self.iperf_clients[0]
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
         self.log_path = os.path.join(logging.log_path, 'test_results')
-        utils.create_dir(self.log_path)
+        os.makedirs(self.log_path, exist_ok=True)
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
         if not hasattr(self, 'golden_files_list'):
