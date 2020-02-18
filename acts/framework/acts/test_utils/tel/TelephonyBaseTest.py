@@ -334,7 +334,10 @@ class TelephonyBaseTest(BaseTestClass):
         if getattr(ad, "telephony_test_setup", None):
             return True
 
-        ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
+        try:
+            ad.droid.wifiEnableVerboseLogging(WIFI_VERBOSE_LOGGING_ENABLED)
+        except Exception:
+            pass
 
         # Disable Emergency alerts
         # Set chrome browser start with no-first-run verification and
@@ -348,7 +351,7 @@ class TelephonyBaseTest(BaseTestClass):
                     "am set-debug-app --persistent com.android.chrome",
                     'echo "chrome --no-default-browser-check --no-first-run '
                     '--disable-fre" > /data/local/tmp/chrome-command-line'):
-            ad.adb.shell(cmd)
+            ad.adb.shell(cmd, ignore_status=True)
 
         # Curl for 2016/7 devices
         if not getattr(ad, "curl_capable", False):
