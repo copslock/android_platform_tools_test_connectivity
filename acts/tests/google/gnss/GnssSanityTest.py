@@ -969,3 +969,63 @@ class GnssSanityTest(BaseTestClass):
         start_qxdm_logger(self.ad, get_current_epoch_time())
         start_adb_tcpdump(self.ad)
         start_toggle_gnss_by_gtw_gpstool(self.ad, iteration=10)
+
+    @test_tracker_info(uuid="9f565b32-9938-42c0-a29d-f4d28b5f4d75")
+    def test_supl_system_server_restart(self):
+        """Verify SUPL functionality after system server restart.
+
+        Steps:
+            1. Kill XTRA daemon to support SUPL only case.
+            2. Get location fixed within supl_cs_criteria.
+            3. Restarts android runtime.
+            4. Get location fixed within supl_cs_criteria.
+
+        Expected Results:
+            Location fixed within supl_cs_criteria.
+        """
+        overall_test_result = []
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
+        kill_xtra_daemon(self.ad)
+        for test_loop in range(1, 6):
+            process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+            start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.restart_runtime()
+            self.ad.unlock_screen(password=None)
+            test_result = process_gnss_by_gtw_gpstool(self.ad,
+                                                      self.supl_cs_criteria)
+            start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.log.info("Iteraion %d => %s" % (test_loop, test_result))
+            overall_test_result.append(test_result)
+        asserts.assert_true(all(overall_test_result),
+                            "Fail to trigger SUPL after system server restart.")
+
+    @test_tracker_info(uuid="a9a64900-9016-46d0-ad7e-cab30e8152cd")
+    def test_xtra_system_server_restart(self):
+        """Verify XTRA functionality after system server restart.
+
+        Steps:
+            1. Disable SUPL mode.
+            2. Get location fixed within xtra_cs_criteria.
+            3. Restarts android runtime.
+            4. Get location fixed within xtra_cs_criteria.
+
+        Expected Results:
+            Location fixed within xtra_cs_criteria.
+        """
+        overall_test_result = []
+        disable_supl_mode(self.ad)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
+        for test_loop in range(1, 6):
+            process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
+            start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.restart_runtime()
+            self.ad.unlock_screen(password=None)
+            test_result = process_gnss_by_gtw_gpstool(self.ad,
+                                                      self.xtra_cs_criteria)
+            start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.log.info("Iteraion %d => %s" % (test_loop, test_result))
+            overall_test_result.append(test_result)
+        asserts.assert_true(all(overall_test_result),
+                            "Fail to trigger XTRA after system server restart.")
