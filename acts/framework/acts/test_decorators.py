@@ -16,12 +16,13 @@
 
 from acts import signals
 
+
 def test_info(predicate=None, **keyed_info):
     """Adds info about test.
 
-    Extra Info to include about the test. This info will be available in the
+    Extra info to include about the test. This info will be available in the
     test output. Note that if a key is given multiple times it will be added
-    as a list of all values. If multiples of these are stacked there results
+    as a list of all values. If multiples of these are stacked their results
     will be merged.
 
     Example:
@@ -37,10 +38,10 @@ def test_info(predicate=None, **keyed_info):
                       test.
     """
 
-    def test_info_decoractor(func):
+    def test_info_decorator(func):
         return _TestInfoDecoratorFunc(func, predicate, keyed_info)
 
-    return test_info_decoractor
+    return test_info_decorator
 
 
 def test_tracker_info(uuid, extra_environment_info=None, predicate=None):
@@ -61,7 +62,7 @@ def test_tracker_info(uuid, extra_environment_info=None, predicate=None):
     """
     return test_info(
         test_tracker_uuid=uuid,
-        test_tracker_enviroment_info=extra_environment_info,
+        test_tracker_environment_info=extra_environment_info,
         predicate=predicate)
 
 
