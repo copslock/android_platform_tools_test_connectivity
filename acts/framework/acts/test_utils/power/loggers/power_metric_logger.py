@@ -45,6 +45,12 @@ class PowerMetricLogger(MetricLogger):
     def set_avg_power(self, avg_power):
         self.proto.avg_power = avg_power
 
+    def set_avg_current(self, avg_current):
+        self.proto.avg_current = avg_current
+
+    def set_voltage(self, voltage):
+        self.proto.voltage = voltage
+
     def set_testbed(self, testbed):
         self.proto.testbed = testbed
 

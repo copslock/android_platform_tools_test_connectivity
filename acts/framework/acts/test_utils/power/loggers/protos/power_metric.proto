@@ -22,6 +22,8 @@ message PowerMetric {
   optional string branch = 4;
   optional string build_id = 5;
   optional string target = 6;
+  optional float avg_current = 7;
+  optional float voltage = 8;
 }
 
 message PowerCellularMetric {
