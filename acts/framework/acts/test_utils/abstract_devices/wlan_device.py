@@ -131,7 +131,7 @@ class WlanDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
-    def is_connected(self):
+    def is_connected(self, ssid=None):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
@@ -216,8 +216,11 @@ class AndroidWlanDevice(WlanDevice):
     def get_interface_ip_addresses(self, interface):
         return get_interface_ip_addresses(self.device, interface)
 
-    def is_connected(self):
-        return 'BSSID' in self.device.droid.wifiGetConnectionInfo()
+    def is_connected(self, ssid=None):
+        wifi_info = self.device.droid.wifiGetConnectionInfo()
+        if ssid:
+            return 'BSSID' in wifi_info and wifi_info['SSID'] == ssid
+        return 'BSSID' in wifi_info
 
     def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
         return adb_shell_ping(self.device,
@@ -333,5 +336,5 @@ class FuchsiaWlanDevice(WlanDevice):
     def get_interface_ip_addresses(self, interface):
         return get_interface_ip_addresses(self.device, interface)
 
-    def is_connected(self):
-        return fwutils.is_connected(self)
+    def is_connected(self, ssid=None):
+        return fwutils.is_connected(self, ssid)
