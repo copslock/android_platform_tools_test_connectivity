@@ -84,6 +84,7 @@ def create_ssh_connection(ip_address,
                        pkey=ssh_key,
                        timeout=connect_timeout,
                        banner_timeout=200)
+    ssh_client.get_transport().set_keepalive(1)
     return ssh_client
 
 
