@@ -1515,3 +1515,23 @@ def renew_linux_ip_address(comm_channel, interface):
     comm_channel.run('sudo dhcpcd -q -b')
     comm_channel.run('sudo dhclient -r %s' % interface)
     comm_channel.run('sudo dhclient %s' % interface)
+
+
+def is_pingable(ip):
+    """Returns whether an ip is pingable or not.
+
+    Args:
+        ip: string, ip address to ping
+    Returns:
+        True if ping was successful, else False
+    """
+    if is_valid_ipv4_address(ip):
+        ping_binary = 'ping'
+    elif is_valid_ipv6_address(ip):
+        ping_binary = 'ping6'
+    else:
+        raise ValueError('Invalid ip addr: %s' % ip)
+    ping_cmd = [ping_binary, '-W', '1', '-c', '1', ip]
+
+    result = job.run(ping_cmd, timeout=10, ignore_status=True)
+    return result.exit_status == 0
