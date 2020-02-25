@@ -161,6 +161,7 @@ class FuchsiaDevice:
                         the fuchsia device
                         (Default: None)
         """
+        self.conf_data = fd_conf_data
         if "ip" not in fd_conf_data:
             raise FuchsiaDeviceError(FUCHSIA_DEVICE_NO_IP_MSG)
         self.ip = fd_conf_data["ip"]
@@ -369,6 +370,19 @@ class FuchsiaDevice:
         # Wait 5 seconds after receiving a ping packet to just to let
         # the OS get everything up and running.
         time.sleep(10)
+        # Verify SSH before starting services, since those have more risky
+        # thread implications if they need to retry. Note that
+        # create_ssh_connection has a short backoff loop itself, but it alone is
+        # not intended for waiting until ssh is up.
+        for _ in range(3):
+            try:
+                self.send_command_ssh('\n')
+                break
+            except:
+                logging.info('Could not SSH to device. Retrying in 1 second.')
+                time.sleep(1)
+        else:
+            raise ConnectionError('Failed to connect to device via SSH.')
         # Start sl4f on device
         self.start_services()
         # Init server
@@ -661,7 +675,14 @@ class FuchsiaDevice:
                                             self.ssh_config)
 
             if ENABLE_LOG_LISTENER:
-                self.log_process.start()
+                try:
+                    self.log_process.start()
+                except FuchsiaSyslogError as e:
+                    # Before backing off and retrying, stop the syslog if it
+                    # failed to setup correctly, to prevent threading error when
+                    # retrying
+                    self.log_process.stop()
+                    raise
 
             if not skip_sl4f:
                 self.control_daemon("sl4f.cmx", "start")
@@ -681,6 +702,12 @@ class FuchsiaDevice:
             if self.log_process:
                 if ENABLE_LOG_LISTENER:
                     self.log_process.stop()
+
+    def reinitialize_services(self):
+        """Reinitialize long running services and establish connection to
+        SL4F."""
+        self.start_services()
+        self.init_server_connection()
 
     def load_config(self, config):
         pass
