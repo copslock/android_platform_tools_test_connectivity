@@ -482,7 +482,7 @@ class IPerfServerOverSsh(IPerfServerBase):
         return self._iperf_pid is not None
 
     def _get_remote_log_path(self):
-        return 'iperf_server_port%s.log' % self.port
+        return '/tmp/iperf_server_port%s.log' % self.port
 
     def _get_test_interface_based_on_ip(self, test_interface):
         """Gets the test interface for a particular IP if the test interface
