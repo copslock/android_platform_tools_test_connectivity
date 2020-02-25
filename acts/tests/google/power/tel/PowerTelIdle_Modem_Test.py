@@ -19,6 +19,9 @@ import acts.test_utils.power.cellular.cellular_idle_power_test as cipt
 
 class PowerTelIdle_Modem_Test(cipt.PowerTelIdleTest):
 
+    def test_lte_band_1_pul_0_bw_20_tm_1_dlmcs_28_mimo_1x1_paging_1280_rrcstatuschangetimer_10(self):
+        self.power_tel_idle_test()
+
     def test_lte_band_13_pul_0_bw_10_tm_3_dlmcs_28_mimo_2x2_paging_2560_rrcstatuschangetimer_10(self):
         self.power_tel_idle_test()
 
