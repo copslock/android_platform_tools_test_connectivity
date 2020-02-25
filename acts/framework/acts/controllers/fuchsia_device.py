@@ -38,6 +38,7 @@ from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
 from acts.controllers.fuchsia_lib.hwinfo_lib import FuchsiaHwinfoLib
+from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
@@ -229,6 +230,10 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaProfileServerLib
         self.sdp_lib = FuchsiaProfileServerLib(self.address, self.test_counter,
                                                self.client_id)
+
+        # Grab commands from FuchsiaRegulatoryRegionLib
+        self.regulatory_region_lib = FuchsiaRegulatoryRegionLib(
+            self.address, self.test_counter, self.client_id)
 
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
