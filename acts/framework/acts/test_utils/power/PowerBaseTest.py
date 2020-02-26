@@ -28,6 +28,8 @@ from acts.controllers.monsoon_lib.api.common import MonsoonError
 from acts.controllers.monsoon_lib.api.common import PassthroughStates
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power.loggers.power_metric_logger import PowerMetricLogger
+from acts.test_utils.power.loggers.utils.test_name_map import TestNameMap
+from acts.test_utils.power.loggers.utils.test_name_map import TestNameType
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
@@ -193,6 +195,15 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.power_logger.set_avg_current(self.avg_current)
         self.power_logger.set_voltage(self.mon_voltage)
         self.power_logger.set_testbed(self.testbed_name)
+
+        # Log the display name of the test suite and test case
+        name_map = TestNameMap()
+        suite_display_name = name_map.get_display_name(self.__class__.__name__,
+                                                       TestNameType.TEST_SUITE)
+        test_case_display_name = name_map.get_display_name(
+            self.test_name, TestNameType.TEST_CASE)
+        self.power_logger.set_test_suite_display_name(suite_display_name)
+        self.power_logger.set_test_case_display_name(test_case_display_name)
 
         build_id = self.dut.build_info.get('incremental_build_id', '')
         branch = self.user_params.get('branch', '')
