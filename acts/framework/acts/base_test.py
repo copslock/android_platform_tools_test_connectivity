@@ -559,11 +559,6 @@ class BaseTestClass(MoblyBaseTest):
             test_signal = e
             tr_record.test_pass(e)
             self._exec_procedure_func(self._on_pass, tr_record)
-        except error.ActsError as e:
-            test_signal = e
-            tr_record.test_error(e)
-            self.log.error('BaseTest execute_one_test_case error: %s' %
-                           e.message)
         except Exception as e:
             test_signal = e
             self.log.error(traceback.format_exc())

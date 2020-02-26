@@ -282,26 +282,6 @@ class ActsBaseClassTest(unittest.TestCase):
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
-    def test_run_fail_by_ActsError_(self):
-        class MockBaseTest(base_test.BaseTestClass):
-            def __init__(self, controllers):
-                super(MockBaseTest, self).__init__(controllers)
-
-            def test_something(self):
-                raise error.ActsError()
-
-        bt_cls = MockBaseTest(self.test_run_config)
-        bt_cls.run(test_names=['test_something'])
-        expected_summary = {
-            'Error': 1,
-            'Executed': 1,
-            'Failed': 0,
-            'Passed': 0,
-            'Requested': 1,
-            'Skipped': 0
-        }
-        self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
-
     def test_teardown_test_assert_fail(self):
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
