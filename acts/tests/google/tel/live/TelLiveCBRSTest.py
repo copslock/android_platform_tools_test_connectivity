@@ -38,6 +38,7 @@ from acts.test_utils.tel.tel_test_utils import is_phone_not_in_call
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import start_qxdm_loggers
+from acts.test_utils.tel.tel_test_utils import load_scone_cat_simulate_data
 from acts.test_utils.tel.tel_test_utils import test_data_browsing_success_using_sl4a
 from acts.test_utils.tel.tel_test_utils import test_data_browsing_failure_using_sl4a
 from acts.test_utils.tel.tel_test_utils import get_operator_name
@@ -85,9 +86,15 @@ class TelLiveCBRSTest(TelephonyBaseTest):
         self.switch_time_dict = {}
         self.stress_test_number = int(
             self.user_params.get("stress_test_number", 5))
+        self.simulate_weak_signal = None
+        self.simulate_out_of_service = None
+        self.stop_simulation = None
+        self.simulate_out_of_coverage = None
 
 
     def on_fail(self, test_name, begin_time):
+        if self.stop_simulation is not None:
+            load_scone_cat_simulate_data(self.android_devices[0],self.stop_simulation[0],1)
         if test_name.startswith('test_stress'):
             return
         super().on_fail(test_name, begin_time)
@@ -329,6 +336,91 @@ class TelLiveCBRSTest(TelephonyBaseTest):
         if input_list == []:
             return False
         return float(total_sum / total_count)
+
+    def _test_CBRS_switch(self, ads,
+                           verify_data_is_on_cbrs,
+                           verify_data_initial_func,
+                           simulate_signal,
+                           verify_data_in_call_func,
+                           incall_cbrs_setting_check_func,
+                           stop_simulation,
+                           verify_data_final_func,
+                           verify_cbrs_final_func,
+                           expected_result  ):
+        """ Test CBRS Signal in Reduced Signal Strength
+        By Default Data will be on CBRS.
+        Fake Signal strength of CBRS to weak.
+        Verify the data is switched to LTE.
+        Increase the signal strength on CBRS
+        Verify data is back on CBRS.
+        """
+
+
+        class _CBRSCallSequenceException1(Exception):
+            pass
+
+        self.cbrs_subid, self.default_subid = get_cbrs_and_default_sub_id(ads[0])
+
+        # Check if Data is on CBRS
+        try:
+            if verify_data_is_on_cbrs and not \
+                verify_data_is_on_cbrs():
+                raise _CBRSCallSequenceException1(
+                    "verify_cbrs_initial_idle_func fail.")
+
+            # Check if Data works well on CBRS
+            if verify_data_initial_func and not \
+                verify_data_initial_func():
+                raise _CBRSCallSequenceException1(
+                    "verify_data_initial_func fail.")
+
+            # Reduce the Signal strength on CBRS
+            self.log.info("Simulating the Signal using Scone CAT")
+            load_scone_cat_simulate_data(ads[0],simulate_signal[0], 1)
+            time.sleep(15)
+
+            # Ensure data checks are performed and it works on Default Sub Id
+            if verify_data_in_call_func and not \
+                verify_data_in_call_func():
+                raise _CBRSCallSequenceException1("verify_data_on_default SubId fail.")
+
+            # in call change setting and check
+            if (incall_cbrs_setting_check_func and not \
+                incall_cbrs_setting_check_func()):
+                raise _CBRSCallSequenceException1(
+                    "incall_cbrs_setting_check_func fail.")
+
+            # Stop Stimulation and wait for CBRS signal to recover
+            load_scone_cat_simulate_data(ads[0],stop_simulation[0],1)
+            time.sleep(15)
+
+            # Verify Data is Back on CBRS
+            # Ensure data checks are performed
+            if verify_data_final_func and not \
+                verify_data_final_func():
+                raise _CBRSCallSequenceException1(
+                    "verify_data_final_func fail.")
+
+            # Ensure data checks are performed
+            if verify_cbrs_final_func and not \
+                verify_cbrs_final_func():
+                raise _CBRSCallSequenceException1(
+                    "verify_cbrs_final_func fail.")
+
+        except _CBRSCallSequenceException1 as e:
+            if str(e) == expected_result:
+                self.log.info("Expected exception: <%s>, return True.", e)
+                return True
+            else:
+                self.log.info("Unexpected exception: <%s>, return False.", e)
+                return False
+        finally:
+            for ad in ads:
+                if ad.droid.telecomIsInCall():
+                    hangup_call_by_adb(ad)
+        self.log.info("cbrs_data_switch finished, return %s",
+                      expected_result is True)
+        return (expected_result is True)
 
 
     """ Tests Begin """
@@ -790,3 +882,95 @@ class TelLiveCBRSTest(TelephonyBaseTest):
         """
         ad = self.android_devices[0]
         self._test_stress_cbrsdataswitch_timing(ad, "call")
+
+    @test_tracker_info(uuid="c2f67a50-1d06-4e3f-8935-5360720a55a3")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cbrs_forced_weak_signalstrength(self):
+        """ Test CBRS Data switch
+
+        Verify Data Browsing works fine on cbrs before weak signal.
+        Using CAT Scone apk, reduce the signal strength.
+        Verify the data switches from CBRS to Psim.
+        Verify Data Browsing works fine on pSIM.
+        Verify Data Browsing works fine on cbrs after simulation is stopped.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        self.simulate_weak_signal = self.user_params.get("simulate_weak_signal")
+        self.stop_simulation = self.user_params.get("stop_simulate")
+        ads = [self.android_devices[0]]
+        result = self._test_CBRS_switch(
+            ads, self._is_current_data_on_cbrs,
+            self._test_data_browsing_success_using_sl4a,
+            self.simulate_weak_signal,
+            self._is_current_data_on_default,
+            self._test_data_browsing_success_using_sl4a,
+            self.stop_simulation,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_current_data_on_cbrs, True)
+
+        self.log.info("CBRS data switch Result: %s", result)
+        return result
+
+    @test_tracker_info(uuid="066ff1e4-c3f7-4834-a86a-6ebd9fbbee06")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cbrs_forced_out_of_service(self):
+        """ Test CBRS Data switch
+
+        Verify Data Browsing works fine on cbrs before weak signal.
+        Using CAT Scone apk, reduce the signal strength
+            to mimic CBRS signal out of service
+        Verify the data switches from CBRS to Psim.
+        Verify Data Browsing works fine on pSIM.
+        Verify Data Browsing works fine on cbrs after simulation is stopped.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        self.simulate_out_of_service = self.user_params.get("simulate_out_of_service")
+        self.stop_simulation = self.user_params.get("stop_simulate")
+        ads = [self.android_devices[0]]
+        result = self._test_CBRS_switch(
+            ads, self._is_current_data_on_cbrs,
+            self._test_data_browsing_success_using_sl4a,
+            self.simulate_out_of_service,
+            self._is_current_data_on_default,
+            self._test_data_browsing_success_using_sl4a,
+            self.stop_simulation,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_current_data_on_cbrs, True)
+
+        self.log.info("CBRS data switch Result: %s", result)
+        return result
+
+    @test_tracker_info(uuid="8268f88f-c2e3-4000-8f05-97e34e028a92")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_cbrs_forced_out_of_coverage(self):
+        """ Test CBRS Data switch
+
+        Verify Data Browsing works fine on cbrs before weak signal.
+        Using CAT Scone apk, reduce the signal strength
+            to mimic CBRS signal out of coverage.
+        Verify the data switches from CBRS to Psim.
+        Verify Data Browsing works fine on pSIM.
+        Verify Data Browsing works fine on cbrs after simulation is stopped.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        self.simulate_out_of_coverage = self.user_params.get("simulate_out_of_coverage")
+        self.stop_simulation = self.user_params.get("stop_simulate")
+        ads = [self.android_devices[0]]
+        result = self._test_CBRS_switch(
+            ads, self._is_current_data_on_cbrs,
+            self._test_data_browsing_success_using_sl4a,
+            self.simulate_out_of_coverage,
+            self._is_current_data_on_default,
+            self._test_data_browsing_success_using_sl4a,
+            self.stop_simulation,
+            self._test_data_browsing_success_using_sl4a,
+            self._is_current_data_on_cbrs, True)
+
+        self.log.info("CBRS data switch Result: %s", result)
+        return result
