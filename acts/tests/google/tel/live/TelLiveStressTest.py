@@ -45,6 +45,7 @@ from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_MESSAGE_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_CHANGE_VOICE_SUB_ID
 from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_CBRS_DATA_SWITCH
+from acts.test_utils.tel.tel_defines import CARRIER_SING
 from acts.test_utils.tel.tel_lookup_tables import is_rat_svd_capable
 from acts.test_utils.tel.tel_test_utils import STORY_LINE
 from acts.test_utils.tel.tel_test_utils import active_file_download_test
@@ -829,7 +830,11 @@ class TelLiveStressTest(TelephonyBaseTest):
     def data_test(self):
         while time.time() < self.finishing_time:
             try:
-                self._data_download()
+                operator_name = self.dut.adb.getprop("gsm.sim.operator.alpha")
+                if CARRIER_SING in operator_name:
+                    self._data_download(file_names=["1MB", "5MB"])
+                else:
+                    self._data_download()
             except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
