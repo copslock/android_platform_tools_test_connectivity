@@ -30,7 +30,7 @@ LOCATION_PERMISSIONS = [
     'android.permission.ACCESS_COARSE_LOCATION'
 ]
 BACKGROUND_LOCATION_PERMISSION = 'android.permission.ACCESS_BACKGROUND_LOCATION'
-
+APP_CLEAN_UP_TIME = 60
 
 class LocationPlatinumTest(BaseTestClass):
     """Location Platinum Tests"""
@@ -100,16 +100,6 @@ class LocationPlatinumTest(BaseTestClass):
             self.ad.log.info('%s permission:%s' % (action, permission))
             self.ad.adb.shell('pm %s %s %s' %
                               (action, TEST_PACKAGE_NAME, permission))
-
-    def confirm_permission_usage_window(self):
-        """ allow the script to confirm permission keep in use"""
-        time.sleep(1)
-        for _ in range(3):
-            # Press Tab for 3 times
-            self.ad.adb.shell('input keyevent 61')
-        # Press Enter to confirm using current permission set.
-        self.ad.adb.shell('input keyevent 66')
-        time.sleep(1)
 
     def get_and_verify_ttff(self, mode):
         """Retrieve ttff with designate mode.
@@ -247,17 +237,13 @@ class LocationPlatinumTest(BaseTestClass):
         self.ad.adb.shell('pm revoke com.android.gpstool %s' %
                           BACKGROUND_LOCATION_PERMISSION)
         gutils.start_gnss_by_gtw_gpstool(self.ad, True)
-        self.confirm_permission_usage_window()
         asserts.assert_true(
             gutils.check_location_api(self.ad, retries=1),
             'APP failed to receive location fix in foreground')
         self.ad.log.info('Trun GPSTool from foreground to background')
         self.ad.adb.shell('input keyevent 3')
-        begin_time = utils.get_current_epoch_time()
-        self.ad.log.info('Wait 60 seconds for app clean up')
-        time.sleep(60)
-        result = self.ad.search_logcat(
-            'skipping loc update for no op app: com.android.gpstool',
-            begin_time)
-        asserts.assert_true(
-            result, 'APP still receive location fix in background')
+        self.ad.log.info('Wait %d seconds for app clean up' % APP_CLEAN_UP_TIME)
+        time.sleep(APP_CLEAN_UP_TIME)
+        asserts.assert_false(
+            gutils.check_location_api(self.ad, retries=1),
+            'DUT still receive location fix')
