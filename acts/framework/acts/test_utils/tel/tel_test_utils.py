@@ -3145,6 +3145,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
     file_size_map = {
+        '1MB': 1000000,
         '5MB': 5000000,
         '10MB': 10000000,
         '20MB': 20000000,
@@ -3154,6 +3155,9 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
         '512MB': 512000000
     }
     url_map = {
+        "1MB": [
+            "http://ipv4.download.thinkbroadband.com/1MB.zip"
+        ],
         "5MB": [
             "http://146.148.91.8/download/5MB.zip",
             "http://212.183.159.230/5MB.zip",
