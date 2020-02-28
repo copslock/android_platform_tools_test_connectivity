@@ -64,13 +64,13 @@ def remount_device(ad):
     """
     for retries in range(5):
         ad.root_adb()
+        if ad.adb.getprop("ro.boot.veritymode") == "enforcing":
+            disable_verity_result = ad.adb.disable_verity()
+            reboot(ad)
         remount_result = ad.adb.remount()
         ad.log.info("Attempt %d - %s" % (retries + 1, remount_result))
         if "remount succeeded" in remount_result:
             break
-        if ad.adb.getprop("ro.boot.veritymode") == "enforcing":
-            disable_verity_result = ad.adb.disable_verity()
-            reboot(ad)
 
 
 def reboot(ad):
