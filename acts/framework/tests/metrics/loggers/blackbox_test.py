@@ -13,6 +13,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 import shutil
 import tempfile
 import unittest
@@ -20,14 +21,13 @@ import warnings
 from unittest import TestCase
 
 from mobly.config_parser import TestRunConfig
+from mock import Mock
+from mock import patch
 
 from acts.base_test import BaseTestClass
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_runner import TestRunner
-from mock import Mock
-from mock import patch
 
-COMPILE_PROTO = 'acts.metrics.logger.MetricLogger._compile_proto'
 GET_CONTEXT_FOR_EVENT = 'acts.metrics.logger.get_context_for_event'
 PROTO_METRIC_PUBLISHER = 'acts.metrics.logger.ProtoMetricPublisher'
 
@@ -39,25 +39,20 @@ class BlackboxMetricLoggerTest(TestCase):
     TEST_FILE_NAME = "blackbox_metric_name"
 
     def setUp(self):
-        self.proto_module = Mock()
         self.event = Mock()
         self.context = Mock()
         self.publisher = Mock()
         self._get_blackbox_identifier = lambda: str(id(self.context))
 
-    @patch(COMPILE_PROTO)
-    def test_default_init_attributes(self, compile_proto):
+    def test_default_init_attributes(self):
         metric_name = Mock()
-        compile_proto.return_value = self.proto_module
 
         logger = BlackboxMetricLogger(metric_name)
 
         self.assertEqual(logger.metric_name, metric_name)
-        self.assertEqual(logger.proto_module, self.proto_module)
         self.assertIsNone(logger.metric_key)
 
-    @patch(COMPILE_PROTO)
-    def test_init_with_params(self, compile_proto):
+    def test_init_with_params(self):
         metric_name = Mock()
         metric_key = Mock()
 
@@ -67,8 +62,7 @@ class BlackboxMetricLoggerTest(TestCase):
 
     @patch(PROTO_METRIC_PUBLISHER)
     @patch(GET_CONTEXT_FOR_EVENT)
-    @patch(COMPILE_PROTO)
-    def test_init_with_event(self, compile_proto, get_context, publisher_cls):
+    def test_init_with_event(self, get_context, publisher_cls):
         metric_name = Mock()
 
         logger = BlackboxMetricLogger(metric_name, event=self.event)
@@ -76,11 +70,11 @@ class BlackboxMetricLoggerTest(TestCase):
         self.assertIsNotNone(logger.context)
         self.assertIsNotNone(logger.publisher)
 
-    @patch(COMPILE_PROTO)
-    def test_end_populates_result(self, compile_proto):
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResult')
+    def test_end_populates_result(self, mock_acts_blackbox):
         result = Mock()
-        compile_proto.return_value = self.proto_module
-        self.proto_module.ActsBlackboxMetricResult.return_value = result
+        mock_acts_blackbox.return_value = result
 
         logger = BlackboxMetricLogger(self.TEST_METRIC_NAME)
         logger.context = self.context
@@ -95,13 +89,13 @@ class BlackboxMetricLoggerTest(TestCase):
                          '%s.%s' % ('Class#test', self.TEST_METRIC_NAME))
         self.assertEqual(result.metric_value, logger.metric_value)
 
-    @patch(COMPILE_PROTO)
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResult')
     def test_end_uses_metric_value_on_metric_value_not_none(
-        self, compile_proto):
+            self, mock_acts_blackbox):
         result = Mock()
         expected_result = Mock()
-        compile_proto.return_value = self.proto_module
-        self.proto_module.ActsBlackboxMetricResult.return_value = result
+        mock_acts_blackbox.return_value = result
 
         logger = BlackboxMetricLogger(self.TEST_METRIC_NAME)
         logger.context = self.context
@@ -112,11 +106,11 @@ class BlackboxMetricLoggerTest(TestCase):
 
         self.assertEqual(result.metric_value, expected_result)
 
-    @patch(COMPILE_PROTO)
-    def test_end_uses_custom_metric_key(self, compile_proto):
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResult')
+    def test_end_uses_custom_metric_key(self, mock_acts_blackbox):
         result = Mock()
-        compile_proto.return_value = self.proto_module
-        self.proto_module.ActsBlackboxMetricResult.return_value = result
+        mock_acts_blackbox.return_value = result
         metric_key = 'metric_key'
 
         logger = BlackboxMetricLogger(self.TEST_METRIC_NAME,
@@ -132,11 +126,11 @@ class BlackboxMetricLoggerTest(TestCase):
         self.assertEqual(result.metric_key, expected_metric_key)
 
     @patch('acts.metrics.loggers.blackbox.ProtoMetric')
-    @patch(COMPILE_PROTO)
-    def test_end_does_publish(self, compile_proto, proto_metric_cls):
+    @patch('acts.metrics.loggers.protos.gen.acts_blackbox_pb2'
+           '.ActsBlackboxMetricResult')
+    def test_end_does_publish(self, mock_acts_blackbox, proto_metric_cls):
         result = Mock()
-        compile_proto.return_value = self.proto_module
-        self.proto_module.ActsBlackboxMetricResult.return_value = result
+        mock_acts_blackbox.return_value = result
         metric_key = 'metric_key'
 
         logger = BlackboxMetricLogger(self.TEST_METRIC_NAME,
@@ -152,18 +146,6 @@ class BlackboxMetricLoggerTest(TestCase):
                                                  data=result)
         self.publisher.publish.assert_called_once_with(
             [proto_metric_cls.return_value])
-
-
-class _BaseTestClassWithCleanup(BaseTestClass):
-    """Subclass of ACTS base test that generates a temp directory for
-    proto compiler output and cleans up upon exit.
-    """
-    def __init__(self, controllers):
-        super().__init__(controllers)
-        self.proto_dir = tempfile.mkdtemp()
-
-    def __del__(self):
-        shutil.rmtree(self.proto_dir)
 
 
 class BlackboxMetricLoggerIntegrationTest(TestCase):
@@ -198,12 +180,11 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
     def test_test_case_metric(self, publisher_cls):
         result = 5.0
 
-        class MyTest(_BaseTestClassWithCleanup):
+        class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
                 self.tests = ('test_case', )
-                self.metric = BlackboxMetricLogger.for_test_case(
-                    'my_metric', compiler_out=self.proto_dir)
+                self.metric = BlackboxMetricLogger.for_test_case('my_metric')
 
             def test_case(self):
                 self.metric.metric_value = result
@@ -222,14 +203,14 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
     def test_multiple_test_case_metrics(self, publisher_cls):
         result = 5.0
 
-        class MyTest(_BaseTestClassWithCleanup):
+        class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
                 self.tests = ('test_case', )
                 self.metric_1 = (BlackboxMetricLogger.for_test_case(
-                    'my_metric_1', compiler_out=self.proto_dir))
+                    'my_metric_1'))
                 self.metric_2 = (BlackboxMetricLogger.for_test_case(
-                    'my_metric_2', compiler_out=self.proto_dir))
+                    'my_metric_2'))
 
             def test_case(self):
                 self.metric_1.metric_value = result
@@ -256,14 +237,12 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
     def test_test_case_metric_with_custom_key(self, publisher_cls):
         result = 5.0
 
-        class MyTest(_BaseTestClassWithCleanup):
+        class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
                 self.tests = ('test_case', )
                 self.metrics = BlackboxMetricLogger.for_test_case(
-                    'my_metric',
-                    metric_key='my_metric_key',
-                    compiler_out=self.proto_dir)
+                    'my_metric', metric_key='my_metric_key')
 
             def test_case(self):
                 self.metrics.metric_value = result
@@ -281,15 +260,14 @@ class BlackboxMetricLoggerIntegrationTest(TestCase):
         result_1 = 5.0
         result_2 = 8.0
 
-        class MyTest(_BaseTestClassWithCleanup):
+        class MyTest(BaseTestClass):
             def __init__(self, controllers):
                 super().__init__(controllers)
                 self.tests = (
                     'test_case_1',
                     'test_case_2',
                 )
-                self.metric = BlackboxMetricLogger.for_test_class(
-                    'my_metric', compiler_out=self.proto_dir)
+                self.metric = BlackboxMetricLogger.for_test_class('my_metric')
 
             def setup_class(self):
                 self.metric.metric_value = 0
