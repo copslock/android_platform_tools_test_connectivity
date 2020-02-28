@@ -31,7 +31,6 @@ class PowerMetricLogger(MetricLogger):
     Attributes:
         proto: Module used to store Power metrics in a proto
     """
-
     def __init__(self, event):
         super().__init__(event=event)
         self.proto = power_protos.PowerMetric()
@@ -62,6 +61,12 @@ class PowerMetricLogger(MetricLogger):
 
     def set_target(self, target):
         self.proto.target = target
+
+    def set_test_suite_display_name(self, test_suite_display_name):
+        self.proto.test_suite_display_name = test_suite_display_name
+
+    def set_test_case_display_name(self, test_case_display_name):
+        self.proto.test_case_display_name = test_case_display_name
 
     def end(self, event):
         metric = ProtoMetric(name='spanner_power_metric', data=self.proto)
