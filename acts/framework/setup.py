@@ -32,7 +32,7 @@ install_requires = [
     'numpy',
     'pyserial',
     'pyyaml>=5.1',
-    'protobuf',
+    'protobuf>=3.11.3',
     'retry',
     'requests',
     'scapy',
