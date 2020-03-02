@@ -1191,19 +1191,23 @@ class AndroidDevice:
             return False, clean_out
         return True, clean_out
 
-    def wait_for_boot_completion(self):
+    def wait_for_boot_completion(self, timeout=900.0):
         """Waits for Android framework to broadcast ACTION_BOOT_COMPLETED.
 
-        This function times out after 15 minutes.
+        Args:
+            timeout: Seconds to wait for the device to boot. Default value is
+            15 minutes.
         """
         timeout_start = time.time()
-        timeout = 15 * 60
 
-        self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
+        self.log.debug("ADB waiting for device")
+        self.adb.wait_for_device(timeout=timeout)
+        self.log.debug("Waiting for  sys.boot_completed")
         while time.time() < timeout_start + timeout:
             try:
                 completed = self.adb.getprop("sys.boot_completed")
                 if completed == '1':
+                    self.log.debug("devie has rebooted")
                     return
             except adb.AdbError:
                 # adb shell calls may fail during certain period of booting
@@ -1214,7 +1218,7 @@ class AndroidDevice:
             'Device %s booting process timed out.' % self.serial,
             serial=self.serial)
 
-    def reboot(self, stop_at_lock_screen=False):
+    def reboot(self, stop_at_lock_screen=False, timeout=180):
         """Reboots the device.
 
         Terminate all sl4a sessions, reboot the device, wait for device to
@@ -1224,6 +1228,8 @@ class AndroidDevice:
             stop_at_lock_screen: whether to unlock after reboot. Set to False
                 if want to bring the device to reboot up to password locking
                 phase. Sl4a checking need the device unlocked after rebooting.
+            timeout: time in seconds to wait for the device to complete
+                rebooting.
         """
         if self.is_bootloader:
             self.fastboot.reboot()
@@ -1233,7 +1239,6 @@ class AndroidDevice:
         self.adb.reboot()
 
         timeout_start = time.time()
-        timeout = 2 * 60
         # b/111791239: Newer versions of android sometimes return early after
         # `adb reboot` is called. This means subsequent calls may make it to
         # the device before the reboot goes through, return false positives for
@@ -1247,7 +1252,8 @@ class AndroidDevice:
                 # want the device to be missing to prove the device has kicked
                 # off the reboot.
                 break
-        self.wait_for_boot_completion()
+        self.wait_for_boot_completion(
+            timeout=(timeout - time.time() + timeout_start))
         self.root_adb()
         skip_sl4a = self.skip_sl4a
         self.skip_sl4a = self.skip_sl4a or stop_at_lock_screen
