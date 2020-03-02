@@ -3,6 +3,7 @@ TEST_SUITE_NAME_MAP = {
   'PowerTelIdle_LTE_Test': 'TechEng LTE Idle',
   'PowerTelTraffic_Modem_Test': 'QComm dashboard - Traffic',
   'PowerTelIdle_Modem_Test': 'QComm dashboard - Idle',
+  'PowerTelPdcch_Modem_Test': 'QComm dashboard - PDCCH',
   'PowerBaselineTest': 'Rockbottom',
 }
 
@@ -57,11 +58,26 @@ TEST_CASE_NAME_MAP = {
   'test_lte_band_7_pul_0_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1': 'LTE7E - Cat4 B7',
   'test_lteca_band_3a4a_pul_0_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1': 'LTE10E - Cat6 B3 - B4',
   'test_lteca_band_3a7a20a_pul_0_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1': 'LTE21E - Cat9 B3 B7 B20',
+  'test_lte_band_13_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1': 'LTE1E - Cat3 B13',
+  'test_lte_band_38_pul_low_bw_20_tm_3_mimo_2x2_direction_dlul_tddconfig_1_phich_16_cfi_1_ssf_7': 'LTE5E - Cat3 B38',
+  'test_lte_band_7_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1': 'LTE7E - Cat4 B7',
+  'test_lteca_band_3a4a_pul_low_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1': 'LTE10E - Cat6 B3 - B4',
+  'test_lteca_band_3a7a20a_pul_low_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1': 'LTE21E - Cat9 B3 B7 B20',
+
 
   # QComm Idle
   'test_lte_band_13_pul_0_bw_10_tm_3_dlmcs_28_mimo_2x2_paging_2560_rrcstatuschangetimer_10': 'LS1 - B13',
   'test_lte_band_41_pul_0_bw_10_tm_3_dlmcs_28_mimo_2x2_tddconfig_1_ssf_7_paging_2560_rrcstatuschangetimer_10': 'LS3 - B41',
   'test_lte_band_1_pul_0_bw_20_tm_1_dlmcs_28_mimo_1x1_paging_1280_rrcstatuschangetimer_10': 'LS11 - B1',
+  'test_lte_band_13_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_paging_2560_rrcstatuschangetimer_10': 'LS1 - B13',
+  'test_lte_band_41_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_tddconfig_1_ssf_7_paging_2560_rrcstatuschangetimer_10': 'LS3 - B41',
+  'test_lte_band_1_pul_low_bw_20_tm_1_dlmcs_28_mimo_1x1_paging_1280_rrcstatuschangetimer_10': 'LS11 - B1',
+
+  # QComm PDCCH
+  'test_lte_band_13_pul_low_bw_10_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1': 'PDCCH - B13',
+  'test_lte_band_7_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1': 'PDCCH - B7',
+  'test_lte_band_4_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1': 'PDCCH - B4',
+  'test_lte_band_40_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1': 'PDCCH - B40',
 
   # TODO(codycaldwell) Remove once older test results are no longer visible in the dashboard
   'test_lte_traffic_band_12_pdl_excellent_pul_low_bw_10_tm_4_mimo_2x2_scheduling_static_direction_dlul_pattern_75_25_1': 'LTE traffic - Band 12, low UL power, 10 MHz BW, TM3 2x2, 75/25 pattern',
