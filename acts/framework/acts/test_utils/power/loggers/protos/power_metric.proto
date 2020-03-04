@@ -26,6 +26,7 @@ message PowerMetric {
   optional float voltage = 8;
   optional string test_suite_display_name = 9;
   optional string test_case_display_name = 10;
+  optional string incremental_build_id = 11;
 }
 
 message PowerCellularMetric {
