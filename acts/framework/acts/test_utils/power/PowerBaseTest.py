@@ -205,12 +205,14 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.power_logger.set_test_suite_display_name(suite_display_name)
         self.power_logger.set_test_case_display_name(test_case_display_name)
 
-        build_id = self.dut.build_info.get('incremental_build_id', '')
+        build_id = self.dut.build_info.get('build_id', '')
+        incr_build_id = self.dut.build_info.get('incremental_build_id', '')
         branch = self.user_params.get('branch', '')
         target = self.dut.device_info.get('flavor', '')
 
         self.power_logger.set_branch(branch)
         self.power_logger.set_build_id(build_id)
+        self.power_logger.set_incremental_build_id(incr_build_id)
         self.power_logger.set_target(target)
 
         # Take Bugreport
