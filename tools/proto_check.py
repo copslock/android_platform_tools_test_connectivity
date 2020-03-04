@@ -89,12 +89,6 @@ def verify_protos_update_generated_files(proto_files, proto_gen_files):
                               '\n%s' % protoc_command)
             success = False
 
-    # fail if there are unpaired gen_files
-    if gen_files:
-        logging.error('Generated *_pb2.py files modified without updating '
-                      'source .proto files: \n\t%s' % '\n\t'.join(gen_files))
-        success = False
-
     return success
 
 

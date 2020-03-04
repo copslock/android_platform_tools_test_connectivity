@@ -559,11 +559,6 @@ class BaseTestClass(MoblyBaseTest):
             test_signal = e
             tr_record.test_pass(e)
             self._exec_procedure_func(self._on_pass, tr_record)
-        except error.ActsError as e:
-            test_signal = e
-            tr_record.test_error(e)
-            self.log.error('BaseTest execute_one_test_case error: %s' %
-                           e.message)
         except Exception as e:
             test_signal = e
             self.log.error(traceback.format_exc())
@@ -978,7 +973,7 @@ class BaseTestClass(MoblyBaseTest):
             mylogger.stop(session)
             diag_path = os.path.join(
                 self.log_path, logger.epoch_to_log_line_timestamp(begin_time))
-            utils.create_dir(diag_path)
+            os.makedirs(diag_path, exist_ok=True)
             mylogger.pull(session, diag_path)
 
     def register_test_class_event_subscriptions(self):

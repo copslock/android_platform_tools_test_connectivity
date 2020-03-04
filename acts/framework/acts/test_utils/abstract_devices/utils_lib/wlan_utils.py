@@ -188,24 +188,27 @@ def status(client):
         # No error, so get the result
         status = status_response['result']
 
-    logging.info('status: %s' % status)
+    logging.debug('status: %s' % status)
     return status
 
 
-def is_connected(client):
+def is_connected(client, ssid=None):
     """Gets status to determine if WLAN is connected or not.
 
     Args:
         None
     """
-    connected = False
     client_status = status(client)
     if client_status and client_status['state'] == 'ConnectionsEnabled':
         for index, network in enumerate(client_status['networks']):
             if network['state'] == 'Connected':
-                connected = True
-
-    return connected
+                if ssid:
+                    connected_ssid = ''.join(
+                        chr(i) for i in network['id']['ssid'])
+                    if ssid != connected_ssid:
+                        return False
+                return True
+    return False
 
 
 def disconnect(client):

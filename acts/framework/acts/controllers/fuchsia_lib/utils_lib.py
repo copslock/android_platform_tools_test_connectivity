@@ -84,7 +84,18 @@ def create_ssh_connection(ip_address,
                        pkey=ssh_key,
                        timeout=connect_timeout,
                        banner_timeout=200)
+    ssh_client.get_transport().set_keepalive(1)
     return ssh_client
+
+
+def ssh_is_connected(ssh_client):
+    """Checks to see if the SSH connection is alive.
+    Args:
+        ssh_client: A paramiko SSH client instance.
+    Returns:
+          True if connected, False or None if not connected.
+    """
+    return ssh_client and ssh_client.get_transport().is_active()
 
 
 def get_ssh_key_for_host(host, ssh_config_file):
@@ -124,12 +135,12 @@ class SshResults:
         stdin: The file descriptor to the input channel of the SSH connection.
         stdout: The file descriptor to the stdout of the SSH connection.
         stderr: The file descriptor to the stderr of the SSH connection.
-        exit_status: The exit status of the SSH command.
+        exit_status: The file descriptor of the SSH command.
     """
     def __init__(self, stdin, stdout, stderr, exit_status):
         self._stdout = stdout.read().decode('utf-8', errors='replace')
         self._stderr = stderr.read().decode('utf-8', errors='replace')
-        self._exit_status = exit_status
+        self._exit_status = exit_status.recv_exit_status()
 
     @property
     def stdout(self):

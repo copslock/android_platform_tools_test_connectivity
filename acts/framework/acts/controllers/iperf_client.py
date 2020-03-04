@@ -17,13 +17,14 @@
 import logging
 import os
 import subprocess
+import socket
 import threading
 
 from acts import context
-from acts import utils
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.iperf_server import _AndroidDeviceBridge
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
+from acts.controllers.fuchsia_lib.utils_lib import ssh_is_connected
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
@@ -32,7 +33,7 @@ from acts.event.decorators import subscribe_static
 from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.libs.proc import job
-
+from paramiko.buffered_pipe import PipeTimeout
 ACTS_CONTROLLER_CONFIG_NAME = 'IPerfClient'
 ACTS_CONTROLLER_REFERENCE_NAME = 'iperf_clients'
 
@@ -55,7 +56,9 @@ def create(configs):
     results = []
     for c in configs:
         if type(c) is dict and 'AndroidDevice' in c:
-            results.append(IPerfClientOverAdb(c['AndroidDevice']))
+            results.append(
+                IPerfClientOverAdb(c['AndroidDevice'],
+                                   test_interface=c.get('test_interface')))
         elif type(c) is dict and 'ssh_config' in c:
             results.append(
                 IPerfClientOverSsh(c['ssh_config'],
@@ -108,7 +111,7 @@ class IPerfClientBase(object):
                                     'iperf_client_files')
 
         with IPerfClientBase.__log_file_lock:
-            utils.create_dir(full_out_dir)
+            os.makedirs(full_out_dir, exist_ok=True)
             tags = ['IPerfClient', tag, IPerfClientBase.__log_file_counter]
             out_file_name = '%s.log' % (','.join(
                 [str(x) for x in tags if x != '' and x is not None]))
@@ -173,9 +176,9 @@ class IPerfClientOverSsh(IPerfClientBase):
         self._use_paramiko = use_paramiko
         if str(self._use_paramiko) == 'True':
             self._ssh_session = create_ssh_connection(
-                ip_address=ssh_config['host'],
-                ssh_username=ssh_config['user'],
-                ssh_config=ssh_config['ssh_config'])
+                ip_address=self._ssh_settings.hostname,
+                ssh_username=self._ssh_settings.username,
+                ssh_config=self._ssh_settings.ssh_config)
         else:
             self._ssh_session = connection.SshConnection(self._ssh_settings)
 
@@ -208,20 +211,32 @@ class IPerfClientOverSsh(IPerfClientBase):
 
         try:
             if self._use_paramiko:
+                if not ssh_is_connected(self._ssh_session):
+                    logging.info('Lost SSH connection to %s. Reconnecting.' %
+                                 self._ssh_settings.hostname)
+                    self._ssh_session.close()
+                    self._ssh_session = create_ssh_connection(
+                        ip_address=self._ssh_settings.hostname,
+                        ssh_username=self._ssh_settings.username,
+                        ssh_config=self._ssh_settings.ssh_config)
                 cmd_result_stdin, cmd_result_stdout, cmd_result_stderr = (
                     self._ssh_session.exec_command(iperf_cmd, timeout=timeout))
-                cmd_result_exit_status = (
-                    cmd_result_stdout.channel.recv_exit_status())
                 iperf_process = SshResults(cmd_result_stdin, cmd_result_stdout,
                                            cmd_result_stderr,
-                                           cmd_result_exit_status)
+                                           cmd_result_stdout.channel)
             else:
                 iperf_process = self._ssh_session.run(iperf_cmd,
                                                       timeout=timeout)
             iperf_output = iperf_process.stdout
             with open(full_out_path, 'w') as out_file:
                 out_file.write(iperf_output)
-        except Exception:
+        except PipeTimeout:
+            raise TimeoutError('Paramiko PipeTimeout. Timed out waiting for '
+                               'iperf client to finish.')
+        except socket.timeout:
+            raise TimeoutError('Socket timeout. Timed out waiting for iperf '
+                               'client to finish.')
+        except Exception as e:
             logging.exception('iperf run failed.')
 
         return full_out_path
@@ -229,7 +244,7 @@ class IPerfClientOverSsh(IPerfClientBase):
 
 class IPerfClientOverAdb(IPerfClientBase):
     """Class that handles iperf3 operations over ADB devices."""
-    def __init__(self, android_device_or_serial):
+    def __init__(self, android_device_or_serial, test_interface=None):
         """Creates a new IPerfClientOverAdb object.
 
         Args:
@@ -237,8 +252,11 @@ class IPerfClientOverAdb(IPerfClientBase):
                 serial that corresponds to the AndroidDevice. Note that the
                 serial must be present in an AndroidDevice entry in the ACTS
                 config.
+            test_interface: The network interface that will be used to send
+                traffic to the iperf server.
         """
         self._android_device_or_serial = android_device_or_serial
+        self.test_interface = test_interface
 
     @property
     def _android_device(self):

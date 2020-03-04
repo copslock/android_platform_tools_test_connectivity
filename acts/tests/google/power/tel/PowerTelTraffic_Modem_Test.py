@@ -19,17 +19,17 @@ import acts.test_utils.power.cellular.cellular_traffic_power_test as ctpt
 
 class PowerTelTraffic_Modem_Test(ctpt.PowerTelTrafficTest):
 
-    def test_lte_band_13_pul_0_bw_10_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+    def test_lte_band_13_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
         self.power_tel_traffic_test()
 
-    def test_lte_band_7_pul_0_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+    def test_lte_band_7_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
         self.power_tel_traffic_test()
 
-    def test_lte_band_38_pul_0_bw_20_tm_3_mimo_2x2_direction_dlul_tddconfig_1_phich_16_cfi_1_ssf_7(self):
+    def test_lte_band_38_pul_low_bw_20_tm_3_mimo_2x2_direction_dlul_tddconfig_1_phich_16_cfi_1_ssf_7(self):
         self.power_tel_traffic_test()
 
-    def test_lteca_band_3a4a_pul_0_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+    def test_lteca_band_3a4a_pul_low_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
         self.power_tel_traffic_test()
 
-    def test_lteca_band_3a7a20a_pul_0_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+    def test_lteca_band_3a7a20a_pul_low_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
         self.power_tel_traffic_test()

@@ -272,6 +272,7 @@ class _TelTables():
         '302490': tel_defines.CARRIER_FRE,
 
         #Telstra (Australia)
+        '52501': tel_defines.CARRIER_SING,
         '50501': tel_defines.CARRIER_TSA
     }
 

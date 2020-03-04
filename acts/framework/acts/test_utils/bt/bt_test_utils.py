@@ -1560,7 +1560,7 @@ def take_btsnoop_log(ad, testcase, testname):
     device_model = device_model.replace(" ", "")
     out_name = ','.join((testname, device_model, serial))
     snoop_path = os.path.join(ad.device_log_path, 'BluetoothSnoopLogs')
-    utils.create_dir(snoop_path)
+    os.makedirs(snoop_path, exist_ok=True)
     cmd = ''.join(("adb -s ", serial, " pull ", btsnoop_log_path_on_device,
                    " ", snoop_path + '/' + out_name, ".btsnoop_hci.log"))
     exe_cmd(cmd)

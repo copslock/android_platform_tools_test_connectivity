@@ -176,7 +176,6 @@ from acts.test_utils.wifi import wifi_test_utils
 from acts.test_utils.wifi import wifi_constants
 from acts.utils import adb_shell_ping
 from acts.utils import load_config
-from acts.utils import create_dir
 from acts.utils import start_standing_subprocess
 from acts.utils import stop_standing_subprocess
 from acts.logger import epoch_to_log_line_timestamp
@@ -3146,6 +3145,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
     # 1GB.zip, 512MB.zip, 200MB.zip, 50MB.zip, 20MB.zip, 10MB.zip, 5MB.zip
     # download file by adb command, as phone call will use sl4a
     file_size_map = {
+        '1MB': 1000000,
         '5MB': 5000000,
         '10MB': 10000000,
         '20MB': 20000000,
@@ -3155,6 +3155,9 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
         '512MB': 512000000
     }
     url_map = {
+        "1MB": [
+            "http://ipv4.download.thinkbroadband.com/1MB.zip"
+        ],
         "5MB": [
             "http://146.148.91.8/download/5MB.zip",
             "http://212.183.159.230/5MB.zip",
@@ -7411,7 +7414,7 @@ def get_tcpdump_log(ad, test_name="", begin_time=None):
         ad.log.info("Pulling tcpdumps %s", logs)
         log_path = os.path.join(
             ad.device_log_path, "TCPDUMP_%s_%s" % (ad.model, ad.serial))
-        utils.create_dir(log_path)
+        os.makedirs(log_path, exist_ok=True)
         ad.pull_files(logs, log_path)
         shutil.make_archive(log_path, "zip", log_path)
         shutil.rmtree(log_path)
@@ -7992,7 +7995,7 @@ def power_on_sim(ad, sim_slot_id=None):
 
 
 def extract_test_log(log, src_file, dst_file, test_tag):
-    utils.create_dir(os.path.dirname(dst_file))
+    os.makedirs(os.path.dirname(dst_file), exist_ok=True)
     cmd = "grep -n '%s' %s" % (test_tag, src_file)
     result = job.run(cmd, ignore_status=True)
     if not result.stdout or result.exit_status == 1:
@@ -8115,7 +8118,7 @@ def get_screen_shot_log(ad, test_name="", begin_time=None):
     if logs:
         ad.log.info("Pulling %s", logs)
         log_path = os.path.join(ad.device_log_path, "Screenshot_%s" % ad.serial)
-        utils.create_dir(log_path)
+        os.makedirs(log_path, exist_ok=True)
         ad.pull_files(logs, log_path)
     ad.adb.shell("rm -rf /sdcard/Pictures/screencap_*", ignore_status=True)
 
@@ -8353,7 +8356,7 @@ def cleanup_configupdater(ad):
 
 
 def pull_carrier_id_files(ad, carrier_id_path):
-    utils.create_dir(carrier_id_path)
+    os.makedirs(carrier_id_path, exist_ok=True)
     ad.log.info("Pull CarrierId Files")
     cmds = ('/data/data/com.google.android.configupdater/shared_prefs/',
             '/data/misc/carrierid/',

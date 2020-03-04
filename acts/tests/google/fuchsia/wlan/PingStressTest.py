@@ -50,38 +50,43 @@ class PingStressTest(BaseTestClass):
         self.fd = self.fuchsia_devices[0]
         self.wlan_device = create_wlan_device(self.fd)
         self.ap = self.access_points[0]
-        setup_ap_and_associate(
-            access_point=self.ap,
-            client=self.wlan_device,
-            profile_name='whirlwind',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap_and_associate(access_point=self.ap,
+                               client=self.wlan_device,
+                               profile_name='whirlwind',
+                               channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                               ssid=self.ssid)
 
     def teardown_test(self):
         self.wlan_device.disconnect()
         self.wlan_device.reset_wifi()
         self.ap.stop_all_aps()
 
-    def send_ping(self, dest_ip, count=3, interval=1000, timeout=1000,
+    def send_ping(self,
+                  dest_ip,
+                  count=3,
+                  interval=1000,
+                  timeout=1000,
                   size=25):
-        ping_result = self.wlan_device.ping(dest_ip, count, interval, timeout, size)
-        if ping_result['status']:
+        ping_result = self.wlan_device.ping(dest_ip, count, interval, timeout,
+                                            size)
+        if ping_result:
             self.log.info('Ping was successful.')
         else:
             if '8.8' in dest_ip:
-                raise signals.TestFailure('Ping was unsuccessful. Consider possibility of server failure.')
+                raise signals.TestFailure('Ping was unsuccessful. Consider '
+                                          'possibility of server failure.')
             else:
                 raise signals.TestFailure('Ping was unsuccessful.')
         return True
 
     def ping_thread(self, dest_ip):
         ping_result = self.wlan_device.ping(dest_ip, count=10, size=50)
-        if ping_result['status']:
+        if ping_result:
             self.log.info('Success pinging: %s' % dest_ip)
         else:
             self.log.info('Failure pinging: %s' % dest_ip)
 
-        self.ping_threads_result.append(ping_result['status'])
+        self.ping_threads_result.append(ping_result)
 
     def test_simple_ping(self):
         return self.send_ping(self.google_dns_1)
@@ -93,8 +98,10 @@ class PingStressTest(BaseTestClass):
         return self.send_ping(self.ap.ssh_settings.hostname)
 
     def test_ping_with_params(self):
-        return self.send_ping(
-            self.google_dns_1, count=5, interval=800, size=50)
+        return self.send_ping(self.google_dns_1,
+                              count=5,
+                              interval=800,
+                              size=50)
 
     def test_long_ping(self):
         return self.send_ping(self.google_dns_1, count=50)
@@ -103,15 +110,19 @@ class PingStressTest(BaseTestClass):
         return self.send_ping(self.google_dns_1, size=64)
 
     def test_medium_packet_long_ping(self):
-        return self.send_ping(
-            self.google_dns_1, count=50, timeout=1500, size=64)
+        return self.send_ping(self.google_dns_1,
+                              count=50,
+                              timeout=1500,
+                              size=64)
 
     def test_large_packet_ping(self):
         return self.send_ping(self.google_dns_1, size=500)
 
     def test_large_packet_long_ping(self):
-        return self.send_ping(
-            self.google_dns_1, count=50, timeout=5000, size=500)
+        return self.send_ping(self.google_dns_1,
+                              count=50,
+                              timeout=5000,
+                              size=500)
 
     def test_simultaneous_pings(self):
         ping_urls = [
@@ -146,7 +157,7 @@ class PingStressTest(BaseTestClass):
         for index in range(0, len(self.ping_threads_result)):
             if not self.ping_threads_result[index]:
                 self.log.info("Ping failed for %d" % index)
-                raise signals.TestFailure('Thread %d failed to ping. Consider possibility of server failure' % index)
-                return False
-
+                raise signals.TestFailure('Thread %d failed to ping. '
+                                          'Consider possibility of server '
+                                          'failure' % index)
         return True

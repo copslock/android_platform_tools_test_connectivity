@@ -79,39 +79,11 @@ CORRECT_COMPLEX_RADVD_CONFIG = ("""interface wlan0 {
 };""".replace("    ", "\t"))
 
 CORRECT_SIMPLE_RADVD_CONFIG = ("""interface wlan0 {
-    IgnoreIfMissing None;
     AdvSendAdvert on;
-    UnicastOnly None;
-    MaxRtrAdvInterval None;
-    MinRtrAdvInterval None;
-    MinDelayBetweenRAs None;
-    AdvManagedFlag None;
-    AdvOtherConfigFlag None;
-    AdvLinkMTU None;
-    AdvReachableTime None;
-    AdvRetransTimer None;
-    AdvCurHopLimit None;
-    AdvDefaultLifetime None;
-    AdvDefaultPreference None;
-    AdvSourceLLAddress None;
-    AdvHomeAgentFlag None;
-    AdvHomeAgentInfo None;
-    HomeAgentLifetime None;
-    HomeAgentPreference None;
-    AdvMobRtrSupportFlag None;
-    AdvIntervalOpt None;
     prefix fd00::/64
     {
         AdvOnLink on;
         AdvAutonomous on;
-        AdvRouterAddr None;
-        AdvValidLifetime None;
-        AdvPreferredLifetime None;
-        Base6to4Interface None;
-    };
-    route None {
-        AdvRouteLifetime None;
-        AdvRoutePreference None;
     };
 };""".replace("    ", "\t"))
 
@@ -196,7 +168,6 @@ class RadvdTest(unittest.TestCase):
         radvd_mock = Radvd('mock_runner', 'wlan0')
         radvd_mock._write_configs(basic_radvd_config)
         radvd_config = radvd_mock._config_file
-
         with open(radvd_config, 'r') as radvd_config_fileId:
             config_data = radvd_config_fileId.read()
             self.assertTrue(CORRECT_SIMPLE_RADVD_CONFIG == config_data)

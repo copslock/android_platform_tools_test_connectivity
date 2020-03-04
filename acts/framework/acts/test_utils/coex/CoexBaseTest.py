@@ -40,7 +40,6 @@ from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
 from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
-from acts.utils import create_dir
 
 AVRCP_WAIT_TIME = 3
 
@@ -117,7 +116,7 @@ class CoexBaseTest(BaseTestClass):
         self.a2dp_dumpsys = A2dpDumpsysParser()
         self.log_path = os.path.join(self.pri_ad.log_path,
                 self.current_test_name)
-        create_dir(self.log_path)
+        os.makedirs(self.log_path, exist_ok=True)
         self.json_file = os.path.join(self.log_path, 'test_results.json')
         for a in self.android_devices:
             a.ed.clear_all_events()

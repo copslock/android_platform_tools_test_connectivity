@@ -17,7 +17,6 @@ import logging
 
 from acts.controllers import adb
 from acts import asserts
-from acts import utils
 from acts.controllers.adb import AdbError
 from acts.logger import epoch_to_log_line_timestamp
 from acts.utils import get_current_epoch_time
@@ -29,6 +28,7 @@ from acts.test_utils.tel.tel_test_utils import get_operator_name
 from acts.test_utils.tel.tel_data_utils import wait_for_cell_data_connection
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.test_utils.wifi import wifi_test_utils as wutils
+from scapy.all import get_if_list
 
 import os
 import re
@@ -39,6 +39,9 @@ VPN_CONST = cconst.VpnProfile
 VPN_TYPE = cconst.VpnProfileType
 VPN_PARAMS = cconst.VpnReqParams
 TCPDUMP_PATH = "/data/local/tmp/"
+USB_CHARGE_MODE = "svc usb setFunctions"
+USB_TETHERING_MODE = "svc usb setFunctions rndis"
+DEVICE_IP_ADDRESS = "ip address"
 
 
 def verify_lte_data_and_tethering_supported(ad):
@@ -280,7 +283,7 @@ def stop_tcpdump(ad,
     except Exception as e:
         ad.log.warning(e)
     log_path = os.path.join(ad.log_path, test_name)
-    utils.create_dir(log_path)
+    os.makedirs(log_path, exist_ok=True)
     ad.adb.pull("%s/. %s" % (TCPDUMP_PATH, log_path), timeout=adb_pull_timeout)
     ad.adb.shell("rm -rf %s/*" % TCPDUMP_PATH, ignore_status=True)
     file_name = "tcpdump_%s_%s.pcap" % (ad.serial, test_name)
@@ -327,3 +330,53 @@ def supports_ipv6_tethering(self, dut):
     carrier_supports_tethering = ["vzw", "tmo", "Far EasTone", "Chunghwa Telecom"]
     operator = get_operator_name(self.log, dut)
     return operator in carrier_supports_tethering
+
+
+def start_usb_tethering(ad):
+    """Start USB tethering.
+
+    Args:
+        ad: android device object
+    """
+    # TODO: test USB tethering by #startTethering API - b/149116235
+    ad.log.info("Starting USB Tethering")
+    ad.stop_services()
+    ad.adb.shell(USB_TETHERING_MODE, ignore_status=True)
+    ad.adb.wait_for_device()
+    ad.start_services()
+    if "rndis" not in ad.adb.shell(DEVICE_IP_ADDRESS):
+        raise signals.TestFailure("Unable to enable USB tethering.")
+
+
+def stop_usb_tethering(ad):
+    """Stop USB tethering.
+
+    Args:
+        ad: android device object
+    """
+    ad.log.info("Stopping USB Tethering")
+    ad.stop_services()
+    ad.adb.shell(USB_CHARGE_MODE)
+    ad.adb.wait_for_device()
+    ad.start_services()
+
+
+def wait_for_new_iface(old_ifaces):
+    """Wait for the new interface to come up.
+
+    Args:
+        old_ifaces: list of old interfaces
+    """
+    old_set = set(old_ifaces)
+    # Try 10 times to find a new interface with a 1s sleep every time
+    # (equivalent to a 9s timeout)
+    for i in range(0, 10):
+        new_ifaces = set(get_if_list()) - old_set
+        asserts.assert_true(len(new_ifaces) < 2,
+                            "Too many new interfaces after turning on "
+                            "tethering")
+        if len(new_ifaces) == 1:
+            return new_ifaces.pop()
+        time.sleep(1)
+    asserts.fail("Timeout waiting for tethering interface on host")
+

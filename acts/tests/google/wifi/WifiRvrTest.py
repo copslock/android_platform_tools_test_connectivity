@@ -81,7 +81,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, 'results')
-        utils.create_dir(self.log_path)
+        os.makedirs(self.log_path, exist_ok=True)
         if not hasattr(self, 'golden_files_list'):
             self.golden_files_list = [
                 os.path.join(self.testbed_params['golden_results_path'], file)
@@ -151,8 +151,7 @@ class WifiRvrTest(base_test.BaseTestClass):
         config file.
 
         Args:
-            rvr_result: dict containing attenuation, throughput and other meta
-            data
+            rvr_result: dict containing attenuation, throughput and other data
         """
         try:
             throughput_limits = self.compute_throughput_limits(rvr_result)
@@ -365,8 +364,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         llstats = []
         rssi = []
         for atten in testcase_params['atten_range']:
-            if not wputils.health_check(self.dut, 5, 50):
-                asserts.skip('Battery low or DUT overheating. Skipping test.')
+            for dev in self.android_devices:
+                if not wputils.health_check(dev, 5, 50):
+                    asserts.skip('DUT health check failed. Skipping test.')
             # Set Attenuation
             for attenuator in self.attenuators:
                 attenuator.set_atten(atten, strict=False)
@@ -516,9 +516,10 @@ class WifiRvrTest(base_test.BaseTestClass):
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
         # Wait before running the first wifi test
-        if len(self.testclass_results) == 0:
+        first_test_delay = self.testclass_params.get('first_test_delay', 600)
+        if first_test_delay > 0 and len(self.testclass_results) == 0:
             self.log.info('Waiting before the first RvR test.')
-            time.sleep(600)
+            time.sleep(first_test_delay)
             self.setup_dut(testcase_params)
         # Get iperf_server address
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):

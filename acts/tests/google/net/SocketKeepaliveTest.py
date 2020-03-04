@@ -68,7 +68,7 @@ class SocketKeepaliveTest(base_test.BaseTestClass):
     def setup_class(self):
         """Setup devices for tests and unpack params."""
 
-        self.dut = self.android_devices[0]
+        self.dut = self.android_devices[1]
         # remote_server_2 is the host machine to test OnDataCallback and Error
         # callbacks. The server program sends data to the DUT while keepalive
         # is enabled. It also closes the server socket to verify Error callback
@@ -567,8 +567,6 @@ class SocketKeepaliveTest(base_test.BaseTestClass):
                                                  end_time,
                                                  expected_ka_count)
             asserts.assert_true(result, "Keepalive verification failed")
-        asserts.assert_true(total_dropped_acks == dropped_acks,
-                            "Dropped acks doesn't match dumpsys network_stack")
 
     @test_tracker_info(uuid="64374896-7a04-4a5b-b27c-e27b5f0e7159")
     def test_tcp_socket_keepalive_start_stop_stress_wifi(self):
@@ -640,9 +638,6 @@ class SocketKeepaliveTest(base_test.BaseTestClass):
                                                      end_time,
                                                      expected_ka_count)
                 asserts.assert_true(result, "Keepalive verification failed")
-            asserts.assert_true(
-                total_dropped_acks == dropped_acks,
-                "Dropped acks doesn't match in dumpsys network_stack")
 
             interval_list = []
 

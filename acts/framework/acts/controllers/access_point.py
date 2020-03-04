@@ -19,6 +19,7 @@ import ipaddress
 import os
 
 from acts import logger
+from acts import utils
 from acts.controllers.ap_lib import ap_get_interface
 from acts.controllers.ap_lib import ap_iwconfig
 from acts.controllers.ap_lib import bridge_interface
@@ -148,11 +149,11 @@ class AccessPoint(object):
         self.wlan_2g = self.wlan[0]
         self.wlan_5g = self.wlan[1]
         self.lan = self.interfaces.get_lan_interface()
-        self.__initial_ap()
+        self._initial_ap()
         self.scapy_install_path = None
         self.setup_bridge = False
 
-    def __initial_ap(self):
+    def _initial_ap(self):
         """Initial AP interfaces.
 
         Bring down hostapd if instance is running, bring down all bridge
@@ -163,8 +164,11 @@ class AccessPoint(object):
         # interfaces need to be brought down as part of the AP initialization
         # process, otherwise test would fail.
         try:
-            self.ssh.run('stop wpasupplicant')
-            self.ssh.run('stop hostapd')
+            self.ssh.run('killall wpasupplicant')
+        except job.Error:
+            self.log.debug('No wpasupplicant running')
+        try:
+            self.ssh.run('killall hostapd')
         except job.Error:
             self.log.debug('No hostapd running')
         # Bring down all wireless interfaces
@@ -446,14 +450,7 @@ class AccessPoint(object):
         self.stop_dhcp()
         self._ip_cmd.clear_ipv4_addresses(identifier)
 
-        # DHCP server needs to refresh in order to tear down the subnet no
-        # longer being used. In the event that all interfaces are torn down
-        # then an exception gets thrown. We need to catch this exception and
-        # check that all interfaces should actually be down.
-        configured_subnets = [x.subnet for x in self._aps.values()]
         del self._aps[identifier]
-        if configured_subnets:
-            self.start_dhcp(subnets=configured_subnets)
         bridge_interfaces = self.interfaces.get_bridge_interface()
         if bridge_interfaces:
             for iface in bridge_interfaces:
@@ -570,3 +567,23 @@ class AccessPoint(object):
                                     PROC_NET_SNMP6).stdout
         if ra_count_str:
             return int(ra_count_str.split()[1])
+
+    def is_pingable(self):
+        """Attempts to ping the access point.
+
+        Returns:
+            True if ping is successful, else False
+        """
+        return utils.is_pingable(self.ssh_settings.hostname)
+
+    def is_sshable(self):
+        """Attempts to run command via ssh.
+
+        Returns:
+            True if no exceptions, else False
+        """
+        try:
+            self.ssh.run('echo')
+        except connection.Error:
+            return False
+        return True
