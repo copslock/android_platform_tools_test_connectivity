@@ -59,6 +59,9 @@ class PowerMetricLogger(MetricLogger):
     def set_build_id(self, build_id):
         self.proto.build_id = build_id
 
+    def set_incremental_build_id(self, incremental_build_id):
+        self.proto.incremental_build_id = incremental_build_id
+
     def set_target(self, target):
         self.proto.target = target
 
