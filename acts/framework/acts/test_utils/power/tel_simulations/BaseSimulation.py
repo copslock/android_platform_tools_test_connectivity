@@ -226,11 +226,10 @@ class BaseSimulation():
                 self.log.info(
                     "UE failed to attach on attempt number {}.".format(i + 1))
 
-                # Turn airplane mode on to prepare the phone for a retry.
+                # Turn airplane mode on and reboot to prepare the phone for a
+                # retry.
                 toggle_airplane_mode(self.log, self.dut, True)
-
-                # Wait for APM to propagate
-                time.sleep(3)
+                self.dut.reboot()
 
                 # Retry
                 if i < self.attach_retries - 1:
