@@ -372,6 +372,7 @@ def get_cbrs_and_default_sub_id(ad):
         cbrs_subId
         default_subId
     """
+    cbrs_subid, default_subid = None, None
     slot_dict = {0: {}, 1: {}}
     for slot in (0, 1):
         slot_dict[slot]['sub_id'] = get_subid_from_slot_index(
@@ -388,4 +389,6 @@ def get_cbrs_and_default_sub_id(ad):
                     slot_dict[slot]['sub_id'],
                     slot_dict[slot]['carrier_id'],
                     slot_dict[slot]['operator'])
+        if not cbrs_subid:
+            ad.log.error("CBRS sub_id is not ACTIVE")
     return cbrs_subid, default_subid
