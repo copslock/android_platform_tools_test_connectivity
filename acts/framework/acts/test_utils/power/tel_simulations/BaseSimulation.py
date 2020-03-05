@@ -40,8 +40,10 @@ class BaseSimulation():
     MAX_PHONE_OUTPUT_POWER = 23
     UL_MIN_POWER = -60.0
 
-    # Key to read the calibration setting from the test_config dictionary.
+    # Keys to obtain settings from the test_config dictionary.
     KEY_CALIBRATION = "calibration"
+    KEY_ATTACH_RETRIES = "attach_retries"
+    KEY_ATTACH_TIMEOUT = "attach_timeout"
 
     # Filepath to the config files stored in the Anritsu callbox. Needs to be
     # formatted to replace {} with either A or B depending on the model.
@@ -51,12 +53,14 @@ class BaseSimulation():
     # after attaching to the base station.
     SETTLING_TIME = 10
 
-    # Time in seconds to wait for the phone to attach
-    # to the basestation after toggling airplane mode.
-    ATTACH_WAITING_TIME = 120
+    # Default time in seconds to wait for the phone to attach to the basestation
+    # after toggling airplane mode. This setting can be changed with the
+    # KEY_ATTACH_TIMEOUT keyword in the test configuration file.
+    DEFAULT_ATTACH_TIMEOUT = 120
 
-    # Max retries before giving up attaching the phone
-    ATTACH_MAX_RETRIES = 3
+    # The default number of attach retries. This setting can be changed with
+    # the KEY_ATTACH_RETRIES keyword in the test configuration file.
+    DEFAULT_ATTACH_RETRIES = 3
 
     # These two dictionaries allow to map from a string to a signal level and
     # have to be overriden by the simulations inheriting from this class.
@@ -116,14 +120,34 @@ class BaseSimulation():
         # Turn calibration on or off depending on the test config value. If the
         # key is not present, set to False by default
         if self.KEY_CALIBRATION not in test_config:
-            self.log.warning("The '{} 'key is not set in the testbed "
-                             "parameters. Setting to off by default. To "
-                             "turn calibration on, include the key with "
-                             "a true/false value.".format(
+            self.log.warning('The {} key is not set in the testbed '
+                             'parameters. Setting to off by default. To '
+                             'turn calibration on, include the key with '
+                             'a true/false value.'.format(
                                  self.KEY_CALIBRATION))
 
         self.calibration_required = test_config.get(self.KEY_CALIBRATION,
                                                     False)
+
+        # Obtain the allowed number of retries from the test configs
+        if self.KEY_ATTACH_RETRIES not in test_config:
+            self.log.warning('The {} key is not set in the testbed '
+                             'parameters. Setting to {} by default.'.format(
+                                 self.KEY_ATTACH_RETRIES,
+                                 self.DEFAULT_ATTACH_RETRIES))
+
+        self.attach_retries = test_config.get(self.KEY_ATTACH_RETRIES,
+                                              self.DEFAULT_ATTACH_RETRIES)
+
+        # Obtain the attach timeout from the test configs
+        if self.KEY_ATTACH_TIMEOUT not in test_config:
+            self.log.warning('The {} key is not set in the testbed '
+                             'parameters. Setting to {} by default.'.format(
+                                 self.KEY_ATTACH_TIMEOUT,
+                                 self.DEFAULT_ATTACH_TIMEOUT))
+
+        self.attach_timeout = test_config.get(self.KEY_ATTACH_TIMEOUT,
+                                              self.DEFAULT_ATTACH_TIMEOUT)
 
         # Configuration object for the primary base station
         self.primary_config = self.BtsConfig()
@@ -186,7 +210,7 @@ class BaseSimulation():
         self.primary_config.incorporate(new_config)
 
         # Try to attach the phone.
-        for i in range(self.ATTACH_MAX_RETRIES):
+        for i in range(self.attach_retries):
 
             try:
 
@@ -194,8 +218,7 @@ class BaseSimulation():
                 toggle_airplane_mode(self.log, self.dut, False)
 
                 # Wait for the phone to attach.
-                self.simulator.wait_until_attached(
-                    timeout=self.ATTACH_WAITING_TIME)
+                self.simulator.wait_until_attached(timeout=self.attach_timeout)
 
             except cellular_simulator.CellularSimulatorError:
 
@@ -210,7 +233,7 @@ class BaseSimulation():
                 time.sleep(3)
 
                 # Retry
-                if i < self.ATTACH_MAX_RETRIES - 1:
+                if i < self.attach_retries - 1:
                     # Retry
                     continue
                 else:
