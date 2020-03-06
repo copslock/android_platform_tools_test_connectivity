@@ -159,7 +159,7 @@ class LocationPlatinumTest(BaseTestClass):
         gutils.set_mobile_data(self.ad, False)
         asserts.assert_true(
             gutils.check_network_location(
-                self.ad, 1, 'networkLocationType=wifi', self.nlp_criteria),
+                self.ad, 1, 'wifi', self.nlp_criteria),
             'Fail to get NLP from wifi')
 
     def test_nlp_available_by_cell(self):
@@ -171,7 +171,7 @@ class LocationPlatinumTest(BaseTestClass):
         wutils.wifi_toggle_state(self.ad, False)
         asserts.assert_true(
             gutils.check_network_location(
-                self.ad, 1, 'networkLocationType=cell', self.nlp_criteria),
+                self.ad, 1, 'cell', self.nlp_criteria),
             'Fail to get NLP from cell')
 
     def test_toggle_location_setting_off_on_report_location(self):

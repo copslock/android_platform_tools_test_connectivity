@@ -95,7 +95,7 @@ def enable_gnss_verbose_logging(ad):
     """
     remount_device(ad)
     ad.log.info("Enable GNSS VERBOSE Logging and persistent logcat.")
-    ad.adb.shell("echo DEBUG_LEVEL = 5 >> /vendor/etc/gps.conf")
+    ad.adb.shell("echo -e '\nDEBUG_LEVEL = 5' >> /vendor/etc/gps.conf")
     ad.adb.shell("echo %r >> /data/local.prop" % LOCAL_PROP_FILE_CONTENTS)
     ad.adb.shell("chmod 644 /data/local.prop")
     ad.adb.shell("setprop persist.logd.logpersistd.size 20000")
@@ -155,8 +155,8 @@ def disable_xtra_throttle(ad):
     """
     remount_device(ad)
     ad.log.info("Disable XTRA Throttle.")
-    ad.adb.shell("echo XTRA_TEST_ENABLED=1 >> /vendor/etc/gps.conf")
-    ad.adb.shell("echo XTRA_THROTTLE_ENABLED=0 >> /vendor/etc/gps.conf")
+    ad.adb.shell("echo -e '\nXTRA_TEST_ENABLED=1' >> /vendor/etc/gps.conf")
+    ad.adb.shell("echo -e '\nXTRA_THROTTLE_ENABLED=0' >> /vendor/etc/gps.conf")
 
 
 def enable_supl_mode(ad):
@@ -167,7 +167,7 @@ def enable_supl_mode(ad):
     """
     remount_device(ad)
     ad.log.info("Enable SUPL mode.")
-    ad.adb.shell("echo SUPL_MODE=1 >> /etc/gps_debug.conf")
+    ad.adb.shell("echo -e '\nSUPL_MODE=1' >> /etc/gps_debug.conf")
 
 
 def disable_supl_mode(ad):
@@ -178,7 +178,7 @@ def disable_supl_mode(ad):
     """
     remount_device(ad)
     ad.log.info("Disable SUPL mode.")
-    ad.adb.shell("echo SUPL_MODE=0 >> /etc/gps_debug.conf")
+    ad.adb.shell("echo -e '\nSUPL_MODE=0' >> /etc/gps_debug.conf")
     reboot(ad)
 
 
@@ -1028,7 +1028,7 @@ def check_network_location(ad, retries, location_type, criteria=30):
     Args:
         ad: An AndroidDevice object.
         retries: Retry time.
-        location_type: neworkLocationType of cell or wifi.
+        location_type: cell or wifi.
         criteria: expected nlp return time, default 30 seconds
 
     Returns:
@@ -1036,22 +1036,20 @@ def check_network_location(ad, retries, location_type, criteria=30):
         otherwise return False.
     """
     criteria = criteria * 1000
+    search_pattern = ("GPSTool : networkLocationType = %s" % location_type)
     for i in range(retries):
-        time.sleep(1)
         begin_time = get_current_epoch_time()
         ad.log.info("Try to get NLP status - attempt %d" % (i+1))
         ad.adb.shell(
             "am start -S -n com.android.gpstool/.GPSTool --es mode nlp")
         while get_current_epoch_time() - begin_time <= criteria:
-            logcat_results = ad.search_logcat("LocationManagerService: "
-                                              "incoming location: Location",
-                                              begin_time)
-            if logcat_results:
-                for logcat_result in logcat_results:
-                    if location_type in logcat_result["log_message"]:
-                        ad.log.info(logcat_result["log_message"])
-                        ad.send_keycode("BACK")
-                        return True
+            # Search pattern in 1 second interval
+            time.sleep(1)
+            result = ad.search_logcat(search_pattern, begin_time)
+            if result:
+                ad.log.info("Pattern Found: %s." % result[-1]["log_message"])
+                ad.send_keycode("BACK")
+                return True
         if not ad.is_adb_logcat_on:
             ad.start_adb_logcat()
         ad.send_keycode("BACK")
