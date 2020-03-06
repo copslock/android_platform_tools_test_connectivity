@@ -476,19 +476,11 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                 new_configs[bts_index].dl_mcs = mcs_dl
                 new_configs[bts_index].ul_mcs = mcs_ul
 
-        # Enable the configured base stations for CA
-        for bts_config in new_configs:
-            bts_config.dl_cc_enabled = True
-
         # Setup the base stations with the obtained configurations and then save
         # these parameters in the current configuration objects
         for bts_index in range(len(new_configs)):
             self.simulator.configure_bts(new_configs[bts_index], bts_index)
             self.bts_configs[bts_index].incorporate(new_configs[bts_index])
-
-        # Trigger UE capability enquiry from network to get
-        # UE supported CA band combinations. Here freq_bands is a hex string.
-        self.anritsu.trigger_ue_capability_enquiry(self.freq_bands)
 
         # Now that the band is set, calibrate the link for the PCC if necessary
         self.load_pathloss_if_required()
@@ -520,4 +512,4 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                 self.simulator.configure_bts(new_config, bts_index)
                 self.bts_configs[bts_index].incorporate(new_config)
 
-        self.simulator.lte_attach_secondary_carriers()
+        self.simulator.lte_attach_secondary_carriers(self.freq_bands)
