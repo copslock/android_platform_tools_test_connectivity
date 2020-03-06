@@ -27,5 +27,5 @@ class PowerTelPdcch_Modem_Test(cppt.PowerTelPDCCHTest):
     def test_lte_band_4_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
         self.power_pdcch_test()
 
-    def test_lte_band_40_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+    def test_lte_band_40_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1_tddconfig_2(self):
         self.power_pdcch_test()
