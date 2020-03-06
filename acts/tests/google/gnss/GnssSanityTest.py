@@ -328,7 +328,7 @@ class GnssSanityTest(BaseTestClass):
         set_wifi_and_bt_scanning(self.ad, False)
         for i in range(1, 6):
             test_result = check_network_location(
-                self.ad, retries=3, location_type="networkLocationType=cell")
+                self.ad, retries=3, location_type="cell")
             test_result_all.append(test_result)
             self.ad.log.info("Iteraion %d => %s" % (i, test_result))
         set_wifi_and_bt_scanning(self.ad, True)
@@ -354,7 +354,7 @@ class GnssSanityTest(BaseTestClass):
         set_wifi_and_bt_scanning(self.ad, True)
         for i in range(1, 6):
             test_result = check_network_location(
-                self.ad, retries=3, location_type="networkLocationType=wifi")
+                self.ad, retries=3, location_type="wifi")
             test_result_all.append(test_result)
             self.ad.log.info("Iteraion %d => %s" % (i, test_result))
         asserts.assert_true(all(test_result_all),
