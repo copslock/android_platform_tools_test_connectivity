@@ -412,9 +412,10 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         attached to the primary carrier first. """
 
         testcase = self.anritsu.get_AnritsuTestCases()
-        # Setting the procedure to selection is needed because of a bug in the
-        # instrument's software (b/139547391).
-        testcase.procedure = md8475a.TestProcedure.PROCEDURE_SELECTION
+        # A bug in the instrument's software (b/139547391) requires the test
+        # procedure to be set to whatever was the previous configuration before
+        # setting it to MULTICELL.
+        testcase.procedure = md8475a.TestProcedure(testcase.procedure)
         testcase.procedure = md8475a.TestProcedure.PROCEDURE_MULTICELL
         testcase.power_control = md8475a.TestPowerControl.POWER_CONTROL_DISABLE
         testcase.measurement_LTE = md8475a.TestMeasurement.MEASUREMENT_DISABLE
