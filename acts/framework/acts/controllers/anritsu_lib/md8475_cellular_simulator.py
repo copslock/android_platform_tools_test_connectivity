@@ -148,15 +148,6 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         time.sleep(8)
         self.bts[bts_index].dl_channel = str(channel_number)
 
-    def set_enabled_for_ca(self, bts_index, enabled):
-        """ Enables or disables the base station during carrier aggregation.
-
-        Args:
-            bts_index: the base station number
-            enabled: whether the base station should be enabled for ca.
-        """
-        self.bts[bts_index].dl_cc_enabled = enabled
-
     def set_dl_modulation(self, bts_index, modulation):
         """ Sets the DL modulation for the indicated base station.
 
@@ -407,9 +398,18 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
 
         time.sleep(5)  # It takes some time to propagate the new settings
 
-    def lte_attach_secondary_carriers(self):
+    def lte_attach_secondary_carriers(self, ue_capability_enquiry):
         """ Activates the secondary carriers for CA. Requires the DUT to be
-        attached to the primary carrier first. """
+        attached to the primary carrier first.
+
+        Args:
+            ue_capability_enquiry: UE capability enquiry message to be sent to
+        the UE before starting carrier aggregation.
+        """
+
+        # Trigger UE capability enquiry from network to get
+        # UE supported CA band combinations. Here freq_bands is a hex string.
+        self.anritsu.trigger_ue_capability_enquiry(ue_capability_enquiry)
 
         testcase = self.anritsu.get_AnritsuTestCases()
         # A bug in the instrument's software (b/139547391) requires the test
@@ -419,6 +419,10 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         testcase.procedure = md8475a.TestProcedure.PROCEDURE_MULTICELL
         testcase.power_control = md8475a.TestPowerControl.POWER_CONTROL_DISABLE
         testcase.measurement_LTE = md8475a.TestMeasurement.MEASUREMENT_DISABLE
+
+        # Enable the secondary carrier base stations for CA
+        for bts_index in range(1, len(self.bts)):
+            self.bts[bts_index].dl_cc_enabled = True
 
         self.anritsu.start_testcase()
 

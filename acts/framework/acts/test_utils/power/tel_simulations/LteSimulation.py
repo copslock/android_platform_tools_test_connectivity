@@ -429,7 +429,6 @@ class LteSimulation(BaseSimulation):
             self.ul_modulation_order = None
             self.tbs_pattern_on = None
             self.dl_channel = None
-            self.dl_cc_enabled = None
             self.cfi = None
             self.paging_cycle = None
             self.phich = None
