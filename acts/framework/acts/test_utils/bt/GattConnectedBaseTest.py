@@ -45,8 +45,8 @@ class GattConnectedBaseTest(BluetoothBaseTest):
     WRITABLE_DESC_UUID = "76d5ed92-ca81-4edb-bb6b-9f019665fb32"
     NOTIFIABLE_CHAR_UUID = "b2c83efa-34ca-11e6-ac61-9e71128cae77"
 
-    def __init__(self, controllers):
-        BluetoothBaseTest.__init__(self, controllers)
+    def setup_class(self):
+        super().setup_class()
         self.cen_ad = self.android_devices[0]
         self.per_ad = self.android_devices[1]
 
