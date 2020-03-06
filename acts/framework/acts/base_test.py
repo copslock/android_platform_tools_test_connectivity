@@ -317,9 +317,6 @@ class BaseTestClass(MoblyBaseTest):
             controller_info = controller_module.get_info(controllers)
             self.log.info("Controller %s: %s", module_config_name,
                           controller_info)
-        else:
-            self.log.warning("No controller info obtained for %s",
-                             module_config_name)
 
         if builtin:
             setattr(self, module_ref_name, controllers)
