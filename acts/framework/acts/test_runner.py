@@ -163,7 +163,8 @@ class TestRunner(object):
                 with utils.SuppressLogOutput(
                         log_levels=[logging.INFO, logging.ERROR]):
                     module = importlib.import_module(name)
-            except:
+            except Exception as e:
+                logging.debug('Failed to import %s: %s', path, str(e))
                 for test_cls_name, _ in self.run_list:
                     alt_name = name.replace('_', '').lower()
                     alt_cls_name = test_cls_name.lower()
