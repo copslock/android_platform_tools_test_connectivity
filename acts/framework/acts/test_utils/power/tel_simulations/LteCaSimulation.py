@@ -14,9 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import re
-from acts.controllers.anritsu_lib.md8475a import BtsNumber
-from acts.controllers.anritsu_lib.md8475a import BtsTechnology
-from acts.controllers.anritsu_lib.md8475a import LteMimoMode
 from acts.test_utils.power.tel_simulations import LteSimulation
 
 
@@ -91,19 +88,6 @@ class LteCaSimulation(LteSimulation.LteSimulation):
 
         super().__init__(simulator, log, dut, test_config, calibration_table)
 
-        self.anritsu = simulator.anritsu
-
-        self.bts = [
-            self.anritsu.get_BTS(BtsNumber.BTS1),
-            self.anritsu.get_BTS(BtsNumber.BTS2)
-        ]
-
-        if self.anritsu._md8475_version == 'B':
-            self.bts.extend([
-                self.anritsu.get_BTS(BtsNumber.BTS3),
-                self.anritsu.get_BTS(BtsNumber.BTS4)
-            ])
-
         # Create a configuration object for each base station and copy initial
         # settings from the PCC base station.
         self.bts_configs = [self.primary_config]
@@ -133,19 +117,6 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             parameters: list of parameters
         """
 
-        # Enable all base stations initially. The ones that are not needed after
-        # parsing the CA combo string can be removed.
-        self.anritsu.set_simulation_model(BtsTechnology.LTE,
-                                          BtsTechnology.LTE,
-                                          BtsTechnology.LTE,
-                                          BtsTechnology.LTE,
-                                          reset=False)
-
-        # Create an empty array for new configuration objects. Elements will be
-        # added to this list after parsing the CA configuration from the band
-        # parameter.
-        new_configs = []
-
         # Get the CA band configuration
 
         values = self.consume_parameter(parameters, self.PARAM_CA, 1)
@@ -166,96 +137,25 @@ class LteCaSimulation(LteSimulation.LteSimulation):
                 "The CA configuration has to be indicated with one string as "
                 "in the following example: ca_3c7c28a".format(self.PARAM_CA))
 
-        carriers = []
-        bts_index = 0
+        # Apply the carrier aggregation combination
+        self.simulator.set_ca_combination(ca_configs)
 
-        # Elements in the ca_configs array are combinations of band numbers
-        # and CA classes. For example, '7A', '3C', etc.
+        # Save the PCC band to the primary config
+        self.primary_config.band = ca_configs[0][:-1]
 
+        # Count the number of carriers in the CA combination
+        self.num_carriers = 0
         for ca in ca_configs:
-
-            band = ca[:-1]
             ca_class = ca[-1]
-
-            if ca_class.upper() == 'B':
-                raise ValueError(
-                    "Class B carrier aggregation is not supported.")
-
-            if band in carriers:
-                raise ValueError(
-                    "Intra-band non contiguous carrier aggregation "
-                    "is not supported.")
-
-            if ca_class.upper() == 'A':
-
-                if bts_index >= self.simulator.LTE_MAX_CARRIERS:
-                    raise ValueError("This callbox model doesn't allow the "
-                                     "requested CA configuration")
-
-                # Create a configuration object for this carrier
-                config = self.BtsConfig()
-                config.band = band
-                new_configs.append(config)
-
-                bts_index += 1
-                carriers.append(band)
-
-            elif ca_class.upper() == 'C':
-
-                if bts_index + 1 >= self.simulator.LTE_MAX_CARRIERS:
-                    raise ValueError("This callbox model doesn't allow the "
-                                     "requested CA configuration")
-
-                # Create configuration objects for the two secondary carriers
-                scc_configs = [self.BtsConfig(), self.BtsConfig()]
-
-                for config in scc_configs:
-                    config.band = band
-
-                new_configs.extend(scc_configs)
-
-                bts_index += 2
-
+            # Class C means that there are two contiguous carriers, while other
+            # classes are a single one.
+            if ca_class.upper() == 'C':
+                self.num_carriers += 2
             else:
-                raise ValueError("Invalid carrier aggregation configuration: "
-                                 "{}{}.".format(band, ca_class))
+                self.num_carriers += 1
 
-        # Ensure there are at least two carriers being used
-        self.num_carriers = bts_index
-        if self.num_carriers < 2:
-            raise ValueError("At least two carriers need to be indicated for "
-                             "the carrier aggregation sim.")
-
-        # Set the simulation model to use only the base stations that are
-        # needed for this CA combination.
-
-        self.anritsu.set_simulation_model(
-            *[BtsTechnology.LTE for _ in range(self.num_carriers)],
-            reset=False)
-
-        # If base stations use different bands, make sure that the RF cards are
-        # not being shared by setting the right maximum MIMO modes
-        if self.num_carriers == 2:
-            # RF cards are never shared when doing 2CA so 4X4 can be done in
-            # both base stations.
-            self.bts[0].mimo_support = LteMimoMode.MIMO_4X4
-            self.bts[1].mimo_support = LteMimoMode.MIMO_4X4
-        if self.num_carriers == 3:
-            # 4X4 can only be done in the second base station if it is shared
-            # with the primary. If the RF cards cannot be shared, then at most
-            # 2X2 can be done.
-            self.bts[0].mimo_support = LteMimoMode.MIMO_4X4
-            if carriers[0] == carriers[1]:
-                self.bts[1].mimo_support = LteMimoMode.MIMO_4X4
-            else:
-                self.bts[1].mimo_support = LteMimoMode.MIMO_2X2
-            self.bts[2].mimo_support = LteMimoMode.MIMO_2X2
-
-        # Enable carrier aggregation
-        self.anritsu.set_carrier_aggregation_enabled()
-
-        # Restart the simulation as changing the simulation model will stop it.
-        self.anritsu.start_simulation()
+        # Create an array of configuration objects to set up the base stations.
+        new_configs = [self.BtsConfig() for _ in range(self.num_carriers)]
 
         # Get the bw for each carrier
         # This is an optional parameter, by default the maximum bandwidth for
