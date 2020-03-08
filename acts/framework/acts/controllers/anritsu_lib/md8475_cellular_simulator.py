@@ -90,6 +90,8 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
 
         self.bts = [self.anritsu.get_BTS(md8475a.BtsNumber.BTS1)]
 
+        self.num_carriers = 1
+
     def setup_lte_ca_scenario(self):
         """ Configures the equipment for an LTE with CA simulation. """
         cell_file_name = self.LTE_CA_BASIC_CELL_FILE
@@ -106,6 +108,95 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             self.anritsu.get_BTS(md8475a.BtsNumber.BTS1),
             self.anritsu.get_BTS(md8475a.BtsNumber.BTS2)
         ]
+
+    def set_ca_combination(self, combination):
+        """ Prepares the test equipment for the indicated CA combination.
+
+        The reason why this is implemented in a separate method and not calling
+        LteSimulation.BtsConfig for each separate band is that configuring each
+        ssc cannot be done separately, as it is necessary to know which
+        carriers are on the same band in order to decide which RF outputs can
+        be shared in the test equipment.
+
+        Args:
+            combination: carrier aggregation configurations are indicated
+                with a list of strings consisting of the band number followed
+                by the CA class. For example, for 5 CA using 3C 7C and 28A
+                the parameter value should be [3c, 7c, 28a].
+        """
+
+        # Obtain the list of bands from the carrier combination list
+        bands = []
+
+        for ca in combination:
+            ca_class = ca[-1]
+            band = ca[:-1]
+
+            # If the band appears twice in the combo it means that carriers
+            # must be in the same band but non contiguous.
+            if band in bands:
+                raise cc.CellularSimulatorError(
+                    'Intra-band non-contiguous carrier aggregation is not '
+                    'supported.')
+
+            if ca_class.upper() == 'B':
+                raise cc.CellularSimulatorError(
+                    'Class B carrier aggregation is not supported')
+            elif ca_class.upper() == 'A':
+                bands.append(band)
+            elif ca_class.upper() == 'C':
+                # Class C means two contiguous carriers in the same band, so
+                # add the band twice to the list.
+                bands.append(band)
+                bands.append(band)
+            else:
+                raise cc.CellularSimulatorError('Invalid carrier aggregation '
+                                                'configuration: ' + ca)
+
+        self.num_carriers = len(bands)
+
+        # Validate the number of carriers.
+        if self.num_carriers > self.LTE_MAX_CARRIERS:
+            raise cc.CellularSimulatorError('The test equipment supports up '
+                                            'to {} carriers.'.format(
+                                                self.LTE_MAX_CARRIERS))
+        elif self.num_carriers < 2:
+            raise cc.CellularSimulatorError('At least two carriers need to be '
+                                            'indicated for the carrier '
+                                            'aggregation simulation.')
+
+        # Initialize the base stations in the test equipment
+        self.anritsu.set_simulation_model(
+            *[md8475a.BtsTechnology.LTE for _ in range(self.num_carriers)],
+            reset=False)
+
+        # If base stations use different bands, make sure that the RF cards are
+        # not being shared by setting the right maximum MIMO modes
+        if self.num_carriers == 2:
+            # RF cards are never shared when doing 2CA so 4X4 can be done in
+            # both base stations.
+            self.bts[0].mimo_support = md8475a.LteMimoMode.MIMO_4X4
+            self.bts[1].mimo_support = md8475a.LteMimoMode.MIMO_4X4
+        if self.num_carriers == 3:
+            # 4X4 can only be done in the second base station if it is shared
+            # with the primary. If the RF cards cannot be shared, then at most
+            # 2X2 can be done.
+            self.bts[0].mimo_support = md8475a.LteMimoMode.MIMO_4X4
+            if bands[0] == bands[1]:
+                self.bts[1].mimo_support = md8475a.LteMimoMode.MIMO_4X4
+            else:
+                self.bts[1].mimo_support = md8475a.LteMimoMode.MIMO_2X2
+            self.bts[2].mimo_support = md8475a.LteMimoMode.MIMO_2X2
+
+        # Enable carrier aggregation
+        self.anritsu.set_carrier_aggregation_enabled()
+
+        # Restart the simulation as changing the simulation model will stop it.
+        self.anritsu.start_simulation()
+
+        # Set the bands in each base station
+        for bts_index in range(len(bands)):
+            self.set_band(bts_index, bands[bts_index])
 
     def set_input_power(self, bts_index, input_power):
         """ Sets the input power for the indicated base station.
@@ -421,7 +512,7 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         testcase.measurement_LTE = md8475a.TestMeasurement.MEASUREMENT_DISABLE
 
         # Enable the secondary carrier base stations for CA
-        for bts_index in range(1, len(self.bts)):
+        for bts_index in range(1, self.num_carriers):
             self.bts[bts_index].dl_cc_enabled = True
 
         self.anritsu.start_testcase()
