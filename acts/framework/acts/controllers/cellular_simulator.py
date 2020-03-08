@@ -57,6 +57,23 @@ class AbstractCellularSimulator:
         """ Configures the equipment for an LTE with CA simulation. """
         raise NotImplementedError()
 
+    def set_ca_combination(self, combination):
+        """ Prepares the test equipment for the indicated CA combination.
+
+        The reason why this is implemented in a separate method and not calling
+        LteSimulation.BtsConfig for each separate band is that configuring each
+        ssc cannot be done separately, as it is necessary to know which
+        carriers are on the same band in order to decide which RF outputs can
+        be shared in the test equipment.
+
+        Args:
+            combination: carrier aggregation configurations are indicated
+                with a list of strings consisting of the band number followed
+                by the CA class. For example, for 5 CA using 3C 7C and 28A
+                the parameter value should be [3c, 7c, 28a].
+        """
+        raise NotImplementedError()
+
     def configure_bts(self, config, bts_index=0):
         """ Commands the equipment to setup a base station with the required
         configuration. This method applies configurations that are common to all
