@@ -893,9 +893,9 @@ class LteSimulation(BaseSimulation):
         tdd_subframe_config = bts_config.dlul_config
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
-        if duplex_mode == DuplexMode.TDD.value:
+        if duplex_mode == DuplexMode.TDD:
             if self.dl_256_qam:
-                if mcs == "27":
+                if mcs == 27:
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
@@ -905,7 +905,7 @@ class LteSimulation(BaseSimulation):
                             'TDD_CONFIG2'][tdd_subframe_config][bandwidth][
                                 'DL']
             else:
-                if mcs == "28":
+                if mcs == 28:
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
@@ -915,9 +915,9 @@ class LteSimulation(BaseSimulation):
                             'TDD_CONFIG1'][tdd_subframe_config][bandwidth][
                                 'DL']
 
-        elif duplex_mode == DuplexMode.FDD.value:
+        elif duplex_mode == DuplexMode.FDD:
             if (not self.dl_256_qam and bts_config.tbs_pattern_on
-                    and mcs == "28"):
+                    and mcs == 28):
                 max_rate_per_stream = {
                     3: 9.96,
                     5: 17.0,
@@ -926,12 +926,12 @@ class LteSimulation(BaseSimulation):
                     20: 72.2
                 }.get(bandwidth, None)
             if (not self.dl_256_qam and bts_config.tbs_pattern_on
-                    and mcs == "27"):
+                    and mcs == 27):
                 max_rate_per_stream = {
                     1.4: 2.94,
                 }.get(bandwidth, None)
             elif (not self.dl_256_qam and not bts_config.tbs_pattern_on
-                  and mcs == "27"):
+                  and mcs == 27):
                 max_rate_per_stream = {
                     1.4: 2.87,
                     3: 7.7,
@@ -940,7 +940,7 @@ class LteSimulation(BaseSimulation):
                     15: 42.3,
                     20: 57.7
                 }.get(bandwidth, None)
-            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == "27":
+            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == 27:
                 max_rate_per_stream = {
                     3: 13.2,
                     5: 22.9,
@@ -948,12 +948,12 @@ class LteSimulation(BaseSimulation):
                     15: 72.2,
                     20: 93.9
                 }.get(bandwidth, None)
-            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == "26":
+            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == 26:
                 max_rate_per_stream = {
                     1.4: 3.96,
                 }.get(bandwidth, None)
             elif (self.dl_256_qam and not bts_config.tbs_pattern_on
-                  and mcs == "27"):
+                  and mcs == 27):
                 max_rate_per_stream = {
                     3: 11.3,
                     5: 19.8,
@@ -962,7 +962,7 @@ class LteSimulation(BaseSimulation):
                     20: 88.4
                 }.get(bandwidth, None)
             elif (self.dl_256_qam and not bts_config.tbs_pattern_on
-                  and mcs == "26"):
+                  and mcs == 26):
                 max_rate_per_stream = {
                     1.4: 3.96,
                 }.get(bandwidth, None)
@@ -1008,9 +1008,9 @@ class LteSimulation(BaseSimulation):
         tdd_subframe_config = bts_config.dlul_config
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
-        if duplex_mode == DuplexMode.TDD.value:
+        if duplex_mode == DuplexMode.TDD:
             if self.ul_64_qam:
-                if mcs == "28":
+                if mcs == 28:
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
@@ -1020,7 +1020,7 @@ class LteSimulation(BaseSimulation):
                             'TDD_CONFIG2'][tdd_subframe_config][bandwidth][
                                 'UL']
             else:
-                if mcs == "23":
+                if mcs == 23:
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
@@ -1030,8 +1030,8 @@ class LteSimulation(BaseSimulation):
                             'TDD_CONFIG1'][tdd_subframe_config][bandwidth][
                                 'UL']
 
-        elif duplex_mode == DuplexMode.FDD.value:
-            if mcs == "23" and not self.ul_64_qam:
+        elif duplex_mode == DuplexMode.FDD:
+            if mcs == 23 and not self.ul_64_qam:
                 max_rate_per_stream = {
                     1.4: 2.85,
                     3: 7.18,
@@ -1040,7 +1040,7 @@ class LteSimulation(BaseSimulation):
                     15: 36.5,
                     20: 49.1
                 }.get(bandwidth, None)
-            elif mcs == "28" and self.ul_64_qam:
+            elif mcs == 28 and self.ul_64_qam:
                 max_rate_per_stream = {
                     1.4: 4.2,
                     3: 10.5,
