@@ -151,6 +151,15 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         self.power_logger.set_dl_tput(self.iperf_results.get('DL', 0))
         self.power_logger.set_ul_tput(self.iperf_results.get('UL', 0))
 
+        try:
+            dl_max_throughput = self.simulation.maximum_downlink_throughput()
+            ul_max_throughput = self.simulation.maximum_uplink_throughput()
+            self.power_logger.set_dl_tput_threshold(dl_max_throughput)
+            self.power_logger.set_ul_tput_threshold(ul_max_throughput)
+        except NotImplementedError as e:
+            self.log.error("%s Downlink/uplink thresholds will not be "
+                           "logged in the power proto" % e)
+
         for ips in self.iperf_servers:
             ips.stop()
 

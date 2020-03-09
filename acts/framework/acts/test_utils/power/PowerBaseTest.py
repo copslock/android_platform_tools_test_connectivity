@@ -196,6 +196,11 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.power_logger.set_voltage(self.mon_voltage)
         self.power_logger.set_testbed(self.testbed_name)
 
+        # If a threshold was provided, log it in the power proto
+        if self.threshold and self.test_name in self.threshold:
+            avg_current_threshold = self.threshold[self.test_name]
+            self.power_logger.set_avg_current_threshold(avg_current_threshold)
+
         # Log the display name of the test suite and test case
         name_map = TestNameMap()
         suite_display_name = name_map.get_display_name(self.__class__.__name__,
