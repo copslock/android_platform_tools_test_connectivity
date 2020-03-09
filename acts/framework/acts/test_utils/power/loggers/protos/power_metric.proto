@@ -27,9 +27,12 @@ message PowerMetric {
   optional string test_suite_display_name = 9;
   optional string test_case_display_name = 10;
   optional string incremental_build_id = 11;
+  optional float avg_current_threshold = 12;
 }
 
 message PowerCellularMetric {
   optional float avg_dl_tput = 1;
   optional float avg_ul_tput = 2;
+  optional float avg_dl_tput_threshold = 3;
+  optional float avg_ul_tput_threshold = 4;
 }
