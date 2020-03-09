@@ -289,7 +289,7 @@ class TestRunner(object):
                 self.run_test_class(test_cls_name, test_case_names)
             except error.ActsError as e:
                 self.results.error.append(ExceptionRecord(e))
-                self.log.error('Test Runner Error: %s' % e.message)
+                self.log.error('Test Runner Error: %s' % e.details)
             except signals.TestAbortAll as e:
                 self.log.warning(
                     'Abort all subsequent test classes. Reason: %s', e)
