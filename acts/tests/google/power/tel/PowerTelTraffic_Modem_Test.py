@@ -28,8 +28,8 @@ class PowerTelTraffic_Modem_Test(ctpt.PowerTelTrafficTest):
     def test_lte_band_38_pul_low_bw_20_tm_3_mimo_2x2_direction_dlul_tddconfig_1_phich_16_cfi_1_ssf_7(self):
         self.power_tel_traffic_test()
 
-    def test_lteca_ca_3a4a_pul_low_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+    def test_lteca_ca_3a4a_pul_low_bw_20_20_tm_3_3_mimo_2x2_2x2_direction_dlul_phich_16_cfi_1(self):
         self.power_tel_traffic_test()
 
-    def test_lteca_ca_3a7a20a_pul_low_bw_20_tm_3_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+    def test_lteca_ca_3a7a20a_pul_low_bw_20_20_20_tm_3_3_3_mimo_2x2_2x2_2x2_direction_dlul_phich_16_cfi_1(self):
         self.power_tel_traffic_test()
