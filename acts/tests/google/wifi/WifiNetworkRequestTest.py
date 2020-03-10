@@ -412,7 +412,7 @@ class WifiNetworkRequestTest(WifiBaseTest):
         has_request_timedout = False
         try:
           while not has_request_timedout and time.time() - start_time <= \
-              NETWORK_REQUEST_TIMEOUT_MS / 1000:
+              NETWORK_REQUEST_TIMEOUT_MS / 1000 + NETWORK_REQUEST_INSTANT_FAILURE_TIMEOUT_SEC:
                 # Pop all network request related events.
                 network_request_events = \
                     self.dut.ed.pop_events("WifiManagerNetwork.*", 30)
