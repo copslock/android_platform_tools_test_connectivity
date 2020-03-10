@@ -87,6 +87,10 @@ class VersionedClass(object):
 
 
 class VersionedTestClass(base_test.BaseTestClass):
+    @mock.patch('mobly.utils.create_dir')
+    def __init__(self, configs, _):
+        super().__init__(configs)
+
     @test_tracker_info('UUID_1')
     @test_versioning(1, 1)
     def test_1(self):
