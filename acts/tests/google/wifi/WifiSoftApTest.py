@@ -90,9 +90,8 @@ class WifiSoftApTest(WifiBaseTest):
             del self.user_params["open_network"]
 
     def setup_test(self):
-        # Set country code explicitly to "US".
-        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
-        wutils.set_wifi_country_code(self.dut_client, wutils.WifiEnums.CountryCode.US)
+        for ad in self.android_devices:
+            wutils.wifi_toggle_state(ad, True)
 
     def teardown_test(self):
         self.dut.log.debug("Toggling Airplane mode OFF.")
@@ -400,6 +399,7 @@ class WifiSoftApTest(WifiBaseTest):
         asserts.assert_true(self.dut.droid.wifiIsApEnabled(),
                              "SoftAp is not reported as running")
         # local hotspot may not have internet connectivity
+        self.confirm_softap_in_scan_results(config[wutils.WifiEnums.SSID_KEY])
         wutils.wifi_connect(self.dut_client, config, check_connectivity=False)
         wutils.stop_wifi_tethering(self.dut)
         wutils.wait_for_disconnect(self.dut_client)
@@ -572,7 +572,7 @@ class WifiSoftApTest(WifiBaseTest):
     def test_softap_auto_shut_off(self):
         """Test for softap auto shut off
 
-        1. Turn of hotspot
+        1. Turn off hotspot
         2. Register softap callback
         3. Let client connect to the hotspot
         4. Start wait [wifi_constants.DEFAULT_SOFTAP_TIMEOUT_S] seconds
