@@ -17,6 +17,7 @@ import os
 import subprocess
 import sys
 
+import mock
 from mobly import config_parser as mobly_config_parser
 
 import acts
@@ -72,7 +73,8 @@ def main():
     test_run_config = mobly_config_parser.TestRunConfig()
     test_run_config.testbed_name = 'UnitTests'
     test_run_config.log_path = ''
-    ActsUnitTest(test_run_config).test_units()
+    with mock.patch('mobly.utils.create_dir'):
+        ActsUnitTest(test_run_config).test_units()
 
 
 if __name__ == '__main__':
