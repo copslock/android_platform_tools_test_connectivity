@@ -18,14 +18,23 @@ import acts.test_utils.power.cellular.cellular_pdcch_power_test as cppt
 
 
 class PowerTelPdcch_Modem_Test(cppt.PowerTelPDCCHTest):
+
+    @property
+    def display_name_test_suite(self):
+        return 'QComm dashboard - PDCCH'
+
     def test_lte_band_13_pul_low_bw_10_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+        self.display_name_test_case = 'LTE17E-1 - B13'
         self.power_pdcch_test()
 
     def test_lte_band_7_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+        self.display_name_test_case = 'LTE17E-1 - B7'
         self.power_pdcch_test()
 
     def test_lte_band_4_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1(self):
+        self.display_name_test_case = 'LTE17E-1 - B4'
         self.power_pdcch_test()
 
     def test_lte_band_40_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1_tddconfig_2(self):
+        self.display_name_test_case = 'LTE40E-1 - B40'
         self.power_pdcch_test()
