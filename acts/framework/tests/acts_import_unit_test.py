@@ -83,11 +83,7 @@ BLACKLIST = [
     'tests/google/tel/live/TelLiveEmergencyTest.py',
     'tests/google/tel/live/TelLiveConnectivityMonitorTest.py',
     'tests/google/tel/live/TelLiveConnectivityMonitorMobilityTest.py',
-    'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
-    'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
-    'tests/google/fuchsia/wlan/RebootStressTest.py',
     'acts/test_utils/gnss/gnss_testlog_utils.py',
-    'tests/google/fuchsia/bt/BluetoothCmdLineTest.py',
 ]
 
 BLACKLIST_DIRECTORIES = [
@@ -100,6 +96,7 @@ BLACKLIST_DIRECTORIES = [
     'tests/google/power/',
     'tests/google/bt/performance/',
     'tests/google/bt/sar/',
+    'tests/google/fuchsia/'
 ]
 
 BANNED_IMPORTS = ['mobly.controllers']

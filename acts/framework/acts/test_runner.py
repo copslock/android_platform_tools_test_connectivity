@@ -163,7 +163,8 @@ class TestRunner(object):
                 with utils.SuppressLogOutput(
                         log_levels=[logging.INFO, logging.ERROR]):
                     module = importlib.import_module(name)
-            except:
+            except Exception as e:
+                logging.debug('Failed to import %s: %s', path, str(e))
                 for test_cls_name, _ in self.run_list:
                     alt_name = name.replace('_', '').lower()
                     alt_cls_name = test_cls_name.lower()
@@ -288,7 +289,7 @@ class TestRunner(object):
                 self.run_test_class(test_cls_name, test_case_names)
             except error.ActsError as e:
                 self.results.error.append(ExceptionRecord(e))
-                self.log.error('Test Runner Error: %s' % e.message)
+                self.log.error('Test Runner Error: %s' % e.details)
             except signals.TestAbortAll as e:
                 self.log.warning(
                     'Abort all subsequent test classes. Reason: %s', e)

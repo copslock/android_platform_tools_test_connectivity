@@ -41,6 +41,12 @@ class PowerMetricLogger(MetricLogger):
     def set_ul_tput(self, avg_ul_tput):
         self.proto.cellular_metric.avg_ul_tput = avg_ul_tput
 
+    def set_dl_tput_threshold(self, avg_dl_tput_threshold):
+        self.proto.cellular_metric.avg_dl_tput_threshold = avg_dl_tput_threshold
+
+    def set_ul_tput_threshold(self, avg_ul_tput_threshold):
+        self.proto.cellular_metric.avg_ul_tput_threshold = avg_ul_tput_threshold
+
     def set_avg_power(self, avg_power):
         self.proto.avg_power = avg_power
 
@@ -59,6 +65,9 @@ class PowerMetricLogger(MetricLogger):
     def set_build_id(self, build_id):
         self.proto.build_id = build_id
 
+    def set_incremental_build_id(self, incremental_build_id):
+        self.proto.incremental_build_id = incremental_build_id
+
     def set_target(self, target):
         self.proto.target = target
 
@@ -67,6 +76,9 @@ class PowerMetricLogger(MetricLogger):
 
     def set_test_case_display_name(self, test_case_display_name):
         self.proto.test_case_display_name = test_case_display_name
+
+    def set_avg_current_threshold(self, avg_current_threshold):
+        self.proto.avg_current_threshold = avg_current_threshold
 
     def end(self, event):
         metric = ProtoMetric(name='spanner_power_metric', data=self.proto)

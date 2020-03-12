@@ -57,6 +57,23 @@ class AbstractCellularSimulator:
         """ Configures the equipment for an LTE with CA simulation. """
         raise NotImplementedError()
 
+    def set_ca_combination(self, combination):
+        """ Prepares the test equipment for the indicated CA combination.
+
+        The reason why this is implemented in a separate method and not calling
+        LteSimulation.BtsConfig for each separate band is that configuring each
+        ssc cannot be done separately, as it is necessary to know which
+        carriers are on the same band in order to decide which RF outputs can
+        be shared in the test equipment.
+
+        Args:
+            combination: carrier aggregation configurations are indicated
+                with a list of strings consisting of the band number followed
+                by the CA class. For example, for 5 CA using 3C 7C and 28A
+                the parameter value should be [3c, 7c, 28a].
+        """
+        raise NotImplementedError()
+
     def configure_bts(self, config, bts_index=0):
         """ Commands the equipment to setup a base station with the required
         configuration. This method applies configurations that are common to all
@@ -127,11 +144,6 @@ class AbstractCellularSimulator:
             self.set_scheduling_mode(bts_index, config.scheduling_mode,
                                      config.dl_mcs, config.ul_mcs,
                                      config.dl_rbs, config.ul_rbs)
-
-        # This variable stores a boolean value so the following is needed to
-        # differentiate False from None
-        if config.dl_cc_enabled is not None:
-            self.set_enabled_for_ca(bts_index, config.dl_cc_enabled)
 
         # This variable stores a boolean value so the following is needed to
         # differentiate False from None
@@ -252,15 +264,6 @@ class AbstractCellularSimulator:
         """
         raise NotImplementedError()
 
-    def set_enabled_for_ca(self, bts_index, enabled):
-        """ Enables or disables the base station during carrier aggregation.
-
-        Args:
-            bts_index: the base station number
-            enabled: whether the base station should be enabled for ca.
-        """
-        raise NotImplementedError()
-
     def set_dl_modulation(self, bts_index, modulation):
         """ Sets the DL modulation for the indicated base station.
 
@@ -315,9 +318,14 @@ class AbstractCellularSimulator:
         """
         raise NotImplementedError()
 
-    def lte_attach_secondary_carriers(self):
+    def lte_attach_secondary_carriers(self, ue_capability_enquiry):
         """ Activates the secondary carriers for CA. Requires the DUT to be
-        attached to the primary carrier first. """
+        attached to the primary carrier first.
+
+        Args:
+            ue_capability_enquiry: UE capability enquiry message to be sent to
+        the UE before starting carrier aggregation.
+        """
         raise NotImplementedError()
 
     def wait_until_attached(self, timeout=120):

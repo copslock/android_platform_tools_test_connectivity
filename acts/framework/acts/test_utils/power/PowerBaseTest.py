@@ -90,6 +90,24 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.results.requested
         ) > 0 and self.current_test_name == self.results.requested[-1]
 
+    @property
+    def display_name_test_suite(self):
+        return getattr(self, '_display_name_test_suite',
+                       self.__class__.__name__)
+
+    @display_name_test_suite.setter
+    def display_name_test_suite(self, name):
+        self._display_name_test_suite = name
+
+    @property
+    def display_name_test_case(self):
+        default_test_name = getattr(self, 'test_name', None)
+        return getattr(self, '_display_name_test_case', default_test_name)
+
+    @display_name_test_case.setter
+    def display_name_test_case(self, name):
+        self._display_name_test_case = name
+
     def setup_class(self):
 
         self.log = logging.getLogger()
@@ -196,6 +214,11 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.power_logger.set_voltage(self.mon_voltage)
         self.power_logger.set_testbed(self.testbed_name)
 
+        # If a threshold was provided, log it in the power proto
+        if self.threshold and self.test_name in self.threshold:
+            avg_current_threshold = self.threshold[self.test_name]
+            self.power_logger.set_avg_current_threshold(avg_current_threshold)
+
         # Log the display name of the test suite and test case
         name_map = TestNameMap()
         suite_display_name = name_map.get_display_name(self.__class__.__name__,
@@ -205,12 +228,14 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.power_logger.set_test_suite_display_name(suite_display_name)
         self.power_logger.set_test_case_display_name(test_case_display_name)
 
-        build_id = self.dut.build_info.get('incremental_build_id', '')
+        build_id = self.dut.build_info.get('build_id', '')
+        incr_build_id = self.dut.build_info.get('incremental_build_id', '')
         branch = self.user_params.get('branch', '')
         target = self.dut.device_info.get('flavor', '')
 
         self.power_logger.set_branch(branch)
         self.power_logger.set_build_id(build_id)
+        self.power_logger.set_incremental_build_id(incr_build_id)
         self.power_logger.set_target(target)
 
         # Take Bugreport

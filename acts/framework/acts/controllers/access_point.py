@@ -164,13 +164,13 @@ class AccessPoint(object):
         # interfaces need to be brought down as part of the AP initialization
         # process, otherwise test would fail.
         try:
-            self.ssh.run('killall wpasupplicant')
+            self.ssh.run('stop wpasupplicant')
         except job.Error:
-            self.log.debug('No wpasupplicant running')
+            self.log.info('No wpasupplicant running')
         try:
-            self.ssh.run('killall hostapd')
+            self.ssh.run('stop hostapd')
         except job.Error:
-            self.log.debug('No hostapd running')
+            self.log.info('No hostapd running')
         # Bring down all wireless interfaces
         for iface in self.wlan:
             WLAN_DOWN = 'ifconfig {} down'.format(iface)
@@ -447,7 +447,10 @@ class AccessPoint(object):
         instance = self._aps.get(identifier)
 
         instance.hostapd.stop()
-        self.stop_dhcp()
+        try:
+            self.stop_dhcp()
+        except dhcp_server.NoInterfaceError:
+            pass
         self._ip_cmd.clear_ipv4_addresses(identifier)
 
         del self._aps[identifier]
@@ -463,10 +466,7 @@ class AccessPoint(object):
         """Stops all running aps on this device."""
 
         for ap in list(self._aps.keys()):
-            try:
-                self.stop_ap(ap)
-            except dhcp_server.NoInterfaceError:
-                pass
+            self.stop_ap(ap)
 
     def close(self):
         """Called to take down the entire access point.

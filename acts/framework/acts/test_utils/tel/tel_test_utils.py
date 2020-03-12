@@ -6418,7 +6418,7 @@ def check_is_wifi_connected(log, ad, wifi_ssid):
         return False
 
 
-def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
+def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3, apm=False):
     """Ensure ad connected to wifi on network wifi_ssid.
 
     Args:
@@ -6432,6 +6432,9 @@ def ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd=None, retries=3):
         True if wifi is connected to wifi_ssid
         False if wifi is not connected to wifi_ssid
     """
+    if not toggle_airplane_mode(log, ad, apm, strict_checking=False):
+        return False
+
     network = {WIFI_SSID_KEY: wifi_ssid}
     if wifi_pwd:
         network[WIFI_PWD_KEY] = wifi_pwd
