@@ -27,6 +27,7 @@ from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
+from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
@@ -44,6 +45,7 @@ from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
+from acts.test_utils.tel.tel_test_utils import set_wfc_mode
 from acts.test_utils.tel.tel_video_utils import phone_setup_video
 from acts.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
 from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
@@ -2225,10 +2227,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
+        if not set_wfc_mode(self.log, ads[0], WFC_MODE_DISABLED):
+            return False
         phone_setup_voice_general(self.log, ads[0])
         tasks = [(ensure_wifi_connected,
                   (self.log, ads[0], self.wifi_network_ssid,
-                   self.wifi_network_pass)), (phone_setup_voice_general,
+                   self.wifi_network_pass, 3, True)), (phone_setup_voice_general,
                                               (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -2251,10 +2255,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
+        if not set_wfc_mode(self.log, ads[0], WFC_MODE_DISABLED):
+            return False
         phone_setup_voice_general(self.log, ads[0])
         tasks = [(ensure_wifi_connected,
                   (self.log, ads[0], self.wifi_network_ssid,
-                   self.wifi_network_pass)), (phone_setup_voice_general,
+                   self.wifi_network_pass, 3, True)), (phone_setup_voice_general,
                                               (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -2277,10 +2283,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
+        if not set_wfc_mode(self.log, ads[0], WFC_MODE_DISABLED):
+            return False
         phone_setup_voice_general(self.log, ads[0])
         tasks = [(ensure_wifi_connected,
                   (self.log, ads[0], self.wifi_network_ssid,
-                   self.wifi_network_pass)), (phone_setup_voice_general,
+                   self.wifi_network_pass, 3, True)), (phone_setup_voice_general,
                                               (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
@@ -2303,10 +2311,12 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
 
         ads = self.android_devices
+        if not set_wfc_mode(self.log, ads[0], WFC_MODE_DISABLED):
+            return False
         phone_setup_voice_general(self.log, ads[0])
         tasks = [(ensure_wifi_connected,
                   (self.log, ads[0], self.wifi_network_ssid,
-                   self.wifi_network_pass)), (phone_setup_voice_general,
+                   self.wifi_network_pass, 3, True)), (phone_setup_voice_general,
                                               (self.log, ads[1]))]
         if not multithread_func(self.log, tasks):
             self.log.error("Phone Failed to Set Up Properly.")
