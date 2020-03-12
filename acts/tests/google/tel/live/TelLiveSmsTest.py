@@ -30,6 +30,7 @@ from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WFC_MODE_DISABLED
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import WFC_MODE_CELLULAR_PREFERRED
+from acts.test_utils.tel.tel_subscription_utils import get_outgoing_message_sub_id
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import ensure_phone_default_state
@@ -82,6 +83,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.number_of_devices = 2
         self.message_lengths = (50, 160, 180)
         self.long_message_lengths = (800, 1600)
+        self.long_message_lengths_of_jp_carriers = (800, 1530)
 
         is_roaming = False
         for ad in self.android_devices:
@@ -125,7 +127,13 @@ class TelLiveSmsTest(TelephonyBaseTest):
             True if success.
             False if failed.
         """
-        for length in self.long_message_lengths:
+        sender_message_sub_id = get_outgoing_message_sub_id(ads[0])
+        sender_mcc = ads[0].telephony["subscription"][sender_message_sub_id]["mcc"]
+        long_message_lengths = self.long_message_lengths
+        if sender_mcc in ["440", "441"]:
+            long_message_lengths = self.long_message_lengths_of_jp_carriers
+
+        for length in long_message_lengths:
             message_array = [rand_ascii_str(length)]
             if not sms_send_receive_verify(self.log, ads[0], ads[1],
                                            message_array):
