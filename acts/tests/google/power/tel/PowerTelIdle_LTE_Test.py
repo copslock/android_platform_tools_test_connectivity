@@ -18,11 +18,19 @@ import acts.test_utils.power.cellular.cellular_idle_power_test as cipt
 
 
 class PowerTelIdle_LTE_Test(cipt.PowerTelIdleTest):
+
+    @property
+    def display_name_test_suite(self):
+        return 'TechEng LTE Idle'
+
     def test_lte_idle_band_13_pul_low_bw_10_tm_1_mimo_1x1_rrcstatuschangetimer_10_1(self):
+        self.display_name_test_case = 'LTE Idle - Band 13, low UL power, 10 MHz BW, TM3 1x1'
         self.power_tel_idle_test()
 
     def test_lte_idle_band_41_pul_low_bw_10_tm_1_mimo_1x1_rrcstatuschangetimer_10_tddconfig_2_2(self):
+        self.display_name_test_case = 'LTE Idle - Band 41, low UL power, 10 MHz BW, TM3 1x1, TDD 2'
         self.power_tel_idle_test()
 
     def test_lte_idle_band_4_pul_low_bw_10_tm_1_mimo_1x1_rrcstatuschangetimer_10_tddconfig_2_3(self):
+        self.display_name_test_case = 'LTE Idle - Band 4, low UL power, 10 MHz BW, TM3 1x1, TDD 2'
         self.power_tel_idle_test()
