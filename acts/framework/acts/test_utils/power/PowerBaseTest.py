@@ -90,6 +90,24 @@ class PowerBaseTest(base_test.BaseTestClass):
             self.results.requested
         ) > 0 and self.current_test_name == self.results.requested[-1]
 
+    @property
+    def display_name_test_suite(self):
+        return getattr(self, '_display_name_test_suite',
+                       self.__class__.__name__)
+
+    @display_name_test_suite.setter
+    def display_name_test_suite(self, name):
+        self._display_name_test_suite = name
+
+    @property
+    def display_name_test_case(self):
+        default_test_name = getattr(self, 'test_name', None)
+        return getattr(self, '_display_name_test_case', default_test_name)
+
+    @display_name_test_case.setter
+    def display_name_test_case(self, name):
+        self._display_name_test_case = name
+
     def setup_class(self):
 
         self.log = logging.getLogger()
