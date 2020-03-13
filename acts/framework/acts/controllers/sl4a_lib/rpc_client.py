@@ -21,6 +21,7 @@ from concurrent import futures
 
 from acts import error
 from acts import logger
+from acts.metrics.loggers import usage_metadata_logger
 
 # The default timeout value when no timeout is set.
 SOCKET_TIMEOUT = 60
@@ -350,6 +351,7 @@ class RpcClient(object):
         """Wrapper for python magic to turn method calls into RPC calls."""
 
         def rpc_call(*args, **kwargs):
+            usage_metadata_logger.log_usage(self.__module__, name)
             return self.rpc(name, *args, **kwargs)
 
         if not self.is_alive:
