@@ -15,6 +15,7 @@
 #   limitations under the License.
 import itertools
 
+from acts.metrics.loggers.usage_metadata_logger import UsageMetadataPublisher
 from future import standard_library
 
 standard_library.install_aliases()
@@ -123,6 +124,7 @@ class TestRunner(object):
         self.dump_config()
         self.results = records.TestResult()
         self.running = False
+        self.usage_publisher = UsageMetadataPublisher()
 
     @property
     def log_path(self):
@@ -307,6 +309,7 @@ class TestRunner(object):
             self._write_results_to_file()
             self.log.info(msg.strip())
             logger.kill_test_logger(self.log)
+            self.usage_publisher.publish()
             self.running = False
 
     def _write_results_to_file(self):
