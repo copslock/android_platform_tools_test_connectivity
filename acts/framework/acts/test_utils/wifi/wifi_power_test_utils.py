@@ -16,16 +16,10 @@
 
 import logging
 import time
-import os
 from acts import utils
 from acts.libs.proc import job
 from acts.controllers.ap_lib import bridge_interface as bi
 from acts.test_utils.wifi import wifi_test_utils as wutils
-from bokeh.layouts import column, layout
-from bokeh.models import CustomJS, ColumnDataSource
-from bokeh.models import tools as bokeh_tools
-from bokeh.models.widgets import DataTable, TableColumn
-from bokeh.plotting import figure, output_file, save
 from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.ap_lib import hostapd_ap_preset
 
@@ -37,140 +31,6 @@ GET_FROM_PHONE = 'get_from_dut'
 GET_FROM_AP = 'get_from_ap'
 ENABLED_MODULATED_DTIM = 'gEnableModulatedDTIM='
 MAX_MODULATED_DTIM = 'gMaxLIModulatedDTIM='
-
-
-def monsoon_data_plot(mon_info, monsoon_results, tag=''):
-    """Plot the monsoon current data using bokeh interactive plotting tool.
-
-    Plotting power measurement data with bokeh to generate interactive plots.
-    You can do interactive data analysis on the plot after generating with the
-    provided widgets, which make the debugging much easier. To realize that,
-    bokeh callback java scripting is used. View a sample html output file:
-    https://drive.google.com/open?id=0Bwp8Cq841VnpT2dGUUxLYWZvVjA
-
-    Args:
-        mon_info: obj with information of monsoon measurement, including
-            monsoon device object, measurement frequency, duration, etc.
-        monsoon_results: a MonsoonResult or list of MonsoonResult objects to
-                         to plot.
-        tag: an extra tag to append to the resulting filename.
-
-    Returns:
-        plot: the plotting object of bokeh, optional, will be needed if multiple
-           plots will be combined to one html file.
-        dt: the datatable object of bokeh, optional, will be needed if multiple
-           datatables will be combined to one html file.
-    """
-    if not isinstance(monsoon_results, list):
-        monsoon_results = [monsoon_results]
-    logging.info('Plotting the power measurement data.')
-
-    voltage = monsoon_results[0].voltage
-
-    total_current = 0
-    total_samples = 0
-    for result in monsoon_results:
-        total_current += result.average_current * result.num_samples
-        total_samples += result.num_samples
-    avg_current = total_current / total_samples
-
-    time_relative = [
-        data_point.time
-        for monsoon_result in monsoon_results
-        for data_point in monsoon_result.get_data_points()
-    ]
-
-    current_data = [
-        data_point.current * 1000
-        for monsoon_result in monsoon_results
-        for data_point in monsoon_result.get_data_points()
-    ]
-
-    total_data_points = sum(result.num_samples for result in monsoon_results)
-    color = ['navy'] * total_data_points
-
-    # Preparing the data and source link for bokehn java callback
-    source = ColumnDataSource(
-        data=dict(x0=time_relative, y0=current_data, color=color))
-    s2 = ColumnDataSource(
-        data=dict(
-            z0=[mon_info.duration],
-            y0=[round(avg_current, 2)],
-            x0=[round(avg_current * voltage, 2)],
-            z1=[round(avg_current * voltage * mon_info.duration, 2)],
-            z2=[round(avg_current * mon_info.duration, 2)]))
-    # Setting up data table for the output
-    columns = [
-        TableColumn(field='z0', title='Total Duration (s)'),
-        TableColumn(field='y0', title='Average Current (mA)'),
-        TableColumn(field='x0', title='Average Power (4.2v) (mW)'),
-        TableColumn(field='z1', title='Average Energy (mW*s)'),
-        TableColumn(field='z2', title='Normalized Average Energy (mA*s)')
-    ]
-    dt = DataTable(
-        source=s2, columns=columns, width=1300, height=60, editable=True)
-
-    plot_title = (os.path.basename(os.path.splitext(monsoon_results[0].tag)[0])
-                  + tag)
-    output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
-    tools = 'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save'
-    # Create a new plot with the datatable above
-    plot = figure(
-        plot_width=1300,
-        plot_height=700,
-        title=plot_title,
-        tools=tools,
-        output_backend='webgl')
-    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions='width'))
-    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions='height'))
-    plot.line('x0', 'y0', source=source, line_width=2)
-    plot.circle('x0', 'y0', source=source, size=0.5, fill_color='color')
-    plot.xaxis.axis_label = 'Time (s)'
-    plot.yaxis.axis_label = 'Current (mA)'
-    plot.title.text_font_size = {'value': '15pt'}
-
-    # Callback JavaScript
-    source.selected.js_on_change(
-        "indices",
-        CustomJS(args=dict(source=source, mytable=dt), code="""
-    var inds = cb_obj.indices;
-    var d1 = source.data;
-    var d2 = mytable.source.data;
-    ym = 0
-    ts = 0
-    d2['x0'] = []
-    d2['y0'] = []
-    d2['z1'] = []
-    d2['z2'] = []
-    d2['z0'] = []
-    min=max=d1['x0'][inds[0]]
-    if (inds.length==0) {return;}
-    for (i = 0; i < inds.length; i++) {
-    ym += d1['y0'][inds[i]]
-    d1['color'][inds[i]] = "red"
-    if (d1['x0'][inds[i]] < min) {
-      min = d1['x0'][inds[i]]}
-    if (d1['x0'][inds[i]] > max) {
-      max = d1['x0'][inds[i]]}
-    }
-    ym /= inds.length
-    ts = max - min
-    dx0 = Math.round(ym*4.2*100.0)/100.0
-    dy0 = Math.round(ym*100.0)/100.0
-    dz1 = Math.round(ym*4.2*ts*100.0)/100.0
-    dz2 = Math.round(ym*ts*100.0)/100.0
-    dz0 = Math.round(ts*1000.0)/1000.0
-    d2['z0'].push(dz0)
-    d2['x0'].push(dx0)
-    d2['y0'].push(dy0)
-    d2['z1'].push(dz1)
-    d2['z2'].push(dz2)
-    mytable.change.emit();
-    """))
-
-    # Layout the plot and the datatable bar
-    save(layout([[dt], [plot]]))
-    return plot, dt
 
 
 def change_dtim(ad, gEnableModulatedDTIM, gMaxLIModulatedDTIM=10):
@@ -281,78 +141,6 @@ def ap_setup(ap, network, bandwidth=80):
     ap.start_ap(config)
     log.info("AP started on channel {} with SSID {}".format(channel, ssid))
     return brconfigs
-
-
-def bokeh_plot(data_sets,
-               legends,
-               fig_property,
-               shaded_region=None,
-               output_file_path=None):
-    """Plot bokeh figs.
-        Args:
-            data_sets: data sets including lists of x_data and lists of y_data
-                       ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
-            legends: list of legend for each curve
-            fig_property: dict containing the plot property, including title,
-                      lables, linewidth, circle size, etc.
-            shaded_region: optional dict containing data for plot shading
-            output_file_path: optional path at which to save figure
-        Returns:
-            plot: bokeh plot figure object
-    """
-    tools = 'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save'
-    plot = figure(
-        plot_width=1300,
-        plot_height=700,
-        title=fig_property['title'],
-        tools=tools,
-        output_backend="webgl")
-    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="width"))
-    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="height"))
-    colors = [
-        'red', 'green', 'blue', 'olive', 'orange', 'salmon', 'black', 'navy',
-        'yellow', 'darkred', 'goldenrod'
-    ]
-    if shaded_region:
-        band_x = shaded_region["x_vector"]
-        band_x.extend(shaded_region["x_vector"][::-1])
-        band_y = shaded_region["lower_limit"]
-        band_y.extend(shaded_region["upper_limit"][::-1])
-        plot.patch(
-            band_x, band_y, color='#7570B3', line_alpha=0.1, fill_alpha=0.1)
-
-    for x_data, y_data, legend in zip(data_sets[0], data_sets[1], legends):
-        index_now = legends.index(legend)
-        color = colors[index_now % len(colors)]
-        plot.line(
-            x_data,
-            y_data,
-            legend=str(legend),
-            line_width=fig_property['linewidth'],
-            color=color)
-        plot.circle(
-            x_data,
-            y_data,
-            size=fig_property['markersize'],
-            legend=str(legend),
-            fill_color=color)
-
-    # Plot properties
-    plot.xaxis.axis_label = fig_property['x_label']
-    plot.yaxis.axis_label = fig_property['y_label']
-    plot.legend.location = "top_right"
-    plot.legend.click_policy = "hide"
-    plot.title.text_font_size = {'value': '15pt'}
-    if output_file_path is not None:
-        output_file(output_file_path)
-        save(plot)
-    return plot
-
-
-def save_bokeh_plots(plot_array, output_file_path):
-    all_plots = column(children=plot_array)
-    output_file(output_file_path)
-    save(all_plots)
 
 
 def run_iperf_client_nonblocking(ad, server_host, extra_args=""):

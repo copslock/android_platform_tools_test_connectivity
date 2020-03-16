@@ -17,6 +17,7 @@
 import acts.test_utils.power.PowerBaseTest as PBT
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.power import plot_utils
 
 IPERF_DURATION = 'iperf_duration'
 INITIAL_ATTEN = [0, 0, 90, 90]
@@ -121,5 +122,5 @@ class PowerWiFiBaseTest(PBT.PowerBaseTest):
             throughput = self.process_iperf_results()
             tag = '_RSSI_{0:d}dBm_Throughput_{1:.2f}Mbps'.format(
                 self.RSSI, throughput)
-            wputils.monsoon_data_plot(self.mon_info, result, tag=tag)
+            plot_utils.monsoon_data_plot(self.mon_info, result, tag=tag)
         return result
