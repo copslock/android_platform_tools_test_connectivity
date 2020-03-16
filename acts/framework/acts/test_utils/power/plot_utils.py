@@ -16,6 +16,8 @@
 
 import os
 import logging
+import numpy
+import math
 
 from bokeh.layouts import column, layout
 from bokeh.models import CustomJS, ColumnDataSource
@@ -156,3 +158,45 @@ def monsoon_data_plot(mon_info, monsoon_results, tag=''):
     # Layout the plot and the datatable bar
     save(layout([[dt], [plot]]))
     return plot, dt
+
+
+def monsoon_histogram_plot(mon_info, monsoon_result):
+    """ Creates a histogram from a monsoon result object.
+
+    Args:
+        mon_info: obj with information of monsoon measurement, including
+            monsoon device object, measurement frequency, duration, etc.
+        monsoon_result: a MonsoonResult object from which to obtain the
+            current histogram.
+    Returns:
+        a tuple of arrays containing the values of the histogram and the
+        bin edges.
+    """
+    current_data = [
+        data_point.current * 1000
+        for data_point in monsoon_result.get_data_points()
+    ]
+    hist, edges = numpy.histogram(current_data,
+                                  bins=math.ceil(max(current_data)),
+                                  range=(0, max(current_data)))
+
+    plot_title = (os.path.basename(os.path.splitext(monsoon_result.tag)[0]) +
+                  '_histogram')
+
+    output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
+
+    plot = figure(title=plot_title, tools='', background_fill_color='#fafafa')
+    plot.quad(top=hist,
+              bottom=0,
+              left=edges[:-1],
+              right=edges[1:],
+              fill_color='navy')
+
+    plot.y_range.start = 0
+    plot.xaxis.axis_label = 'Instantaneous current [mA]'
+    plot.yaxis.axis_label = 'Count'
+    plot.grid.grid_line_color = 'white'
+
+    save(plot)
+
+    return hist, edges
