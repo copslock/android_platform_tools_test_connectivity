@@ -140,8 +140,19 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         # Apply the carrier aggregation combination
         self.simulator.set_ca_combination(ca_configs)
 
-        # Save the PCC band to the primary config
-        self.primary_config.band = ca_configs[0][:-1]
+        # Save the bands to the bts config objects
+        bts_index = 0
+        for ca in ca_configs:
+            ca_class = ca[-1]
+            band = ca[:-1]
+
+            self.bts_configs[bts_index] = band
+            bts_index += 1
+
+            if ca_class.upper() == 'B' or ca_class.upper() == 'C':
+                # Class B and C means two carriers with the same band
+                self.bts_configs[bts_index] = band
+                bts_index += 1
 
         # Count the number of carriers in the CA combination
         self.num_carriers = 0
