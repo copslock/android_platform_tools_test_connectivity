@@ -185,7 +185,10 @@ def monsoon_histogram_plot(mon_info, monsoon_result):
 
     output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
 
-    plot = figure(title=plot_title, tools='', background_fill_color='#fafafa')
+    plot = figure(title=plot_title,
+                  y_axis_type='log',
+                  background_fill_color='#fafafa')
+
     plot.quad(top=hist,
               bottom=0,
               left=edges[:-1],
