@@ -55,7 +55,6 @@ from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
-from acts.test_utils.wifi.wifi_power_test_utils import bokeh_plot
 from acts.test_utils.wifi.wifi_power_test_utils import get_phone_ip
 from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
@@ -1060,6 +1059,70 @@ def push_music_to_android_device(ad, audio_params):
         ad.adb.push("{} {}".format(music_file_to_play, android_music_path))
         return (os.path.basename(music_file_to_play))
 
+def bokeh_plot(data_sets,
+               legends,
+               fig_property,
+               shaded_region=None,
+               output_file_path=None):
+    """Plot bokeh figs.
+        Args:
+            data_sets: data sets including lists of x_data and lists of y_data
+                       ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
+            legends: list of legend for each curve
+            fig_property: dict containing the plot property, including title,
+                      labels, linewidth, circle size, etc.
+            shaded_region: optional dict containing data for plot shading
+            output_file_path: optional path at which to save figure
+        Returns:
+            plot: bokeh plot figure object
+    """
+    tools = 'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save'
+    plot = figure(plot_width=1300,
+                  plot_height=700,
+                  title=fig_property['title'],
+                  tools=tools,
+                  output_backend="webgl")
+    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="width"))
+    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="height"))
+    colors = [
+        'red', 'green', 'blue', 'olive', 'orange', 'salmon', 'black', 'navy',
+        'yellow', 'darkred', 'goldenrod'
+    ]
+    if shaded_region:
+        band_x = shaded_region["x_vector"]
+        band_x.extend(shaded_region["x_vector"][::-1])
+        band_y = shaded_region["lower_limit"]
+        band_y.extend(shaded_region["upper_limit"][::-1])
+        plot.patch(band_x,
+                   band_y,
+                   color='#7570B3',
+                   line_alpha=0.1,
+                   fill_alpha=0.1)
+
+    for x_data, y_data, legend in zip(data_sets[0], data_sets[1], legends):
+        index_now = legends.index(legend)
+        color = colors[index_now % len(colors)]
+        plot.line(x_data,
+                  y_data,
+                  legend=str(legend),
+                  line_width=fig_property['linewidth'],
+                  color=color)
+        plot.circle(x_data,
+                    y_data,
+                    size=fig_property['markersize'],
+                    legend=str(legend),
+                    fill_color=color)
+
+    # Plot properties
+    plot.xaxis.axis_label = fig_property['x_label']
+    plot.yaxis.axis_label = fig_property['y_label']
+    plot.legend.location = "top_right"
+    plot.legend.click_policy = "hide"
+    plot.title.text_font_size = {'value': '15pt'}
+    if output_file_path is not None:
+        output_file(output_file_path)
+        save(plot)
+    return plot
 
 def bokeh_chart_plot(bt_attenuation_range,
                data_sets,
@@ -1075,7 +1138,7 @@ def bokeh_chart_plot(bt_attenuation_range,
             ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
         legends: list of legend for each curve
         fig_property: dict containing the plot property, including title,
-                      lables, linewidth, circle size, etc.
+                      labels, linewidth, circle size, etc.
         shaded_region: optional dict containing data for plot shading
         output_file_path: optional path at which to save figure
 
