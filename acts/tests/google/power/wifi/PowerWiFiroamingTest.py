@@ -22,7 +22,7 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.power import PowerWiFiBaseTest as PWBT
 from acts.test_utils.wifi import wifi_constants as wc
 from acts.test_utils.wifi import wifi_test_utils as wutils
-from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.power import plot_utils
 
 PHONE_BATTERY_VOLTAGE = 4.2
 
@@ -93,7 +93,7 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
             results.append(self.monsoon_data_collect_save())
-        wputils.monsoon_data_plot(self.mon_info, results)
+        plot_utils.monsoon_data_plot(self.mon_info, results)
 
         total_current = 0
         total_samples = 0
@@ -140,7 +140,7 @@ class PowerWiFiroamingTest(PWBT.PowerWiFiBaseTest):
             self.dut.log.info('Connecting to %s' % network_aux[wc.SSID])
             self.dut.droid.wifiConnect(network_aux)
             results.append(self.monsoon_data_collect_save())
-        wputils.monsoon_data_plot(self.mon_info, results)
+        plot_utils.monsoon_data_plot(self.mon_info, results)
 
         total_current = 0
         total_samples = 0

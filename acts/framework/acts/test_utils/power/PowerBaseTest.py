@@ -28,7 +28,7 @@ from acts.controllers.monsoon_lib.api.common import MonsoonError
 from acts.controllers.monsoon_lib.api.common import PassthroughStates
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power.loggers.power_metric_logger import PowerMetricLogger
-from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.power import plot_utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
@@ -339,7 +339,9 @@ class PowerBaseTest(base_test.BaseTestClass):
                                           self.mon_voltage)
         self.avg_current = result.average_current
 
-        wputils.monsoon_data_plot(self.mon_info, result)
+        plot_utils.monsoon_data_plot(self.mon_info, result)
+        plot_utils.monsoon_histogram_plot(self.mon_info, result)
+
         return result
 
     def pass_fail_check(self, average_current=None):
