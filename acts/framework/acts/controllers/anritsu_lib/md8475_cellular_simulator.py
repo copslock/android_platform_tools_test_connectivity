@@ -308,6 +308,68 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         """
         self.bts[bts_index].phich_resource = phich
 
+    def set_drx_connected_mode(self, bts_index, active):
+        """ Sets the DRX connected mode
+
+        Args:
+            bts_index: the base station number
+            active: Boolean indicating whether cDRX mode
+                is active
+        """
+        mode = 'MANUAL' if active else 'OFF'
+        self.bts[bts_index].drx_connected_mode = mode
+
+    def set_drx_on_duration_timer(self, bts_index, timer):
+        """ Sets the amount of PDCCH subframes to wait for data after
+            waking up from a DRX cycle
+
+        Args:
+            bts_index: the base station number
+            timer: Number of PDCCH subframes to wait and check for user data
+                after waking from the DRX cycle
+        """
+        self.bts[bts_index].drx_on_duration_timer = timer
+
+    def set_drx_inactivity_timer(self, bts_index, timer):
+        """ Sets the number of PDCCH subframes to wait before entering DRX mode
+
+        Args:
+            bts_index: the base station number
+            timer: The time interval to wait before entering DRX mode
+        """
+        self.bts[bts_index].drx_inactivity_timer = timer
+
+    def set_drx_retransmission_timer(self, bts_index, timer):
+        """ Sets the number of consecutive PDCCH subframes to wait
+        for retransmission
+
+        Args:
+            bts_index: the base station number
+            timer: Number of PDCCH subframes to remain active
+
+        """
+        self.bts[bts_index].drx_retransmission_timer = timer
+
+    def set_drx_long_cycle(self, bts_index, cycle):
+        """ Sets the amount of subframes representing a DRX long cycle.
+
+        Args:
+            bts_index: the base station number
+            cycle: The amount of subframes representing one long DRX cycle.
+                One cycle consists of DRX sleep + DRX on duration
+        """
+        self.bts[bts_index].drx_long_cycle = cycle
+
+    def set_drx_long_cycle_offset(self, bts_index, offset):
+        """ Sets the offset used to determine the subframe number
+        to begin the long drx cycle
+
+        Args:
+            bts_index: the base station number
+            offset: Number in range 0 to (long cycle - 1)
+        """
+        self.bts[bts_index].drx_long_cycle_offset = offset
+
     def set_band(self, bts_index, band):
         """ Sets the right duplex mode before switching to a new band.
 
