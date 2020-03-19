@@ -45,6 +45,7 @@ install_requires = [
     # paramiko-ng is needed vs paramiko as currently paramiko does not support
     # ed25519 ssh keys, which is what Fuchsia uses.
     'paramiko-ng',
+    'dlipower'
 ]
 
 if sys.version_info < (3, ):
