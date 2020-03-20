@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import backoff
 import json
 import logging
 import platform
@@ -22,17 +23,22 @@ import random
 import re
 import requests
 import subprocess
+import socket
 import time
 
 from acts import context
 from acts import logger as acts_logger
+from acts import utils
 from acts import signals
 
+from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
 from acts.controllers.fuchsia_lib.bt.ble_lib import FuchsiaBleLib
 from acts.controllers.fuchsia_lib.bt.btc_lib import FuchsiaBtcLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
+from acts.controllers.fuchsia_lib.hwinfo_lib import FuchsiaHwinfoLib
+from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
 from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
@@ -41,9 +47,6 @@ from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.libs.proc.job import Error
-from acts.utils import is_valid_ipv4_address
-from acts.utils import is_valid_ipv6_address
-from acts.utils import SuppressLogOutput
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
@@ -146,7 +149,6 @@ class FuchsiaDevice:
         log: A logger object.
         port: The TCP port number of the Fuchsia device.
     """
-
     def __init__(self, fd_conf_data):
         """
         Args:
@@ -160,6 +162,7 @@ class FuchsiaDevice:
                         the fuchsia device
                         (Default: None)
         """
+        self.conf_data = fd_conf_data
         if "ip" not in fd_conf_data:
             raise FuchsiaDeviceError(FUCHSIA_DEVICE_NO_IP_MSG)
         self.ip = fd_conf_data["ip"]
@@ -172,9 +175,9 @@ class FuchsiaDevice:
         self.log = acts_logger.create_tagged_trace_logger(
             "FuchsiaDevice | %s" % self.ip)
 
-        if is_valid_ipv4_address(self.ip):
+        if utils.is_valid_ipv4_address(self.ip):
             self.address = "http://{}:{}".format(self.ip, self.port)
-        elif is_valid_ipv6_address(self.ip):
+        elif utils.is_valid_ipv6_address(self.ip):
             self.address = "http://[{}]:{}".format(self.ip, self.port)
         else:
             raise ValueError('Invalid IP: %s' % self.ip)
@@ -196,6 +199,9 @@ class FuchsiaDevice:
             self.log_path, "fuchsialog_%s_debug.txt" % self.serial)
         self.log_process = None
 
+        # Grab commands from FuchsiaAvdtpLib
+        self.avdtp_lib = FuchsiaAvdtpLib(self.address, self.test_counter,
+                                         self.client_id)
         # Grab commands from FuchsiaBleLib
         self.ble_lib = FuchsiaBleLib(self.address, self.test_counter,
                                      self.client_id)
@@ -209,6 +215,10 @@ class FuchsiaDevice:
         self.gatts_lib = FuchsiaGattsLib(self.address, self.test_counter,
                                          self.client_id)
 
+        # Grab commands from FuchsiaHwinfoLib
+        self.hwinfo_lib = FuchsiaHwinfoLib(self.address, self.test_counter,
+                                           self.client_id)
+
         # Grab commands from FuchsiaLoggingLib
         self.logging_lib = FuchsiaLoggingLib(self.address, self.test_counter,
                                              self.client_id)
@@ -221,6 +231,10 @@ class FuchsiaDevice:
         self.sdp_lib = FuchsiaProfileServerLib(self.address, self.test_counter,
                                                self.client_id)
 
+        # Grab commands from FuchsiaRegulatoryRegionLib
+        self.regulatory_region_lib = FuchsiaRegulatoryRegionLib(
+            self.address, self.test_counter, self.client_id)
+
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
                                        self.client_id)
@@ -230,13 +244,13 @@ class FuchsiaDevice:
         # Init server
         self.init_server_connection()
 
-    def init_server_connection(self, retry_count=3):
-        """Initializes HTTP connection with SL4F server.
-
-        Args:
-            retry_count: How many time to retry connecting assuming a
-                known error.
-        """
+    @backoff.on_exception(
+        backoff.constant,
+        (ConnectionRefusedError, requests.exceptions.ConnectionError),
+        interval=1.5,
+        max_tries=4)
+    def init_server_connection(self):
+        """Initializes HTTP connection with SL4F server."""
         self.log.debug("Initialziing server connection")
         init_data = json.dumps({
             "jsonrpc": "2.0",
@@ -246,28 +260,8 @@ class FuchsiaDevice:
                 "client_id": self.client_id
             }
         })
-        retry_counter = 0
-        while retry_counter < retry_count:
-            try:
-                requests.get(url=self.init_address, data=init_data)
-                retry_counter = retry_count + 1
-            except ConnectionRefusedError:
-                self.log.info('Connection Refused Error.  '
-                              'Retrying in 1 second.')
-                e = ConnectionRefusedError('Connection Refused Error.')
-                retry_counter += 1
-                time.sleep(1)
-            except requests.exceptions.ConnectionError:
-                self.log.info('Requests ConnectionError.  '
-                              'Retrying in 1 second.')
-                e = requests.exceptions.ConnectionError('Requests '
-                                                        'ConnectionError')
-                retry_counter += 1
-                time.sleep(1)
-            except Exception as e:
-                raise e
-        if retry_counter is retry_count:
-            raise e
+
+        requests.get(url=self.init_address, data=init_data)
         self.test_counter += 1
 
     def build_id(self, test_id):
@@ -315,7 +309,8 @@ class FuchsiaDevice:
         elif os_type == 'Linux':
             timeout_flag = '-W'
         else:
-            raise ValueError('Invalid OS.  Only Linux and MacOS are supported.')
+            raise ValueError(
+                'Invalid OS.  Only Linux and MacOS are supported.')
         ping_command = ['ping', '%s' % timeout_flag, '1', '-c', '1', self.ip]
         self.clean_up()
         self.log.info('Rebooting FuchsiaDevice %s' % self.ip)
@@ -323,7 +318,7 @@ class FuchsiaDevice:
         # because the ssh session does not disconnect cleanly and therefore
         # would throw an error.  This is expected and thus the error logging
         # is disabled for this call to not confuse the user.
-        with SuppressLogOutput():
+        with utils.SuppressLogOutput():
             self.send_command_ssh('dm reboot',
                                   timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
                                   skip_status_code_check=True)
@@ -331,7 +326,7 @@ class FuchsiaDevice:
         self.log.info('Waiting for FuchsiaDevice %s to come back up.' %
                       self.ip)
         self.log.debug('Waiting for FuchsiaDevice %s to stop responding'
-                      ' to pings.' % self.ip)
+                       ' to pings.' % self.ip)
         while True:
             initial_ping_status_code = subprocess.call(
                 ping_command,
@@ -340,28 +335,26 @@ class FuchsiaDevice:
             if initial_ping_status_code != 1:
                 break
             else:
-                initial_ping_elapsed_time = (
-                        time.time() - initial_ping_start_time)
+                initial_ping_elapsed_time = (time.time() -
+                                             initial_ping_start_time)
                 if initial_ping_elapsed_time > timeout:
                     try:
                         uptime = (int(
                             self.send_command_ssh(
                                 'clock --monotonic',
-                                timeout=
-                                FUCHSIA_RECONNECT_AFTER_REBOOT_TIME).stdout)
-                                / FUCHSIA_TIME_IN_NANOSECONDS)
+                                timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME).
+                            stdout) / FUCHSIA_TIME_IN_NANOSECONDS)
                     except Exception as e:
-                        self.log.debug('Unable to retrieve uptime from device.')
+                        self.log.info('Unable to retrieve uptime from device.')
                     # Device failed to restart within the specified period.
                     # Restart the services so other tests can continue.
                     self.start_services()
                     self.init_server_connection()
-                    raise TimeoutError('Waited %s seconds, and FuchsiaDevice %s'
-                                       ' never stopped responding to pings.'
-                                       ' Uptime reported as %s' %
-                                       (initial_ping_elapsed_time,
-                                        self.ip,
-                                        str(uptime)))
+                    raise TimeoutError(
+                        'Waited %s seconds, and FuchsiaDevice %s'
+                        ' never stopped responding to pings.'
+                        ' Uptime reported as %s' %
+                        (initial_ping_elapsed_time, self.ip, str(uptime)))
 
         start_time = time.time()
         self.log.debug('Waiting for FuchsiaDevice %s to start responding '
@@ -377,11 +370,24 @@ class FuchsiaDevice:
                 raise TimeoutError('Waited %s seconds, and FuchsiaDevice %s'
                                    'did not repond to a ping.' %
                                    (elapsed_time, self.ip))
-        self.log.debug('Received a ping back in %s seconds.'
-                       % str(time.time() - start_time))
+        self.log.debug('Received a ping back in %s seconds.' %
+                       str(time.time() - start_time))
         # Wait 5 seconds after receiving a ping packet to just to let
         # the OS get everything up and running.
         time.sleep(10)
+        # Verify SSH before starting services, since those have more risky
+        # thread implications if they need to retry. Note that
+        # create_ssh_connection has a short backoff loop itself, but it alone is
+        # not intended for waiting until ssh is up.
+        for _ in range(3):
+            try:
+                self.send_command_ssh('\n')
+                break
+            except:
+                logging.info('Could not SSH to device. Retrying in 1 second.')
+                time.sleep(1)
+        else:
+            raise ConnectionError('Failed to connect to device via SSH.')
         # Start sl4f on device
         self.start_services()
         # Init server
@@ -417,12 +423,10 @@ class FuchsiaDevice:
                 cmd_result_stdin, cmd_result_stdout, cmd_result_stderr = (
                     ssh_conn.exec_command(test_cmd, timeout=timeout))
                 if not skip_status_code_check:
-                    cmd_result_exit_status = (
-                        cmd_result_stdout.channel.recv_exit_status())
                     command_result = SshResults(cmd_result_stdin,
                                                 cmd_result_stdout,
                                                 cmd_result_stderr,
-                                                cmd_result_exit_status)
+                                                cmd_result_stdout.channel)
             except Exception as e:
                 self.log.warning("Problem running ssh command: %s"
                                  "\n Exception: %s" % (test_cmd, e))
@@ -456,7 +460,7 @@ class FuchsiaDevice:
         rtt_min = None
         rtt_max = None
         rtt_avg = None
-        self.log.info("Pinging %s..." % dest_ip)
+        self.log.debug("Pinging %s..." % dest_ip)
         ping_result = self.send_command_ssh(
             'ping -c %s -i %s -t %s -s %s %s' %
             (count, interval, timeout, size, dest_ip))
@@ -635,14 +639,14 @@ class FuchsiaDevice:
             if not connection_result:
                 # Ideally the error would be present but just outputting a log
                 # message until available.
-                self.log.error("Connect call failed, aborting!")
+                self.log.debug("Connect call failed, aborting!")
                 return False
             else:
                 # Returns True if connection was successful.
                 return True
         else:
             # the response indicates an error - log and raise failure
-            self.log.error("Aborting! - Connect call failed with error: %s" %
+            self.log.debug("Aborting! - Connect call failed with error: %s" %
                            connect_response.get("error"))
             return False
 
@@ -652,19 +656,21 @@ class FuchsiaDevice:
             return True
         else:
             # the response indicates an error - log and raise failure
-            self.log.error("Disconnect call failed with error: %s" %
+            self.log.debug("Disconnect call failed with error: %s" %
                            disconnect_response.get("error"))
             return False
 
-    def start_services(self, skip_sl4f=False, retry_count=3):
+    @backoff.on_exception(backoff.constant,
+                          (FuchsiaSyslogError, socket.timeout),
+                          interval=1.5,
+                          max_tries=4)
+    def start_services(self, skip_sl4f=False):
         """Starts long running services on the Fuchsia device.
 
         1. Start SL4F if not skipped.
 
         Args:
             skip_sl4f: Does not attempt to start SL4F if True.
-            retry_count: How many time to retry connecting assuming a
-                known error.
         """
         self.log.debug("Attempting to start Fuchsia device services on %s." %
                        self.ip)
@@ -672,24 +678,16 @@ class FuchsiaDevice:
             self.log_process = start_syslog(self.serial, self.log_path,
                                             self.ip, self.ssh_username,
                                             self.ssh_config)
-            retry_counter = 0
-            while retry_counter < retry_count:
-                if ENABLE_LOG_LISTENER:
-                    try:
-                        self.log_process.start()
-                        retry_counter = retry_count + 1
-                    except FuchsiaSyslogError:
-                        self.log.info('Fuchsia Syslog Error.  '
-                                      'Retrying in 1 second.')
-                        e = FuchsiaSyslogError('Fuchsia Syslog Error')
-                        retry_counter += 1
-                        time.sleep(1)
-                    except Exception as e:
-                        raise e
-                else:
-                    retry_counter = retry_count + 1
-            if retry_counter is retry_count:
-                raise e
+
+            if ENABLE_LOG_LISTENER:
+                try:
+                    self.log_process.start()
+                except FuchsiaSyslogError as e:
+                    # Before backing off and retrying, stop the syslog if it
+                    # failed to setup correctly, to prevent threading error when
+                    # retrying
+                    self.log_process.stop()
+                    raise
 
             if not skip_sl4f:
                 self.control_daemon("sl4f.cmx", "start")
@@ -709,6 +707,12 @@ class FuchsiaDevice:
             if self.log_process:
                 if ENABLE_LOG_LISTENER:
                     self.log_process.stop()
+
+    def reinitialize_services(self):
+        """Reinitialize long running services and establish connection to
+        SL4F."""
+        self.start_services()
+        self.init_server_connection()
 
     def load_config(self, config):
         pass

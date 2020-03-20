@@ -56,6 +56,7 @@ from acts.test_utils.tel.tel_defines import \
     WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_TETHERING_AFTER_REBOOT
 from acts.test_utils.tel.tel_data_utils import airplane_mode_test
+from acts.test_utils.tel.tel_data_utils import browsing_test
 from acts.test_utils.tel.tel_data_utils import change_data_sim_and_verify_data
 from acts.test_utils.tel.tel_data_utils import data_connectivity_single_bearer
 from acts.test_utils.tel.tel_data_utils import tethering_check_internet_connection
@@ -119,6 +120,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_3g
 from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
+from acts.test_utils.tel.tel_voice_utils import phone_setup_4g
 from acts.utils import disable_doze
 from acts.utils import enable_doze
 from acts.utils import rand_ascii_str
@@ -139,6 +141,62 @@ class TelLiveDataTest(TelephonyBaseTest):
 
     def teardown_class(self):
         TelephonyBaseTest.teardown_class(self)
+
+
+    """ Tests Begin """
+
+
+    @test_tracker_info(uuid="ba24f9a3-0126-436c-8a5c-9f88859c273c")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_data_browsing_for_single_phone(self):
+        """ Browsing websites on cellular.
+
+        Ensure phone attach, data on, WiFi off
+        Verify 5 websites on cellular.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        wifi_toggle_state(ad.log, ad, False)
+        for iteration in range(3):
+            ad.log.info("Attempt %d", iteration + 1)
+            if test_data_browsing_success_using_sl4a(ad.log, ad):
+                ad.log.info("Call test PASS in iteration %d", iteration + 1)
+                return True
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        ad.log.info("Data Browsing test FAIL for all 3 iterations")
+        return False
+
+
+    @test_tracker_info(uuid="0679214b-9002-476d-83a7-3532b3cca209")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_wifi_browsing_for_single_phone(self):
+        """ Browsing websites on wifi.
+
+        Ensure phone attach, data on, WiFi On, WiFi Connected.
+        Verify 5 websites on WiFi.
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        wifi_toggle_state(ad.log, ad, True)
+        if not ensure_wifi_connected(ad.log, ad, self.wifi_network_ssid,
+                                     self.wifi_network_pass):
+            ad.log.error("WiFi connect fail.")
+            return False
+        for iteration in range(3):
+            ad.log.info("Attempt %d", iteration + 1)
+            if test_data_browsing_success_using_sl4a(ad.log, ad):
+                ad.log.info("Call test PASS in iteration %d", iteration + 1)
+                wifi_toggle_state(ad.log, ad, False)
+                return True
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        ad.log.info("Data Browsing test FAIL for all 3 iterations")
+        wifi_toggle_state(ad.log, ad, False)
+        return False
+
 
     @test_tracker_info(uuid="1b0354f3-8668-4a28-90a5-3b3d2b2756d3")
     @TelephonyBaseTest.tel_test_wrap
@@ -3305,4 +3363,31 @@ class TelLiveDataTest(TelephonyBaseTest):
         return self._test_data_stall_detection_recovery(nw_type="cellular",
                                                 validation_type="recovery")
 
-        """ Tests End """
+    @test_tracker_info(uuid="d705d653-c810-42eb-bd07-3313f99be2fa")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_browsing_4g(self):
+        ad = self.android_devices[0]
+        self.log.info("Connect to LTE and verify internet connection.")
+        if not phone_setup_4g(self.log, ad):
+            return False
+        if not verify_internet_connection(self.log, ad):
+            return False
+
+        return browsing_test(self.log, self.android_devices[0])
+
+    @test_tracker_info(uuid="71088cb1-5ccb-4d3a-8e6a-03fac9bf31cc")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_browsing_wifi(self):
+        ad = self.android_devices[0]
+        self.log.info("Connect to Wi-Fi and verify internet connection.")
+        if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                     self.wifi_network_pass):
+            return False
+        if not wait_for_wifi_data_connection(self.log, ad, True):
+            return False
+        if not verify_internet_connection(self.log, ad):
+            return False
+
+        return browsing_test(self.log, self.android_devices[0], wifi_ssid=self.wifi_network_ssid)
+
+    """ Tests End """

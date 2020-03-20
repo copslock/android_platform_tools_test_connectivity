@@ -214,3 +214,36 @@ class FuchsiaBtcLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def pair(self, identifier, pairing_security_level, non_bondable,
+             transport):
+        """Pairs to a device.
+
+        Args:
+            identifier: A string representing the device id.
+            pairing_security_level: The security level required for this pairing request
+                represented as a u64. (Only for LE pairing)
+                Available Values
+                1 - ENCRYPTED: Encrypted without MITM protection (unauthenticated)
+                2 - AUTHENTICATED: Encrypted with MITM protection (authenticated).
+                None: No pairing security level.
+            non_bondable: A bool representing whether the pairing mode is bondable or not. None is
+                also accepted. False if bondable, True if non-bondable.
+            transport: A u64 representing the transport type.
+                Available Values
+                1 - BREDR: Classic BR/EDR transport
+                2 - LE: Bluetooth Low Energy Transport
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "bt_control_facade.BluetoothPairDevice"
+        test_args = {
+            "identifier": identifier,
+            "pairing_security_level": pairing_security_level,
+            "non_bondable": non_bondable,
+            "transport": transport,
+        }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+        return self.send_command(test_id, test_cmd, test_args)

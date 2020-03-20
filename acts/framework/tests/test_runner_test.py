@@ -14,11 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import shutil
 import tempfile
 import unittest
 
-import os
 from mobly.config_parser import TestRunConfig
 from mock import Mock
 from mock import patch
@@ -104,7 +104,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertTrue(test_classes[class_names[2]].called)
 
     @patch('acts.records.TestResult')
-    @patch('acts.test_runner.open')
+    @patch.object(test_runner.TestRunner, 'dump_config')
     @patch.object(test_runner.TestRunner, '_write_results_to_file')
     @patch('acts.test_runner.logger')
     def test_class_logpath_contains_proper_directory(self, logger_mock, *_):
@@ -122,5 +122,5 @@ class TestRunnerTest(unittest.TestCase):
                          expected_timestamp))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

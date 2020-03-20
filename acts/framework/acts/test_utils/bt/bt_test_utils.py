@@ -24,6 +24,7 @@ import time
 from queue import Empty
 from subprocess import call
 
+from acts import asserts
 from acts.test_utils.bt.bt_constants import adv_fail
 from acts.test_utils.bt.bt_constants import adv_succ
 from acts.test_utils.bt.bt_constants import batch_scan_not_supported_list
@@ -58,7 +59,6 @@ from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import verify_http_connection
 from acts.utils import exe_cmd
 
-from acts import context
 from acts import utils
 
 log = logging
@@ -1560,7 +1560,7 @@ def take_btsnoop_log(ad, testcase, testname):
     device_model = device_model.replace(" ", "")
     out_name = ','.join((testname, device_model, serial))
     snoop_path = os.path.join(ad.device_log_path, 'BluetoothSnoopLogs')
-    utils.create_dir(snoop_path)
+    os.makedirs(snoop_path, exist_ok=True)
     cmd = ''.join(("adb -s ", serial, " pull ", btsnoop_log_path_on_device,
                    " ", snoop_path + '/' + out_name, ".btsnoop_hci.log"))
     exe_cmd(cmd)
@@ -1745,3 +1745,55 @@ def write_read_verify_data(client_ad, server_ad, msg, binary=False):
         log.error("Mismatch! Read: {}, Expected: {}".format(read_msg, msg))
         return False
     return True
+
+
+class MediaControlOverSl4a(object):
+    """Media control using sl4a facade for general purpose.
+
+    """
+    def __init__(self, android_device, music_file):
+        """Initialize the media_control class.
+
+        Args:
+            android_dut: android_device object
+            music_file: location of the music file
+        """
+        self.android_device = android_device
+        self.music_file = music_file
+
+    def play(self):
+        """Play media.
+
+        """
+        self.android_device.droid.mediaPlayOpen('file://%s' % self.music_file,
+                                                'default', True)
+        playing = self.android_device.droid.mediaIsPlaying()
+        asserts.assert_true(playing,
+                            'Failed to play music %s' % self.music_file)
+
+    def pause(self):
+        """Pause media.
+
+        """
+        self.android_device.droid.mediaPlayPause('default')
+        paused = not self.android_device.droid.mediaIsPlaying()
+        asserts.assert_true(paused,
+                            'Failed to pause music %s' % self.music_file)
+
+    def resume(self):
+        """Resume media.
+
+        """
+        self.android_device.droid.mediaPlayStart('default')
+        playing = self.android_device.droid.mediaIsPlaying()
+        asserts.assert_true(playing,
+                            'Failed to play music %s' % self.music_file)
+
+    def stop(self):
+        """Stop media.
+
+        """
+        self.android_device.droid.mediaPlayStop('default')
+        stopped = not self.android_device.droid.mediaIsPlaying()
+        asserts.assert_true(stopped,
+                            'Failed to stop music %s' % self.music_file)

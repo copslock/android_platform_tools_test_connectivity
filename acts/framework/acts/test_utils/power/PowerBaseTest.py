@@ -28,7 +28,7 @@ from acts.controllers.monsoon_lib.api.common import MonsoonError
 from acts.controllers.monsoon_lib.api.common import PassthroughStates
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power.loggers.power_metric_logger import PowerMetricLogger
-from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.power import plot_utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
 RESET_BATTERY_STATS = 'dumpsys batterystats --reset'
@@ -80,15 +80,36 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.img_name = ''
         self.dut = None
         self.power_logger = PowerMetricLogger.for_test_case()
+        self.avg_current = 0
 
     @property
     def final_test(self):
-        return self.current_test_name == self.results.requested[-1]
+        return len(
+            self.results.requested
+        ) > 0 and self.current_test_name == self.results.requested[-1]
+
+    @property
+    def display_name_test_suite(self):
+        return getattr(self, '_display_name_test_suite',
+                       self.__class__.__name__)
+
+    @display_name_test_suite.setter
+    def display_name_test_suite(self, name):
+        self._display_name_test_suite = name
+
+    @property
+    def display_name_test_case(self):
+        default_test_name = getattr(self, 'test_name', None)
+        return getattr(self, '_display_name_test_case', default_test_name)
+
+    @display_name_test_case.setter
+    def display_name_test_case(self, name):
+        self._display_name_test_case = name
 
     def setup_class(self):
 
         self.log = logging.getLogger()
-        self.tests = self._get_all_test_names()
+        self.tests = self.get_existing_test_names()
 
         # Obtain test parameters from user_params
         TEST_PARAMS = self.TAG + '_params'
@@ -155,7 +176,7 @@ class PowerBaseTest(base_test.BaseTestClass):
         # Sync device time, timezone and country code
         utils.require_sl4a((self.dut, ))
         utils.sync_device_time(self.dut)
-        self.dut.droid.wifiSetCountryCode('US')
+        wutils.set_wifi_country_code(self.dut, 'US')
 
         screen_on_img = self.user_params.get('screen_on_img', [])
         if screen_on_img:
@@ -187,7 +208,33 @@ class PowerBaseTest(base_test.BaseTestClass):
         self.log.info('Tearing down the test case')
         self.mon.usb('on')
         self.power_logger.set_avg_power(self.power_result.metric_value)
+        self.power_logger.set_avg_current(self.avg_current)
+        self.power_logger.set_voltage(self.mon_voltage)
         self.power_logger.set_testbed(self.testbed_name)
+
+        # If a threshold was provided, log it in the power proto
+        if self.threshold and self.test_name in self.threshold:
+            avg_current_threshold = self.threshold[self.test_name]
+            self.power_logger.set_avg_current_threshold(avg_current_threshold)
+
+        build_id = self.dut.build_info.get('build_id', '')
+        incr_build_id = self.dut.build_info.get('incremental_build_id', '')
+        branch = self.user_params.get('branch', '')
+        target = self.dut.device_info.get('flavor', '')
+
+        self.power_logger.set_branch(branch)
+        self.power_logger.set_build_id(build_id)
+        self.power_logger.set_incremental_build_id(incr_build_id)
+        self.power_logger.set_target(target)
+
+        # Log the display name of the test suite and test case
+        if self.display_name_test_suite:
+            name = self.display_name_test_suite
+            self.power_logger.set_test_suite_display_name(name)
+
+        if self.display_name_test_case:
+            name = self.display_name_test_case
+            self.power_logger.set_test_case_display_name(name)
 
         # Take Bugreport
         if self.bug_report:
@@ -290,7 +337,11 @@ class PowerBaseTest(base_test.BaseTestClass):
         result = self.monsoon_data_collect_save()
         self.power_result.metric_value = (result.average_current *
                                           self.mon_voltage)
-        wputils.monsoon_data_plot(self.mon_info, result)
+        self.avg_current = result.average_current
+
+        plot_utils.monsoon_data_plot(self.mon_info, result)
+        plot_utils.monsoon_histogram_plot(self.mon_info, result)
+
         return result
 
     def pass_fail_check(self, average_current=None):

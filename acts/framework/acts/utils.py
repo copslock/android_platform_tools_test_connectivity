@@ -19,6 +19,7 @@ import concurrent.futures
 import copy
 import datetime
 import functools
+import IPy
 import json
 import logging
 import os
@@ -117,15 +118,6 @@ def abs_path(path):
         The absolute path of the input path.
     """
     return os.path.abspath(os.path.expanduser(path))
-
-
-def create_dir(path):
-    """Creates a directory if it does not exist already.
-
-    Args:
-        path: The path of the directory to create.
-    """
-    os.makedirs(path, exist_ok=True)
 
 
 def get_current_epoch_time():
@@ -958,7 +950,10 @@ def adb_shell_ping(ad,
                  default www.google.com
         timeout: timeout for icmp pings to complete.
     """
-    ping_cmd = "ping -W 1"
+    if is_valid_ipv6_address(dest_ip):
+        ping_cmd = "ping6 -W 1"
+    else:
+        ping_cmd = "ping -W 1"
     if count:
         ping_cmd += " -c %d" % count
     if dest_ip:
@@ -1381,3 +1376,163 @@ def merge_dicts(*dict_args):
 def ascii_string(uc_string):
     """Converts unicode string to ascii"""
     return str(uc_string).encode('ASCII')
+
+
+def get_interface_ip_addresses(comm_channel, interface):
+    """Gets all of the ip addresses, ipv4 and ipv6, associated with a
+       particular interface name.
+
+    Args:
+        comm_channel: How to send commands to a device.  Can be ssh, adb serial,
+            etc.  Must have the run function implemented.
+        interface: The interface name on the device, ie eth0
+
+    Returns:
+        A list of dictionaries of the the various IP addresses:
+            ipv4_private_local_addresses: Any 192.168, 172.16, 10, or 169.254
+                addresses
+            ipv4_public_addresses: Any IPv4 public addresses
+            ipv6_link_local_addresses: Any fe80:: addresses
+            ipv6_private_local_addresses: Any fd00:: addresses
+            ipv6_public_addresses: Any publicly routable addresses
+    """
+    # Local imports are used here to prevent cyclic dependency.
+    from acts.controllers.android_device import AndroidDevice
+    from acts.controllers.fuchsia_device import FuchsiaDevice
+    from acts.controllers.utils_lib.ssh.connection import SshConnection
+    ipv4_private_local_addresses = []
+    ipv4_public_addresses = []
+    ipv6_link_local_addresses = []
+    ipv6_private_local_addresses = []
+    ipv6_public_addresses = []
+    is_local = comm_channel == job
+    if type(comm_channel) is AndroidDevice:
+        all_interfaces_and_addresses = comm_channel.adb.shell(
+            'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
+            'print $2" "$4}\'')
+        ifconfig_output = comm_channel.adb.shell('ifconfig %s' % interface)
+    elif (type(comm_channel) is SshConnection or is_local):
+        all_interfaces_and_addresses = comm_channel.run(
+            'ip -o addr | awk \'!/^[0-9]*: ?lo|link\/ether/ {gsub("/", " "); '
+            'print $2" "$4}\'').stdout
+        ifconfig_output = comm_channel.run('ifconfig %s' % interface).stdout
+    elif type(comm_channel) is FuchsiaDevice:
+        all_interfaces_and_addresses = []
+        comm_channel.netstack_lib.init()
+        interfaces = comm_channel.netstack_lib.netstackListInterfaces()
+        if interfaces.get('error') is not None:
+            raise ActsUtilsError('Failed with {}'.format(
+                interfaces.get('error')))
+        for item in interfaces.get('result'):
+            for ipv4_address in item['ipv4_addresses']:
+                ipv4_address = '.'.join(map(str, ipv4_address))
+                all_interfaces_and_addresses.append(
+                    '%s %s' % (item['name'], ipv4_address))
+            for ipv6_address in item['ipv6_addresses']:
+                converted_ipv6_address = []
+                for octet in ipv6_address:
+                    converted_ipv6_address.append(format(octet, 'x').zfill(2))
+                ipv6_address = ''.join(converted_ipv6_address)
+                ipv6_address = (':'.join(
+                    ipv6_address[i:i + 4]
+                    for i in range(0, len(ipv6_address), 4)))
+                all_interfaces_and_addresses.append(
+                    '%s %s' % (item['name'], str(IPy.IP(ipv6_address))))
+        all_interfaces_and_addresses = '\n'.join(all_interfaces_and_addresses)
+        ifconfig_output = all_interfaces_and_addresses
+    else:
+        raise ValueError('Unsupported method to send command to device.')
+
+    for interface_line in all_interfaces_and_addresses.split('\n'):
+        if interface != interface_line.split()[0]:
+            continue
+        on_device_ip = IPy.IP(interface_line.split()[1])
+        if on_device_ip.version() is 4:
+            if on_device_ip.iptype() == 'PRIVATE':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv4_private_local_addresses.append(
+                        on_device_ip.strNormal())
+            elif (on_device_ip.iptype() == 'PUBLIC'
+                  or on_device_ip.iptype() == 'CARRIER_GRADE_NAT'):
+                if str(on_device_ip) in ifconfig_output:
+                    ipv4_public_addresses.append(on_device_ip.strNormal())
+        elif on_device_ip.version() is 6:
+            if on_device_ip.iptype() == 'LINKLOCAL':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_link_local_addresses.append(on_device_ip.strNormal())
+            elif on_device_ip.iptype() == 'ULA':
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_private_local_addresses.append(
+                        on_device_ip.strNormal())
+            elif 'ALLOCATED' in on_device_ip.iptype():
+                if str(on_device_ip) in ifconfig_output:
+                    ipv6_public_addresses.append(on_device_ip.strNormal())
+    return {
+        'ipv4_private': ipv4_private_local_addresses,
+        'ipv4_public': ipv4_public_addresses,
+        'ipv6_link_local': ipv6_link_local_addresses,
+        'ipv6_private_local': ipv6_private_local_addresses,
+        'ipv6_public': ipv6_public_addresses
+    }
+
+
+def get_interface_based_on_ip(comm_channel, desired_ip_address):
+    """Gets the interface for a particular IP
+
+    Args:
+        comm_channel: How to send commands to a device.  Can be ssh, adb serial,
+            etc.  Must have the run function implemented.
+        desired_ip_address: The IP address that is being looked for on a device.
+
+    Returns:
+        The name of the test interface.
+    """
+
+    desired_ip_address = desired_ip_address.split('%', 1)[0]
+    all_ips_and_interfaces = comm_channel.run(
+        '(ip -o -4 addr show; ip -o -6 addr show) | '
+        'awk \'{print $2" "$4}\'').stdout
+    for ip_address_and_interface in all_ips_and_interfaces.split('\n'):
+        if desired_ip_address in ip_address_and_interface:
+            return ip_address_and_interface.split()[1][:-1]
+    return None
+
+
+def renew_linux_ip_address(comm_channel, interface):
+    comm_channel.run('sudo ifconfig %s down' % interface)
+    comm_channel.run('sudo ifconfig %s up' % interface)
+    comm_channel.run('sudo killall dhcpcd 2>/dev/null; echo""')
+    is_dhcpcd_dead = False
+    dhcpcd_counter = 0
+    dhcpcd_checker_max_times = 3
+    while not is_dhcpcd_dead:
+        if dhcpcd_counter == dhcpcd_checker_max_times:
+            raise TimeoutError('Unable to stop dhcpcd')
+        time.sleep(1)
+        if 'dhcpcd' in comm_channel.run('ps axu').stdout:
+            dhcpcd_counter += 1
+        else:
+            is_dhcpcd_dead = True
+    comm_channel.run('sudo dhcpcd -q -b')
+    comm_channel.run('sudo dhclient -r %s' % interface)
+    comm_channel.run('sudo dhclient %s' % interface)
+
+
+def is_pingable(ip):
+    """Returns whether an ip is pingable or not.
+
+    Args:
+        ip: string, ip address to ping
+    Returns:
+        True if ping was successful, else False
+    """
+    if is_valid_ipv4_address(ip):
+        ping_binary = 'ping'
+    elif is_valid_ipv6_address(ip):
+        ping_binary = 'ping6'
+    else:
+        raise ValueError('Invalid ip addr: %s' % ip)
+    ping_cmd = [ping_binary, '-W', '1', '-c', '1', ip]
+
+    result = job.run(ping_cmd, timeout=10, ignore_status=True)
+    return result.exit_status == 0

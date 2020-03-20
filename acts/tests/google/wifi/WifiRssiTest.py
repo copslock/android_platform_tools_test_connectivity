@@ -75,7 +75,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             ssh.settings.from_config(self.RemoteServer[0]['ssh_config']))
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
         self.log_path = os.path.join(logging.log_path, 'results')
-        utils.create_dir(self.log_path)
+        os.makedirs(self.log_path, exist_ok=True)
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
         if hasattr(self, 'bdf'):
@@ -561,7 +561,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             wutils.reset_wifi(self.dut)
             self.main_network[testcase_params['band']][
                 'channel'] = testcase_params['channel']
-            self.dut.droid.wifiSetCountryCode(
+            wutils.set_wifi_country_code(self.dut,
                 self.testclass_params['country_code'])
             wutils.wifi_connect(self.dut,
                                 self.main_network[testcase_params['band']],

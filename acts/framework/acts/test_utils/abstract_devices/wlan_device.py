@@ -17,7 +17,10 @@
 import inspect
 import logging
 
-import acts.test_utils.wifi.wifi_test_utils as wutils
+import acts.test_utils.wifi.wifi_test_utils as awutils
+import acts.test_utils.abstract_devices.utils_lib.wlan_utils as fwutils
+from acts.utils import get_interface_ip_addresses
+from acts.utils import adb_shell_ping
 
 from acts import asserts
 from acts.controllers.fuchsia_device import FuchsiaDevice
@@ -49,7 +52,6 @@ class WlanDevice(object):
     Attributes:
         device: A generic WLAN device.
     """
-
     def __init__(self, device):
         self.device = device
         self.log = logging
@@ -121,6 +123,22 @@ class WlanDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
+    def send_command(self, command):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def get_interface_ip_addresses(self, interface):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def is_connected(self, ssid=None):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
 
 class AndroidWlanDevice(WlanDevice):
     """Class wrapper for an Android WLAN device.
@@ -131,15 +149,14 @@ class AndroidWlanDevice(WlanDevice):
     Attributes:
         android_device: An Android WLAN device.
     """
-
     def __init__(self, android_device):
         super().__init__(android_device)
 
     def wifi_toggle_state(self, state):
-        wutils.wifi_toggle_state(self.device, state)
+        awutils.wifi_toggle_state(self.device, state)
 
     def reset_wifi(self):
-        wutils.reset_wifi(self.device)
+        awutils.reset_wifi(self.device)
 
     def take_bug_report(self, test_name, begin_time):
         self.device.take_bug_report(test_name, begin_time)
@@ -148,11 +165,12 @@ class AndroidWlanDevice(WlanDevice):
         self.device.cat_adb_log(test_name, begin_time)
 
     def turn_location_off_and_scan_toggle_off(self):
-        wutils.turn_location_off_and_scan_toggle_off(self.device)
+        awutils.turn_location_off_and_scan_toggle_off(self.device)
 
     def associate(self,
                   target_ssid,
                   target_pwd=None,
+                  key_mgmt=None,
                   check_connectivity=True,
                   hidden=False):
         """Function to associate an Android WLAN device.
@@ -160,21 +178,20 @@ class AndroidWlanDevice(WlanDevice):
         Args:
             target_ssid: SSID to associate to.
             target_pwd: Password for the SSID, if necessary.
+            key_mgmt: The hostapd wpa_key_mgmt value, distinguishes wpa3 from
+                wpa2 for android tests.
             check_connectivity: Whether to check for internet connectivity.
             hidden: Whether the network is hidden.
         Returns:
             True if successfully connected to WLAN, False if not.
         """
+        network = {'SSID': target_ssid, 'hiddenSSID': hidden}
         if target_pwd:
-            network = {
-                'SSID': target_ssid,
-                'password': target_pwd,
-                'hiddenSSID': hidden
-            }
-        else:
-            network = {'SSID': target_ssid, 'hiddenSSID': hidden}
+            network['password'] = target_pwd
+        if key_mgmt:
+            network['security'] = key_mgmt
         try:
-            wutils.connect_to_wifi_network(
+            awutils.connect_to_wifi_network(
                 self.device,
                 network,
                 check_connectivity=check_connectivity,
@@ -185,13 +202,31 @@ class AndroidWlanDevice(WlanDevice):
             return False
 
     def disconnect(self):
-        wutils.turn_location_off_and_scan_toggle_off(self.device)
+        awutils.turn_location_off_and_scan_toggle_off(self.device)
 
     def get_wlan_interface_id_list(self):
         pass
 
     def destroy_wlan_interface(self, iface_id):
         pass
+
+    def send_command(self, command):
+        return self.device.adb.shell(str(command))
+
+    def get_interface_ip_addresses(self, interface):
+        return get_interface_ip_addresses(self.device, interface)
+
+    def is_connected(self, ssid=None):
+        wifi_info = self.device.droid.wifiGetConnectionInfo()
+        if ssid:
+            return 'BSSID' in wifi_info and wifi_info['SSID'] == ssid
+        return 'BSSID' in wifi_info
+
+    def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
+        return adb_shell_ping(self.device,
+                              dest_ip=dest_ip,
+                              count=count,
+                              timeout=timeout)
 
 
 class FuchsiaWlanDevice(WlanDevice):
@@ -203,7 +238,6 @@ class FuchsiaWlanDevice(WlanDevice):
     Attributes:
         fuchsia_device: A Fuchsia WLAN device.
     """
-
     def __init__(self, fuchsia_device):
         super().__init__(fuchsia_device)
 
@@ -230,6 +264,7 @@ class FuchsiaWlanDevice(WlanDevice):
     def associate(self,
                   target_ssid,
                   target_pwd=None,
+                  key_mgmt=None,
                   check_connectivity=True,
                   hidden=False):
         """Function to associate a Fuchsia WLAN device.
@@ -237,6 +272,7 @@ class FuchsiaWlanDevice(WlanDevice):
         Args:
             target_ssid: SSID to associate to.
             target_pwd: Password for the SSID, if necessary.
+            key_mgmt: the hostapd wpa_key_mgmt, if specified.
             check_connectivity: Whether to check for internet connectivity.
             hidden: Whether the network is hidden.
         Returns:
@@ -260,11 +296,12 @@ class FuchsiaWlanDevice(WlanDevice):
         return self.device.wlan_lib.wlanStatus()
 
     def ping(self, dest_ip, count=3, interval=1000, timeout=1000, size=25):
-        return self.device.ping(dest_ip,
-                                count=count,
-                                interval=interval,
-                                timeout=timeout,
-                                size=size)
+        ping_result = self.device.ping(dest_ip,
+                                       count=count,
+                                       interval=interval,
+                                       timeout=timeout,
+                                       size=size)
+        return ping_result['status']
 
     def get_wlan_interface_id_list(self):
         """Function to list available WLAN interfaces.
@@ -292,3 +329,12 @@ class FuchsiaWlanDevice(WlanDevice):
             self.log.error("Failed to destroy interface with: {}".format(
                 result.get('error')))
             return False
+
+    def send_command(self, command):
+        return self.device.send_command_ssh(str(command)).stdout
+
+    def get_interface_ip_addresses(self, interface):
+        return get_interface_ip_addresses(self.device, interface)
+
+    def is_connected(self, ssid=None):
+        return fwutils.is_connected(self, ssid)

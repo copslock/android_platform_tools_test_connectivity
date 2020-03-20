@@ -19,9 +19,20 @@ message PowerMetric {
   optional float avg_power = 1; // Required
   optional string testbed = 2; // Required
   optional PowerCellularMetric cellular_metric = 3;
+  optional string branch = 4;
+  optional string build_id = 5;
+  optional string target = 6;
+  optional float avg_current = 7;
+  optional float voltage = 8;
+  optional string test_suite_display_name = 9;
+  optional string test_case_display_name = 10;
+  optional string incremental_build_id = 11;
+  optional float avg_current_threshold = 12;
 }
 
 message PowerCellularMetric {
   optional float avg_dl_tput = 1;
   optional float avg_ul_tput = 2;
+  optional float avg_dl_tput_threshold = 3;
+  optional float avg_ul_tput_threshold = 4;
 }

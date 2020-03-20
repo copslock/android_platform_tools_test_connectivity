@@ -23,22 +23,24 @@ from setuptools.command import test
 import sys
 
 install_requires = [
+    'backoff',
     # Future needs to have a newer version that contains urllib.
     'future>=0.16.0',
-    'mock',
+    # Latest version of mock (4.0.0b) causes a number of compatibility issues with ACTS unit tests
+    # b/148695846, b/148814743
+    'mock==3.0.5',
     'numpy',
     'pyserial',
     'pyyaml>=5.1',
-    'shellescape>=3.4.1',
-    'protobuf',
+    'protobuf>=3.11.3',
     'retry',
     'requests',
-    'roman',
     'scapy',
     'pylibftdi',
     'xlsxwriter',
-    'mobly',
+    'mobly>=1.10.0',
     'grpcio',
+    'IPy',
     'Monsoon',
     # paramiko-ng is needed vs paramiko as currently paramiko does not support
     # ed25519 ssh keys, which is what Fuchsia uses.
@@ -58,16 +60,20 @@ class PyTest(test.test):
     """Class used to execute unit tests using PyTest. This allows us to execute
     unit tests without having to install the package.
     """
-
     def finalize_options(self):
         test.test.finalize_options(self)
         self.test_args = ['-x', "tests"]
         self.test_suite = True
 
     def run_tests(self):
-        import pytest
-        errno = pytest.main(self.test_args)
-        sys.exit(errno)
+        test_path = os.path.join(os.path.dirname(__file__),
+                                 '../tests/meta/ActsUnitTest.py')
+        result = subprocess.Popen('python3 %s' % test_path,
+                                  stdout=sys.stdout,
+                                  stderr=sys.stderr,
+                                  shell=True)
+        result.communicate()
+        sys.exit(result.returncode)
 
 
 class ActsInstallDependencies(cmd.Command):
@@ -143,9 +149,8 @@ class ActsUninstall(cmd.Command):
         try:
             import acts as acts_module
         except ImportError:
-            self.announce(
-                'Acts is not installed, nothing to uninstall.',
-                level=log.ERROR)
+            self.announce('Acts is not installed, nothing to uninstall.',
+                          level=log.ERROR)
             return
 
         while acts_module:
@@ -166,22 +171,21 @@ def main():
         os.path.join(framework_dir, 'acts', 'bin', 'monsoon.py')
     ]
 
-    setuptools.setup(
-        name='acts',
-        version='0.9',
-        description='Android Comms Test Suite',
-        license='Apache2.0',
-        packages=setuptools.find_packages(),
-        include_package_data=False,
-        tests_require=['pytest'],
-        install_requires=install_requires,
-        scripts=scripts,
-        cmdclass={
-            'test': PyTest,
-            'install_deps': ActsInstallDependencies,
-            'uninstall': ActsUninstall
-        },
-        url="http://www.android.com/")
+    setuptools.setup(name='acts',
+                     version='0.9',
+                     description='Android Comms Test Suite',
+                     license='Apache2.0',
+                     packages=setuptools.find_packages(),
+                     include_package_data=False,
+                     tests_require=['pytest'],
+                     install_requires=install_requires,
+                     scripts=scripts,
+                     cmdclass={
+                         'test': PyTest,
+                         'install_deps': ActsInstallDependencies,
+                         'uninstall': ActsUninstall
+                     },
+                     url="http://www.android.com/")
 
     if {'-u', '--uninstall', 'uninstall'}.intersection(sys.argv):
         installed_scripts = [

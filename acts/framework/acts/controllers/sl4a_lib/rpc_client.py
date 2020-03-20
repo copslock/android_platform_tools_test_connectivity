@@ -21,6 +21,7 @@ from concurrent import futures
 
 from acts import error
 from acts import logger
+from acts.metrics.loggers import usage_metadata_logger
 
 # The default timeout value when no timeout is set.
 SOCKET_TIMEOUT = 60
@@ -276,8 +277,9 @@ class RpcClient(object):
                     break
         except BrokenPipeError as e:
             if self.is_alive:
-                self._log.exception('Exception %s happened for sl4a call %s',
-                                    e, method)
+                self._log.exception('The device disconnected during RPC call '
+                                    '%s. Please check the logcat for a crash '
+                                    'or disconnect.', method)
                 self.on_error(connection)
             else:
                 self._log.warning('The connection was killed during cleanup:')
@@ -349,6 +351,7 @@ class RpcClient(object):
         """Wrapper for python magic to turn method calls into RPC calls."""
 
         def rpc_call(*args, **kwargs):
+            usage_metadata_logger.log_usage(self.__module__, name)
             return self.rpc(name, *args, **kwargs)
 
         if not self.is_alive:

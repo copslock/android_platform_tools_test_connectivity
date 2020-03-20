@@ -50,7 +50,6 @@ class DuplexMode(Enum):
     FDD = "FDD"
     TDD = "TDD"
 
-
 class ModulationType(Enum):
     """DL/UL Modulation order."""
     QPSK = 'QPSK'
@@ -81,6 +80,7 @@ class LteSimulation(BaseSimulation):
     PARAM_PAGING = 'paging'
     PARAM_PHICH = 'phich'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
+    PARAM_DRX = 'drx'
 
     # Test config keywords
     KEY_TBS_PATTERN = "tbs_pattern_on"
@@ -409,6 +409,18 @@ class LteSimulation(BaseSimulation):
             paging_cycle: an integer indicating the paging cycle duration in
                 milliseconds
             phich: a string indicating the PHICH group size parameter
+            drx_connected_mode: a boolean indicating whether cDRX mode is
+                on or off
+            drx_on_duration_timer: number of PDCCH subframes representing
+                DRX on duration
+            drx_inactivity_timer: number of PDCCH subframes to wait before
+                entering DRX mode
+            drx_retransmission_timer: number of consecutive PDCCH subframes
+                to wait for retransmission
+            drx_long_cycle: number of subframes representing one long DRX cycle.
+                One cycle consists of DRX sleep + DRX on duration
+            drx_long_cycle_offset: number representing offset in range
+                0 to drx_long_cycle - 1
         """
         def __init__(self):
             """ Initialize the base station config by setting all its
@@ -429,10 +441,15 @@ class LteSimulation(BaseSimulation):
             self.ul_modulation_order = None
             self.tbs_pattern_on = None
             self.dl_channel = None
-            self.dl_cc_enabled = None
             self.cfi = None
             self.paging_cycle = None
             self.phich = None
+            self.drx_connected_mode = None
+            self.drx_on_duration_timer = None
+            self.drx_inactivity_timer = None
+            self.drx_retransmission_timer = None
+            self.drx_long_cycle = None
+            self.drx_long_cycle_offset = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier LTE simulation.
@@ -701,6 +718,41 @@ class LteSimulation(BaseSimulation):
                 else:
                     new_config.ul_mcs = 23
 
+        # Configure the simulation for DRX mode
+
+        drx = self.consume_parameter(parameters, self.PARAM_DRX, 5)
+
+        if drx and len(drx) == 6:
+            new_config.drx_connected_mode = True
+            new_config.drx_on_duration_timer = drx[1]
+            new_config.drx_inactivity_timer = drx[2]
+            new_config.drx_retransmission_timer = drx[3]
+            new_config.drx_long_cycle = drx[4]
+            try:
+                long_cycle = int(drx[4])
+                long_cycle_offset = int(drx[5])
+                if long_cycle_offset in range(0, long_cycle):
+                    new_config.drx_long_cycle_offset = long_cycle_offset
+                else:
+                    self.log.error(("The cDRX long cycle offset must be in the "
+                                    "range 0 to (long cycle  - 1). Setting "
+                                    "long cycle offset to 0"))
+                    new_config.drx_long_cycle_offset = 0
+
+            except ValueError:
+                self.log.error(("cDRX long cycle and long cycle offset "
+                                "must be integers. Disabling cDRX mode."))
+                new_config.drx_connected_mode = False
+        else:
+            self.log.warning(("DRX mode was not configured properly. "
+                              "Please provide the following 5 values: "
+                              "1) DRX on duration timer "
+                              "2) Inactivity timer "
+                              "3) Retransmission timer "
+                              "4) Long DRX cycle duration "
+                              "5) Long DRX cycle offset "
+                              "Example: drx_2_6_16_20_0"))
+
         # Setup LTE RRC status change function and timer for LTE idle test case
         values = self.consume_parameter(parameters,
                                         self.PARAM_RRC_STATUS_CHANGE_TIMER, 1)
@@ -894,9 +946,9 @@ class LteSimulation(BaseSimulation):
         tdd_subframe_config = bts_config.dlul_config
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
-        if duplex_mode == DuplexMode.TDD.value:
+        if duplex_mode == DuplexMode.TDD:
             if self.dl_256_qam:
-                if mcs == "27":
+                if mcs == 27:
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
@@ -906,7 +958,7 @@ class LteSimulation(BaseSimulation):
                             'TDD_CONFIG2'][tdd_subframe_config][bandwidth][
                                 'DL']
             else:
-                if mcs == "28":
+                if mcs == 28:
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
@@ -916,9 +968,9 @@ class LteSimulation(BaseSimulation):
                             'TDD_CONFIG1'][tdd_subframe_config][bandwidth][
                                 'DL']
 
-        elif duplex_mode == DuplexMode.FDD.value:
+        elif duplex_mode == DuplexMode.FDD:
             if (not self.dl_256_qam and bts_config.tbs_pattern_on
-                    and mcs == "28"):
+                    and mcs == 28):
                 max_rate_per_stream = {
                     3: 9.96,
                     5: 17.0,
@@ -927,12 +979,12 @@ class LteSimulation(BaseSimulation):
                     20: 72.2
                 }.get(bandwidth, None)
             if (not self.dl_256_qam and bts_config.tbs_pattern_on
-                    and mcs == "27"):
+                    and mcs == 27):
                 max_rate_per_stream = {
                     1.4: 2.94,
                 }.get(bandwidth, None)
             elif (not self.dl_256_qam and not bts_config.tbs_pattern_on
-                  and mcs == "27"):
+                  and mcs == 27):
                 max_rate_per_stream = {
                     1.4: 2.87,
                     3: 7.7,
@@ -941,7 +993,7 @@ class LteSimulation(BaseSimulation):
                     15: 42.3,
                     20: 57.7
                 }.get(bandwidth, None)
-            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == "27":
+            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == 27:
                 max_rate_per_stream = {
                     3: 13.2,
                     5: 22.9,
@@ -949,12 +1001,12 @@ class LteSimulation(BaseSimulation):
                     15: 72.2,
                     20: 93.9
                 }.get(bandwidth, None)
-            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == "26":
+            elif self.dl_256_qam and bts_config.tbs_pattern_on and mcs == 26:
                 max_rate_per_stream = {
                     1.4: 3.96,
                 }.get(bandwidth, None)
             elif (self.dl_256_qam and not bts_config.tbs_pattern_on
-                  and mcs == "27"):
+                  and mcs == 27):
                 max_rate_per_stream = {
                     3: 11.3,
                     5: 19.8,
@@ -963,7 +1015,7 @@ class LteSimulation(BaseSimulation):
                     20: 88.4
                 }.get(bandwidth, None)
             elif (self.dl_256_qam and not bts_config.tbs_pattern_on
-                  and mcs == "26"):
+                  and mcs == 26):
                 max_rate_per_stream = {
                     1.4: 3.96,
                 }.get(bandwidth, None)
@@ -1009,9 +1061,9 @@ class LteSimulation(BaseSimulation):
         tdd_subframe_config = bts_config.dlul_config
         duplex_mode = self.get_duplex_mode(bts_config.band)
 
-        if duplex_mode == DuplexMode.TDD.value:
+        if duplex_mode == DuplexMode.TDD:
             if self.ul_64_qam:
-                if mcs == "28":
+                if mcs == 28:
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG3'][tdd_subframe_config][bandwidth][
@@ -1021,7 +1073,7 @@ class LteSimulation(BaseSimulation):
                             'TDD_CONFIG2'][tdd_subframe_config][bandwidth][
                                 'UL']
             else:
-                if mcs == "23":
+                if mcs == 23:
                     if bts_config.tbs_pattern_on:
                         max_rate_per_stream = self.tdd_config_tput_lut_dict[
                             'TDD_CONFIG4'][tdd_subframe_config][bandwidth][
@@ -1031,8 +1083,8 @@ class LteSimulation(BaseSimulation):
                             'TDD_CONFIG1'][tdd_subframe_config][bandwidth][
                                 'UL']
 
-        elif duplex_mode == DuplexMode.FDD.value:
-            if mcs == "23" and not self.ul_64_qam:
+        elif duplex_mode == DuplexMode.FDD:
+            if mcs == 23 and not self.ul_64_qam:
                 max_rate_per_stream = {
                     1.4: 2.85,
                     3: 7.18,
@@ -1041,7 +1093,7 @@ class LteSimulation(BaseSimulation):
                     15: 36.5,
                     20: 49.1
                 }.get(bandwidth, None)
-            elif mcs == "28" and self.ul_64_qam:
+            elif mcs == 28 and self.ul_64_qam:
                 max_rate_per_stream = {
                     1.4: 4.2,
                     3: 10.5,

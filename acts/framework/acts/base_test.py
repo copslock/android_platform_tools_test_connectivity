@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import collections
+
 import fnmatch
 import functools
 import importlib
@@ -23,11 +23,11 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 
 from acts import asserts
+from acts import error
 from acts import keys
 from acts import logger
 from acts import records
 from acts import signals
-from acts import error
 from acts import tracelogger
 from acts import utils
 from acts.event import event_bus
@@ -39,7 +39,6 @@ from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
 
-from mobly import controller_manager
 from mobly.base_test import BaseTestClass as MoblyBaseTest
 from mobly.records import ExceptionRecord
 
@@ -175,33 +174,28 @@ class BaseTestClass(MoblyBaseTest):
     TAG = None
 
     def __init__(self, configs):
+        """Initializes a BaseTestClass given a TestRunConfig, which provides
+        all of the config information for this test class.
+
+        Args:
+            configs: A config_parser.TestRunConfig object.
+        """
+        super().__init__(configs)
+
         self.class_subscriptions = SubscriptionBundle()
         self.class_subscriptions.register()
         self.all_subscriptions = [self.class_subscriptions]
 
-        self.tests = []
-        if not self.TAG:
-            self.TAG = self.__class__.__name__
-        # Set all the controller objects and params.
-        self.controller_configs = configs.controller_configs
-        self.testbed_name = configs.testbed_name
-        self.user_params = configs.user_params
-        self.log_path = configs.log_path
-        self.summary_writer = configs.summary_writer
-
-        self.results = records.TestResult()
         self.current_test_name = None
         self.log = tracelogger.TraceLogger(logging.getLogger())
+        # TODO: remove after converging log path definitions with mobly
+        self.log_path = configs.log_path
+
         self.consecutive_failures = 0
         self.consecutive_failure_limit = self.user_params.get(
             'consecutive_failure_limit', -1)
         self.size_limit_reached = False
         self.retryable_exceptions = signals.TestFailure
-
-        # Initialize a controller manager (Mobly)
-        self._controller_manager = controller_manager.ControllerManager(
-            class_name=self.__class__.__name__,
-            controller_configs=self.controller_configs)
 
     def _import_builtin_controllers(self):
         """Import built-in controller modules.
@@ -323,9 +317,6 @@ class BaseTestClass(MoblyBaseTest):
             controller_info = controller_module.get_info(controllers)
             self.log.info("Controller %s: %s", module_config_name,
                           controller_info)
-        else:
-            self.log.warning("No controller info obtained for %s",
-                             module_config_name)
 
         if builtin:
             setattr(self, module_ref_name, controllers)
@@ -565,11 +556,6 @@ class BaseTestClass(MoblyBaseTest):
             test_signal = e
             tr_record.test_pass(e)
             self._exec_procedure_func(self._on_pass, tr_record)
-        except error.ActsError as e:
-            test_signal = e
-            tr_record.test_error(e)
-            self.log.error('BaseTest execute_one_test_case error: %s' %
-                           e.message)
         except Exception as e:
             test_signal = e
             self.log.error(traceback.format_exc())
@@ -723,19 +709,6 @@ class BaseTestClass(MoblyBaseTest):
                                func.__name__, self.TAG)
             return False
 
-    def _get_all_test_names(self):
-        """Finds all the function names that match the test case naming
-        convention in this class.
-
-        Returns:
-            A list of strings, each is a test case name.
-        """
-        test_names = []
-        for name in dir(self):
-            if name.startswith("test_"):
-                test_names.append(name)
-        return test_names
-
     def _get_test_funcs(self, test_names):
         """Obtain the actual functions of test cases based on test names.
 
@@ -832,7 +805,7 @@ class BaseTestClass(MoblyBaseTest):
             valid_tests = list(self.tests)
         else:
             # No test case specified by user, execute all in the test class
-            valid_tests = self._get_all_test_names()
+            valid_tests = self.get_existing_test_names()
         if test_names:
             # Match test cases with any of the user-specified patterns
             matches = []
@@ -997,7 +970,7 @@ class BaseTestClass(MoblyBaseTest):
             mylogger.stop(session)
             diag_path = os.path.join(
                 self.log_path, logger.epoch_to_log_line_timestamp(begin_time))
-            utils.create_dir(diag_path)
+            os.makedirs(diag_path, exist_ok=True)
             mylogger.pull(session, diag_path)
 
     def register_test_class_event_subscriptions(self):

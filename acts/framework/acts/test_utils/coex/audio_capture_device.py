@@ -20,7 +20,6 @@ import pyaudio
 import wave
 
 from acts import context
-from acts import utils
 
 
 WAVE_FILE_TEMPLATE = 'recorded_audio_%s.wav'
@@ -43,7 +42,7 @@ class AudioCaptureBase(object):
         full_out_dir = os.path.join(current_context.get_full_output_path(),
                                     'AudioCapture')
 
-        utils.create_dir(full_out_dir)
+        os.makedirs(full_out_dir, exist_ok=True)
         return full_out_dir
 
     @property
@@ -56,6 +55,21 @@ class AudioCaptureBase(object):
     @property
     def last_fileno(self):
         return self.next_fileno - 1
+
+    @property
+    def get_last_record_duration_millis(self):
+        """Get duration of most recently recorded file.
+
+        Returns:
+            duration (float): duration of recorded file in milliseconds.
+        """
+        latest_file_path = self.wave_file % self.last_fileno
+        print (latest_file_path)
+        with wave.open(latest_file_path, 'r') as f:
+            frames = f.getnframes()
+            rate = f.getframerate()
+            duration = (frames / float(rate)) * 1000
+        return duration
 
     def write_record_file(self, audio_params, frames):
         """Writes the recorded audio into the file.

@@ -168,6 +168,16 @@ class BtsBandwidth(Enum):
                 'Could not map {} to a bandwidth value.'.format(bandwidth_str))
 
 
+MAX_NRB_FOR_BANDWIDTH = {
+    BtsBandwidth.LTE_BANDWIDTH_1dot4MHz.value: 6,
+    BtsBandwidth.LTE_BANDWIDTH_3MHz.value: 15,
+    BtsBandwidth.LTE_BANDWIDTH_5MHz.value: 25,
+    BtsBandwidth.LTE_BANDWIDTH_10MHz.value: 50,
+    BtsBandwidth.LTE_BANDWIDTH_15MHz.value: 75,
+    BtsBandwidth.LTE_BANDWIDTH_20MHz.value: 100
+}
+
+
 class LteMimoMode(Enum):
     """ Values for LTE MIMO modes. """
     NONE = "MIMONOT"
@@ -3095,6 +3105,169 @@ class _BaseTransceiverStation(object):
         self._anritsu.send_command(cmd)
 
     @property
+    def drx_connected_mode(self):
+        """ Gets the Connected DRX LTE cell parameter
+
+        Args:
+            None
+
+        Returns:
+            DRX connected mode (OFF, AUTO, MANUAL)
+        """
+        cmd = "DRXCONN? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @drx_connected_mode.setter
+    def drx_connected_mode(self, mode):
+        """  Sets the Connected DRX LTE cell parameter
+
+        Args:
+            mode: OFF, AUTO, MANUAL
+
+        Returns:
+            None
+        """
+        cmd = "DRXCONN {}, {}".format(mode, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def drx_on_duration_timer(self):
+        """ Gets the amount of PDCCH subframes to wait for data after
+            waking up from a DRX cycle
+
+        Args:
+            None
+
+        Returns:
+            DRX mode duration timer
+        """
+        cmd = "DRXDURATIONTIME? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @drx_on_duration_timer.setter
+    def drx_on_duration_timer(self, time):
+        """ Sets the amount of PDCCH subframes to wait for data after
+            waking up from a DRX cycle
+
+        Args:
+            timer: Amount of PDCCH subframes to wait for user data
+                to be transmitted
+
+        Returns:
+            None
+        """
+        cmd = "DRXDURATIONTIME PSF{}, {}".format(time, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def drx_inactivity_timer(self):
+        """ Gets the number of PDCCH subframes to wait before entering DRX mode
+
+        Args:
+            None
+
+        Returns:
+            DRX mode inactivity timer
+        """
+        cmd = "DRXINACTIVITYTIME? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @drx_inactivity_timer.setter
+    def drx_inactivity_timer(self, time):
+        """ Sets the number of PDCCH subframes to wait before entering DRX mode
+
+        Args:
+            timer: Length of the interval to wait
+
+        Returns:
+            None
+        """
+        cmd = "DRXINACTIVITYTIME PSF{}, {}".format(time, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def drx_retransmission_timer(self):
+        """ Gets the number of consecutive PDCCH subframes to wait
+        for retransmission
+
+        Args:
+            None
+
+        Returns:
+            Number of PDCCH subframes to wait for retransmission
+        """
+        cmd = "DRXRETRANSTIME? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @drx_retransmission_timer.setter
+    def drx_retransmission_timer(self, time):
+        """ Sets the number of consecutive PDCCH subframes to wait
+        for retransmission
+
+        Args:
+            time: Number of PDCCH subframes to wait
+            for retransmission
+
+        Returns:
+            None
+        """
+        cmd = "DRXRETRANSTIME PSF{}, {}".format(time, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def drx_long_cycle(self):
+        """ Gets the amount of subframes representing a DRX long cycle
+
+        Args:
+            None
+
+        Returns:
+            The amount of subframes representing one long DRX cycle.
+            One cycle consists of DRX sleep + DRX on duration
+        """
+        cmd = "DRXLONGCYCLE? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @drx_long_cycle.setter
+    def drx_long_cycle(self, time):
+        """ Sets the amount of subframes representing a DRX long cycle
+
+        Args:
+            long_cycle: The amount of subframes representing one long DRX cycle.
+                One cycle consists of DRX sleep + DRX on duration
+
+        Returns:
+            None
+        """
+        cmd = "DRXLONGCYCLE SF{}, {}".format(time, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
+    def drx_long_cycle_offset(self):
+        """ Gets the offset used to determine long cycle starting
+        subframe
+
+        Args:
+            None
+
+        Returns:
+            Long cycle offset
+        """
+        cmd = "DRXLONGCYCLESTARTOFFSET? " + self._bts_number
+        return self._anritsu.send_query(cmd)
+
+    @drx_long_cycle_offset.setter
+    def drx_long_cycle_offset(self, offset):
+        """ Sets the offset used to determine long cycle starting
+        subframe
+
+        Args:
+            offset: Number in range 0...(long cycle - 1)
+        """
+        cmd = "DRXLONGCYCLESTARTOFFSET {}, {}".format(offset, self._bts_number)
+        self._anritsu.send_command(cmd)
+
+    @property
     def lte_mcs_dl(self):
         """ Gets the Modulation and Coding scheme (DL) of the LTE cell
 
@@ -3249,6 +3422,17 @@ class _BaseTransceiverStation(object):
         """
         cmd = "ULNRB {},{}".format(blocks, self._bts_number)
         self._anritsu.send_command(cmd)
+
+    @property
+    def max_nrb_ul(self):
+        ul_bandwidth = self.ul_bandwidth
+        if ul_bandwidth == 'SAMEASDL':
+            ul_bandwidth = self.dl_bandwidth
+        max_nrb = MAX_NRB_FOR_BANDWIDTH.get(ul_bandwidth, None)
+        if not max_nrb:
+            raise ValueError('Could not get maximum RB allocation'
+                             'for bandwidth: {}'.format(ul_bandwidth))
+        return max_nrb
 
     @property
     def mimo_support(self):

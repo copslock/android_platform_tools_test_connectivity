@@ -18,10 +18,10 @@ import time
 import re
 import os
 import math
-import collections
 import shutil
 import fnmatch
 import posixpath
+from collections import namedtuple
 
 from acts import utils
 from acts import signals
@@ -38,9 +38,8 @@ PULL_TIMEOUT = 300
 GNSSSTATUS_LOG_PATH = (
     "/storage/emulated/0/Android/data/com.android.gpstool/files/")
 QXDM_MASKS = ["GPS.cfg", "GPS-general.cfg", "default.cfg"]
-TTFF_REPORT = collections.namedtuple(
-    "TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
-TRACK_REPORT = collections.namedtuple(
+TTFF_REPORT = namedtuple("TTFF_REPORT", "ttff_loop ttff_sec ttff_pe ttff_cn")
+TRACK_REPORT = namedtuple(
     "TRACK_REPORT", "track_l5flag track_pe track_top4cn track_cn")
 LOCAL_PROP_FILE_CONTENTS =  """\
 log.tag.LocationManagerService=VERBOSE
@@ -65,13 +64,13 @@ def remount_device(ad):
     """
     for retries in range(5):
         ad.root_adb()
+        if ad.adb.getprop("ro.boot.veritymode") == "enforcing":
+            disable_verity_result = ad.adb.disable_verity()
+            reboot(ad)
         remount_result = ad.adb.remount()
         ad.log.info("Attempt %d - %s" % (retries + 1, remount_result))
         if "remount succeeded" in remount_result:
             break
-        if ad.adb.getprop("ro.boot.veritymode") == "enforcing":
-            disable_verity_result = ad.adb.disable_verity()
-            reboot(ad)
 
 
 def reboot(ad):
@@ -96,7 +95,7 @@ def enable_gnss_verbose_logging(ad):
     """
     remount_device(ad)
     ad.log.info("Enable GNSS VERBOSE Logging and persistent logcat.")
-    ad.adb.shell("echo DEBUG_LEVEL = 5 >> /vendor/etc/gps.conf")
+    ad.adb.shell("echo -e '\nDEBUG_LEVEL = 5' >> /vendor/etc/gps.conf")
     ad.adb.shell("echo %r >> /data/local.prop" % LOCAL_PROP_FILE_CONTENTS)
     ad.adb.shell("chmod 644 /data/local.prop")
     ad.adb.shell("setprop persist.logd.logpersistd.size 20000")
@@ -107,35 +106,45 @@ def enable_gnss_verbose_logging(ad):
     ad.adb.shell("sync")
 
 
+def get_am_flags(value):
+    """Returns the (value, type) flags for a given python value."""
+    if type(value) is bool:
+        return str(value).lower(), 'boolean'
+    elif type(value) is str:
+        return value, 'string'
+    raise ValueError("%s should be either 'boolean' or 'string'" % value)
+
+
 def enable_compact_and_particle_fusion_log(ad):
-    """Enable CompactLog and FLP particle fusion log.
+    """Enable CompactLog, FLP particle fusion log and disable gms
+    location-based quake monitoring.
 
     Args:
         ad: An AndroidDevice object.
     """
     ad.root_adb()
-    ad.log.info("Enable CompactLog and FLP particle fusion log.")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:compact_log_enabled true")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:proks_config 28")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:flp_use_particle_fusion true")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e "
-                 "location:flp_particle_fusion_extended_bug_report true")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:flp_event_log_size 86400")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e "
-                 "location:flp_particle_fusion_bug_report_window_sec 86400")
-    ad.adb.shell("am broadcast -a com.google.gservices.intent.action."
-                 "GSERVICES_OVERRIDE -e location:"
-                 "flp_particle_fusion_bug_report_max_buffer_size 86400")
+    ad.log.info("Enable FLP flags and Disable GMS location-based quake "
+                "monitoring.")
+    overrides = {
+        'compact_log_enabled': True,
+        'flp_use_particle_fusion': True,
+        'flp_particle_fusion_extended_bug_report': True,
+        'flp_event_log_size': '86400',
+        'proks_config': '28',
+        'flp_particle_fusion_bug_report_window_sec': '86400',
+        'flp_particle_fusion_bug_report_max_buffer_size': '86400',
+        'seismic_data_collection': False,
+        'Ealert__enable': False,
+    }
+    for flag, python_value in overrides.items():
+        value, type = get_am_flags(python_value)
+        cmd = ("am broadcast -a com.google.android.gms.phenotype.FLAG_OVERRIDE "
+               "--es package com.google.android.location --es user \* "
+               "--esa flags %s --esa values %s --esa types %s "
+               "com.google.android.gms" % (flag, value, type))
+        ad.adb.shell(cmd)
     ad.adb.shell("am force-stop com.google.android.gms")
     ad.adb.shell("am broadcast -a com.google.android.gms.INITIALIZE")
-    ad.adb.shell("dumpsys activity service com.google.android.location."
-                 "internal.GoogleLocationManagerService")
 
 
 def disable_xtra_throttle(ad):
@@ -146,8 +155,8 @@ def disable_xtra_throttle(ad):
     """
     remount_device(ad)
     ad.log.info("Disable XTRA Throttle.")
-    ad.adb.shell("echo XTRA_TEST_ENABLED=1 >> /vendor/etc/gps.conf")
-    ad.adb.shell("echo XTRA_THROTTLE_ENABLED=0 >> /vendor/etc/gps.conf")
+    ad.adb.shell("echo -e '\nXTRA_TEST_ENABLED=1' >> /vendor/etc/gps.conf")
+    ad.adb.shell("echo -e '\nXTRA_THROTTLE_ENABLED=0' >> /vendor/etc/gps.conf")
 
 
 def enable_supl_mode(ad):
@@ -158,7 +167,7 @@ def enable_supl_mode(ad):
     """
     remount_device(ad)
     ad.log.info("Enable SUPL mode.")
-    ad.adb.shell("echo SUPL_MODE=1 >> /etc/gps_debug.conf")
+    ad.adb.shell("echo -e '\nSUPL_MODE=1' >> /etc/gps_debug.conf")
 
 
 def disable_supl_mode(ad):
@@ -169,7 +178,7 @@ def disable_supl_mode(ad):
     """
     remount_device(ad)
     ad.log.info("Disable SUPL mode.")
-    ad.adb.shell("echo SUPL_MODE=0 >> /etc/gps_debug.conf")
+    ad.adb.shell("echo -e '\nSUPL_MODE=0' >> /etc/gps_debug.conf")
     reboot(ad)
 
 
@@ -228,7 +237,9 @@ def connect_to_wifi_network(ad, network):
         network: Dictionary with network info.
     """
     SSID = network[WifiEnums.SSID_KEY]
-    wutils.start_wifi_connection_scan_and_return_status(ad)
+    ad.ed.clear_all_events()
+    wutils.reset_wifi(ad)
+    wutils.start_wifi_connection_scan_and_ensure_network_found(ad, SSID)
     wutils.wifi_connect(ad, network, num_of_tries=5)
 
 
@@ -292,10 +303,10 @@ def get_gnss_qxdm_log(ad, qdb_path):
         qdb_path: The path of qdsp6m.qdb on different projects.
     """
     log_path = ad.device_log_path
-    utils.create_dir(log_path)
+    os.makedirs(log_path, exist_ok=True)
     gnss_log_name = "gnssstatus_log_%s_%s" % (ad.model, ad.serial)
     gnss_log_path = posixpath.join(log_path, gnss_log_name)
-    utils.create_dir(gnss_log_path)
+    os.makedirs(gnss_log_path, exist_ok=True)
     ad.log.info("Pull GnssStatus Log to %s" % gnss_log_path)
     ad.adb.pull("%s %s" % (GNSSSTATUS_LOG_PATH+".", gnss_log_path),
                 timeout=PULL_TIMEOUT, ignore_status=True)
@@ -307,7 +318,7 @@ def get_gnss_qxdm_log(ad, qdb_path):
     if not int(file_count) == 0:
         qxdm_log_name = "QXDM_%s_%s" % (ad.model, ad.serial)
         qxdm_log_path = posixpath.join(log_path, qxdm_log_name)
-        utils.create_dir(qxdm_log_path)
+        os.makedirs(qxdm_log_path, exist_ok=True)
         ad.log.info("Pull QXDM Log %s to %s" % (output_path, qxdm_log_path))
         ad.adb.pull("%s %s" % (output_path, qxdm_log_path),
                     timeout=PULL_TIMEOUT, ignore_status=True)
@@ -424,7 +435,7 @@ def pull_mdstool(ad):
         mds_tool = result.group(1)
         ad.log.info("Get ModemDiagnosticSystemTest.apk from %s" % mds_tool)
         apkdir = "/tmp/MDS/"
-        utils.create_dir(apkdir)
+        os.makedirs(apkdir, exist_ok=True)
         ad.pull_files([mds_tool], apkdir)
 
 
@@ -478,7 +489,7 @@ def pull_gtw_gpstool(ad):
         GTW_GPSTool_apk = result.group(1)
         ad.log.info("Get GTW GPSTool apk from %s" % GTW_GPSTool_apk)
         apkdir = "/tmp/GNSS/"
-        utils.create_dir(apkdir)
+        os.makedirs(apkdir, exist_ok=True)
         ad.pull_files([GTW_GPSTool_apk], apkdir)
 
 
@@ -1017,7 +1028,7 @@ def check_network_location(ad, retries, location_type, criteria=30):
     Args:
         ad: An AndroidDevice object.
         retries: Retry time.
-        location_type: neworkLocationType of cell or wifi.
+        location_type: cell or wifi.
         criteria: expected nlp return time, default 30 seconds
 
     Returns:
@@ -1025,22 +1036,20 @@ def check_network_location(ad, retries, location_type, criteria=30):
         otherwise return False.
     """
     criteria = criteria * 1000
+    search_pattern = ("GPSTool : networkLocationType = %s" % location_type)
     for i in range(retries):
-        time.sleep(1)
         begin_time = get_current_epoch_time()
         ad.log.info("Try to get NLP status - attempt %d" % (i+1))
         ad.adb.shell(
             "am start -S -n com.android.gpstool/.GPSTool --es mode nlp")
         while get_current_epoch_time() - begin_time <= criteria:
-            logcat_results = ad.search_logcat("LocationManagerService: "
-                                              "incoming location: Location",
-                                              begin_time)
-            if logcat_results:
-                for logcat_result in logcat_results:
-                    if location_type in logcat_result["log_message"]:
-                        ad.log.info(logcat_result["log_message"])
-                        ad.send_keycode("BACK")
-                        return True
+            # Search pattern in 1 second interval
+            time.sleep(1)
+            result = ad.search_logcat(search_pattern, begin_time)
+            if result:
+                ad.log.info("Pattern Found: %s." % result[-1]["log_message"])
+                ad.send_keycode("BACK")
+                return True
         if not ad.is_adb_logcat_on:
             ad.start_adb_logcat()
         ad.send_keycode("BACK")

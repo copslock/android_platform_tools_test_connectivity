@@ -316,6 +316,9 @@ def perform_dds_switch(ad):
 def set_dds_on_slot_0(ad):
     sub_id = get_subid_from_slot_index(ad.log, ad, 0)
     operator = get_operatorname_from_slot_index(ad, 0)
+    if get_default_data_sub_id(ad) == sub_id:
+        ad.log.info("Current DDS is already on %s", operator)
+        return True
     ad.log.info("Setting DDS on %s", operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
@@ -329,6 +332,9 @@ def set_dds_on_slot_0(ad):
 def set_dds_on_slot_1(ad):
     sub_id = get_subid_from_slot_index(ad.log, ad, 1)
     operator = get_operatorname_from_slot_index(ad, 1)
+    if get_default_data_sub_id(ad) == sub_id:
+        ad.log.info("Current DDS is already on %s", operator)
+        return True
     ad.log.info("Setting DDS on %s", operator)
     set_subid_for_data(ad, sub_id)
     ad.droid.telephonyToggleDataConnection(True)
@@ -354,7 +360,12 @@ def set_slways_allow_mms_data(ad, sub_id, state=True):
         ad.log.info("Always allow MMS Data is not supported on platform")
     else:
         ad.log.debug("Setting MMS Data Always ON %s sub_id %s", state, sub_id)
-        return ad.droid.subscriptionSetAlwaysAllowMmsData(sub_id, state)
+        try:
+            ad.droid.subscriptionSetAlwaysAllowMmsData(sub_id, state)
+        except Exception as e:
+            ad.log.error(e)
+            ad.droid.telephonySetAlwaysAllowMmsData(sub_id, state)
+    return True
 
 
 def get_cbrs_and_default_sub_id(ad):
@@ -367,6 +378,7 @@ def get_cbrs_and_default_sub_id(ad):
         cbrs_subId
         default_subId
     """
+    cbrs_subid, default_subid = None, None
     slot_dict = {0: {}, 1: {}}
     for slot in (0, 1):
         slot_dict[slot]['sub_id'] = get_subid_from_slot_index(
@@ -383,4 +395,6 @@ def get_cbrs_and_default_sub_id(ad):
                     slot_dict[slot]['sub_id'],
                     slot_dict[slot]['carrier_id'],
                     slot_dict[slot]['operator'])
+        if not cbrs_subid:
+            ad.log.error("CBRS sub_id is not ACTIVE")
     return cbrs_subid, default_subid

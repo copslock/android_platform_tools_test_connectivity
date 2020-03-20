@@ -74,6 +74,7 @@ class CmdInput(cmd.Cmd):
         # Tool to an abstract_device tool. Only commands that use test_dut will work
         # Otherwise this tool is primarially targeted at Fuchsia devices.
         self.test_dut = create_bluetooth_device(self.pri_dut)
+        self.test_dut.initialize_bluetooth_controller()
         self.target_device_name = target_device_name
         self.log = log
 
@@ -85,7 +86,6 @@ class CmdInput(cmd.Cmd):
         return True
 
     """ Useful Helper functions and cmd line tooling """
-
     def str_to_bool(self, s):
         if s.lower() == 'true':
             return True
@@ -198,7 +198,6 @@ class CmdInput(cmd.Cmd):
         self.target_device_name = line
 
     """Begin BLE advertise wrappers"""
-
     def do_ble_start_generic_connectable_advertisement(self, line):
         """
         Description: Start a connectable LE advertisement
@@ -238,7 +237,6 @@ class CmdInput(cmd.Cmd):
 
     """End BLE advertise wrappers"""
     """Begin GATT client wrappers"""
-
     def complete_gattc_connect_by_id(self, text, line, begidx, endidx):
         if not text:
             completions = list(self.le_ids)[:]
@@ -946,7 +944,6 @@ class CmdInput(cmd.Cmd):
 
     """End GATT client wrappers"""
     """Begin LE scan wrappers"""
-
     def _update_scan_results(self, scan_results):
         self.le_ids = []
         for scan in scan_results['result']:
@@ -1003,7 +1000,6 @@ class CmdInput(cmd.Cmd):
 
     """End LE scan wrappers"""
     """Begin GATT Server wrappers"""
-
     def do_gatts_close(self, line):
         """
         Description: Close active GATT server.
@@ -1051,6 +1047,86 @@ class CmdInput(cmd.Cmd):
 
     """End GATT Server wrappers"""
     """Begin Bluetooth Controller wrappers"""
+    def complete_btc_pair(self, text, line, begidx, endidx):
+        """ Provides auto-complete for btc_pair cmd.
+
+        See Cmd module for full description.
+        """
+        arg_completion = len(line.split(" ")) - 1
+        pairing_security_level_options = ['ENCRYPTED', 'AUTHENTICATED', 'NONE']
+        non_bondable_options = ['BONDABLE', 'NON_BONDABLE', 'NONE']
+        transport_options = ['BREDR', 'LE']
+        if arg_completion == 1:
+            if not text:
+                completions = pairing_security_level_options
+            else:
+                completions = [
+                    s for s in pairing_security_level_options
+                    if s.startswith(text)
+                ]
+            return completions
+        if arg_completion == 2:
+            if not text:
+                completions = non_bondable_options
+            else:
+                completions = [
+                    s for s in non_bondable_options if s.startswith(text)
+                ]
+            return completions
+        if arg_completion == 3:
+            if not text:
+                completions = transport_options
+            else:
+                completions = [
+                    s for s in transport_options if s.startswith(text)
+                ]
+            return completions
+
+    def do_btc_pair(self, line):
+        """
+        Description: Sends an outgoing pairing request.
+
+        Input(s):
+            pairing security level: ENCRYPTED, AUTHENTICATED, or NONE
+            non_bondable: BONDABLE, NON_BONDABLE, or NONE
+            transport: BREDR or LE
+
+        Usage:
+          Examples:
+            btc_pair NONE NONE BREDR
+            btc_pair ENCRYPTED NONE LE
+            btc_pair AUTHENTICATED NONE LE
+            btc_pair NONE NON_BONDABLE BREDR
+        """
+        cmd = "Send an outgoing pairing request."
+        pairing_security_level_mapping = {
+            "ENCRYPTED": 1,
+            "AUTHENTICATED": 2,
+            "NONE": None,
+        }
+
+        non_bondable_mapping = {
+            "BONDABLE": False,  # Note: Reversed on purpose
+            "NON_BONDABLE": True,  # Note: Reversed on purpose
+            "NONE": None,
+        }
+
+        transport_mapping = {
+            "BREDR": 1,
+            "LE": 2,
+        }
+
+        try:
+            options = line.split(" ")
+            result = self.test_dut.init_pair(
+                self.unique_mac_addr_id,
+                pairing_security_level_mapping.get(options[0]),
+                non_bondable_mapping.get(options[1]),
+                transport_mapping.get(options[2]),
+            )
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
 
     def do_btc_accept_pairing(self, line):
         """
@@ -1346,7 +1422,6 @@ class CmdInput(cmd.Cmd):
 
     """End Bluetooth Control wrappers"""
     """Begin Profile Server wrappers"""
-
     def do_sdp_pts_example(self, num_of_records):
         """
         Description: An example of how to setup a generic SDP record
@@ -1480,4 +1555,337 @@ class CmdInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_sdp_connect_l2cap(self, psm):
+        """
+        Description: Send an l2cap connection request over an input psm value.
+
+        Note: Must be already connected to a peer.
+
+        Input(s):
+            psm: The int hex value to connect over. Available PSMs:
+                SDP 0x0001  See Bluetooth Service Discovery Protocol (SDP)
+                RFCOMM  0x0003  See RFCOMM with TS 07.10
+                TCS-BIN 0x0005  See Bluetooth Telephony Control Specification /
+                    TCS Binary
+                TCS-BIN-CORDLESS    0x0007  See Bluetooth Telephony Control
+                    Specification / TCS Binary
+                BNEP    0x000F  See Bluetooth Network Encapsulation Protocol
+                HID_Control 0x0011  See Human Interface Device
+                HID_Interrupt   0x0013  See Human Interface Device
+                UPnP    0x0015  See [ESDP]
+                AVCTP   0x0017  See Audio/Video Control Transport Protocol
+                AVDTP   0x0019  See Audio/Video Distribution Transport Protocol
+                AVCTP_Browsing  0x001B  See Audio/Video Remote Control Profile
+                UDI_C-Plane 0x001D  See the Unrestricted Digital Information
+                    Profile [UDI]
+                ATT 0x001F  See Bluetooth Core Specification​
+                ​3DSP   0x0021​ ​​See 3D Synchronization Profile.
+                ​LE_PSM_IPSP    ​0x0023 ​See Internet Protocol Support Profile
+                    (IPSP)
+                OTS 0x0025  See Object Transfer Service (OTS)
+                EATT    0x0027  See Bluetooth Core Specification
+
+        Usage:
+          Examples:
+            sdp_connect_l2cap 0001
+            sdp_connect_l2cap 0015
+        """
+        cmd = "Connect l2cap"
+        try:
+            result = self.pri_dut.sdp_lib.connectL2cap(self.unique_mac_addr_id,
+                                                       int(psm, 16))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     """End Profile Server wrappers"""
+    """Begin AVDTP wrappers"""
+    def complete_avdtp_init(self, text, line, begidx, endidx):
+        roles = ["sink", "source"]
+        if not text:
+            completions = roles
+        else:
+            completions = [s for s in roles if s.startswith(text)]
+        return completions
+
+    def do_avdtp_init(self, role):
+        """
+        Description: Init the AVDTP and A2DP service corresponding to the input
+        role.
+
+        Input(s):
+            role: The specified role. Either 'source' or 'sink'.
+
+        Usage:
+          Examples:
+            avdtp_init source
+            avdtp_init sink
+        """
+        cmd = "Initialize AVDTP proxy"
+        try:
+            result = self.pri_dut.avdtp_lib.init(role)
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_kill_a2dp_sink(self, line):
+        """
+        Description: Quickly kill any A2DP sink service currently running on the
+        device.
+
+        Usage:
+          Examples:
+            avdtp_kill_a2dp_sink
+        """
+        cmd = "Killing A2DP sink"
+        try:
+            result = self.pri_dut.control_daemon("bt-a2dp-sink.cmx", "stop")
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_kill_a2dp_source(self, line):
+        """
+        Description: Quickly kill any A2DP source service currently running on
+        the device.
+
+        Usage:
+          Examples:
+            avdtp_kill_a2dp_source
+        """
+        cmd = "Killing A2DP source"
+        try:
+            result = self.pri_dut.control_daemon("bt-a2dp-source.cmx", "stop")
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_get_connected_peers(self, line):
+        """
+        Description: Get the connected peers for the AVDTP service
+
+        Usage:
+          Examples:
+            avdtp_get_connected_peers
+        """
+        cmd = "AVDTP get connected peers"
+        try:
+            result = self.pri_dut.avdtp_lib.getConnectedPeers()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_set_configuration(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: set configuration
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_set_configuration <peer_id>
+        """
+        cmd = "Send AVDTP set configuration to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.setConfiguration(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_get_configuration(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: get configuration
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_get_configuration <peer_id>
+        """
+        cmd = "Send AVDTP get configuration to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.getConfiguration(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_get_capabilities(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: get capabilities
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_get_capabilities <peer_id>
+        """
+        cmd = "Send AVDTP get capabilities to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.getCapabilities(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_get_all_capabilities(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: get all capabilities
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_get_all_capabilities <peer_id>
+        """
+        cmd = "Send AVDTP get all capabilities to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.getAllCapabilities(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_reconfigure_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: reconfigure stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_reconfigure_stream <peer_id>
+        """
+        cmd = "Send AVDTP reconfigure stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.reconfigureStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_suspend_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: suspend stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_suspend_stream <peer_id>
+        """
+        cmd = "Send AVDTP suspend stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.suspendStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_suspend_reconfigure(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: suspend reconfigure
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_suspend_reconfigure <peer_id>
+        """
+        cmd = "Send AVDTP suspend reconfigure to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.suspendAndReconfigure(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_release_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: release stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_release_stream <peer_id>
+        """
+        cmd = "Send AVDTP release stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.releaseStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_establish_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: establish stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_establish_stream <peer_id>
+        """
+        cmd = "Send AVDTP establish stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.establishStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_start_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: start stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_start_stream <peer_id>
+        """
+        cmd = "Send AVDTP start stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.startStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_abort_stream(self, peer_id):
+        """
+        Description: Send AVDTP command to connected peer: abort stream
+
+        Input(s):
+            peer_id: The specified peer_id.
+
+        Usage:
+          Examples:
+            avdtp_abort_stream <peer_id>
+        """
+        cmd = "Send AVDTP abort stream to connected peer"
+        try:
+            result = self.pri_dut.avdtp_lib.abortStream(int(peer_id))
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_avdtp_remove_service(self, line):
+        """
+        Description: Removes the AVDTP service in use.
+
+        Usage:
+          Examples:
+            avdtp_establish_stream <peer_id>
+        """
+        cmd = "Remove AVDTP service"
+        try:
+            result = self.pri_dut.avdtp_lib.removeService()
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    """End AVDTP wrappers"""

@@ -18,7 +18,7 @@ import time
 
 from acts import asserts
 from acts.signals import TestPass
-from acts.test_utils.bt.A2dpCodecBaseTest import A2dpCodecBaseTest
+from acts.test_utils.bt.A2dpBaseTest import A2dpBaseTest
 from acts.test_utils.bt import bt_constants
 from acts.test_utils.bt.loggers.bluetooth_metric_logger import BluetoothMetricLogger
 
@@ -26,7 +26,7 @@ DEFAULT_THDN_THRESHOLD = .1
 DEFAULT_ANOMALIES_THRESHOLD = 0
 
 
-class BtCodecSweepTest(A2dpCodecBaseTest):
+class BtCodecSweepTest(A2dpBaseTest):
 
     def setup_class(self):
         super().setup_class()

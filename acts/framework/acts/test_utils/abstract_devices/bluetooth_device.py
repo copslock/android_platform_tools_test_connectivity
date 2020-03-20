@@ -338,6 +338,14 @@ class BluetoothDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
+    def init_pair(self, peer_identifier, security_level, non_bondable,
+                  transport):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
 
 class AndroidBluetoothDevice(BluetoothDevice):
     """Class wrapper for an Android Bluetooth device.
@@ -788,6 +796,24 @@ class AndroidBluetoothDevice(BluetoothDevice):
 
         """
         self.device.droid.bluetoothUnbond(peer_identifier)
+
+    def init_pair(self, peer_identifier, security_level, non_bondable,
+                  transport):
+        """ Send an outgoing pairing request the input peer_identifier.
+
+        Android currently does not support setting various security levels or
+        bondable modes. Making them available for other bluetooth_device
+        variants. Depending on the Address type, Android will figure out the
+        transport to pair automatically.
+
+        Args:
+            peer_identifier: A string representing the device id.
+            security_level: Not yet implemented. See Fuchsia device impl.
+            non_bondable: Not yet implemented. See Fuchsia device impl.
+            transport: Not yet implemented. See Fuchsia device impl.
+
+        """
+        self.dut.droid.bluetoothBond(self.peer_identifier)
 
 
 class FuchsiaBluetoothDevice(BluetoothDevice):
@@ -1320,4 +1346,42 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
                     except Exception as err:
                         pass
         except Exception as err:
+            self.log.error(fail_err.format(err))
+
+    def init_pair(self, peer_identifier, security_level, non_bondable,
+                  transport):
+        """ Send an outgoing pairing request the input peer_identifier.
+
+        Android currently does not support setting various security levels or
+        bondable modes. Making them available for other bluetooth_device
+        variants. Depending on the Address type, Android will figure out the
+        transport to pair automatically.
+
+        Args:
+            peer_identifier: A string representing the device id.
+            security_level: The security level required for this pairing request
+                represented as a u64. (Only for LE pairing)
+                Available Values
+                1 - ENCRYPTED: Encrypted without MITM protection
+                    (unauthenticated)
+                2 - AUTHENTICATED: Encrypted with MITM protection
+                    (authenticated)
+                None: No pairing security level.
+            non_bondable: A bool representing whether the pairing mode is
+                bondable or not. None is also accepted. False if bondable, True
+                if non-bondable
+            transport: A u64 representing the transport type.
+                Available Values
+                1 - BREDR: Classic BR/EDR transport
+                2 - LE: Bluetooth Low Energy Transport
+        Returns:
+            True if successful, False if failed.
+        """
+        try:
+            self.device.btc_lib.pair(peer_identifier, security_level,
+                                     non_bondable, transport)
+            return True
+        except Exception as err:
+            fail_err = "Failed to pair to peer_identifier {} with: {}".format(
+                peer_identifier)
             self.log.error(fail_err.format(err))

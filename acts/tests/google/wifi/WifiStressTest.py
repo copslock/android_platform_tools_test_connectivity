@@ -424,17 +424,14 @@ class WifiStressTest(WifiBaseTest):
             4. Verify softAP is turned down and WiFi is up.
 
         """
-        # Set country code explicitly to "US".
-        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
-        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
         ap_ssid = "softap_" + utils.rand_ascii_str(8)
         ap_password = utils.rand_ascii_str(8)
         self.dut.log.info("softap setup: %s %s", ap_ssid, ap_password)
         config = {wutils.WifiEnums.SSID_KEY: ap_ssid}
         config[wutils.WifiEnums.PWD_KEY] = ap_password
         # Set country code explicitly to "US".
-        self.dut.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
-        self.dut_client.droid.wifiSetCountryCode(wutils.WifiEnums.CountryCode.US)
+        wutils.set_wifi_country_code(self.dut, wutils.WifiEnums.CountryCode.US)
+        wutils.set_wifi_country_code(self.dut_client, wutils.WifiEnums.CountryCode.US)
         for count in range(self.stress_count):
             initial_wifi_state = self.dut.droid.wifiCheckState()
             wutils.start_wifi_tethering(self.dut,
@@ -524,9 +521,12 @@ class WifiStressTest(WifiBaseTest):
         self.dut.droid.goToSleepNow()
         for count in range(self.stress_count):
             self.connect_and_verify_connected_ssid(self.reference_networks[0]['2g'], is_pno=True)
+            wutils.wifi_forget_network(
+                    self.dut, networks[0][WifiEnums.SSID_KEY])
             # move the DUT out of range
             self.attenuators[0].set_atten(95)
             time.sleep(10)
+            self.add_networks(self.dut, networks)
         wutils.set_attns(self.attenuators, "default")
         raise signals.TestPass(details="", extras={"Iterations":"%d" %
             self.stress_count, "Pass":"%d" %(count+1)})

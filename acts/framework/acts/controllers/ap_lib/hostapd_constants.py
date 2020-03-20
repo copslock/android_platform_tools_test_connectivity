@@ -21,6 +21,7 @@ BAND_5G = '5g'
 WEP = 0
 WPA1 = 1
 WPA2 = 2
+WPA3 = 2  # same as wpa2, distinguished by wpa_key_mgmt
 MIXED = 3
 ENT = 4  # get the correct constant
 MAX_WPA_PSK_LENGTH = 64
@@ -34,6 +35,8 @@ WPA_STRICT_REKEY_DEFAULT = True
 WPA_STRING = 'wpa'
 WPA2_STRING = 'wpa2'
 WPA_MIXED_STRING = 'wpa/wpa2'
+WPA3_STRING = 'wpa3'
+WPA3_KEY_MGMT = 'SAE'
 ENT_STRING = 'ent'
 ENT_KEY_MGMT = 'WPA-EAP'
 IEEE8021X = 1
@@ -175,6 +178,10 @@ N_CAPABILITIES_MAPPING = {
     N_CAPABILITY_SMPS_STATIC: '[SMPS-STATIC]',
     N_CAPABILITY_SMPS_DYNAMIC: '[SMPS-DYNAMIC]'
 }
+N_CAPABILITIES_MAPPING_INVERSE = {
+    v: k
+    for k, v in N_CAPABILITIES_MAPPING.items()
+}
 N_CAPABILITY_HT40_MINUS_CHANNELS = object()
 N_CAPABILITY_HT40_PLUS_CHANNELS = object()
 AC_CAPABILITY_VHT160 = object()
@@ -251,6 +258,10 @@ AC_CAPABILITIES_MAPPING = {
     AC_CAPABILITY_MAX_MPDU_11454: '[MAX-MPDU-11454]',
     AC_CAPABILITY_MAX_MPDU_7991: '[MAX-MPDU-7991]'
 }
+AC_CAPABILITIES_MAPPING_INVERSE = {
+    v: k
+    for k, v in AC_CAPABILITIES_MAPPING.items()
+}
 VHT_CHANNEL_WIDTH_40 = 0
 VHT_CHANNEL_WIDTH_80 = 1
 VHT_CHANNEL_WIDTH_160 = 2
@@ -270,11 +281,11 @@ VHT_CHANNEL = {
 HT40_ALLOW_MAP = {
     N_CAPABILITY_HT40_MINUS_CHANNELS:
     tuple(
-        itertools.chain(range(6, 14), range(40, 65, 8), range(104, 137, 8),
+        itertools.chain(range(6, 14), range(40, 65, 8), range(104, 145, 8),
                         [153, 161])),
     N_CAPABILITY_HT40_PLUS_CHANNELS:
     tuple(
-        itertools.chain(range(1, 8), range(36, 61, 8), range(100, 133, 8),
+        itertools.chain(range(1, 8), range(36, 61, 8), range(100, 141, 8),
                         [149, 157]))
 }
 
@@ -292,7 +303,7 @@ CENTER_CHANNEL_MAP = {
         2,
         'channels': ((36, 40), (44, 48), (52, 56), (60, 64), (100, 104),
                      (108, 112), (116, 120), (124, 128), (132, 136),
-                     (140, 144), (149, 153), (147, 161))
+                     (140, 144), (149, 153), (157, 161))
     },
     VHT_CHANNEL_WIDTH_80: {
         'delta':

@@ -759,11 +759,23 @@ def wifi_test_device_init(ad):
     ad.log.info("wpa_supplicant log change status: %s", output)
     utils.sync_device_time(ad)
     ad.droid.telephonyToggleDataConnection(False)
-    # TODO(angli): need to verify the country code was actually set. No generic
-    # way to check right now.
-    ad.adb.shell("halutil -country %s" % WifiEnums.CountryCode.US)
-    ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
+    set_wifi_country_code(ad, WifiEnums.CountryCode.US)
     utils.set_ambient_display(ad, False)
+
+def set_wifi_country_code(ad, country_code):
+    """Sets the wifi country code on the device.
+
+    Args:
+        ad: An AndroidDevice object.
+        country_code: 2 letter ISO country code
+
+    Raises:
+        An RpcException if unable to set the country code.
+    """
+    try:
+        ad.adb.shell("cmd wifi force-country-code enabled %s" % country_code)
+    except ad.adb.AdbError as e:
+        ad.droid.wifiSetCountryCode(WifiEnums.CountryCode.US)
 
 
 def start_wifi_connection_scan(ad):
@@ -1333,7 +1345,7 @@ def _wifi_connect(ad, network, num_of_tries=1, check_connectivity=True):
         time.sleep(5)
 
         if check_connectivity:
-            internet = validate_connection(ad, DEFAULT_PING_ADDR)
+            internet = validate_connection(ad, DEFAULT_PING_ADDR, 10)
             if not internet:
                 raise signals.TestFailure("Failed to connect to internet on %s" %
                                           expected_ssid)
@@ -1766,18 +1778,19 @@ def convert_pem_key_to_pkcs8(in_file, out_file):
     utils.exe_cmd(cmd)
 
 
-def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR):
+def validate_connection(ad, ping_addr=DEFAULT_PING_ADDR, wait_time=2):
     """Validate internet connection by pinging the address provided.
 
     Args:
         ad: android_device object.
         ping_addr: address on internet for pinging.
+        wait_time: wait for some time before validating connection
 
     Returns:
         ping output if successful, NULL otherwise.
     """
-    # Adding 2 secs timeout before pinging to allow for DHCP to complete.
-    time.sleep(2)
+    # wait_time to allow for DHCP to complete.
+    time.sleep(wait_time)
     ping = ad.droid.httpPing(ping_addr)
     ad.log.info("Http ping result: %s.", ping)
     return ping
@@ -2090,7 +2103,7 @@ def get_ssrdumps(ad, test_name=""):
         ad.log.info("Pulling ssrdumps %s", logs)
         log_path = os.path.join(ad.log_path, test_name,
                                 "SSRDUMP_%s" % ad.serial)
-        utils.create_dir(log_path)
+        os.makedirs(log_path, exist_ok=True)
         ad.pull_files(logs, log_path)
     ad.adb.shell("find /data/vendor/ssrdump/ -type f -delete")
 
@@ -2108,7 +2121,7 @@ def start_pcap(pcap, wifi_band, test_name):
     """
     log_dir = os.path.join(
         context.get_current_context().get_full_output_path(), 'PacketCapture')
-    utils.create_dir(log_dir)
+    os.makedirs(log_dir, exist_ok=True)
     if wifi_band == 'dual':
         bands = [BAND_2G, BAND_5G]
     else:
@@ -2211,7 +2224,7 @@ def get_cnss_diag_log(ad, test_name=""):
     if logs:
         ad.log.info("Pulling cnss_diag logs %s", logs)
         log_path = os.path.join(ad.device_log_path, "CNSS_DIAG_%s" % ad.serial)
-        utils.create_dir(log_path)
+        os.makedirs(log_path, exist_ok=True)
         ad.pull_files(logs, log_path)
 
 

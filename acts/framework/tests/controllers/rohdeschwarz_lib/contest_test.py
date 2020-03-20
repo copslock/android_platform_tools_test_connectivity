@@ -16,10 +16,15 @@
 
 from acts import base_test
 from acts import asserts
-from acts.controllers.rohdeschwarz_lib import contest
 from unittest import mock
 import socket
 import time
+
+# TODO(markdr): Remove this hack after adding zeep to setup.py.
+import sys
+sys.modules['zeep'] = mock.Mock()
+
+from acts.controllers.rohdeschwarz_lib import contest
 
 
 class ContestTest(base_test.BaseTestClass):

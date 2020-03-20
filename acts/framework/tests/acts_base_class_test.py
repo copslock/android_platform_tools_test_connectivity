@@ -282,26 +282,6 @@ class ActsBaseClassTest(unittest.TestCase):
         }
         self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
 
-    def test_run_fail_by_ActsError_(self):
-        class MockBaseTest(base_test.BaseTestClass):
-            def __init__(self, controllers):
-                super(MockBaseTest, self).__init__(controllers)
-
-            def test_something(self):
-                raise error.ActsError()
-
-        bt_cls = MockBaseTest(self.test_run_config)
-        bt_cls.run(test_names=['test_something'])
-        expected_summary = {
-            'Error': 1,
-            'Executed': 1,
-            'Failed': 0,
-            'Passed': 0,
-            'Requested': 1,
-            'Skipped': 0
-        }
-        self.assertEqual(bt_cls.results.summary_dict(), expected_summary)
-
     def test_teardown_test_assert_fail(self):
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
@@ -797,7 +777,7 @@ class ActsBaseClassTest(unittest.TestCase):
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
         self.assertEqual(actual_record.test_name, 'test_func')
-        self.assertEqual(actual_record.details, '1 != 2')
+        self.assertIn('1 != 2', actual_record.details)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
 
     def test_assert_equal_fail_with_msg(self):
@@ -813,7 +793,7 @@ class ActsBaseClassTest(unittest.TestCase):
         actual_record = bt_cls.results.failed[0]
         self.assertEqual(actual_record.test_name, 'test_func')
         expected_msg = '1 != 2 ' + MSG_EXPECTED_EXCEPTION
-        self.assertEqual(actual_record.details, expected_msg)
+        self.assertIn(expected_msg, actual_record.details)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
 
     def test_assert_raises_pass(self):

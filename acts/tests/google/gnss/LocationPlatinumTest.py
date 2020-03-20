@@ -30,7 +30,7 @@ LOCATION_PERMISSIONS = [
     'android.permission.ACCESS_COARSE_LOCATION'
 ]
 BACKGROUND_LOCATION_PERMISSION = 'android.permission.ACCESS_BACKGROUND_LOCATION'
-
+APP_CLEAN_UP_TIME = 60
 
 class LocationPlatinumTest(BaseTestClass):
     """Location Platinum Tests"""
@@ -40,9 +40,9 @@ class LocationPlatinumTest(BaseTestClass):
         self.ad = self.android_devices[0]
         req_params = [
             # A { SSID, password } dictionary. Password is optional.
-            'pixel_lab_network',
+            'wifi_network',
             # A [latitude, longitude] list to identify test location.
-            'pixel_lab_location',
+            'test_location',
             # Cold Start Criteria, a int to define the criteria.
             'cs_criteria',
             # Warm Start Criteria, a int to define the criteria.
@@ -75,7 +75,7 @@ class LocationPlatinumTest(BaseTestClass):
             self.ad.adb.shell('settings put secure location_mode 3')
         if not self.ad.droid.wifiCheckState():
             wutils.wifi_toggle_state(self.ad, True)
-            gutils.connect_to_wifi_network(self.ad, self.pixel_lab_network)
+            gutils.connect_to_wifi_network(self.ad, self.wifi_network)
         if int(self.ad.adb.shell('settings get global mobile_data')) != 1:
             gutils.set_mobile_data(self.ad, True)
         self.grant_location_permission(True)
@@ -101,16 +101,6 @@ class LocationPlatinumTest(BaseTestClass):
             self.ad.adb.shell('pm %s %s %s' %
                               (action, TEST_PACKAGE_NAME, permission))
 
-    def confirm_permission_usage_window(self):
-        """ allow the script to confirm permission keep in use"""
-        time.sleep(1)
-        for _ in range(3):
-            # Press Tab for 3 times
-            self.ad.adb.shell('input keyevent 61')
-        # Press Enter to confirm using current permission set.
-        self.ad.adb.shell('input keyevent 66')
-        time.sleep(1)
-
     def get_and_verify_ttff(self, mode):
         """Retrieve ttff with designate mode.
 
@@ -128,7 +118,7 @@ class LocationPlatinumTest(BaseTestClass):
         gutils.start_ttff_by_gtw_gpstool(
             self.ad, ttff_mode=mode, iteration=1, aid_data=True)
         ttff_data = gutils.process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                       self.pixel_lab_location)
+                                                       self.test_location)
         result = gutils.check_ttff_data(
             self.ad,
             ttff_data,
@@ -169,7 +159,7 @@ class LocationPlatinumTest(BaseTestClass):
         gutils.set_mobile_data(self.ad, False)
         asserts.assert_true(
             gutils.check_network_location(
-                self.ad, 1, 'networkLocationType=wifi', self.nlp_criteria),
+                self.ad, 1, 'wifi', self.nlp_criteria),
             'Fail to get NLP from wifi')
 
     def test_nlp_available_by_cell(self):
@@ -181,7 +171,7 @@ class LocationPlatinumTest(BaseTestClass):
         wutils.wifi_toggle_state(self.ad, False)
         asserts.assert_true(
             gutils.check_network_location(
-                self.ad, 1, 'networkLocationType=cell', self.nlp_criteria),
+                self.ad, 1, 'cell', self.nlp_criteria),
             'Fail to get NLP from cell')
 
     def test_toggle_location_setting_off_on_report_location(self):
@@ -247,16 +237,13 @@ class LocationPlatinumTest(BaseTestClass):
         self.ad.adb.shell('pm revoke com.android.gpstool %s' %
                           BACKGROUND_LOCATION_PERMISSION)
         gutils.start_gnss_by_gtw_gpstool(self.ad, True)
-        self.confirm_permission_usage_window()
         asserts.assert_true(
             gutils.check_location_api(self.ad, retries=1),
             'APP failed to receive location fix in foreground')
-        # Press HOME and let GPStool go background
+        self.ad.log.info('Trun GPSTool from foreground to background')
         self.ad.adb.shell('input keyevent 3')
-        begin_time = utils.get_current_epoch_time()
-        time.sleep(60)
-        result = self.ad.search_logcat(
-            'skipping loc update for no op app: com.android.gpstool',
-            begin_time)
-        asserts.assert_true(
-            result, 'APP still receive location fix in background')
+        self.ad.log.info('Wait %d seconds for app clean up' % APP_CLEAN_UP_TIME)
+        time.sleep(APP_CLEAN_UP_TIME)
+        asserts.assert_false(
+            gutils.check_location_api(self.ad, retries=1),
+            'DUT still receive location fix')

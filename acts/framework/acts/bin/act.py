@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import argparse
+import os
 import re
 import signal
 import sys
@@ -114,8 +115,8 @@ def _run_tests(parsed_configs, test_identifiers, repeat):
     return ok
 
 
-def main(argv):
-    """This is a sample implementation of a cli entry point for ACTS test
+def main():
+    """This is the default implementation of a cli entry point for ACTS test
     execution.
 
     Or you could implement your own cli entry point using acts.config_parser
@@ -180,7 +181,7 @@ def main(argv):
                         type=int,
                         help="Number of times to run every test case.")
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args(sys.argv[1:])
     test_list = None
     if args.testfile:
         test_list = config_parser.parse_test_file(args.testfile[0])
@@ -194,29 +195,25 @@ def main(argv):
             args.config, args.testbed)
 
     for test_run_config in parsed_configs:
-        # TODO(markdr): Remove this statement after the next Mobly release.
-        test_run_config.testbed_name = getattr(test_run_config, 'testbed_name',
-                                               test_run_config.test_bed_name)
-
         if args.testpaths:
             tp_key = keys.Config.key_test_paths.value
             test_run_config.controller_configs[tp_key] = args.testpaths
         if args.logpath:
             test_run_config.log_path = args.logpath
         if args.test_case_iterations:
-            # TODO(markdr): Remove this check after the next Mobly release.
-            if test_run_config.user_params is None:
-                test_run_config.user_params = {}
-
             ti_key = keys.Config.key_test_case_iterations.value
             test_run_config.user_params[ti_key] = args.test_case_iterations
 
+        # Sets the --testpaths flag to the default test directory if left unset.
+        testpath_key = keys.Config.key_test_paths.value
+        if (testpath_key not in test_run_config.controller_configs
+                or test_run_config.controller_configs[testpath_key] is None):
+            test_run_config.controller_configs[testpath_key] = utils.abs_path(
+                utils.os.path.join(os.path.dirname(__file__),
+                                   '../../../tests/'))
+
         # TODO(markdr): Find a way to merge this with the validation done in
         # Mobly's load_test_config_file.
-        if (keys.Config.key_test_paths.value not in
-                test_run_config.controller_configs):
-            raise ActsConfigError("Required key %s missing in test config." %
-                                  keys.Config.key_test_paths.value)
         if not test_run_config.log_path:
             raise ActsConfigError("Required key %s missing in test config." %
                                   keys.Config.key_log_path.value)
@@ -234,4 +231,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

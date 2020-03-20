@@ -55,13 +55,12 @@ from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import run_multithread_func
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
-from acts.test_utils.wifi.wifi_power_test_utils import bokeh_plot
 from acts.test_utils.wifi.wifi_power_test_utils import get_phone_ip
 from acts.test_utils.wifi.wifi_test_utils import reset_wifi
 from acts.test_utils.wifi.wifi_test_utils import wifi_connect
 from acts.test_utils.wifi.wifi_test_utils import wifi_test_device_init
 from acts.test_utils.wifi.wifi_test_utils import wifi_toggle_state
-from acts.utils import exe_cmd, create_dir
+from acts.utils import exe_cmd
 from bokeh.layouts import column
 from bokeh.models import tools as bokeh_tools
 from bokeh.plotting import figure, output_file, save
@@ -73,41 +72,38 @@ BLUETOOTH_WAIT_TIME = 2
 AVRCP_WAIT_TIME = 3
 
 
-def avrcp_actions(pri_ad, audio_receiver):
+def avrcp_actions(pri_ad, bt_device):
     """Performs avrcp controls like volume up, volume down, skip next and
     skip previous.
 
     Args:
         pri_ad: Android device.
-        audio_receiver: Relay instance.
+        bt_device: bt device instance.
 
     Returns:
         True if successful, otherwise False.
     """
-    if "Volume_up" and "Volume_down" in (audio_receiver.relays.keys()):
-        current_volume = pri_ad.droid.getMediaVolume()
-        audio_receiver.press_volume_up()
+    current_volume = pri_ad.droid.getMediaVolume()
+    for _ in range(5):
+        bt_device.volume_up()
         time.sleep(AVRCP_WAIT_TIME)
-        if current_volume == pri_ad.droid.getMediaVolume():
-            pri_ad.log.error("Increase volume failed")
-            return False
+    if current_volume == pri_ad.droid.getMediaVolume():
+        pri_ad.log.error("Increase volume failed")
+        return False
+    time.sleep(AVRCP_WAIT_TIME)
+    current_volume = pri_ad.droid.getMediaVolume()
+    for _ in range(5):
+        bt_device.volume_down()
         time.sleep(AVRCP_WAIT_TIME)
-        current_volume = pri_ad.droid.getMediaVolume()
-        audio_receiver.press_volume_down()
-        time.sleep(AVRCP_WAIT_TIME)
-        if current_volume == pri_ad.droid.getMediaVolume():
-            pri_ad.log.error("Decrease volume failed")
-            return False
-    else:
-        pri_ad.log.warning("No volume control pins specfied in relay config.")
+    if current_volume == pri_ad.droid.getMediaVolume():
+        pri_ad.log.error("Decrease volume failed")
+        return False
 
-    if "Next" and "Previous" in audio_receiver.relays.keys():
-        audio_receiver.press_next()
-        time.sleep(AVRCP_WAIT_TIME)
-        audio_receiver.press_previous()
-        time.sleep(AVRCP_WAIT_TIME)
-    else:
-        pri_ad.log.warning("No track change pins specfied in relay config.")
+    #TODO: (sairamganesh) validate next and previous calls.
+    bt_device.next()
+    time.sleep(AVRCP_WAIT_TIME)
+    bt_device.previous()
+    time.sleep(AVRCP_WAIT_TIME)
     return True
 
 
@@ -154,7 +150,7 @@ def collect_bluetooth_manager_dumpsys_logs(pri_ad, test_name):
     """
     dump_counter = 0
     dumpsys_path = os.path.join(pri_ad.log_path, test_name, "BluetoothDumpsys")
-    create_dir(dumpsys_path)
+    os.makedirs(dumpsys_path, exist_ok=True)
     while os.path.exists(
             os.path.join(dumpsys_path,
                          "bluetooth_dumpsys_%s.txt" % dump_counter)):
@@ -944,7 +940,7 @@ def start_fping(pri_ad, duration, fping_params):
     """
     counter = 0
     fping_path = ''.join((pri_ad.log_path, "/Fping"))
-    create_dir(fping_path)
+    os.makedirs(fping_path, exist_ok=True)
     while os.path.isfile(fping_path + "/fping_%s.txt" % counter):
         counter += 1
     out_file_name = "{}".format("fping_%s.txt" % counter)
@@ -1063,6 +1059,70 @@ def push_music_to_android_device(ad, audio_params):
         ad.adb.push("{} {}".format(music_file_to_play, android_music_path))
         return (os.path.basename(music_file_to_play))
 
+def bokeh_plot(data_sets,
+               legends,
+               fig_property,
+               shaded_region=None,
+               output_file_path=None):
+    """Plot bokeh figs.
+        Args:
+            data_sets: data sets including lists of x_data and lists of y_data
+                       ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
+            legends: list of legend for each curve
+            fig_property: dict containing the plot property, including title,
+                      labels, linewidth, circle size, etc.
+            shaded_region: optional dict containing data for plot shading
+            output_file_path: optional path at which to save figure
+        Returns:
+            plot: bokeh plot figure object
+    """
+    tools = 'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save'
+    plot = figure(plot_width=1300,
+                  plot_height=700,
+                  title=fig_property['title'],
+                  tools=tools,
+                  output_backend="webgl")
+    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="width"))
+    plot.add_tools(bokeh_tools.WheelZoomTool(dimensions="height"))
+    colors = [
+        'red', 'green', 'blue', 'olive', 'orange', 'salmon', 'black', 'navy',
+        'yellow', 'darkred', 'goldenrod'
+    ]
+    if shaded_region:
+        band_x = shaded_region["x_vector"]
+        band_x.extend(shaded_region["x_vector"][::-1])
+        band_y = shaded_region["lower_limit"]
+        band_y.extend(shaded_region["upper_limit"][::-1])
+        plot.patch(band_x,
+                   band_y,
+                   color='#7570B3',
+                   line_alpha=0.1,
+                   fill_alpha=0.1)
+
+    for x_data, y_data, legend in zip(data_sets[0], data_sets[1], legends):
+        index_now = legends.index(legend)
+        color = colors[index_now % len(colors)]
+        plot.line(x_data,
+                  y_data,
+                  legend=str(legend),
+                  line_width=fig_property['linewidth'],
+                  color=color)
+        plot.circle(x_data,
+                    y_data,
+                    size=fig_property['markersize'],
+                    legend=str(legend),
+                    fill_color=color)
+
+    # Plot properties
+    plot.xaxis.axis_label = fig_property['x_label']
+    plot.yaxis.axis_label = fig_property['y_label']
+    plot.legend.location = "top_right"
+    plot.legend.click_policy = "hide"
+    plot.title.text_font_size = {'value': '15pt'}
+    if output_file_path is not None:
+        output_file(output_file_path)
+        save(plot)
+    return plot
 
 def bokeh_chart_plot(bt_attenuation_range,
                data_sets,
@@ -1078,7 +1138,7 @@ def bokeh_chart_plot(bt_attenuation_range,
             ex: [[[x_data1], [x_data2]], [[y_data1],[y_data2]]]
         legends: list of legend for each curve
         fig_property: dict containing the plot property, including title,
-                      lables, linewidth, circle size, etc.
+                      labels, linewidth, circle size, etc.
         shaded_region: optional dict containing data for plot shading
         output_file_path: optional path at which to save figure
 

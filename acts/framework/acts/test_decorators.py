@@ -16,12 +16,13 @@
 
 from acts import signals
 
+
 def test_info(predicate=None, **keyed_info):
     """Adds info about test.
 
-    Extra Info to include about the test. This info will be available in the
+    Extra info to include about the test. This info will be available in the
     test output. Note that if a key is given multiple times it will be added
-    as a list of all values. If multiples of these are stacked there results
+    as a list of all values. If multiples of these are stacked their results
     will be merged.
 
     Example:
@@ -37,10 +38,10 @@ def test_info(predicate=None, **keyed_info):
                       test.
     """
 
-    def test_info_decoractor(func):
+    def test_info_decorator(func):
         return _TestInfoDecoratorFunc(func, predicate, keyed_info)
 
-    return test_info_decoractor
+    return test_info_decorator
 
 
 def test_tracker_info(uuid, extra_environment_info=None, predicate=None):
@@ -61,7 +62,7 @@ def test_tracker_info(uuid, extra_environment_info=None, predicate=None):
     """
     return test_info(
         test_tracker_uuid=uuid,
-        test_tracker_enviroment_info=extra_environment_info,
+        test_tracker_environment_info=extra_environment_info,
         predicate=predicate)
 
 
@@ -95,11 +96,13 @@ class _TestInfoDecoratorFunc(object):
                 new_signal = signals.TestPass('')
             else:
                 new_signal = signals.TestFailure('')
-        except Exception as signal:
+        except signals.TestSignal as signal:
             new_signal = signal
+        except Exception as cause:
+            new_signal = signals.TestError(cause)
 
-        if getattr(new_signal, "extras", None) is None:
-            setattr(new_signal, "extras", {})
+        if new_signal.extras is None:
+            new_signal.extras = {}
         if not isinstance(new_signal.extras, dict):
             raise ValueError('test_info can only append to signal data '
                              'that has a dict as the extra value.')

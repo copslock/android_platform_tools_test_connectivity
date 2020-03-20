@@ -48,12 +48,6 @@ else:
 PY_FILE_REGEX = re.compile('.+\.py$')
 
 BLACKLIST = [
-    # TODO(markdr): Remove these after BT team evaluates these tests.
-    'acts/test_utils/bt/PowerBaseTest.py',
-    'tests/google/ble/power/GattPowerTest.py',
-    'tests/google/bt/power/A2dpPowerTest.py',
-    'tests/google/ble/power/BleScanPowerTest.py',
-
     'acts/controllers/rohdeschwarz_lib/contest.py',
     'acts/controllers/native.py',
     'acts/controllers/native_android_device.py',
@@ -66,8 +60,7 @@ BLACKLIST = [
     'acts/test_utils/bt/bt_power_test_utils.py',
     'acts/test_utils/coex/coex_test_utils.py',
     'acts/test_utils/tel/twilio_client.py',
-    'acts/test_utils/bt/A2dpCodecBaseTest.py',
-    'acts/test_utils/bt/BtRangeBaseTest.py',
+    'acts/test_utils/bt/A2dpBaseTest.py',
     'acts/test_utils/bt/BtSarBaseTest.py',
     'tests/google/ble/beacon_tests/BeaconSwarmTest.py',
     'tests/google/bt/pts/BtCmdLineTest.py',
@@ -90,11 +83,7 @@ BLACKLIST = [
     'tests/google/tel/live/TelLiveEmergencyTest.py',
     'tests/google/tel/live/TelLiveConnectivityMonitorTest.py',
     'tests/google/tel/live/TelLiveConnectivityMonitorMobilityTest.py',
-    'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
-    'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
-    'tests/google/fuchsia/wlan/RebootStressTest.py',
     'acts/test_utils/gnss/gnss_testlog_utils.py',
-    'tests/google/fuchsia/bt/BluetoothCmdLineTest.py',
 ]
 
 BLACKLIST_DIRECTORIES = [
@@ -107,6 +96,7 @@ BLACKLIST_DIRECTORIES = [
     'tests/google/power/',
     'tests/google/bt/performance/',
     'tests/google/bt/sar/',
+    'tests/google/fuchsia/'
 ]
 
 BANNED_IMPORTS = ['mobly.controllers']

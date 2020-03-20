@@ -24,8 +24,14 @@ class PowerBaselineTest(PowerBaseTest):
     consumption to a minimum during connectivity power tests.
     """
 
+    @property
+    def display_name_test_suite(self):
+        return 'Rockbottom'
+
     def test_power_baseline(self):
         """Measures power when the device is on rockbottom. """
+
+        self.display_name_test_case = 'Power Baseline'
 
         # Make the device go to sleep
         self.dut.droid.goToSleepNow()

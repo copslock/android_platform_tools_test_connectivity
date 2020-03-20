@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='power_metric.proto',
   package='wireless.android.platform.testing.power.metrics',
   syntax='proto2',
-  serialized_pb=_b('\n\x12power_metric.proto\x12/wireless.android.platform.testing.power.metrics\"\x90\x01\n\x0bPowerMetric\x12\x11\n\tavg_power\x18\x01 \x01(\x02\x12\x0f\n\x07testbed\x18\x02 \x01(\t\x12]\n\x0f\x63\x65llular_metric\x18\x03 \x01(\x0b\x32\x44.wireless.android.platform.testing.power.metrics.PowerCellularMetric\"?\n\x13PowerCellularMetric\x12\x13\n\x0b\x61vg_dl_tput\x18\x01 \x01(\x02\x12\x13\n\x0b\x61vg_ul_tput\x18\x02 \x01(\x02')
+  serialized_pb=_b('\n\x12power_metric.proto\x12/wireless.android.platform.testing.power.metrics\"\xe6\x02\n\x0bPowerMetric\x12\x11\n\tavg_power\x18\x01 \x01(\x02\x12\x0f\n\x07testbed\x18\x02 \x01(\t\x12]\n\x0f\x63\x65llular_metric\x18\x03 \x01(\x0b\x32\x44.wireless.android.platform.testing.power.metrics.PowerCellularMetric\x12\x0e\n\x06\x62ranch\x18\x04 \x01(\t\x12\x10\n\x08\x62uild_id\x18\x05 \x01(\t\x12\x0e\n\x06target\x18\x06 \x01(\t\x12\x13\n\x0b\x61vg_current\x18\x07 \x01(\x02\x12\x0f\n\x07voltage\x18\x08 \x01(\x02\x12\x1f\n\x17test_suite_display_name\x18\t \x01(\t\x12\x1e\n\x16test_case_display_name\x18\n \x01(\t\x12\x1c\n\x14incremental_build_id\x18\x0b \x01(\t\x12\x1d\n\x15\x61vg_current_threshold\x18\x0c \x01(\x02\"}\n\x13PowerCellularMetric\x12\x13\n\x0b\x61vg_dl_tput\x18\x01 \x01(\x02\x12\x13\n\x0b\x61vg_ul_tput\x18\x02 \x01(\x02\x12\x1d\n\x15\x61vg_dl_tput_threshold\x18\x03 \x01(\x02\x12\x1d\n\x15\x61vg_ul_tput_threshold\x18\x04 \x01(\x02')
 )
 
 
@@ -53,6 +53,69 @@ _POWERMETRIC = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='branch', full_name='wireless.android.platform.testing.power.metrics.PowerMetric.branch', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='build_id', full_name='wireless.android.platform.testing.power.metrics.PowerMetric.build_id', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='target', full_name='wireless.android.platform.testing.power.metrics.PowerMetric.target', index=5,
+      number=6, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='avg_current', full_name='wireless.android.platform.testing.power.metrics.PowerMetric.avg_current', index=6,
+      number=7, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='voltage', full_name='wireless.android.platform.testing.power.metrics.PowerMetric.voltage', index=7,
+      number=8, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='test_suite_display_name', full_name='wireless.android.platform.testing.power.metrics.PowerMetric.test_suite_display_name', index=8,
+      number=9, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='test_case_display_name', full_name='wireless.android.platform.testing.power.metrics.PowerMetric.test_case_display_name', index=9,
+      number=10, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='incremental_build_id', full_name='wireless.android.platform.testing.power.metrics.PowerMetric.incremental_build_id', index=10,
+      number=11, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='avg_current_threshold', full_name='wireless.android.platform.testing.power.metrics.PowerMetric.avg_current_threshold', index=11,
+      number=12, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -66,7 +129,7 @@ _POWERMETRIC = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=72,
-  serialized_end=216,
+  serialized_end=430,
 )
 
 
@@ -91,6 +154,20 @@ _POWERCELLULARMETRIC = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='avg_dl_tput_threshold', full_name='wireless.android.platform.testing.power.metrics.PowerCellularMetric.avg_dl_tput_threshold', index=2,
+      number=3, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='avg_ul_tput_threshold', full_name='wireless.android.platform.testing.power.metrics.PowerCellularMetric.avg_ul_tput_threshold', index=3,
+      number=4, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -103,8 +180,8 @@ _POWERCELLULARMETRIC = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=218,
-  serialized_end=281,
+  serialized_start=432,
+  serialized_end=557,
 )
 
 _POWERMETRIC.fields_by_name['cellular_metric'].message_type = _POWERCELLULARMETRIC

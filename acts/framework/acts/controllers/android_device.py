@@ -473,7 +473,8 @@ class AndroidDevice:
             'serial': self.serial,
             'model': self.model,
             'build_info': self.build_info,
-            'user_added_info': self._user_added_device_info
+            'user_added_info': self._user_added_device_info,
+            'flavor': self.flavor
         }
         return info
 
@@ -524,6 +525,11 @@ class AndroidDevice:
             return model
         else:
             return self.adb.getprop("ro.product.name").lower()
+
+    @property
+    def flavor(self):
+        """Returns the specific flavor of Android build the device is using."""
+        return self.adb.getprop("ro.build.flavor").lower()
 
     @property
     def droid(self):
@@ -717,7 +723,7 @@ class AndroidDevice:
             self.log.warning("Logcat file %s does not exist." % logcat_path)
             return
         adb_excerpt_dir = os.path.join(self.log_path, dest_path)
-        utils.create_dir(adb_excerpt_dir)
+        os.makedirs(adb_excerpt_dir, exist_ok=True)
         out_name = '%s,%s.txt' % (acts_logger.normalize_log_line_timestamp(
             log_begin_time), self.serial)
         tag_len = utils.MAX_FILENAME_LEN - len(out_name)
@@ -932,7 +938,7 @@ class AndroidDevice:
         except adb.AdbError:
             new_br = False
         br_path = self.device_log_path
-        utils.create_dir(br_path)
+        os.makedirs(br_path, exist_ok=True)
         time_stamp = acts_logger.normalize_log_line_timestamp(
             acts_logger.epoch_to_log_line_timestamp(begin_time))
         out_name = "AndroidDevice%s_%s" % (
@@ -979,6 +985,13 @@ class AndroidDevice:
         files = out.split("\n")
         self.log.debug("Find files in directory %s: %s", directory, files)
         return files
+
+    @property
+    def external_storage_path(self):
+        """
+        The $EXTERNAL_STORAGE path on the device. Most commonly set to '/sdcard'
+        """
+        return self.adb.shell('echo $EXTERNAL_STORAGE')
 
     def pull_files(self, device_paths, host_path=None):
         """Pull files from devices.
@@ -1027,7 +1040,7 @@ class AndroidDevice:
             test_name = test_name or time.strftime("%Y-%m-%d-%Y-%H-%M-%S")
             crash_log_path = os.path.join(self.log_path, test_name,
                                           "Crashes_%s" % self.serial)
-            utils.create_dir(crash_log_path)
+            os.makedirs(crash_log_path, exist_ok=True)
             self.pull_files(crash_reports, crash_log_path)
         return crash_reports
 
@@ -1041,7 +1054,7 @@ class AndroidDevice:
         if qxdm_logs:
             qxdm_log_path = os.path.join(self.device_log_path,
                                          "QXDM_%s" % self.serial)
-            utils.create_dir(qxdm_log_path)
+            os.makedirs(qxdm_log_path, exist_ok=True)
             self.log.info("Pull QXDM Log %s to %s", qxdm_logs, qxdm_log_path)
             self.pull_files(qxdm_logs, qxdm_log_path)
             self.adb.pull(
@@ -1053,7 +1066,7 @@ class AndroidDevice:
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)
-            utils.create_dir(omadm_log_path)
+            os.makedirs(omadm_log_path, exist_ok=True)
             self.log.info("Pull OMADM Log")
             self.adb.pull(
                 "/data/data/com.android.omadm.service/files/dm/log/ %s" %
@@ -1071,7 +1084,7 @@ class AndroidDevice:
         if sdm_logs:
             sdm_log_path = os.path.join(self.device_log_path,
                                         "SDM_%s" % self.serial)
-            utils.create_dir(sdm_log_path)
+            os.makedirs(sdm_log_path, exist_ok=True)
             self.log.info("Pull SDM Log %s to %s", sdm_logs, sdm_log_path)
             self.pull_files(sdm_logs, sdm_log_path)
         else:
@@ -1079,7 +1092,7 @@ class AndroidDevice:
         if "Verizon" in self.adb.getprop("gsm.sim.operator.alpha"):
             omadm_log_path = os.path.join(self.device_log_path,
                                           "OMADM_%s" % self.serial)
-            utils.create_dir(omadm_log_path)
+            os.makedirs(omadm_log_path, exist_ok=True)
             self.log.info("Pull OMADM Log")
             self.adb.pull(
                 "/data/data/com.android.omadm.service/files/dm/log/ %s" %
@@ -1178,19 +1191,23 @@ class AndroidDevice:
             return False, clean_out
         return True, clean_out
 
-    def wait_for_boot_completion(self):
+    def wait_for_boot_completion(self, timeout=900.0):
         """Waits for Android framework to broadcast ACTION_BOOT_COMPLETED.
 
-        This function times out after 15 minutes.
+        Args:
+            timeout: Seconds to wait for the device to boot. Default value is
+            15 minutes.
         """
         timeout_start = time.time()
-        timeout = 15 * 60
 
-        self.adb.wait_for_device(timeout=WAIT_FOR_DEVICE_TIMEOUT)
+        self.log.debug("ADB waiting for device")
+        self.adb.wait_for_device(timeout=timeout)
+        self.log.debug("Waiting for  sys.boot_completed")
         while time.time() < timeout_start + timeout:
             try:
                 completed = self.adb.getprop("sys.boot_completed")
                 if completed == '1':
+                    self.log.debug("devie has rebooted")
                     return
             except adb.AdbError:
                 # adb shell calls may fail during certain period of booting
@@ -1201,7 +1218,7 @@ class AndroidDevice:
             'Device %s booting process timed out.' % self.serial,
             serial=self.serial)
 
-    def reboot(self, stop_at_lock_screen=False):
+    def reboot(self, stop_at_lock_screen=False, timeout=180):
         """Reboots the device.
 
         Terminate all sl4a sessions, reboot the device, wait for device to
@@ -1211,6 +1228,8 @@ class AndroidDevice:
             stop_at_lock_screen: whether to unlock after reboot. Set to False
                 if want to bring the device to reboot up to password locking
                 phase. Sl4a checking need the device unlocked after rebooting.
+            timeout: time in seconds to wait for the device to complete
+                rebooting.
         """
         if self.is_bootloader:
             self.fastboot.reboot()
@@ -1220,7 +1239,6 @@ class AndroidDevice:
         self.adb.reboot()
 
         timeout_start = time.time()
-        timeout = 2 * 60
         # b/111791239: Newer versions of android sometimes return early after
         # `adb reboot` is called. This means subsequent calls may make it to
         # the device before the reboot goes through, return false positives for
@@ -1234,7 +1252,8 @@ class AndroidDevice:
                 # want the device to be missing to prove the device has kicked
                 # off the reboot.
                 break
-        self.wait_for_boot_completion()
+        self.wait_for_boot_completion(
+            timeout=(timeout - time.time() + timeout_start))
         self.root_adb()
         skip_sl4a = self.skip_sl4a
         self.skip_sl4a = self.skip_sl4a or stop_at_lock_screen
@@ -1311,7 +1330,7 @@ class AndroidDevice:
     def get_my_current_focus_window(self):
         """Get the current focus window on screen"""
         output = self.adb.shell(
-            'dumpsys window windows | grep -E mCurrentFocus',
+            'dumpsys window displays | grep -E mCurrentFocus',
             ignore_status=True)
         if not output or "not found" in output or "Can't find" in output or (
                 "mCurrentFocus=null" in output):
@@ -1325,7 +1344,7 @@ class AndroidDevice:
         """Get the current focus application"""
         dumpsys_cmd = [
             'dumpsys window | grep -E mFocusedApp',
-            'dumpsys window windows | grep -E mFocusedApp'
+            'dumpsys window displays | grep -E mFocusedApp'
         ]
         for cmd in dumpsys_cmd:
             output = self.adb.shell(cmd, ignore_status=True)

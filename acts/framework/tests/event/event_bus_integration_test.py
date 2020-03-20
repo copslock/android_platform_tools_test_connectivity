@@ -13,7 +13,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import shutil
 import tempfile
 import unittest
 from unittest import TestCase
@@ -34,7 +33,8 @@ class TestClass(BaseTestClass):
     def __init__(self, configs):
         import mock
         self.log = mock.Mock()
-        super().__init__(configs)
+        with mock.patch('mobly.utils.create_dir'):
+            super().__init__(configs)
 
     @subscribe(Event)
     def subscribed_instance_member(self, event):
@@ -65,10 +65,6 @@ class EventBusIntegrationTest(TestCase):
             test_run_config.testbed_name = 'SampleTestBed'
             test_run_config.log_path = tmp_dir
 
-            # TODO(markdr): Remove stanza the next Mobly release.
-            test_run_config.user_params = {}
-            test_run_config.controller_configs = {}
-
             TestRunner(test_run_config, [('TestClass', [])]).run(TestClass)
 
         self.assertGreaterEqual(len(TestClass.instance_event_received), 1)
@@ -88,8 +84,7 @@ class EventBusIntegrationTest(TestCase):
         """Tests that @subscribe bundles register only instance listeners."""
         test_run_config = mobly_config_parser.TestRunConfig()
         test_run_config.testbed_name = ''
-        # TODO(markdr): Remove this line after the next Mobly release.
-        test_run_config.user_params = {}
+        test_run_config.log_path = ''
         test_object = TestClass(test_run_config)
         bundle = subscription_bundle.create_from_instance(test_object)
         bundle.register()
