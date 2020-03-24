@@ -400,7 +400,8 @@ class WifiPingTest(base_test.BaseTestClass):
         self.access_point.set_bandwidth(band, testcase_params['mode'])
         if 'low' in testcase_params['ap_power']:
             self.log.info('Setting low AP power.')
-            self.access_point.set_power(band, 0)
+            self.access_point.set_power(
+                band, self.testclass_params['low_ap_tx_power'])
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
 
@@ -421,7 +422,7 @@ class WifiPingTest(base_test.BaseTestClass):
         else:
             wutils.reset_wifi(self.dut)
             wutils.set_wifi_country_code(self.dut,
-                self.testclass_params['country_code'])
+                                         self.testclass_params['country_code'])
             testcase_params['test_network']['channel'] = testcase_params[
                 'channel']
             wutils.wifi_connect(self.dut,
