@@ -76,7 +76,8 @@ class WifiRvrTest(base_test.BaseTestClass):
             ssh.settings.from_config(self.RemoteServer[0]['ssh_config']))
         self.iperf_client = self.iperf_clients[0]
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
-        if hasattr(self, 'OTASniffer'):
+        if hasattr(self,
+                   'OTASniffer') and self.testbed_params['sniffer_enable']:
             self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
