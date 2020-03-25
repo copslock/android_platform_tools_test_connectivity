@@ -77,7 +77,8 @@ class WifiPingTest(base_test.BaseTestClass):
         self.ping_server = ssh.connection.SshConnection(
             ssh.settings.from_config(self.RemoteServer[0]['ssh_config']))
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
-        if hasattr(self, 'OTASniffer'):
+        if hasattr(self,
+                   'OTASniffer') and self.testbed_params['sniffer_enable']:
             self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
