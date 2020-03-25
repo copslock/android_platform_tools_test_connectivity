@@ -22,6 +22,8 @@ from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
 from acts.controllers.rohdeschwarz_lib import cmw500_cellular_simulator as cmw
 from unittest import mock
 
+magic_patch = lambda patched: mock.patch(patched, mock.MagicMock())
+
 
 class PowerTelTrafficE2eTest(unittest.TestCase):
     """ E2E sanity test for the power cellular traffic tests """
@@ -31,18 +33,17 @@ class PowerTelTrafficE2eTest(unittest.TestCase):
         cls.PTTT.log = mock.Mock()
         cls.PTTT.log_path = ''
 
-    @mock.patch('json.load')
-    @mock.patch('builtins.open')
-    @mock.patch('os.chmod')
-    @mock.patch('os.system')
-    @mock.patch('time.sleep')
-    @mock.patch(
-        'acts.test_utils.tel.tel_test_utils.toggle_airplane_mode_by_adb')
-    @mock.patch('acts.test_utils.wifi.wifi_test_utils.reset_wifi')
-    @mock.patch('acts.test_utils.wifi.wifi_test_utils.wifi_toggle_state')
-    @mock.patch(
+    @magic_patch('json.load')
+    @magic_patch('builtins.open')
+    @magic_patch('os.chmod')
+    @magic_patch('os.system')
+    @magic_patch('time.sleep')
+    @magic_patch(
+        'acts.test_utils.power.cellular.cellular_power_base_test.telutils')
+    @magic_patch('acts.test_utils.power.PowerBaseTest.wutils')
+    @magic_patch(
         'acts.metrics.loggers.blackbox.BlackboxMetricLogger.for_test_case')
-    @mock.patch(
+    @magic_patch(
         'acts.test_utils.power.loggers.power_metric_logger.PowerMetricLogger.for_test_case'
     )
     def test_e2e(self, *args):
@@ -62,7 +63,9 @@ class PowerTelTrafficE2eTest(unittest.TestCase):
             monsoons=[mock.Mock()],
             iperf_servers=[mock.Mock(), mock.Mock()],
             packet_senders=[mock.Mock(), mock.Mock()],
-            custom_files=['pass_fail_threshold_coral.json', 'rockbottom_coral.sh'],
+            custom_files=[
+                'pass_fail_threshold_coral.json', 'rockbottom_coral.sh'
+            ],
             simulation=mock.Mock(spec=LteSimulation),
             mon_freq=5000,
             mon_duration=0,
