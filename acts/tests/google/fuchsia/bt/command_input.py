@@ -58,7 +58,7 @@ FAILURE = "CMD {} threw exception: {}"
 BASIC_ADV_NAME = "fs_test"
 
 
-class CmdInput(cmd.Cmd):
+class CommandInput(cmd.Cmd):
     ble_advertise_interval = 1000
     bt_control_ids = []
     bt_control_names = []
