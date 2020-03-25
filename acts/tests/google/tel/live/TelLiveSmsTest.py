@@ -130,7 +130,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         sender_message_sub_id = get_outgoing_message_sub_id(ads[0])
         sender_mcc = ads[0].telephony["subscription"][sender_message_sub_id]["mcc"]
         long_message_lengths = self.long_message_lengths
-        if sender_mcc in ["440", "441"]:
+        if str(sender_mcc) in ["440", "441"]:
             long_message_lengths = self.long_message_lengths_of_jp_carriers
 
         for length in long_message_lengths:
