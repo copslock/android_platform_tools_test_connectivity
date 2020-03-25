@@ -37,6 +37,7 @@ from acts.controllers.fuchsia_lib.bt.btc_lib import FuchsiaBtcLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
+from acts.controllers.fuchsia_lib.hardware_power_statecontrol_lib import FuchsiaHardwarePowerStatecontrolLib
 from acts.controllers.fuchsia_lib.hwinfo_lib import FuchsiaHwinfoLib
 from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
@@ -214,6 +215,10 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaGattsLib
         self.gatts_lib = FuchsiaGattsLib(self.address, self.test_counter,
                                          self.client_id)
+
+        # Grab commands from FuchsiaHardwarePowerStatecontrolLib
+        self.hardware_power_statecontrol_lib = FuchsiaHardwarePowerStatecontrolLib(
+            self.address, self.test_counter, self.client_id)
 
         # Grab commands from FuchsiaHwinfoLib
         self.hwinfo_lib = FuchsiaHwinfoLib(self.address, self.test_counter,
