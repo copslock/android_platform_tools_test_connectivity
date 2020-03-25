@@ -20,7 +20,7 @@ Required custom config parameters:
 
 """
 from acts.base_test import BaseTestClass
-from cmd_input import CmdInput
+from command_input import CommandInput
 from queue import Empty
 
 
@@ -50,7 +50,7 @@ class BluetoothCmdLineTest(BaseTestClass):
             self.target_device_name = self.user_params["target_device_name"]
 
     def test_cmd_line_helper(self):
-        cmd_line = CmdInput()
+        cmd_line = CommandInput()
         cmd_line.setup_vars(self.dut, self.target_device_name, self.log)
         cmd_line.cmdloop()
         return True
