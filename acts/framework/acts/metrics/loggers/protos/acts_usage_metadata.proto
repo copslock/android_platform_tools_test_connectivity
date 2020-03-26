@@ -20,13 +20,12 @@ package acts.metadata;
 
 option java_package = "com.android.acts.metadata";
 
+// next id: 2
 message ActsTestRunMetadata {
-
   repeated ActsMethodUsageMetadata usage = 1;
 }
 
 message ActsMethodUsageMetadata {
-
     // Contextual identifier: who's invoking the method
     optional string test_context = 1;
 
