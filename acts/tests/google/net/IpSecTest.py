@@ -209,7 +209,6 @@ class IpSecTest(base_test.BaseTestClass):
         # dut objects and ip addrs
         dut_a = self.dut_a
         dut_b = self.dut_b
-        port = random.randint(5000, 6000)
         udp_encap_port = 4500
         ip_a = self.ipv4_dut_a
         ip_b = self.ipv4_dut_b
@@ -218,7 +217,6 @@ class IpSecTest(base_test.BaseTestClass):
             ip_b = self.ipv6_dut_b
         self.log.info("DUT_A IP addr: %s" % ip_a)
         self.log.info("DUT_B IP addr: %s" % ip_b)
-        self.log.info("Port: %s" % port)
 
         # create crypt and auth keys
         cl, auth_algo, al, trunc_bits = random.choice(self.crypt_auth_combos)
@@ -227,8 +225,9 @@ class IpSecTest(base_test.BaseTestClass):
         crypt_algo = cconst.CRYPT_AES_CBC
 
         # open sockets
-        socket_a = sutils.open_datagram_socket(dut_a, ip_a, port)
-        socket_b = sutils.open_datagram_socket(dut_b, ip_b, port)
+        socket_a = sutils.open_datagram_socket(dut_a, ip_a, 0)
+        socket_b = sutils.open_datagram_socket(dut_b, ip_b, 0)
+        port = dut_b.droid.getPortOfDatagramSocket(socket_b)
 
         # allocate SPIs
         spi_keys_a = iutils.allocate_spis(dut_a, ip_a, ip_b)
@@ -298,7 +297,6 @@ class IpSecTest(base_test.BaseTestClass):
         # dut objects and ip addrs
         dut_a = self.dut_a
         dut_b = self.dut_b
-        port = random.randint(5000, 6000)
         ip_a = self.ipv4_dut_a
         ip_b = self.ipv4_dut_b
         if domain == cconst.AF_INET6:
@@ -306,13 +304,13 @@ class IpSecTest(base_test.BaseTestClass):
             ip_b = self.ipv6_dut_b
         self.log.info("DUT_A IP addr: %s" % ip_a)
         self.log.info("DUT_B IP addr: %s" % ip_b)
-        self.log.info("Port: %s" % port)
         udp_encap_port = 4500
 
         # open sockets
-        server_sock = sutils.open_server_socket(dut_b, ip_b, port)
+        server_sock = sutils.open_server_socket(dut_b, ip_b, 0)
+        port = dut_b.droid.getPortOfServerSocket(server_sock)
         sock_a, sock_b = sutils.open_connect_socket(
-            dut_a, dut_b, ip_a, ip_b, port, port, server_sock)
+            dut_a, dut_b, ip_a, ip_b, 0, port, server_sock)
 
         # create crypt and auth keys
         cl, auth_algo, al, trunc_bits = random.choice(self.crypt_auth_combos)
