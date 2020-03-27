@@ -47,6 +47,7 @@ from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
+from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
 from acts.libs.proc.job import Error
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
@@ -243,6 +244,12 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
                                        self.client_id)
+
+        #Grab commands from FuchsiaWlanPolicyLib
+        self.wlan_policy_lib = FuchsiaWlanPolicyLib(self.address,
+                                                    self.test_counter,
+                                                    self.client_id)
+
         self.skip_sl4f = False
         # Start sl4f on device
         self.start_services(skip_sl4f=self.skip_sl4f)
