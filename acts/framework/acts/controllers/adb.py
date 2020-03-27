@@ -207,7 +207,7 @@ class AdbProxy(object):
             device_port: Port number to use on the android device.
 
         Returns:
-            The command output for the forward command.
+            Forwarded port on host as int or command output string on error
         """
         if self._ssh_connection:
             # We have to hop through a remote host first.
@@ -217,14 +217,18 @@ class AdbProxy(object):
             remote_port = self._ssh_connection.find_free_port()
             host_port = self._ssh_connection.create_ssh_tunnel(
                 remote_port, local_port=host_port)
-        output = self.forward("tcp:%d tcp:%d" % (host_port, device_port))
+        output = self.forward("tcp:%d tcp:%d" % (host_port, device_port),
+                              ignore_status=True)
         # If hinted_port is 0, the output will be the selected port.
         # Otherwise, there will be no output upon successfully
         # forwarding the hinted port.
-        if output:
-            return int(output)
-        else:
+        if not output:
             return host_port
+        try:
+            output_int = int(output)
+        except ValueError:
+            return output
+        return output_int
 
     def remove_tcp_forward(self, host_port):
         """Stop tcp forwarding a port from localhost to this android device.
