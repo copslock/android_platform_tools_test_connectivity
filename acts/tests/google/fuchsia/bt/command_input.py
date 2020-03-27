@@ -46,6 +46,7 @@ This is all to say this documentation pattern is expected.
 from acts.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
 from acts.test_utils.bt.bt_constants import bt_attribute_values
 from acts.test_utils.bt.bt_constants import sig_uuid_constants
+from acts.test_utils.fuchsia.sdp_records import sdp_pts_record_list
 
 import acts.test_utils.bt.gatt_test_database as gatt_test_database
 
@@ -86,6 +87,7 @@ class CommandInput(cmd.Cmd):
         return True
 
     """ Useful Helper functions and cmd line tooling """
+
     def str_to_bool(self, s):
         if s.lower() == 'true':
             return True
@@ -198,6 +200,7 @@ class CommandInput(cmd.Cmd):
         self.target_device_name = line
 
     """Begin BLE advertise wrappers"""
+
     def do_ble_start_generic_connectable_advertisement(self, line):
         """
         Description: Start a connectable LE advertisement
@@ -237,6 +240,7 @@ class CommandInput(cmd.Cmd):
 
     """End BLE advertise wrappers"""
     """Begin GATT client wrappers"""
+
     def complete_gattc_connect_by_id(self, text, line, begidx, endidx):
         if not text:
             completions = list(self.le_ids)[:]
@@ -944,6 +948,7 @@ class CommandInput(cmd.Cmd):
 
     """End GATT client wrappers"""
     """Begin LE scan wrappers"""
+
     def _update_scan_results(self, scan_results):
         self.le_ids = []
         for scan in scan_results['result']:
@@ -1000,6 +1005,7 @@ class CommandInput(cmd.Cmd):
 
     """End LE scan wrappers"""
     """Begin GATT Server wrappers"""
+
     def do_gatts_close(self, line):
         """
         Description: Close active GATT server.
@@ -1047,6 +1053,7 @@ class CommandInput(cmd.Cmd):
 
     """End GATT Server wrappers"""
     """Begin Bluetooth Controller wrappers"""
+
     def complete_btc_pair(self, text, line, begidx, endidx):
         """ Provides auto-complete for btc_pair cmd.
 
@@ -1422,6 +1429,7 @@ class CommandInput(cmd.Cmd):
 
     """End Bluetooth Control wrappers"""
     """Begin Profile Server wrappers"""
+
     def do_sdp_pts_example(self, num_of_records):
         """
         Description: An example of how to setup a generic SDP record
@@ -1437,90 +1445,41 @@ class CommandInput(cmd.Cmd):
             sdp pts_example 10
         """
         cmd = "Setup SDP for PTS testing."
-        record = {
-            'service_class_uuids': ["0001"],
-            'protocol_descriptors': [
-                {
-                    'protocol':
-                    int(sig_uuid_constants['AVDTP'], 16),
-                    'params': [
-                        {
-                            'data': 0x0103  # to indicate 1.3
-                        },
-                        {
-                            'data': 0x0105  # to indicate 1.5
-                        }
-                    ]
-                },
-                {
-                    'protocol': int(sig_uuid_constants['SDP'], 16),
-                    'params': [{
-                        'data': int(sig_uuid_constants['AVDTP'], 16),
-                    }]
-                }
-            ],
-            'profile_descriptors': [{
-                'profile_id':
-                int(sig_uuid_constants['AdvancedAudioDistribution'], 16),
-                'major_version':
-                1,
-                'minor_version':
-                3,
-            }],
-            'additional_protocol_descriptors': [{
-                'protocol':
-                int(sig_uuid_constants['L2CAP'], 16),
-                'params': [
-                    {
-                        'data': int(sig_uuid_constants['AVDTP'], 16),
-                    },
-                    {
-                        'data': int(sig_uuid_constants['AVCTP'], 16),
-                    },
-                    {
-                        'data': int(sig_uuid_constants['GenericAudio'], 16),
-                    },
-                ]
-            }],
-            'information': [{
-                'language': "en",
-                'name': "A2DP",
-                'description': "Advanced Audio Distribution Profile",
-                'provider': "Fuchsia"
-            }],
-            'additional_attributes': [
-                {
-                    'id': 0x0200,
-                    'element': {
-                        'data': int(sig_uuid_constants['AVDTP'], 16)
-                    }
-                },
-                {
-                    'id': 0x0201,
-                    'element': {
-                        'data': int(sig_uuid_constants['AVDTP'], 16)
-                    }
-                },
-            ]
-        }
 
         attributes = [
             bt_attribute_values['ATTR_PROTOCOL_DESCRIPTOR_LIST'],
             bt_attribute_values['ATTR_SERVICE_CLASS_ID_LIST'],
             bt_attribute_values['ATTR_BLUETOOTH_PROFILE_DESCRIPTOR_LIST'],
             bt_attribute_values['ATTR_A2DP_SUPPORTED_FEATURES'],
-            bt_attribute_values['ATTR_ADDITIONAL_PROTOCOL_DESCRIPTOR_LIST'],
-            bt_attribute_values['ATTR_SERVICE_RECORD_HANDLE'],
         ]
 
         try:
             self.pri_dut.sdp_lib.addSearch(
                 attributes, int(sig_uuid_constants['AudioSource'], 16))
             self.pri_dut.sdp_lib.addSearch(
-                attributes,
-                int(sig_uuid_constants['AdvancedAudioDistribution'], 16))
-            for _ in range(int(num_of_records)):
-                result = self.pri_dut.sdp_lib.addService(record)
+                attributes, int(sig_uuid_constants['A/V_RemoteControl'], 16))
+            self.pri_dut.sdp_lib.addSearch(attributes,
+                                           int(sig_uuid_constants['PANU'], 16))
+            self.pri_dut.sdp_lib.addSearch(
+                attributes, int(sig_uuid_constants['SerialPort'], 16))
+            self.pri_dut.sdp_lib.addSearch(
+                attributes, int(sig_uuid_constants['DialupNetworking'], 16))
+            self.pri_dut.sdp_lib.addSearch(
+                attributes, int(sig_uuid_constants['OBEXObjectPush'], 16))
+            self.pri_dut.sdp_lib.addSearch(
+                attributes, int(sig_uuid_constants['OBEXFileTransfer'], 16))
+            self.pri_dut.sdp_lib.addSearch(
+                attributes, int(sig_uuid_constants['Headset'], 16))
+            self.pri_dut.sdp_lib.addSearch(
+                attributes, int(sig_uuid_constants['HandsfreeAudioGateway'],
+                                16))
+            self.pri_dut.sdp_lib.addSearch(
+                attributes, int(sig_uuid_constants['Handsfree'], 16))
+            self.pri_dut.sdp_lib.addSearch(
+                attributes, int(sig_uuid_constants['SIM_Access'], 16))
+            for i in range(int(num_of_records)):
+                result = self.pri_dut.sdp_lib.addService(
+                    sdp_pts_record_list[i])
                 self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1600,6 +1559,7 @@ class CommandInput(cmd.Cmd):
 
     """End Profile Server wrappers"""
     """Begin AVDTP wrappers"""
+
     def complete_avdtp_init(self, text, line, begidx, endidx):
         roles = ["sink", "source"]
         if not text:
