@@ -15,6 +15,9 @@
 #   limitations under the License.
 
 import importlib
+import logging
+
+from acts import tracelogger
 
 ACTS_CONTROLLER_CONFIG_NAME = 'PduDevice'
 ACTS_CONTROLLER_REFERENCE_NAME = 'pdu_devices'
@@ -164,6 +167,7 @@ class PduDevice(object):
         self.host = host
         self.username = username
         self.password = password
+        self.log = tracelogger.TraceLogger(logging.getLogger())
 
     def on_all(self):
         """Turns on all outlets on the device."""
