@@ -993,9 +993,8 @@ class NetgearR8000AP(NetgearR7000AP):
     Since most of the class' implementation is shared with the R7000, this
     class inherits from NetgearR7000AP and simply redifines config parameters
     """
-    def __init__(self, ap_settings):
-        super().__init__(ap_settings)
-        self.init_gui_data()
+    def init_gui_data(self):
+        super().init_gui_data()
         # Overwrite minor differences from R7000 AP
         self.config_page = (
             "{protocol}://{username}:{password}@"
@@ -1046,10 +1045,6 @@ class NetgearR8000AP(NetgearR7000AP):
             ("5G_1", "password"): "passphrase_an",
             ("5G_2", "password"): "passphrase_an_2"
         }
-        # Read and update AP settings
-        self.read_ap_settings()
-        if not set(ap_settings.items()).issubset(self.ap_settings.items()):
-            self.update_ap_settings(ap_settings)
 
 
 class NetgearR8500AP(NetgearR7000AP):

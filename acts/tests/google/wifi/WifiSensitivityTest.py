@@ -17,7 +17,6 @@
 import collections
 import csv
 import itertools
-import json
 import logging
 import numpy
 import os
@@ -183,11 +182,33 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
                                 "Can not turn on airplane mode.")
         wutils.wifi_toggle_state(self.dut, True)
 
+        # Configure test retries
+        self.user_params['retry_tests'] = [self.__class__.__name__]
+
     def teardown_class(self):
         # Turn WiFi OFF
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
         self.process_testclass_results()
+
+    def setup_test(self):
+        self.retry_flag = False
+
+    def teardown_test(self):
+        self.retry_flag = False
+
+    def on_retry(self):
+        """Function to control test logic on retried tests.
+
+        This function is automatically executed on tests that are being
+        retried. In this case the function resets wifi, toggles it off and on
+        and sets a retry_flag to enable further tweaking the test logic on
+        second attempts.
+        """
+        self.retry_flag = True
+        for dev in self.android_devices:
+            wutils.reset_wifi(dev)
+            wutils.toggle_wifi_off_and_on(dev)
 
     def pass_fail_check(self, result):
         """Checks sensitivity against golden results and decides on pass/fail.
@@ -196,28 +217,12 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             result: dict containing attenuation, throughput and other meta
                 data
         """
-        try:
-            golden_path = next(file_name
-                               for file_name in self.golden_files_list
-                               if 'sensitivity_targets' in file_name)
-            with open(golden_path, 'r') as golden_file:
-                golden_results = json.load(golden_file)
-            golden_sensitivity = golden_results[
-                self.current_test_name]['sensitivity']
-        except:
-            golden_sensitivity = float('nan')
-
-        result_string = ('Throughput = {}%, Sensitivity = {}.'
-                         'Target Sensitivity = {}'.format(
-                             result['peak_throughput_pct'],
-                             result['sensitivity'], golden_sensitivity))
+        result_string = ('Throughput = {}%, Sensitivity = {}.'.format(
+            result['peak_throughput_pct'], result['sensitivity']))
         if result['peak_throughput_pct'] < 95:
-            self.log.warning('Result unreliable. Peak rate unstable')
-        if result['sensitivity'] - golden_sensitivity < self.testclass_params[
-                'sensitivity_tolerance']:
-            asserts.explicit_pass('Test Passed. {}'.format(result_string))
+            asserts.fail('Result unreliable. {}'.format(result_string))
         else:
-            asserts.fail('Test Failed. {}'.format(result_string))
+            asserts.explicit_pass('Test Passed. {}'.format(result_string))
 
     def process_testclass_results(self):
         """Saves and plots test results from all executed test cases."""
@@ -444,6 +449,10 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         Returns:
             start_atten: starting attenuation for current test
         """
+        # If the test is being retried, start from the beginning
+        if self.retry_flag:
+            self.log.info('Retry flag set. Setting attenuation to minimum.')
+            return self.testclass_params['atten_start']
         # Get the current and reference test config. The reference test is the
         # one performed at the current MCS+1
         current_rate = testcase_params['rate']
@@ -725,14 +734,20 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
                     'orientation': [],
                     'sensitivity': []
                 }
-            testclass_results_dict[test_id][line_id]['orientation'].append(
-                result['testcase_params']['orientation'])
+            orientation = result['testcase_params']['orientation']
             if result['peak_throughput_pct'] >= 95:
-                testclass_results_dict[test_id][line_id]['sensitivity'].append(
-                    result['sensitivity'])
+                sensitivity = result['sensitivity']
             else:
+                sensitivity = float('nan')
+            if orientation not in testclass_results_dict[test_id][line_id][
+                    'orientation']:
+                testclass_results_dict[test_id][line_id]['orientation'].append(
+                    orientation)
                 testclass_results_dict[test_id][line_id]['sensitivity'].append(
-                    float('nan'))
+                    sensitivity)
+            else:
+                testclass_results_dict[test_id][line_id]['sensitivity'][
+                    -1] = sensitivity
 
         for test_id, test_data in testclass_results_dict.items():
             test_id_dict = dict(test_id)
@@ -788,6 +803,10 @@ class WifiOtaSensitivityTest(WifiSensitivityTest):
         Returns:
             start_atten: starting attenuation for current test
         """
+        # If the test is being retried, start from the beginning
+        if self.retry_flag:
+            self.log.info('Retry flag set. Setting attenuation to minimum.')
+            return self.testclass_params['atten_start']
         # Get the current and reference test config. The reference test is the
         # one performed at the current MCS+1
         ref_test_params = self.extract_test_id(
