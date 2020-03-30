@@ -405,39 +405,18 @@ class WifiNetworkRequestTest(WifiBaseTest):
                     network_specifier)
         time.sleep(wifi_constants.NETWORK_REQUEST_CB_REGISTER_DELAY_SEC)
         self.dut.droid.wifiRegisterNetworkRequestMatchCallback()
-        # Wait for the request to timeout. In the meantime, platform will scan
-        # and return matching networks. Ensure the matching networks list is
-        # empty.
-        start_time = time.time()
-        has_request_timedout = False
+        # Wait for the request to timeout.
+        timeout_secs = \
+            NETWORK_REQUEST_TIMEOUT_MS / 1000 + NETWORK_REQUEST_INSTANT_FAILURE_TIMEOUT_SEC
         try:
-          while not has_request_timedout and time.time() - start_time <= \
-              NETWORK_REQUEST_TIMEOUT_MS / 1000 + NETWORK_REQUEST_INSTANT_FAILURE_TIMEOUT_SEC:
-                # Pop all network request related events.
-                network_request_events = \
-                    self.dut.ed.pop_events("WifiManagerNetwork.*", 30)
-                asserts.assert_true(network_request_events, "invalid events")
-                for network_request_event in network_request_events:
-                    # Handle the network match callbacks.
-                    if network_request_event["name"] == \
-                        wifi_constants.WIFI_NETWORK_REQUEST_MATCH_CB_ON_MATCH:
-                        matched_scan_results = network_request_event["data"]
-                        self.dut.log.debug(
-                            "Network request on match results %s",
-                            matched_scan_results)
-                        asserts.assert_false(matched_scan_results,
-                                             "Empty network matches expected")
-                    # Handle the network request unavailable timeout.
-                    if network_request_event["name"] == \
-                        wifi_constants.WIFI_NETWORK_CB_ON_UNAVAILABLE:
-                        self.dut.log.info("Network request timed out")
-                        has_request_timedout = True
+            on_unavailable_event = self.dut.ed.pop_event(
+                wifi_constants.WIFI_NETWORK_CB_ON_UNAVAILABLE, timeout_secs)
+            asserts.assert_true(on_unavailable_event, "Network request did not timeout")
+
         except queue.Empty:
             asserts.fail("No events returned")
         finally:
             self.dut.droid.wifiStopTrackingStateChange()
-        asserts.assert_true(has_request_timedout,
-                            "Network request did not timeout")
 
     @test_tracker_info(uuid="760c3768-697d-442b-8d61-cfe02f10ceff")
     def test_connect_failure_user_rejected(self):
