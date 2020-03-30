@@ -50,7 +50,6 @@ class DuplexMode(Enum):
     FDD = "FDD"
     TDD = "TDD"
 
-
 class ModulationType(Enum):
     """DL/UL Modulation order."""
     QPSK = 'QPSK'
@@ -81,6 +80,7 @@ class LteSimulation(BaseSimulation):
     PARAM_PAGING = 'paging'
     PARAM_PHICH = 'phich'
     PARAM_RRC_STATUS_CHANGE_TIMER = "rrcstatuschangetimer"
+    PARAM_DRX = 'drx'
 
     # Test config keywords
     KEY_TBS_PATTERN = "tbs_pattern_on"
@@ -409,6 +409,18 @@ class LteSimulation(BaseSimulation):
             paging_cycle: an integer indicating the paging cycle duration in
                 milliseconds
             phich: a string indicating the PHICH group size parameter
+            drx_connected_mode: a boolean indicating whether cDRX mode is
+                on or off
+            drx_on_duration_timer: number of PDCCH subframes representing
+                DRX on duration
+            drx_inactivity_timer: number of PDCCH subframes to wait before
+                entering DRX mode
+            drx_retransmission_timer: number of consecutive PDCCH subframes
+                to wait for retransmission
+            drx_long_cycle: number of subframes representing one long DRX cycle.
+                One cycle consists of DRX sleep + DRX on duration
+            drx_long_cycle_offset: number representing offset in range
+                0 to drx_long_cycle - 1
         """
         def __init__(self):
             """ Initialize the base station config by setting all its
@@ -432,6 +444,12 @@ class LteSimulation(BaseSimulation):
             self.cfi = None
             self.paging_cycle = None
             self.phich = None
+            self.drx_connected_mode = None
+            self.drx_on_duration_timer = None
+            self.drx_inactivity_timer = None
+            self.drx_retransmission_timer = None
+            self.drx_long_cycle = None
+            self.drx_long_cycle_offset = None
 
     def __init__(self, simulator, log, dut, test_config, calibration_table):
         """ Initializes the simulator for a single-carrier LTE simulation.
@@ -699,6 +717,41 @@ class LteSimulation(BaseSimulation):
                     new_config.ul_mcs = 28
                 else:
                     new_config.ul_mcs = 23
+
+        # Configure the simulation for DRX mode
+
+        drx = self.consume_parameter(parameters, self.PARAM_DRX, 5)
+
+        if drx and len(drx) == 6:
+            new_config.drx_connected_mode = True
+            new_config.drx_on_duration_timer = drx[1]
+            new_config.drx_inactivity_timer = drx[2]
+            new_config.drx_retransmission_timer = drx[3]
+            new_config.drx_long_cycle = drx[4]
+            try:
+                long_cycle = int(drx[4])
+                long_cycle_offset = int(drx[5])
+                if long_cycle_offset in range(0, long_cycle):
+                    new_config.drx_long_cycle_offset = long_cycle_offset
+                else:
+                    self.log.error(("The cDRX long cycle offset must be in the "
+                                    "range 0 to (long cycle  - 1). Setting "
+                                    "long cycle offset to 0"))
+                    new_config.drx_long_cycle_offset = 0
+
+            except ValueError:
+                self.log.error(("cDRX long cycle and long cycle offset "
+                                "must be integers. Disabling cDRX mode."))
+                new_config.drx_connected_mode = False
+        else:
+            self.log.warning(("DRX mode was not configured properly. "
+                              "Please provide the following 5 values: "
+                              "1) DRX on duration timer "
+                              "2) Inactivity timer "
+                              "3) Retransmission timer "
+                              "4) Long DRX cycle duration "
+                              "5) Long DRX cycle offset "
+                              "Example: drx_2_6_16_20_0"))
 
         # Setup LTE RRC status change function and timer for LTE idle test case
         values = self.consume_parameter(parameters,

@@ -45,6 +45,7 @@ install_requires = [
     # paramiko-ng is needed vs paramiko as currently paramiko does not support
     # ed25519 ssh keys, which is what Fuchsia uses.
     'paramiko-ng',
+    'dlipower'
 ]
 
 if sys.version_info < (3, ):
@@ -54,6 +55,10 @@ if sys.version_info < (3, ):
     install_requires.append('futures')
     install_requires.append('py2-ipaddress')
     install_requires.append('subprocess32')
+
+DEV_PACKAGES = [
+    'shiv'
+]
 
 
 class PyTest(test.test):
@@ -179,6 +184,7 @@ def main():
                      include_package_data=False,
                      tests_require=['pytest'],
                      install_requires=install_requires,
+                     extras_require={'dev': DEV_PACKAGES},
                      scripts=scripts,
                      cmdclass={
                          'test': PyTest,

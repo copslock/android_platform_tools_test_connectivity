@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,22 @@
 
 syntax = "proto2";
 
-package acts.metrics.blackbox;
+package acts.metadata;
 
-option java_package = "com.android.acts.metrics.blackbox";
+option java_package = "com.android.acts.metadata";
 
-message ActsBlackboxMetricResult {
+message ActsTestRunMetadata {
 
-  optional string test_identifier = 1;
+  repeated ActsMethodUsageMetadata usage = 1;
+}
 
-  required string metric_key = 3;
+message ActsMethodUsageMetadata {
 
-  required double metric_value = 4;
+    // Contextual identifier: who's invoking the method
+    optional string test_context = 1;
 
+    // Method identifier: fully qualified module + method names
+    optional string method_identifier = 2;
+
+    optional int32 count = 3;
 }

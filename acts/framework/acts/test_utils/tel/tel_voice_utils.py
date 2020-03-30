@@ -530,7 +530,7 @@ def phone_setup_iwlan_for_subscription(log,
         return False
 
     if wifi_ssid is not None:
-        if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd):
+        if not ensure_wifi_connected(log, ad, wifi_ssid, wifi_pwd, apm=is_airplane_mode):
             ad.log.error("Fail to bring up WiFi connection on %s.", wifi_ssid)
             return False
     else:
