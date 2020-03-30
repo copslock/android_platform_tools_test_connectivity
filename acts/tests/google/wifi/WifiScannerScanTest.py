@@ -216,6 +216,11 @@ class WifiScannerScanTest(WifiBaseTest):
                 "timestamp"] + scan_time_mic
             self.log.debug("max_scan_interval: %s", max_scan_interval)
             for result in batch["ScanResults"]:
+                # Though the tests are run in shield box, there are leakes
+                # from outside environment. This would ignore any such SSIDs
+                ssid = result["SSID"]
+                if not ssid.startswith("2g_") or not ssid.startswith("5g_"):
+                    continue
                 if (result["frequency"] not in scan_channels or
                         result["timestamp"] > max_scan_interval or
                         result["timestamp"] < scan_rt * 1000 or
@@ -767,6 +772,7 @@ class WifiScannerScanTest(WifiBaseTest):
         self.wifi_scanner_batch_scan_full(scan_settings[0])
 
     @test_tracker_info(uuid="e9a7cfb5-21c4-4c40-8169-8d88b65a1dee")
+    @WifiBaseTest.wifi_test_wrap
     def test_single_scan_while_pno(self):
         """Test wifi scanner single scan parallel to PNO connection.
 
@@ -927,6 +933,7 @@ class WifiScannerScanTest(WifiBaseTest):
         self.wifi_scanner_single_scan(scan_setting)
 
     @test_tracker_info(uuid="7c8da0c4-dec7-4d04-abd4-f8ea467a5c6d")
+    @WifiBaseTest.wifi_test_wrap
     def test_wifi_scanner_dual_radio_low_latency(self):
         """Test WiFi scanner single scan for mix channel with default setting
            parameters.
@@ -946,6 +953,7 @@ class WifiScannerScanTest(WifiBaseTest):
         self.wifi_scanner_single_scan_full(scan_setting)
 
     @test_tracker_info(uuid="58b49b01-851b-4e45-b218-9fd27c0be921")
+    @WifiBaseTest.wifi_test_wrap
     def test_wifi_scanner_dual_radio_low_power(self):
         """Test WiFi scanner single scan for mix channel with default setting
            parameters.
@@ -965,6 +973,7 @@ class WifiScannerScanTest(WifiBaseTest):
         self.wifi_scanner_single_scan_full(scan_setting)
 
     @test_tracker_info(uuid="3e7288bc-45e4-497c-bf3a-977eec4e896e")
+    @WifiBaseTest.wifi_test_wrap
     def test_wifi_scanner_dual_radio_high_accuracy(self):
         """Test WiFi scanner single scan for mix channel with default setting
            parameters.

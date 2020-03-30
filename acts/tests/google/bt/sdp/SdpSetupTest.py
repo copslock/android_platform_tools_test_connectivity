@@ -27,53 +27,7 @@ from acts.test_utils.abstract_devices.bluetooth_device import FuchsiaBluetoothDe
 from acts.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
 from acts.test_utils.bt.bt_constants import bt_attribute_values
 from acts.test_utils.bt.bt_constants import sig_uuid_constants
-
-TEST_SDP_RECORD = {
-    'service_class_uuids': ["0001"],
-    'protocol_descriptors': [
-        {
-            'protocol':
-            int(sig_uuid_constants['AVDTP'], 16),
-            'params': [
-                {
-                    'data': 0x0103  # to indicate 1.3
-                },
-                {
-                    'data': 0x0105  # to indicate 1.5
-                }
-            ]
-        },
-        {
-            'protocol': int(sig_uuid_constants['SDP'], 16),
-            'params': [{
-                'data': int(sig_uuid_constants['AVDTP'], 16),
-            }]
-        }
-    ],
-    'profile_descriptors': [{
-        'profile_id':
-        int(sig_uuid_constants['AdvancedAudioDistribution'], 16),
-        'major_version':
-        1,
-        'minor_version':
-        3,
-    }],
-    'additional_protocol_descriptors': [{
-        'protocol':
-        int(sig_uuid_constants['L2CAP'], 16),
-        'params': [{
-            'data': int(sig_uuid_constants['AVDTP'], 16),
-        }]
-    }],
-    'information': [{
-        'language': "en",
-        'name': "A2DP",
-        'description': "Advanced Audio Distribution Profile",
-        'provider': "Fuchsia"
-    }],
-    'additional_attributes':
-    None
-}
+from acts.test_utils.fuchsia.sdp_records import sdp_pts_record_list
 
 
 class SdpSetupTest(BaseTestClass):
@@ -92,7 +46,6 @@ class SdpSetupTest(BaseTestClass):
             self.dut = create_bluetooth_device(self.fuchsia_devices[0])
         self.dut.initialize_bluetooth_controller()
 
-
     def setup_test(self):
         self.dut.sdp_clean_up()
 
@@ -109,7 +62,7 @@ class SdpSetupTest(BaseTestClass):
 
     def test_add_service(self):
         self.dut.sdp_init()
-        result = self.dut.sdp_add_service(TEST_SDP_RECORD)
+        result = self.dut.sdp_add_service(sdp_pts_record_list[0])
         if result.get("error") is not None:
             raise signals.TestFailure(
                 "Failed to add SDP service record: {}".format(
@@ -155,8 +108,8 @@ class SdpSetupTest(BaseTestClass):
             }
         }]
 
-        TEST_SDP_RECORD['additional_attributes'] = additional_attributes
-        result = self.dut.sdp_add_service(TEST_SDP_RECORD)
+        sdp_pts_record_list[0]['additional_attributes'] = additional_attributes
+        result = self.dut.sdp_add_service(sdp_pts_record_list[0])
         if result.get("error") is not None:
             raise signals.TestFailure(
                 "Failed to add SDP service record: {}".format(
@@ -167,8 +120,8 @@ class SdpSetupTest(BaseTestClass):
     def test_add_multiple_services(self):
         self.dut.sdp_init()
         number_of_records = 10
-        for _ in range(number_of_records):
-            result = self.dut.sdp_add_service(TEST_SDP_RECORD)
+        for i in range(number_of_records):
+            result = self.dut.sdp_add_service(sdp_pts_record_list[i])
             if result.get("error") is not None:
                 raise signals.TestFailure(
                     "Failed to add SDP service record: {}".format(

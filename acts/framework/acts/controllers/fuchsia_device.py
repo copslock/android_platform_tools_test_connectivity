@@ -37,6 +37,7 @@ from acts.controllers.fuchsia_lib.bt.btc_lib import FuchsiaBtcLib
 from acts.controllers.fuchsia_lib.bt.gattc_lib import FuchsiaGattcLib
 from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
+from acts.controllers.fuchsia_lib.hardware_power_statecontrol_lib import FuchsiaHardwarePowerStatecontrolLib
 from acts.controllers.fuchsia_lib.hwinfo_lib import FuchsiaHwinfoLib
 from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
@@ -46,6 +47,7 @@ from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
+from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
 from acts.libs.proc.job import Error
 
 ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
@@ -215,6 +217,10 @@ class FuchsiaDevice:
         self.gatts_lib = FuchsiaGattsLib(self.address, self.test_counter,
                                          self.client_id)
 
+        # Grab commands from FuchsiaHardwarePowerStatecontrolLib
+        self.hardware_power_statecontrol_lib = FuchsiaHardwarePowerStatecontrolLib(
+            self.address, self.test_counter, self.client_id)
+
         # Grab commands from FuchsiaHwinfoLib
         self.hwinfo_lib = FuchsiaHwinfoLib(self.address, self.test_counter,
                                            self.client_id)
@@ -238,6 +244,12 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
                                        self.client_id)
+
+        #Grab commands from FuchsiaWlanPolicyLib
+        self.wlan_policy_lib = FuchsiaWlanPolicyLib(self.address,
+                                                    self.test_counter,
+                                                    self.client_id)
+
         self.skip_sl4f = False
         # Start sl4f on device
         self.start_services(skip_sl4f=self.skip_sl4f)
