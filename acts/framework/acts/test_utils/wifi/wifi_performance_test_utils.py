@@ -241,6 +241,13 @@ class BokehFigure():
         'square_cross', 'triangle', 'x'
     ]
 
+    TOOLS = ('box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
+    TOOLTIPS = [
+        ('index', '$index'),
+        ('(x,y)', '($x, $y)'),
+        ('info', '@hover_text'),
+    ]
+
     def __init__(self,
                  title=None,
                  x_label=None,
@@ -249,26 +256,23 @@ class BokehFigure():
                  height=700,
                  width=1100,
                  title_size='15pt',
-                 axis_label_size='12pt'):
-        self.figure_data = []
-        self.fig_property = {
-            'title': title,
-            'x_label': x_label,
-            'primary_y_label': primary_y_label,
-            'secondary_y_label': secondary_y_label,
-            'num_lines': 0,
-            'height': height,
-            'width': width,
-            'title_size': title_size,
-            'axis_label_size': axis_label_size
-        }
-        self.TOOLS = (
-            'box_zoom,box_select,pan,crosshair,redo,undo,reset,hover,save')
-        self.TOOLTIPS = [
-            ('index', '$index'),
-            ('(x,y)', '($x, $y)'),
-            ('info', '@hover_text'),
-        ]
+                 axis_label_size='12pt',
+                 json_file=None):
+        if json_file:
+            self.load_from_json(json_file)
+        else:
+            self.figure_data = []
+            self.fig_property = {
+                'title': title,
+                'x_label': x_label,
+                'primary_y_label': primary_y_label,
+                'secondary_y_label': secondary_y_label,
+                'num_lines': 0,
+                'height': height,
+                'width': width,
+                'title_size': title_size,
+                'axis_label_size': axis_label_size
+            }
 
     def init_plot(self):
         self.plot = bokeh.plotting.figure(
@@ -469,12 +473,16 @@ class BokehFigure():
             self.save_figure(output_file)
         return self.plot
 
+    def load_from_json(self, file_path):
+        with open(file_path, 'r') as json_file:
+            fig_dict = json.load(json_file)
+        self.fig_property = fig_dict['fig_property']
+        self.figure_data = fig_dict['figure_data']
+
     def _save_figure_json(self, output_file):
         """Function to save a json format of a figure"""
         figure_dict = collections.OrderedDict(fig_property=self.fig_property,
-                                              figure_data=self.figure_data,
-                                              tools=self.TOOLS,
-                                              tooltips=self.TOOLTIPS)
+                                              figure_data=self.figure_data)
         output_file = output_file.replace('.html', '_plot_data.json')
         with open(output_file, 'w') as outfile:
             json.dump(figure_dict, outfile, indent=4)
