@@ -69,8 +69,18 @@ class WifiSoftApAcsTest(WifiBaseTest):
                      "iperf_server_port"]
         self.unpack_userparams(
             req_param_names=req_params, opt_param_names=opt_param)
+        self.chan_map = {v: k for k, v in hostapd_constants.CHANNEL_MAP.items()}
+        self.pcap_procs = None
 
     def setup_test(self):
+        if hasattr(self, 'packet_capture'):
+            chan = self.test_name.split('_')[-1]
+            if chan.isnumeric():
+                band = '2G' if self.chan_map[int(chan)] < 5000 else '5G'
+                self.packet_capture[0].configure_monitor_mode(band, int(chan))
+                self.pcap_procs = wutils.start_pcap(
+                    self.packet_capture[0], band, self.test_name)
+        wutils.start_cnss_diags(self.android_devices)
         self.dut.droid.wakeLockAcquireBright()
         self.dut.droid.wakeUpNow()
 
@@ -80,6 +90,10 @@ class WifiSoftApAcsTest(WifiBaseTest):
         wutils.stop_wifi_tethering(self.dut)
         wutils.reset_wifi(self.dut)
         wutils.reset_wifi(self.dut_client)
+        wutils.stop_cnss_diags(self.android_devices)
+        if hasattr(self, 'packet_capture') and self.pcap_procs:
+            wutils.stop_pcap(self.packet_capture[0], self.pcap_procs, False)
+            self.pcap_procs = None
         try:
             if "AccessPoint" in self.user_params:
                 del self.user_params["reference_networks"]
@@ -91,6 +105,8 @@ class WifiSoftApAcsTest(WifiBaseTest):
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
+        for ad in self.android_devices:
+            wutils.get_cnss_diag_log(ad, test_name)
 
     """Helper Functions"""
 
@@ -155,12 +171,13 @@ class WifiSoftApAcsTest(WifiBaseTest):
         """
         if "AccessPoint" in self.user_params:
             if not channel_2g:
-                self.legacy_configure_ap_and_start(channel_5g=channel_5g)
-            elif not channel_5g:
-                self.legacy_configure_ap_and_start(channel_2g=channel_2g)
-            else:
-                self.legacy_configure_ap_and_start(channel_2g=channel_2g,
-                    channel_5g=chanel_5g)
+                channel_2g = hostapd_constants.AP_DEFAULT_CHANNEL_2G
+            if not channel_5g:
+                channel_5g = hostapd_constants.AP_DEFAULT_CHANNEL_5G
+            self.legacy_configure_ap_and_start(wpa_network=True,
+                                               wep_network=True,
+                                               channel_2g=channel_2g,
+                                               channel_5g=channel_5g)
 
     def start_traffic_and_softap(self, network, softap_band):
         """Start iPerf traffic on client dut, during softAP bring-up on dut.
