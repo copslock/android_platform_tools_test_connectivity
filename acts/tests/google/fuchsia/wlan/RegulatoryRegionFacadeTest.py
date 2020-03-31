@@ -21,7 +21,7 @@ RegulatoryRegionService.
 from acts.base_test import BaseTestClass
 from acts import asserts, signals
 
-class InvokeSetRegionTest(BaseTestClass):
+class RegulatoryRegionFacadeTest(BaseTestClass):
 
     def setup_class(self):
         super().setup_class()
