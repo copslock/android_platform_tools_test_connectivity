@@ -42,6 +42,7 @@ CONST_3dB = 3.01029995664
 RSSI_ERROR_VAL = float('nan')
 RTT_REGEX = re.compile(r'^\[(?P<timestamp>\S+)\] .*? time=(?P<rtt>\S+)')
 LOSS_REGEX = re.compile(r'(?P<loss>\S+)% packet loss')
+FW_REGEX = re.compile(r'FW:(?P<firmware>\S+) HW:')
 
 
 # Threading decorator
@@ -1123,6 +1124,26 @@ def health_check(dut, batt_thresh=5, temp_threshold=53, cooldown=1):
     else:
         logging.debug("DUT Temperature = {} C".format(temperature))
     return health_check
+
+
+def get_sw_signature(dut):
+    """Function that checks the signature for wifi firmware and config files.
+
+    Returns:
+        bdf_signature: signature consisting of last three digits of bdf cksums
+        fw_signature: floating point firmware version, i.e., major.minor
+    """
+    bdf_output = dut.adb.shell('cksum /vendor/firmware/bdwlan*')
+    logging.debug('BDF Checksum output: {}'.format(bdf_output))
+    bdf_signature = sum(
+        [int(line.split(' ')[0]) for line in bdf_output.splitlines()]) % 1000
+
+    fw_output = dut.adb.shell('halutil -logger -get fw')
+    logging.debug('Firmware version output: {}'.format(fw_output))
+    fw_version = re.search(FW_REGEX, fw_output).group('firmware')
+    fw_signature = fw_version.split('.')[-3:-1]
+    fw_signature = float('.'.join(fw_signature))
+    return {'bdf_signature': bdf_signature, 'fw_signature': fw_signature}
 
 
 def push_bdf(dut, bdf_file):
