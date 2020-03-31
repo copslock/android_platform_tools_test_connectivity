@@ -73,6 +73,7 @@ BLACKLIST = [
     'tests/google/wifi/WifiOtaTest.py',
     'tests/google/wifi/WifiRoamingPerformanceTest.py',
     'tests/google/wifi/WifiRssiTest.py',
+    'tests/google/wifi/WifiPerformancePreflightTest.py',
     'tests/google/wifi/WifiPingTest.py',
     'tests/google/wifi/WifiThroughputStabilityTest.py',
     'tests/google/wifi/WifiSensitivityTest.py',
