@@ -1,6 +1,6 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python3.7
 #
-#   Copyright 2019 - Google
+#   Copyright 2020 - Google
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -49,7 +49,14 @@ log.tag.GpsNetInitiatedHandler=VERBOSE
 log.tag.GnssNetworkConnectivityHandler=VERBOSE
 log.tag.ConnectivityService=VERBOSE
 log.tag.ConnectivityManager=VERBOSE
-log.tag.GnssVisibilityControl=VERBOSE"""
+log.tag.GnssVisibilityControl=VERBOSE
+log.tag.NtpTimeHelper=VERBOSE
+log.tag.NtpTrustedTime=VERBOSE"""
+TEST_PACKAGE_NAME = 'com.google.android.apps.maps'
+LOCATION_PERMISSIONS = [
+    'android.permission.ACCESS_FINE_LOCATION',
+    'android.permission.ACCESS_COARSE_LOCATION'
+]
 
 
 class GnssTestUtilsError(Exception):
@@ -1220,3 +1227,16 @@ def start_toggle_gnss_by_gtw_gpstool(ad, iteration):
                                   "within %d minutes" % (iteration * 4))
     finally:
         ad.send_keycode("HOME")
+
+def grant_location_permission(ad, option):
+    """Grant or revoke location related permission.
+
+    Args:
+        ad: An AndroidDevice object.
+        option: Boolean to grant or revoke location related permissions.
+    """
+    action = 'grant' if option else 'revoke'
+    for permission in LOCATION_PERMISSIONS:
+        ad.log.info(
+            '%s permission:%s on %s' % (action, permission, TEST_PACKAGE_NAME))
+        ad.adb.shell('pm %s %s %s' % (action, TEST_PACKAGE_NAME, permission))
