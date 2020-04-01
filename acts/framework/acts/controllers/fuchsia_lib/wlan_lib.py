@@ -21,6 +21,7 @@ COMMAND_CONNECT = "wlan.connect"
 COMMAND_DISCONNECT = "wlan.disconnect"
 COMMAND_STATUS = "wlan.status"
 COMMAND_GET_IFACE_ID_LIST = "wlan.get_iface_id_list"
+COMMAND_GET_PHY_ID_LIST = "wlan.get_phy_id_list"
 COMMAND_DESTROY_IFACE = "wlan.destroy_iface"
 
 
@@ -89,6 +90,18 @@ class FuchsiaWlanLib(BaseLib):
             Dictionary, service id if success, error if error.
         """
         test_cmd = COMMAND_GET_IFACE_ID_LIST
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, {})
+
+    def wlanPhyIdList(self):
+        """ Get a list if wlan phy IDs.
+
+        Returns:
+            List of IDs if success, error if error.
+        """
+        test_cmd = COMMAND_GET_PHY_ID_LIST
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 

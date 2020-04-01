@@ -20,6 +20,10 @@ from acts.test_utils.net.net_test_utils import stop_tcpdump
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
+from scapy.all import ICMPv6ND_RA
+from scapy.all import rdpcap
+from scapy.all import Scapy_Exception
+
 import acts.base_test
 import acts.test_utils.wifi.wifi_test_utils as wutils
 
@@ -74,10 +78,12 @@ class ApfCountersTest(WifiBaseTest):
         self.tcpdump_pid = None
 
     def setup_test(self):
-        self.tcpdump_pid = start_tcpdump(self.dut, self.test_name)
+        if 'RTT' not in self.test_name:
+            self.tcpdump_pid = start_tcpdump(self.dut, self.test_name)
 
     def teardown_test(self):
-        stop_tcpdump(self.dut, self.tcpdump_pid, self.test_name)
+        if 'RTT' not in self.test_name:
+            stop_tcpdump(self.dut, self.tcpdump_pid, self.test_name)
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
@@ -104,6 +110,27 @@ class ApfCountersTest(WifiBaseTest):
         ra_count = int(ra_count.split()[-1].rstrip())
         self.dut.log.info("RA Count %s:" % ra_count)
         return ra_count
+
+    def _get_rtt_list_from_tcpdump(self, pcap_file):
+        """ Get RTT of each RA pkt in a list
+
+        Args:
+            pcap_file: tcpdump file from the DUT
+
+        Returns:
+            List of RTT of 400 pkts
+        """
+        rtt = []
+        try:
+            packets = rdpcap(pcap_file)
+        except Scapy_Exception:
+            self.log.error("Not a valid pcap file")
+            return rtt
+
+        for pkt in packets:
+            if ICMPv6ND_RA in pkt:
+                rtt.append(int(pkt[ICMPv6ND_RA].retranstimer))
+        return rtt
 
     """ Tests """
 
@@ -172,6 +199,7 @@ class ApfCountersTest(WifiBaseTest):
         """
         pkt_num = 400
         rtt_list = random.sample(range(10, 10000), pkt_num)
+        self.log.info("RTT List: %s" % rtt_list)
 
         # get mac address of the dut
         ap = self.access_points[0]
@@ -183,14 +211,26 @@ class ApfCountersTest(WifiBaseTest):
         # get the current ra count
         ra_count = self._get_icmp6intype134()
 
+        # start tcpdump on the device
+        tcpdump_pid = start_tcpdump(self.dut, self.test_name)
+
         # send RA with differnt re-trans time
         for rtt in rtt_list:
             ap.send_ra('wlan1', mac_addr, 0, 1, rtt=rtt)
 
+        # stop tcpdump and pull file
+        time.sleep(60)
+        pcap_file = stop_tcpdump(self.dut, tcpdump_pid, self.test_name)
+
         # get the new RA count
         new_ra_count = self._get_icmp6intype134()
-        asserts.assert_true(new_ra_count == ra_count + pkt_num,
+        asserts.assert_true(new_ra_count >= ra_count + pkt_num,
                             "Device did not accept all RAs")
+
+        # verify the RA pkts RTT match
+        tcpdump_rtt_list = self._get_rtt_list_from_tcpdump(pcap_file)
+        asserts.assert_true(set(rtt_list).issubset(set(tcpdump_rtt_list)),
+                            "RA packets didn't match with tcpdump")
 
         # verify if internet connectivity works after sending RA packets
         wutils.validate_connection(self.dut)

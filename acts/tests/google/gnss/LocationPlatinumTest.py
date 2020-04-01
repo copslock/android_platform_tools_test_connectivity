@@ -24,11 +24,6 @@ from acts.test_utils.gnss import gnss_test_utils as gutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.tel import tel_test_utils as tutils
 
-TEST_PACKAGE_NAME = 'com.google.android.apps.maps'
-LOCATION_PERMISSIONS = [
-    'android.permission.ACCESS_FINE_LOCATION',
-    'android.permission.ACCESS_COARSE_LOCATION'
-]
 BACKGROUND_LOCATION_PERMISSION = 'android.permission.ACCESS_BACKGROUND_LOCATION'
 APP_CLEAN_UP_TIME = 60
 
@@ -78,7 +73,7 @@ class LocationPlatinumTest(BaseTestClass):
             gutils.connect_to_wifi_network(self.ad, self.wifi_network)
         if int(self.ad.adb.shell('settings get global mobile_data')) != 1:
             gutils.set_mobile_data(self.ad, True)
-        self.grant_location_permission(True)
+        gutils.grant_location_permission(self.ad, True)
         self.ad.adb.shell('pm grant com.android.gpstool %s' %
                           BACKGROUND_LOCATION_PERMISSION)
 
@@ -88,18 +83,6 @@ class LocationPlatinumTest(BaseTestClass):
         tutils.stop_adb_tcpdump(self.ad)
         tutils.get_tcpdump_log(self.ad, 'location_platinum', self.begin_time)
         self.ad.take_bug_report('location_platinum', self.begin_time)
-
-    def grant_location_permission(self, option):
-        """Grant or revoke location related permission.
-
-        Args:
-            option: Boolean to grant or revoke location related permissions.
-        """
-        action = 'grant' if option else 'revoke'
-        for permission in LOCATION_PERMISSIONS:
-            self.ad.log.info('%s permission:%s' % (action, permission))
-            self.ad.adb.shell('pm %s %s %s' %
-                              (action, TEST_PACKAGE_NAME, permission))
 
     def get_and_verify_ttff(self, mode):
         """Retrieve ttff with designate mode.
@@ -205,8 +188,8 @@ class LocationPlatinumTest(BaseTestClass):
             2. Open Google Map and ask for location.
             3. Validate there are location fix in logcat.
         """
-        self.grant_location_permission(False)
-        self.grant_location_permission(True)
+        gutils.grant_location_permission(self.ad, False)
+        gutils.grant_location_permission(self.ad, True)
         gutils.launch_google_map(self.ad)
         asserts.assert_true(
             gutils.check_location_api(self.ad, retries=1),
@@ -218,7 +201,7 @@ class LocationPlatinumTest(BaseTestClass):
             2. Open Google Map and ask for location.
             3. Validate there is no location fix in logcat.
         """
-        self.grant_location_permission(False)
+        gutils.grant_location_permission(self.ad, False)
         gutils.launch_google_map(self.ad)
         asserts.assert_false(
             gutils.check_location_api(self.ad, retries=1),
