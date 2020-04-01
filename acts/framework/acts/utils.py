@@ -36,7 +36,7 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
 from acts import signals
-from acts.controllers import adb
+from acts.controllers.adb_lib.error import AdbError
 from acts.libs.proc import job
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
@@ -864,7 +864,7 @@ def bypass_setup_wizard(ad):
         ad.adb.shell("am start -n \"com.google.android.setupwizard/"
                      ".SetupWizardExitActivity\"")
         logging.debug("No error during default bypass call.")
-    except adb.AdbError as adb_error:
+    except AdbError as adb_error:
         if adb_error.stdout == "ADB_CMD_OUTPUT:0":
             if adb_error.stderr and \
                     not adb_error.stderr.startswith("Error type 3\n"):
@@ -881,7 +881,7 @@ def bypass_setup_wizard(ad):
                 ad.adb.shell("am start -n \"com.google.android.setupwizard/"
                              ".SetupWizardExitActivity\"")
                 logging.debug("No error during rooted bypass call.")
-            except adb.AdbError as adb_error:
+            except AdbError as adb_error:
                 if adb_error.stdout == "ADB_CMD_OUTPUT:0":
                     if adb_error.stderr and \
                             not adb_error.stderr.startswith("Error type 3\n"):

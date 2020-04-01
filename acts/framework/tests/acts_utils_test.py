@@ -22,7 +22,7 @@ import mock
 
 from acts import utils
 from acts import signals
-from acts.controllers.adb import AdbError
+from acts.controllers.adb_lib.error import AdbError
 from acts.controllers.android_device import AndroidDevice
 from acts.controllers.fuchsia_device import FuchsiaDevice
 from acts.controllers.utils_lib.ssh.connection import SshConnection

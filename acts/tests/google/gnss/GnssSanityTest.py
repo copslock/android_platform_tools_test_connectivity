@@ -1,6 +1,6 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python3.7
 #
-#   Copyright 2019 - The Android Open Source Project
+#   Copyright 2020 - The Android Open Source Project
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ from acts.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
 from acts.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
 from acts.test_utils.gnss.gnss_test_utils import enable_supl_mode
 from acts.test_utils.gnss.gnss_test_utils import start_toggle_gnss_by_gtw_gpstool
+from acts.test_utils.gnss.gnss_test_utils import grant_location_permission
 from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
@@ -83,10 +84,16 @@ class GnssSanityTest(BaseTestClass):
         super().setup_class()
         self.ad = self.android_devices[0]
         req_params = ["pixel_lab_network", "standalone_cs_criteria",
-                      "supl_cs_criteria", "xtra_ws_criteria",
-                      "xtra_cs_criteria", "weak_signal_supl_cs_criteria",
-                      "weak_signal_xtra_ws_criteria",
+                      "standalone_ws_criteria", "standalone_hs_criteria",
+                      "supl_cs_criteria", "supl_ws_criteria",
+                      "supl_hs_criteria", "xtra_cs_criteria",
+                      "xtra_ws_criteria", "xtra_hs_criteria",
+                      "weak_signal_supl_cs_criteria",
+                      "weak_signal_supl_ws_criteria",
+                      "weak_signal_supl_hs_criteria",
                       "weak_signal_xtra_cs_criteria",
+                      "weak_signal_xtra_ws_criteria",
+                      "weak_signal_xtra_hs_criteria",
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
@@ -99,6 +106,9 @@ class GnssSanityTest(BaseTestClass):
         for network in self.pixel_lab_network:
             SSID = network['SSID']
             self.ssid_map[SSID] = network
+        self.ttff_mode = {'cs': 'Cold Start',
+                          'ws': 'Warm Start',
+                          'hs': 'Hot Start'}
         if self.ad.model in self.legacy_projects:
             self.wifi_xtra_cs_criteria = self.legacy_wifi_xtra_cs_criteria
         else:
@@ -220,6 +230,107 @@ class GnssSanityTest(BaseTestClass):
             except Exception as e:
                 self.ad.log.error("cat mcfg.version with error %s", e)
                 return False
+
+    def run_ttff_via_gtw_gpstool(self, mode, criteria, ttff_iteration=10):
+        """Run GNSS TTFF test with selected mode and parse the results.
+
+        Args:
+            mode: "cs", "ws" or "hs"
+            criteria: Criteria for the TTFF.
+            ttff_iteration: Test cycle of TTFF. Default is 10
+        """
+        begin_time = get_current_epoch_time()
+        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
+        start_ttff_by_gtw_gpstool(self.ad, mode, ttff_iteration)
+        ttff_data = process_ttff_by_gtw_gpstool(
+            self.ad, begin_time, self.pixel_lab_location)
+        result = check_ttff_data(
+            self.ad, ttff_data, self.ttff_mode.get(mode), criteria)
+        asserts.assert_true(
+            result, "TTFF %s fails to reach designated criteria of %d "
+                    "seconds." % (self.ttff_mode.get(mode), criteria))
+
+    def supl_ttff_with_sim(self, mode, criteria):
+        """Verify SUPL TTFF functionality.
+
+        Args:
+            mode: "cs", "ws" or "hs"
+            criteria: Criteria for the test.
+        """
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
+        kill_xtra_daemon(self.ad)
+        self.run_ttff_via_gtw_gpstool(mode, criteria)
+
+    def standalone_ttff_airplane_mode_on(self, mode, criteria):
+        """Verify Standalone GNSS TTFF functionality while airplane mode is on.
+
+        Args:
+            mode: "cs", "ws" or "hs"
+            criteria: Criteria for the test.
+        """
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
+        self.ad.log.info("Turn airplane mode on")
+        force_airplane_mode(self.ad, True)
+        self.run_ttff_via_gtw_gpstool(mode, criteria)
+
+    def supl_ttff_weak_gnss_signal(self, mode, criteria):
+        """Verify SUPL TTFF functionality under weak GNSS signal.
+
+        Args:
+            mode: "cs", "ws" or "hs"
+            criteria: Criteria for the test.
+        """
+        set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                   self.weak_gnss_signal_attenuation)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
+        kill_xtra_daemon(self.ad)
+        self.run_ttff_via_gtw_gpstool(mode, criteria)
+
+    def xtra_ttff_mobile_data(self, mode, criteria):
+        """Verify XTRA TTFF functionality with mobile data.
+
+        Args:
+            mode: "cs", "ws" or "hs"
+            criteria: Criteria for the test.
+        """
+        disable_supl_mode(self.ad)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
+        self.run_ttff_via_gtw_gpstool(mode, criteria)
+
+    def xtra_ttff_weak_gnss_signal(self, mode, criteria):
+        """Verify XTRA TTFF functionality under weak GNSS signal.
+
+        Args:
+            mode: "cs", "ws" or "hs"
+            criteria: Criteria for the test.
+        """
+        disable_supl_mode(self.ad)
+        set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                   self.weak_gnss_signal_attenuation)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
+        self.run_ttff_via_gtw_gpstool(mode, criteria)
+
+    def xtra_ttff_wifi(self, mode, criteria):
+        """Verify XTRA TTFF functionality with WiFi.
+
+        Args:
+            mode: "cs", "ws" or "hs"
+            criteria: Criteria for the test.
+        """
+        disable_supl_mode(self.ad)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
+        start_adb_tcpdump(self.ad)
+        self.ad.log.info("Turn airplane mode on")
+        force_airplane_mode(self.ad, True)
+        wifi_toggle_state(self.ad, True)
+        connect_to_wifi_network(
+            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
+        self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     """ Test Cases """
 
@@ -378,6 +489,7 @@ class GnssSanityTest(BaseTestClass):
         start_qxdm_logger(self.ad, get_current_epoch_time())
         start_adb_tcpdump(self.ad)
         for i in range(1, 6):
+            grant_location_permission(self.ad, True)
             launch_google_map(self.ad)
             test_result = check_location_api(self.ad, retries=3)
             self.ad.send_keycode("HOME")
@@ -407,6 +519,7 @@ class GnssSanityTest(BaseTestClass):
         out = int(self.ad.adb.shell("settings get secure location_mode"))
         self.ad.log.info("Modify current Location Mode to %d" % out)
         for i in range(1, 6):
+            grant_location_permission(self.ad, True)
             launch_google_map(self.ad)
             test_result = check_location_api(self.ad, retries=3)
             self.ad.send_keycode("HOME")
@@ -436,6 +549,7 @@ class GnssSanityTest(BaseTestClass):
         start_adb_tcpdump(self.ad)
         set_battery_saver_mode(self.ad, True)
         for i in range(1, 6):
+            grant_location_permission(self.ad, True)
             launch_google_map(self.ad)
             test_result = check_location_api(self.ad, retries=3)
             self.ad.send_keycode("HOME")
@@ -443,6 +557,48 @@ class GnssSanityTest(BaseTestClass):
             self.ad.log.info("Iteraion %d => %s" % (i, test_result))
         set_battery_saver_mode(self.ad, False)
         asserts.assert_true(all(test_result_all), "Fail to get location update")
+
+    @test_tracker_info(uuid="a59c72af-5d56-4d88-9746-ae2749cac671")
+    def test_supl_ttff_cs(self):
+        """Verify SUPL functionality of TTFF Cold Start.
+
+        Steps:
+            1. Kill XTRA daemon to support SUPL only case.
+            2. SUPL TTFF Cold Start for 10 iteration.
+
+        Expected Results:
+            All SUPL TTFF Cold Start results should be less than
+            supl_cs_criteria.
+        """
+        self.supl_ttff_with_sim('cs', self.supl_cs_criteria)
+
+    @test_tracker_info(uuid="9a91c8ad-1978-414a-a9ac-8ebc782f77ff")
+    def test_supl_ttff_ws(self):
+        """Verify SUPL functionality of TTFF Warm Start.
+
+        Steps:
+            1. Kill XTRA daemon to support SUPL only case.
+            2. SUPL TTFF Warm Start for 10 iteration.
+
+        Expected Results:
+            All SUPL TTFF Warm Start results should be less than
+            supl_ws_criteria.
+        """
+        self.supl_ttff_with_sim('ws', self.supl_ws_criteria)
+
+    @test_tracker_info(uuid="bbd5aad4-3309-4579-a3b2-a06bfb674dfa")
+    def test_supl_ttff_hs(self):
+        """Verify SUPL functionality of TTFF Hot Start.
+
+        Steps:
+            1. Kill XTRA daemon to support SUPL only case.
+            2. SUPL TTFF Hot Start for 10 iteration.
+
+        Expected Results:
+            All SUPL TTFF Hot Start results should be less than
+            supl_hs_criteria.
+        """
+        self.supl_ttff_with_sim('hs', self.supl_hs_criteria)
 
     @test_tracker_info(uuid="60c0aeec-0c8f-4a96-bc6c-05cba1260e73")
     def test_supl_ongoing_call(self):
@@ -458,8 +614,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be less than
             supl_cs_criteria.
         """
-        begin_time = get_current_epoch_time()
-        start_qxdm_logger(self.ad, begin_time)
+        start_qxdm_logger(self.ad, get_current_epoch_time())
         start_adb_tcpdump(self.ad)
         kill_xtra_daemon(self.ad)
         self.ad.droid.setVoiceCallVolume(25)
@@ -467,13 +622,7 @@ class GnssSanityTest(BaseTestClass):
         time.sleep(5)
         if not check_call_state_connected_by_adb(self.ad):
             raise signals.TestFailure("Call is not connected.")
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                self.pixel_lab_location)
-        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
-                                 criteria=self.supl_cs_criteria)
-        asserts.assert_true(result, "TTFF fails to reach designated criteria")
+        self.run_ttff_via_gtw_gpstool("cs", self.supl_cs_criteria)
 
     @test_tracker_info(uuid="df605509-328f-43e8-b6d8-00635bf701ef")
     def test_supl_downloading_files(self):
@@ -573,30 +722,49 @@ class GnssSanityTest(BaseTestClass):
                             "TTFF fails to reach designated criteria")
 
     @test_tracker_info(uuid="01602e65-8ded-4459-8df1-7df70a1bfe8a")
-    def test_gnss_airplane_mode_on(self):
-        """Verify Standalone GNSS functionality while airplane mode is on.
+    def test_gnss_ttff_cs_airplane_mode_on(self):
+        """Verify Standalone GNSS functionality of TTFF Cold Start while
+        airplane mode is on.
 
         Steps:
             1. Turn on airplane mode.
             2. TTFF Cold Start for 10 iteration.
-            3. Turn off airplane mode.
 
         Expected Results:
             All Standalone TTFF Cold Start results should be within
             standalone_cs_criteria.
         """
-        begin_time = get_current_epoch_time()
-        start_qxdm_logger(self.ad, begin_time)
-        start_adb_tcpdump(self.ad)
-        self.ad.log.info("Turn airplane mode on")
-        force_airplane_mode(self.ad, True)
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                self.pixel_lab_location)
-        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
-                                 criteria=self.standalone_cs_criteria)
-        asserts.assert_true(result, "TTFF fails to reach designated criteria")
+        self.standalone_ttff_airplane_mode_on('cs', self.standalone_cs_criteria)
+
+    @test_tracker_info(uuid="30b9e7c2-0048-4ccd-b3ae-f385eb5f4e46")
+    def test_gnss_ttff_ws_airplane_mode_on(self):
+        """Verify Standalone GNSS functionality of TTFF Warm Start while
+        airplane mode is on.
+
+        Steps:
+            1. Turn on airplane mode.
+            2. TTFF Warm Start for 10 iteration.
+
+        Expected Results:
+            All Standalone TTFF Warm Start results should be within
+            standalone_ws_criteria.
+        """
+        self.standalone_ttff_airplane_mode_on('ws', self.standalone_ws_criteria)
+
+    @test_tracker_info(uuid="8f3c323a-c625-4339-ab7a-6a41d34cba8f")
+    def test_gnss_ttff_hs_airplane_mode_on(self):
+        """Verify Standalone GNSS functionality of TTFF Hot Start while
+        airplane mode is on.
+
+        Steps:
+            1. Turn on airplane mode.
+            2. TTFF Hot Start for 10 iteration.
+
+        Expected Results:
+            All Standalone TTFF Hot Start results should be within
+            standalone_hs_criteria.
+        """
+        self.standalone_ttff_airplane_mode_on('hs', self.standalone_hs_criteria)
 
     @test_tracker_info(uuid="23731b0d-cb80-4c79-a877-cfe7c2faa447")
     def test_gnss_mobile_data_off(self):
@@ -611,22 +779,15 @@ class GnssSanityTest(BaseTestClass):
             All Standalone TTFF Cold Start results should be within
             standalone_cs_criteria.
         """
-        begin_time = get_current_epoch_time()
-        start_qxdm_logger(self.ad, begin_time)
+        start_qxdm_logger(self.ad, get_current_epoch_time)
         start_adb_tcpdump(self.ad)
         kill_xtra_daemon(self.ad)
         set_mobile_data(self.ad, False)
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                self.pixel_lab_location)
-        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
-                                 criteria=self.standalone_cs_criteria)
-        asserts.assert_true(result, "TTFF fails to reach designated criteria")
+        self.run_ttff_via_gtw_gpstool("cs", self.standalone_cs_criteria)
 
     @test_tracker_info(uuid="085b86a9-0212-4c0f-8ca1-2e467a0a2e6e")
-    def test_supl_without_gnss_signal(self):
-        """Verify SUPL functionality after no GNSS signal for awhile.
+    def test_supl_after_regain_gnss_signal(self):
+        """Verify SUPL functionality after regain GNSS signal.
 
         Steps:
             1. Get location fixed.
@@ -663,8 +824,8 @@ class GnssSanityTest(BaseTestClass):
                             "Fail to get location update")
 
     @test_tracker_info(uuid="3ff2f2fa-42d8-47fa-91de-060816cca9df")
-    def test_supl_weak_gnss_signal(self):
-        """Verify SUPL TTFF functionality under weak GNSS signal.
+    def test_supl_ttff_cs_weak_gnss_signal(self):
+        """Verify SUPL functionality of TTFF Cold Start under weak GNSS signal.
 
         Steps:
             1. Set attenuation value to weak GNSS signal.
@@ -675,19 +836,37 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be less than
             weak_signal_supl_cs_criteria.
         """
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.weak_gnss_signal_attenuation)
-        begin_time = get_current_epoch_time()
-        start_qxdm_logger(self.ad, begin_time)
-        start_adb_tcpdump(self.ad)
-        kill_xtra_daemon(self.ad)
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                self.pixel_lab_location)
-        result = check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
-                                 criteria=self.weak_signal_supl_cs_criteria)
-        asserts.assert_true(result, "TTFF fails to reach designated criteria")
+        self.supl_ttff_weak_gnss_signal('cs', self.weak_signal_supl_cs_criteria)
+
+    @test_tracker_info(uuid="d72364d4-dad8-4d46-8190-87183def9822")
+    def test_supl_ttff_ws_weak_gnss_signal(self):
+        """Verify SUPL functionality of TTFF Warm Start under weak GNSS signal.
+
+        Steps:
+            1. Set attenuation value to weak GNSS signal.
+            2. Kill XTRA daemon to support SUPL only case.
+            3. SUPL TTFF Warm Start for 10 iteration.
+
+        Expected Results:
+            All SUPL TTFF Warm Start results should be less than
+            weak_signal_supl_ws_criteria.
+        """
+        self.supl_ttff_weak_gnss_signal('ws', self.weak_signal_supl_ws_criteria)
+
+    @test_tracker_info(uuid="aeb95733-9829-470d-bfc7-e3b059bf881f")
+    def test_supl_ttff_hs_weak_gnss_signal(self):
+        """Verify SUPL functionality of TTFF Hot Start under weak GNSS signal.
+
+        Steps:
+            1. Set attenuation value to weak GNSS signal.
+            2. Kill XTRA daemon to support SUPL only case.
+            3. SUPL TTFF Hot Start for 10 iteration.
+
+        Expected Results:
+            All SUPL TTFF Hot Start results should be less than
+            weak_signal_supl_hs_criteria.
+        """
+        self.supl_ttff_weak_gnss_signal('hs', self.weak_signal_supl_hs_criteria)
 
     @test_tracker_info(uuid="4ad4a371-949a-42e1-b1f4-628c79fa8ddc")
     def test_supl_factory_reset(self):
@@ -722,134 +901,130 @@ class GnssSanityTest(BaseTestClass):
                              "PASS" % times)
 
     @test_tracker_info(uuid="ea3096cf-4f72-4e91-bfb3-0bcbfe865ab4")
-    def test_xtra_ttff_mobile_data(self):
-        """Verify XTRA TTFF functionality with mobile data.
+    def test_xtra_ttff_cs_mobile_data(self):
+        """Verify XTRA functionality of TTFF Cold Start with mobile data.
+
+        Steps:
+            1. Disable SUPL mode.
+            2. TTFF Cold Start for 10 iteration.
+
+        Expected Results:
+            XTRA TTFF Cold Start results should be within xtra_cs_criteria.
+        """
+        self.xtra_ttff_mobile_data('cs', self.xtra_cs_criteria)
+
+    @test_tracker_info(uuid="c9b22894-deb3-4dc2-af14-4dcbb8ebad66")
+    def test_xtra_ttff_ws_mobile_data(self):
+        """Verify XTRA functionality of TTFF Warm Start with mobile data.
 
         Steps:
             1. Disable SUPL mode.
             2. TTFF Warm Start for 10 iteration.
-            3. TTFF Cold Start for 10 iteration.
 
         Expected Results:
             XTRA TTFF Warm Start results should be within xtra_ws_criteria.
-            XTRA TTFF Cold Start results should be within xtra_cs_criteria.
         """
-        xtra_result = []
-        disable_supl_mode(self.ad)
-        begin_time = get_current_epoch_time()
-        start_qxdm_logger(self.ad, begin_time)
-        start_adb_tcpdump(self.ad)
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
-        ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                   self.pixel_lab_location)
-        ws_result = check_ttff_data(self.ad,
-                                    ws_ttff_data,
-                                    ttff_mode="Warm Start",
-                                    criteria=self.xtra_ws_criteria)
-        xtra_result.append(ws_result)
-        begin_time = get_current_epoch_time()
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                   self.pixel_lab_location)
-        cs_result = check_ttff_data(self.ad,
-                                    cs_ttff_data,
-                                    ttff_mode="Cold Start",
-                                    criteria=self.xtra_cs_criteria)
-        xtra_result.append(cs_result)
-        asserts.assert_true(all(xtra_result),
-                            "TTFF fails to reach designated criteria")
+        self.xtra_ttff_mobile_data('ws', self.xtra_ws_criteria)
 
-    @test_tracker_info(uuid="c91ba740-220e-41de-81e5-43af31f63907")
-    def test_xtra_ttff_weak_gnss_signal(self):
-        """Verify XTRA TTFF functionality under weak GNSS signal.
+    @test_tracker_info(uuid="273741e2-0815-4817-96df-9c13401119dd")
+    def test_xtra_ttff_hs_mobile_data(self):
+        """Verify XTRA functionality of TTFF Hot Start with mobile data.
 
         Steps:
-            1. Set attenuation value to weak GNSS signal.
-            2. TTFF Warm Start for 10 iteration.
+            1. Disable SUPL mode.
+            2. TTFF Hot Start for 10 iteration.
+
+        Expected Results:
+            XTRA TTFF Hot Start results should be within xtra_hs_criteria.
+        """
+        self.xtra_ttff_mobile_data('hs', self.xtra_hs_criteria)
+
+    @test_tracker_info(uuid="c91ba740-220e-41de-81e5-43af31f63907")
+    def test_xtra_ttff_cs_weak_gnss_signal(self):
+        """Verify XTRA functionality of TTFF Cold Start under weak GNSS signal.
+
+        Steps:
+            1. Disable SUPL mode.
+            2. Set attenuation value to weak GNSS signal.
             3. TTFF Cold Start for 10 iteration.
+
+        Expected Results:
+            XTRA TTFF Cold Start results should be within
+            weak_signal_xtra_cs_criteria.
+        """
+        self.xtra_ttff_weak_gnss_signal('cs', self.weak_signal_xtra_cs_criteria)
+
+    @test_tracker_info(uuid="2a285be7-3571-49fb-8825-01efa2e65f10")
+    def test_xtra_ttff_ws_weak_gnss_signal(self):
+        """Verify XTRA functionality of TTFF Warm Start under weak GNSS signal.
+
+        Steps:
+            1. Disable SUPL mode.
+            2. Set attenuation value to weak GNSS signal.
+            3. TTFF Warm Start for 10 iteration.
 
         Expected Results:
             XTRA TTFF Warm Start results should be within
             weak_signal_xtra_ws_criteria.
-            XTRA TTFF Cold Start results should be within
-            weak_signal_xtra_cs_criteria.
         """
-        xtra_result = []
-        disable_supl_mode(self.ad)
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.weak_gnss_signal_attenuation)
-        begin_time = get_current_epoch_time()
-        start_qxdm_logger(self.ad, begin_time)
-        start_adb_tcpdump(self.ad)
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
-        ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                   self.pixel_lab_location)
-        ws_result = check_ttff_data(self.ad,
-                                    ws_ttff_data,
-                                    ttff_mode="Warm Start",
-                                    criteria=self.weak_signal_xtra_ws_criteria)
-        xtra_result.append(ws_result)
-        begin_time = get_current_epoch_time()
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                   self.pixel_lab_location)
-        cs_result = check_ttff_data(self.ad,
-                                    cs_ttff_data,
-                                    ttff_mode="Cold Start",
-                                    criteria=self.weak_signal_xtra_cs_criteria)
-        xtra_result.append(cs_result)
-        asserts.assert_true(all(xtra_result),
-                            "TTFF fails to reach designated criteria")
+        self.xtra_ttff_weak_gnss_signal('ws', self.weak_signal_xtra_ws_criteria)
+
+    @test_tracker_info(uuid="249bf484-8b04-4cd9-a372-aa718e5f4ec6")
+    def test_xtra_ttff_hs_weak_gnss_signal(self):
+        """Verify XTRA functionality of TTFF Hot Start under weak GNSS signal.
+
+        Steps:
+            1. Disable SUPL mode.
+            2. Set attenuation value to weak GNSS signal.
+            3. TTFF Hot Start for 10 iteration.
+
+        Expected Results:
+            XTRA TTFF Hot Start results should be within
+            weak_signal_xtra_hs_criteria.
+        """
+        self.xtra_ttff_weak_gnss_signal('hs', self.weak_signal_xtra_hs_criteria)
 
     @test_tracker_info(uuid="beeb3454-bcb2-451e-83fb-26289e89b515")
-    def test_xtra_ttff_wifi(self):
-        """Verify XTRA TTFF functionality with WiFi.
+    def test_xtra_ttff_cs_wifi(self):
+        """Verify XTRA functionality of TTFF Cold Start with WiFi.
+
+        Steps:
+            1. Disable SUPL mode and turn airplane mode on.
+            2. Connect to WiFi.
+            3. TTFF Cold Start for 10 iteration.
+
+        Expected Results:
+            XTRA TTFF Cold Start results should be within wifi_xtra_cs_criteria.
+        """
+        self.xtra_ttff_wifi('cs', self.wifi_xtra_cs_criteria)
+
+    @test_tracker_info(uuid="f6e79b31-99d5-49ca-974f-4543957ea449")
+    def test_xtra_ttff_ws_wifi(self):
+        """Verify XTRA functionality of TTFF Warm Start with WiFi.
 
         Steps:
             1. Disable SUPL mode and turn airplane mode on.
             2. Connect to WiFi.
             3. TTFF Warm Start for 10 iteration.
-            4. TTFF Cold Start for 10 iteration.
 
         Expected Results:
             XTRA TTFF Warm Start results should be within xtra_ws_criteria.
-            XTRA TTFF Cold Start results should be within xtra_cs_criteria.
         """
-        xtra_result = []
-        disable_supl_mode(self.ad)
-        begin_time = get_current_epoch_time()
-        start_qxdm_logger(self.ad, begin_time)
-        start_adb_tcpdump(self.ad)
-        self.ad.log.info("Turn airplane mode on")
-        force_airplane_mode(self.ad, True)
-        wifi_toggle_state(self.ad, True)
-        connect_to_wifi_network(
-            self.ad, self.ssid_map[self.pixel_lab_network[0]["SSID"]])
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="ws", iteration=10)
-        ws_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                   self.pixel_lab_location)
-        ws_result = check_ttff_data(self.ad,
-                                    ws_ttff_data,
-                                    ttff_mode="Warm Start",
-                                    criteria=self.xtra_ws_criteria)
-        xtra_result.append(ws_result)
-        begin_time = get_current_epoch_time()
-        process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
-        cs_ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                   self.pixel_lab_location)
-        cs_result = check_ttff_data(self.ad,
-                                    cs_ttff_data,
-                                    ttff_mode="Cold Start",
-                                    criteria=self.wifi_xtra_cs_criteria)
-        xtra_result.append(cs_result)
-        asserts.assert_true(all(xtra_result),
-                            "TTFF fails to reach designated criteria")
+        self.xtra_ttff_wifi('ws', self.xtra_ws_criteria)
+
+    @test_tracker_info(uuid="8981363c-f64f-4c37-9674-46733c40473b")
+    def test_xtra_ttff_hs_wifi(self):
+        """Verify XTRA functionality of TTFF Hot Start with WiFi.
+
+        Steps:
+            1. Disable SUPL mode and turn airplane mode on.
+            2. Connect to WiFi.
+            3. TTFF Hot Start for 10 iteration.
+
+        Expected Results:
+            XTRA TTFF Hot Start results should be within xtra_hs_criteria.
+        """
+        self.xtra_ttff_wifi('hs', self.xtra_hs_criteria)
 
     @test_tracker_info(uuid="1745b8a4-5925-4aa0-809a-1b17e848dc9c")
     def test_xtra_modem_ssr(self):

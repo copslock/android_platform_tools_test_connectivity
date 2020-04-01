@@ -33,7 +33,7 @@ from acts import utils
 from queue import Empty
 from acts.asserts import abort_all
 from acts.asserts import fail
-from acts.controllers.adb import AdbError
+from acts.controllers.adb_lib.error import AdbError
 from acts.controllers.android_device import list_adb_devices
 from acts.controllers.android_device import list_fastboot_devices
 from acts.controllers.android_device import DEFAULT_QXDM_LOG_PATH
