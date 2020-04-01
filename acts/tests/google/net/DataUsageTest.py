@@ -20,6 +20,7 @@ from acts import asserts
 from acts import base_test
 from acts import utils
 from acts.controllers import adb
+from acts.controllers.adb_lib.error import AdbError
 from acts.controllers.ap_lib import hostapd_constants
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import connectivity_const as cconst
@@ -87,7 +88,7 @@ class DataUsageTest(base_test.BaseTestClass):
             cutils.set_private_dns(ad, cconst.PRIVATE_DNS_MODE_OFF)
             try:
                 ad.adb.shell(instr_cmd)
-            except adb.AdbError:
+            except AdbError:
                 self.log.warn("cmd %s failed on %s" % (instr_cmd, ad.serial))
         self.tcpdumps = []
         self.hs_enabled = []

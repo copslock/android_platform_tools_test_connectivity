@@ -20,8 +20,9 @@ import logging
 import re
 import shlex
 
-from acts import error
+from acts.controllers.adb_lib.error import AdbError
 from acts.libs.proc import job
+from acts.metrics.loggers import usage_metadata_logger
 
 DEFAULT_ADB_TIMEOUT = 60
 DEFAULT_ADB_PULL_TIMEOUT = 180
@@ -50,20 +51,6 @@ def parsing_parcel_output(output):
     output = ''.join(re.findall(r"'(.*)'", output))
     return re.sub(r'[.\s]', '', output)
 
-
-class AdbError(error.ActsError):
-    """Raised when there is an error in adb operations."""
-
-    def __init__(self, cmd, stdout, stderr, ret_code):
-        super().__init__()
-        self.cmd = cmd
-        self.stdout = stdout
-        self.stderr = stderr
-        self.ret_code = ret_code
-
-    def __str__(self):
-        return ("Error executing adb cmd '%s'. ret: %d, stdout: %s, stderr: %s"
-                ) % (self.cmd, self.ret_code, self.stdout, self.stderr)
 
 
 class AdbProxy(object):
@@ -281,6 +268,7 @@ class AdbProxy(object):
 
     def __getattr__(self, name):
         def adb_call(*args, **kwargs):
+            usage_metadata_logger.log_usage(self.__module__, name)
             clean_name = name.replace('_', '-')
             arg_str = ' '.join(str(elem) for elem in args)
             return self._exec_adb_cmd(clean_name, arg_str, **kwargs)
