@@ -438,7 +438,7 @@ class PowerBaseTest(base_test.BaseTestClass):
             for filename in os.listdir(os.path.dirname(data_path)):
                 match = re.match(r'{}_(\d+).txt'.format(tag), filename)
                 if match:
-                    highest_value = int(match.group(1))
+                    highest_value = max(highest_value, int(match.group(1)))
 
             data_path = os.path.join(self.mon_info.data_path,
                                      '%s_%s.txt' % (tag, highest_value + 1))
