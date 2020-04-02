@@ -140,6 +140,31 @@ class TestDecoratorUnitTests(unittest.TestCase):
         with self.assertRaises(signals.TestFailure):
             test_returns_falsy_but_not_none()
 
+    def test_function_name(self):
+        """Test test_func.__name__ returns its original unwrapped name"""
+        @test_decorators.test_info(uuid='SOME_UID')
+        def test_func():
+            pass
+
+        self.assertEqual(test_func.__name__, "test_func")
+
+    def test_function_doc(self):
+        """Test test_func.__doc__ returns its original unwrapped doc string"""
+        @test_decorators.test_info(uuid='SOME_UID')
+        def test_func():
+            """DOC_STRING"""
+            pass
+
+        self.assertEqual(test_func.__doc__, "DOC_STRING")
+
+    def test_function_module(self):
+        """Test test_func.__module__ returns its original unwrapped module"""
+        @test_decorators.test_info(uuid='SOME_UID')
+        def test_func():
+            pass
+
+        self.assertEqual(test_func.__module__, self.__module__)
+
 
 class MockTest(base_test.BaseTestClass):
     TEST_CASE_LIST = 'test_run_mock_test'
