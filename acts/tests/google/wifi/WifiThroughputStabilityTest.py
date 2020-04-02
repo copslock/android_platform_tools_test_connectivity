@@ -18,7 +18,6 @@ import collections
 import itertools
 import json
 import logging
-import math
 import numpy
 import os
 from acts import asserts
@@ -281,7 +280,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             wutils.wifi_toggle_state(self.dut, True)
             wutils.reset_wifi(self.dut)
             wutils.set_wifi_country_code(self.dut,
-                self.testclass_params['country_code'])
+                                         self.testclass_params['country_code'])
             self.main_network[band]['channel'] = testcase_params['channel']
             wutils.wifi_connect(self.dut,
                                 testcase_params['test_network'],

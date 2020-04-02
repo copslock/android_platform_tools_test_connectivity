@@ -70,7 +70,7 @@ class WifiPingTest(base_test.BaseTestClass):
             'ping_test_params', 'testbed_params', 'main_network',
             'RetailAccessPoints', 'RemoteServer'
         ]
-        opt_params = ['golden_files_list', 'OTASniffer']
+        opt_params = ['OTASniffer']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.ping_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
@@ -84,12 +84,6 @@ class WifiPingTest(base_test.BaseTestClass):
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, 'results')
         os.makedirs(self.log_path, exist_ok=True)
-        if not hasattr(self, 'golden_files_list'):
-            self.golden_files_list = [
-                os.path.join(self.testbed_params['golden_results_path'], file)
-                for file in os.listdir(
-                    self.testbed_params['golden_results_path'])
-            ]
         if hasattr(self, 'bdf'):
             self.log.info('Pushing WiFi BDF to DUT.')
             wputils.push_bdf(self.dut, self.bdf)

@@ -142,7 +142,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             'RetailAccessPoints', 'sensitivity_test_params', 'testbed_params',
             'RemoteServer'
         ]
-        opt_params = ['main_network', 'golden_files_list']
+        opt_params = ['main_network']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.sensitivity_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
@@ -155,12 +155,6 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, 'results')
         os.makedirs(self.log_path, exist_ok=True)
-        if not hasattr(self, 'golden_files_list'):
-            self.golden_files_list = [
-                os.path.join(self.testbed_params['golden_results_path'], file)
-                for file in os.listdir(
-                    self.testbed_params['golden_results_path'])
-            ]
         if hasattr(self, 'bdf'):
             self.log.info('Pushing WiFi BDF to DUT.')
             wputils.push_bdf(self.dut, self.bdf)
@@ -211,7 +205,7 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
             wutils.toggle_wifi_off_and_on(dev)
 
     def pass_fail_check(self, result):
-        """Checks sensitivity against golden results and decides on pass/fail.
+        """Checks sensitivity results and decides on pass/fail.
 
         Args:
             result: dict containing attenuation, throughput and other meta
