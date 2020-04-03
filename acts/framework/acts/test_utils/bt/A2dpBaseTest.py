@@ -14,6 +14,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """Stream music through connected device from phone test implementation."""
+import acts
 import os
 import shutil
 import time
@@ -129,6 +130,28 @@ class A2dpBaseTest(BluetoothBaseTest):
         self.log.info('Audio play and record stopped')
         asserts.assert_true(audio_captured, 'Audio not recorded')
         return audio_captured
+
+    def _get_bt_link_metrics(self):
+        """Get bt link metrics such as rssi and tx pwls.
+
+        Returns:
+            rssi_master: master rssi
+            pwl_master: master tx pwl
+            rssi_slave: slave rssi
+        """
+
+        self.media.play()
+        # Get master rssi and power level
+        rssi_master = btutils.get_bt_metric(self.dut)['rssi']
+        pwl_master = btutils.get_bt_metric(self.dut)['pwlv']
+        # Get slave rssi if possible
+        if isinstance(self.bt_device_controller,
+                      acts.controllers.android_device.AndroidDevice):
+            rssi_slave = btutils.get_bt_rssi(self.bt_device_controller)
+        else:
+            rssi_slave = None
+        self.media.stop()
+        return [rssi_master, pwl_master, rssi_slave]
 
     def run_thdn_analysis(self, audio_captured, tag):
         """Calculate Total Harmonic Distortion plus Noise for latest recording.

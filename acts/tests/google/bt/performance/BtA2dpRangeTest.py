@@ -14,7 +14,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import acts
 import acts.test_utils.bt.bt_test_utils as btutils
 from acts import asserts
 from acts.signals import TestPass
@@ -49,28 +48,6 @@ class BtA2dpRangeTest(A2dpBaseTest):
         test_case_name = 'test_bt_a2dp_range_codec_{}'.format(
             codec_config['codec_type'])
         setattr(self, test_case_name, test_case_fn)
-
-    def _get_bt_link_metrics(self):
-        """Get bt link metrics such as rssi and tx pwls.
-
-        Returns:
-            rssi_master: master rssi
-            pwl_master: master tx pwl
-            rssi_slave: slave rssi
-        """
-
-        self.media.play()
-        # Get master rssi and power level
-        rssi_master = btutils.get_bt_metric(self.dut)['rssi']
-        pwl_master = btutils.get_bt_metric(self.dut)['pwlv']
-        # Get slave rssi if possible
-        if isinstance(self.bt_device_controller,
-                      acts.controllers.android_device.AndroidDevice):
-            rssi_slave = btutils.get_bt_rssi(self.bt_device_controller)
-        else:
-            rssi_slave = None
-        self.media.stop()
-        return [rssi_master, pwl_master, rssi_slave]
 
     def generate_proto(self, data_points, codec_type, sample_rate,
                        bits_per_sample, channel_mode):
