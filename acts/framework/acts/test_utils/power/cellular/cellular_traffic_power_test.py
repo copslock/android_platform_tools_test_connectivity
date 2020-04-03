@@ -21,6 +21,7 @@ import scapy.all as scapy
 from acts import asserts
 from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power import IperfHelper as IPH
+from acts.test_utils.power import plot_utils
 import acts.test_utils.power.cellular.cellular_power_base_test as PWCEL
 from acts.test_utils.wifi import wifi_power_test_utils as wputils
 
@@ -214,16 +215,15 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
         return throughput
 
-    def pass_fail_check(self, average_current=None):
-        """ Checks power consumption and throughput.
+    def check_throughput_results(self, iperf_results):
+        """ Checks throughput results.
 
-        Uses the base class method to check power consumption. Also, compares
-        the obtained throughput with the expected value provided by the
-        simulation class.
+        Compares the obtained throughput with the expected value
+        provided by the simulation class.
 
         """
 
-        for direction, throughput in self.iperf_results.items():
+        for direction, throughput in iperf_results.items():
             try:
                 if direction == "UL":
                     expected_t = self.simulation.maximum_uplink_throughput()
@@ -248,6 +248,15 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                         direction, round(throughput, 3), round(expected_t, 3),
                         round(throughput / expected_t, 3)))
 
+    def pass_fail_check(self, average_current=None):
+        """ Checks power consumption and throughput.
+
+        Uses the base class method to check power consumption. Also, compares
+        the obtained throughput with the expected value provided by the
+        simulation class.
+
+        """
+        self.check_throughput_results(self.iperf_results)
         super().pass_fail_check(average_current)
 
     def start_tel_traffic(self, client_host):
@@ -454,3 +463,99 @@ class PowerTelRvRTest(PowerTelTrafficTest):
         print(sweep_range)
         print(current)
         print(throughput)
+
+
+class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
+    """ Gets Average Current vs Tx Power plot.
+
+    Uses PowerTelTrafficTest as a base class.
+    """
+
+    # Test name configuration keywords
+    PARAM_TX_POWER_SWEEP = "sweep"
+
+    def setup_test(self):
+        """ Executed before every test case.
+
+        Parses test configuration from the test name and prepares
+        the simulation for measurement.
+        """
+        # Call parent method first to setup simulation
+        if not super().setup_test():
+            return False
+
+        # Determine power range to sweep from test case params
+        try:
+            values = self.consume_parameter(self.PARAM_TX_POWER_SWEEP, 5)
+
+            if len(values) == 6:
+                self.start_dbm = int(values[1].replace('n', '-'))
+                self.end_dbm = int(values[2].replace('n', '-'))
+                self.step = int(values[3].replace('n', '-'))
+                self.up_tolerance = int(values[4])
+                self.down_tolerance = int(values[5])
+            else:
+                raise ValueError('Not enough params specified for sweep.')
+        except ValueError as e:
+            self.log.error("Unable to parse test param sweep: {}".format(e))
+            return False
+
+        return True
+
+    def pass_fail_check(self, currents, txs, iperf_results):
+        """ Compares the obtained throughput with the expected
+        value provided by the simulation class. Also, ensures
+        consecutive currents do not increase or decrease beyond
+        specified tolerance
+        """
+        for iperf_result in iperf_results:
+            self.check_throughput_results(iperf_result)
+
+        # x = reference current value, y = next current value, i = index of x
+        for i, (x, y) in enumerate(zip(currents[::], currents[1::])):
+            measured_change = (y - x) / x * 100
+            asserts.assert_true(
+                -self.down_tolerance < measured_change < self.up_tolerance,
+                "Current went from {} to {} ({}%) between {} dBm and {} dBm. "
+                "Tolerance range: -{}% to {}%".format(
+                    x, y, measured_change, txs[i], txs[i + 1],
+                    self.down_tolerance, self.up_tolerance))
+
+    def create_power_plot(self, currents, txs):
+        """ Creates average current vs tx power plot
+        """
+        tag = '{}_{}_{}'.format(self.test_name, self.dut.model,
+                                self.dut.build_info['build_id'])
+        plot_utils.monsoon_tx_power_sweep_plot(self.mon_info, tag, currents,
+                                               txs)
+
+    def power_tel_tx_sweep(self):
+        """ Main function for the Tx power sweep test.
+
+        Produces a plot of power consumption vs tx power
+        """
+        currents = []
+        txs = []
+        iperf_results = []
+        for tx in range(self.start_dbm, self.end_dbm + 1, self.step):
+
+            self.simulation.set_uplink_tx_power(tx)
+
+            iperf_helpers = self.start_tel_traffic(self.dut)
+
+            # Measure power
+            result = self.collect_power_data()
+
+            # Wait for iPerf to finish
+            time.sleep(self.IPERF_MARGIN + 2)
+
+            # Collect and check throughput measurement
+            iperf_result = self.get_iperf_results(
+                self.dut, iperf_helpers)
+
+            currents.append(result.average_current)
+            txs.append(tx)
+            iperf_results.append(iperf_result)
+
+        self.create_power_plot(currents, txs)
+        self.pass_fail_check(currents, txs, iperf_results)
