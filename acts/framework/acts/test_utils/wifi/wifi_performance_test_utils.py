@@ -687,7 +687,8 @@ def get_connected_rssi(dut,
                        num_measurements=1,
                        polling_frequency=SHORT_SLEEP,
                        first_measurement_delay=0,
-                       disconnect_warning=True):
+                       disconnect_warning=True,
+                       ignore_samples=0):
     """Gets all RSSI values reported for the connected access point/BSSID.
 
     Args:
@@ -695,6 +696,7 @@ def get_connected_rssi(dut,
         num_measurements: number of scans done, and RSSIs collected
         polling_frequency: time to wait between RSSI measurements
         disconnect_warning: boolean controlling disconnection logging messages
+        ignore_samples: number of leading samples to ignore
     Returns:
         connected_rssi: dict containing the measurements results for
         all reported RSSI values (signal_poll, per chain, etc.) and their
@@ -774,6 +776,8 @@ def get_connected_rssi(dut,
         if 'data' not in val:
             continue
         filtered_rssi_values = [x for x in val['data'] if not math.isnan(x)]
+        if len(filtered_rssi_values) > ignore_samples:
+            filtered_rssi_values = filtered_rssi_values[ignore_samples:]
         if filtered_rssi_values:
             connected_rssi[key]['mean'] = statistics.mean(filtered_rssi_values)
             if len(filtered_rssi_values) > 1:
@@ -792,9 +796,11 @@ def get_connected_rssi_nb(dut,
                           num_measurements=1,
                           polling_frequency=SHORT_SLEEP,
                           first_measurement_delay=0,
-                          disconnect_warning=True):
+                          disconnect_warning=True,
+                          ignore_samples=0):
     return get_connected_rssi(dut, num_measurements, polling_frequency,
-                              first_measurement_delay)
+                              first_measurement_delay, disconnect_warning,
+                              ignore_samples)
 
 
 def get_scan_rssi(dut, tracked_bssids, num_measurements=1):
@@ -860,6 +866,83 @@ def atten_by_label(atten_list, path_label, atten_level):
             atten.set_atten(atten_level)
 
 
+def get_atten_for_target_rssi(target_rssi, attenuators, dut, ping_server):
+    """Function to estimate attenuation to hit a target RSSI.
+
+    This function estimates a constant attenuation setting on all atennuation
+    ports to hit a target RSSI. The estimate is not meant to be exact or
+    guaranteed.
+
+    Args:
+        target_rssi: rssi of interest
+        attenuators: list of attenuator ports
+        dut: android device object assumed connected to a wifi network.
+        ping_server: ssh connection object to ping server
+    Returns:
+        target_atten: attenuation setting to achieve target_rssi
+    """
+    logging.info('Searching attenuation for RSSI = {}dB'.format(target_rssi))
+    # Set attenuator to 0 dB
+    for atten in attenuators:
+        atten.set_atten(0, strict=False)
+    # Start ping traffic
+    dut_ip = dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
+    # Measure starting RSSI
+    ping_future = get_ping_stats_nb(src_device=ping_server,
+                                    dest_address=dut_ip,
+                                    ping_duration=1.5,
+                                    ping_interval=0.02,
+                                    ping_size=64)
+    current_rssi = get_connected_rssi(dut,
+                                      num_measurements=4,
+                                      polling_frequency=0.25,
+                                      first_measurement_delay=0.5,
+                                      disconnect_warning=1,
+                                      ignore_samples=1)
+    current_rssi = current_rssi['signal_poll_rssi']['mean']
+    ping_future.result()
+    target_atten = 0
+    logging.debug("RSSI @ {0:.2f}dB attenuation = {1:.2f}".format(
+        target_atten, current_rssi))
+    within_range = 0
+    for idx in range(20):
+        atten_delta = max(min(current_rssi - target_rssi, 20), -20)
+        target_atten = int((target_atten + atten_delta) * 4) / 4
+        if target_atten < 0:
+            return 0
+        if target_atten > attenuators[0].get_max_atten():
+            return attenuators[0].get_max_atten()
+        for atten in attenuators:
+            atten.set_atten(target_atten, strict=False)
+        ping_future = get_ping_stats_nb(src_device=ping_server,
+                                        dest_address=dut_ip,
+                                        ping_duration=1.5,
+                                        ping_interval=0.02,
+                                        ping_size=64)
+        current_rssi = get_connected_rssi(dut,
+                                          num_measurements=4,
+                                          polling_frequency=0.25,
+                                          first_measurement_delay=0.5,
+                                          disconnect_warning=1,
+                                          ignore_samples=1)
+        current_rssi = current_rssi['signal_poll_rssi']['mean']
+        ping_future.result()
+        logging.info("RSSI @ {0:.2f}dB attenuation = {1:.2f}".format(
+            target_atten, current_rssi))
+        if abs(current_rssi - target_rssi) < 1:
+            if within_range:
+                logging.info(
+                    'Reached RSSI: {0:.2f}. Target RSSI: {1:.2f}.'
+                    'Attenuation: {2:.2f}, Iterations = {3:.2f}'.format(
+                        current_rssi, target_rssi, target_atten, idx))
+                return target_atten
+            else:
+                within_range = True
+        else:
+            within_range = False
+    return target_atten
+
+
 def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
     """Function to detect mapping between attenuator ports and DUT chains.
 
@@ -874,7 +957,6 @@ def get_current_atten_dut_chain_map(attenuators, dut, ping_server):
         attenuators: list of attenuator ports
         dut: android device object assumed connected to a wifi network.
         ping_server: ssh connection object to ping server
-        ping_ip: ip to ping to keep connection alive and RSSI updated
     Returns:
         chain_map: list of dut chains, one entry per attenuator port
     """
@@ -960,6 +1042,12 @@ def get_full_rf_connection_map(attenuators, dut, ping_server, networks):
 
 
 # Miscellaneous Wifi Utilities
+def extract_sub_dict(full_dict, fields):
+    sub_dict = collections.OrderedDict(
+        (field, full_dict[field]) for field in fields)
+    return sub_dict
+
+
 def validate_network(dut, ssid):
     """Check that DUT has a valid internet connection through expected SSID
 

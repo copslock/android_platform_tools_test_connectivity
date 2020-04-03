@@ -73,9 +73,13 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             'VHT80': [36, 149]
         }
         test_cases = []
-        for channel, mode, traffic_type, traffic_direction, signal_level in itertools.product(
-                channels, modes, traffic_types, traffic_directions,
-                signal_levels):
+        for channel, mode, signal_level, traffic_type, traffic_direction in itertools.product(
+                channels,
+                modes,
+                signal_levels,
+                traffic_types,
+                traffic_directions,
+        ):
             if channel not in allowed_configs[mode]:
                 continue
             testcase_params = collections.OrderedDict(
@@ -99,8 +103,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             'throughput_stability_test_params', 'testbed_params',
             'main_network', 'RetailAccessPoints', 'RemoteServer'
         ]
-        opt_params = ['golden_files_list']
-        self.unpack_userparams(req_params, opt_params)
+        self.unpack_userparams(req_params)
         self.testclass_params = self.throughput_stability_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
         self.remote_server = ssh.connection.SshConnection(
@@ -112,12 +115,6 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         os.makedirs(self.log_path, exist_ok=True)
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
-        if not hasattr(self, 'golden_files_list'):
-            self.golden_files_list = [
-                os.path.join(self.testbed_params['golden_results_path'], file)
-                for file in os.listdir(
-                    self.testbed_params['golden_results_path'])
-            ]
         if hasattr(self, 'bdf'):
             self.log.info('Pushing WiFi BDF to DUT.')
             wputils.push_bdf(self.dut, self.bdf)
@@ -129,6 +126,7 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             data_msc = [file for file in self.firmware
                         if "Data.msc" in file][0]
             wputils.push_firmware(self.dut, wlanmdsp, data_msc)
+        self.ref_attenuations = {}
         self.testclass_results = []
 
         # Turn WiFi ON
@@ -173,17 +171,16 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
 
         if min_throughput_check and std_deviation_check:
             asserts.explicit_pass(
-                'Test Passed. Throughput at {0:.2f}dB attenuation is stable. '
-                'Mean throughput is {1:.2f} Mbps with a standard deviation of '
-                '{2:.2f}% and dips down to {3:.2f} Mbps.'.format(
-                    test_result_dict['attenuation'], avg_throughput,
-                    std_dev_percent, min_throughput))
+                'Test Passed. Atten: {0:.2f}dB, RSSI: {1:.2f}dB. '
+                'Throughput (Mean: {2:.2f}, Std. Dev:{3:.2f}%, Min: {4:.2f} Mbps).'
+                .format(test_result_dict['attenuation'],
+                        test_result_dict['rssi'], avg_throughput,
+                        std_dev_percent, min_throughput))
         asserts.fail(
-            'Test Failed. Throughput at {0:.2f}dB attenuation is unstable. '
-            'Mean throughput is {1:.2f} Mbps with a standard deviation of '
-            '{2:.2f}% and dips down to {3:.2f} Mbps.'.format(
-                test_result_dict['attenuation'], avg_throughput,
-                std_dev_percent, min_throughput))
+            'Test Failed. Atten: {0:.2f}dB, RSSI: {1:.2f}dB. '
+            'Throughput (Mean: {2:.2f}, Std. Dev:{3:.2f}%, Min: {4:.2f} Mbps).'
+            .format(test_result_dict['attenuation'], test_result_dict['rssi'],
+                    avg_throughput, std_dev_percent, min_throughput))
 
     def post_process_results(self, test_result):
         """Extracts results and saves plots and JSON formatted results.
@@ -202,6 +199,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_result_dict = {}
         test_result_dict['ap_settings'] = test_result['ap_settings'].copy()
         test_result_dict['attenuation'] = test_result['attenuation']
+        test_result_dict['rssi'] = test_result['rssi_result'][
+            'signal_poll_rssi']['mean']
         if test_result['iperf_result'].instantaneous_rates:
             instantaneous_rates_Mbps = [
                 rate * 8 * (1.024**2)
@@ -296,13 +295,16 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         """
         # Configure AP
         self.setup_ap(testcase_params)
-        # Set attenuator to 0 dB
+        # Reset, configure, and connect DUT
+        self.setup_dut(testcase_params)
+        # Get and set attenuation levels for test
+        testcase_params['atten_level'] = self.get_target_atten(
+            testcase_params)
         self.log.info('Setting attenuation to {} dB'.format(
             testcase_params['atten_level']))
         for attenuator in self.attenuators:
             attenuator.set_atten(testcase_params['atten_level'])
-        # Reset, configure, and connect DUT
-        self.setup_dut(testcase_params)
+        # Configure iperf
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
             testcase_params['iperf_server_address'] = self.dut_ip
         else:
@@ -325,10 +327,18 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         # Start iperf session
         self.log.info('Starting iperf test.')
         self.iperf_server.start(tag=str(testcase_params['atten_level']))
+        current_rssi = wputils.get_connected_rssi_nb(
+            dut=self.dut,
+            num_measurements=self.testclass_params['iperf_duration'] - 1,
+            polling_frequency=1,
+            first_measurement_delay=1,
+            disconnect_warning=1,
+            ignore_samples=1)
         client_output_path = self.iperf_client.start(
             testcase_params['iperf_server_address'],
             testcase_params['iperf_args'], str(testcase_params['atten_level']),
             self.testclass_params['iperf_duration'] + TEST_TIMEOUT)
+        current_rssi = current_rssi.result()
         server_output_path = self.iperf_server.stop()
         # Set attenuator to 0 dB
         for attenuator in self.attenuators:
@@ -347,63 +357,44 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_result['ap_settings'] = self.access_point.ap_settings.copy()
         test_result['attenuation'] = testcase_params['atten_level']
         test_result['iperf_result'] = iperf_result
+        test_result['rssi_result'] = current_rssi
         self.testclass_results.append(test_result)
         return test_result
 
-    def get_target_atten_tput(self, testcase_params):
+    def get_target_atten(self, testcase_params):
         """Function gets attenuation used for test
 
         The function fetches the attenuation at which the test should be
-        performed, and the expected target average throughput.
+        performed.
 
         Args:
             testcase_params: dict containing test specific parameters
         Returns:
-            test_target: dict containing target test attenuation and expected
-            throughput
+            test_atten: target attenuation for test
         """
-        # Fetch the golden RvR results
-        rvr_golden_file_name = 'test_rvr_' + '_'.join(
-            self.current_test_name.split('_')[4:])
-        try:
-            golden_path = next(file_name
-                               for file_name in self.golden_files_list
-                               if rvr_golden_file_name in file_name)
-        except:
-            asserts.fail('Test failed. Golden data not found.')
+        # Get attenuation from reference test if it has been run
+        ref_test_fields = ['channel', 'mode', 'signal_level']
+        test_id = wputils.extract_sub_dict(testcase_params, ref_test_fields)
+        test_id = tuple(test_id.items())
+        if test_id in self.ref_attenuations:
+            return self.ref_attenuations[test_id]
 
-        with open(golden_path, 'r') as golden_file:
-            golden_results = json.load(golden_file)
-        test_target = {}
+        # Get attenuation for target RSSI
         if testcase_params['signal_level'] == 'low':
-            # Get last test point where throughput is above
-            throughput_below_target = [
-                x < self.testclass_params['low_throughput_target']
-                for x in golden_results['throughput_receive']
-            ]
-            atten_idx = throughput_below_target.index(1) - 1
-            test_target['target_attenuation'] = golden_results['attenuation'][
-                atten_idx]
-            test_target['target_throughput'] = golden_results[
-                'throughput_receive'][atten_idx]
-        if testcase_params['signal_level'] == 'high':
-            # Test at lowest attenuation point
-            test_target['target_attenuation'] = golden_results['attenuation'][
-                0]
-            test_target['target_throughput'] = golden_results[
-                'throughput_receive'][0]
-        return test_target
+            target_rssi = self.testclass_params['low_throughput_target']
+        else:
+            target_rssi = self.testclass_params['high_throughput_target']
+        target_atten = wputils.get_atten_for_target_rssi(
+            target_rssi, self.attenuators, self.dut, self.remote_server)
+
+        self.ref_attenuations[test_id] = target_atten
+        return self.ref_attenuations[test_id]
 
     def compile_test_params(self, testcase_params):
         """Function that completes setting the test case parameters."""
         band = self.access_point.band_lookup_by_channel(
             testcase_params['channel'])
         testcase_params['test_network'] = self.main_network[band]
-        testcase_params['test_target'] = self.get_target_atten_tput(
-            testcase_params)
-        testcase_params['atten_level'] = testcase_params['test_target'][
-            'target_attenuation']
-        self.atten_level = testcase_params['atten_level']
 
         if (testcase_params['traffic_direction'] == 'DL'
                 and not isinstance(self.iperf_server, ipf.IPerfServerOverAdb)
@@ -545,16 +536,12 @@ class WifiOtaThroughputStabilityTest(WifiThroughputStabilityTest):
         elif testcase_params['chamber_mode'] == 'stepped stirrers':
             self.ota_chamber.step_stirrers(testcase_params['total_positions'])
 
-    def get_target_atten_tput(self, testcase_params):
-        test_target = {}
+    def get_target_atten(self, testcase_params):
         if testcase_params['signal_level'] == 'high':
-            test_target['target_attenuation'] = self.testclass_params[
-                'default_atten_levels'][0]
+            test_atten = self.testclass_params['default_atten_levels'][0]
         elif testcase_params['signal_level'] == 'low':
-            test_target['target_attenuation'] = self.testclass_params[
-                'default_atten_levels'][1]
-        test_target['target_throughput'] = 0
-        return test_target
+            test_atten = self.testclass_params['default_atten_levels'][1]
+        return test_atten
 
     def generate_test_cases(self, channels, modes, traffic_types,
                             traffic_directions, signal_levels, chamber_mode,
