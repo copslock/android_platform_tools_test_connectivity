@@ -25,6 +25,7 @@ from acts import context
 from acts import utils
 from acts.controllers import iperf_server as ipf
 from acts.controllers.utils_lib import ssh
+from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 from acts.test_utils.wifi import wifi_test_utils as wutils
@@ -43,6 +44,13 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
     and connects the phone to the AP, and runs  For an example config file to
     run this test class see example_connectivity_performance_ap_sta.json.
     """
+    def __init__(self, controllers):
+        base_test.BaseTestClass.__init__(self, controllers)
+        self.testcase_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_case())
+        self.testclass_metric_logger = (
+            BlackboxMappedMetricLogger.for_test_class())
+        self.publish_testcase_metrics = True
 
     def setup_class(self):
         """Initializes common test hardware and parameters.
@@ -91,9 +99,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         #Turn WiFi ON
         if self.testclass_params.get('airplane_mode', 1):
             self.log.info('Turning on airplane mode.')
-            asserts.assert_true(
-                utils.force_airplane_mode(self.dut, True),
-                "Can not turn on airplane mode.")
+            asserts.assert_true(utils.force_airplane_mode(self.dut, True),
+                                "Can not turn on airplane mode.")
         wutils.wifi_toggle_state(self.dut, True)
 
     def pass_fail_traffic_continuity(self, result):
@@ -118,16 +125,29 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.log.info('Detected {} traffic gaps of duration: {}'.format(
             len(result['traffic_disruption']), formatted_traffic_gaps))
 
-        if len(result['traffic_disruption']) == 0:
-            asserts.explicit_pass('Test passed. No traffic disruptions found.')
-        elif (max(result['traffic_disruption']) >
-              self.testclass_params['traffic_disruption_threshold']):
-            asserts.fail('Test failed. Max traffic disruption: {}s.'.format(
-                max(result['traffic_disruption'])))
+        if result['total_roams'] > 0:
+            disruption_percentage = (len(result['traffic_disruption']) /
+                                     result['total_roams']) * 100
+            max_disruption = max(result['traffic_disruption'])
         else:
-            asserts.explicit_pass(
-                'Test passed. Max traffic disruption: {}s.'.format(
-                    max(result['traffic_disruption'])))
+            disruption_percentage = 0
+            max_disruption = 0
+        self.testcase_metric_logger.add_metric('disruption_percentage',
+                                               disruption_percentage)
+        self.testcase_metric_logger.add_metric('max_disruption',
+                                               max_disruption)
+
+        if disruption_percentage == 0:
+            asserts.explicit_pass('Test passed. No traffic disruptions found.')
+        elif max_disruption > self.testclass_params[
+                'traffic_disruption_threshold']:
+            asserts.fail('Test failed. Disruption Percentage = {}%. '
+                         'Max traffic disruption: {}s.'.format(
+                             disruption_percentage, max_disruption))
+        else:
+            asserts.explicit_pass('Test failed. Disruption Percentage = {}%. '
+                                  'Max traffic disruption: {}s.'.format(
+                                      disruption_percentage, max_disruption))
 
     def pass_fail_roaming_consistency(self, results_dict):
         """Function to evaluate roaming consistency results.
@@ -152,6 +172,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
                 test_fail = True
                 self.log.info('Unstable Roams at {}dB secondary att'.format(
                     secondary_atten))
+        self.testcase_metric_logger.add_metric('common_roam_frequency',
+                                               common_roam_frequency)
         if test_fail:
             asserts.fail('Incosistent roaming detected.')
         else:
@@ -173,12 +195,14 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
 
         if 'ping' in self.current_test_name:
             self.detect_ping_gaps(result)
-            self.plot_ping_result(
-                testcase_params, result, output_file_path=plot_file_path)
+            self.plot_ping_result(testcase_params,
+                                  result,
+                                  output_file_path=plot_file_path)
         elif 'iperf' in self.current_test_name:
             self.detect_iperf_gaps(result)
-            self.plot_iperf_result(
-                testcase_params, result, output_file_path=plot_file_path)
+            self.plot_iperf_result(testcase_params,
+                                   result,
+                                   output_file_path=plot_file_path)
 
         results_file_path = os.path.join(current_context,
                                          self.current_test_name + '.json')
@@ -208,11 +232,10 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         roam_stats = collections.OrderedDict()
         current_context = context.get_current_context().get_full_output_path()
         for secondary_atten, results_list in results_dict.items():
-            figure = wputils.BokehFigure(
-                title=self.current_test_name,
-                x_label='Time (ms)',
-                primary_y_label=primary_y_axis,
-                secondary_y_label='RSSI (dBm)')
+            figure = wputils.BokehFigure(title=self.current_test_name,
+                                         x_label='Time (ms)',
+                                         primary_y_label=primary_y_axis,
+                                         secondary_y_label='RSSI (dBm)')
             roam_stats[secondary_atten] = collections.OrderedDict()
             for result in results_list:
                 self.detect_roam_events(result)
@@ -223,8 +246,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
                 detect_gaps(result)
                 plot_result(testcase_params, result, figure=figure)
             # save plot
-            plot_file_name = (
-                self.current_test_name + '_' + str(secondary_atten) + '.html')
+            plot_file_name = (self.current_test_name + '_' +
+                              str(secondary_atten) + '.html')
 
             plot_file_path = os.path.join(current_context, plot_file_name)
             figure.save_figure(plot_file_path)
@@ -282,6 +305,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         roam_events.sort(key=lambda event_tuple: event_tuple[1])
         roam_transitions = []
         roam_counts = {}
+        total_roams = 0
         for event in roam_events:
             from_bssid = next(
                 key for key, value in self.main_network.items()
@@ -298,9 +322,11 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             roam_transitions.append(curr_roam_transition)
             roam_counts[curr_bssid_transition] = roam_counts.get(
                 curr_bssid_transition, 0) + 1
+            total_roams = total_roams + 1
         result['roam_events'] = roam_events
         result['roam_transitions'] = roam_transitions
         result['roam_counts'] = roam_counts
+        result['total_roams'] = total_roams
 
     def detect_ping_gaps(self, result):
         """Function to process ping results.
@@ -363,16 +389,14 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             output_file_path: optional path to output file
         """
         if not figure:
-            figure = wputils.BokehFigure(
-                title=self.current_test_name,
-                x_label='Time (ms)',
-                primary_y_label='RTT (ms)',
-                secondary_y_label='RSSI (dBm)')
-        figure.add_line(
-            x_data=result['ping_result']['time_stamp'],
-            y_data=result['ping_result']['rtt'],
-            legend='Ping RTT',
-            width=1)
+            figure = wputils.BokehFigure(title=self.current_test_name,
+                                         x_label='Time (ms)',
+                                         primary_y_label='RTT (ms)',
+                                         secondary_y_label='RSSI (dBm)')
+        figure.add_line(x_data=result['ping_result']['time_stamp'],
+                        y_data=result['ping_result']['rtt'],
+                        legend='Ping RTT',
+                        width=1)
         figure.add_line(
             x_data=result['rssi_result']['time_stamp'],
             y_data=result['rssi_result']['signal_poll_rssi']['data'],
@@ -397,21 +421,21 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             output_file_path: optional path to output file
         """
         if not figure:
-            figure = wputils.BokehFigure(
-                title=self.current_test_name,
-                x_label='Time (s)',
-                primary_y_label='Throughput (Mbps)',
-                secondary_y_label='RSSI (dBm)')
+            figure = wputils.BokehFigure(title=self.current_test_name,
+                                         x_label='Time (s)',
+                                         primary_y_label='Throughput (Mbps)',
+                                         secondary_y_label='RSSI (dBm)')
         iperf_time_stamps = [
             idx * IPERF_INTERVAL for idx in range(len(result['throughput']))
         ]
-        figure.add_line(
-            iperf_time_stamps, result['throughput'], 'Throughput', width=1)
-        figure.add_line(
-            result['rssi_result']['time_stamp'],
-            result['rssi_result']['signal_poll_rssi']['data'],
-            'RSSI',
-            y_axis='secondary')
+        figure.add_line(iperf_time_stamps,
+                        result['throughput'],
+                        'Throughput',
+                        width=1)
+        figure.add_line(result['rssi_result']['time_stamp'],
+                        result['rssi_result']['signal_poll_rssi']['data'],
+                        'RSSI',
+                        y_axis='secondary')
 
         figure.generate_figure(output_file_path)
 
@@ -444,15 +468,17 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             asserts.skip('Battery level too low. Skipping test.')
         wutils.reset_wifi(self.dut)
         wutils.set_wifi_country_code(self.dut,
-            self.testclass_params['country_code'])
+                                     self.testclass_params['country_code'])
         (primary_net_id,
          primary_net_config) = next(net for net in self.main_network.items()
                                     if net[1]['roaming_label'] == 'primary')
         network = primary_net_config.copy()
         network.pop('BSSID', None)
         self.dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
-        wutils.wifi_connect(
-            self.dut, network, num_of_tries=5, check_connectivity=False)
+        wutils.wifi_connect(self.dut,
+                            network,
+                            num_of_tries=5,
+                            check_connectivity=False)
         self.dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
         self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         if testcase_params['screen_on']:
