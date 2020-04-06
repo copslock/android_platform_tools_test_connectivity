@@ -304,20 +304,11 @@ class BaseSimulation():
         self.log.info('Setting UL power to -30 dBm before going to the '
                       'requested value to avoid incosistencies caused by '
                       'hysteresis.')
-        new_config = self.BtsConfig()
-        new_config.input_power = self.calibrated_uplink_tx_power(
-            self.primary_config, -30)
-        self.simulator.configure_bts(new_config)
-        self.primary_config.incorporate(new_config)
+        self.set_uplink_tx_power(-30)
 
         # Set signal levels obtained from the test parameters
-        new_config = self.BtsConfig()
-        new_config.output_power = self.calibrated_downlink_rx_power(
-            self.primary_config, self.sim_dl_power)
-        new_config.input_power = self.calibrated_uplink_tx_power(
-            self.primary_config, self.sim_ul_power)
-        self.simulator.configure_bts(new_config)
-        self.primary_config.incorporate(new_config)
+        self.set_downlink_rx_power(self.sim_dl_power)
+        self.set_uplink_tx_power(self.sim_ul_power)
 
         # Verify signal level
         try:
@@ -383,6 +374,30 @@ class BaseSimulation():
                     parameter_name, num_values))
 
         return return_list
+
+    def set_uplink_tx_power(self, signal_level):
+        """ Configure the uplink tx power level
+
+        Args:
+            signal_level: calibrated tx power in dBm
+        """
+        new_config = self.BtsConfig()
+        new_config.input_power = self.calibrated_uplink_tx_power(
+            self.primary_config, signal_level)
+        self.simulator.configure_bts(new_config)
+        self.primary_config.incorporate(new_config)
+
+    def set_downlink_rx_power(self, signal_level):
+        """ Configure the downlink rx power level
+
+        Args:
+            signal_level: calibrated rx power in dBm
+        """
+        new_config = self.BtsConfig()
+        new_config.output_power = self.calibrated_downlink_rx_power(
+            self.primary_config, signal_level)
+        self.simulator.configure_bts(new_config)
+        self.primary_config.incorporate(new_config)
 
     def get_uplink_power_from_parameters(self, parameters):
         """ Reads uplink power from a list of parameters. """
