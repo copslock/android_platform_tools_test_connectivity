@@ -210,6 +210,14 @@ class WifiRetailAP(object):
             self.lock_timeout = self.ap_settings.get('lock_timeout', 3600)
             self._lock_ap()
 
+    def reset(self):
+        """Function that resets AP.
+
+        Function implementation is AP dependent and intended to perform any
+        necessary reset operations as part of controller destroy.
+        """
+        pass
+
     def read_ap_settings(self):
         """Function that reads current ap settings.
 
@@ -1176,6 +1184,11 @@ class GoogleWifiAP(WifiRetailAP):
         self.access_point = access_point.AccessPoint(init_settings)
         self.configure_ap()
 
+    def reset(self):
+        for network in ['2G', '5G_1']:
+            self.set_power(network = network, power = 'auto')
+            self.set_rate(network = network, rate = 'auto')
+
     def read_ap_settings(self):
         """Function that reads current ap settings."""
         return self.ap_settings.copy()
@@ -1323,7 +1336,9 @@ class GoogleWifiAP(WifiRetailAP):
             interface = self.access_point.wlan_5g
             interface_short = "5"
 
-        if "legacy" in mode.lower():
+        if "auto" in rate:
+            cmd_string = "iw dev {0} set bitrates"
+        elif "legacy" in mode.lower():
             cmd_string = "iw dev {0} set bitrates legacy-{1} {2} ht-mcs-{1} vht-mcs-{1}".format(
                 interface, interface_short, rate)
         elif "vht" in mode.lower():
