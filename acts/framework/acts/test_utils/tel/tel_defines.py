@@ -65,6 +65,9 @@ WAIT_TIME_AFTER_MODE_CHANGE = 60
 # Max time to wait for Carrier Config Version to Update in mins
 WAIT_TIME_FOR_CARRIERCONFIG_CHANGE = 20
 
+# Max time to wait for Emergency DB Version to Update in mins
+WAIT_TIME_FOR_ER_DB_CHANGE = 10
+
 # Max time to wait after toggle airplane mode and before
 # get expected event
 MAX_WAIT_TIME_AIRPLANEMODE_EVENT = 90
@@ -201,6 +204,8 @@ POWER_LEVEL_OUT_OF_SERVICE = -100
 
 # Callbox Power level which will ensure full service on device
 POWER_LEVEL_FULL_SERVICE = -20
+
+
 
 # These are used in phone_number_formatter
 PHONE_NUMBER_STRING_FORMAT_7_DIGIT = 7
@@ -604,6 +609,8 @@ NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_CDMA_EV
 
 # Carrier Config Update
 CARRIER_ID_VERSION = "3"
+ER_DB_ID_VERSION = "99999"
+
 CARRIER_ID_VERSION_P = "5"
 WAIT_TIME_FOR_CARRIERID_CHANGE = 6
 CARRIER_ID_METADATA_URL = "am broadcast -a com.google.android.gms." \
