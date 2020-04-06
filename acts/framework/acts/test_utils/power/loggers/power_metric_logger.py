@@ -80,6 +80,9 @@ class PowerMetricLogger(MetricLogger):
     def set_avg_current_threshold(self, avg_current_threshold):
         self.proto.avg_current_threshold = avg_current_threshold
 
+    def set_pass_fail_status(self, status):
+        self.proto.pass_fail_status = status
+
     def end(self, event):
         metric = ProtoMetric(name='spanner_power_metric', data=self.proto)
         return self.publisher.publish(metric)
