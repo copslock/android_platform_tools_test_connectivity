@@ -17,6 +17,7 @@
 from acts import base_test
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
+from acts.test_utils.wifi import wifi_retail_ap as retail_ap
 
 
 class WifiPerformancePreflightTest(base_test.BaseTestClass):
@@ -34,6 +35,10 @@ class WifiPerformancePreflightTest(base_test.BaseTestClass):
 
     def setup_class(self):
         self.dut = self.android_devices[-1]
+        # Initialize AP to ensure that tests can be run in later suites
+        req_params = ['RetailAccessPoints']
+        self.unpack_userparams(req_params)
+        self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
 
     def test_wifi_sw_signature(self):
         sw_signature = wputils.get_sw_signature(self.dut)
