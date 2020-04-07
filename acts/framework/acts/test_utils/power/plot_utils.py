@@ -203,3 +203,27 @@ def monsoon_histogram_plot(mon_info, monsoon_result):
     save(plot)
 
     return hist, edges
+
+def monsoon_tx_power_sweep_plot(mon_info, tag, currents, txs):
+    """ Creates average current vs tx power plot
+
+    Args:
+        currents: List of average currents measured during power sweep
+        txs: List of uplink input power levels specified for each measurement
+    """
+
+    plot_title = tag + '_tx_power_sweep'
+
+    output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
+
+    plot = figure(title=plot_title,
+                  y_axis_type='log',
+                  y_axis_label='Average Current [mA]',
+                  x_axis_label='Tx Power [dBm]',
+                  background_fill_color='#fafafa')
+
+    plot.line(txs, currents)
+    plot.circle(txs, currents, fill_color='white', size=8)
+    plot.y_range.start = 0
+
+    save(plot)

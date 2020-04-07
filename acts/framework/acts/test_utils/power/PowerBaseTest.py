@@ -254,6 +254,12 @@ class PowerBaseTest(base_test.BaseTestClass):
         if hasattr(self, 'monsoons'):
             self.monsoons[0].usb('on')
 
+    def on_fail(self, test_name, begin_time):
+        self.power_logger.set_pass_fail_status('FAIL')
+
+    def on_pass(self, test_name, begin_time):
+        self.power_logger.set_pass_fail_status('PASS')
+
     def dut_rockbottom(self):
         """Set the dut to rockbottom state
 
@@ -438,7 +444,7 @@ class PowerBaseTest(base_test.BaseTestClass):
             for filename in os.listdir(os.path.dirname(data_path)):
                 match = re.match(r'{}_(\d+).txt'.format(tag), filename)
                 if match:
-                    highest_value = int(match.group(1))
+                    highest_value = max(highest_value, int(match.group(1)))
 
             data_path = os.path.join(self.mon_info.data_path,
                                      '%s_%s.txt' % (tag, highest_value + 1))

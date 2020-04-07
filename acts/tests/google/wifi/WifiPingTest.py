@@ -70,7 +70,7 @@ class WifiPingTest(base_test.BaseTestClass):
             'ping_test_params', 'testbed_params', 'main_network',
             'RetailAccessPoints', 'RemoteServer'
         ]
-        opt_params = ['golden_files_list', 'OTASniffer']
+        opt_params = ['OTASniffer']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.ping_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
@@ -84,12 +84,6 @@ class WifiPingTest(base_test.BaseTestClass):
             self.access_point.ap_settings))
         self.log_path = os.path.join(logging.log_path, 'results')
         os.makedirs(self.log_path, exist_ok=True)
-        if not hasattr(self, 'golden_files_list'):
-            self.golden_files_list = [
-                os.path.join(self.testbed_params['golden_results_path'], file)
-                for file in os.listdir(
-                    self.testbed_params['golden_results_path'])
-            ]
         if hasattr(self, 'bdf'):
             self.log.info('Pushing WiFi BDF to DUT.')
             wputils.push_bdf(self.dut, self.bdf)
@@ -115,9 +109,10 @@ class WifiPingTest(base_test.BaseTestClass):
         self.user_params['retry_tests'] = [self.__class__.__name__]
 
     def teardown_class(self):
-        # Turn WiFi OFF
+        # Turn WiFi OFF and reset AP
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
+        self.access_point.reset()
         self.process_testclass_results()
 
     def setup_test(self):
@@ -610,6 +605,7 @@ class WifiOtaPingTest(WifiPingTest):
             self.user_params['OTAChamber'])[0]
 
     def teardown_class(self):
+        WifiPingTest.teardown_class(self)
         self.process_testclass_results()
         self.ota_chamber.reset_chamber()
 

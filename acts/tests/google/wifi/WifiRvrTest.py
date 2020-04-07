@@ -84,11 +84,15 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.log_path = os.path.join(logging.log_path, 'results')
         os.makedirs(self.log_path, exist_ok=True)
         if not hasattr(self, 'golden_files_list'):
-            self.golden_files_list = [
-                os.path.join(self.testbed_params['golden_results_path'], file)
-                for file in os.listdir(
-                    self.testbed_params['golden_results_path'])
-            ]
+            if 'golden_results_path' in self.testbed_params:
+                self.golden_files_list = [
+                    os.path.join(self.testbed_params['golden_results_path'],
+                                 file) for file in
+                    os.listdir(self.testbed_params['golden_results_path'])
+                ]
+            else:
+                self.log.warning('No golden files found.')
+                self.golden_files_list = []
         if hasattr(self, 'bdf'):
             self.log.info('Pushing WiFi BDF to DUT.')
             wputils.push_bdf(self.dut, self.bdf)
