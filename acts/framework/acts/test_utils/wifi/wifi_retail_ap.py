@@ -1186,8 +1186,8 @@ class GoogleWifiAP(WifiRetailAP):
 
     def reset(self):
         for network in ['2G', '5G_1']:
-            self.set_power(network = network, power = 'auto')
-            self.set_rate(network = network, rate = 'auto')
+            self.set_power(network=network, power='auto')
+            self.set_rate(network=network, rate='auto')
 
     def read_ap_settings(self):
         """Function that reads current ap settings."""
@@ -1336,8 +1336,8 @@ class GoogleWifiAP(WifiRetailAP):
             interface = self.access_point.wlan_5g
             interface_short = "5"
 
-        if "auto" in rate:
-            cmd_string = "iw dev {0} set bitrates"
+        if rate == "auto":
+            cmd_string = "iw dev {0} set bitrates".format(interface)
         elif "legacy" in mode.lower():
             cmd_string = "iw dev {0} set bitrates legacy-{1} {2} ht-mcs-{1} vht-mcs-{1}".format(
                 interface, interface_short, rate)
