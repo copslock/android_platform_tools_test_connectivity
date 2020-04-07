@@ -23,31 +23,43 @@ class PowerTelTraffic_TxSweep_Test(ctpt.PowerTelTxPowerSweepTest):
     def display_name_test_suite(self):
         return 'TechEng Tx Power Sweep'
 
-    def test_lte_band_7_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n40_24_10_10_5(self):
+    def test_lte_band_7_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n4_22(self):
         self.display_name_test_case = 'Tx Power Sweep - Band 7'
         self.power_tel_tx_sweep()
 
-    def test_lte_band_12_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n40_24_10_10_5(self):
+    def test_lte_band_12_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n4_22(self):
         self.display_name_test_case = 'Tx Power Sweep - Band 12'
         self.power_tel_tx_sweep()
 
-    def test_lte_band_66_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n40_24_10_10_5(self):
+    def test_lte_band_66_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n4_22(self):
         self.display_name_test_case = 'Tx Power Sweep - Band 66'
         self.power_tel_tx_sweep()
 
-    def test_lte_band_20_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n40_24_10_10_5(self):
+    def test_lte_band_20_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n4_22(self):
         self.display_name_test_case = 'Tx Power Sweep - Band 20'
         self.power_tel_tx_sweep()
 
-    def test_lte_band_3_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n40_24_10_10_5(self):
+    def test_lte_band_3_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n4_23(self):
         self.display_name_test_case = 'Tx Power Sweep - Band 3'
         self.power_tel_tx_sweep()
 
-    def test_lte_band_2_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n40_24_10_10_5(self):
+    def test_lte_band_2_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n4_22(self):
         self.display_name_test_case = 'Tx Power Sweep - Band 2'
         self.power_tel_tx_sweep()
 
-    def test_lte_band_13_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n40_24_10_10_5(self):
+    def test_lte_band_13_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n4_22(self):
         self.display_name_test_case = 'Tx Power Sweep - Band 13'
+        self.power_tel_tx_sweep()
+
+    def test_lte_band_1_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n4_23(self):
+        self.display_name_test_case = 'Tx Power Sweep - Band 1'
+        self.power_tel_tx_sweep()
+
+    def test_lte_band_4_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_sweep_n4_22(self):
+        self.display_name_test_case = 'Tx Power Sweep - Band 4'
+        self.power_tel_tx_sweep()
+
+    def test_lte_band_41_pul_low_bw_20_tm_3_dlmcs_28_mimo_2x2_direction_dlul_phich_16_cfi_1_tddconfig_6_sweep_n4_21(self):
+        self.display_name_test_case = 'Tx Power Sweep - Band 41, TDD 6 pattern'
         self.power_tel_tx_sweep()
 

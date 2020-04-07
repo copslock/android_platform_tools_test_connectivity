@@ -471,8 +471,18 @@ class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
     Uses PowerTelTrafficTest as a base class.
     """
 
-    # Test name configuration keywords
-    PARAM_TX_POWER_SWEEP = "sweep"
+    # Test config keywords
+    KEY_TX_STEP = 'step'
+    KEY_UP_TOLERANCE = 'up_tolerance'
+    KEY_DOWN_TOLERANCE = 'down_tolerance'
+
+    # Test name parameters
+    PARAM_TX_POWER_SWEEP = 'sweep'
+
+    def setup_class(self):
+        super().setup_class()
+        self.unpack_userparams(
+            [self.KEY_TX_STEP, self.KEY_UP_TOLERANCE, self.KEY_DOWN_TOLERANCE])
 
     def setup_test(self):
         """ Executed before every test case.
@@ -486,14 +496,11 @@ class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
 
         # Determine power range to sweep from test case params
         try:
-            values = self.consume_parameter(self.PARAM_TX_POWER_SWEEP, 5)
+            values = self.consume_parameter(self.PARAM_TX_POWER_SWEEP, 2)
 
-            if len(values) == 6:
+            if len(values) == 3:
                 self.start_dbm = int(values[1].replace('n', '-'))
                 self.end_dbm = int(values[2].replace('n', '-'))
-                self.step = int(values[3].replace('n', '-'))
-                self.up_tolerance = int(values[4])
-                self.down_tolerance = int(values[5])
             else:
                 raise ValueError('Not enough params specified for sweep.')
         except ValueError as e:
@@ -517,9 +524,10 @@ class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
             asserts.assert_true(
                 -self.down_tolerance < measured_change < self.up_tolerance,
                 "Current went from {} to {} ({}%) between {} dBm and {} dBm. "
-                "Tolerance range: -{}% to {}%".format(
-                    x, y, measured_change, txs[i], txs[i + 1],
-                    self.down_tolerance, self.up_tolerance))
+                "Tolerance range: -{}% to {}%".format(x, y, measured_change,
+                                                      txs[i], txs[i + 1],
+                                                      self.down_tolerance,
+                                                      self.up_tolerance))
 
     def create_power_plot(self, currents, txs):
         """ Creates average current vs tx power plot
@@ -550,8 +558,7 @@ class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
             time.sleep(self.IPERF_MARGIN + 2)
 
             # Collect and check throughput measurement
-            iperf_result = self.get_iperf_results(
-                self.dut, iperf_helpers)
+            iperf_result = self.get_iperf_results(self.dut, iperf_helpers)
 
             currents.append(result.average_current)
             txs.append(tx)
