@@ -183,7 +183,6 @@ class WifiSensitivityTest(WifiRvrTest, WifiPingTest):
         # Turn WiFi OFF
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
-        self.access_point.reset()
         self.process_testclass_results()
 
     def setup_test(self):
