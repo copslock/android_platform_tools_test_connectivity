@@ -1162,6 +1162,14 @@ class GoogleWifiAP(WifiRetailAP):
             "bandwidth_5G_1": "VHT20",
             "power_2G": "auto",
             "power_5G_1": "auto",
+            "mode_2G": None,
+            "num_streams_2G": None,
+            "rate_2G": "auto",
+            "short_gi_2G": 0,
+            "mode_5G_1": None,
+            "num_streams_5G_1": None,
+            "rate_5G_1": "auto",
+            "short_gi_5G_1": 0,
             "security_type_2G": "Open",
             "security_type_5G_1": "Open",
             "subnet_2G": "192.168.1.0/24",
@@ -1172,7 +1180,7 @@ class GoogleWifiAP(WifiRetailAP):
 
         for setting in self.default_settings.keys():
             if setting not in self.ap_settings:
-                self.log.warning(
+                self.log.debug(
                     "{0} not found during init. Setting {0} = {1}".format(
                         setting, self.default_settings[setting]))
                 self.ap_settings[setting] = self.default_settings[setting]
@@ -1183,11 +1191,6 @@ class GoogleWifiAP(WifiRetailAP):
         }
         self.access_point = access_point.AccessPoint(init_settings)
         self.configure_ap()
-
-    def reset(self):
-        for network in ['2G', '5G_1']:
-            self.set_power(network=network, power='auto')
-            self.set_rate(network=network, rate='auto')
 
     def read_ap_settings(self):
         """Function that reads current ap settings."""
@@ -1285,6 +1288,12 @@ class GoogleWifiAP(WifiRetailAP):
         self.access_point.bridge.startup(brconfigs)
         self.access_point.start_ap(config)
         self.set_power(network, self.ap_settings["power_{}".format(network)])
+        self.set_rate(
+            network,
+            mode=self.ap_settings["mode_{}".format(network)],
+            num_streams=self.ap_settings["num_streams_{}".format(network)],
+            rate=self.ap_settings["rate_{}".format(network)],
+            short_gi=self.ap_settings["short_gi_{}".format(network)])
         self.log.info("AP started on channel {} with SSID {}".format(
             channel, ssid))
 
@@ -1318,7 +1327,7 @@ class GoogleWifiAP(WifiRetailAP):
                  network,
                  mode=None,
                  num_streams=None,
-                 rate=None,
+                 rate='auto',
                  short_gi=0):
         """Function that sets rate.
 
@@ -1332,9 +1341,17 @@ class GoogleWifiAP(WifiRetailAP):
         if "2G" in network:
             interface = self.access_point.wlan_2g
             interface_short = "2.4"
+            self.ap_settings["mode_2G"] = mode
+            self.ap_settings["num_streams_2G"] = num_streams
+            self.ap_settings["rate_2G"] = rate
+            self.ap_settings["short_gi_2G"] = short_gi
         elif "5G_1" in network:
             interface = self.access_point.wlan_5g
             interface_short = "5"
+            self.ap_settings["mode_5G_1"] = mode
+            self.ap_settings["num_streams_5G_1"] = num_streams
+            self.ap_settings["rate_5G_1"] = rate
+            self.ap_settings["short_gi_5G_1"] = short_gi
 
         if rate == "auto":
             cmd_string = "iw dev {0} set bitrates".format(interface)
