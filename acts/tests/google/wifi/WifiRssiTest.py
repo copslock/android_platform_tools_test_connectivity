@@ -562,7 +562,7 @@ class WifiRssiTest(base_test.BaseTestClass):
             self.main_network[testcase_params['band']][
                 'channel'] = testcase_params['channel']
             wutils.set_wifi_country_code(self.dut,
-                self.testclass_params['country_code'])
+                                         self.testclass_params['country_code'])
             wutils.wifi_connect(self.dut,
                                 self.main_network[testcase_params['band']],
                                 num_of_tries=5)
@@ -928,6 +928,8 @@ class WifiOtaRssiTest(WifiRssiTest):
             x_label = 'Angle (deg)'
         elif chamber_mode == 'stepped stirrers':
             x_label = 'Position Index'
+        elif chamber_mode == 'StirrersOn':
+            return
 
         # Publish test class metrics
         for channel, channel_data in testclass_data.items():
