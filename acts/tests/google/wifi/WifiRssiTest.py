@@ -922,15 +922,6 @@ class WifiOtaRssiTest(WifiRssiTest):
                 test_result['postprocessed_results']['chain_1_rssi']['mean']
                 [0])
 
-        chamber_mode = self.testclass_results[0]['testcase_params'][
-            'chamber_mode']
-        if chamber_mode == 'orientation':
-            x_label = 'Angle (deg)'
-        elif chamber_mode == 'stepped stirrers':
-            x_label = 'Position Index'
-        elif chamber_mode == 'StirrersOn':
-            return
-
         # Publish test class metrics
         for channel, channel_data in testclass_data.items():
             for rssi_metric, rssi_metric_value in channel_data['rssi'].items():
@@ -941,6 +932,14 @@ class WifiOtaRssiTest(WifiRssiTest):
                     metric_name, metric_value)
 
         # Plot test class results
+        chamber_mode = self.testclass_results[0]['testcase_params'][
+            'chamber_mode']
+        if chamber_mode == 'orientation':
+            x_label = 'Angle (deg)'
+        elif chamber_mode == 'stepped stirrers':
+            x_label = 'Position Index'
+        elif chamber_mode == 'StirrersOn':
+            return
         plots = []
         for channel, channel_data in testclass_data.items():
             current_plot = wputils.BokehFigure(
