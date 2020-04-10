@@ -23,6 +23,7 @@ import IPy
 import json
 import logging
 import os
+import platform
 import random
 import re
 import signal
@@ -1526,13 +1527,21 @@ def is_pingable(ip):
     Returns:
         True if ping was successful, else False
     """
+    os_type = platform.system()
+    if os_type == 'Darwin':
+        timeout_flag = '-t'
+    elif os_type == 'Linux':
+        timeout_flag = '-W'
+    else:
+        raise ValueError('Invalid OS.  Only Linux and MacOS are supported.')
+
     if is_valid_ipv4_address(ip):
         ping_binary = 'ping'
     elif is_valid_ipv6_address(ip):
         ping_binary = 'ping6'
     else:
         raise ValueError('Invalid ip addr: %s' % ip)
-    ping_cmd = [ping_binary, '-W', '1', '-c', '1', ip]
+    ping_cmd = [ping_binary, timeout_flag, '1', '-c', '1', ip]
 
     result = job.run(ping_cmd, timeout=10, ignore_status=True)
     return result.exit_status == 0
