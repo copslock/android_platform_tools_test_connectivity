@@ -277,7 +277,7 @@ class BokehFigure():
 
     def init_plot(self):
         self.plot = bokeh.plotting.figure(
-            sizing_mode='scale_width',
+            sizing_mode='scale_both',
             plot_width=self.fig_property['width'],
             plot_height=self.fig_property['height'],
             title=self.fig_property['title'],

@@ -8151,6 +8151,34 @@ def get_carrier_config_version(ad):
     ad.log.debug("Carrier Config Version is %s", version)
     return version
 
+def get_er_db_id_version(ad):
+    out = ad.adb.shell("dumpsys activity service TelephonyDebugService | \
+                        grep -i \"Database Version\"")
+    if out and ":" in out:
+        version = out.split(':')[1].lstrip()
+    else:
+        version = "0"
+    ad.log.debug("Emergency database Version is %s", version)
+    return version
+
+
+def add_whitelisted_account(ad, user_account,user_password, retries=3):
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.error("GoogleAccountUtil is not installed")
+        return False
+    for _ in range(retries):
+        ad.ensure_screen_on()
+        output = ad.adb.shell(
+            'am instrument -w -e account "%s@gmail.com" -e password '
+            '"%s" -e sync true -e wait-for-checkin false '
+            'com.google.android.tradefed.account/.AddAccount' %
+            (user_account, user_password))
+        if "result=SUCCESS" in output:
+            ad.log.info("Google account is added successfully")
+            return True
+    ad.log.error("Failed to add google account - %s", output)
+    return False
+
 
 def install_googleaccountutil_apk(ad, account_util):
     ad.log.info("Install account_util %s", account_util)

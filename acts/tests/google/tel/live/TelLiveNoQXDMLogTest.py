@@ -38,6 +38,8 @@ from acts.test_utils.tel.tel_defines import ATT_CARRIER_CONFIG_VERSION
 from acts.test_utils.tel.tel_defines import CARRIER_ID_METADATA_URL
 from acts.test_utils.tel.tel_defines import CARRIER_ID_CONTENT_URL
 from acts.test_utils.tel.tel_defines import CARRIER_ID_VERSION
+from acts.test_utils.tel.tel_defines import ER_DB_ID_VERSION
+from acts.test_utils.tel.tel_defines import WAIT_TIME_FOR_ER_DB_CHANGE
 from acts.test_utils.tel.tel_defines import CARRIER_ID_METADATA_URL_P
 from acts.test_utils.tel.tel_defines import CARRIER_ID_CONTENT_URL_P
 from acts.test_utils.tel.tel_defines import CARRIER_ID_VERSION_P
@@ -53,6 +55,9 @@ from acts.test_utils.tel.tel_test_utils import bring_up_sl4a
 from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import get_carrier_config_version
 from acts.test_utils.tel.tel_test_utils import get_carrier_id_version
+from acts.test_utils.tel.tel_test_utils import get_er_db_id_version
+from acts.test_utils.tel.tel_test_utils import install_googleaccountutil_apk
+from acts.test_utils.tel.tel_test_utils import add_whitelisted_account
 from acts.test_utils.tel.tel_test_utils import adb_disable_verity
 from acts.test_utils.tel.tel_test_utils import install_carriersettings_apk
 from acts.test_utils.tel.tel_test_utils import ensure_wifi_connected
@@ -87,6 +92,9 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         self.user_params["check_crash"] = False
         self.skip_reset_between_cases = False
+        self.path = "/x20/teams/android-telephony-test/apk/GoogleAccountUtil.apk"
+        self.user_account = "commsteltest1"
+        self.user_password = "tellivetest1"
 
     def _get_list_average(self, input_list):
         total_sum = float(sum(input_list))
@@ -764,4 +772,62 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             carrier_id_path = os.path.join(self.log_path, self.test_name,
                                            "CarrierId_%s" % ad.serial)
             pull_carrier_id_files(ad, carrier_id_path)
+
+    @test_tracker_info(uuid="0edcafb1-b76d-45e1-9774-0638820b8b6e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_emergency_database_update_wifi_connected(self):
+        """Emergency DB Id Version Test after WiFi Connected
+
+        1. WiFi is connected
+        2. Login with whitelisted gmail credentials
+        3. Wait for 5 mins and keep checking for version match
+
+        """
+        try:
+            result_flag = False
+            time_var = 1
+            ad = self.android_devices[0]
+
+            # Get the Emergency database Id
+            ad.log.info("Before - Emergency DB Id is %s",
+                    get_er_db_id_version(ad))
+
+            # Connect to Wifi
+            if not ensure_wifi_connected(self.log, ad, self.wifi_network_ssid,
+                                         self.wifi_network_pass):
+                ad.log.error("connect WiFi failed")
+                return False
+            time.sleep(5)
+
+            #Login with whitelisted google account
+            if not install_googleaccountutil_apk(ad,self.path):
+                ad.log.error("Failed to install Google Util")
+                return False
+            if not add_whitelisted_account(ad,self.user_account,
+            self.user_password):
+                ad.log.error("Failed to Login with Google Account")
+                return False
+
+            # Wait for 5 mins for Emergency database Id version upgrade
+            while(time_var < WAIT_TIME_FOR_ER_DB_CHANGE):
+                current_version = get_er_db_id_version(ad)
+                if current_version == ER_DB_ID_VERSION:
+                    ad.log.info("ER DB version is %s in %s mins",
+                                current_version, time_var)
+                    result_flag = True
+                    break
+                else:
+                    ad.log.debug("ER Database Version Id Not Match")
+                time.sleep(60)
+                time_var += 1
+
+            if not result_flag:
+                ad.log.info("ER Database version Id Failed to Update in %s mins",
+                             WAIT_TIME_FOR_ER_DB_CHANGE)
+
+        except Exception as e:
+            ad.log.error(e)
+            return False
+        finally:
+            return result_flag
 """ Tests End """

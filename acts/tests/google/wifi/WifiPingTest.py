@@ -112,7 +112,6 @@ class WifiPingTest(base_test.BaseTestClass):
         # Turn WiFi OFF and reset AP
         for dev in self.android_devices:
             wutils.wifi_toggle_state(dev, False)
-        self.access_point.reset()
         self.process_testclass_results()
 
     def setup_test(self):
