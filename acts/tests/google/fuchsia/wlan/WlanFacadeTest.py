@@ -36,3 +36,21 @@ class WlanFacadeTest(BaseTestClass):
 
         self.log.info('Got Phy IDs %s' % result['result'])
         return True
+
+    def test_get_country(self):
+        wlan_lib = self.fuchsia_devices[0].wlan_lib
+
+        result = wlan_lib.wlanPhyIdList()
+        error = result['error']
+        asserts.assert_true(error is None, error)
+        phy_id = result['result'][0]
+
+        result = wlan_lib.wlanGetCountry(phy_id)
+        error = result['error']
+        asserts.assert_true(error is None, error)
+
+        country_bytes = result['result']
+        country_string = str(array.array('b', country_bytes),
+                             encoding='us-ascii')
+        self.log.info('Got country %s (%s)', country_string, country_bytes)
+        return True
