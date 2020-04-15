@@ -154,7 +154,11 @@ class _TelTables():
         "ROGERS": tel_defines.CARRIER_ROGERS,
         "Videotron PRTNR1": tel_defines.CARRIER_VIDEOTRON,
         "Bell": tel_defines.CARRIER_BELL,
-        "Koodo": tel_defines.CARRIER_KOODO
+        "Koodo": tel_defines.CARRIER_KOODO,
+        "Ntt Docomo" : tel_defines.CARRIER_NTT_DOCOMO,
+        "KDDI" : tel_defines.CARRIER_KDDI,
+        "Rakuten": tel_defines.CARRIER_RAKUTEN,
+        "SBM": tel_defines.CARRIER_SBM
     }
     operator_id_to_name = {
 
@@ -639,7 +643,11 @@ class _TelTables():
         tel_defines.CARRIER_VZW: "*86",
         tel_defines.CARRIER_ATT: None,
         tel_defines.CARRIER_SPT: None,
-        tel_defines.CARRIER_EEUK: "+447953222222"
+        tel_defines.CARRIER_EEUK: "+447953222222",
+        tel_defines.CARRIER_NTT_DOCOMO: "1417",
+        tel_defines.CARRIER_KDDI: "1417",
+        tel_defines.CARRIER_RAKUTEN: "1417",
+        tel_defines.CARRIER_SBM: "1416"
     }
 
     voice_mail_count_check_function_tbl = {
@@ -648,7 +656,11 @@ class _TelTables():
         tel_defines.CARRIER_SPT: check_spt_voice_mail_count
     }
 
-    voice_mail_delete_digit_tbl = {tel_defines.CARRIER_EEUK: "3"}
+    voice_mail_delete_digit_tbl = {
+        tel_defines.CARRIER_EEUK: "3",
+        tel_defines.CARRIER_NTT_DOCOMO: "3",
+        tel_defines.CARRIER_KDDI: "9"
+    }
 
 
 device_capabilities = {
