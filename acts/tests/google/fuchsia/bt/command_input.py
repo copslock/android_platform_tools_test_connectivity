@@ -344,20 +344,34 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
-    def do_gattc_list_services(self, line):
+    def do_gattc_list_services(self, discover_chars):
         """
         Description: List services from LE peripheral.
         Assumptions: Already connected to a peripheral.
+        Input(s):
+            discover_chars: Optional. An optional input to discover all
+                characteristics on the service.
         Usage:
           Examples:
             gattc_list_services
+            gattc_list_services true
         """
         cmd = "List services from LE peripheral."
         try:
+
             services = self.pri_dut.gattc_lib.listServices(
                 self.unique_mac_addr_id)
             self.log.info("Discovered Services: \n{}".format(
                 pprint.pformat(services)))
+            discover_characteristics = self.str_to_bool(discover_chars)
+            if discover_chars:
+                for service in services.get('result'):
+                    self.pri_dut.gattc_lib.connectToService(
+                        self.unique_mac_addr_id, service.get('id'))
+                    chars = self.pri_dut.gattc_lib.discoverCharacteristics()
+                    self.log.info("Discovered chars:\n{}".format(
+                        pprint.pformat(chars)))
+
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
