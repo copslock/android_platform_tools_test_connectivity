@@ -1,0 +1,1 @@
+../../../../../../acts/framework/tests/test_utils/power/tel/lab/initialize_simulator_test.py
