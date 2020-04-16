@@ -23,7 +23,7 @@ COMMAND_STATUS = "wlan.status"
 COMMAND_GET_IFACE_ID_LIST = "wlan.get_iface_id_list"
 COMMAND_GET_PHY_ID_LIST = "wlan.get_phy_id_list"
 COMMAND_DESTROY_IFACE = "wlan.destroy_iface"
-
+COMMAND_GET_COUNTRY = "wlan_phy.get_country"
 
 class FuchsiaWlanLib(BaseLib):
     def __init__(self, addr, tc, client_id):
@@ -119,3 +119,19 @@ class FuchsiaWlanLib(BaseLib):
         self.test_counter += 1
 
         return self.send_command(test_id, test_cmd, {})
+
+    def wlanGetCountry(self, phy_id):
+        """ Reads the currently configured country for `phy_id`.
+
+        Args:
+            phy_id: unsigned 16-bit integer.
+
+        Returns:
+            Dictionary, String if success, error if error.
+        """
+        test_cmd = COMMAND_GET_COUNTRY
+        test_args = {"phy_id": phy_id}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
