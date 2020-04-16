@@ -91,6 +91,7 @@ class _TestInfoDecoratorFunc(object):
         When called runs the underlying func and then attaches test info
         to a signal.
         """
+        cause = None
         try:
             result = self.func(*args, **kwargs)
 
@@ -100,7 +101,8 @@ class _TestInfoDecoratorFunc(object):
                 new_signal = signals.TestFailure('')
         except signals.TestSignal as signal:
             new_signal = signal
-        except Exception as cause:
+        except Exception as ex:
+            cause = ex
             new_signal = signals.TestError(cause)
 
         if new_signal.extras is None:
@@ -119,7 +121,7 @@ class _TestInfoDecoratorFunc(object):
 
                 new_signal.extras[k].insert(0, v)
 
-        raise new_signal
+        raise new_signal from cause
 
     def gather(self, *args, **kwargs):
         """
