@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 #
 #   Copyright 2020 - Google
 #
@@ -52,11 +52,24 @@ log.tag.ConnectivityManager=VERBOSE
 log.tag.GnssVisibilityControl=VERBOSE
 log.tag.NtpTimeHelper=VERBOSE
 log.tag.NtpTrustedTime=VERBOSE"""
-TEST_PACKAGE_NAME = 'com.google.android.apps.maps'
+TEST_PACKAGE_NAME = "com.google.android.apps.maps"
 LOCATION_PERMISSIONS = [
-    'android.permission.ACCESS_FINE_LOCATION',
-    'android.permission.ACCESS_COARSE_LOCATION'
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.ACCESS_COARSE_LOCATION"
 ]
+GNSSTOOL_PACKAGE_NAME = "com.android.gpstool"
+GNSSTOOL_PERMISSIONS = [
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.READ_EXTERNAL_STORAGE",
+    "android.permission.ACCESS_COARSE_LOCATION",
+    "android.permission.CALL_PHONE",
+    "android.permission.WRITE_CONTACTS",
+    "android.permission.CAMERA",
+    "android.permission.WRITE_EXTERNAL_STORAGE",
+    "android.permission.READ_CONTACTS",
+    "android.permission.ACCESS_BACKGROUND_LOCATION"
+]
+
 
 
 class GnssTestUtilsError(Exception):
@@ -232,8 +245,8 @@ def _init_device(ad):
     check_location_service(ad)
     set_wifi_and_bt_scanning(ad, True)
     disable_private_dns_mode(ad)
-    init_gtw_gpstool(ad)
     reboot(ad)
+    init_gtw_gpstool(ad)
 
 
 def connect_to_wifi_network(ad, network):
@@ -453,7 +466,7 @@ def reinstall_mdstool(ad):
         ad: An AndroidDevice object.
     """
     ad.log.info("Re-install ModemDiagnosticSystemTest.apk")
-    ad.adb.install("-r -g -t /tmp/MDS/base.apk")
+    ad.adb.install("-r -d -g --user 0 /tmp/MDS/base.apk")
     mds_check = ad.adb.shell("pm path com.google.mdstest")
     if not mds_check:
         raise signals.TestError("MDS Tool is not properly re-installed.")
@@ -507,7 +520,7 @@ def reinstall_gtw_gpstool(ad):
         ad: An AndroidDevice object.
     """
     ad.log.info("Re-install GTW GPSTool")
-    ad.adb.install("-r -g -t /tmp/GNSS/base.apk")
+    ad.adb.install("-r -d -g --user 0 /tmp/GNSS/base.apk")
     gpstool_check = ad.adb.shell("pm path com.android.gpstool")
     if not gpstool_check:
         raise signals.TestError("GTW GPSTool is not properly re-installed.")
@@ -575,7 +588,7 @@ def fastboot_factory_reset(ad):
                 break
             ad.log.info("Re-install sl4a")
             ad.adb.shell("settings put global verifier_verify_adb_installs 0")
-            ad.adb.install("-r -g -t /tmp/base.apk")
+            ad.adb.install("-r -d -g --user 0 /tmp/base.apk")
             reinstall_gtw_gpstool(ad)
             reinstall_mdstool(ad)
             time.sleep(10)
@@ -647,6 +660,8 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss"):
     """
     retries = 3
     for i in range(retries):
+        check_location_runtime_permissions(
+            ad, GNSSTOOL_PACKAGE_NAME, GNSSTOOL_PERMISSIONS)
         begin_time = get_current_epoch_time()
         clear_aiding_data_by_gtw_gpstool(ad)
         ad.log.info("Start %s on GTW_GPSTool - attempt %d" % (type.upper(),
@@ -1228,6 +1243,7 @@ def start_toggle_gnss_by_gtw_gpstool(ad, iteration):
     finally:
         ad.send_keycode("HOME")
 
+
 def grant_location_permission(ad, option):
     """Grant or revoke location related permission.
 
@@ -1235,8 +1251,32 @@ def grant_location_permission(ad, option):
         ad: An AndroidDevice object.
         option: Boolean to grant or revoke location related permissions.
     """
-    action = 'grant' if option else 'revoke'
+    action = "grant" if option else "revoke"
     for permission in LOCATION_PERMISSIONS:
         ad.log.info(
-            '%s permission:%s on %s' % (action, permission, TEST_PACKAGE_NAME))
-        ad.adb.shell('pm %s %s %s' % (action, TEST_PACKAGE_NAME, permission))
+            "%s permission:%s on %s" % (action, permission, TEST_PACKAGE_NAME))
+        ad.adb.shell("pm %s %s %s" % (action, TEST_PACKAGE_NAME, permission))
+
+
+def check_location_runtime_permissions(ad, package, permissions):
+    """Check if runtime permissions are granted on selected package.
+
+    Args:
+        ad: An AndroidDevice object.
+        package: Apk package name to check.
+        permissions: A list of permissions to be granted.
+    """
+    for _ in range(3):
+        location_runtime_permission = ad.adb.shell(
+            "dumpsys package %s | grep ACCESS_FINE_LOCATION" % package)
+        if "true" not in location_runtime_permission:
+            ad.log.info("ACCESS_FINE_LOCATION is NOT granted on %s" % package)
+            for permission in permissions:
+                ad.log.debug("Grant %s on %s" % (permission, package))
+                ad.adb.shell("pm grant %s %s" % (package, permission))
+        else:
+            ad.log.info("ACCESS_FINE_LOCATION is granted on %s" % package)
+            break
+    else:
+        raise signals.TestError(
+            "Fail to grant ACCESS_FINE_LOCATION on %s" % package)
