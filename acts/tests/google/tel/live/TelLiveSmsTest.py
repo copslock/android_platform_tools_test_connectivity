@@ -2885,7 +2885,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         expected_result = False
-        if get_operator_name(self.log, ads[0]) in ["vzw", "Verizon"]:
+        if get_operator_name(self.log, ads[0]) in ["vzw", "Verizon", "att", "AT&T"]:
             expected_result = True
         ads[0].log.info("Expected Result is %s", expected_result)
 
@@ -2925,7 +2925,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         """
         ads = self.android_devices
         expected_result = False
-        if get_operator_name(self.log, ads[0]) in ["vzw", "Verizon"]:
+        if get_operator_name(self.log, ads[0]) in ["vzw", "Verizon", "att", "AT&T"]:
             expected_result = True
         try:
             tasks = [(phone_setup_voice_general, (self.log, ads[0])),
