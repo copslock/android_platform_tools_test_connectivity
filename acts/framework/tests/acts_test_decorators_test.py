@@ -82,6 +82,16 @@ class TestDecoratorUnitTests(unittest.TestCase):
     def test_test_tracker_info_on_raise_generic(self):
         self._verify_test_tracker_info(raise_generic)
 
+    def test_test_tracker_info_on_raise_generic_is_chained(self):
+        @test_decorators.test_tracker_info(uuid='SOME_UID')
+        def raise_generic():
+            raise ValueError('I am a ValueError')
+
+        with self.assertRaises(signals.TestError) as context:
+            raise_generic()
+
+        self.assertIsInstance(context.exception.__cause__, ValueError)
+
     def test_tti_returns_existing_test_pass(self):
         @test_decorators.test_tracker_info(uuid='SOME_UID')
         def test_raises_test_pass():
@@ -139,6 +149,31 @@ class TestDecoratorUnitTests(unittest.TestCase):
 
         with self.assertRaises(signals.TestFailure):
             test_returns_falsy_but_not_none()
+
+    def test_function_name(self):
+        """Test test_func.__name__ returns its original unwrapped name"""
+        @test_decorators.test_info(uuid='SOME_UID')
+        def test_func():
+            pass
+
+        self.assertEqual(test_func.__name__, "test_func")
+
+    def test_function_doc(self):
+        """Test test_func.__doc__ returns its original unwrapped doc string"""
+        @test_decorators.test_info(uuid='SOME_UID')
+        def test_func():
+            """DOC_STRING"""
+            pass
+
+        self.assertEqual(test_func.__doc__, "DOC_STRING")
+
+    def test_function_module(self):
+        """Test test_func.__module__ returns its original unwrapped module"""
+        @test_decorators.test_info(uuid='SOME_UID')
+        def test_func():
+            pass
+
+        self.assertEqual(test_func.__module__, self.__module__)
 
 
 class MockTest(base_test.BaseTestClass):

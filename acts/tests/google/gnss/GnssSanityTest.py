@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 #
 #   Copyright 2020 - The Android Open Source Project
 #
@@ -104,11 +104,11 @@ class GnssSanityTest(BaseTestClass):
         # create hashmap for SSID
         self.ssid_map = {}
         for network in self.pixel_lab_network:
-            SSID = network['SSID']
+            SSID = network["SSID"]
             self.ssid_map[SSID] = network
-        self.ttff_mode = {'cs': 'Cold Start',
-                          'ws': 'Warm Start',
-                          'hs': 'Hot Start'}
+        self.ttff_mode = {"cs": "Cold Start",
+                          "ws": "Warm Start",
+                          "hs": "Hot Start"}
         if self.ad.model in self.legacy_projects:
             self.wifi_xtra_cs_criteria = self.legacy_wifi_xtra_cs_criteria
         else:
@@ -570,7 +570,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be less than
             supl_cs_criteria.
         """
-        self.supl_ttff_with_sim('cs', self.supl_cs_criteria)
+        self.supl_ttff_with_sim("cs", self.supl_cs_criteria)
 
     @test_tracker_info(uuid="9a91c8ad-1978-414a-a9ac-8ebc782f77ff")
     def test_supl_ttff_ws(self):
@@ -584,7 +584,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Warm Start results should be less than
             supl_ws_criteria.
         """
-        self.supl_ttff_with_sim('ws', self.supl_ws_criteria)
+        self.supl_ttff_with_sim("ws", self.supl_ws_criteria)
 
     @test_tracker_info(uuid="bbd5aad4-3309-4579-a3b2-a06bfb674dfa")
     def test_supl_ttff_hs(self):
@@ -598,7 +598,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Hot Start results should be less than
             supl_hs_criteria.
         """
-        self.supl_ttff_with_sim('hs', self.supl_hs_criteria)
+        self.supl_ttff_with_sim("hs", self.supl_hs_criteria)
 
     @test_tracker_info(uuid="60c0aeec-0c8f-4a96-bc6c-05cba1260e73")
     def test_supl_ongoing_call(self):
@@ -734,7 +734,7 @@ class GnssSanityTest(BaseTestClass):
             All Standalone TTFF Cold Start results should be within
             standalone_cs_criteria.
         """
-        self.standalone_ttff_airplane_mode_on('cs', self.standalone_cs_criteria)
+        self.standalone_ttff_airplane_mode_on("cs", self.standalone_cs_criteria)
 
     @test_tracker_info(uuid="30b9e7c2-0048-4ccd-b3ae-f385eb5f4e46")
     def test_gnss_ttff_ws_airplane_mode_on(self):
@@ -749,7 +749,7 @@ class GnssSanityTest(BaseTestClass):
             All Standalone TTFF Warm Start results should be within
             standalone_ws_criteria.
         """
-        self.standalone_ttff_airplane_mode_on('ws', self.standalone_ws_criteria)
+        self.standalone_ttff_airplane_mode_on("ws", self.standalone_ws_criteria)
 
     @test_tracker_info(uuid="8f3c323a-c625-4339-ab7a-6a41d34cba8f")
     def test_gnss_ttff_hs_airplane_mode_on(self):
@@ -764,7 +764,7 @@ class GnssSanityTest(BaseTestClass):
             All Standalone TTFF Hot Start results should be within
             standalone_hs_criteria.
         """
-        self.standalone_ttff_airplane_mode_on('hs', self.standalone_hs_criteria)
+        self.standalone_ttff_airplane_mode_on("hs", self.standalone_hs_criteria)
 
     @test_tracker_info(uuid="23731b0d-cb80-4c79-a877-cfe7c2faa447")
     def test_gnss_mobile_data_off(self):
@@ -836,7 +836,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be less than
             weak_signal_supl_cs_criteria.
         """
-        self.supl_ttff_weak_gnss_signal('cs', self.weak_signal_supl_cs_criteria)
+        self.supl_ttff_weak_gnss_signal("cs", self.weak_signal_supl_cs_criteria)
 
     @test_tracker_info(uuid="d72364d4-dad8-4d46-8190-87183def9822")
     def test_supl_ttff_ws_weak_gnss_signal(self):
@@ -851,7 +851,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Warm Start results should be less than
             weak_signal_supl_ws_criteria.
         """
-        self.supl_ttff_weak_gnss_signal('ws', self.weak_signal_supl_ws_criteria)
+        self.supl_ttff_weak_gnss_signal("ws", self.weak_signal_supl_ws_criteria)
 
     @test_tracker_info(uuid="aeb95733-9829-470d-bfc7-e3b059bf881f")
     def test_supl_ttff_hs_weak_gnss_signal(self):
@@ -866,7 +866,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Hot Start results should be less than
             weak_signal_supl_hs_criteria.
         """
-        self.supl_ttff_weak_gnss_signal('hs', self.weak_signal_supl_hs_criteria)
+        self.supl_ttff_weak_gnss_signal("hs", self.weak_signal_supl_hs_criteria)
 
     @test_tracker_info(uuid="4ad4a371-949a-42e1-b1f4-628c79fa8ddc")
     def test_supl_factory_reset(self):
@@ -911,7 +911,7 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             XTRA TTFF Cold Start results should be within xtra_cs_criteria.
         """
-        self.xtra_ttff_mobile_data('cs', self.xtra_cs_criteria)
+        self.xtra_ttff_mobile_data("cs", self.xtra_cs_criteria)
 
     @test_tracker_info(uuid="c9b22894-deb3-4dc2-af14-4dcbb8ebad66")
     def test_xtra_ttff_ws_mobile_data(self):
@@ -924,7 +924,7 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             XTRA TTFF Warm Start results should be within xtra_ws_criteria.
         """
-        self.xtra_ttff_mobile_data('ws', self.xtra_ws_criteria)
+        self.xtra_ttff_mobile_data("ws", self.xtra_ws_criteria)
 
     @test_tracker_info(uuid="273741e2-0815-4817-96df-9c13401119dd")
     def test_xtra_ttff_hs_mobile_data(self):
@@ -937,7 +937,7 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             XTRA TTFF Hot Start results should be within xtra_hs_criteria.
         """
-        self.xtra_ttff_mobile_data('hs', self.xtra_hs_criteria)
+        self.xtra_ttff_mobile_data("hs", self.xtra_hs_criteria)
 
     @test_tracker_info(uuid="c91ba740-220e-41de-81e5-43af31f63907")
     def test_xtra_ttff_cs_weak_gnss_signal(self):
@@ -952,7 +952,7 @@ class GnssSanityTest(BaseTestClass):
             XTRA TTFF Cold Start results should be within
             weak_signal_xtra_cs_criteria.
         """
-        self.xtra_ttff_weak_gnss_signal('cs', self.weak_signal_xtra_cs_criteria)
+        self.xtra_ttff_weak_gnss_signal("cs", self.weak_signal_xtra_cs_criteria)
 
     @test_tracker_info(uuid="2a285be7-3571-49fb-8825-01efa2e65f10")
     def test_xtra_ttff_ws_weak_gnss_signal(self):
@@ -967,7 +967,7 @@ class GnssSanityTest(BaseTestClass):
             XTRA TTFF Warm Start results should be within
             weak_signal_xtra_ws_criteria.
         """
-        self.xtra_ttff_weak_gnss_signal('ws', self.weak_signal_xtra_ws_criteria)
+        self.xtra_ttff_weak_gnss_signal("ws", self.weak_signal_xtra_ws_criteria)
 
     @test_tracker_info(uuid="249bf484-8b04-4cd9-a372-aa718e5f4ec6")
     def test_xtra_ttff_hs_weak_gnss_signal(self):
@@ -982,7 +982,7 @@ class GnssSanityTest(BaseTestClass):
             XTRA TTFF Hot Start results should be within
             weak_signal_xtra_hs_criteria.
         """
-        self.xtra_ttff_weak_gnss_signal('hs', self.weak_signal_xtra_hs_criteria)
+        self.xtra_ttff_weak_gnss_signal("hs", self.weak_signal_xtra_hs_criteria)
 
     @test_tracker_info(uuid="beeb3454-bcb2-451e-83fb-26289e89b515")
     def test_xtra_ttff_cs_wifi(self):
@@ -996,7 +996,7 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             XTRA TTFF Cold Start results should be within wifi_xtra_cs_criteria.
         """
-        self.xtra_ttff_wifi('cs', self.wifi_xtra_cs_criteria)
+        self.xtra_ttff_wifi("cs", self.wifi_xtra_cs_criteria)
 
     @test_tracker_info(uuid="f6e79b31-99d5-49ca-974f-4543957ea449")
     def test_xtra_ttff_ws_wifi(self):
@@ -1010,7 +1010,7 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             XTRA TTFF Warm Start results should be within xtra_ws_criteria.
         """
-        self.xtra_ttff_wifi('ws', self.xtra_ws_criteria)
+        self.xtra_ttff_wifi("ws", self.xtra_ws_criteria)
 
     @test_tracker_info(uuid="8981363c-f64f-4c37-9674-46733c40473b")
     def test_xtra_ttff_hs_wifi(self):
@@ -1024,7 +1024,7 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             XTRA TTFF Hot Start results should be within xtra_hs_criteria.
         """
-        self.xtra_ttff_wifi('hs', self.xtra_hs_criteria)
+        self.xtra_ttff_wifi("hs", self.xtra_hs_criteria)
 
     @test_tracker_info(uuid="1745b8a4-5925-4aa0-809a-1b17e848dc9c")
     def test_xtra_modem_ssr(self):

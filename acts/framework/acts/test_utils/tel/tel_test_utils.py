@@ -380,6 +380,10 @@ def refresh_droid_config(log, ad):
             carrier_id = sub_info["carrierId"]
         else:
             carrier_id = -1
+        if sub_info.get("isOpportunistic"):
+            isopportunistic = sub_info["isOpportunistic"]
+        else:
+            isopportunistic = -1
 
         if sim_slot != INVALID_SIM_SLOT_INDEX:
             if sub_id not in ad.telephony["subscription"]:
@@ -430,6 +434,10 @@ def refresh_droid_config(log, ad):
                 except:
                     ad.log.info("Carrier ID is not supported")
             if carrier_id == 2340:
+                ad.log.info("SubId %s info: %s", sub_id, sorted(
+                    sub_record.items()))
+                continue
+            if carrier_id == 1989 and isopportunistic == "true":
                 ad.log.info("SubId %s info: %s", sub_id, sorted(
                     sub_record.items()))
                 continue
@@ -8150,6 +8158,34 @@ def get_carrier_config_version(ad):
         version = "0"
     ad.log.debug("Carrier Config Version is %s", version)
     return version
+
+def get_er_db_id_version(ad):
+    out = ad.adb.shell("dumpsys activity service TelephonyDebugService | \
+                        grep -i \"Database Version\"")
+    if out and ":" in out:
+        version = out.split(':', 2)[2].lstrip()
+    else:
+        version = "0"
+    ad.log.debug("Emergency database Version is %s", version)
+    return version
+
+
+def add_whitelisted_account(ad, user_account,user_password, retries=3):
+    if not ad.is_apk_installed("com.google.android.tradefed.account"):
+        ad.log.error("GoogleAccountUtil is not installed")
+        return False
+    for _ in range(retries):
+        ad.ensure_screen_on()
+        output = ad.adb.shell(
+            'am instrument -w -e account "%s@gmail.com" -e password '
+            '"%s" -e sync true -e wait-for-checkin false '
+            'com.google.android.tradefed.account/.AddAccount' %
+            (user_account, user_password))
+        if "result=SUCCESS" in output:
+            ad.log.info("Google account is added successfully")
+            return True
+    ad.log.error("Failed to add google account - %s", output)
+    return False
 
 
 def install_googleaccountutil_apk(ad, account_util):

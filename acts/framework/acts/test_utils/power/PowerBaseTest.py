@@ -254,6 +254,12 @@ class PowerBaseTest(base_test.BaseTestClass):
         if hasattr(self, 'monsoons'):
             self.monsoons[0].usb('on')
 
+    def on_fail(self, test_name, begin_time):
+        self.power_logger.set_pass_fail_status('FAIL')
+
+    def on_pass(self, test_name, begin_time):
+        self.power_logger.set_pass_fail_status('PASS')
+
     def dut_rockbottom(self):
         """Set the dut to rockbottom state
 
