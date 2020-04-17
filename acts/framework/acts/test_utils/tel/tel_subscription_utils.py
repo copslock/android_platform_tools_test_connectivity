@@ -204,6 +204,23 @@ def get_carrierid_from_slot_index(ad, sim_slot_index):
             return info['carrierId']
     return None
 
+def get_isopportunistic_from_slot_index(ad, sim_slot_index):
+    """ Get the isOppotunistic field for a particular slot
+
+    Args:
+        ad: android_device object.
+        sim_slot_index: slot 0 or slot 1
+
+    Returns:
+        result: True or False based on Value set
+    """
+    subInfo = ad.droid.subscriptionGetAllSubInfoList()
+    for info in subInfo:
+        if info['simSlotIndex'] == sim_slot_index:
+            value = info['isOpportunistic']
+            if value == 'true':
+                return True
+    return False
 
 def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
     """Set subId for data
