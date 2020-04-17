@@ -15,8 +15,12 @@
 #   limitations under the License.
 
 import datetime
+import http
+import requests
 
 from acts.controllers.fuchsia_lib.base_lib import BaseLib
+
+HW_PWR_STATE_CONTROL_TIMEOUT = 5
 
 
 class FuchsiaHardwarePowerStatecontrolLib(BaseLib):
@@ -25,67 +29,102 @@ class FuchsiaHardwarePowerStatecontrolLib(BaseLib):
         self.test_counter = tc
         self.client_id = client_id
 
-    def suspendReboot(self):
-        """Call Suspend Reboot
+    def suspendReboot(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
+        """Call Suspend Reboot.
 
         Returns:
-            Dictionary, None if success, error if error.
+            None if success.
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendReboot"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
+        try:
+            response = self.send_command(test_id,
+                                         test_cmd,
+                                         test_args,
+                                         response_timeout=timeout)
+        except (requests.exceptions.ReadTimeout,
+                http.client.RemoteDisconnected) as err:
+            return
+        return response
 
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def suspendRebootBootloader(self):
+    def suspendRebootBootloader(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Reboot Bootloader
 
         Returns:
-            Dictionary, None if success, error if error.
+            None if success.
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendRebootBootloader"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
+        try:
+            response = self.send_command(test_id,
+                                         test_cmd,
+                                         test_args,
+                                         response_timeout=timeout)
+        except (requests.exceptions.ReadTimeout,
+                http.client.RemoteDisconnected):
+            return
+        return response
 
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def suspendPoweroff(self):
+    def suspendPoweroff(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Poweroff
 
         Returns:
-            Dictionary, None if success, error if error.
+            None if success.
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendPoweroff"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
+        try:
+            response = self.send_command(test_id,
+                                         test_cmd,
+                                         test_args,
+                                         response_timeout=timeout)
+        except (requests.exceptions.ReadTimeout,
+                http.client.RemoteDisconnected):
+            return
+        return response
 
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def suspendMexec(self):
+    def suspendMexec(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Mexec
 
         Returns:
-            Dictionary, None if success, error if error.
+            None if success.
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendMexec"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
+        try:
+            response = self.send_command(test_id,
+                                         test_cmd,
+                                         test_args,
+                                         response_timeout=timeout)
+        except (requests.exceptions.ReadTimeout,
+                http.client.RemoteDisconnected):
+            return
+        return response
 
-        return self.send_command(test_id, test_cmd, test_args)
-
-    def suspendRam(self):
+    def suspendRam(self, timeout=HW_PWR_STATE_CONTROL_TIMEOUT):
         """Call Suspend Ram
 
         Returns:
-            Dictionary, None if success, error if error.
+            None if success.
         """
         test_cmd = "hardware_power_statecontrol_facade.SuspendRam"
         test_args = {}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
-
-        return self.send_command(test_id, test_cmd, test_args)
+        try:
+            response = self.send_command(test_id,
+                                         test_cmd,
+                                         test_args,
+                                         response_timeout=timeout)
+        except (requests.exceptions.ReadTimeout,
+                http.client.RemoteDisconnected):
+            return
+        return response
