@@ -380,6 +380,10 @@ def refresh_droid_config(log, ad):
             carrier_id = sub_info["carrierId"]
         else:
             carrier_id = -1
+        if sub_info.get("isOpportunistic"):
+            isopportunistic = sub_info["isOpportunistic"]
+        else:
+            isopportunistic = -1
 
         if sim_slot != INVALID_SIM_SLOT_INDEX:
             if sub_id not in ad.telephony["subscription"]:
@@ -430,6 +434,10 @@ def refresh_droid_config(log, ad):
                 except:
                     ad.log.info("Carrier ID is not supported")
             if carrier_id == 2340:
+                ad.log.info("SubId %s info: %s", sub_id, sorted(
+                    sub_record.items()))
+                continue
+            if carrier_id == 1989 and isopportunistic == "true":
                 ad.log.info("SubId %s info: %s", sub_id, sorted(
                     sub_record.items()))
                 continue
