@@ -8155,7 +8155,7 @@ def get_er_db_id_version(ad):
     out = ad.adb.shell("dumpsys activity service TelephonyDebugService | \
                         grep -i \"Database Version\"")
     if out and ":" in out:
-        version = out.split(':')[1].lstrip()
+        version = out.split(':', 2)[2].lstrip()
     else:
         version = "0"
     ad.log.debug("Emergency database Version is %s", version)
