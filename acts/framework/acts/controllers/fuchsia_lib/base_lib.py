@@ -40,13 +40,19 @@ class BaseLib():
         """
         return self.client_id + "." + str(test_id)
 
-    def send_command(self, test_id, test_cmd, test_args):
+    def send_command(self,
+                     test_id,
+                     test_cmd,
+                     test_args,
+                     response_timeout=None):
         """Builds and sends a JSON command to SL4F server.
 
         Args:
             test_id: string, unique identifier of test command.
             test_cmd: string, sl4f method name of command.
             test_args: dictionary, arguments required to execute test_cmd.
+            response_timeout: int, seconds to wait for a response before
+                throwing an exception. Defaults to no timeout.
 
         Returns:
             Dictionary, Result of sl4f command executed.
@@ -57,4 +63,6 @@ class BaseLib():
             "method": test_cmd,
             "params": test_args
         })
-        return requests.get(url=self.address, data=test_data).json()
+        return requests.get(url=self.address,
+                            data=test_data,
+                            timeout=response_timeout).json()
