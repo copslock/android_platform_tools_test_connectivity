@@ -217,10 +217,8 @@ def get_isopportunistic_from_slot_index(ad, sim_slot_index):
     subInfo = ad.droid.subscriptionGetAllSubInfoList()
     for info in subInfo:
         if info['simSlotIndex'] == sim_slot_index:
-            value = info['isOpportunistic']
-            if value == 'true':
-                return True
-    return False
+            return info['isOpportunistic']
+    return None
 
 def set_subid_for_data(ad, sub_id, time_to_sleep=WAIT_TIME_CHANGE_DATA_SUB_ID):
     """Set subId for data
