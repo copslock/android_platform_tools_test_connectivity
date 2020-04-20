@@ -171,6 +171,13 @@ class BluetoothDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
+    def gatt_client_read_characteristic_by_uuid(self, peer_identifier, uuid):
+        """Base generic Bluetooth interface. Only called if not overridden by
+        another supported device.
+        """
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
     def gatt_client_read_long_characteristic_by_handle(self, peer_identifier,
                                                        handle, offset,
                                                        max_bytes):
@@ -901,9 +908,8 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         if (not self._find_service_id_and_connect_to_service_for_handle(
                 peer_identifier, handle)):
-            self.log.error(
+            self.log.warn(
                 "Unable to find handle {} in GATT server db.".format(handle))
-            return False
         result = self.device.gattc_lib.writeCharByIdWithoutResponse(
             handle, value)
         if result.get("error") is not None:
@@ -928,9 +934,8 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         if (not self._find_service_id_and_connect_to_service_for_handle(
                 peer_identifier, handle)):
-            self.log.error(
+            self.log.warn(
                 "Unable to find handle {} in GATT server db.".format(handle))
-            return False
         result = self.device.gattc_lib.writeCharById(handle, offset, value)
         if result.get("error") is not None:
             self.log.error(
@@ -1006,14 +1011,35 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         if (not self._find_service_id_and_connect_to_service_for_handle(
                 peer_identifier, handle)):
-            self.log.error(
+            self.log.warn(
                 "Unable to find handle {} in GATT server db.".format(handle))
-            return False
         result = self.device.gattc_lib.readCharacteristicById(handle)
         if result.get("error") is not None:
             self.log.error(
                 "Failed to read characteristic handle {} with err: {}".format(
                     handle, result.get("error")))
+            return None
+        return result.get("result")
+
+    def gatt_client_read_characteristic_by_uuid(self, peer_identifier, uuid):
+        """ Perform a GATT Client read Characteristic by uuid to remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            uuid: The characteristic uuid.
+        Returns:
+            Value of Characteristic if success, None if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, uuid, uuid=True)):
+            self.log.warn(
+                "Unable to find uuid {} in GATT server db.".format(uuid))
+        result = self.device.gattc_lib.readCharacteristicByType(uuid)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to read characteristic uuid {} with err: {}".format(
+                    uuid, result.get("error")))
             return None
         return result.get("result")
 
@@ -1033,9 +1059,8 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         if (not self._find_service_id_and_connect_to_service_for_handle(
                 peer_identifier, handle)):
-            self.log.error(
+            self.log.warn(
                 "Unable to find handle {} in GATT server db.".format(handle))
-            return False
         result = self.device.gattc_lib.readLongCharacteristicById(
             handle, offset, max_bytes)
         if result.get("error") is not None:
@@ -1058,9 +1083,8 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         if (not self._find_service_id_and_connect_to_service_for_handle(
                 peer_identifier, handle)):
-            self.log.error(
+            self.log.warn(
                 "Unable to find handle {} in GATT server db.".format(handle))
-            return False
         result = self.device.gattc_lib.enableNotifyCharacteristic(handle)
         if result.get("error") is not None:
             self.log.error(
@@ -1082,9 +1106,8 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         if (not self._find_service_id_and_connect_to_service_for_handle(
                 peer_identifier, handle)):
-            self.log.error(
+            self.log.warn(
                 "Unable to find handle {} in GATT server db.".format(handle))
-            return False
         result = self.device.gattc_lib.disableNotifyCharacteristic(handle)
         if result.get("error") is not None:
             self.log.error(
@@ -1105,9 +1128,8 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         if (not self._find_service_id_and_connect_to_service_for_handle(
                 peer_identifier, handle)):
-            self.log.error(
+            self.log.warn(
                 "Unable to find handle {} in GATT server db.".format(handle))
-            return False
         result = self.device.gattc_lib.readDescriptorById(handle)
         if result.get("error") is not None:
             self.log.error(
@@ -1131,9 +1153,8 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         if (not self._find_service_id_and_connect_to_service_for_handle(
                 peer_identifier, handle)):
-            self.log.error(
+            self.log.warn(
                 "Unable to find handle {} in GATT server db.".format(handle))
-            return False
         result = self.device.gattc_lib.writeDescriptorById(
             handle, offset, value)
         if result.get("error") is not None:
@@ -1311,8 +1332,10 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         self.device.btc_lib.forgetDevice(peer_identifier)
 
     def _find_service_id_and_connect_to_service_for_handle(
-        self, peer_identifier, handle):
+        self, peer_identifier, handle, uuid=False):
         fail_err = "Failed to find handle {} in Peer database."
+        if uuid:
+            handle = handle.lower()
         try:
             services = self.device.gattc_lib.listServices(peer_identifier)
             for service in services['result']:
@@ -1323,11 +1346,15 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
 
                 for char in chars['result']:
                     char_id = char['id']
+                    if uuid:
+                        char_id = char['uuid_type']
                     if handle == char_id:
                         return True
                     descriptors = char['descriptors']
                     for desc in descriptors:
                         desc_id = desc["id"]
+                        if uuid:
+                            desc_id = desc['uuid_type']
                         if handle == desc_id:
                             return True
         except Exception as err:
