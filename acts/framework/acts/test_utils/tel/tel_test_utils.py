@@ -133,6 +133,7 @@ from acts.test_utils.tel.tel_defines import TYPE_MOBILE
 from acts.test_utils.tel.tel_defines import TYPE_WIFI
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
 from acts.test_utils.tel.tel_defines import EventActiveDataSubIdChanged
+from acts.test_utils.tel.tel_defines import EventDisplayInfoChanged
 from acts.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts.test_utils.tel.tel_defines import EventDataSmsReceived
@@ -151,6 +152,8 @@ from acts.test_utils.tel.tel_defines import DataConnectionStateContainer
 from acts.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
 from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts.test_utils.tel.tel_defines import ServiceStateContainer
+from acts.test_utils.tel.tel_defines import DisplayInfoContainer
+from acts.test_utils.tel.tel_defines import OverrideNetworkContainer
 from acts.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
     CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
 from acts.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
@@ -1473,6 +1476,72 @@ def is_current_data_on_cbrs(ad, cbrs_subid):
         return True
     else:
         return False
+
+
+def get_current_override_network_type(ad, timeout=30):
+    """Returns current override network type
+
+    Args:
+        ad: android device object.
+        timeout: max time to wait for event
+
+    Returns:
+        value: current override type
+        -1: if no event received
+    """
+    override_value_list = [OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA,
+                           OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NONE,
+                           OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_MMWAVE,
+                           OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_LTE_CA,
+                           OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_LTE_ADVANCED_PRO]
+    ad.ed.clear_events(EventDisplayInfoChanged)
+    ad.droid.telephonyStartTrackingDisplayInfoChange()
+    try:
+        event = ad.ed.wait_for_event(
+                    EventDisplayInfoChanged,
+                    is_event_match_for_list,
+                    timeout=timeout,
+                    field=DisplayInfoContainer.OVERRIDE,
+                    value_list=override_value_list)
+        override_type = event['data']['override']
+        ad.log.info("Current Override Type is %s", override_type)
+        return override_type
+    except Empty:
+        ad.log.info("No event for display info change")
+        return -1
+    finally:
+        ad.droid.telephonyStopTrackingDisplayInfoChange()
+    return -1
+
+
+def is_current_network_5g_nsa(ad, timeout=30):
+    """Verifies 5G NSA override network type
+
+    Args:
+        ad: android device object.
+        timeout: max time to wait for event
+
+    Returns:
+        True: if data is on 5g NSA
+        False: if data is not on 5g NSA
+    """
+    ad.ed.clear_events(EventDisplayInfoChanged)
+    ad.droid.telephonyStartTrackingDisplayInfoChange()
+    try:
+        event = ad.ed.wait_for_event(
+                EventDisplayInfoChanged,
+                is_event_match,
+                timeout=timeout,
+                field=DisplayInfoContainer.OVERRIDE,
+                value=OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA)
+        ad.log.info("Got expected event %s", event)
+        return True
+    except Empty:
+        ad.log.info("No event for display info change")
+        return False
+    finally:
+        ad.droid.telephonyStopTrackingDisplayInfoChange()
+    return None
 
 
 def disconnect_call_by_id(log, ad, call_id):

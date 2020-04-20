@@ -690,6 +690,7 @@ EventVolteServiceStateChanged = "VolteServiceStateChanged"
 EventMessageWaitingIndicatorChanged = "MessageWaitingIndicatorChanged"
 EventConnectivityChanged = "ConnectivityChanged"
 EventActiveDataSubIdChanged = "ActiveDataSubIdChanged"
+EventDisplayInfoChanged = "DisplayInfoChanged"
 
 # Constant for Packet Keep Alive Call Back
 EventPacketKeepaliveCallback = "PacketKeepaliveCallback"
@@ -741,6 +742,18 @@ class CallStateContainer:
     SUBSCRIPTION_ID = "subscriptionId"
     CALL_STATE = "callState"
 
+class DisplayInfoContainer:
+    TIME = "time"
+    NETWORK = "network"
+    OVERRIDE = "override"
+    SUBSCRIPTION_ID = "subscriptionId"
+
+class OverrideNetworkContainer:
+    OVERRIDE_NETWORK_TYPE_NONE = "NONE"
+    OVERRIDE_NETWORK_TYPE_LTE_CA = "LTE_CA"
+    OVERRIDE_NETWORK_TYPE_LTE_ADVANCED_PRO = "LTE_ADVANCED_PRO"
+    OVERRIDE_NETWORK_TYPE_NR_NSA = "NR_NSA"
+    OVERRIDE_NETWORK_TYPE_NR_MMWAVE = "NR_MMWAVE"
 
 class PreciseCallStateContainer:
     TYPE = "type"
