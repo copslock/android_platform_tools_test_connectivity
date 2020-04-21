@@ -180,7 +180,7 @@ def main():
                      version='0.9',
                      description='Android Comms Test Suite',
                      license='Apache2.0',
-                     packages=setuptools.find_packages(),
+                     packages=setuptools.find_packages(exclude=('tests*',)),
                      include_package_data=False,
                      tests_require=['pytest'],
                      install_requires=install_requires,
