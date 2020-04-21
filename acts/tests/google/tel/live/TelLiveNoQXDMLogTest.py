@@ -93,7 +93,7 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
         self.dut.log.info("DUT capabilities: %s", self.dut_capabilities)
         self.user_params["check_crash"] = False
         self.skip_reset_between_cases = False
-        self.path = "/x20/teams/android-telephony-test/apk/GoogleAccountUtil.apk"
+        self.path = self.user_params['account_util'][0]
         self.user_account = "commsteltest1"
         self.user_password = "tellivetest1"
 
