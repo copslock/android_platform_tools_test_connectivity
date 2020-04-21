@@ -56,6 +56,7 @@ from acts.test_utils.tel.tel_test_utils import fastboot_wipe
 from acts.test_utils.tel.tel_test_utils import get_carrier_config_version
 from acts.test_utils.tel.tel_test_utils import get_carrier_id_version
 from acts.test_utils.tel.tel_test_utils import get_er_db_id_version
+from acts.test_utils.tel.tel_test_utils import get_database_content
 from acts.test_utils.tel.tel_test_utils import install_googleaccountutil_apk
 from acts.test_utils.tel.tel_test_utils import add_whitelisted_account
 from acts.test_utils.tel.tel_test_utils import adb_disable_verity
@@ -824,6 +825,13 @@ class TelLiveNoQXDMLogTest(TelephonyBaseTest):
             if not result_flag:
                 ad.log.info("ER Database version Id Failed to Update in %s mins",
                              WAIT_TIME_FOR_ER_DB_CHANGE)
+                return False
+            # Verify Emerency Database content
+            if not get_database_content(ad):
+                ad.log.error("Emergency Number does not match")
+                result_flag = False
+                return False
+            ad.log.info("Emergency Number is 54321")
 
         except Exception as e:
             ad.log.error(e)

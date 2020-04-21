@@ -8169,6 +8169,15 @@ def get_er_db_id_version(ad):
     ad.log.debug("Emergency database Version is %s", version)
     return version
 
+def get_database_content(ad):
+    out = ad.adb.shell("dumpsys activity service TelephonyDebugService | \
+                        egrep -i \EmergencyNumber:Number-54321")
+    if out:
+        return True
+    result = ad.adb.shell(r"dumpsys activity service TelephonyDebugService | \
+                egrep -i \updateOtaEmergencyNumberListDatabaseAndNotify")
+    ad.log.error("Emergency Number is incorrect. %s ", result)
+    return False
 
 def add_whitelisted_account(ad, user_account,user_password, retries=3):
     if not ad.is_apk_installed("com.google.android.tradefed.account"):
