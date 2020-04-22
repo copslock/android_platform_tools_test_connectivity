@@ -1,0 +1,1 @@
+../../../../../acts/tests/google/power/tel/PowerTelTraffic_GSM_Test.py

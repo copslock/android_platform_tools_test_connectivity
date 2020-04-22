@@ -1,0 +1,1 @@
+../../../../../../acts/framework/acts/test_utils/power/loggers/protos/__init__.py
