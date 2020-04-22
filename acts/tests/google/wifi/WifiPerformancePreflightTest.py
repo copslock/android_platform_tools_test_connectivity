@@ -46,3 +46,5 @@ class WifiPerformancePreflightTest(base_test.BaseTestClass):
                                                sw_signature['bdf_signature'])
         self.testcase_metric_logger.add_metric('fw_signature',
                                                sw_signature['fw_signature'])
+        self.testcase_metric_logger.add_metric('serial_hash',
+                                               sw_signature['serial_hash'])
