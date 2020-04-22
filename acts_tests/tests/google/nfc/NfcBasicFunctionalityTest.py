@@ -1,0 +1,1 @@
+../../../../acts/tests/google/nfc/NfcBasicFunctionalityTest.py
