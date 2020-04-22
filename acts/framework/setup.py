@@ -60,6 +60,8 @@ DEV_PACKAGES = [
     'shiv'
 ]
 
+framework_dir = os.path.dirname(os.path.realpath(__file__))
+
 
 class PyTest(test.test):
     """Class used to execute unit tests using PyTest. This allows us to execute
@@ -71,8 +73,7 @@ class PyTest(test.test):
         self.test_suite = True
 
     def run_tests(self):
-        test_path = os.path.join(os.path.dirname(__file__),
-                                 '../tests/meta/ActsUnitTest.py')
+        test_path = os.path.join(framework_dir, '../tests/meta/ActsUnitTest.py')
         result = subprocess.Popen('python3 %s' % test_path,
                                   stdout=sys.stdout,
                                   stderr=sys.stderr,
@@ -144,9 +145,8 @@ class ActsUninstall(cmd.Command):
         """Entry point for the uninstaller."""
         # Remove the working directory from the python path. This ensures that
         # Source code is not accidentally targeted.
-        our_dir = os.path.abspath(os.path.dirname(__file__))
-        if our_dir in sys.path:
-            sys.path.remove(our_dir)
+        if framework_dir in sys.path:
+            sys.path.remove(framework_dir)
 
         if os.getcwd() in sys.path:
             sys.path.remove(os.getcwd())
@@ -170,12 +170,12 @@ class ActsUninstall(cmd.Command):
 
 
 def main():
-    framework_dir = os.path.dirname(os.path.realpath(__file__))
     scripts = [
         os.path.join(framework_dir, 'acts', 'bin', 'act.py'),
         os.path.join(framework_dir, 'acts', 'bin', 'monsoon.py')
     ]
-
+    # cd to framework directory so the correct package namespace is found
+    os.chdir(framework_dir)
     setuptools.setup(name='acts',
                      version='0.9',
                      description='Android Comms Test Suite',
