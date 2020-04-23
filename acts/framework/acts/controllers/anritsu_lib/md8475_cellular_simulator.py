@@ -65,7 +65,7 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         try:
             self.anritsu = md8475a.MD8475A(ip_address,
                                            md8475_version=self.MD8475_VERSION)
-        except anritsu.AnristuError:
+        except anritsu.AnritsuError:
             raise cc.CellularSimulatorError('Could not connect to MD8475.')
 
         self.bts = None
