@@ -133,6 +133,7 @@ from acts.test_utils.tel.tel_defines import TYPE_MOBILE
 from acts.test_utils.tel.tel_defines import TYPE_WIFI
 from acts.test_utils.tel.tel_defines import EventCallStateChanged
 from acts.test_utils.tel.tel_defines import EventActiveDataSubIdChanged
+from acts.test_utils.tel.tel_defines import EventDisplayInfoChanged
 from acts.test_utils.tel.tel_defines import EventConnectivityChanged
 from acts.test_utils.tel.tel_defines import EventDataConnectionStateChanged
 from acts.test_utils.tel.tel_defines import EventDataSmsReceived
@@ -151,6 +152,8 @@ from acts.test_utils.tel.tel_defines import DataConnectionStateContainer
 from acts.test_utils.tel.tel_defines import MessageWaitingIndicatorContainer
 from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts.test_utils.tel.tel_defines import ServiceStateContainer
+from acts.test_utils.tel.tel_defines import DisplayInfoContainer
+from acts.test_utils.tel.tel_defines import OverrideNetworkContainer
 from acts.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
     CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
 from acts.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
@@ -1473,6 +1476,72 @@ def is_current_data_on_cbrs(ad, cbrs_subid):
         return True
     else:
         return False
+
+
+def get_current_override_network_type(ad, timeout=30):
+    """Returns current override network type
+
+    Args:
+        ad: android device object.
+        timeout: max time to wait for event
+
+    Returns:
+        value: current override type
+        -1: if no event received
+    """
+    override_value_list = [OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA,
+                           OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NONE,
+                           OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_MMWAVE,
+                           OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_LTE_CA,
+                           OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_LTE_ADVANCED_PRO]
+    ad.ed.clear_events(EventDisplayInfoChanged)
+    ad.droid.telephonyStartTrackingDisplayInfoChange()
+    try:
+        event = ad.ed.wait_for_event(
+                    EventDisplayInfoChanged,
+                    is_event_match_for_list,
+                    timeout=timeout,
+                    field=DisplayInfoContainer.OVERRIDE,
+                    value_list=override_value_list)
+        override_type = event['data']['override']
+        ad.log.info("Current Override Type is %s", override_type)
+        return override_type
+    except Empty:
+        ad.log.info("No event for display info change")
+        return -1
+    finally:
+        ad.droid.telephonyStopTrackingDisplayInfoChange()
+    return -1
+
+
+def is_current_network_5g_nsa(ad, timeout=30):
+    """Verifies 5G NSA override network type
+
+    Args:
+        ad: android device object.
+        timeout: max time to wait for event
+
+    Returns:
+        True: if data is on 5g NSA
+        False: if data is not on 5g NSA
+    """
+    ad.ed.clear_events(EventDisplayInfoChanged)
+    ad.droid.telephonyStartTrackingDisplayInfoChange()
+    try:
+        event = ad.ed.wait_for_event(
+                EventDisplayInfoChanged,
+                is_event_match,
+                timeout=timeout,
+                field=DisplayInfoContainer.OVERRIDE,
+                value=OverrideNetworkContainer.OVERRIDE_NETWORK_TYPE_NR_NSA)
+        ad.log.info("Got expected event %s", event)
+        return True
+    except Empty:
+        ad.log.info("No event for display info change")
+        return False
+    finally:
+        ad.droid.telephonyStopTrackingDisplayInfoChange()
+    return None
 
 
 def disconnect_call_by_id(log, ad, call_id):
@@ -7750,6 +7819,19 @@ def recover_build_id(ad):
     if ad.adb.getprop("ro.build.id") != build_id:
         build_id_override(ad, build_id)
 
+def enable_privacy_usage_diagnostics(ad):
+    try:
+        ad.ensure_screen_on()
+        ad.send_keycode('HOME')
+    # open the UI page on which we need to enable the setting
+        cmd = ('am start -n com.google.android.gms/com.google.android.gms.'
+               'usagereporting.settings.UsageReportingActivity')
+        ad.adb.shell(cmd)
+    # perform the toggle
+        ad.send_keycode('TAB')
+        ad.send_keycode('ENSURE')
+    except Exception:
+        ad.log.info("Unable to toggle Usage and Diagnostics")
 
 def build_id_override(ad, new_build_id=None, postfix=None):
     build_fingerprint = ad.adb.getprop(
@@ -7770,6 +7852,7 @@ def build_id_override(ad, new_build_id=None, postfix=None):
         return
     ad.log.info("Override build id %s with %s", existing_build_id,
                 new_build_id)
+    enable_privacy_usage_diagnostics(ad)
     adb_disable_verity(ad)
     ad.adb.remount()
     if "backup.prop" not in ad.adb.shell("ls /sdcard/"):
@@ -8169,6 +8252,15 @@ def get_er_db_id_version(ad):
     ad.log.debug("Emergency database Version is %s", version)
     return version
 
+def get_database_content(ad):
+    out = ad.adb.shell("dumpsys activity service TelephonyDebugService | \
+                        egrep -i \EmergencyNumber:Number-54321")
+    if out:
+        return True
+    result = ad.adb.shell(r"dumpsys activity service TelephonyDebugService | \
+                egrep -i \updateOtaEmergencyNumberListDatabaseAndNotify")
+    ad.log.error("Emergency Number is incorrect. %s ", result)
+    return False
 
 def add_whitelisted_account(ad, user_account,user_password, retries=3):
     if not ad.is_apk_installed("com.google.android.tradefed.account"):

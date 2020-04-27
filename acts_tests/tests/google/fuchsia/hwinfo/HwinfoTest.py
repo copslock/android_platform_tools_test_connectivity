@@ -1,0 +1,1 @@
+../../../../../acts/tests/google/fuchsia/hwinfo/HwinfoTest.py

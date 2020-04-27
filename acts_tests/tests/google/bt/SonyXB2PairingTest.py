@@ -1,0 +1,1 @@
+../../../../acts/tests/google/bt/SonyXB2PairingTest.py

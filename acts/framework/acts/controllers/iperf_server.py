@@ -458,12 +458,13 @@ class IPerfServerOverSsh(IPerfServerBase):
     """Class that handles iperf3 operations on remote machines."""
     def __init__(self, ssh_config, port, test_interface=None):
         super().__init__(port)
-        ssh_settings = settings.from_config(ssh_config)
-        self._ssh_session = connection.SshConnection(ssh_settings)
+        self.ssh_settings = settings.from_config(ssh_config)
+        self._ssh_session = None
+        self.start_ssh()
 
         self._iperf_pid = None
         self._current_tag = None
-        self.hostname = ssh_settings.hostname
+        self.hostname = self.ssh_settings.hostname
         try:
             # A test interface can only be found if an ip address is specified.
             # A fully qualified hostname will return None for the
@@ -515,12 +516,16 @@ class IPerfServerOverSsh(IPerfServerBase):
                 ipv6_private_local_addresses: Any fd00:: addresses
                 ipv6_public_addresses: Any publicly routable addresses
         """
+        if not self._ssh_session:
+            self.start_ssh()
         return utils.get_interface_ip_addresses(self._ssh_session, interface)
 
     def renew_test_interface_ip_address(self):
         """Renews the test interface's IP address.  Necessary for changing
            DHCP scopes during a test.
         """
+        if not self._ssh_session:
+            self.start_ssh()
         utils.renew_linux_ip_address(self._ssh_session, self.test_interface)
 
     def start(self, extra_args='', tag='', iperf_binary=None):
@@ -537,6 +542,8 @@ class IPerfServerOverSsh(IPerfServerBase):
         if self.started:
             return
 
+        if not self._ssh_session:
+            self.start_ssh()
         if not iperf_binary:
             logging.debug('No iperf3 binary specified.  '
                           'Assuming iperf3 is in the path.')
@@ -575,6 +582,21 @@ class IPerfServerOverSsh(IPerfServerBase):
             self._get_remote_log_path()))
         self._iperf_pid = None
         return log_file
+
+    def start_ssh(self):
+        """Starts an ssh session to the iperf server."""
+        if not self._ssh_session:
+            self._ssh_session = connection.SshConnection(self.ssh_settings)
+
+    def close_ssh(self):
+        """Closes the ssh session to the iperf server, if one exists, preventing
+        connection reset errors when rebooting server device.
+        """
+        if self.started:
+            self.stop()
+        if self._ssh_session:
+            self._ssh_session.close()
+            self._ssh_session = None
 
 
 # TODO(markdr): Remove this after automagic controller creation has been

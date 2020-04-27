@@ -1,0 +1,1 @@
+../../../../../acts/tests/google/power/tel/PowerTelTraffic_LTECA_Test.py

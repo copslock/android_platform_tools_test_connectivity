@@ -1,0 +1,1 @@
+../../../../../acts/tests/google/bt/pts/cmd_input.py

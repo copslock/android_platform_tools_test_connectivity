@@ -4,6 +4,7 @@ package acts.metrics.bounded;
 
 option java_package = "com.android.acts.metrics.bounded";
 
+// next id: 8
 message Metric {
   // required
   optional string test_class = 1;

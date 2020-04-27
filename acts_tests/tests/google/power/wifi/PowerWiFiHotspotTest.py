@@ -1,0 +1,1 @@
+../../../../../acts/tests/google/power/wifi/PowerWiFiHotspotTest.py
