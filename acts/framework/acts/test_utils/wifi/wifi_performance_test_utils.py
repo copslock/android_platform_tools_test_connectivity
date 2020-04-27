@@ -16,6 +16,7 @@
 
 import bokeh, bokeh.plotting
 import collections
+import hashlib
 import itertools
 import json
 import logging
@@ -1231,7 +1232,7 @@ def get_sw_signature(dut):
     fw_version = re.search(FW_REGEX, fw_output).group('firmware')
     fw_signature = fw_version.split('.')[-3:-1]
     fw_signature = float('.'.join(fw_signature))
-    serial_hash = hash(dut.serial) % 1000
+    serial_hash = int(hashlib.md5(dut.serial.encode()).hexdigest(),16) % 1000
     return {'bdf_signature': bdf_signature, 'fw_signature': fw_signature,
             'serial_hash': serial_hash}
 
