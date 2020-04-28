@@ -99,7 +99,8 @@ class GnssSanityTest(BaseTestClass):
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
                       "gnss_init_error_whitelist", "pixel_lab_location",
                       "legacy_wifi_xtra_cs_criteria", "legacy_projects",
-                      "qdsp6m_path", "supl_capabilities"]
+                      "qdsp6m_path", "supl_capabilities", "ttff_test_cycle",
+                      "collect_logs"]
         self.unpack_userparams(req_param_names=req_params)
         # create hashmap for SSID
         self.ssid_map = {}
@@ -113,14 +114,16 @@ class GnssSanityTest(BaseTestClass):
             self.wifi_xtra_cs_criteria = self.legacy_wifi_xtra_cs_criteria
         else:
             self.wifi_xtra_cs_criteria = self.xtra_cs_criteria
-        self.flash_new_radio_or_mbn()
+        if self.collect_logs:
+            self.flash_new_radio_or_mbn()
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.default_gnss_signal_attenuation)
         _init_device(self.ad)
 
     def setup_test(self):
         get_baseband_and_gms_version(self.ad)
-        clear_logd_gnss_qxdm_log(self.ad)
+        if self.collect_logs:
+            clear_logd_gnss_qxdm_log(self.ad)
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.default_gnss_signal_attenuation)
         if not verify_internet_connection(self.ad.log, self.ad, retries=3,
@@ -128,8 +131,9 @@ class GnssSanityTest(BaseTestClass):
             raise signals.TestFailure("Fail to connect to LTE network.")
 
     def teardown_test(self):
-        stop_qxdm_logger(self.ad)
-        stop_adb_tcpdump(self.ad)
+        if self.collect_logs:
+            stop_qxdm_logger(self.ad)
+            stop_adb_tcpdump(self.ad)
         if check_call_state_connected_by_adb(self.ad):
             hangup_call(self.ad.log, self.ad)
         if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
@@ -146,14 +150,16 @@ class GnssSanityTest(BaseTestClass):
                                    self.default_gnss_signal_attenuation)
 
     def on_pass(self, test_name, begin_time):
-        self.ad.take_bug_report(test_name, begin_time)
-        get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
-        get_tcpdump_log(self.ad, test_name, begin_time)
+        if self.collect_logs:
+            self.ad.take_bug_report(test_name, begin_time)
+            get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+            get_tcpdump_log(self.ad, test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
-        self.ad.take_bug_report(test_name, begin_time)
-        get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
-        get_tcpdump_log(self.ad, test_name, begin_time)
+        if self.collect_logs:
+            self.ad.take_bug_report(test_name, begin_time)
+            get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+            get_tcpdump_log(self.ad, test_name, begin_time)
 
     def flash_new_radio_or_mbn(self):
         paths = {}
@@ -231,17 +237,16 @@ class GnssSanityTest(BaseTestClass):
                 self.ad.log.error("cat mcfg.version with error %s", e)
                 return False
 
-    def run_ttff_via_gtw_gpstool(self, mode, criteria, ttff_iteration=10):
+    def run_ttff_via_gtw_gpstool(self, mode, criteria):
         """Run GNSS TTFF test with selected mode and parse the results.
 
         Args:
             mode: "cs", "ws" or "hs"
             criteria: Criteria for the TTFF.
-            ttff_iteration: Test cycle of TTFF. Default is 10
         """
         begin_time = get_current_epoch_time()
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, mode, ttff_iteration)
+        start_ttff_by_gtw_gpstool(self.ad, mode, self.ttff_test_cycle)
         ttff_data = process_ttff_by_gtw_gpstool(
             self.ad, begin_time, self.pixel_lab_location)
         result = check_ttff_data(
@@ -250,6 +255,12 @@ class GnssSanityTest(BaseTestClass):
             result, "TTFF %s fails to reach designated criteria of %d "
                     "seconds." % (self.ttff_mode.get(mode), criteria))
 
+    def start_qxdm_and_tcpdump_log(self):
+        """Start QXDM and adb tcpdump if collect_logs is True."""
+        if self.collect_logs:
+            start_qxdm_logger(self.ad, get_current_epoch_time())
+            start_adb_tcpdump(self.ad)
+
     def supl_ttff_with_sim(self, mode, criteria):
         """Verify SUPL TTFF functionality.
 
@@ -257,8 +268,7 @@ class GnssSanityTest(BaseTestClass):
             mode: "cs", "ws" or "hs"
             criteria: Criteria for the test.
         """
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
@@ -269,8 +279,7 @@ class GnssSanityTest(BaseTestClass):
             mode: "cs", "ws" or "hs"
             criteria: Criteria for the test.
         """
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.ad.log.info("Turn airplane mode on")
         force_airplane_mode(self.ad, True)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
@@ -284,8 +293,7 @@ class GnssSanityTest(BaseTestClass):
         """
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.weak_gnss_signal_attenuation)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
@@ -297,8 +305,7 @@ class GnssSanityTest(BaseTestClass):
             criteria: Criteria for the test.
         """
         disable_supl_mode(self.ad)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     def xtra_ttff_weak_gnss_signal(self, mode, criteria):
@@ -311,8 +318,7 @@ class GnssSanityTest(BaseTestClass):
         disable_supl_mode(self.ad)
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.weak_gnss_signal_attenuation)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.run_ttff_via_gtw_gpstool(mode, criteria)
 
     def xtra_ttff_wifi(self, mode, criteria):
@@ -323,8 +329,7 @@ class GnssSanityTest(BaseTestClass):
             criteria: Criteria for the test.
         """
         disable_supl_mode(self.ad)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.ad.log.info("Turn airplane mode on")
         force_airplane_mode(self.ad, True)
         wifi_toggle_state(self.ad, True)
@@ -346,8 +351,7 @@ class GnssSanityTest(BaseTestClass):
         Expected Results:
             DUT could finish 60 minutes test and output track data.
         """
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
                                       type="gnss", testtime=60)
         parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="gnss")
@@ -434,8 +438,7 @@ class GnssSanityTest(BaseTestClass):
             Test devices could report cell Network Location.
         """
         test_result_all = []
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         set_wifi_and_bt_scanning(self.ad, False)
         for i in range(1, 6):
             test_result = check_network_location(
@@ -460,8 +463,7 @@ class GnssSanityTest(BaseTestClass):
             Test devices could report wifi Network Location.
         """
         test_result_all = []
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         set_wifi_and_bt_scanning(self.ad, True)
         for i in range(1, 6):
             test_result = check_network_location(
@@ -486,8 +488,7 @@ class GnssSanityTest(BaseTestClass):
             Test devices could report location to Google Map.
         """
         test_result_all = []
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         for i in range(1, 6):
             grant_location_permission(self.ad, True)
             launch_google_map(self.ad)
@@ -513,8 +514,7 @@ class GnssSanityTest(BaseTestClass):
             Test devices could report location to Google Map.
         """
         test_result_all = []
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.ad.adb.shell("settings put secure location_mode 1")
         out = int(self.ad.adb.shell("settings get secure location_mode"))
         self.ad.log.info("Modify current Location Mode to %d" % out)
@@ -545,8 +545,7 @@ class GnssSanityTest(BaseTestClass):
             Test devices could report location to Google Map.
         """
         test_result_all = []
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         set_battery_saver_mode(self.ad, True)
         for i in range(1, 6):
             grant_location_permission(self.ad, True)
@@ -614,8 +613,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be less than
             supl_cs_criteria.
         """
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
         self.ad.droid.setVoiceCallVolume(25)
         initiate_call(self.ad.log, self.ad, "99117")
@@ -638,8 +636,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         begin_time = get_current_epoch_time()
-        start_qxdm_logger(self.ad, begin_time)
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
         download = Process(target=http_file_download_by_sl4a,
                            args=(self.ad, "https://speed.hetzner.de/10GB.bin",
@@ -647,7 +644,8 @@ class GnssSanityTest(BaseTestClass):
         download.start()
         time.sleep(10)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        start_ttff_by_gtw_gpstool(
+            self.ad, ttff_mode="cs", iteration=self.ttff_test_cycle)
         ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                 self.pixel_lab_location)
         download.terminate()
@@ -670,12 +668,12 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         begin_time = get_current_epoch_time()
-        start_qxdm_logger(self.ad, begin_time)
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
         self.ad.droid.setMediaVolume(25)
         process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-        start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+        start_ttff_by_gtw_gpstool(
+            self.ad, ttff_mode="cs", iteration=self.ttff_test_cycle)
         start_youtube_video(self.ad,
                             url="https://www.youtube.com/watch?v=AbdVsi1VjQY",
                             retries=3)
@@ -699,8 +697,7 @@ class GnssSanityTest(BaseTestClass):
             All SUPL TTFF Cold Start results should be within supl_cs_criteria.
         """
         supl_ssr_test_result_all = []
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
@@ -779,8 +776,7 @@ class GnssSanityTest(BaseTestClass):
             All Standalone TTFF Cold Start results should be within
             standalone_cs_criteria.
         """
-        start_qxdm_logger(self.ad, get_current_epoch_time)
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
         set_mobile_data(self.ad, False)
         self.run_ttff_via_gtw_gpstool("cs", self.standalone_cs_criteria)
@@ -803,8 +799,7 @@ class GnssSanityTest(BaseTestClass):
             DUT could get location fixed again.
         """
         supl_no_gnss_signal_all = []
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         for times in range(1, 6):
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
             self.ad.log.info("Let device do GNSS tracking for 1 minute.")
@@ -886,11 +881,11 @@ class GnssSanityTest(BaseTestClass):
             self.ad.unlock_screen(password=None)
             _init_device(self.ad)
             begin_time = get_current_epoch_time()
-            start_qxdm_logger(self.ad, begin_time)
-            start_adb_tcpdump(self.ad)
+            self.start_qxdm_and_tcpdump_log()
             kill_xtra_daemon(self.ad)
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
-            start_ttff_by_gtw_gpstool(self.ad, ttff_mode="cs", iteration=10)
+            start_ttff_by_gtw_gpstool(
+                self.ad, ttff_mode="cs", iteration=self.ttff_test_cycle)
             ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
                                                     self.pixel_lab_location)
             if not check_ttff_data(self.ad, ttff_data, ttff_mode="Cold Start",
@@ -1041,8 +1036,7 @@ class GnssSanityTest(BaseTestClass):
         """
         disable_supl_mode(self.ad)
         xtra_ssr_test_result_all = []
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         for times in range(1, 6):
             begin_time = get_current_epoch_time()
             gnss_trigger_modem_ssr_by_mds(self.ad)
@@ -1077,8 +1071,7 @@ class GnssSanityTest(BaseTestClass):
         """
         mobile_xtra_result_all = []
         disable_supl_mode(self.ad)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         for i in range(1, 6):
             begin_time = get_current_epoch_time()
             process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria)
@@ -1106,8 +1099,7 @@ class GnssSanityTest(BaseTestClass):
         """
         wifi_xtra_result_all = []
         disable_supl_mode(self.ad)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         self.ad.log.info("Turn airplane mode on")
         force_airplane_mode(self.ad, True)
         wifi_toggle_state(self.ad, True)
@@ -1141,9 +1133,9 @@ class GnssSanityTest(BaseTestClass):
         """
         enable_supl_mode(self.ad)
         reboot(self.ad)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
-        start_toggle_gnss_by_gtw_gpstool(self.ad, iteration=10)
+        self.start_qxdm_and_tcpdump_log()
+        start_toggle_gnss_by_gtw_gpstool(
+            self.ad, iteration=self.ttff_test_cycle)
 
     @test_tracker_info(uuid="9f565b32-9938-42c0-a29d-f4d28b5f4d75")
     def test_supl_system_server_restart(self):
@@ -1159,14 +1151,16 @@ class GnssSanityTest(BaseTestClass):
             Location fixed within supl_cs_criteria.
         """
         overall_test_result = []
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         kill_xtra_daemon(self.ad)
         for test_loop in range(1, 6):
             process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
             self.ad.restart_runtime()
             self.ad.unlock_screen(password=None)
+            # in case restart android runtime and adb logcat didn't restart.
+            if not self.ad.is_adb_logcat_on:
+                self.ad.start_adb_logcat()
             test_result = process_gnss_by_gtw_gpstool(self.ad,
                                                       self.supl_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
@@ -1190,13 +1184,15 @@ class GnssSanityTest(BaseTestClass):
         """
         overall_test_result = []
         disable_supl_mode(self.ad)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
-        start_adb_tcpdump(self.ad)
+        self.start_qxdm_and_tcpdump_log()
         for test_loop in range(1, 6):
             process_gnss_by_gtw_gpstool(self.ad, self.xtra_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
             self.ad.restart_runtime()
             self.ad.unlock_screen(password=None)
+            # in case restart android runtime and adb logcat didn't restart.
+            if not self.ad.is_adb_logcat_on:
+                self.ad.start_adb_logcat()
             test_result = process_gnss_by_gtw_gpstool(self.ad,
                                                       self.xtra_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
