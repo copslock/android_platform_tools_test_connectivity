@@ -28,8 +28,8 @@ from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
 
 
 class TelLiveVideoDataTest(TelephonyBaseTest):
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        TelephonyBaseTest.__init__(self, controllers)
 
         self.stress_test_number = self.get_stress_test_number()
         self.number_of_devices = 2

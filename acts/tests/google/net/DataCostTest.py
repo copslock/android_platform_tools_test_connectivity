@@ -22,7 +22,6 @@ import time
 
 from acts import asserts
 from acts import base_test
-from acts import signals
 from acts import test_runner
 from acts.controllers import adb
 from acts.test_decorators import test_tracker_info
@@ -37,7 +36,6 @@ from acts.test_utils.net.connectivity_const import MULTIPATH_PREFERENCE_PERFORMA
 
 DOWNLOAD_PATH = "/sdcard/Download/"
 RELIABLE = RELIABILITY | HANDOVER
-TIMEOUT = 6
 
 class DataCostTest(base_test.BaseTestClass):
     """ Tests for Wifi Tethering """
@@ -159,16 +157,8 @@ class DataCostTest(base_test.BaseTestClass):
             sub_id, int((total_pre + 5) * 1000.0 * 1000.0))
 
         # verify multipath preference values
-        curr_time = time.time()
-        while time.time() < curr_time + TIMEOUT:
-            try:
-                self._verify_multipath_preferences(
-                    ad, RELIABLE, NONE, wifi_network, cell_network)
-                return True
-            except signals.TestFailure as e:
-                self.log.debug("%s" % e)
-            time.sleep(1)
-        return False
+        self._verify_multipath_preferences(
+            ad, RELIABLE, NONE, wifi_network, cell_network)
 
     @test_tracker_info(uuid="a2781411-d880-476a-9f40-2c67e0f97db9")
     def test_multipath_preference_data_download(self):
@@ -204,16 +194,8 @@ class DataCostTest(base_test.BaseTestClass):
             ad.adb.shell("rm -rf %s%s" % (DOWNLOAD_PATH, file_name))
 
         #  verify multipath preference values
-        curr_time = time.time()
-        while time.time() < curr_time + TIMEOUT:
-            try:
-                self._verify_multipath_preferences(
-                    ad, RELIABLE, NONE, wifi_network, cell_network)
-                return True
-            except signals.TestFailure as e:
-                self.log.debug("%s" % e)
-            time.sleep(1)
-        return False
+        self._verify_multipath_preferences(
+            ad, RELIABLE, NONE, wifi_network, cell_network)
 
     # TODO gmoturu@: Need to add tests that use the mobility rig and test when
     # the WiFi signal is poor and data signal is good.

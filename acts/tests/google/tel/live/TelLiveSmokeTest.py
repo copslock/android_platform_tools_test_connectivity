@@ -54,8 +54,8 @@ SKIP = 'Skip'
 
 
 class TelLiveSmokeTest(TelephonyBaseTest):
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        TelephonyBaseTest.__init__(self, controllers)
 
         self.wifi_network_ssid = self.user_params["wifi_network_ssid"]
         try:

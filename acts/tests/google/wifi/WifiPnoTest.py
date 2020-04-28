@@ -26,9 +26,10 @@ MAX_ATTN = 95
 
 class WifiPnoTest(WifiBaseTest):
 
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
 
+    def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = ["attn_vals", "pno_interval"]

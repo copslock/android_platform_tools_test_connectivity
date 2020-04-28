@@ -29,6 +29,9 @@ class RttRequestManagementTest(RttBaseTest):
 
     SPAMMING_LIMIT = 20
 
+    def __init__(self, controllers):
+        RttBaseTest.__init__(self, controllers)
+
     #############################################################################
 
     @test_tracker_info(uuid="29ff4a02-2952-47df-bf56-64f30c963093")

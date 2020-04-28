@@ -29,8 +29,8 @@ from acts.test_utils.tel.tel_voice_utils \
 
 
 class TelLiveMSIMSmsTest(TelephonyBaseTest):
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        TelephonyBaseTest.__init__(self, controllers)
         self.numer_of_slots = 2
         self.sim_config = { "config": MULTI_SIM_CONFIG,
                             "number_of_sims": 2 }

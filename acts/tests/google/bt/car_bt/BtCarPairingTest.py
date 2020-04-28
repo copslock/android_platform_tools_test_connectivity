@@ -33,8 +33,8 @@ UNBOND_TIMEOUT = 3
 
 
 class BtCarPairingTest(BluetoothBaseTest):
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
         self.car = self.android_devices[0]
         self.ph = self.android_devices[1]
 

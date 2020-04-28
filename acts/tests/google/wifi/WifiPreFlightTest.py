@@ -42,13 +42,14 @@ class WifiPreFlightTest(WifiBaseTest):
     * Check if attenuators attenuate the correct network
     """
 
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
         self.WIFI_2G = "2g"
         self.WIFI_5G = "5g"
         self.PASSWORD = "password"
         self.MIN_SIGNAL_LEVEL = -45
 
+    def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         wutils.wifi_toggle_state(self.dut, True)

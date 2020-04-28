@@ -71,6 +71,7 @@ class HostapdConfig(object):
 
     All the settings for a router that are not part of an ssid.
     """
+
     def _get_11ac_center_channel_from_channel(self, channel):
         """Returns the center channel of the selected channel band based
            on the channel and channel bandwidth provided.
@@ -307,7 +308,6 @@ class HostapdConfig(object):
                  beacon_interval=None,
                  dtim_period=None,
                  frag_threshold=None,
-                 rts_threshold=None,
                  short_preamble=None,
                  ssid=None,
                  hidden=False,
@@ -324,7 +324,6 @@ class HostapdConfig(object):
                  scenario_name=None,
                  min_streams=None,
                  bss_settings=[],
-                 additional_parameters={},
                  set_ap_defaults_model=None):
         """Construct a HostapdConfig.
 
@@ -341,8 +340,6 @@ class HostapdConfig(object):
             beacon_interval: int, beacon interval of AP.
             dtim_period: int, include a DTIM every |dtim_period| beacons.
             frag_threshold: int, maximum outgoing data frame size.
-            rts_threshold: int, maximum packet size without requiring explicit
-                protection via rts/cts or cts to self.
             short_preamble: Whether to use a short preamble.
             ssid: string, The name of the ssid to brodcast.
             hidden: bool, Should the ssid be hidden.
@@ -366,8 +363,6 @@ class HostapdConfig(object):
             min_streams: int, number of spatial streams required.
             control_interface: The file name to use as the control interface.
             bss_settings: The settings for all bss.
-            additional_parameters: A dictionary of additional parameters to add
-                to the hostapd config.
         """
         self._interface = interface
         if channel is not None and frequency is not None:
@@ -419,17 +414,14 @@ class HostapdConfig(object):
         self._beacon_interval = beacon_interval
         self._dtim_period = dtim_period
         self._frag_threshold = frag_threshold
-        self._rts_threshold = rts_threshold
         self._short_preamble = short_preamble
+
         self._ssid = ssid
         self._hidden = hidden
         self._security = security
         self._bssid = bssid
         if force_wmm is not None:
-            if force_wmm:
-                self._wmm_enabled = 1
-            else:
-                self._wmm_enabled = 0
+            self._wmm_enabled = force_wmm
         if pmf_support not in hostapd_constants.PMF_SUPPORT_VALUES:
             raise ValueError('Invalid value for pmf_support: %r' % pmf_support)
 
@@ -451,9 +443,10 @@ class HostapdConfig(object):
                 logging.warning(
                     'No channel bandwidth specified.  Using 80MHz for 11ac.')
                 self._vht_oper_chwidth = 1
-            if not vht_channel_width == 20 and not vht_center_channel:
-                self._vht_oper_centr_freq_seg0_idx = self._get_11ac_center_channel_from_channel(
-                    self.channel)
+            if not vht_channel_width == 20:
+                if not vht_center_channel:
+                    self._vht_oper_centr_freq_seg0_idx = self._get_11ac_center_channel_from_channel(
+                        self.channel)
             else:
                 self._vht_oper_centr_freq_seg0_idx = vht_center_channel
             self._ac_capabilities = set(ac_capabilities)
@@ -461,7 +454,6 @@ class HostapdConfig(object):
         self._spectrum_mgmt_required = spectrum_mgmt_required
         self._scenario_name = scenario_name
         self._min_streams = min_streams
-        self._additional_parameters = additional_parameters
 
         self._bss_lookup = collections.OrderedDict()
         for bss in bss_settings:
@@ -471,16 +463,16 @@ class HostapdConfig(object):
             self._bss_lookup[bss.name] = bss
 
     def __repr__(self):
-        return (
-            '%s(mode=%r, channel=%r, frequency=%r, '
-            'n_capabilities=%r, beacon_interval=%r, '
-            'dtim_period=%r, frag_threshold=%r, ssid=%r, bssid=%r, '
-            'wmm_enabled=%r, security_config=%r, '
-            'spectrum_mgmt_required=%r)' %
-            (self.__class__.__name__, self._mode, self.channel, self.frequency,
-             self._n_capabilities, self._beacon_interval, self._dtim_period,
-             self._frag_threshold, self._ssid, self._bssid, self._wmm_enabled,
-             self._security, self._spectrum_mgmt_required))
+        return ('%s(mode=%r, channel=%r, frequency=%r, '
+                'n_capabilities=%r, beacon_interval=%r, '
+                'dtim_period=%r, frag_threshold=%r, ssid=%r, bssid=%r, '
+                'wmm_enabled=%r, security_config=%r, '
+                'spectrum_mgmt_required=%r)' %
+                (self.__class__.__name__, self._mode, self.channel,
+                 self.frequency, self._n_capabilities, self._beacon_interval,
+                 self._dtim_period, self._frag_threshold, self._ssid,
+                 self._bssid, self._wmm_enabled, self._security,
+                 self._spectrum_mgmt_required))
 
     def supports_channel(self, value):
         """Check whether channel is supported by the current hardware mode.
@@ -569,8 +561,8 @@ class HostapdConfig(object):
             conf['vht_oper_centr_freq_seg0_idx'] = \
                     self._vht_oper_centr_freq_seg0_idx
             conf['vht_capab'] = self._hostapd_vht_capabilities
-        if self._wmm_enabled is not None:
-            conf['wmm_enabled'] = self._wmm_enabled
+        if self._wmm_enabled:
+            conf['wmm_enabled'] = 1
         if self._require_ht:
             conf['require_ht'] = 1
         if self._require_vht:
@@ -581,8 +573,6 @@ class HostapdConfig(object):
             conf['dtim_period'] = self._dtim_period
         if self._frag_threshold:
             conf['fragm_threshold'] = self._frag_threshold
-        if self._rts_threshold:
-            conf['rts_threshold'] = self._rts_threshold
         if self._pmf_support:
             conf['ieee80211w'] = self._pmf_support
         if self._obss_interval:
@@ -610,8 +600,5 @@ class HostapdConfig(object):
             for k, v in (bss.generate_dict()).items():
                 bss_conf[k] = v
             all_conf.append(bss_conf)
-
-        if self._additional_parameters:
-            all_conf.append(self._additional_parameters)
 
         return all_conf

@@ -27,9 +27,6 @@ RECORD_FILE_TEMPLATE = 'recorded_audio_%s.wav'
 class DeviceNotFound(Exception):
     """Raises exception if audio capture device is not found."""
 
-# TODO: (@sairamganesh) This class will be deprecated for
-# ../acts/test_utils/coex/audio_capture_device.py
-
 
 class AudioCapture:
 
@@ -64,7 +61,6 @@ class AudioCapture:
         if self.__input_device is None:
             for i in range(self.audio.get_device_count()):
                 device_info = self.audio.get_device_info_by_index(i)
-                logging.info("Device Information {}".format(device_info))
                 if self.audio_params['input_device'] in device_info['name']:
                     self.__input_device = device_info
                     break
@@ -97,7 +93,7 @@ class AudioCapture:
             'record_duration']
         for i in range(total_chunks):
             try:
-                data = stream.read(self.chunk, exception_on_overflow=False)
+                data = stream.read(self.chunk)
             except IOError as ex:
                 logging.error("Cannot record audio :{}".format(ex))
                 return False
@@ -151,7 +147,7 @@ if __name__ == '__main__':
         '--test_params',
         type=json.loads,
         help="Contains sample rate, channels,"
-             " chunk and device index for recording.")
+        " chunk and device index for recording.")
     args = parser.parse_args()
     audio = AudioCapture(args.test_params, args.path)
     audio.capture_and_store_audio(args.test_params['trim_beginning'],

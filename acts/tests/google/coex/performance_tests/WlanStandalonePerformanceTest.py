@@ -20,9 +20,13 @@ from acts.test_utils.bt.bt_test_utils import disable_bluetooth
 
 class WlanStandalonePerformanceTest(CoexPerformanceBaseTest):
 
+    def __init__(self, controllers):
+        super().__init__(controllers)
+
     def setup_class(self):
         super().setup_class()
-
+        req_params = ["iterations"]
+        self.unpack_userparams(req_params)
 
     def setup_test(self):
         super().setup_test()
@@ -38,6 +42,8 @@ class WlanStandalonePerformanceTest(CoexPerformanceBaseTest):
 
         Steps:
         1. Start TCP-uplink traffic.
+
+        Test Id: Bt_CoEx_kpi_001
         """
         self.set_attenuation_and_run_iperf()
         return self.teardown_result()
@@ -50,6 +56,8 @@ class WlanStandalonePerformanceTest(CoexPerformanceBaseTest):
 
         Steps:
         1. Start TCP-downlink traffic.
+
+        Test Id: Bt_CoEx_kpi_002
         """
         self.set_attenuation_and_run_iperf()
         return self.teardown_result()
@@ -62,6 +70,8 @@ class WlanStandalonePerformanceTest(CoexPerformanceBaseTest):
 
         Steps:
         1. Start UDP-uplink traffic.
+
+        Test Id: Bt_CoEx_kpi_003
         """
         self.set_attenuation_and_run_iperf()
         return self.teardown_result()
@@ -74,6 +84,8 @@ class WlanStandalonePerformanceTest(CoexPerformanceBaseTest):
 
         Steps:
         1. Start UDP-downlink traffic.
+
+        Test Id: Bt_CoEx_kpi_004
         """
         self.set_attenuation_and_run_iperf()
         return self.teardown_result()

@@ -19,6 +19,7 @@ import logging
 import math
 import os
 import re
+import subprocess
 import time
 
 from acts import asserts
@@ -28,7 +29,7 @@ from acts.controllers.ap_lib import hostapd_security
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.controllers.iperf_server import IPerfResult
-from acts.libs.proc import job
+from acts.test_utils.bt import BtEnum
 from acts.test_utils.bt.bt_constants import (
     bluetooth_profile_connection_state_changed)
 from acts.test_utils.bt.bt_constants import bt_default_timeout
@@ -536,7 +537,7 @@ def initiate_disconnect_call_dut(pri_ad, sec_ad, duration, callee_number):
     return flag
 
 
-def check_wifi_status(pri_ad, network, ssh_config=None):
+def check_wifi_status(pri_ad, network, ssh_config):
     """Function to check existence of wifi connection.
 
     Args:
@@ -545,12 +546,12 @@ def check_wifi_status(pri_ad, network, ssh_config=None):
         ssh_config: ssh config for iperf client.
     """
     time.sleep(5)
-    proc = job.run("pgrep -f 'iperf3 -c'")
-    pid_list = proc.stdout.split()
+    proc = subprocess.Popen("pgrep -f 'iperf3 -c'", stdout=subprocess.PIPE, shell=True)
+    pid_list = proc.communicate()[0].decode('utf-8').split()
 
     while True:
-        iperf_proc = job.run(["pgrep", "-f", "iperf3"])
-        process_list = iperf_proc.stdout.split()
+        p = subprocess.Popen(["pgrep", "-f", "iperf3"], stdout=subprocess.PIPE)
+        process_list = p.communicate()[0].decode('utf-8').split()
         if not wifi_connection_check(pri_ad, network["SSID"]):
             pri_ad.adb.shell("killall iperf3")
             if ssh_config:
@@ -561,13 +562,12 @@ def check_wifi_status(pri_ad, network, ssh_config=None):
                 res = result.stdout.split("\n")
                 for pid in res:
                     try:
-                        ssh_session.run("kill -9 %s" % pid)
+                        ssh_session.run("kill -9 %s" %pid)
                     except Exception as e:
-                        logging.warning("No such process: %s" % e)
+                        logging.warning("No such process: %s" %e)
                 for pid in pid_list[:-1]:
-                    job.run(["kill", " -9", " %s" % pid], ignore_status=True)
-            else:
-                job.run(["killall", " iperf3"], ignore_status=True)
+                    subprocess.Popen("kill -9 {}".format(pid),
+                                 stdout=subprocess.PIPE, shell=True)
             break
         elif pid_list[0] not in process_list:
             break
@@ -729,7 +729,7 @@ def get_phone_ip(ad):
 
 
 def pair_dev_to_headset(pri_ad, dev_to_pair):
-    """Pairs primary android device with headset.
+    """Pairs pri droid to secondary droid.
 
     Args:
         pri_ad: Android device initiating connection
@@ -742,13 +742,12 @@ def pair_dev_to_headset(pri_ad, dev_to_pair):
     bonded_devices = pri_ad.droid.bluetoothGetBondedDevices()
     for d in bonded_devices:
         if d['address'] == dev_to_pair:
-            pri_ad.log.info("Successfully bonded to device {}".format(
-                dev_to_pair))
+            pri_ad.log.info("Successfully bonded to device".format(dev_to_pair))
             return True
     pri_ad.droid.bluetoothStartDiscovery()
-    time.sleep(10)  # Wait until device gets discovered
+    time.sleep(10)  #Wait until device gets discovered
     pri_ad.droid.bluetoothCancelDiscovery()
-    pri_ad.log.debug("Discovered bluetooth devices: {}".format(
+    pri_ad.log.debug("discovered devices = {}".format(
         pri_ad.droid.bluetoothGetDiscoveredDevices()))
     for device in pri_ad.droid.bluetoothGetDiscoveredDevices():
         if device['address'] == dev_to_pair:
@@ -756,18 +755,17 @@ def pair_dev_to_headset(pri_ad, dev_to_pair):
             result = pri_ad.droid.bluetoothDiscoverAndBond(dev_to_pair)
             pri_ad.log.info(result)
             end_time = time.time() + bt_default_timeout
-            pri_ad.log.info("Verifying if device bonded with {}".format(
-                dev_to_pair))
-            time.sleep(5)  # Wait time until device gets paired.
+            pri_ad.log.info("Verifying devices are bonded")
+            time.sleep(5)  #Wait time until device gets paired.
             while time.time() < end_time:
                 bonded_devices = pri_ad.droid.bluetoothGetBondedDevices()
+                bonded = False
                 for d in bonded_devices:
                     if d['address'] == dev_to_pair:
                         pri_ad.log.info(
-                            "Successfully bonded to device {}".format(
-                                dev_to_pair))
+                            "Successfully bonded to device".format(dev_to_pair))
                         return True
-    pri_ad.log.error("Failed to bond with {}".format(dev_to_pair))
+    pri_ad.log.info("Failed to bond devices.")
     return False
 
 
@@ -781,30 +779,28 @@ def pair_and_connect_headset(pri_ad, headset_mac_address, profile_to_connect, re
         retry: Number of times pair and connection should happen.
 
     Returns:
-        True if pair and connect to headset successful, or raises exception
-        on failure.
+        True if pair and connect to headset successful, False otherwise.
     """
 
     paired = False
-    for i in range(1, retry):
+    for _ in range(retry):
         if pair_dev_to_headset(pri_ad, headset_mac_address):
             paired = True
             break
         else:
-            pri_ad.log.error("Attempt {} out of {}, Failed to pair, "
-                             "Retrying.".format(i, retry))
+            pri_ad.log.error("Could not pair to headset. Retrying.")
+
+    time.sleep(2)  # Wait until pairing gets over.
 
     if paired:
-        for i in range(1, retry):
+        for _ in range(retry):
             if connect_dev_to_headset(pri_ad, headset_mac_address,
                                       profile_to_connect):
                 return True
             else:
-                pri_ad.log.error("Attempt {} out of {}, Failed to connect, "
-                                 "Retrying.".format(i, retry))
+                pri_ad.log.error("Could not connect to headset. Retrying.")
     else:
-        asserts.fail("Failed to pair and connect with {}".format(
-            headset_mac_address))
+        asserts.fail("Failed to pair and connect to headset")
 
 
 def perform_classic_discovery(pri_ad, duration, file_name, dev_list=None):
@@ -977,7 +973,7 @@ def start_fping(pri_ad, duration, fping_params):
     else:
         cmd = cmd.split()
         with open(full_out_path, "w") as f:
-            job.run(cmd)
+            subprocess.call(cmd, stderr=f, stdout=f)
     result = parse_fping_results(fping_params["fping_drop_tolerance"],
                                  full_out_path)
     return bool(result)

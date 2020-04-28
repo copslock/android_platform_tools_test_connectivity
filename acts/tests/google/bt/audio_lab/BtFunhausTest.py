@@ -26,8 +26,8 @@ class BtFunhausTest(BtFunhausBaseTest):
     music_file_to_play = ""
     device_fails_to_connect_list = []
 
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        BtFunhausBaseTest.__init__(self, controllers)
 
     @test_tracker_info(uuid='80a4cc4c-7c2a-428d-9eaf-46239a7926df')
     def test_run_bt_audio_12_hours(self):

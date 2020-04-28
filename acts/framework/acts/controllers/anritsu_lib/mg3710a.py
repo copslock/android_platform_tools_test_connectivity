@@ -17,7 +17,6 @@
 Controller interface for Anritsu Signal Generator MG3710A.
 """
 
-import logging
 import time
 import socket
 from enum import Enum
@@ -27,16 +26,14 @@ from acts.controllers.anritsu_lib._anritsu_utils import AnritsuError
 from acts.controllers.anritsu_lib._anritsu_utils import NO_ERROR
 from acts.controllers.anritsu_lib._anritsu_utils import OPERATION_COMPLETE
 
-from acts import tracelogger
-
 TERMINATOR = "\n"
 
 
-def create(configs):
+def create(configs, logger):
     objs = []
     for c in configs:
         ip_address = c["ip_address"]
-        objs.append(MG3710A(ip_address))
+        objs.append(MG3710A(ip_address, logger))
     return objs
 
 
@@ -48,9 +45,9 @@ class MG3710A(object):
     """Class to communicate with Anritsu Signal Generator MG3710A.
        This uses GPIB command to interface with Anritsu MG3710A """
 
-    def __init__(self, ip_address):
+    def __init__(self, ip_address, log_handle):
         self._ipaddr = ip_address
-        self.log = tracelogger.TraceLogger(logging.getLogger())
+        self.log = log_handle
 
         # Open socket connection to Signaling Tester
         self.log.info("Opening Socket Connection with "

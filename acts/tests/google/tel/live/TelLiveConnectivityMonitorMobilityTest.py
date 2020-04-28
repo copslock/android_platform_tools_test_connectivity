@@ -68,14 +68,16 @@ IMS_LINK_LOST = "Media Timeout"
 
 class TelLiveConnectivityMonitorMobilityTest(
         TelLiveConnectivityMonitorBaseTest):
-    def setup_class(self):
-        TelLiveConnectivityMonitorBaseTest.setup_class(self)
+    def __init__(self, controllers):
+        TelLiveConnectivityMonitorBaseTest.__init__(self, controllers)
 
         self.attens = {}
         for atten in self.attenuators:
             self.attens[atten.path] = atten
             atten.set_atten(atten.get_max_atten())  # Default all attens to max
 
+    def setup_class(self):
+        TelLiveConnectivityMonitorBaseTest.setup_class(self)
 
         # Do WiFi RSSI calibration.
         self.set_wifi_strong_cell_strong()

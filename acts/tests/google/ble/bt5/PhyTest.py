@@ -42,11 +42,11 @@ class PhyTest(GattConnectedBaseTest):
     def setup_class(self):
         super(PhyTest, self).setup_class()
         if not self.cen_ad.droid.bluetoothIsLe2MPhySupported():
-            raise signals.TestAbortClass(
+            raise signals.TestSkipClass(
                 "Central device does not support LE 2M PHY")
 
         if not self.per_ad.droid.bluetoothIsLe2MPhySupported():
-            raise signals.TestAbortClass(
+            raise signals.TestSkipClass(
                 "Peripheral device does not support LE 2M PHY")
 
     # Some controllers auto-update PHY to 2M, and both client and server

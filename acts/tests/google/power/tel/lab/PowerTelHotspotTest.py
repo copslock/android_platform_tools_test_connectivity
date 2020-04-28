@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.4
 #
 #   Copyright 2018 - The Android Open Source Project
 #
@@ -74,18 +74,24 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
                         wutils.WifiEnums.PWD_KEY))
         else:
 
-            self.log.warning("The configuration file doesn't indicate an SSID "
-                             "password for the hotspot. Using default values. "
-                             "To configured the SSID and pwd include a the key"
-                             " {} containing the '{}' and '{}' fields.".format(
-                                 self.CONFIG_KEY_WIFI,
-                                 wutils.WifiEnums.SSID_KEY,
-                                 wutils.WifiEnums.PWD_KEY))
+            self.log.warning(
+                "The configuration file doesn't indicate an SSID "
+                "password for the hotspot. Using default values. "
+                "To configured the SSID and pwd include a the key"
+                " {} containing the '{}' and '{}' fields.".format(
+                    self.CONFIG_KEY_WIFI,
+                    wutils.WifiEnums.SSID_KEY,
+                    wutils.WifiEnums.PWD_KEY))
 
             self.network = {
                 wutils.WifiEnums.SSID_KEY: "Pixel_1030",
                 wutils.WifiEnums.PWD_KEY: "1234567890"
             }
+
+        # Both devices need to have a country code in order
+        # to use the 5 GHz band.
+        self.android_devices[0].droid.wifiSetCountryCode('US')
+        self.android_devices[1].droid.wifiSetCountryCode('US')
 
     def power_tel_tethering_test(self):
         """ Measure power and throughput during data transmission.
@@ -94,32 +100,20 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
         the iPerf client is hosted in the second android device.
 
         """
-        # Country Code set to 00 after toggling airplane mode.
-        # We need to set this right before we setup a hotspot
-        # Set country codes on both devices to US to connect to 5GHz
-        country_code = "US"
-        hotspot_dut = self.dut
-        slave_dut = self.android_devices[1]
-        for dut in [hotspot_dut, slave_dut]:
-            self.log.info("Setting Country Code to %s for SN:%s" %
-                          (country_code, dut.serial))
-            dut.droid.wifiSetCountryCode(country_code)
 
         # Setup tethering
-        wutils.start_wifi_tethering(self.dut,
-                                    self.network[wutils.WifiEnums.SSID_KEY],
-                                    self.network[wutils.WifiEnums.PWD_KEY],
-                                    self.wifi_band)
+        wutils.start_wifi_tethering(
+            self.dut, self.network[wutils.WifiEnums.SSID_KEY],
+            self.network[wutils.WifiEnums.PWD_KEY], self.wifi_band)
 
-        wutils.wifi_connect(self.android_devices[1],
-                            self.network,
-                            check_connectivity=False)
+        wutils.wifi_connect(
+            self.android_devices[1], self.network, check_connectivity=False)
 
         # Start data traffic
         iperf_helpers = self.start_tel_traffic(self.android_devices[1])
 
         # Measure power
-        result = self.collect_power_data()
+        self.collect_power_data()
 
         # Wait for iPerf to finish
         time.sleep(self.IPERF_MARGIN + 2)
@@ -129,7 +123,7 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
                                                     iperf_helpers)
 
         # Checks if power is below the required threshold.
-        self.pass_fail_check(result.average_current)
+        self.pass_fail_check()
 
     def setup_test(self):
         """ Executed before every test case.
@@ -154,9 +148,9 @@ class PowerTelHotspotTest(PowerTelTrafficTest):
         except:
             self.log.error(
                 "The test name has to include parameter {} followed by "
-                "either {} or {}.".format(self.PARAM_WIFI_BAND,
-                                          self.PARAM_2G_BAND,
-                                          self.PARAM_5G_BAND))
+                "either {} or {}.".
+                format(self.PARAM_WIFI_BAND, self.PARAM_2G_BAND,
+                       self.PARAM_5G_BAND))
             return False
 
         return True

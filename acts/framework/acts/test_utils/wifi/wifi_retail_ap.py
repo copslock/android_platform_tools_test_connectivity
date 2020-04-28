@@ -95,22 +95,11 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
         self.timeout = timeout
 
     def __enter__(self):
-        """Entry context manager for BlockingBrowser.
-
-        The enter context manager for BlockingBrowser attempts to lock the
-        browser file. If successful, it launches and returns a chromedriver
-        session. If an exception occurs while starting the browser, the lock
-        file is released.
-        """
         self.lock_file = open(self.lock_file_path, "r")
         start_time = time.time()
         while time.time() < start_time + self.timeout:
             try:
                 fcntl.flock(self.lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError:
-                time.sleep(BROWSER_WAIT_SHORT)
-                continue
-            try:
                 self.driver = selenium.webdriver.Chrome(
                     options=self.chrome_options,
                     desired_capabilities=self.chrome_capabilities)
@@ -120,19 +109,11 @@ class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
                 super(splinter.driver.webdriver.chrome.WebDriver,
                       self).__init__(2)
                 return super(BlockingBrowser, self).__enter__()
-            except:
-                fcntl.flock(self.lock_file, fcntl.LOCK_UN)
-                self.lock_file.close()
-                raise RuntimeError("Error starting browser. "
-                                   "Releasing lock file.")
+            except BlockingIOError:
+                time.sleep(BROWSER_WAIT_SHORT)
         raise TimeoutError("Could not start chrome browser in time.")
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """Exit context manager for BlockingBrowser.
-
-        The exit context manager simply calls the parent class exit and
-        releases the lock file.
-        """
         try:
             super(BlockingBrowser, self).__exit__(exc_type, exc_value,
                                                   traceback)
@@ -1314,10 +1295,8 @@ class GoogleWifiAP(WifiRetailAP):
             cmd_string = "iw dev {0} set bitrates legacy-{1} ht-mcs-{1} vht-mcs-{1} {2}:{3}".format(
                 interface, interface_short, num_streams, rate)
             if short_gi:
-                cmd_string = cmd_string + " sgi-{}".format(interface_short)
+                cmd_string = cmd_string + " sgi-interface_short"
         elif "ht" in mode.lower():
             cmd_string = "iw dev {0} set bitrates legacy-{1} ht-mcs-{1} {2} vht-mcs-{1}".format(
                 interface, interface_short, rate)
-            if short_gi:
-                cmd_string = cmd_string + " sgi-{}".format(interface_short)
         self.access_point.ssh.run(cmd_string)

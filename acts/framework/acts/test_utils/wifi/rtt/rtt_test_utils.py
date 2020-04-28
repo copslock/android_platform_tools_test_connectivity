@@ -124,22 +124,16 @@ def get_rtt_constrained_results(scanned_networks, support_rtt):
     return matching_networks
 
 
-def scan_networks(dut, max_tries=3):
+def scan_networks(dut):
     """Perform a scan and return scan results.
 
   Args:
     dut: Device under test.
-    max_retries: Retry scan to ensure network is found
 
   Returns: an array of scan results.
   """
-    scan_results = []
-    for num_tries in range(max_tries):
-        wutils.start_wifi_connection_scan(dut)
-        scan_results = dut.droid.wifiGetScanResults()
-        if scan_results:
-            break
-    return scan_results
+    wutils.start_wifi_connection_scan(dut)
+    return dut.droid.wifiGetScanResults()
 
 
 def scan_with_rtt_support_constraint(dut, support_rtt, repeat=0):

@@ -39,7 +39,6 @@ from acts.event.event import TestClassEndEvent
 from acts.event.subscription_bundle import SubscriptionBundle
 
 from mobly import controller_manager
-from mobly.base_test import BaseTestClass as MoblyBaseTest
 from mobly.records import ExceptionRecord
 
 # Macro strings for test result reporting
@@ -96,53 +95,16 @@ def _logcat_log_test_end(event):
         test_instance.log.warning('Error: %s' % e)
 
 
-@subscribe_static(TestCaseBeginEvent)
-def _syslog_log_test_begin(event):
-    """This adds a BEGIN log message with the test name to the syslog of any
-    Fuchsia device"""
-    test_instance = event.test_class
-    try:
-        for fd in getattr(test_instance, 'fuchsia_devices', []):
-            if not fd.skip_sl4f:
-                fd.logging_lib.logI("%s BEGIN %s" % (TEST_CASE_TOKEN,
-                                                     event.test_case_name))
-
-    except Exception as e:
-        test_instance.log.warning(
-            'Unable to send BEGIN log command to all devices.')
-        test_instance.log.warning('Error: %s' % e)
-
-
-@subscribe_static(TestCaseEndEvent)
-def _syslog_log_test_end(event):
-    """This adds a END log message with the test name to the syslog of any
-    Fuchsia device"""
-    test_instance = event.test_class
-    try:
-        for fd in getattr(test_instance, 'fuchsia_devices', []):
-            if not fd.skip_sl4f:
-                fd.logging_lib.logI("%s END %s" % (TEST_CASE_TOKEN,
-                                                   event.test_case_name))
-
-    except Exception as e:
-        test_instance.log.warning(
-            'Unable to send END log command to all devices.')
-        test_instance.log.warning('Error: %s' % e)
-
-
 event_bus.register_subscription(_logcat_log_test_begin.subscription)
 event_bus.register_subscription(_logcat_log_test_end.subscription)
-event_bus.register_subscription(_syslog_log_test_begin.subscription)
-event_bus.register_subscription(_syslog_log_test_end.subscription)
 
 
 class Error(Exception):
     """Raised for exceptions that occured in BaseTestClass."""
 
 
-class BaseTestClass(MoblyBaseTest):
-    """Base class for all test classes to inherit from. Inherits some
-    functionality from Mobly's base test class.
+class BaseTestClass(object):
+    """Base class for all test classes to inherit from.
 
     This class gets all the controller objects from test_runner and executes
     the test cases requested within itself.
@@ -182,7 +144,6 @@ class BaseTestClass(MoblyBaseTest):
         # Set all the controller objects and params.
         self.user_params = {}
         self.testbed_configs = {}
-        self.testbed_name = ''
         for name, value in configs.items():
             setattr(self, name, value)
         self.results = records.TestResult()
@@ -192,12 +153,78 @@ class BaseTestClass(MoblyBaseTest):
         self.consecutive_failure_limit = self.user_params.get(
             'consecutive_failure_limit', -1)
         self.size_limit_reached = False
-        self.retryable_exceptions = signals.TestFailure
 
         # Initialize a controller manager (Mobly)
         self._controller_manager = controller_manager.ControllerManager(
             class_name=self.__class__.__name__,
             controller_configs=self.testbed_configs)
+
+        # Import and register the built-in controller modules specified
+        # in testbed config.
+        for module in self._import_builtin_controllers():
+            self.register_controller(module, builtin=True)
+        if hasattr(self, 'android_devices'):
+            for ad in self.android_devices:
+                if ad.droid:
+                    utils.set_location_service(ad, False)
+                    utils.sync_device_time(ad)
+        self.testbed_name = ''
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self._exec_func(self.clean_up)
+
+    def unpack_userparams(self,
+                          req_param_names=[],
+                          opt_param_names=[],
+                          **kwargs):
+        """An optional function that unpacks user defined parameters into
+        individual variables.
+
+        After unpacking, the params can be directly accessed with self.xxx.
+
+        If a required param is not provided, an exception is raised. If an
+        optional param is not provided, a warning line will be logged.
+
+        To provide a param, add it in the config file or pass it in as a kwarg.
+        If a param appears in both the config file and kwarg, the value in the
+        config file is used.
+
+        User params from the config file can also be directly accessed in
+        self.user_params.
+
+        Args:
+            req_param_names: A list of names of the required user params.
+            opt_param_names: A list of names of the optional user params.
+            **kwargs: Arguments that provide default values.
+                e.g. unpack_userparams(required_list, opt_list, arg_a="hello")
+                     self.arg_a will be "hello" unless it is specified again in
+                     required_list or opt_list.
+
+        Raises:
+            Error is raised if a required user params is not provided.
+        """
+        for k, v in kwargs.items():
+            if k in self.user_params:
+                v = self.user_params[k]
+            setattr(self, k, v)
+        for name in req_param_names:
+            if hasattr(self, name):
+                continue
+            if name not in self.user_params:
+                raise Error(("Missing required user param '%s' in test "
+                             "configuration.") % name)
+            setattr(self, name, self.user_params[name])
+        for name in opt_param_names:
+            if hasattr(self, name):
+                continue
+            if name in self.user_params:
+                setattr(self, name, self.user_params[name])
+            else:
+                self.log.warning(("Missing optional user param '%s' in "
+                                  "configuration, continue."), name)
 
     def _import_builtin_controllers(self):
         """Import built-in controller modules.
@@ -277,6 +304,14 @@ class BaseTestClass(MoblyBaseTest):
                     A list of json serializable objects, each represents the
                     info of a controller object. The order of the info object
                     should follow that of the input objects.
+            def get_post_job_info(controller_list):
+                [Optional] Returns information about the controller after the
+                test has run. This info is sent to test_run_summary.json's
+                "Extras" key.
+                Args:
+                    The list of controller objects created by the module
+                Returns:
+                    A (name, data) tuple.
         Registering a controller module declares a test class's dependency the
         controller. If the module config exists and the module matches the
         controller interface, controller objects will be instantiated with
@@ -330,6 +365,28 @@ class BaseTestClass(MoblyBaseTest):
             setattr(self, module_ref_name, controllers)
         return controllers
 
+    def unregister_controllers(self):
+        """Destroy controller objects and clear internal registry. Invokes
+        Mobly's controller manager's unregister_controllers.
+
+        This will be called upon test class teardown.
+        """
+        controller_modules = self._controller_manager._controller_modules
+        controller_objects = self._controller_manager._controller_objects
+        # Record post job info for the controller
+        for name, controller_module in controller_modules.items():
+            if hasattr(controller_module, 'get_post_job_info'):
+                self.log.debug('Getting post job info for %s', name)
+                try:
+                    name, value = controller_module.get_post_job_info(
+                        controller_objects[name])
+                    self.results.set_extra_data(name, value)
+                    self.summary_writer.dump(
+                        {name: value}, records.TestSummaryEntryType.USER_DATA)
+                except:
+                    self.log.error("Fail to get post job info for %s", name)
+        self._controller_manager.unregister_controllers()
+
     def _record_controller_info(self):
         """Collect controller information and write to summary file."""
         try:
@@ -347,18 +404,33 @@ class BaseTestClass(MoblyBaseTest):
         is called.
         """
         event_bus.post(TestClassBeginEvent(self))
-        # Import and register the built-in controller modules specified
-        # in testbed config.
-        for module in self._import_builtin_controllers():
-            self.register_controller(module, builtin=True)
         return self.setup_class()
+
+    def setup_class(self):
+        """Setup function that will be called before executing any test case in
+        the test class.
+
+        To signal setup failure, return False or raise an exception. If
+        exceptions were raised, the stack trace would appear in log, but the
+        exceptions would not propagate to upper levels.
+
+        Implementation is optional.
+        """
 
     def _teardown_class(self):
         """Proxy function to guarantee the base implementation of teardown_class
         is called.
         """
-        super()._teardown_class()
+        self.teardown_class()
+        self.unregister_controllers()
         event_bus.post(TestClassEndEvent(self, self.results))
+
+    def teardown_class(self):
+        """Teardown function that will be called after all the selected test
+        cases in the test class have been executed.
+
+        Implementation is optional.
+        """
 
     def _setup_test(self, test_name):
         """Proxy function to guarantee the base implementation of setup_test is
@@ -389,7 +461,18 @@ class BaseTestClass(MoblyBaseTest):
         is called.
         """
         self.log.debug('Tearing down test %s' % test_name)
-        self.teardown_test()
+
+        try:
+            self.teardown_test()
+        finally:
+            self.current_test_name = None
+
+    def teardown_test(self):
+        """Teardown function that will be called every time a test case has
+        been executed.
+
+        Implementation is optional.
+        """
 
     def _on_fail(self, record):
         """Proxy function to guarantee the base implementation of on_fail is
@@ -482,14 +565,6 @@ class BaseTestClass(MoblyBaseTest):
         Args:
             test_name: Name of the test that triggered this function.
             begin_time: Logline format timestamp taken when the test started.
-        """
-
-    def on_retry():
-        """Function to run before retrying a test through get_func_with_retry.
-
-        This function runs when a test is automatically retried. The function
-        can be used to modify internal test parameters, for example, to retry
-        a test with slightly different input variables.
         """
 
     def _exec_procedure_func(self, func, tr_record):
@@ -625,7 +700,6 @@ class BaseTestClass(MoblyBaseTest):
 
         Returns: result of the test method
         """
-        exceptions = self.retryable_exceptions
         def wrapper(*args, **kwargs):
             error_msgs = []
             extras = {}
@@ -635,9 +709,8 @@ class BaseTestClass(MoblyBaseTest):
                     if retry:
                         self.teardown_test()
                         self.setup_test()
-                        self.on_retry()
                     return func(*args, **kwargs)
-                except exceptions as e:
+                except signals.TestFailure as e:
                     retry = True
                     msg = 'Failure on attempt %d: %s' % (i+1, e.details)
                     self.log.warning(msg)
@@ -873,14 +946,17 @@ class BaseTestClass(MoblyBaseTest):
                 self._block_all_test_cases(tests)
                 setup_fail = True
         except signals.TestAbortClass:
-            self.log.exception('Test class %s aborted' % self.TAG)
+            try:
+                self._exec_func(self._teardown_class)
+            except Exception as e:
+                self.log.warning(e)
             setup_fail = True
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
             self._block_all_test_cases(tests)
+            self._exec_func(self._teardown_class)
             setup_fail = True
         if setup_fail:
-            self._exec_func(self._teardown_class)
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
             return self.results
@@ -892,7 +968,6 @@ class BaseTestClass(MoblyBaseTest):
                     self.exec_one_testcase(test_name, test_func, self.cli_args)
             return self.results
         except signals.TestAbortClass:
-            self.log.exception('Test class %s aborted' % self.TAG)
             return self.results
         except signals.TestAbortAll as e:
             # Piggy-back test results on this exception object so we don't lose
@@ -903,6 +978,14 @@ class BaseTestClass(MoblyBaseTest):
             self._exec_func(self._teardown_class)
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
+
+    def clean_up(self):
+        """A function that is executed upon completion of all tests cases
+        selected in the test class.
+
+        This function should clean up objects initialized in the constructor by
+        user.
+        """
 
     def _ad_take_bugreport(self, ad, test_name, begin_time):
         for i in range(3):
@@ -935,11 +1018,8 @@ class BaseTestClass(MoblyBaseTest):
             result = False
         return result
 
-    def _skip_bug_report(self, test_name):
+    def _skip_bug_report(self):
         """A function to check whether we should skip creating a bug report.
-
-        Args:
-            test_name: The test case name
 
         Returns: True if bug report is to be skipped.
         """
@@ -955,7 +1035,7 @@ class BaseTestClass(MoblyBaseTest):
             self.log.info(
                 "Skipping bug report, as directed for this test class.")
             return True
-        full_test_name = '%s.%s' % (class_name, test_name)
+        full_test_name = '%s.%s' % (class_name, self.test_name)
         if full_test_name in quiet_tests:
             self.log.info(
                 "Skipping bug report, as directed for this test case.")
@@ -982,7 +1062,7 @@ class BaseTestClass(MoblyBaseTest):
         return False
 
     def _take_bug_report(self, test_name, begin_time):
-        if self._skip_bug_report(test_name):
+        if self._skip_bug_report():
             return
 
         executor = ThreadPoolExecutor(max_workers=10)

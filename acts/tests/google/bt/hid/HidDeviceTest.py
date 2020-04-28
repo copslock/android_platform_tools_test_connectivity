@@ -34,8 +34,8 @@ class HidDeviceTest(BluetoothBaseTest):
     tests = None
     default_timeout = 10
 
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        BaseTestClass.__init__(self, controllers)
         self.host_ad = self.android_devices[0]
         self.device_ad = self.android_devices[1]
 

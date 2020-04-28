@@ -42,11 +42,13 @@ class BleScanScreenStateTest(BluetoothBaseTest):
     scan_callback = -1
     shorter_scan_timeout = 4
 
-    def setup_class(self):
-        super(BluetoothBaseTest, self).setup_class()
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
         self.scn_ad = self.android_devices[0]
         self.adv_ad = self.android_devices[1]
 
+    def setup_class(self):
+        super(BluetoothBaseTest, self).setup_class()
         utils.set_location_service(self.scn_ad, True)
         utils.set_location_service(self.adv_ad, True)
         return True

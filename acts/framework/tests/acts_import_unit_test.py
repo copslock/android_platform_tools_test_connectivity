@@ -48,18 +48,17 @@ else:
 PY_FILE_REGEX = re.compile('.+\.py$')
 
 BLACKLIST = [
-    # TODO(markdr): Remove these after BT team evaluates these tests.
-    'acts/test_utils/bt/PowerBaseTest.py',
-    'tests/google/ble/power/GattPowerTest.py',
-    'tests/google/bt/power/A2dpPowerTest.py',
-    'tests/google/ble/power/BleScanPowerTest.py',
-
-    'acts/controllers/rohdeschwarz_lib/contest.py',
     'acts/controllers/native.py',
     'acts/controllers/native_android_device.py',
     'acts/controllers/packet_sender.py',
-    'acts/test_utils/wifi/ota_chamber.py',
     'acts/controllers/buds_lib/dev_utils/proto/gen/nanopb_pb2.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/bigquery_logger_utils.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/test_bigquery_utils.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/test_bigquery_logger.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/bigquery_buffer.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/bigquery_logger.py',
+    'acts/controllers/buds_lib/data_storage/bigquery/bigquery_scheduled_automatic_client.py',
+    'acts/controllers/buds_lib/data_storage/_sponge/sponge_client_lite.py',
     'acts/test_utils/wifi/wifi_performance_test_utils.py',
     'acts/test_utils/wifi/wifi_power_test_utils.py',
     'acts/test_utils/wifi/wifi_retail_ap.py',
@@ -90,20 +89,14 @@ BLACKLIST = [
     'tests/google/tel/live/TelLiveConnectivityMonitorTest.py',
     'tests/google/tel/live/TelLiveConnectivityMonitorMobilityTest.py',
     'tests/google/fuchsia/bt/FuchsiaCmdLineTest.py',
-    'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py',
-    'tests/google/fuchsia/wlan/RebootStressTest.py',
-    'acts/test_utils/gnss/gnss_testlog_utils.py',
+    'tests/google/fuchsia/bt/gatt/GattServerSetupTest.py'
 ]
 
 BLACKLIST_DIRECTORIES = [
-    'acts/controllers/buds_lib',
-    # TODO: remove monsoon_lib after HVPM and LVPM sampling libraries are merged
-    'acts/controllers/monsoon_lib',
     'acts/test_utils/audio_analysis_lib/',
     'acts/test_utils/coex/',
     'acts/test_utils/power/',
     'tests/google/coex/',
-    'tests/google/gnss/',
     'tests/google/power/',
     'tests/google/bt/performance/'
 ]
@@ -150,10 +143,9 @@ class ActsImportUnitTest(unittest.TestCase):
         self.longMessage = False
 
         for banned_import in BANNED_IMPORTS:
-            self.assertNotIn(
-                banned_import, sys.modules,
-                'Attempted to import the banned package/module '
-                '%s.' % banned_import)
+            self.assertNotIn(banned_import, sys.modules,
+                             'Attempted to import the banned package/module '
+                             '%s.' % banned_import)
 
 
 if __name__ == '__main__':

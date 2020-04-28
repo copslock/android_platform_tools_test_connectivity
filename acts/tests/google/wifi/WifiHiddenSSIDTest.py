@@ -38,9 +38,10 @@ class WifiHiddenSSIDTest(WifiBaseTest):
       network.
     """
 
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
 
+    def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = []
@@ -106,7 +107,10 @@ class WifiHiddenSSIDTest(WifiBaseTest):
             hidden_network: The hidden network config to connect to.
 
         """
-        wutils.connect_to_wifi_network(self.dut, hidden_network, hidden=True)
+        ret = self.dut.droid.wifiAddNetwork(hidden_network)
+        asserts.assert_true(ret != -1, "Add network %r failed" % hidden_network)
+        self.dut.droid.wifiEnableNetwork(ret, 0)
+        wutils.connect_to_wifi_network(self.dut, hidden_network)
         if not wutils.validate_connection(self.dut):
             raise signals.TestFailure("Fail to connect to internet on %s" %
                                        hidden_network)

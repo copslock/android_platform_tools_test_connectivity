@@ -28,8 +28,8 @@ log = logging
 class SonyXB2PairingTest(BluetoothBaseTest):
     DISCOVERY_TIME = 5
 
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
         self.dut = self.android_devices[0]
         # Do factory reset and then do delay for 3-seconds
         self.dut.droid.bluetoothFactoryReset()

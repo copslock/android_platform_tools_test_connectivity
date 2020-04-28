@@ -18,10 +18,7 @@ import json
 import logging
 import math
 import os
-import shlex
-import subprocess
 import threading
-import time
 
 from acts import context
 from acts import utils
@@ -81,25 +78,20 @@ class IPerfResult(object):
         will be loaded and this funtion is not intended to be used with files
         containing multiple iperf client runs.
         """
-        # if result_path isn't a path, treat it as JSON
-        if not os.path.exists(result_path):
-            self.result = json.loads(result_path)
-        else:
-            try:
-                with open(result_path, 'r') as f:
-                    iperf_output = f.readlines()
-                    if '}\n' in iperf_output:
-                        iperf_output = iperf_output[:iperf_output.index('}\n')
-                                                    + 1]
-                    iperf_string = ''.join(iperf_output)
-                    iperf_string = iperf_string.replace('nan', '0')
-                    self.result = json.loads(iperf_string)
-            except ValueError:
-                with open(result_path, 'r') as f:
-                    # Possibly a result from interrupted iperf run,
-                    # skip first line and try again.
-                    lines = f.readlines()[1:]
-                    self.result = json.loads(''.join(lines))
+        try:
+            with open(result_path, 'r') as f:
+                iperf_output = f.readlines()
+                if '}\n' in iperf_output:
+                    iperf_output = iperf_output[:iperf_output.index('}\n') + 1]
+                iperf_string = ''.join(iperf_output)
+                iperf_string = iperf_string.replace('nan', '0')
+                self.result = json.loads(iperf_string)
+        except ValueError:
+            with open(result_path, 'r') as f:
+                # Possibly a result from interrupted iperf run, skip first line
+                # and try again.
+                lines = f.readlines()[1:]
+                self.result = json.loads(''.join(lines))
 
     def _has_data(self):
         """Checks if the iperf result has valid throughput data.
@@ -202,7 +194,7 @@ class IPerfResult(object):
         instantaneous_rates = self.instantaneous_rates[iperf_ignored_interval:
                                                        -1]
         avg_rate = math.fsum(instantaneous_rates) / len(instantaneous_rates)
-        sqd_deviations = [(rate - avg_rate) ** 2 for rate in instantaneous_rates]
+        sqd_deviations = [(rate - avg_rate)**2 for rate in instantaneous_rates]
         std_dev = math.sqrt(
             math.fsum(sqd_deviations) / (len(sqd_deviations) - 1))
         return std_dev
@@ -217,10 +209,7 @@ class IPerfServerBase(object):
 
     def __init__(self, port):
         self._port = port
-        # TODO(markdr): We shouldn't be storing the log files in an array like
-        # this. Nobody should be reading this property either. Instead, the
-        # IPerfResult should be returned in stop() with all the necessary info.
-        # See aosp/1012824 for a WIP implementation.
+        # TODO(markdr): Remove this after migration to the new iperf APIs.
         self.log_files = []
 
     @property
@@ -283,27 +272,14 @@ class IPerfServerBase(object):
         return full_out_dir
 
 
-def _get_port_from_ss_output(ss_output, pid):
-    pid = str(pid)
-    lines = ss_output.split('\n')
-    for line in lines:
-        if pid in line:
-            # Expected format:
-            # tcp LISTEN  0 5 *:<PORT>  *:* users:(("cmd",pid=<PID>,fd=3))
-            return line.split()[4].split(':')[1]
-    else:
-        raise ProcessLookupError('Could not find started iperf3 process.')
-
-
 class IPerfServer(IPerfServerBase):
     """Class that handles iperf server commands on localhost."""
 
-    def __init__(self, port=5201):
+    def __init__(self, port):
         super().__init__(port)
-        self._hinted_port = port
+        self._iperf_command = 'iperf3 -s -J -p {}'.format(self.port)
         self._current_log_file = None
         self._iperf_process = None
-        self._last_opened_file = None
 
     @property
     def port(self):
@@ -327,28 +303,12 @@ class IPerfServer(IPerfServerBase):
 
         self._current_log_file = self._get_full_file_path(tag)
 
-        # Run an iperf3 server on the hinted port with JSON output.
-        command = ['iperf3', '-s', '-p', str(self._hinted_port), '-J']
+        cmd = '{cmd} {extra_flags} > {log_file}'.format(
+            cmd=self._iperf_command,
+            extra_flags=extra_args,
+            log_file=self._current_log_file)
 
-        command.extend(shlex.split(extra_args))
-
-        if self._last_opened_file:
-            self._last_opened_file.close()
-        self._last_opened_file = open(self._current_log_file, 'w')
-        self._iperf_process = subprocess.Popen(
-            command, stdout=self._last_opened_file, stderr=subprocess.DEVNULL)
-        for attempts_left in reversed(range(3)):
-            try:
-                self._port = int(
-                    _get_port_from_ss_output(
-                        job.run('ss -l -p -n | grep iperf').stdout,
-                        self._iperf_process.pid))
-                break
-            except ProcessLookupError:
-                if attempts_left == 0:
-                    raise
-                logging.debug('iperf3 process not started yet.')
-                time.sleep(.01)
+        self._iperf_process = utils.start_standing_subprocess(cmd)
 
     def stop(self):
         """Stops the iperf server.
@@ -359,17 +319,10 @@ class IPerfServer(IPerfServerBase):
         if self._iperf_process is None:
             return
 
-        if self._last_opened_file:
-            self._last_opened_file.close()
-            self._last_opened_file = None
+        utils.stop_standing_subprocess(self._iperf_process)
 
-        self._iperf_process.terminate()
         self._iperf_process = None
-
         return self._current_log_file
-
-    def __del__(self):
-        self.stop()
 
 
 class IPerfServerOverSsh(IPerfServerBase):
@@ -444,27 +397,20 @@ class IPerfServerOverSsh(IPerfServerBase):
 class _AndroidDeviceBridge(object):
     """A helper class for connecting serial numbers to AndroidDevices."""
 
-    _test_class = None
+    # A dict of serial -> AndroidDevice, where AndroidDevice is a device found
+    # in the current TestClass's controllers.
+    android_devices = {}
 
     @staticmethod
     @subscribe_static(TestClassBeginEvent)
     def on_test_begin(event):
-        _AndroidDeviceBridge._test_class = event.test_class
+        for device in getattr(event.test_class, 'android_devices', []):
+            _AndroidDeviceBridge.android_devices[device.serial] = device
 
     @staticmethod
     @subscribe_static(TestClassEndEvent)
     def on_test_end(_):
-        _AndroidDeviceBridge._test_class = None
-
-    @staticmethod
-    def android_devices():
-        """A dict of serial -> AndroidDevice, where AndroidDevice is a device
-        found in the current TestClass's controllers.
-        """
-        if not _AndroidDeviceBridge._test_class:
-            return {}
-        return {device.serial: device
-                for device in _AndroidDeviceBridge._test_class.android_devices}
+        _AndroidDeviceBridge.android_devices = {}
 
 
 event_bus.register_subscription(
@@ -505,7 +451,7 @@ class IPerfServerOverAdb(IPerfServerBase):
         if isinstance(self._android_device_or_serial, AndroidDevice):
             return self._android_device_or_serial
         else:
-            return _AndroidDeviceBridge.android_devices()[
+            return _AndroidDeviceBridge.android_devices[
                 self._android_device_or_serial]
 
     def _get_device_log_path(self):
@@ -546,7 +492,7 @@ class IPerfServerOverAdb(IPerfServerBase):
 
         job.run('kill -9 {}'.format(self._iperf_process.pid))
 
-        # TODO(markdr): update with definitive kill method
+        #TODO(markdr): update with definitive kill method
         while True:
             iperf_process_list = self._android_device.adb.shell('pgrep iperf3')
             if iperf_process_list.find(self._iperf_process_adb_pid) == -1:

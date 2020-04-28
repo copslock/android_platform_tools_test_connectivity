@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.4
 #
 #   Copyright 2018 - The Android Open Source Project
 #
@@ -22,7 +22,7 @@ from acts.test_utils.power import PowerCellularLabBaseTest as PWCEL
 from acts.test_utils.tel.tel_test_utils import initiate_call, hangup_call, set_phone_silent_mode
 
 
-class PowerTelVoiceCallTest(PWCEL.PowerCellularLabBaseTest):
+class PowerVoiceCallTest(PWCEL.PowerCellularLabBaseTest):
     """ Voice call power test.
 
     Inherits from PowerCellularLabBaseTest. Contains methods to initiate
@@ -70,10 +70,10 @@ class PowerTelVoiceCallTest(PWCEL.PowerCellularLabBaseTest):
         self.dut.droid.goToSleepNow()
 
         # Measure power
-        result = self.collect_power_data()
+        self.collect_power_data()
 
         # End the call
         hangup_call(self.log, self.dut)
 
         # Check if power measurement is within the required values
-        self.pass_fail_check(result.average_current)
+        self.pass_fail_check()

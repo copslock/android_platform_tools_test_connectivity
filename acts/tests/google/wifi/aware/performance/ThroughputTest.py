@@ -35,6 +35,9 @@ class ThroughputTest(AwareBaseTest):
     PASSPHRASE = "This is some random passphrase - very very secure!!"
     PASSPHRASE2 = "This is some random passphrase - very very secure - but diff!!"
 
+    def __init__(self, controllers):
+        super(ThroughputTest, self).__init__(controllers)
+
     def request_network(self, dut, ns):
         """Request a Wi-Fi Aware network.
 

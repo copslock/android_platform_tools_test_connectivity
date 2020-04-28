@@ -16,6 +16,7 @@
 
 import collections
 import json
+import logging
 import math
 import os
 import time
@@ -50,7 +51,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         This function initializes hardwares and compiles parameters that are
         common to all tests in this class.
         """
-        self.dut = self.android_devices[-1]
+        self.client_dut = self.android_devices[-1]
         req_params = [
             'RetailAccessPoints', 'roaming_test_params', 'testbed_params'
         ]
@@ -66,35 +67,12 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
-
-        if hasattr(self, 'bdf'):
-            self.log.info('Pushing WiFi BDF to DUT.')
-            wputils.push_bdf(self.dut, self.bdf)
-        if hasattr(self, 'firmware'):
-            self.log.info('Pushing WiFi firmware to DUT.')
-            wlanmdsp = [
-                file for file in self.firmware if "wlanmdsp.mbn" in file
-            ][0]
-            data_msc = [file for file in self.firmware
-                        if "Data.msc" in file][0]
-            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
-        # Get RF connection map
-        self.log.info("Getting RF connection map.")
-        wutils.wifi_toggle_state(self.dut, True)
-        self.rf_map_by_network, self.rf_map_by_atten = (
-            wputils.get_full_rf_connection_map(self.attenuators, self.dut,
-                                               self.remote_server,
-                                               self.main_network))
-        self.log.info("RF Map (by Network): {}".format(self.rf_map_by_network))
-        self.log.info("RF Map (by Atten): {}".format(self.rf_map_by_atten))
+        self.log_path = os.path.join(logging.log_path, 'results')
+        utils.create_dir(self.log_path)
 
         #Turn WiFi ON
-        if self.testclass_params.get('airplane_mode', 1):
-            self.log.info('Turning on airplane mode.')
-            asserts.assert_true(
-                utils.force_airplane_mode(self.dut, True),
-                "Can not turn on airplane mode.")
-        wutils.wifi_toggle_state(self.dut, True)
+        for dev in self.android_devices:
+            wutils.wifi_toggle_state(dev, True)
 
     def pass_fail_traffic_continuity(self, result):
         """Pass fail check for traffic continuity
@@ -118,16 +96,13 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.log.info('Detected {} traffic gaps of duration: {}'.format(
             len(result['traffic_disruption']), formatted_traffic_gaps))
 
-        if len(result['traffic_disruption']) == 0:
-            asserts.explicit_pass('Test passed. No traffic disruptions found.')
-        elif (max(result['traffic_disruption']) >
-              self.testclass_params['traffic_disruption_threshold']):
-            asserts.fail('Test failed. Max traffic disruption: {}s.'.format(
+        if (max(result['traffic_disruption']) >
+                self.testclass_params['traffic_disruption thresold']):
+            asserts.fail('Test failed. Max traffic discruption: {}s.'.format(
                 max(result['traffic_disruption'])))
-        else:
-            asserts.explicit_pass(
-                'Test passed. Max traffic disruption: {}s.'.format(
-                    max(result['traffic_disruption'])))
+        asserts.explicit_pass(
+            'Test passed. Max traffic discruption: {}s.'.format(
+                max(result['traffic_disruption'])))
 
     def pass_fail_roaming_consistency(self, results_dict):
         """Function to evaluate roaming consistency results.
@@ -183,7 +158,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         results_file_path = os.path.join(current_context,
                                          self.current_test_name + '.json')
         with open(results_file_path, 'w') as results_file:
-            json.dump(wputils.serialize_dict(result), results_file, indent=4)
+            json.dump(result, results_file, indent=4)
 
     def process_consistency_results(self, testcase_params, results_dict):
         """Function to process roaming consistency results.
@@ -211,8 +186,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
                 x_label='Time (ms)',
-                primary_y_label=primary_y_axis,
-                secondary_y_label='RSSI (dBm)')
+                primary_y=primary_y_axis,
+                secondary_y='RSSI (dBm)')
             roam_stats[secondary_atten] = collections.OrderedDict()
             for result in results_list:
                 self.detect_roam_events(result)
@@ -224,7 +199,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
                 plot_result(testcase_params, result, figure=figure)
             # save plot
             plot_file_name = (
-                self.current_test_name + '_' + str(secondary_atten) + '.html')
+                self.current_test_name + '_' + secondary_atten + '.html')
 
             plot_file_path = os.path.join(current_context, plot_file_name)
             figure.save_figure(plot_file_path)
@@ -233,7 +208,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         results_file_path = os.path.join(current_context,
                                          self.current_test_name + '.json')
         with open(results_file_path, 'w') as results_file:
-            json.dump(wputils.serialize_dict(result), results_file, indent=4)
+            json.dump(result, results_file, indent=4)
 
     def detect_roam_events(self, result):
         """Function to process roaming results.
@@ -366,17 +341,17 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
                 x_label='Time (ms)',
-                primary_y_label='RTT (ms)',
-                secondary_y_label='RSSI (dBm)')
+                primary_y='RTT (ms)',
+                secondary_y='RSSI (dBm)')
         figure.add_line(
-            x_data=result['ping_result']['time_stamp'],
-            y_data=result['ping_result']['rtt'],
-            legend='Ping RTT',
+            result['ping_result']['time_stamp'],
+            result['ping_result']['rtt'],
+            'Ping RTT',
             width=1)
         figure.add_line(
-            x_data=result['rssi_result']['time_stamp'],
-            y_data=result['rssi_result']['signal_poll_rssi']['data'],
-            legend='RSSI',
+            result['rssi_result']['time_stamp'],
+            result['rssi_result']['signal_poll_rssi']['data'],
+            'RSSI',
             y_axis='secondary')
         figure.generate_figure(output_file_path)
 
@@ -400,8 +375,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             figure = wputils.BokehFigure(
                 title=self.current_test_name,
                 x_label='Time (s)',
-                primary_y_label='Throughput (Mbps)',
-                secondary_y_label='RSSI (dBm)')
+                primary_y='Throughput (Mbps)',
+                secondary_y='RSSI (dBm)')
         iperf_time_stamps = [
             idx * IPERF_INTERVAL for idx in range(len(result['throughput']))
         ]
@@ -424,11 +399,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         (primary_net_id,
          primary_net_config) = next(net for net in self.main_network.items()
                                     if net[1]['roaming_label'] == 'primary')
-        for idx, atten in enumerate(self.attenuators):
-            nets_on_port = [
-                item["network"] for item in self.rf_map_by_atten[idx]
-            ]
-            if primary_net_id in nets_on_port:
+        for atten in self.attenuators:
+            if primary_net_id in atten.path:
                 atten.set_atten(0)
             else:
                 atten.set_atten(atten.instrument.max_atten)
@@ -439,25 +411,23 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         Args:
             testcase_params: dict containing AP and other test params
         """
-        # Check battery level before test
-        if not wputils.health_check(self.dut, 10):
-            asserts.skip('Battery level too low. Skipping test.')
-        wutils.reset_wifi(self.dut)
-        self.dut.droid.wifiSetCountryCode(
+        wutils.reset_wifi(self.client_dut)
+        self.client_dut.droid.wifiSetCountryCode(
             self.testclass_params['country_code'])
         (primary_net_id,
          primary_net_config) = next(net for net in self.main_network.items()
                                     if net[1]['roaming_label'] == 'primary')
         network = primary_net_config.copy()
         network.pop('BSSID', None)
-        self.dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
+        self.client_dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
         wutils.wifi_connect(
-            self.dut, network, num_of_tries=5, check_connectivity=False)
-        self.dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
-        self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
+            self.client_dut, network, num_of_tries=5, check_connectivity=False)
+        self.client_dut.droid.wifiSetEnableAutoJoinWhenAssociated(1)
+        self.dut_ip = self.client_dut.droid.connectivityGetIPv4Addresses(
+            'wlan0')[0]
         if testcase_params['screen_on']:
-            self.dut.wakeup_screen()
-            self.dut.droid.wakeLockAcquireBright()
+            self.client_dut.wakeup_screen()
+            self.client_dut.droid.wakeLockAcquireBright()
         time.sleep(MED_SLEEP)
 
     def setup_roaming_test(self, testcase_params):
@@ -480,13 +450,13 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             testcase_params['atten_waveforms']['length'],
             testcase_params['ping_interval'], 64)
         rssi_future = wputils.get_connected_rssi_nb(
-            self.dut,
+            self.client_dut,
             int(testcase_params['atten_waveforms']['length'] /
                 testcase_params['rssi_polling_frequency']),
             testcase_params['rssi_polling_frequency'])
         self.run_attenuation_waveform(testcase_params)
         return {
-            'ping_result': ping_future.result().as_dict(),
+            'ping_result': ping_future.result(),
             'rssi_result': rssi_future.result(),
             'ap_settings': self.access_point.ap_settings,
         }
@@ -502,12 +472,12 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         """
         self.log.info('Starting iperf test.')
         self.iperf_server.start(extra_args='-i {}'.format(IPERF_INTERVAL))
-        self.dut_ip = self.dut.droid.connectivityGetIPv4Addresses('wlan0')[0]
         if isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
-            iperf_server_address = self.dut_ip
+            iperf_server_address = (
+                self.client_dut.droid.connectivityGetIPv4Addresses('wlan0')[0])
+            self.iperf_client._ssh_session.setup_master_ssh()
         else:
-            iperf_server_address = wputils.get_server_address(
-                self.remote_server, self.dut_ip, '255.255.255.0')
+            iperf_server_address = self.testbed_params['iperf_server_address']
         iperf_args = '-i {} -t {} -J'.format(
             IPERF_INTERVAL, testcase_params['atten_waveforms']['length'])
         if not isinstance(self.iperf_server, ipf.IPerfServerOverAdb):
@@ -516,7 +486,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             self.iperf_client, iperf_server_address, iperf_args, 0,
             testcase_params['atten_waveforms']['length'] + MED_SLEEP)
         rssi_future = wputils.get_connected_rssi_nb(
-            self.dut,
+            self.client_dut,
             int(testcase_params['atten_waveforms']['length'] /
                 testcase_params['rssi_polling_frequency']),
             testcase_params['rssi_polling_frequency'])
@@ -528,11 +498,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         else:
             iperf_file = client_output_path
         iperf_result = ipf.IPerfResult(iperf_file)
-        instantaneous_rates = [
-            rate * 8 * (1.024**2) for rate in iperf_result.instantaneous_rates
-        ]
         return {
-            'throughput': instantaneous_rates,
+            'throughput': iperf_result.instantaneous_rates,
             'rssi_result': rssi_future.result(),
             'ap_settings': self.access_point.ap_settings,
         }
@@ -550,11 +517,8 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         for atten_idx in range(atten_waveforms['length']):
             start_time = time.time()
             for network, atten_waveform in atten_waveforms.items():
-                for idx, atten in enumerate(self.attenuators):
-                    nets_on_port = [
-                        item["network"] for item in self.rf_map_by_atten[idx]
-                    ]
-                    if network in nets_on_port:
+                for atten in self.attenuators:
+                    if network in atten.path:
                         atten.set_atten(atten_waveform[atten_idx])
             measure_time = time.time() - start_time
             time.sleep(step_duration - measure_time)
@@ -609,7 +573,7 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         waveform_vector *= waveform_params['repetitions']
         return waveform_vector
 
-    def parse_test_params(self, testcase_params):
+    def parse_test_params(self, test_name):
         """Function that generates test params based on the test name.
 
         Args:
@@ -618,24 +582,28 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
             testcase_params: dict including all test params encoded in test
             name
         """
-        if testcase_params["waveform_type"] == 'smooth':
+        test_name_params = test_name.split('_')
+        testcase_params = collections.OrderedDict()
+        if test_name_params[1] == 'smooth':
             testcase_params[
                 'roaming_waveforms_params'] = self.testclass_params[
                     'smooth_roaming_waveforms']
-        elif testcase_params["waveform_type"] == 'failover':
+        elif test_name_params[1] == 'failover':
             testcase_params[
                 'roaming_waveforms_params'] = self.testclass_params[
                     'failover_roaming_waveforms']
-        elif testcase_params["waveform_type"] == 'consistency':
+        elif test_name_params[1] == 'consistency':
             testcase_params[
                 'roaming_waveforms_params'] = self.testclass_params[
                     'consistency_waveforms']
+        testcase_params['screen_on'] = test_name_params[4] == 'on'
+        testcase_params['traffic_type'] = test_name_params[5]
         return testcase_params
 
-    def _test_traffic_continuity(self, testcase_params):
+    def _test_traffic_continuity(self):
         """Test function for traffic continuity"""
         # Compile test parameters from config and test name
-        testcase_params = self.parse_test_params(testcase_params)
+        testcase_params = self.parse_test_params(self.current_test_name)
         testcase_params.update(self.testclass_params)
         testcase_params['atten_waveforms'] = self.compile_atten_waveforms(
             testcase_params['roaming_waveforms_params'])
@@ -649,9 +617,9 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.process_traffic_continuity_results(testcase_params, result)
         self.pass_fail_traffic_continuity(result)
 
-    def _test_roam_consistency(self, testcase_params):
+    def _test_roam_consistency(self):
         """Test function for roaming consistency"""
-        testcase_params = self.parse_test_params(testcase_params)
+        testcase_params = self.parse_test_params(self.current_test_name)
         testcase_params.update(self.testclass_params)
         # Run traffic test
         secondary_attens = range(
@@ -692,73 +660,28 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.pass_fail_roaming_consistency(results)
 
     def test_consistency_roaming_screen_on_ping(self):
-        testcase_params = {
-            "waveform_type": "consistency",
-            "screen_on": 1,
-            "traffic_type": "ping"
-        }
-        self._test_roam_consistency(testcase_params)
+        self._test_roam_consistency()
 
     def test_smooth_roaming_screen_on_ping_continuity(self):
-        testcase_params = {
-            "waveform_type": "smooth",
-            "screen_on": 1,
-            "traffic_type": "ping"
-        }
-        self._test_traffic_continuity(testcase_params)
+        self._test_traffic_continuity()
 
     def test_smooth_roaming_screen_on_iperf_continuity(self):
-        testcase_params = {
-            "waveform_type": "smooth",
-            "screen_on": 1,
-            "traffic_type": "iperf"
-        }
-        self._test_traffic_continuity(testcase_params)
+        self._test_traffic_continuity()
 
     def test_failover_roaming_screen_on_ping_continuity(self):
-        testcase_params = {
-            "waveform_type": "failover",
-            "screen_on": 1,
-            "traffic_type": "ping"
-        }
-        self._test_traffic_continuity(testcase_params)
+        self._test_traffic_continuity()
 
     def test_failover_roaming_screen_on_iperf_continuity(self):
-        testcase_params = {
-            "waveform_type": "failover",
-            "screen_on": 1,
-            "traffic_type": "iperf"
-        }
-        self._test_traffic_continuity(testcase_params)
+        self._test_traffic_continuity()
 
     def test_smooth_roaming_screen_off_ping_continuity(self):
-        testcase_params = {
-            "waveform_type": "smooth",
-            "screen_on": 0,
-            "traffic_type": "ping"
-        }
-        self._test_traffic_continuity(testcase_params)
+        self._test_traffic_continuity()
 
     def test_smooth_roaming_screen_off_iperf_continuity(self):
-        testcase_params = {
-            "waveform_type": "smooth",
-            "screen_on": 0,
-            "traffic_type": "iperf"
-        }
-        self._test_traffic_continuity(testcase_params)
+        self._test_traffic_continuity()
 
     def test_failover_roaming_screen_off_ping_continuity(self):
-        testcase_params = {
-            "waveform_type": "failover",
-            "screen_on": 0,
-            "traffic_type": "ping"
-        }
-        self._test_traffic_continuity(testcase_params)
+        self._test_traffic_continuity()
 
     def test_failover_roaming_screen_off_iperf_continuity(self):
-        testcase_params = {
-            "waveform_type": "failover",
-            "screen_on": 0,
-            "traffic_type": "iperf"
-        }
-        self._test_traffic_continuity(testcase_params)
+        self._test_traffic_continuity()

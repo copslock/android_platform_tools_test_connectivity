@@ -79,10 +79,12 @@ class ConcurrentGattConnectTest(BluetoothBaseTest):
     advertisement_names = []
     list_of_arguments_list = []
 
-    def setup_class(self):
-        super(BluetoothBaseTest, self).setup_class()
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
         self.pri_dut = self.android_devices[0]
 
+    def setup_class(self):
+        super(BluetoothBaseTest, self).setup_class()
 
         # Create 5 advertisements from different android devices
         for i in range(1, self.max_connections + 1):

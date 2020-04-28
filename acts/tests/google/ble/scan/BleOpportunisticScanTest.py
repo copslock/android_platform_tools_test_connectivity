@@ -38,18 +38,20 @@ from acts.test_utils.bt.bt_constants import scan_result
 
 class BleOpportunisticScanTest(BluetoothBaseTest):
     default_timeout = 10
-    max_scan_instances = 25
+    max_scan_instances = 27
     report_delay = 2000
     scan_callbacks = []
     adv_callbacks = []
     active_scan_callback_list = []
     active_adv_callback_list = []
 
-    def setup_class(self):
-        super(BluetoothBaseTest, self).setup_class()
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
         self.scn_ad = self.android_devices[0]
         self.adv_ad = self.android_devices[1]
 
+    def setup_class(self):
+        super(BluetoothBaseTest, self).setup_class()
         utils.set_location_service(self.scn_ad, True)
         utils.set_location_service(self.adv_ad, True)
         return True

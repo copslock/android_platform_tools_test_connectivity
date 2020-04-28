@@ -24,10 +24,11 @@ from acts.test_utils.bt.bt_test_utils import setup_multiple_devices_for_bt_test
 
 
 class GattApiTest(BluetoothBaseTest):
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
         self.ad = self.android_devices[0]
 
+    def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def setup_test(self):

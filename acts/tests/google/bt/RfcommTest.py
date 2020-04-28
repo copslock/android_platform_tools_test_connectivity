@@ -47,11 +47,12 @@ class RfcommTest(BluetoothBaseTest):
         "strange new worlds, to seek out new life and new civilizations,"
         " to boldly go where no man has gone before.")
 
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
         self.client_ad = self.android_devices[0]
         self.server_ad = self.android_devices[1]
 
+    def setup_class(self):
         return setup_multiple_devices_for_bt_test(self.android_devices)
 
     def teardown_test(self):

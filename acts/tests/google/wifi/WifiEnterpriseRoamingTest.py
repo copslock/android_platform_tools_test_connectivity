@@ -34,9 +34,10 @@ Ent = WifiEnums.Enterprise
 
 
 class WifiEnterpriseRoamingTest(WifiBaseTest):
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
 
+    def setup_class(self):
         self.dut = self.android_devices[0]
         wutils.wifi_test_device_init(self.dut)
         req_params = (
@@ -121,7 +122,6 @@ class WifiEnterpriseRoamingTest(WifiBaseTest):
         self.set_attns("default")
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
         self.dut.cat_adb_log(test_name, begin_time)
 
     def set_attns(self, attn_val_name):

@@ -51,9 +51,10 @@ class WifiConnectedMacRandomizationTest(WifiBaseTest):
     * At least two Wi-Fi networks to connect to.
     """
 
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        WifiBaseTest.__init__(self, controllers)
 
+    def setup_class(self):
         self.dut = self.android_devices[0]
         self.dut_softap = self.android_devices[1]
         wutils.wifi_test_device_init(self.dut)

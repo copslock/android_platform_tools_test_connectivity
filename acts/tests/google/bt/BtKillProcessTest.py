@@ -25,8 +25,8 @@ from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 
 
 class BtKillProcessTest(BluetoothBaseTest):
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        BluetoothBaseTest.__init__(self, controllers)
         self.dut = self.android_devices[0]
 
     def _get_bt_pid(self):

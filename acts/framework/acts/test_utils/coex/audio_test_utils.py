@@ -18,8 +18,6 @@ import logging
 import os
 import wave
 
-from acts.test_utils.coex.audio_capture_device import CaptureAudioOverAdb
-from acts.test_utils.coex.audio_capture_device import CaptureAudioOverLocal
 from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.test_utils.audio_analysis_lib import audio_analysis
@@ -34,46 +32,8 @@ ANALYSIS_FILE_TEMPLATE = "audio_analysis_%s.txt"
 bits_per_sample = 32
 
 
-def get_audio_capture_device(test_class_instance):
-    """Gets the device object of the audio capture device connected to server.
-
-    The audio capture device returned is specified by the audio_params
-    within user_params. audio_params must specify a "type" field, that
-    is either "AndroidDevice" or "Local"
-
-    Args:
-        test_class_instance: object self of test class.
-
-    Returns:
-        Object of the audio capture device.
-
-    Raises:
-        ValueError if audio_params['type'] is not "AndroidDevice" or
-            "Local".
-        ValueError if "AndroidDevice" is specified, but there is only one
-            AndroidDevice within the testbed.
-    """
-    audio_params = test_class_instance.user_params.get('audio_params')
-
-    if audio_params['type'] == 'AndroidDevice':
-        if len(test_class_instance.android_devices) > 1:
-            return CaptureAudioOverAdb(
-                test_class_instance.android_devices[-1], audio_params)
-        else:
-            raise ValueError('At least 2 or more AndroidDevice should be '
-                             'specified to use as audio capture endpoint.')
-    elif audio_params['type'] == 'Local':
-        return CaptureAudioOverLocal(audio_params)
-    else:
-        raise ValueError('Unrecognized audio capture device '
-                         '%s' % audio_params['type'])
-
-
 class FileNotFound(Exception):
     """Raises Exception if file is not present"""
-
-# TODO @sairamganesh Rename this class to AudioCaptureResult and
-# remove duplicates which are in ../test_utils/coex/audio_capture_device.py.
 
 
 class SshAudioCapture(AudioCapture):
@@ -113,7 +73,8 @@ class SshAudioCapture(AudioCapture):
             logging.debug("Job Result {}".format(job_result.stdout))
             self.ssh_session.pull_file(
                 self.remote_path, os.path.join(
-                    self.audio_params["dest_path"], "*.wav"))
+                    self.audio_params["dest_path"], "*.wav"),
+                    ignore_status=True)
             return bool(not job_result.exit_status)
         else:
             return self.capture_and_store_audio(trim_beginning, trim_end)

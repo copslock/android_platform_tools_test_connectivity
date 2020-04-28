@@ -143,9 +143,6 @@ WAIT_TIME_ANDROID_STATE_SETTLING = 1
 # has sufficient time to reconfigure based on new network
 WAIT_TIME_BETWEEN_REG_AND_CALL = 5
 
-# Wait time for data pdn to be up on CBRS
-WAIT_TIME_FOR_CBRS_DATA_SWITCH = 60
-
 # Time to wait for 1xrtt voice attach check
 # After DUT voice network type report 1xrtt (from unknown), it need to wait for
 # several seconds before the DUT can receive incoming call.
@@ -599,7 +596,6 @@ NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_CDMA_EV
 
 # Carrier Config Update
 CARRIER_ID_VERSION = "3"
-CARRIER_ID_VERSION_P = "5"
 WAIT_TIME_FOR_CARRIERID_CHANGE = 6
 CARRIER_ID_METADATA_URL = "am broadcast -a com.google.android.gms." \
      "phenotype.FLAG_OVERRIDE --es package 'com.google.android.configupdater'" \
@@ -607,23 +603,11 @@ CARRIER_ID_METADATA_URL = "am broadcast -a com.google.android.gms." \
      "--esa values 'https://www.gstatic.com/android/config_update/110618-" \
      "carrier-id-metadata.txt' --esa types 'string' com.google.android.gms"
 
-CARRIER_ID_METADATA_URL_P = "am broadcast -a com.google.android.gms." \
-     "phenotype.FLAG_OVERRIDE --es package 'com.google.android.configupdater'" \
-     " --es user '\*' --esa flags 'CarrierIdentification__metadata_url' " \
-     "--esa values 'https://www.gstatic.com/android/telephony/carrierid/" \
-     "030419-p-carrier-id-metadata.txt' --esa types 'string' com.google.android.gms"
-
 CARRIER_ID_CONTENT_URL = "am broadcast -a com.google.android.gms." \
      "phenotype.FLAG_OVERRIDE --es package 'com.google.android.configupdater'" \
      " --es user '\*' --esa flags 'CarrierIdentification__content_url' " \
      "--esa values 'https://www.gstatic.com/android/config_update/110618-" \
      "carrier-id.pb' --esa types 'string' com.google.android.gms"
-
-CARRIER_ID_CONTENT_URL_P = "am broadcast -a com.google.android.gms." \
-     "phenotype.FLAG_OVERRIDE --es package 'com.google.android.configupdater'" \
-     " --es user '\*' --esa flags 'CarrierIdentification__content_url' " \
-     "--esa values 'https://www.gstatic.com/android/telephony/carrierid/" \
-     "030419-p-carrier-id.pb' --esa types 'string' com.google.android.gms"
 
 # Constant for Messaging Event Name
 EventSmsDeliverSuccess = "SmsDeliverSuccess"
@@ -673,7 +657,6 @@ EventSignalStrengthChanged = "SignalStrengthChanged"
 EventVolteServiceStateChanged = "VolteServiceStateChanged"
 EventMessageWaitingIndicatorChanged = "MessageWaitingIndicatorChanged"
 EventConnectivityChanged = "ConnectivityChanged"
-EventActiveDataSubIdChanged = "ActiveDataSubIdChanged"
 
 # Constant for Packet Keep Alive Call Back
 EventPacketKeepaliveCallback = "PacketKeepaliveCallback"

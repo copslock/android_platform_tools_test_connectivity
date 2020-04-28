@@ -37,8 +37,8 @@ class BluetoothThroughputTest(BaseTestClass):
          data_transfer_type: Data transfer protocol used for the test
     """
 
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, configs):
+        BaseTestClass.__init__(self, configs)
 
         # Sanity check of the devices under test
         # TODO(b/119051823): Investigate using a config validator to replace this.

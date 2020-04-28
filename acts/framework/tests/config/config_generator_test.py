@@ -78,7 +78,9 @@ class ConfigGeneratorTest(TestCase):
         config_generator._master_config = dict(self.post_process_master_config)
         config_generator._post_process_configs()
         self.assertEqual(
-            config_generator._master_config[Config.key_config_path.value],
+            # Doesn't use .value here on purpose due to backwards compatibility!
+            # See b/29836695 and b/78189048.
+            config_generator._master_config[Config.key_config_path],
             'foo'
         )
 

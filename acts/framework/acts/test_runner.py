@@ -22,7 +22,6 @@ import copy
 import importlib
 import inspect
 import fnmatch
-import json
 import logging
 import os
 import pkgutil
@@ -36,8 +35,6 @@ from acts import records
 from acts import signals
 from acts import utils
 from acts import error
-
-from mobly.records import ExceptionRecord
 
 
 def _find_test_class():
@@ -148,7 +145,6 @@ class TestRunner(object):
             self.write_test_campaign()
         else:
             self.run_list = run_list
-        self.dump_config()
         self.results = records.TestResult()
         self.running = False
 
@@ -179,9 +175,7 @@ class TestRunner(object):
         for path, name, _ in file_list:
             sys.path.append(path)
             try:
-                with utils.SuppressLogOutput(
-                        log_levels=[logging.INFO, logging.ERROR]):
-                    module = importlib.import_module(name)
+                module = importlib.import_module(name)
             except:
                 for test_cls_name, _ in self.run_list:
                     alt_name = name.replace('_', '').lower()
@@ -293,15 +287,15 @@ class TestRunner(object):
                 test_case_iterations = self.test_configs.get(
                     keys.Config.key_test_case_iterations.value, 1)
 
-            test_cls_instance = test_cls(self.test_run_info)
-            try:
-                cls_result = test_cls_instance.run(test_cases,
-                                                   test_case_iterations)
-                self.results += cls_result
-                self._write_results_to_file()
-            except signals.TestAbortAll as e:
-                self.results += e.results
-                raise e
+            with test_cls(self.test_run_info) as test_cls_instance:
+                try:
+                    cls_result = test_cls_instance.run(test_cases,
+                                                       test_case_iterations)
+                    self.results += cls_result
+                    self._write_results_to_file()
+                except signals.TestAbortAll as e:
+                    self.results += e.results
+                    raise e
 
     def run(self, test_class=None):
         """Executes test cases.
@@ -342,7 +336,7 @@ class TestRunner(object):
             try:
                 self.run_test_class(test_cls_name, test_case_names)
             except error.ActsError as e:
-                self.results.error.append(ExceptionRecord(e))
+                self.results.errors.append(e)
                 self.log.error("Test Runner Error: %s" % e.message)
             except signals.TestAbortAll as e:
                 self.log.warning(
@@ -372,12 +366,6 @@ class TestRunner(object):
         # New YAML format
         self.summary_writer.dump(
             self.results.summary_dict(), records.TestSummaryEntryType.SUMMARY)
-
-    def dump_config(self):
-        """Writes the test config to a JSON file under self.log_path"""
-        config_path = os.path.join(self.log_path, 'test_configs.json')
-        with open(config_path, 'a') as f:
-            json.dump(self.test_configs, f, skipkeys=True, indent=4)
 
     def write_test_campaign(self):
         """Log test campaign file."""

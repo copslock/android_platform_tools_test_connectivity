@@ -81,7 +81,6 @@ from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
-from acts.test_utils.tel.tel_test_utils import start_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
 from acts.test_utils.tel.tel_test_utils import toggle_volte
@@ -126,8 +125,8 @@ from acts.utils import adb_shell_ping
 
 
 class TelLiveDataTest(TelephonyBaseTest):
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        TelephonyBaseTest.__init__(self, controllers)
 
         self.stress_test_number = self.get_stress_test_number()
         self.provider = self.android_devices[0]
@@ -495,8 +494,8 @@ class TelLiveDataTest(TelephonyBaseTest):
                         self.log, self.android_devices[0], False):
                     raise _LocalException("Failed to Disable Cellular Data")
 
-                if not verify_internet_connection(self.log,
-                                              self.android_devices[0], expected_state=False):
+                if verify_internet_connection(self.log,
+                                              self.android_devices[0]):
                     raise _LocalException("Internet Accessible when Disabled")
 
                 self.log.info("Step5 Re-enable data.")
@@ -1614,7 +1613,7 @@ class TelLiveDataTest(TelephonyBaseTest):
                 "Disable Data on Provider, verify no data on Client.")
             self.provider.droid.telephonyToggleDataConnection(False)
             time.sleep(WAIT_TIME_DATA_STATUS_CHANGE_DURING_WIFI_TETHERING)
-            if not verify_internet_connection(self.log, self.provider, expected_state=False):
+            if verify_internet_connection(self.log, self.provider):
                 self.provider.log.error("Disable data on provider failed.")
                 return False
             if not self.provider.droid.wifiIsApEnabled():
@@ -1821,7 +1820,7 @@ class TelLiveDataTest(TelephonyBaseTest):
             if self.provider.droid.wifiIsApEnabled():
                 self.provider.log.error("Provider WiFi tethering not stopped.")
                 return False
-            if not verify_internet_connection(self.log, self.clients[0], expected_state=False):
+            if verify_internet_connection(self.log, self.clients[0]):
                 self.clients[0].log.error(
                     "Client should not have Internet connection.")
                 return False
@@ -3222,47 +3221,6 @@ class TelLiveDataTest(TelephonyBaseTest):
             return True
         finally:
             resume_internet_with_sl4a_port(dut, sl4a_port)
-
-
-    def _test_airplane_mode_stress(self):
-        ad = self.android_devices[0]
-        total_iteration = self.stress_test_number
-        fail_count = collections.defaultdict(int)
-        current_iteration = 1
-        for i in range(1, total_iteration + 1):
-            msg = "Airplane mode test Iteration: <%s> / <%s>" % (i, total_iteration)
-            self.log.info(msg)
-            if not airplane_mode_test(self.log, ad):
-                fail_count["apm_run"] += 1
-                ad.log.error(">----Iteration : %d/%d failed.----<",
-                             i, total_iteration)
-            ad.log.info(">----Iteration : %d/%d succeeded.----<",
-                        i, total_iteration)
-            current_iteration += 1
-        test_result = True
-        for failure, count in fail_count.items():
-            if count:
-                ad.log.error("%s: %s %s failures in %s iterations",
-                             self.test_name, count, failure,
-                             total_iteration)
-                test_result = False
-        return test_result
-
-
-    @test_tracker_info(uuid="3a82728f-18b5-4a35-9eab-4e6cf55271d9")
-    @TelephonyBaseTest.tel_test_wrap
-    def test_apm_toggle_stress(self):
-        """ Test airplane mode toggle
-
-        1. Start with airplane mode off
-        2. Toggle airplane mode on
-        3. Toggle airplane mode off
-        4. Repeat above steps
-
-        Returns:
-            True if pass; False if fail.
-        """
-        return self._test_airplane_mode_stress()
 
 
     @test_tracker_info(uuid="fda33416-698a-408f-8ddc-b5cde13b1f83")

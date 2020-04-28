@@ -56,7 +56,6 @@ from acts.test_utils.tel.tel_test_utils import get_mobile_data_usage
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import initiate_call
 from acts.test_utils.tel.tel_test_utils import is_phone_in_call_active
-from acts.test_utils.tel.tel_test_utils import is_phone_in_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
@@ -69,8 +68,6 @@ from acts.test_utils.tel.tel_test_utils import wait_for_ringing_call
 from acts.test_utils.tel.tel_test_utils import wait_for_state
 from acts.test_utils.tel.tel_test_utils import start_youtube_video
 from acts.test_utils.tel.tel_test_utils import set_wifi_to_default
-from acts.test_utils.tel.tel_test_utils import STORY_LINE
-from acts.test_utils.tel.tel_test_utils import wait_for_in_call_active
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
@@ -102,8 +99,8 @@ DEFAULT_PING_DURATION = 120  # in seconds
 CallResult = TelephonyVoiceTestResult.CallResult.Value
 
 class TelLiveVoiceTest(TelephonyBaseTest):
-    def setup_class(self):
-        super().setup_class()
+    def __init__(self, controllers):
+        TelephonyBaseTest.__init__(self, controllers)
 
         self.stress_test_number = self.get_stress_test_number()
         self.long_duration_call_total_duration = self.user_params.get(
@@ -114,45 +111,6 @@ class TelLiveVoiceTest(TelephonyBaseTest):
 
 
     """ Tests Begin """
-
-    @TelephonyBaseTest.tel_test_wrap
-    @test_tracker_info(uuid="c5009f8c-eb1d-4cd9-85ce-604298bbeb3e")
-    def test_call_to_answering_machine(self):
-        """ Voice call to an answering machine.
-
-        1. Make Sure PhoneA attached to voice network.
-        2. Call from PhoneA to Storyline
-        3. Verify call is in ACTIVE state
-        4. Hangup Call from PhoneA
-
-        Raises:
-            TestFailure if not success.
-        """
-        ad = self.android_devices[0]
-
-        if not phone_setup_voice_general(ad.log, ad):
-            ad.log.error("Phone Failed to Set Up Properly for Voice.")
-            return False
-        for iteration in range(3):
-            result = True
-            ad.log.info("Attempt %d", iteration + 1)
-            if not initiate_call(ad.log, ad, STORY_LINE) and \
-                                 wait_for_in_call_active(ad, 60, 3):
-                ad.log.error("Call Failed to Initiate")
-                result = False
-            time.sleep(WAIT_TIME_IN_CALL)
-            if not is_phone_in_call(ad.log, ad):
-                ad.log.error("Call Dropped")
-                result = False
-            if not hangup_call(ad.log, ad):
-                ad.log.error("Call Failed to Hangup")
-                result = False
-            if result:
-                ad.log.info("Call test PASS in iteration %d", iteration + 1)
-                return True
-        ad.log.info("Call test FAIL in all 3 iterations")
-        return False
-
 
     @TelephonyBaseTest.tel_test_wrap
     @test_tracker_info(uuid="fca3f9e1-447a-416f-9a9c-50b7161981bf")

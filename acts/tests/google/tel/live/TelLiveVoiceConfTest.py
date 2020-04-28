@@ -33,7 +33,6 @@ from acts.test_utils.tel.tel_defines import PHONE_TYPE_GSM
 from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_ONLY
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
-from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_test_utils import call_reject
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import get_call_uri
@@ -44,8 +43,6 @@ from acts.test_utils.tel.tel_test_utils import multithread_func
 from acts.test_utils.tel.tel_test_utils import num_active_calls
 from acts.test_utils.tel.tel_test_utils import verify_incall_state
 from acts.test_utils.tel.tel_test_utils import wait_and_answer_call
-from acts.test_utils.tel.tel_test_utils import get_capability_for_subscription
-from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
 from acts.test_utils.tel.tel_voice_utils import get_cep_conference_call_id
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_1x
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_2g
@@ -67,17 +64,12 @@ from acts.test_utils.tel.tel_voice_utils import swap_calls
 class TelLiveVoiceConfTest(TelephonyBaseTest):
     def setup_class(self):
         TelephonyBaseTest.setup_class(self)
-        if not get_capability_for_subscription(
-            self.android_devices[0],
-            CAPABILITY_CONFERENCE,
-            get_outgoing_voice_sub_id(self.android_devices[0])):
+        if CAPABILITY_CONFERENCE not in self.android_devices[0].telephony.get(
+                "capabilities", []):
             self.android_devices[0].log.error(
                 "Conference call is not supported, abort test.")
             raise signals.TestAbortClass(
                 "Conference call is not supported, abort test.")
-
-    def teardown_test(self):
-        ensure_phones_idle(self.log, self.android_devices)
 
     # Note: Currently Conference Call do not verify voice.
     # So even if test cases passed, does not necessarily means
@@ -1618,7 +1610,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         self.log.info(
             "Step6: Disconnect call A-B and verify PhoneA PhoneB end.")
-        calls = ads[0].droid.telecomCallGetCallIds()
         call_to_disconnect = None
         for call in calls:
             if is_uri_equivalent(call_ab_uri, get_call_uri(ads[0], call)):
@@ -1686,7 +1677,6 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
 
         self.log.info(
             "Step6: Disconnect call A-C and verify PhoneA PhoneC end.")
-        calls = ads[0].droid.telecomCallGetCallIds()
         call_to_disconnect = None
         for call in calls:
             if is_uri_equivalent(call_ac_uri, get_call_uri(ads[0], call)):
@@ -2425,53 +2415,21 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             True if succeed;
             False if failed.
         """
+
         ads = self.android_devices
+
         self.log.info("Step4: Merge to Conf Call and verify Conf Call.")
         ads[0].droid.telecomCallJoinCallsInConf(call_ab_id, call_ac_id)
         time.sleep(WAIT_TIME_IN_CALL)
         calls = ads[0].droid.telecomCallGetCallIds()
         ads[0].log.info("Calls in PhoneA %s", calls)
-
-        call_conf_id = None
         if num_active_calls(self.log, ads[0]) != 1:
-            ads[0].log.info("Total number of call ids is not 1.")
-            call_conf_id = get_cep_conference_call_id(ads[0])
-            if call_conf_id is not None:
-                self.log.info("New conference call id is found. CEP enabled.")
-
-                calls.remove(call_conf_id)
-                if (set(ads[0].droid.telecomCallGetCallChildren(
-                    call_conf_id)) != set(calls)):
-                    ads[0].log.error(
-                        "Children list %s for conference call is not correct.",
-                        ads[0].droid.telecomCallGetCallChildren(call_conf_id))
-                    return False
-
-                if (CALL_PROPERTY_CONFERENCE not in ads[0]
-                        .droid.telecomCallGetProperties(call_conf_id)):
-                    ads[0].log.error(
-                        "Conf call id % properties wrong: %s", call_conf_id,
-                        ads[0].droid.telecomCallGetProperties(call_conf_id))
-                    return False
-
-                if (CALL_CAPABILITY_MANAGE_CONFERENCE not in ads[0]
-                        .droid.telecomCallGetCapabilities(call_conf_id)):
-                    ads[0].log.error(
-                        "Conf call id %s capabilities wrong: %s", call_conf_id,
-                        ads[0].droid.telecomCallGetCapabilities(call_conf_id))
-                    return False
-
-                if (call_ab_id in calls) or (call_ac_id in calls):
-                    self.log.error(
-                        "Previous call ids should not in new call list after "
-                        "merge.")
-                    return False
-        else:
-            for call_id in calls:
-                if call_id != call_ab_id and call_id != call_ac_id:
-                    call_conf_id = call_id
-                    self.log.info("CEP not enabled.")
-
+            ads[0].log.error("Total number of call ids is not 1.")
+            return False
+        call_conf_id = None
+        for call_id in calls:
+            if call_id != call_ab_id and call_id != call_ac_id:
+                call_conf_id = call_id
         if not call_conf_id:
             self.log.error("Merge call fail, no new conference call id.")
             return False
@@ -10836,7 +10794,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_general, (self.log, ads[2]))]
@@ -10845,7 +10803,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         if not self._three_phone_call_mo_add_mt_reject(
-            [ads[0], ads[1], ads[2]], [is_phone_in_call_iwlan, None], True):
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], True):
             return False
         return True
 
@@ -10855,7 +10813,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
         ads = self.android_devices
 
         tasks = [(phone_setup_iwlan,
-                  (self.log, ads[0], True, WFC_MODE_WIFI_PREFERRED,
+                  (self.log, ads[0], False, WFC_MODE_WIFI_PREFERRED,
                    self.wifi_network_ssid, self.wifi_network_pass)),
                  (phone_setup_voice_general, (self.log, ads[1])),
                  (phone_setup_voice_general, (self.log, ads[2]))]
@@ -10864,7 +10822,7 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             return False
 
         if not self._three_phone_call_mo_add_mt_reject(
-            [ads[0], ads[1], ads[2]], [is_phone_in_call_iwlan, None], False):
+            [ads[0], ads[1], ads[2]], [is_phone_in_call_volte, None], False):
             return False
         return True
 

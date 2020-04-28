@@ -68,8 +68,8 @@ SMS_OVER_WIFI_PROVIDERS = ("vzw", "tmo", "fi", "rogers", "rjio", "eeuk",
 
 
 class TelLiveSmsTest(TelephonyBaseTest):
-    def setup_class(self):
-        TelephonyBaseTest.setup_class(self)
+    def __init__(self, controllers):
+        TelephonyBaseTest.__init__(self, controllers)
 
         # Try to put SMS and call on different help device
         # If it is a three phone test bed, use the first one as dut,
@@ -81,6 +81,8 @@ class TelLiveSmsTest(TelephonyBaseTest):
         self.message_lengths = (50, 160, 180)
         self.long_message_lengths = (800, 1600)
 
+    def setup_class(self):
+        TelephonyBaseTest.setup_class(self)
         is_roaming = False
         for ad in self.android_devices:
             ad.sms_over_wifi = False
