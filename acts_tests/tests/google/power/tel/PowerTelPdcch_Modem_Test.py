@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/power/tel/PowerTelPdcch_Modem_Test.py

@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/ble/system_tests/BleStressTest.py

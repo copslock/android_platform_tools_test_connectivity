@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/power/bt/PowerBTa2dpTest.py

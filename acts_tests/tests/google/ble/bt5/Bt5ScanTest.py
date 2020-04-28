@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/ble/bt5/Bt5ScanTest.py

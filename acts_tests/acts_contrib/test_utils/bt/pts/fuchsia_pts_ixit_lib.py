@@ -1,1 +1,0 @@
-../../../../../acts/framework/acts/test_utils/bt/pts/fuchsia_pts_ixit_lib.py

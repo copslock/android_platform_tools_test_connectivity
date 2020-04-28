@@ -1,1 +1,0 @@
-../../../../../acts/framework/acts/test_utils/power/cellular/cellular_traffic_power_test.py

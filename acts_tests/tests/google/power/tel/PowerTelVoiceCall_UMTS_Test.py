@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/power/tel/PowerTelVoiceCall_UMTS_Test.py

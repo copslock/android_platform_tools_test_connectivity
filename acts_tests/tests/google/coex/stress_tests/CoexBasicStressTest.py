@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/coex/stress_tests/CoexBasicStressTest.py

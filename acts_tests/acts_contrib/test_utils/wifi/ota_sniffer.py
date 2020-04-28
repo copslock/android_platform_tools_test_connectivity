@@ -1,1 +1,0 @@
-../../../../acts/framework/acts/test_utils/wifi/ota_sniffer.py

@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/bt/sar/BtSarPowerLimitTest.py
