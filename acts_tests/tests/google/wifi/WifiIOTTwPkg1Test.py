@@ -1,1 +1,0 @@
-../../../../acts/tests/google/wifi/WifiIOTTwPkg1Test.py

@@ -1,1 +1,0 @@
-../../../../acts/framework/acts/test_utils/bt/GattConnectedBaseTest.py

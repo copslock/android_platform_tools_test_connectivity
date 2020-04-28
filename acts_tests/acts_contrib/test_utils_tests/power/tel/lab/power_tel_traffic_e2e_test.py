@@ -1,1 +1,0 @@
-../../../../../../acts/framework/tests/test_utils/power/tel/lab/power_tel_traffic_e2e_test.py

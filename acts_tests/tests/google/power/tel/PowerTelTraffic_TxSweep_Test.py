@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/power/tel/PowerTelTraffic_TxSweep_Test.py

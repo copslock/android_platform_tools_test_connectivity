@@ -1,1 +1,0 @@
-../../../../../../acts/framework/tests/test_utils/power/tel/lab/consume_parameter_test.py

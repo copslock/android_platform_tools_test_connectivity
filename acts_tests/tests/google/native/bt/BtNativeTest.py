@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/native/bt/BtNativeTest.py

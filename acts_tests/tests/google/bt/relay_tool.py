@@ -1,1 +1,0 @@
-../../../../acts/tests/google/bt/relay_tool.py

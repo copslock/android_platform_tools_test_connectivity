@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/fuchsia/wlan/WlanPhyCompliance11ACTest.py
