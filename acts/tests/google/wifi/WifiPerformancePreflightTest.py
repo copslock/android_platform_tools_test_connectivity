@@ -48,3 +48,7 @@ class WifiPerformancePreflightTest(base_test.BaseTestClass):
                                                sw_signature['fw_signature'])
         self.testcase_metric_logger.add_metric('serial_hash',
                                                sw_signature['serial_hash'])
+    
+    def teardown_class(self):
+        # Teardown AP and release its lockfile
+        self.access_point.teardown()
