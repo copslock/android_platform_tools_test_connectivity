@@ -47,6 +47,7 @@ from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
+from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
 from acts.libs.proc.job import Error
 
@@ -244,6 +245,11 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
                                        self.client_id)
+
+        #Grab commands from FuchsiaWlanApPolicyLib
+        self.wlan_ap_policy_lib = FuchsiaWlanApPolicyLib(self.address,
+                                                      self.test_counter,
+                                                      self.client_id)
 
         #Grab commands from FuchsiaWlanPolicyLib
         self.wlan_policy_lib = FuchsiaWlanPolicyLib(self.address,
