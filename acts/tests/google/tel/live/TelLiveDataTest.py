@@ -42,6 +42,8 @@ from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts.test_utils.tel.tel_defines import RAT_2G
 from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import RAT_4G
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
 from acts.test_utils.tel.tel_defines import SIM1_SLOT_INDEX
 from acts.test_utils.tel.tel_defines import SIM2_SLOT_INDEX
@@ -50,6 +52,7 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TETHERING_ENTITLEMENT_
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WIFI_CONNECTION
 from acts.test_utils.tel.tel_defines import TETHERING_MODE_WIFI
 from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_REBOOT
+from acts.test_utils.tel.tel_defines import WAIT_TIME_AFTER_MODE_CHANGE
 from acts.test_utils.tel.tel_defines import WAIT_TIME_ANDROID_STATE_SETTLING
 from acts.test_utils.tel.tel_defines import WAIT_TIME_BETWEEN_REG_AND_CALL
 from acts.test_utils.tel.tel_defines import \
@@ -77,6 +80,7 @@ from acts.test_utils.tel.tel_test_utils import get_slot_index_from_subid
 from acts.test_utils.tel.tel_test_utils import get_network_rat_for_subscription
 from acts.test_utils.tel.tel_test_utils import hangup_call
 from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import reboot_device
 from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
@@ -110,6 +114,7 @@ from acts.test_utils.tel.tel_test_utils import check_data_stall_detection
 from acts.test_utils.tel.tel_test_utils import check_network_validation_fail
 from acts.test_utils.tel.tel_test_utils import break_internet_except_sl4a_port
 from acts.test_utils.tel.tel_test_utils import resume_internet_with_sl4a_port
+from acts.test_utils.tel.tel_test_utils import set_preferred_network_mode_pref
 from acts.test_utils.tel.tel_test_utils import get_device_epoch_time
 from acts.test_utils.tel.tel_test_utils import check_data_stall_recovery
 from acts.test_utils.tel.tel_test_utils import \
@@ -235,6 +240,87 @@ class TelLiveDataTest(TelephonyBaseTest):
                              get_current_override_network_type(ad))
             time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
         ad.log.info("5g attach test FAIL for all 3 iterations")
+        return False
+
+
+    @test_tracker_info(uuid="0c2a407a-6d8f-4c94-9a9d-b16e5f884b0b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_activation_from_reboot(self):
+        """ Verifies 5G NSA activation from Reboot
+
+        Reboot device
+        Ensure phone attach, data on, LTE attach
+        Wait for 120 secs for ENDC attach
+        Verify is data network type is NR_NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        wifi_toggle_state(ad.log, ad, False)
+        toggle_airplane_mode(ad.log, ad, False)
+        for iteration in range(3):
+            ad.log.info("Attempt %d", iteration + 1)
+            # Reboot phone
+            reboot_device(ad)
+            # LTE attach
+            if not wait_for_network_generation(
+                    ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
+                ad.log.error("Fail to ensure initial data in 4G")
+            # 5G attach
+            ad.log.info("Waiting for 5g NSA attach for 60 secs")
+            if is_current_network_5g_nsa(ad, timeout=60):
+                ad.log.info("Success! attached on 5g NSA")
+                return True
+            else:
+                ad.log.error("Failure - expected NR_NSA, current %s",
+                             get_current_override_network_type(ad))
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        ad.log.info("5g reboot test FAIL for all 3 iterations")
+        return False
+
+
+    @test_tracker_info(uuid="09893a9f-72eb-4718-aaf0-772155b7b104")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_activation_from_3g_mode(self):
+        """ Verifies 5G NSA activation from 3G Mode Pref
+
+        Change Mode to 3G and wait for 15 secs
+        Change Mode back to 5G
+        Ensure phone attach, data on, LTE attach
+        Wait for 120 secs for ENDC attach
+        Verify is data network type is NR_NSA
+
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        sub_id = ad.droid.subscriptionGetDefaultSubId()
+        wifi_toggle_state(ad.log, ad, False)
+        toggle_airplane_mode(ad.log, ad, False)
+        for iteration in range(3):
+            ad.log.info("Attempt %d", iteration + 1)
+            # Set mode pref to 3G
+            set_preferred_network_mode_pref(ad.log, ad, sub_id,
+                                            NETWORK_MODE_WCDMA_ONLY)
+            time.sleep(15)
+            # Set mode pref to 5G
+            set_preferred_network_mode_pref(ad.log, ad, sub_id,
+                                            NETWORK_MODE_NR_LTE_GSM_WCDMA)
+            # LTE attach
+            if not wait_for_network_generation(
+                    ad.log, ad, GEN_4G, voice_or_data=NETWORK_SERVICE_DATA):
+                ad.log.error("Fail to ensure initial data in 4G")
+            # 5G attach
+            ad.log.info("Waiting for 5g NSA attach for 60 secs")
+            if is_current_network_5g_nsa(ad, timeout=60):
+                ad.log.info("Success! attached on 5g NSA")
+                return True
+            else:
+                ad.log.error("Failure - expected NR_NSA, current %s",
+                             get_current_override_network_type(ad))
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        ad.log.info("5g mode pref from 3G test FAIL for all 3 iterations")
         return False
 
 
