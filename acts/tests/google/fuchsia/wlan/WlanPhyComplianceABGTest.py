@@ -68,8 +68,40 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         self.open_network_min_len_5g = open_network_min_len['5g']
         self.open_network_min_len_5g['SSID'] = (
             self.open_network_min_len_5g['SSID'][3:])
+
         self.utf8_ssid_2g = '2𝔤_𝔊𝔬𝔬𝔤𝔩𝔢'
         self.utf8_ssid_5g = '5𝔤_𝔊𝔬𝔬𝔤𝔩𝔢'
+
+        self.utf8_ssid_2g_french = 'Château du Feÿ'
+        self.utf8_password_2g_french = 'du Feÿ Château'
+
+        self.utf8_ssid_2g_german = 'Rat für Straßenatlas'
+        self.utf8_password_2g_german = 'für Straßenatlas Rat'
+
+        self.utf8_ssid_2g_dutch = 'Die niet óúd, is níéuw!'
+        self.utf8_password_2g_dutch = 'niet óúd, is níéuw! Die'
+
+        self.utf8_ssid_2g_swedish = 'Det är femtioåtta'
+        self.utf8_password_2g_swedish = 'femtioåtta Det är'
+
+        self.utf8_ssid_2g_norwegian = 'Curaçao ØÆ æ å å å'
+        self.utf8_password_2g_norwegian = 'ØÆ Curaçao æ å å å'
+
+        #Danish and Norwegian has the same alphabet
+        self.utf8_ssid_2g_danish = self.utf8_ssid_2g_norwegian
+        self.utf8_password_2g_danish = self.utf8_password_2g_norwegian
+
+        self.utf8_ssid_2g_japanese = 'あなた　はお母さん'
+        self.utf8_password_2g_japanese = 'そっくりね。あな'
+
+        self.utf8_ssid_2g_spanish = '¡No á,é,í,ó,ú,ü,ñ,¿,¡'
+        self.utf8_password_2g_spanish = 'á,é,í,ó,ú,ü,ñ,¿,¡ ¡No'
+
+        self.utf8_ssid_2g_italian = 'caffè Pinocchio è italiano?'
+        self.utf8_password_2g_italian = 'Pinocchio è italiano? caffè'
+
+        self.utf8_ssid_2g_korean = 'ㅘㅙㅚㅛㅜㅝㅞㅟㅠ'
+        self.utf8_password_2g_korean = 'ㅜㅝㅞㅟㅠㅘㅙㅚㅛ'
 
         self.access_point.stop_all_aps()
 
@@ -1373,3 +1405,83 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
             profile_name='whirlwind_11ab_legacy',
             channel=hostapd_constants.AP_DEFAULT_CHANNEL_5G,
             ssid=self.utf8_ssid_5g)
+
+    def test_ssid_with_UTF8_characters_french_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_french)
+
+    def test_ssid_with_UTF8_characters_german_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_german)
+
+    def test_ssid_with_UTF8_characters_dutch_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_dutch)
+
+    def test_ssid_with_UTF8_characters_swedish_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_swedish)
+
+    def test_ssid_with_UTF8_characters_norwegian_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_norwegian)
+
+    def test_ssid_with_UTF8_characters_danish_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_danish)
+
+    def test_ssid_with_UTF8_characters_japanese_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_japanese)
+
+    def test_ssid_with_UTF8_characters_spanish_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_spanish)
+
+    def test_ssid_with_UTF8_characters_italian_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_italian)
+
+    def test_ssid_with_UTF8_characters_korean_2g_11n_20mhz(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name='whirlwind_11ab_legacy',
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.utf8_ssid_2g_korean)
