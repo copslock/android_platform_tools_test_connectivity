@@ -24,6 +24,8 @@ COMMAND_GET_IFACE_ID_LIST = "wlan.get_iface_id_list"
 COMMAND_GET_PHY_ID_LIST = "wlan.get_phy_id_list"
 COMMAND_DESTROY_IFACE = "wlan.destroy_iface"
 COMMAND_GET_COUNTRY = "wlan_phy.get_country"
+COMMAND_QUERY_IFACE = "wlan.query_iface"
+
 
 class FuchsiaWlanLib(BaseLib):
     def __init__(self, addr, tc, client_id):
@@ -131,6 +133,23 @@ class FuchsiaWlanLib(BaseLib):
         """
         test_cmd = COMMAND_GET_COUNTRY
         test_args = {"phy_id": phy_id}
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
+    def wlanQueryInterface(self, iface_id):
+        """ Retrieves interface info for given wlan iface id.
+
+        Args:
+            iface_id: unsigned 16-bit int, the wlan interface id.
+
+        Returns:
+            Dictionary, containing interface id, role, phy_id, phy_assigned_id
+            and mac addr.
+        """
+        test_cmd = COMMAND_QUERY_IFACE
+        test_args = {'iface_id': iface_id}
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
 
