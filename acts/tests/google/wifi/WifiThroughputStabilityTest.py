@@ -115,17 +115,6 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         os.makedirs(self.log_path, exist_ok=True)
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
-        if hasattr(self, 'bdf'):
-            self.log.info('Pushing WiFi BDF to DUT.')
-            wputils.push_bdf(self.dut, self.bdf)
-        if hasattr(self, 'firmware'):
-            self.log.info('Pushing WiFi firmware to DUT.')
-            wlanmdsp = [
-                file for file in self.firmware if "wlanmdsp.mbn" in file
-            ][0]
-            data_msc = [file for file in self.firmware
-                        if "Data.msc" in file][0]
-            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         self.ref_attenuations = {}
         self.testclass_results = []
 
