@@ -1292,8 +1292,8 @@ LARGE_DB_3 = {
                 'uuid': '0000b006-0000-1000-8000-00805f9b34fb',
                 'instance_id': 0x0052,
                 'properties': 0x3e,
-                'permissions': gatt_characteristic['permission_write'] |
-                gatt_characteristic['permission_read'],
+                'permissions': gatt_characteristic['permission_write_encrypted_mitm'] |
+                gatt_characteristic['permission_read_encrypted_mitm'],
                 'value_type': gatt_characteristic_value_format['byte'],
                 'value': [0x06],
             }]
@@ -1628,8 +1628,8 @@ TEST_DB_6 = {
         'handles': 4,
         'characteristics': [{
             'uuid': '00002a29-0000-1000-8000-00805f9b34fb',
-            'properties': gatt_characteristic['property_read'],
-            'permissions': gatt_characteristic['permission_read'],
+            'properties': gatt_characteristic['property_read'] | gatt_characteristic['property_notify'],
+            'permissions': gatt_characteristic['permission_read_encrypted_mitm'],
             'value_type': gatt_characteristic_value_format['string'],
             'value': 'test',
             'instance_id': 0x002a,
