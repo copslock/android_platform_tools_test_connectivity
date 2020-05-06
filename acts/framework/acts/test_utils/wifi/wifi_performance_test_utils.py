@@ -399,7 +399,7 @@ class BokehFigure():
         })
         self.fig_property['num_lines'] += 1
 
-    def generate_figure(self, output_file=None):
+    def generate_figure(self, output_file=None, save_json = True):
         """Function to generate and save BokehFigure.
 
         Args:
@@ -472,7 +472,7 @@ class BokehFigure():
         self.plot.title.text_font_size = self.fig_property['title_size']
 
         if output_file is not None:
-            self.save_figure(output_file)
+            self.save_figure(output_file, save_json)
         return self.plot
 
     def load_from_json(self, file_path):
@@ -489,18 +489,20 @@ class BokehFigure():
         with open(output_file, 'w') as outfile:
             json.dump(figure_dict, outfile, indent=4)
 
-    def save_figure(self, output_file):
+    def save_figure(self, output_file, save_json = True):
         """Function to save BokehFigure.
 
         Args:
             output_file: string specifying output file path
+            save_json: flag controlling json outputs
         """
         bokeh.plotting.output_file(output_file)
         bokeh.plotting.save(self.plot)
-        self._save_figure_json(output_file)
+        if save_json:
+            self._save_figure_json(output_file)
 
     @staticmethod
-    def save_figures(figure_array, output_file_path):
+    def save_figures(figure_array, output_file_path, save_json = True):
         """Function to save list of BokehFigures in one file.
 
         Args:
@@ -509,9 +511,10 @@ class BokehFigure():
         """
         for idx, figure in enumerate(figure_array):
             figure.generate_figure()
-            json_file_path = output_file_path.replace(
-                '.html', '{}-plot_data.json'.format(idx))
-            figure._save_figure_json(json_file_path)
+            if save_json:
+                json_file_path = output_file_path.replace(
+                        '.html', '{}-plot_data.json'.format(idx))
+                figure._save_figure_json(json_file_path)
         plot_array = [figure.plot for figure in figure_array]
         all_plots = bokeh.layouts.column(children=plot_array,
                                          sizing_mode='scale_width')
