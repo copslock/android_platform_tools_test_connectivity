@@ -952,8 +952,8 @@ class CommandInput(cmd.Cmd):
             id = int(args[0], 16)
             offset = int(args[1])
             max_bytes = int(args[2])
-            read_val = self.pri_dut.gattc_lib.readLongCharacteristicById(
-                id, offset, max_bytes)
+            read_val = self.test_dut.gatt_client_read_long_characteristic_by_handle(
+                self.unique_mac_addr_id, id, offset, max_bytes)
             self.log.info("Characteristic Value with id {}: {}".format(
                 id, read_val['result']))
 
