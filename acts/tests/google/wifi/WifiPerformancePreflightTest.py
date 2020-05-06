@@ -37,12 +37,13 @@ class WifiPerformancePreflightTest(base_test.BaseTestClass):
         self.dut = self.android_devices[-1]
         # Initialize AP to ensure that tests can be run in later suites
         req_params = ['RetailAccessPoints']
-        self.unpack_userparams(req_params)
+        opt_params = ['bdf', 'firmware']
+        self.unpack_userparams(req_params, opt_params)
         self.access_point = retail_ap.create(self.RetailAccessPoints)[0]
         # Load BDF and firmware if needed
         if hasattr(self, 'bdf'):
             self.log.info('Pushing WiFi BDF to DUT.')
-            wputils.push_bdf(self.dut, self.bdf)
+            wputils.push_bdf(self.dut, self.bdf[0])
         if hasattr(self, 'firmware'):
             self.log.info('Pushing WiFi firmware to DUT.')
             wlanmdsp = [
