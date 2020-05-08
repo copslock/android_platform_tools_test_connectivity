@@ -57,7 +57,7 @@ class BtSarTpcTest(BtSarBaseTest):
         super().setup_test()
 
         self.tpc_sweep_range = range(self.atten_min, self.pl10_atten)
-
+        self.log.info(self.current_test_name)
         self.tpc_plots_figure = wifi_utils.BokehFigure(
             title='{}_{}'.format(self.current_test_name, 'curve'),
             x_label='Pathloss(dBm)',
@@ -148,7 +148,7 @@ class BtSarTpcTest(BtSarBaseTest):
 
         # Forcing the SAR state
         read_scenario = self.sar_df.loc[scenario].to_dict()
-        self.set_sar_state(self.dut, read_scenario)
+        self.set_sar_state(self.dut, read_scenario, self.country_code)
 
         # Reading power cap
         self.sar_df.loc[scenario, 'power_cap'] = self.get_current_power_cap(
