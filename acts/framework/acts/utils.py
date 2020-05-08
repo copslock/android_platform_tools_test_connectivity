@@ -1559,3 +1559,39 @@ def ip_in_subnet(ip, subnet):
         True, if ip in subnet, else False
     """
     return ipaddress.ip_address(ip) in ipaddress.ip_network(subnet)
+
+
+def mac_address_str_to_list(mac_addr_str):
+    """Converts mac address string to list of decimal octets.
+
+    Args:
+        mac_addr_string: string, mac address
+            e.g. '12:34:56:78:9a:bc'
+
+    Returns
+        list, representing mac address octets in decimal
+            e.g. [18, 52, 86, 120, 154, 188]
+    """
+    return [int(octet, 16) for octet in mac_addr_str.split(':')]
+
+
+def mac_address_list_to_str(mac_addr_list):
+    """Converts list of decimal octets represeting mac address to string.
+
+    Args:
+        mac_addr_list: list, representing mac address octets in decimal
+            e.g. [18, 52, 86, 120, 154, 188]
+
+    Returns:
+        string, mac address
+            e.g. '12:34:56:78:9a:bc'
+    """
+    hex_list = []
+    for octet in mac_addr_list:
+        hex_octet = hex(octet)[2:]
+        if octet < 16:
+            hex_list.append('0%s' % hex_octet)
+        else:
+            hex_list.append(hex_octet)
+
+    return ':'.join(hex_list)
