@@ -88,6 +88,8 @@ ENABLE_LOG_LISTENER = True
 
 CHANNEL_OPEN_TIMEOUT = 5
 
+FUCHSIA_GET_VERSION_CMD = 'cat /config/build-info/version'
+
 
 class FuchsiaDeviceError(signals.ControllerError):
     pass
@@ -247,9 +249,8 @@ class FuchsiaDevice:
                                        self.client_id)
 
         #Grab commands from FuchsiaWlanApPolicyLib
-        self.wlan_ap_policy_lib = FuchsiaWlanApPolicyLib(self.address,
-                                                      self.test_counter,
-                                                      self.client_id)
+        self.wlan_ap_policy_lib = FuchsiaWlanApPolicyLib(
+            self.address, self.test_counter, self.client_id)
 
         #Grab commands from FuchsiaWlanPolicyLib
         self.wlan_policy_lib = FuchsiaWlanPolicyLib(self.address,
@@ -740,6 +741,14 @@ class FuchsiaDevice:
 
             if not skip_sl4f:
                 self.control_daemon("sl4f.cmx", "start")
+
+            out_name = "fuchsia_device_%s_%s.txt" % (self.serial, 'fw_version')
+            full_out_path = os.path.join(self.log_path, out_name)
+            fuchsia_version = self.send_command_ssh(
+                FUCHSIA_GET_VERSION_CMD).stdout
+            fw_file = open(full_out_path, 'w')
+            fw_file.write('%s\n' % fuchsia_version)
+            fw_file.close()
 
     def stop_services(self):
         """Stops long running services on the fuchsia device.
