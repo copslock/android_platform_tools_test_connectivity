@@ -116,16 +116,14 @@ class GnssSanityTest(BaseTestClass):
             self.wifi_xtra_cs_criteria = self.xtra_cs_criteria
         if self.collect_logs:
             self.flash_new_radio_or_mbn()
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.default_gnss_signal_attenuation)
         _init_device(self.ad)
 
     def setup_test(self):
         get_baseband_and_gms_version(self.ad)
         if self.collect_logs:
             clear_logd_gnss_qxdm_log(self.ad)
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.default_gnss_signal_attenuation)
+            set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                       self.default_gnss_signal_attenuation)
         if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                           expected_state=True):
             raise signals.TestFailure("Fail to connect to LTE network.")
@@ -134,6 +132,8 @@ class GnssSanityTest(BaseTestClass):
         if self.collect_logs:
             stop_qxdm_logger(self.ad)
             stop_adb_tcpdump(self.ad)
+            set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                       self.default_gnss_signal_attenuation)
         if check_call_state_connected_by_adb(self.ad):
             hangup_call(self.ad.log, self.ad)
         if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
@@ -146,8 +146,6 @@ class GnssSanityTest(BaseTestClass):
         if int(self.ad.adb.shell(
             "settings get global wifi_scan_always_enabled")) != 1:
             set_wifi_and_bt_scanning(self.ad, True)
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.default_gnss_signal_attenuation)
 
     def on_pass(self, test_name, begin_time):
         if self.collect_logs:

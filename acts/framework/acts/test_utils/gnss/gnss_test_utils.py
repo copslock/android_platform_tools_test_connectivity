@@ -21,6 +21,7 @@ import math
 import shutil
 import fnmatch
 import posixpath
+import tempfile
 from collections import namedtuple
 
 from acts import utils
@@ -441,38 +442,6 @@ def gnss_trigger_modem_ssr_by_mds(ad, dwelltime=60):
             "Failed to trigger modem SSR crash by MDS. \n%s" % output)
 
 
-def pull_mdstool(ad):
-    """Pull ModemDiagnosticSystemTest.apk from device.
-
-    Args:
-        ad: An AndroidDevice object.
-    """
-    out = ad.adb.shell("pm path com.google.mdstest")
-    result = re.search(r"package:(.*)", out)
-    if not result:
-        raise signals.TestError("No ModemDiagnosticSystemTest.apk found.")
-    else:
-        mds_tool = result.group(1)
-        ad.log.info("Get ModemDiagnosticSystemTest.apk from %s" % mds_tool)
-        apkdir = "/tmp/MDS/"
-        os.makedirs(apkdir, exist_ok=True)
-        ad.pull_files([mds_tool], apkdir)
-
-
-def reinstall_mdstool(ad):
-    """Reinstall ModemDiagnosticSystemTest.apk.
-
-    Args:
-        ad: An AndroidDevice object.
-    """
-    ad.log.info("Re-install ModemDiagnosticSystemTest.apk")
-    ad.adb.install("-r -d -g --user 0 /tmp/MDS/base.apk")
-    mds_check = ad.adb.shell("pm path com.google.mdstest")
-    if not mds_check:
-        raise signals.TestError("MDS Tool is not properly re-installed.")
-    ad.log.info("MDS Tool is re-installed successfully.")
-
-
 def check_xtra_download(ad, begin_time):
     """Verify XTRA download success log message in logcat.
 
@@ -495,36 +464,50 @@ def check_xtra_download(ad, begin_time):
     return False
 
 
-def pull_gtw_gpstool(ad):
-    """Pull GTW_GPSTool apk from device.
+def pull_package_apk(ad, package_name):
+    """Pull apk of given package_name from device.
 
     Args:
         ad: An AndroidDevice object.
+        package_name: Package name of apk to pull.
+
+    Returns:
+        The temp path of pulled apk.
     """
-    out = ad.adb.shell("pm path com.android.gpstool")
+    out = ad.adb.shell("pm path %s" % package_name)
     result = re.search(r"package:(.*)", out)
     if not result:
-        tutils.abort_all_tests(ad.log, "Couldn't find GTW GPSTool apk")
+        tutils.abort_all_tests(ad.log, "Couldn't find apk of %s" % package_name)
     else:
-        GTW_GPSTool_apk = result.group(1)
-        ad.log.info("Get GTW GPSTool apk from %s" % GTW_GPSTool_apk)
-        apkdir = "/tmp/GNSS/"
-        os.makedirs(apkdir, exist_ok=True)
-        ad.pull_files([GTW_GPSTool_apk], apkdir)
+        apk_source = result.group(1)
+        ad.log.info("Get apk of %s from %s" % (package_name, apk_source))
+        apk_path = tempfile.mkdtemp()
+        ad.pull_files([apk_source], apk_path)
+    return apk_path
 
 
-def reinstall_gtw_gpstool(ad):
-    """Reinstall GTW_GPSTool apk.
+def reinstall_package_apk(ad, package_name, apk_path):
+    """Reinstall apk of given package_name.
 
     Args:
         ad: An AndroidDevice object.
+        package_name: Package name of apk.
+        apk_path: The temp path of pulled apk.
     """
-    ad.log.info("Re-install GTW GPSTool")
-    ad.adb.install("-r -d -g --user 0 /tmp/GNSS/base.apk")
-    gpstool_check = ad.adb.shell("pm path com.android.gpstool")
-    if not gpstool_check:
-        raise signals.TestError("GTW GPSTool is not properly re-installed.")
-    ad.log.info("GTW GPSTool is re-installed successfully.")
+    for path_key in os.listdir(apk_path):
+        if fnmatch.fnmatch(path_key, "*.apk"):
+            apk_path = os.path.join(apk_path, path_key)
+            break
+    else:
+        raise signals.TestError("No apk is found in %s" % apk_path)
+    ad.log.info("Re-install %s with path: %s" % (package_name, apk_path))
+    ad.adb.shell("settings put global verifier_verify_adb_installs 0")
+    ad.adb.install("-r -d -g --user 0 %s" % apk_path)
+    package_check = ad.adb.shell("pm path %s" % package_name)
+    if not package_check:
+        tutils.abort_all_tests(
+            ad.log, "%s is not properly re-installed." % package_name)
+    ad.log.info("%s is re-installed successfully." % package_name)
 
 
 def init_gtw_gpstool(ad):
@@ -534,9 +517,8 @@ def init_gtw_gpstool(ad):
         ad: An AndroidDevice object.
     """
     remount_device(ad)
-    pull_gtw_gpstool(ad)
-    ad.adb.shell("settings put global verifier_verify_adb_installs 0")
-    reinstall_gtw_gpstool(ad)
+    gpstool_path = pull_package_apk(ad, "com.android.gpstool")
+    reinstall_package_apk(ad, "com.android.gpstool", gpstool_path)
 
 
 def fastboot_factory_reset(ad):
@@ -555,16 +537,9 @@ def fastboot_factory_reset(ad):
     """
     status = True
     skip_setup_wizard = True
-    out = ad.adb.shell("pm path %s" % SL4A_APK_NAME)
-    result = re.search(r"package:(.*)", out)
-    if not result:
-        tutils.abort_all_tests(ad.log, "Couldn't find sl4a apk")
-    else:
-        sl4a_apk = result.group(1)
-        ad.log.info("Get sl4a apk from %s" % sl4a_apk)
-        ad.pull_files([sl4a_apk], "/tmp/")
-    pull_gtw_gpstool(ad)
-    pull_mdstool(ad)
+    sl4a_path = pull_package_apk(ad, SL4A_APK_NAME)
+    gpstool_path = pull_package_apk(ad, "com.android.gpstool")
+    mds_path = pull_package_apk(ad, "com.google.mdstest")
     tutils.stop_qxdm_logger(ad)
     ad.stop_services()
     attempts = 3
@@ -586,11 +561,9 @@ def fastboot_factory_reset(ad):
                 break
             if ad.is_sl4a_installed():
                 break
-            ad.log.info("Re-install sl4a")
-            ad.adb.shell("settings put global verifier_verify_adb_installs 0")
-            ad.adb.install("-r -d -g --user 0 /tmp/base.apk")
-            reinstall_gtw_gpstool(ad)
-            reinstall_mdstool(ad)
+            reinstall_package_apk(ad, SL4A_APK_NAME, sl4a_path)
+            reinstall_package_apk(ad, "com.android.gpstool", gpstool_path)
+            reinstall_package_apk(ad, "com.google.mdstest", mds_path)
             time.sleep(10)
             break
         except Exception as e:

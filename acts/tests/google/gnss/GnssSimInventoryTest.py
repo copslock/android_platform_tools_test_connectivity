@@ -24,10 +24,18 @@ class GnssSimInventoryTest(BaseTestClass):
 
     def test_gnss_sim_inventory(self):
         self.check_device_status()
-        imsi = str(self.ad.adb.shell("service call iphonesubinfo 7"))
-        if not imsi:
+        android_version = int(self.ad.adb.getprop("ro.build.version.release"))
+        if android_version == 10:
+            imsi = str(self.ad.adb.shell("service call iphonesubinfo 7"))
+        elif android_version == 11:
+            imsi = str(self.ad.adb.shell("service call iphonesubinfo 8"))
+        else:
             raise signals.TestFailure("Couldn't get imsi")
         iccid = str(get_iccid_by_adb(self.ad))
+        if not isinstance(iccid, int):
+            self.ad.log.info("Unable to get iccid via adb. Changed to isub.")
+            iccid = str(self.ad.adb.shell(
+                "dumpsys isub | grep iccid")).split(" ")[4].strip(",")
         if not iccid:
             raise signals.TestFailure("Couldn't get iccid")
         sms_message = "imsi: %s, iccid: %s, ldap: %s, model: %s, sn: %s" % \
