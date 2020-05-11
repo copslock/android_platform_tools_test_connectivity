@@ -16,10 +16,14 @@
 
 import csv
 import os
+import acts.test_utils.wifi.wifi_test_utils as wutils
+
 from acts import context
 from acts import logger
 from acts import utils
 from acts.controllers.utils_lib import ssh
+
+WifiEnums = wutils.WifiEnums
 
 
 def create(configs):
@@ -81,7 +85,7 @@ class OtaSnifferBase(object):
 
     def _get_remote_dump_path(self):
         """Returns name of the sniffer dump file."""
-        return "sniffer_dump.csv"
+        return "sniffer_dump.{}".format(self.sniffer_output_file_type)
 
     def _get_full_file_path(self, tag=None):
         """Returns the full file path for the sniffer capture dump file.
@@ -93,8 +97,9 @@ class OtaSnifferBase(object):
             tag: The tag appended to the sniffer capture dump file .
         """
         tags = [tag, "count", OtaSnifferBase._log_file_counter]
-        out_file_name = 'Sniffer_Capture_%s.csv' % ('_'.join(
-            [str(x) for x in tags if x != '' and x is not None]))
+        out_file_name = 'Sniffer_Capture_%s.%s' % ('_'.join([
+            str(x) for x in tags if x != '' and x is not None
+        ]), self.sniffer_output_file_type)
         OtaSnifferBase._log_file_counter += 1
 
         file_path = os.path.join(self.log_path, out_file_name)
@@ -219,6 +224,8 @@ class TsharkSnifferBase(OtaSnifferBase):
         self.log = logger.create_tagged_trace_logger("Tshark Sniffer")
         self.ssh_config = config["ssh_config"]
         self.sniffer_os = config["os"]
+        self.sniffer_output_file_type = config["output_file_type"]
+        self.sniffer_snap_length = config["snap_length"]
         self.sniffer_interface = config["interface"]
 
         #Logging into sniffer
@@ -263,6 +270,34 @@ class TsharkSnifferBase(OtaSnifferBase):
 
         return tshark_command
 
+    def _get_sniffer_command(self, tshark_command):
+        """
+        Frames the appropriate sniffer command.
+
+        Args:
+            tshark_command: framed tshark command
+
+        Returns:
+            sniffer_command: appropriate sniffer command
+        """
+
+        if self.sniffer_output_file_type in ["pcap", "pcapng"]:
+            sniffer_command = " {tshark} -s {snaplength} -w {log_file} ".format(
+                tshark=tshark_command,
+                snaplength=self.sniffer_snap_length,
+                log_file=self._get_remote_dump_path())
+
+        elif self.sniffer_output_file_type == "csv":
+            sniffer_command = "{tshark} {fields} > {log_file}".format(
+                tshark=tshark_command,
+                fields=self.tshark_fields,
+                log_file=self._get_remote_dump_path())
+
+        else:
+            raise KeyError("Sniffer output file type not configured correctly")
+
+        return sniffer_command
+
     def _generate_tshark_fields(self, fields):
         """Generates tshark fields to be appended to the tshark command.
 
@@ -270,7 +305,8 @@ class TsharkSnifferBase(OtaSnifferBase):
             fields: list of tshark fields to be appended to the tshark command.
 
         Returns:
-            tshark_fields: string of tshark fields to be appended to the tshark command.
+            tshark_fields: string of tshark fields to be appended
+            to the tshark command.
         """
 
         tshark_fields = '-T fields -y IEEE802_11_RADIO -E separator="^"'
@@ -278,25 +314,26 @@ class TsharkSnifferBase(OtaSnifferBase):
             tshark_fields = tshark_fields + " -e {}".format(field)
         return tshark_fields
 
-    def _connect_to_network(self, network):
+    def _connect_to_network(self, network, chan, bw):
         """ Connects to a wireless network using networksetup utility.
 
         Args:
             network: dictionary of network credentials; SSID and password.
         """
 
-        self.log.info("Connecting to network {}".format(network["SSID"]))
+        self.log.debug("Connecting to network {}".format(network["SSID"]))
 
         # Scan to see if the requested SSID is available
         scan_result = self._scan_for_networks()
 
-        if network["SSID"] not in scan_result:
-            self.log.warning("{} not found in scan".format(network["SSID"]))
+#        if network["SSID"] not in scan_result:
+#            self.log.warning("{} not found in scan".format(network["SSID"]))
 
         if "password" not in network.keys():
             network["password"] = ""
 
-        self._init_network_association(network["SSID"], network["password"])
+        self._init_network_association(network["SSID"], network["password"],
+                                       chan, bw)
 
     def _run_tshark(self, sniffer_command):
         """Starts the sniffer.
@@ -328,7 +365,7 @@ class TsharkSnifferBase(OtaSnifferBase):
             try:
                 # Returns error if process was killed already
                 if not kill_line_logged:
-                    self.log.info('Killing tshark process.')
+                    self.log.debug('Killing tshark process.')
                     kill_line_logged = True
                 self._sniffer_server.run("kill -15 {}".format(
                     str(self.sniffer_proc_pid)))
@@ -337,7 +374,7 @@ class TsharkSnifferBase(OtaSnifferBase):
                 # out of the loop when confirming process is dead using ps aux
                 pass
 
-    def _process_tshark_dump(self, temp_dump_file, tag):
+    def _process_tshark_dump(self, log_file):
         """ Process tshark dump for better readability.
 
         Processes tshark dump for better readability and saves it to a file.
@@ -345,12 +382,14 @@ class TsharkSnifferBase(OtaSnifferBase):
         subtype of the frame, sequence no and retry status.
 
         Args:
-            temp_dump_file : string of sniffer capture output.
-            tag : tag to be appended to the dump file.
+            log_file : unprocessed sniffer output
         Returns:
-            log_file : name of the file where the processed dump is stored.
+            log_file : processed sniffer output
         """
-        log_file = self._get_full_file_path(tag)
+
+        temp_dump_file = os.path.join(self.log_path, "sniffer_temp_dump.csv")
+        utils.exe_cmd("cp {} {}".format(log_file, temp_dump_file))
+
         with open(temp_dump_file, "r") as input_csv, open(log_file,
                                                           "w") as output_csv:
             reader = csv.DictReader(input_csv,
@@ -370,9 +409,11 @@ class TsharkSnifferBase(OtaSnifferBase):
                     row["Info"] = "{} S={} retry={}\n".format(
                         row["subtype"], row["seq"], row["retry"])
                 writer.writerow(row)
+
+        utils.exe_cmd("rm -f {}".format(temp_dump_file))
         return log_file
 
-    def start_capture(self, network, duration=30):
+    def start_capture(self, network, chan, bw, duration=60):
         """Starts sniffer capture on the specified machine.
 
         Args:
@@ -386,14 +427,11 @@ class TsharkSnifferBase(OtaSnifferBase):
             return
 
         # Connecting to network
-        self._connect_to_network(network)
+        self._connect_to_network(network, chan, bw)
 
         tshark_command = self._get_tshark_command(duration)
 
-        sniffer_command = "{tshark} {fields} > {log_file}".format(
-            tshark=tshark_command,
-            fields=self.tshark_fields,
-            log_file=self._get_remote_dump_path())
+        sniffer_command = self._get_sniffer_command(tshark_command)
 
         # Starting sniffer capture by executing tshark command
         self._run_tshark(sniffer_command)
@@ -414,18 +452,19 @@ class TsharkSnifferBase(OtaSnifferBase):
         self._stop_tshark()
 
         # Processing writing capture output to file
-        temp_dump_path = os.path.join(self.log_path, "sniffer_temp_dump.csv")
-        self._sniffer_server.pull_file(temp_dump_path,
-                                       self._get_remote_dump_path())
-        log_file = self._process_tshark_dump(temp_dump_path, tag)
+        log_file = self._get_full_file_path(tag)
+        self._sniffer_server.pull_file(log_file, self._get_remote_dump_path())
+
+        if self.sniffer_output_file_type == "csv":
+            log_file = self._process_tshark_dump(log_file)
 
         self.sniffer_proc_pid = None
-        utils.exe_cmd("rm -f {}".format(temp_dump_path))
         return log_file
 
 
 class TsharkSnifferOnUnix(TsharkSnifferBase):
     """Class that implements Tshark based sniffer controller on Unix systems."""
+
     def _scan_for_networks(self):
         """Scans the wireless networks on the sniffer.
 
@@ -438,10 +477,11 @@ class TsharkSnifferOnUnix(TsharkSnifferBase):
 
         return scan_result
 
-    def _init_network_association(self, ssid, password):
+    def _init_network_association(self, ssid, password, chan, bw):
         """Associates the sniffer to the network to sniff.
 
-        Associates the sniffer to wireless network to sniff using networksetup utility.
+        Associates the sniffer to wireless network to sniff
+        using networksetup utility.
 
         Args:
             ssid: SSID of the wireless network to connect to.
@@ -454,20 +494,92 @@ class TsharkSnifferOnUnix(TsharkSnifferBase):
 
 
 class TsharkSnifferOnLinux(TsharkSnifferBase):
-    """Class that implements Tshark based sniffer controller on Linux systems."""
+    """Class that implements Tshark based sniffer controller on
+        Linux systems."""
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.channel = None
+        self.bandwidth = None
+
+    def set_monitor_mode(self, chan, bw):
+        """Function to configure interface to monitor mode
+
+        Brings up the sniffer wireless interface in monitor mode and
+        tunes it to the appropriate channel and bandwidth
+
+        Args:
+            chan: primary channel (int) to tune the sniffer to
+            bw: bandwidth (int) to tune the sniffer to
+        """
+
+        if chan == self.channel and bw == self.bandwidth:
+            return
+
+        self.channel = chan
+        self.bandwidth = bw
+
+        channel_map = {
+            80: {
+                tuple(range(36, 50, 2)): 42,
+                tuple(range(52, 66, 2)): 58,
+                tuple(range(100, 114, 2)): 106,
+                tuple(range(116, 130, 2)): 122,
+                tuple(range(132, 146, 2)): 138,
+                tuple(range(149, 163, 2)): 155
+            },
+            40: {
+                (36, 38, 40): 38,
+                (44, 46, 48): 46,
+                (52, 54, 56): 54,
+                (60, 62, 64): 62,
+                (100, 102, 104): 102,
+                (108, 110, 112): 108,
+                (116, 118, 120): 118,
+                (124, 126, 128): 126,
+                (132, 134, 136): 134,
+                (140, 142, 144): 142,
+                (149, 151, 153): 151,
+                (157, 159, 161): 159
+            }
+        }
+
+        if chan <= 13:
+            primary_freq = WifiEnums.channel_2G_to_freq[chan]
+        else:
+            primary_freq = WifiEnums.channel_5G_to_freq[chan]
+
+
+        self._sniffer_server.run("sudo ifconfig {} down".format(
+            self.sniffer_interface))
+        self._sniffer_server.run("sudo iwconfig {} mode monitor".format(
+            self.sniffer_interface))
+        self._sniffer_server.run("sudo ifconfig {} up".format(
+            self.sniffer_interface))
+
+        if bw in channel_map.keys():
+            for tuple_chan in channel_map[bw].keys():
+                if chan in tuple_chan:
+                    center_freq = WifiEnums.channel_5G_to_freq[channel_map[bw]
+                                                               [tuple_chan]]
+                    self._sniffer_server.run(
+                        "sudo iw dev {} set freq {} {} {}".format(
+                            self.sniffer_interface, primary_freq, bw,
+                            center_freq))
+
+        else:
+            self._sniffer_server.run("sudo iw dev {} set freq {}".format(
+                self.sniffer_interface, primary_freq))
+
     def _scan_for_networks(self):
         """Scans the wireless networks on the sniffer.
 
         Returns:
             scan_results : output of the scan command.
         """
+        pass
 
-        scan_command = "nmcli device wifi rescan; nmcli device wifi list"
-        scan_result = self._sniffer_server.run(scan_command).stdout
-
-        return scan_result
-
-    def _init_network_association(self, ssid, password):
+    def _init_network_association(self, ssid, password, chan=0, bw=0):
         """Associates the sniffer to the network to sniff.
 
         Associates the sniffer to wireless network to sniff using nmcli utility.
@@ -475,10 +587,8 @@ class TsharkSnifferOnLinux(TsharkSnifferBase):
         Args:
             ssid: SSID of the wireless network to connect to.
             password: password of the wireless network to connect to.
+            chan: primary channel (int) to tune the sniffer to
+            bw: bandwidth (int) to tune the sniffer to
         """
-        if password != "":
-            connect_command = "sudo nmcli device wifi connect {} password {}".format(
-                ssid, password)
-        else:
-            connect_command = "sudo nmcli device wifi connect {}".format(ssid)
-        self._sniffer_server.run(connect_command)
+
+        self.set_monitor_mode(chan, bw)
