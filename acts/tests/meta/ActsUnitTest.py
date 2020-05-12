@@ -37,8 +37,9 @@ class ActsUnitTest(base_test.BaseTestClass):
 
     def test_units(self):
         """Runs all the ACTS unit tests in test_suite.py."""
-        test_script = os.path.join(os.path.dirname(acts.__path__[0]),
-                                   'tests/test_suite.py')
+        unittest_dir = self.user_params.get('unittests_dir', [
+            os.path.join(os.path.dirname(acts.__path__[0]), 'tests')])[0]
+        test_script = os.path.join(unittest_dir, 'test_suite.py')
         test_process = subprocess.Popen([sys.executable, test_script],
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT)
