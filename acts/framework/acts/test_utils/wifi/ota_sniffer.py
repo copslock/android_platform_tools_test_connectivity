@@ -224,6 +224,7 @@ class TsharkSnifferBase(OtaSnifferBase):
         self.log = logger.create_tagged_trace_logger("Tshark Sniffer")
         self.ssh_config = config["ssh_config"]
         self.sniffer_os = config["os"]
+        self.run_as_sudo = config.getdefault('run_as_sudo', False)
         self.sniffer_output_file_type = config["output_file_type"]
         self.sniffer_snap_length = config["snap_length"]
         self.sniffer_interface = config["interface"]
@@ -267,6 +268,8 @@ class TsharkSnifferBase(OtaSnifferBase):
 
         tshark_command = "{} -l -i {} -I -t u -a duration:{}".format(
             self.tshark_path, self.sniffer_interface, int(duration))
+        if self.run_as_sudo:
+            tshark_command = "sudo {}".format(tshark_command)
 
         return tshark_command
 
@@ -326,8 +329,8 @@ class TsharkSnifferBase(OtaSnifferBase):
         # Scan to see if the requested SSID is available
         scan_result = self._scan_for_networks()
 
-#        if network["SSID"] not in scan_result:
-#            self.log.warning("{} not found in scan".format(network["SSID"]))
+        #        if network["SSID"] not in scan_result:
+        #            self.log.warning("{} not found in scan".format(network["SSID"]))
 
         if "password" not in network.keys():
             network["password"] = ""
@@ -464,7 +467,6 @@ class TsharkSnifferBase(OtaSnifferBase):
 
 class TsharkSnifferOnUnix(TsharkSnifferBase):
     """Class that implements Tshark based sniffer controller on Unix systems."""
-
     def _scan_for_networks(self):
         """Scans the wireless networks on the sniffer.
 
@@ -496,11 +498,19 @@ class TsharkSnifferOnUnix(TsharkSnifferBase):
 class TsharkSnifferOnLinux(TsharkSnifferBase):
     """Class that implements Tshark based sniffer controller on
         Linux systems."""
-
     def __init__(self, config):
         super().__init__(config)
+        self._init_sniffer()
         self.channel = None
         self.bandwidth = None
+
+    def _init_sniffer(self):
+        """Function to configure interface for the first time"""
+
+        self._sniffer_server.run("sudo modprobe -r iwlwifi")
+        self._sniffer_server.run("sudo dmesg -C")
+        self._sniffer_server.run("cat /dev/null | sudo tee /var/log/syslog")
+        self._sniffer_server.run("sudo modprobe iwlwifi debug=0x1")
 
     def set_monitor_mode(self, chan, bw):
         """Function to configure interface to monitor mode
@@ -548,7 +558,6 @@ class TsharkSnifferOnLinux(TsharkSnifferBase):
             primary_freq = WifiEnums.channel_2G_to_freq[chan]
         else:
             primary_freq = WifiEnums.channel_5G_to_freq[chan]
-
 
         self._sniffer_server.run("sudo ifconfig {} down".format(
             self.sniffer_interface))
