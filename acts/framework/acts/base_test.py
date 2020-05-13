@@ -66,7 +66,6 @@ def _logcat_log_test_begin(event):
             ExceptionRecord(e, 'Logcat for test begin: %s' %
                             event.test_case_name))
         test_instance.log.error('BaseTest setup_test error: %s' % e.message)
-
     except Exception as e:
         test_instance.log.warning(
             'Unable to send BEGIN log command to all devices.')
@@ -89,7 +88,6 @@ def _logcat_log_test_end(event):
             ExceptionRecord(e,
                             'Logcat for test end: %s' % event.test_case_name))
         test_instance.log.error('BaseTest teardown_test error: %s' % e.message)
-
     except Exception as e:
         test_instance.log.warning(
             'Unable to send END log command to all devices.')
@@ -621,7 +619,7 @@ class BaseTestClass(MoblyBaseTest):
                                 tag="",
                                 name_func=None,
                                 format_args=False):
-        """Runs generated test cases.
+        """Deprecated. Please use setup_generated_tests and generate_tests.
 
         Generated test cases are not written down as functions, but as a list
         of parameter sets. This way we reduce code repetition and improve
@@ -709,55 +707,6 @@ class BaseTestClass(MoblyBaseTest):
                                func.__name__, self.TAG)
             return False
 
-    def _get_test_funcs(self, test_names):
-        """Obtain the actual functions of test cases based on test names.
-
-        Args:
-            test_names: A list of strings, each string is a test case name.
-
-        Returns:
-            A list of tuples of (string, function). String is the test case
-            name, function is the actual test case function.
-
-        Raises:
-            Error is raised if the test name does not follow
-            naming convention "test_*". This can only be caused by user input
-            here.
-        """
-        test_funcs = []
-        for test_name in test_names:
-            test_funcs.append(self._get_test_func(test_name))
-
-        return test_funcs
-
-    def _get_test_func(self, test_name):
-        """Obtain the actual function of test cases based on the test name.
-
-        Args:
-            test_name: String, The name of the test.
-
-        Returns:
-            A tuples of (string, function). String is the test case
-            name, function is the actual test case function.
-
-        Raises:
-            Error is raised if the test name does not follow
-            naming convention "test_*". This can only be caused by user input
-            here.
-        """
-        if not test_name.startswith("test_"):
-            raise Error(("Test case name %s does not follow naming "
-                         "convention test_*, abort.") % test_name)
-        try:
-            return test_name, getattr(self, test_name)
-        except:
-
-            def test_skip_func(*args, **kwargs):
-                raise signals.TestSkip("Test %s does not exist" % test_name)
-
-            self.log.info("Test case %s not found in %s.", test_name, self.TAG)
-            return test_name, test_skip_func
-
     def _block_all_test_cases(self, tests, reason='Failed class setup'):
         """
         Block all passed in test cases.
@@ -797,6 +746,10 @@ class BaseTestClass(MoblyBaseTest):
         Returns:
             The test results object of this class.
         """
+        # Executes pre-setup procedures, like generating test methods.
+        if not self._setup_generated_tests():
+            return self.results
+
         self.register_test_class_event_subscriptions()
         self.log.info("==========> %s <==========", self.TAG)
         # Devise the actual test cases to run in the test class.
@@ -804,7 +757,7 @@ class BaseTestClass(MoblyBaseTest):
             # Specified by run list in class.
             valid_tests = list(self.tests)
         else:
-            # No test case specified by user, execute all in the test class
+            # No test case specified by user, gather the run list automatically.
             valid_tests = self.get_existing_test_names()
         if test_names:
             # Match test cases with any of the user-specified patterns
@@ -819,7 +772,7 @@ class BaseTestClass(MoblyBaseTest):
         self.results.requested = matches
         self.summary_writer.dump(self.results.requested_test_names_dict(),
                                  records.TestSummaryEntryType.TEST_NAME_LIST)
-        tests = self._get_test_funcs(matches)
+        tests = self._get_test_methods(matches)
 
         # Setup for the class.
         setup_fail = False

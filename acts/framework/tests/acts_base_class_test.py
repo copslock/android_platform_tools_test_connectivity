@@ -95,25 +95,6 @@ class ActsBaseClassTest(unittest.TestCase):
         actual_record = bt_cls.results.passed[0]
         self.assertEqual(actual_record.test_name, 'test_something')
 
-    def test_self_tests_list_fail_by_convention(self):
-        class MockBaseTest(base_test.BaseTestClass):
-            def __init__(self, controllers):
-                super(MockBaseTest, self).__init__(controllers)
-                self.tests = ('not_a_test_something', )
-
-            def not_a_test_something(self):
-                pass
-
-            def test_never(self):
-                # This should not execute it's not on default test list.
-                never_call()
-
-        bt_cls = MockBaseTest(self.test_run_config)
-        expected_msg = ('Test case name not_a_test_something does not follow '
-                        'naming convention test_\*, abort.')
-        with self.assertRaisesRegex(base_test.Error, expected_msg):
-            bt_cls.run()
-
     def test_cli_test_selection_match_self_tests_list(self):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):
@@ -165,17 +146,6 @@ class ActsBaseClassTest(unittest.TestCase):
         bt_cls.run()
         actual_record = bt_cls.results.passed[0]
         self.assertEqual(actual_record.test_name, 'test_something')
-
-    def test_missing_requested_test_func(self):
-        class MockBaseTest(base_test.BaseTestClass):
-            def __init__(self, controllers):
-                super(MockBaseTest, self).__init__(controllers)
-                self.tests = ('test_something', )
-
-        bt_cls = MockBaseTest(self.test_run_config)
-        bt_cls.run()
-        self.assertFalse(bt_cls.results.executed)
-        self.assertTrue(bt_cls.results.skipped)
 
     def test_setup_class_fail_by_exception(self):
         call_check = mock.MagicMock()
