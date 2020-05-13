@@ -224,7 +224,7 @@ class TsharkSnifferBase(OtaSnifferBase):
         self.log = logger.create_tagged_trace_logger("Tshark Sniffer")
         self.ssh_config = config["ssh_config"]
         self.sniffer_os = config["os"]
-        self.run_as_sudo = config.getdefault('run_as_sudo', False)
+        self.run_as_sudo = config.get('run_as_sudo', False)
         self.sniffer_output_file_type = config["output_file_type"]
         self.sniffer_snap_length = config["snap_length"]
         self.sniffer_interface = config["interface"]
