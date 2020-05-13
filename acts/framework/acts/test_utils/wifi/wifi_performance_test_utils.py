@@ -81,7 +81,10 @@ class LinkLayerStats():
         self.llstats_incremental = self._empty_llstats()
 
     def update_stats(self):
-        llstats_output = self.dut.adb.shell(self.LLSTATS_CMD)
+        try:
+            llstats_output = self.dut.adb.shell(self.LLSTATS_CMD, timeout=0.1)
+        except:
+            llstats_output = ''
         self._update_stats(llstats_output)
 
     def reset_stats(self):
@@ -399,7 +402,7 @@ class BokehFigure():
         })
         self.fig_property['num_lines'] += 1
 
-    def generate_figure(self, output_file=None, save_json = True):
+    def generate_figure(self, output_file=None, save_json=True):
         """Function to generate and save BokehFigure.
 
         Args:
@@ -489,7 +492,7 @@ class BokehFigure():
         with open(output_file, 'w') as outfile:
             json.dump(figure_dict, outfile, indent=4)
 
-    def save_figure(self, output_file, save_json = True):
+    def save_figure(self, output_file, save_json=True):
         """Function to save BokehFigure.
 
         Args:
@@ -502,7 +505,7 @@ class BokehFigure():
             self._save_figure_json(output_file)
 
     @staticmethod
-    def save_figures(figure_array, output_file_path, save_json = True):
+    def save_figures(figure_array, output_file_path, save_json=True):
         """Function to save list of BokehFigures in one file.
 
         Args:
@@ -513,7 +516,7 @@ class BokehFigure():
             figure.generate_figure()
             if save_json:
                 json_file_path = output_file_path.replace(
-                        '.html', '{}-plot_data.json'.format(idx))
+                    '.html', '{}-plot_data.json'.format(idx))
                 figure._save_figure_json(json_file_path)
         plot_array = [figure.plot for figure in figure_array]
         all_plots = bokeh.layouts.column(children=plot_array,
@@ -1235,9 +1238,12 @@ def get_sw_signature(dut):
     fw_version = re.search(FW_REGEX, fw_output).group('firmware')
     fw_signature = fw_version.split('.')[-3:-1]
     fw_signature = float('.'.join(fw_signature))
-    serial_hash = int(hashlib.md5(dut.serial.encode()).hexdigest(),16) % 1000
-    return {'bdf_signature': bdf_signature, 'fw_signature': fw_signature,
-            'serial_hash': serial_hash}
+    serial_hash = int(hashlib.md5(dut.serial.encode()).hexdigest(), 16) % 1000
+    return {
+        'bdf_signature': bdf_signature,
+        'fw_signature': fw_signature,
+        'serial_hash': serial_hash
+    }
 
 
 def push_bdf(dut, bdf_file):
