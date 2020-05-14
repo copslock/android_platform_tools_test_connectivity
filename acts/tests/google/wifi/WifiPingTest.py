@@ -284,7 +284,10 @@ class WifiPingTest(base_test.BaseTestClass):
             test_result: dict containing ping results and other meta data
         """
         # Prepare results dict
-        llstats_obj = wputils.LinkLayerStats(self.dut)
+        llstats_obj = wputils.LinkLayerStats(
+                self.dut,
+                self.testclass_params.get('llstats_enabled', True)
+                )
         test_result = collections.OrderedDict()
         test_result['testcase_params'] = testcase_params.copy()
         test_result['test_name'] = self.current_test_name
