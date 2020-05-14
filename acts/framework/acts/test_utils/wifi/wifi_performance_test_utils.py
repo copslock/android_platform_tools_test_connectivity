@@ -75,15 +75,19 @@ class LinkLayerStats():
     MODE_MAP = {'0': '11a/g', '1': '11b', '2': '11n', '3': '11ac'}
     BW_MAP = {'0': 20, '1': 40, '2': 80}
 
-    def __init__(self, dut):
+    def __init__(self, dut, llstats_enabled):
         self.dut = dut
+        self.llstats_enabled = llstats_enabled
         self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
 
     def update_stats(self):
-        try:
-            llstats_output = self.dut.adb.shell(self.LLSTATS_CMD, timeout=0.1)
-        except:
+        if self.llstats_enabled:
+            try:
+                llstats_output = self.dut.adb.shell(self.LLSTATS_CMD, timeout=0.1)
+            except:
+                llstats_output = ''
+        else:
             llstats_output = ''
         self._update_stats(llstats_output)
 
