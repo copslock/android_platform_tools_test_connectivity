@@ -247,11 +247,17 @@ class Process(object):
             self._process.wait()
 
             if self._stopped:
+                logging.debug('The process for command %s was stopped.',
+                              command)
                 break
             else:
+                logging.debug('The process for command %s terminated.',
+                              command)
                 # Wait for all output to be processed before sending
                 # _on_terminate_callback()
                 self._redirection_thread.join()
+                logging.debug('Beginning on_terminate_callback for %s.',
+                              command)
                 retry_value = self._on_terminate_callback(self._process)
                 if retry_value:
                     command = retry_value
