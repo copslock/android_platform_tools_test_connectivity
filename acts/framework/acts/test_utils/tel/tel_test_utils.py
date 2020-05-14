@@ -154,6 +154,7 @@ from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts.test_utils.tel.tel_defines import ServiceStateContainer
 from acts.test_utils.tel.tel_defines import DisplayInfoContainer
 from acts.test_utils.tel.tel_defines import OverrideNetworkContainer
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
     CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
 from acts.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
@@ -6851,6 +6852,21 @@ def set_preferred_network_mode_pref(log,
             error_msg = "%s due to %s" % (error_msg, log_message)
     ad.log.error(error_msg)
     return False
+
+
+def set_preferred_mode_for_5g(ad, sub_id=None, mode=None):
+    """Set Preferred Network Mode for 5G NSA
+    Args:
+        ad: Android device object.
+        sub_id: Subscription ID.
+        mode: 5G Network Mode Type
+    """
+    if sub_id is None:
+        sub_id = ad.droid.subscriptionGetDefaultSubId()
+    if mode is None:
+        mode = NETWORK_MODE_NR_LTE_GSM_WCDMA
+    return set_preferred_network_mode_pref(ad.log, ad, sub_id, mode)
+
 
 
 def set_preferred_subid_for_sms(log, ad, sub_id):
