@@ -50,7 +50,7 @@ class BoundedMetricsLoggerTest(TestCase):
         self.assertIsNotNone(logger.publisher)
 
     @patch(GET_CONTEXT_FOR_EVENT)
-    @patch('acts.metrics.loggers.protos.gen.bounded_pb2.Metric')
+    @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
     def test_add_generates_messages(self, mock_metric, get_context):
         result = Mock()
         mock_metric.return_value = result
@@ -72,7 +72,7 @@ class BoundedMetricsLoggerTest(TestCase):
         self.assertEqual(result.unit, 'towels')
 
     @patch(GET_CONTEXT_FOR_EVENT)
-    @patch('acts.metrics.loggers.protos.gen.bounded_pb2.Metric')
+    @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
     def test_add_without_limits_does_not_populate_limits(self, mock_metric,
         get_context):
         result = Mock()
@@ -95,7 +95,7 @@ class BoundedMetricsLoggerTest(TestCase):
         result.upper_limit.assert_not_called()
 
     @patch(GET_CONTEXT_FOR_EVENT)
-    @patch('acts.metrics.loggers.protos.gen.bounded_pb2.Metric')
+    @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
     def test_test_method_and_test_class_get_set_if_test_method_identifier(self,
         mock_metric, get_context):
         result = Mock()
@@ -117,7 +117,7 @@ class BoundedMetricsLoggerTest(TestCase):
         test_method.assert_called_with('incredible_test')
 
     @patch(GET_CONTEXT_FOR_EVENT)
-    @patch('acts.metrics.loggers.protos.gen.bounded_pb2.Metric')
+    @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
     def test_only_test_class_gets_set_if_not_test_identifier(self, mock_metric,
         get_context):
         result = Mock()
@@ -137,7 +137,7 @@ class BoundedMetricsLoggerTest(TestCase):
         test_method.assert_not_called()
 
     @patch('acts.metrics.loggers.bounded_metrics.ProtoMetric')
-    @patch('acts.metrics.loggers.protos.gen.bounded_pb2.Metric')
+    @patch('acts.metrics.loggers.protos.gen.metrics_pb2.BoundedMetric')
     @patch(GET_CONTEXT_FOR_EVENT)
     def test_end_does_publish(self, get_context, mock_metric, proto_metric_cls):
         result = Mock()
