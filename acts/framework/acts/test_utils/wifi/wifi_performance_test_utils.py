@@ -75,7 +75,7 @@ class LinkLayerStats():
     MODE_MAP = {'0': '11a/g', '1': '11b', '2': '11n', '3': '11ac'}
     BW_MAP = {'0': 20, '1': 40, '2': 80}
 
-    def __init__(self, dut, llstats_enabled):
+    def __init__(self, dut, llstats_enabled=True):
         self.dut = dut
         self.llstats_enabled = llstats_enabled
         self.llstats_cumulative = self._empty_llstats()
