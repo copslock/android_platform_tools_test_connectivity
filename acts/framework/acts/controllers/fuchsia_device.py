@@ -46,6 +46,7 @@ from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
 from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
+from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import FuchsiaWlanDeprecatedConfigurationLib
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
 from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
@@ -242,6 +243,10 @@ class FuchsiaDevice:
 
         # Grab commands from FuchsiaRegulatoryRegionLib
         self.regulatory_region_lib = FuchsiaRegulatoryRegionLib(
+            self.address, self.test_counter, self.client_id)
+
+        # Grabs command from FuchsiaWlanDeprecatedConfigurationLib
+        self.wlan_deprecated_configuration_lib = FuchsiaWlanDeprecatedConfigurationLib(
             self.address, self.test_counter, self.client_id)
 
         # Grab commands from FuchsiaWlanLib
