@@ -939,6 +939,60 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
             return False
         return True
 
+    def gatt_client_write_long_characteristic_by_handle(
+        self, peer_identifier, handle, offset, value, reliable_mode=False):
+        """ Perform a GATT Client write long Characteristic to remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The characteristic handle.
+            offset: The offset to start writing to.
+            value: The list of bytes to write.
+            reliable_mode: A bool value representing a reliable write or not.
+        Returns:
+            True if success, False if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.writeLongCharById(
+            handle, offset, value, reliable_mode)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to write long characteristic handle {} with err: {}".
+                format(peer_identifier, result.get("error")))
+            return False
+        return True
+
+    def gatt_client_write_long_descriptor_by_handle(self, peer_identifier,
+                                                    handle, offset, value):
+        """ Perform a GATT Client write long Descriptor to remote peer GATT
+        server database.
+
+        Args:
+            peer_identifier: The peer to connect to.
+            handle: The descriptor handle.
+            offset: The offset to start writing to.
+            value: The list of bytes to write.
+        Returns:
+            True if success, False if failure.
+        """
+        if (not self._find_service_id_and_connect_to_service_for_handle(
+                peer_identifier, handle)):
+            self.log.error(
+                "Unable to find handle {} in GATT server db.".format(handle))
+            return False
+        result = self.device.gattc_lib.writeLongDescById(handle, offset, value)
+        if result.get("error") is not None:
+            self.log.error(
+                "Failed to write long descriptor handle {} with err: {}".
+                format(peer_identifier, result.get("error")))
+            return False
+        return True
+
     def gatt_client_read_characteristic_by_handle(self, peer_identifier,
                                                   handle):
         """ Perform a GATT Client read Characteristic to remote peer GATT
