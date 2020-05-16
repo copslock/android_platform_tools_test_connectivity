@@ -791,6 +791,77 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_gattc_write_long_char_by_id(self, line):
+        """
+        Description: Write long char by characteristic id reference.
+        Assumptions: Already connected to a GATT server service.
+        Input(s):
+            characteristic_id: The characteristic id reference on the GATT
+                service
+            offset: The offset value to use
+            size: Function will generate random bytes by input size.
+                IE: Input of 5 will send a byte array of [00, 01, 02, 03, 04]
+            reliable_mode: Optional: Reliable writes represented as bool
+        Usage:
+          Examples:
+            gattc_write_long_char_by_id char_id 0 5
+            gattc_write_long_char_by_id char_id 20 1
+            gattc_write_long_char_by_id char_id 20 1 true
+            gattc_write_long_char_by_id char_id 20 1 false
+        """
+        cmd = "Long Write to GATT server characteristic ."
+        try:
+            args = line.split()
+            if len(args) < 3:
+                self.log.info("3 Arguments required: [Id] [Offset] [Size]")
+                return
+            id = int(args[0], 16)
+            offset = int(args[1])
+            size = int(args[2])
+            reliable_mode = False
+            if len(args) > 3:
+                reliable_mode = self.str_to_bool(args[3])
+            write_value = []
+            for i in range(size):
+                write_value.append(i % 256)
+            self.test_dut.gatt_client_write_long_characteristic_by_handle(
+                self.unique_mac_addr_id, id, offset, write_value,
+                reliable_mode)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_gattc_write_long_desc_by_id(self, line):
+        """
+        Description: Write long char by descrioptor id reference.
+        Assumptions: Already connected to a GATT server service.
+        Input(s):
+            characteristic_id: The characteristic id reference on the GATT
+                service
+            offset: The offset value to use
+            size: Function will generate random bytes by input size.
+                IE: Input of 5 will send a byte array of [00, 01, 02, 03, 04]
+        Usage:
+          Examples:
+            gattc_write_long_desc_by_id char_id 0 5
+            gattc_write_long_desc_by_id char_id 20 1
+        """
+        cmd = "Long Write to GATT server descriptor ."
+        try:
+            args = line.split()
+            if len(args) != 3:
+                self.log.info("3 Arguments required: [Id] [Offset] [Size]")
+                return
+            id = int(args[0], 16)
+            offset = int(args[1])
+            size = int(args[2])
+            write_value = []
+            for i in range(size):
+                write_value.append(i % 256)
+            self.test_dut.gatt_client_write_long_descriptor_by_handle(
+                self.unique_mac_addr_id, id, offset, write_value)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_gattc_write_char_by_id_without_response(self, line):
         """
         Description: Write char by characteristic id reference without response.
