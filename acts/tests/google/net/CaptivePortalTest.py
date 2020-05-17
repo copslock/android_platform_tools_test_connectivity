@@ -17,10 +17,10 @@ import time
 
 from acts import asserts
 from acts import base_test
-from acts.libs.uicd.uicd_cli import UicdCli
 from acts.test_decorators import test_tracker_info
 from acts.test_utils.net import connectivity_const as cconst
 from acts.test_utils.net import connectivity_test_utils as cutils
+from acts.test_utils.net import ui_utils as uutils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
@@ -28,6 +28,7 @@ WifiEnums = wutils.WifiEnums
 IFACE = "InterfaceName"
 TIME_OUT = 20
 WLAN = "wlan0"
+ACCEPT_CONTINUE = "Accept and Continue"
 
 
 class CaptivePortalTest(base_test.BaseTestClass):
@@ -45,35 +46,37 @@ class CaptivePortalTest(base_test.BaseTestClass):
           4. uic_zip: Zip file location of UICD application
         """
         self.dut = self.android_devices[0]
-        wutils.wifi_test_device_init(self.dut)
-        wutils.wifi_toggle_state(self.dut, True)
-        req_params = ["rk_captive_portal",
-                      "gg_captive_portal",
-                      "uicd_workflows",
-                      "uicd_zip"]
+        req_params = ["rk_captive_portal", "gg_captive_portal"]
         self.unpack_userparams(req_param_names=req_params,)
-        self.ui = UicdCli(self.uicd_zip, self.uicd_workflows)
-        self.rk_workflow_config = "rk_captive_portal_%s" % self.dut.model
-        self.gg_workflow_config = "gg_captive_portal_%s" % self.dut.model
+        wutils.wifi_test_device_init(self.dut)
 
     def teardown_class(self):
         """Reset devices."""
         cutils.set_private_dns(self.dut, cconst.PRIVATE_DNS_MODE_OPPORTUNISTIC)
+        wutils.reset_wifi(self.dut)
+        self.dut.droid.telephonyToggleDataConnection(True)
 
     def setup_test(self):
         """Setup device."""
-        self.dut.unlock_screen()
-
-    def teardown_test(self):
-        """Reset to default state after each test."""
         wutils.reset_wifi(self.dut)
+        self.dut.unlock_screen()
+        self._go_to_wifi_settings()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
 
     ### Helper methods ###
 
-    def _verify_captive_portal(self, network, uicd_workflow):
+    def _go_to_wifi_settings(self):
+        """Go to wifi settings to perform UI actions for Captive portal."""
+        self.dut.adb.shell("am start -a android.settings.SETTINGS")
+        asserts.assert_true(
+            uutils.has_element(self.dut, text="Network & internet"),
+            "Failed to find 'Network & internet' icon")
+        uutils.wait_and_click(self.dut, text="Network & internet")
+        uutils.wait_and_click(self.dut, text="Not connected")
+
+    def _verify_captive_portal(self, network, click_accept=ACCEPT_CONTINUE):
         """Connect to captive portal network using uicd workflow.
 
         Steps:
@@ -83,15 +86,16 @@ class CaptivePortalTest(base_test.BaseTestClass):
 
         Args:
             network: captive portal network to connect to
-            uicd_workflow: ui workflow to accept captive portal conn
+            click_accept: Notification to select to accept captive portal
         """
         # connect to captive portal wifi network
-        wutils.start_wifi_connection_scan_and_ensure_network_found(
-            self.dut, network[WifiEnums.SSID_KEY])
-        wutils.wifi_connect(self.dut, network, check_connectivity=False)
+        wutils.connect_to_wifi_network(
+            self.dut, network, check_connectivity=False)
 
-        # run uicd
-        self.ui.run(self.dut.serial, uicd_workflow)
+        # run ui automator
+        uutils.wait_and_click(self.dut, text="%s" % network["SSID"])
+        if uutils.has_element(self.dut, text="%s" % click_accept):
+            uutils.wait_and_click(self.dut, text="%s" % click_accept)
 
         # wait for sometime for captive portal connection to go through
         curr_time = time.time()
@@ -103,11 +107,9 @@ class CaptivePortalTest(base_test.BaseTestClass):
             time.sleep(2)
 
         # verify connectivity
-        try:
-            asserts.assert_true(wutils.validate_connection(self.dut),
-                                "Failed to verify internet connectivity")
-        except Exception as e:
-            asserts.fail("Failed to connect to captive portal: %s" % e)
+        asserts.assert_true(
+            wutils.validate_connection(self.dut, ping_gateway=False),
+            "Failed to connect to internet. Captive portal test failed")
 
     ### Test Cases ###
 
@@ -125,8 +127,7 @@ class CaptivePortalTest(base_test.BaseTestClass):
         cutils.set_private_dns(self.dut, cconst.PRIVATE_DNS_MODE_OPPORTUNISTIC)
 
         # verify connection to captive portal network
-        self._verify_captive_portal(self.rk_captive_portal,
-                                    self.rk_workflow_config)
+        self._verify_captive_portal(self.rk_captive_portal)
 
     @test_tracker_info(uuid="8ea18d80-0170-41b1-8945-fe14bcd4feab")
     @WifiBaseTest.wifi_test_wrap
@@ -142,8 +143,7 @@ class CaptivePortalTest(base_test.BaseTestClass):
         cutils.set_private_dns(self.dut, cconst.PRIVATE_DNS_MODE_OFF)
 
         # verify connection to captive portal network
-        self._verify_captive_portal(self.rk_captive_portal,
-                                    self.rk_workflow_config)
+        self._verify_captive_portal(self.rk_captive_portal)
 
     @test_tracker_info(uuid="e8e05907-55f7-40e5-850c-b3111ceb31a4")
     @WifiBaseTest.wifi_test_wrap
@@ -161,8 +161,7 @@ class CaptivePortalTest(base_test.BaseTestClass):
                                cconst.DNS_GOOGLE)
 
         # verify connection to captive portal network
-        self._verify_captive_portal(self.rk_captive_portal,
-                                    self.rk_workflow_config)
+        self._verify_captive_portal(self.rk_captive_portal)
 
     @test_tracker_info(uuid="76e49800-f141-4fd2-9969-562585eb1e7a")
     def test_guestgate_captive_portal_default(self):
@@ -177,7 +176,7 @@ class CaptivePortalTest(base_test.BaseTestClass):
         cutils.set_private_dns(self.dut, cconst.PRIVATE_DNS_MODE_OPPORTUNISTIC)
 
         # verify connection to captive portal network
-        self._verify_captive_portal(self.gg_captive_portal, "gg_captive_portal")
+        self._verify_captive_portal(self.gg_captive_portal)
 
     @test_tracker_info(uuid="0aea0cac-0f42-406b-84ba-62c1ef74adfc")
     def test_guestgate_captive_portal_private_dns_off(self):
@@ -192,7 +191,7 @@ class CaptivePortalTest(base_test.BaseTestClass):
         cutils.set_private_dns(self.dut, cconst.PRIVATE_DNS_MODE_OFF)
 
         # verify connection to captive portal network
-        self._verify_captive_portal(self.gg_captive_portal, "gg_captive_portal")
+        self._verify_captive_portal(self.gg_captive_portal)
 
     @test_tracker_info(uuid="39124dcc-2fd3-4d33-b129-a1c8150b7f2a")
     def test_guestgate_captive_portal_private_dns_strict(self):
@@ -209,4 +208,4 @@ class CaptivePortalTest(base_test.BaseTestClass):
                                cconst.DNS_GOOGLE)
 
         # verify connection to captive portal network
-        self._verify_captive_portal(self.gg_captive_portal, "gg_captive_portal")
+        self._verify_captive_portal(self.gg_captive_portal)
