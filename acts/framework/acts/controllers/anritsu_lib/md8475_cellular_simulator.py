@@ -706,6 +706,30 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             self.log.warning(str(inst))
         time.sleep(2)
 
+    def get_measured_pusch_power(self):
+        """ Queries PUSCH power measured at the callbox.
+
+        Returns:
+            The PUSCH power in the primary input port.
+        """
+        # Try three times before raising an exception. This is needed because
+        # the callbox sometimes reports an active chain as 'DEACTIVE'.
+        retries_left = 3
+
+        while retries_left > 0:
+
+            ul_pusch = self.anritsu.get_measured_pusch_power().split(',')[0]
+
+            if ul_pusch != 'DEACTIVE':
+                return float(ul_pusch)
+
+            time.sleep(3)
+            retries_left -= 1
+            self.log.info('Chain shows as inactive. %d retries left.' %
+                          retries_left)
+
+        raise cc.CellularSimulatorError('Could not get measured PUSCH power.')
+
 
 class MD8475BCellularSimulator(MD8475CellularSimulator):
 

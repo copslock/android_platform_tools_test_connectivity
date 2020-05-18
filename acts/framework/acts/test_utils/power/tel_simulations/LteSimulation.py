@@ -1269,3 +1269,31 @@ class LteSimulation(BaseSimulation):
             return DuplexMode.TDD
         else:
             return DuplexMode.FDD
+
+    def get_measured_ul_power(self, samples=5, wait_after_sample=3):
+        """ Calculates UL power using measurements from the callbox and the
+        calibration data.
+
+        Args:
+            samples: the numble of samples to average
+            wait_after_sample: time in seconds to wait in between samples
+
+        Returns:
+            the ul power at the UE antenna ports in dBs
+        """
+        ul_power_sum = 0
+        samples_left = samples
+
+        while samples_left > 0:
+            ul_power_sum += self.simulator.get_measured_pusch_power()
+            samples_left -= 1
+            time.sleep(wait_after_sample)
+
+        # Got enough samples, return calibrated average
+        if self.dl_path_loss:
+            return ul_power_sum / samples + self.ul_path_loss
+        else:
+            self.log.warning('No uplink calibration data. Returning '
+                             'uncalibrated values as measured by the '
+                             'callbox.')
+            return ul_power_sum / samples

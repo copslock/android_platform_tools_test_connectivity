@@ -1582,6 +1582,14 @@ class MD8475A(object):
         self.send_trigger_message(TriggerMessageIDs.UE_CAPABILITY_ENQUIRY)
         time.sleep(SETTLING_TIME)
 
+    def get_measured_pusch_power(self):
+        """ Queries the PUSCH power.
+
+        Returns:
+            A string indicating PUSCH power in each input port.
+        """
+        return self.send_query("MONITOR? UL_PUSCH")
+
     def select_usim(self, usim):
         """ Select pre-defined Anritsu USIM models
 
