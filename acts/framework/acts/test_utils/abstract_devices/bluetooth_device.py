@@ -148,7 +148,7 @@ class BluetoothDevice(object):
             inspect.currentframe().f_code.co_name))
 
     def gatt_client_write_characteristic_without_response_by_handle(
-            self, peer_identifier, handle, value):
+        self, peer_identifier, handle, value):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
@@ -181,7 +181,7 @@ class BluetoothDevice(object):
             inspect.currentframe().f_code.co_name))
 
     def gatt_client_enable_notifiy_characteristic_by_handle(
-            self, peer_identifier, handle):
+        self, peer_identifier, handle):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
@@ -189,7 +189,7 @@ class BluetoothDevice(object):
             inspect.currentframe().f_code.co_name))
 
     def gatt_client_disable_notifiy_characteristic_by_handle(
-            self, peer_identifier, handle):
+        self, peer_identifier, handle):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
@@ -424,7 +424,7 @@ class AndroidBluetoothDevice(BluetoothDevice):
         self.device.droid.bluetoothStartPairingHelper(True)
 
     def gatt_client_write_characteristic_without_response_by_handle(
-            self, peer_identifier, handle, value):
+        self, peer_identifier, handle, value):
         """ Perform a GATT Client write Characteristic without response to
         remote peer GATT server database.
 
@@ -544,7 +544,7 @@ class AndroidBluetoothDevice(BluetoothDevice):
         return event['data']['CharacteristicValue']
 
     def gatt_client_enable_notifiy_characteristic_by_handle(
-            self, peer_identifier, handle):
+        self, peer_identifier, handle):
         """ Perform a GATT Client enable Characteristic notification to remote
         peer GATT server database.
 
@@ -558,7 +558,7 @@ class AndroidBluetoothDevice(BluetoothDevice):
             inspect.currentframe().f_code.co_name))
 
     def gatt_client_disable_notifiy_characteristic_by_handle(
-            self, peer_identifier, handle):
+        self, peer_identifier, handle):
         """ Perform a GATT Client disable Characteristic notification to remote
         peer GATT server database.
 
@@ -888,7 +888,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         self.device.btc_lib.setName(name)
 
     def gatt_client_write_characteristic_without_response_by_handle(
-            self, peer_identifier, handle, value):
+        self, peer_identifier, handle, value):
         """ Perform a GATT Client write Characteristic without response to
         remote peer GATT server database.
 
@@ -1046,7 +1046,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         return result.get("result")
 
     def gatt_client_enable_notifiy_characteristic_by_handle(
-            self, peer_identifier, handle):
+        self, peer_identifier, handle):
         """ Perform a GATT Client enable Characteristic notification to remote
         peer GATT server database.
 
@@ -1070,7 +1070,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         return result.get("result")
 
     def gatt_client_disable_notifiy_characteristic_by_handle(
-            self, peer_identifier, handle):
+        self, peer_identifier, handle):
         """ Perform a GATT Client disable Characteristic notification to remote
         peer GATT server database.
 
@@ -1311,7 +1311,7 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         self.device.btc_lib.forgetDevice(peer_identifier)
 
     def _find_service_id_and_connect_to_service_for_handle(
-            self, peer_identifier, handle):
+        self, peer_identifier, handle):
         fail_err = "Failed to find handle {} in Peer database."
         try:
             services = self.device.gattc_lib.listServices(peer_identifier)
