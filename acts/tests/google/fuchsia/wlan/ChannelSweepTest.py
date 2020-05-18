@@ -14,30 +14,28 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import itertools
+import json
+import os
+import time
 
+from statistics import pstdev
+
+from bokeh.models import FixedTicker
+from bokeh.plotting import ColumnDataSource
+from bokeh.plotting import figure
+from bokeh.plotting import output_file
+from bokeh.plotting import save
+
+from acts import asserts
+from acts import context
 from acts import utils
-from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
+from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.ap_lib.hostapd_security import Security
+from acts.controllers.iperf_server import IPerfResult
+from acts.test_utils.abstract_devices.utils_lib import wlan_utils
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-from acts.utils import rand_ascii_str
-
-# 12, 13 outside the US
-# 14 in Japan, DSSS and CCK only
-CHANNELS_24 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-
-# 32, 34 for 20 and 40 mhz in Europe
-# 34, 42, 46 have mixed international support
-# 144 is supported by some chips
-CHANNELS_5 = [
-    36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128,
-    132, 136, 140, 144, 149, 153, 157, 161, 165
-]
-
-BANDWIDTH_24 = [20, 40]
-BANDWIDTH_5 = [20, 40, 80]
 
 N_CAPABILITIES_DEFAULT = [
     hostapd_constants.N_CAPABILITY_LDPC, hostapd_constants.N_CAPABILITY_SGI20,
@@ -57,32 +55,40 @@ AC_CAPABILITIES_DEFAULT = [
     hostapd_constants.AC_CAPABILITY_TX_ANTENNA_PATTERN
 ]
 
+DEFAULT_MIN_THROUGHPUT = 0
+DEFAULT_MAX_STD_DEV = 1
 
-def generate_test_name(settings):
-    """Generates a string test name based on the channel and band
+DEFAULT_TIME_TO_WAIT_FOR_IP_ADDR = 30
+GRAPH_CIRCLE_SIZE = 10
+IPERF_NO_THROUGHPUT_VALUE = 0
+MAX_2_4_CHANNEL = 14
+TIME_TO_SLEEP_BETWEEN_RETRIES = 1
+WEP_HEX_STRING_LENGTH = 10
 
-    Args:
-        settings: A dict with 'channel' and 'bandwidth' keys.
 
-    Returns:
-        A string that represents a test case name.
-    """
-    return 'test_channel_%s_bandwidth_%smhz' % (settings['channel'],
-                                                settings['bandwidth'])
+def get_test_name(settings):
+    """Retrieves the test_name value from test_settings"""
+    return settings.get('test_name')
 
 
 class ChannelSweepTest(WifiBaseTest):
-    """Tests for associating with all 2.5 and 5 channels and bands.
+    """Tests channel performance.
 
     Testbed Requirement:
     * One ACTS compatible device (dut)
     * One Access Point
+    * One Linux Machine used as IPerfServer if running performance tests
+    Note: Performance tests should be done in isolated testbed.
     """
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
-        self.tests = ['test_24ghz_channels', 'test_5ghz_channels']
-        if 'debug_channel_sweep_tests' in self.user_params:
-            self.tests.append('test_channel_sweep_debug')
+        if 'channel_sweep_test_params' in self.user_params:
+            self.time_to_wait_for_ip_addr = self.user_params[
+                'channel_sweep_test_params'].get(
+                    'time_to_wait_for_ip_addr',
+                    DEFAULT_TIME_TO_WAIT_FOR_IP_ADDR)
+        else:
+            self.time_to_wait_for_ip_addr = DEFAULT_TIME_TO_WAIT_FOR_IP_ADDR
 
     def setup_class(self):
         super().setup_class()
@@ -99,14 +105,20 @@ class ChannelSweepTest(WifiBaseTest):
             self.dut = create_wlan_device(self.android_devices[0])
 
         self.android_devices = getattr(self, 'android_devices', [])
+
         self.access_point = self.access_points[0]
+        self.iperf_server = self.iperf_servers[0]
+        self.iperf_server.start()
+        self.iperf_client = self.iperf_clients[0]
         self.access_point.stop_all_aps()
 
     def setup_test(self):
+        self.access_point.stop_all_aps()
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
         self.dut.wifi_toggle_state(True)
+        self.dut.disconnect()
 
     def teardown_test(self):
         for ad in self.android_devices:
@@ -114,33 +126,37 @@ class ChannelSweepTest(WifiBaseTest):
             ad.droid.goToSleepNow()
         self.dut.turn_location_off_and_scan_toggle_off()
         self.dut.disconnect()
-        self.dut.reset_wifi()
         self.access_point.stop_all_aps()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.get_log(test_name, begin_time)
 
-    def setup_and_connect(self, settings):
-        """Generates a hostapd config based on the provided channel and
-        bandwidth, starts AP with that config, and attempts to associate the
-        dut.
+    def setup_ap(self, channel, channel_bandwidth, security_profile=None):
+        """Start network on AP with basic configuration.
 
         Args:
-            settings: A dict with 'channel' and 'bandwidth' keys.
+            channel: int, channel to use for network
+            channel_bandwidth: int, channel bandwidth in mhz to use for network,
+            security_profile: Security object, or None if open
+
+        Returns:
+            string, ssid of network running
+
+        Raises:
+            ConnectionError if network is not started successfully.
         """
-        channel = settings['channel']
-        bandwidth = settings['bandwidth']
-        if channel > 14:
-            vht_bandwidth = bandwidth
+        if channel > MAX_2_4_CHANNEL:
+            vht_bandwidth = channel_bandwidth
         else:
             vht_bandwidth = None
 
-        if bandwidth == 20:
+        if channel_bandwidth == hostapd_constants.CHANNEL_BANDWIDTH_20MHZ:
             n_capabilities = N_CAPABILITIES_DEFAULT + [
                 hostapd_constants.N_CAPABILITY_HT20
             ]
-        elif bandwidth == 40 or bandwidth == 80:
+        elif (channel_bandwidth == hostapd_constants.CHANNEL_BANDWIDTH_40MHZ or
+              channel_bandwidth == hostapd_constants.CHANNEL_BANDWIDTH_80MHZ):
             if hostapd_config.ht40_plus_allowed(channel):
                 extended_channel = [hostapd_constants.N_CAPABILITY_HT40_PLUS]
             elif hostapd_config.ht40_minus_allowed(channel):
@@ -149,86 +165,642 @@ class ChannelSweepTest(WifiBaseTest):
                 raise ValueError('Invalid Channel: %s' % channel)
             n_capabilities = N_CAPABILITIES_DEFAULT + extended_channel
         else:
-            raise ValueError('Invalid Bandwidth: %s' % bandwidth)
+            raise ValueError('Invalid Bandwidth: %s' % channel_bandwidth)
+        ssid = utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G)
+        try:
+            wlan_utils.setup_ap(access_point=self.access_point,
+                                profile_name='whirlwind',
+                                channel=channel,
+                                security=security_profile,
+                                n_capabilities=n_capabilities,
+                                ac_capabilities=None,
+                                force_wmm=True,
+                                ssid=ssid,
+                                vht_bandwidth=vht_bandwidth,
+                                setup_bridge=True)
+        except Exception as err:
+            raise ConnectionError(
+                'Failed to setup ap on channel: %s, channel bandwidth: %smhz. '
+                'Error: %s' % (channel, channel_bandwidth, err))
+        else:
+            self.log.info(
+                'Network (ssid: %s) up on channel %s w/ channel bandwidth %smhz'
+                % (ssid, channel, channel_bandwidth))
 
-        validate_setup_ap_and_associate(access_point=self.access_point,
-                                        client=self.dut,
-                                        profile_name='whirlwind',
-                                        channel=channel,
-                                        n_capabilities=n_capabilities,
-                                        ac_capabilities=None,
-                                        force_wmm=True,
-                                        ssid=utils.rand_ascii_str(20),
-                                        vht_bandwidth=vht_bandwidth)
+        return ssid
 
-    def create_test_settings(self, channels, bandwidths):
-        """Creates a list of test configurations to run from the product of the
-        given channels list and bandwidths list.
+    def get_and_verify_iperf_address(self, channel, device, interface=None):
+        """Get ip address from a devices interface and verify it belongs to
+        expected subnet based on APs DHCP config.
 
         Args:
-            channels: A list of ints representing the channels to test.
-            bandwidths: A list of ints representing the bandwidths to test on
-                those channels.
+            channel: int, channel network is running on, to determine subnet
+            device: device to get ip address for
+            interface (default: None): interface on device to get ip address.
+                If None, uses device.test_interface.
 
         Returns:
-            A list of dictionaries containing 'channel' and 'bandwidth' keys,
-                one for each test combination to be run.
+            String, ip address of device on given interface (or test_interface)
+
+        Raises:
+            ConnectionError, if device does not have a valid ip address after
+                all retries.
         """
+        if channel <= MAX_2_4_CHANNEL:
+            subnet = self.access_point._AP_2G_SUBNET_STR
+        else:
+            subnet = self.access_point._AP_5G_SUBNET_STR
+        end_time = time.time() + self.time_to_wait_for_ip_addr
+        while time.time() < end_time:
+            if interface:
+                device_addresses = device.get_interface_ip_addresses(interface)
+            else:
+                device_addresses = device.get_interface_ip_addresses(
+                    device.test_interface)
+
+            if device_addresses['ipv4_private']:
+                for ip_addr in device_addresses['ipv4_private']:
+                    if utils.ip_in_subnet(ip_addr, subnet):
+                        return ip_addr
+                    else:
+                        self.log.debug(
+                            'Device has an ip address (%s), but it is not in '
+                            'subnet %s' % (ip_addr, subnet))
+            else:
+                self.log.debug(
+                    'Device does not have a valid ip address. Retrying.')
+            time.sleep(TIME_TO_SLEEP_BETWEEN_RETRIES)
+        raise ConnectionError('Device failed to get an ip address.')
+
+    def get_iperf_throughput(self,
+                             iperf_server_address,
+                             iperf_client_address,
+                             reverse=False):
+        """Run iperf between client and server and get the throughput.
+
+        Args:
+            iperf_server_address: string, ip address of running iperf server
+            iperf_client_address: string, ip address of iperf client (dut)
+            reverse (default: False): If True, run traffic in reverse direction,
+                from server to client.
+
+        Returns:
+            int, iperf throughput OR IPERF_NO_THROUGHPUT_VALUE, if iperf fails
+        """
+        if reverse:
+            self.log.info(
+                'Running IPerf traffic from server (%s) to dut (%s).' %
+                (iperf_server_address, iperf_client_address))
+            iperf_results_file = self.iperf_client.start(
+                iperf_server_address, '-i 1 -t 10 -R -J', 'channel_sweep_rx')
+        else:
+            self.log.info(
+                'Running IPerf traffic from dut (%s) to server (%s).' %
+                (iperf_client_address, iperf_server_address))
+            iperf_results_file = self.iperf_client.start(
+                iperf_server_address, '-i 1 -t 10 -J', 'channel_sweep_tx')
+        if iperf_results_file:
+            iperf_results = IPerfResult(iperf_results_file)
+            return iperf_results.avg_send_rate
+        else:
+            return IPERF_NO_THROUGHPUT_VALUE
+
+    def log_to_file_and_throughput_data(self, channel, channel_bandwidth,
+                                        tx_throughput, rx_throughput):
+        """Write performance info to csv file and to throughput data.
+
+        Args:
+            channel: int, channel that test was run on
+            channel_bandwidth: int, channel bandwidth the test used
+            tx_throughput: float, throughput value from dut to iperf server
+            rx_throughput: float, throughput value from iperf server to dut
+        """
+        test_name = self.throughput_data['test']
+        output_path = context.get_current_context().get_base_output_path()
+        log_path = '%s/ChannelSweepTest/%s' % (output_path, test_name)
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
+        log_file = '%s/%s_%smhz.csv' % (log_path, test_name, channel_bandwidth)
+        self.log.info('Writing IPerf results for %s to %s' %
+                      (test_name, log_file))
+        with open(log_file, 'a') as csv_file:
+            csv_file.write('%s,%s,%s\n' %
+                           (channel, tx_throughput, rx_throughput))
+        self.throughput_data['results'][str(channel)] = {
+            'tx_throughput': tx_throughput,
+            'rx_throughput': rx_throughput
+        }
+
+    def write_graph(self):
+        """Create graph html files from throughput data, plotting channel vs
+        tx_throughput and channel vs rx_throughput.
+        """
+        output_path = context.get_current_context().get_base_output_path()
+        test_name = self.throughput_data['test']
+        channel_bandwidth = self.throughput_data['channel_bandwidth']
+        output_file_name = '%s/ChannelSweepTest/%s/%s_%smhz.html' % (
+            output_path, test_name, test_name, channel_bandwidth)
+        output_file(output_file_name)
+        channels = []
+        tx_throughputs = []
+        rx_throughputs = []
+        for channel in self.throughput_data['results']:
+            channels.append(str(channel))
+            tx_throughputs.append(
+                self.throughput_data['results'][channel]['tx_throughput'])
+            rx_throughputs.append(
+                self.throughput_data['results'][channel]['rx_throughput'])
+        channel_vs_throughput_data = ColumnDataSource(
+            data=dict(channels=channels,
+                      tx_throughput=tx_throughputs,
+                      rx_throughput=rx_throughputs))
+        TOOLTIPS = [('Channel', '@channels'),
+                    ('TX_Throughput', '@tx_throughput'),
+                    ('RX_Throughput', '@rx_throughput')]
+        channel_vs_throughput_graph = figure(title='Channels vs. Throughput',
+                                             x_axis_label='Channels',
+                                             x_range=channels,
+                                             y_axis_label='Throughput',
+                                             tooltips=TOOLTIPS)
+        channel_vs_throughput_graph.sizing_mode = 'stretch_both'
+        channel_vs_throughput_graph.title.align = 'center'
+        channel_vs_throughput_graph.line('channels',
+                                         'tx_throughput',
+                                         source=channel_vs_throughput_data,
+                                         line_width=2,
+                                         line_color='blue',
+                                         legend_label='TX_Throughput')
+        channel_vs_throughput_graph.circle('channels',
+                                           'tx_throughput',
+                                           source=channel_vs_throughput_data,
+                                           size=GRAPH_CIRCLE_SIZE,
+                                           color='blue')
+        channel_vs_throughput_graph.line('channels',
+                                         'rx_throughput',
+                                         source=channel_vs_throughput_data,
+                                         line_width=2,
+                                         line_color='red',
+                                         legend_label='RX_Throughput')
+        channel_vs_throughput_graph.circle('channels',
+                                           'rx_throughput',
+                                           source=channel_vs_throughput_data,
+                                           size=GRAPH_CIRCLE_SIZE,
+                                           color='red')
+
+        channel_vs_throughput_graph.legend.location = "top_left"
+        graph_file = save([channel_vs_throughput_graph])
+        self.log.info('Saved graph to %s' % graph_file)
+
+    def verify_standard_deviation(self, max_std_dev):
+        """Verifies the standard deviation of the throughput across the channels
+        does not exceed the max_std_dev value.
+
+        Args:
+            max_std_dev: float, max standard deviation of throughput for a test
+                to pass (in mb/s)
+
+        Raises:
+            TestFailure, if standard deviation of throughput exceeds max_std_dev
+        """
+        self.log.info('Verifying standard deviation across channels does not '
+                      'exceed max standard deviation of %s mb/s' % max_std_dev)
+        tx_values = []
+        rx_values = []
+        for channel in self.throughput_data['results']:
+            if self.throughput_data['results'][channel][
+                    'tx_throughput'] is not None:
+                tx_values.append(
+                    self.throughput_data['results'][channel]['tx_throughput'])
+            if self.throughput_data['results'][channel][
+                    'rx_throughput'] is not None:
+                rx_values.append(
+                    self.throughput_data['results'][channel]['rx_throughput'])
+        tx_std_dev = pstdev(tx_values)
+        rx_std_dev = pstdev(rx_values)
+        if tx_std_dev > max_std_dev or rx_std_dev > max_std_dev:
+            asserts.fail(
+                'With %smhz channel bandwidth, throughput standard '
+                'deviation (tx: %s mb/s, rx: %s mb/s) exceeds max standard deviation'
+                ' (%s mb/s).' % (self.throughput_data['channel_bandwidth'],
+                                 tx_std_dev, rx_std_dev, max_std_dev))
+        else:
+            asserts.explicit_pass(
+                'Throughput standard deviation (tx: %s mb/s, rx: %s mb/s) '
+                'with %smhz channel bandwidth does not exceed maximum (%s mb/s).'
+                % (tx_std_dev, rx_std_dev,
+                   self.throughput_data['channel_bandwidth'], max_std_dev))
+
+    def run_channel_performance_tests(self, settings):
+        """Test function for running channel performance tests. Used by both
+        explicit test cases and debug test cases from config. Runs a performance
+        test for each channel in test_channels with test_channel_bandwidth, then
+        writes a graph and csv file of the channel vs throughput.
+
+        Args:
+            settings: dict, containing the following test settings
+                test_channels: list of channels to test.
+                test_channel_bandwidth: int, channel bandwidth to use for test.
+                test_security (optional): string, security type to use for test.
+                min_tx_throughput (optional, default: 0): float, minimum tx
+                    throughput threshold to pass individual channel tests
+                    (in mb/s).
+                min_rx_throughput (optional, default: 0): float, minimum rx
+                    throughput threshold to pass individual channel tests
+                    (in mb/s).
+                max_std_dev (optional, default: 1): float, maximum standard
+                    deviation of throughput across all test channels to pass
+                    test (in mb/s).
+                base_test_name (optional): string, test name prefix to use with
+                    generated subtests.
+                test_name (debug tests only): string, the test name for this
+                    parent test case from the config file. In explicit tests,
+                    this is not necessary.
+
+        Writes:
+            CSV file: channel, tx_throughput, rx_throughput
+                for every test channel.
+            Graph: channel vs tx_throughput & channel vs rx_throughput
+
+        Raises:
+            TestFailure, if throughput standard deviation across channels
+                exceeds max_std_dev
+
+            Example Explicit Test (see EOF for debug JSON example):
+            def test_us_2g_20mhz_wpa2(self):
+                self.run_channel_performance_tests(
+                        dict(
+                        test_channels=hostapd_constants.US_CHANNELS_2G,
+                        test_channel_bandwidth=20,
+                        test_security=hostapd_constants.WPA2_STRING,
+                        min_tx_throughput=2,
+                        min_rx_throughput=4,
+                        max_std_dev=0.75,
+                        base_test_name='test_us'))
+        """
+        test_channels = settings['test_channels']
+        test_channel_bandwidth = settings['test_channel_bandwidth']
+        test_security = settings.get('test_security')
+        test_name = settings.get('test_name', self.test_name)
+        base_test_name = settings.get('base_test_name', 'test')
+        min_tx_throughput = settings.get('min_tx_throughput',
+                                         DEFAULT_MIN_THROUGHPUT)
+        min_rx_throughput = settings.get('min_rx_throughput',
+                                         DEFAULT_MIN_THROUGHPUT)
+        max_std_dev = settings.get('max_std_dev', DEFAULT_MAX_STD_DEV)
+
+        self.throughput_data = {
+            'test': test_name,
+            'channel_bandwidth': test_channel_bandwidth,
+            'results': {}
+        }
         test_list = []
-        for combination in itertools.product(channels, bandwidths):
-            test_settings = {
-                'channel': combination[0],
-                'bandwidth': combination[1]
-            }
-            test_list.append(test_settings)
-        return test_list
-
-    def test_24ghz_channels(self):
-        """Runs setup_and_connect for 2.4GHz channels on 20 and 40 MHz bands."""
-        test_list = self.create_test_settings(CHANNELS_24, BANDWIDTH_24)
-        self.run_generated_testcases(self.setup_and_connect,
+        for channel in test_channels:
+            sub_test_name = '%s_channel_%s_%smhz' % (base_test_name, channel,
+                                                     test_channel_bandwidth)
+            test_list.append({
+                'test_name': sub_test_name,
+                'channel': int(channel),
+                'channel_bandwidth': int(test_channel_bandwidth),
+                'security': test_security,
+                'min_tx_throughput': min_tx_throughput,
+                'min_rx_throughput': min_rx_throughput
+            })
+        self.run_generated_testcases(self.get_channel_performance,
                                      settings=test_list,
-                                     name_func=generate_test_name)
+                                     name_func=get_test_name)
+        self.log.info('Channel tests completed.')
+        self.write_graph()
+        self.verify_standard_deviation(max_std_dev)
 
-    def test_5ghz_channels(self):
-        """Runs setup_and_connect for 5GHz channels on 20, 40, and 80 MHz bands.
+    def get_channel_performance(self, settings):
+        """Run a single channel performance test and logs results to csv file
+        and throughput data. Run with generated sub test cases in
+        run_channel_performance_tests.
+
+        1. Sets up network with test settings
+        2. Associates DUT
+        3. Runs traffic between DUT and iperf server (both directions)
+        4. Logs channel, tx_throughput (mb/s), and rx_throughput (mb/s) to
+           log file and throughput data.
+        5. Checks throughput values against minimum throughput thresholds.
+
+        Args:
+            settings: see run_channel_performance_tests
+
+        Raises:
+            TestFailure, if throughput (either direction) is less than
+                the directions given minimum throughput threshold.
         """
-        test_list = self.create_test_settings(CHANNELS_5, BANDWIDTH_5)
-        # Channel 165 is 20mhz only
-        test_list.remove({'channel': 165, 'bandwidth': 40})
-        test_list.remove({'channel': 165, 'bandwidth': 80})
-        self.run_generated_testcases(self.setup_and_connect,
-                                     settings=test_list,
-                                     name_func=generate_test_name)
+        channel = settings['channel']
+        channel_bandwidth = settings['channel_bandwidth']
+        security = settings['security']
+        test_name = settings['test_name']
+        min_tx_throughput = settings['min_tx_throughput']
+        min_rx_throughput = settings['min_rx_throughput']
+        if security:
+            if security == hostapd_constants.WEP_STRING:
+                password = utils.rand_hex_str(WEP_HEX_STRING_LENGTH)
+            else:
+                password = utils.rand_ascii_str(
+                    hostapd_constants.MIN_WPA_PSK_LENGTH)
+            security_profile = Security(security_mode=security,
+                                        password=password)
+        else:
+            password = None
+            security_profile = None
+        ssid = self.setup_ap(channel, channel_bandwidth, security_profile)
+        associated = wlan_utils.associate(client=self.dut,
+                                          ssid=ssid,
+                                          password=password)
+        if not associated:
+            self.log_to_file_and_throughput_data(channel, channel_bandwidth,
+                                                 None, None)
+            asserts.fail('Device failed to associate with network %s' % ssid)
+        self.log.info('DUT (%s) connected to network %s.' %
+                      (self.dut.device.ip, ssid))
+        self.iperf_server.renew_test_interface_ip_address()
+        self.log.info(
+            'Getting ip address for iperf server. Will retry for %s seconds.' %
+            self.time_to_wait_for_ip_addr)
+        iperf_server_address = self.get_and_verify_iperf_address(
+            channel, self.iperf_server)
+        self.log.info(
+            'Getting ip address for DUT. Will retry for %s seconds.' %
+            self.time_to_wait_for_ip_addr)
+        iperf_client_address = self.get_and_verify_iperf_address(
+            channel, self.dut, self.iperf_client.test_interface)
+        tx_throughput = self.get_iperf_throughput(iperf_server_address,
+                                                  iperf_client_address)
+        rx_throughput = self.get_iperf_throughput(iperf_server_address,
+                                                  iperf_client_address,
+                                                  reverse=True)
+        self.log_to_file_and_throughput_data(channel, channel_bandwidth,
+                                             tx_throughput, rx_throughput)
+        self.log.info('Throughput (tx, rx): (%s mb/s, %s mb/s), '
+                      'Minimum threshold (tx, rx): (%s mb/s, %s mb/s)' %
+                      (tx_throughput, rx_throughput, min_tx_throughput,
+                       min_rx_throughput))
+        base_message = 'Actual throughput (on channel: %s, channel bandwidth: %s, security: %s)' % (
+            channel, channel_bandwidth, security)
+        if tx_throughput < min_tx_throughput or rx_throughput < min_rx_throughput:
+            asserts.fail('%s below the minimum threshold.' % base_message)
+        asserts.explicit_pass('%s above the minimum threshold.' % base_message)
 
-    def test_channel_sweep_debug(self):
-        """Runs test cases defined in the ACTS config file for debugging
-        purposes.
+    # Helper functions to allow explicit tests throughput and standard deviation
+    # thresholds to be passed in via config.
+    def _get_min_tx_throughput(self, test_name):
+        return self.user_params.get('channel_sweep_test_params',
+                                    {}).get(test_name,
+                                            {}).get('min_tx_throughput',
+                                                    DEFAULT_MIN_THROUGHPUT)
 
-        Usage:
-            1. Add 'debug_channel_sweep_tests' to ACTS config with list of
-                tests to run matching pattern:
-                test_channel_<CHANNEL>_bandwidth_<BANDWIDTH>
-            2. Run test_channel_sweep_debug test.
+    def _get_min_rx_throughput(self, test_name):
+        return self.user_params.get('channel_sweep_test_params',
+                                    {}).get(test_name,
+                                            {}).get('min_rx_throughput',
+                                                    DEFAULT_MIN_THROUGHPUT)
+
+    def _get_max_std_dev(self, test_name):
+        return self.user_params.get('channel_sweep_test_params',
+                                    {}).get(test_name,
+                                            {}).get('min_std_dev',
+                                                    DEFAULT_MAX_STD_DEV)
+
+    # Test cases
+    def test_us_20mhz_open_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G,
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_20MHZ,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_40mhz_open_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_40MHZ,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_80mhz_open_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_80MHZ,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_20mhz_wep_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G,
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_20MHZ,
+                 test_security=hostapd_constants.WEP_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_40mhz_wep_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_40MHZ,
+                 test_security=hostapd_constants.WEP_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_80mhz_wep_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_80MHZ,
+                 test_security=hostapd_constants.WEP_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_20mhz_wpa_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G,
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_20MHZ,
+                 test_security=hostapd_constants.WPA_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_40mhz_wpa_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_40MHZ,
+                 test_security=hostapd_constants.WPA_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_80mhz_wpa_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_80MHZ,
+                 test_security=hostapd_constants.WPA_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_20mhz_wpa2_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G,
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_20MHZ,
+                 test_security=hostapd_constants.WPA2_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_40mhz_wpa2_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_40MHZ,
+                 test_security=hostapd_constants.WPA2_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_80mhz_wpa2_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_80MHZ,
+                 test_security=hostapd_constants.WPA2_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_20mhz_wpa_wpa2_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G,
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_20MHZ,
+                 test_security=hostapd_constants.WPA_MIXED_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_40mhz_wpa_wpa2_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_40MHZ,
+                 test_security=hostapd_constants.WPA_MIXED_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_80mhz_wpa_wpa2_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_80MHZ,
+                 test_security=hostapd_constants.WPA_MIXED_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_20mhz_wpa3_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G,
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_20MHZ,
+                 test_security=hostapd_constants.WPA3_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_40mhz_wpa3_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_2G +
+                 hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_40MHZ,
+                 test_security=hostapd_constants.WPA3_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_us_80mhz_wpa3_channel_performance(self):
+        self.run_channel_performance_tests(
+            dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
+                 test_channel_bandwidth=hostapd_constants.
+                 CHANNEL_BANDWIDTH_80MHZ,
+                 test_security=hostapd_constants.WPA3_STRING,
+                 base_test_name=self.test_name,
+                 min_tx_throughput=self._get_min_tx_throughput(self.test_name),
+                 min_rx_throughput=self._get_min_rx_throughput(self.test_name),
+                 max_std_dev=self._get_max_std_dev(self.test_name)))
+
+    def test_channel_performance_debug(self):
+        """Run channel performance test cases from the ACTS config file.
+
+        Example:
+        "channel_sweep_test_params": {
+            "debug_channel_performance_tests": [
+                {
+                    "test_name": "test_123_20mhz_wpa2_performance"
+                    "test_channels": [1, 2, 3],
+                    "test_channel_bandwidth": 20,
+                    "test_security": "wpa2",
+                    "base_test_name": "test_123_perf",
+                    "min_tx_throughput": 1.1,
+                    "min_rx_throughput": 3,
+                    "max_std_dev": 0.5
+                },
+                ...
+            ]
+        }
+
         """
-        allowed_channels = CHANNELS_24 + CHANNELS_5
-        chan_band_pattern = re.compile(
-            r'.*channel_([0-9]*)_.*bandwidth_([0-9]*)')
-        test_list = []
-        for test_title in self.user_params['debug_channel_sweep_tests']:
-            test = re.match(chan_band_pattern, test_title)
-            if test:
-                channel = int(test.group(1))
-                bandwidth = int(test.group(2))
-                if channel not in allowed_channels:
-                    raise ValueError("Invalid channel: %s" % channel)
-                if channel <= 14 and bandwidth not in BANDWIDTH_24:
-                    raise ValueError(
-                        "Channel %s does not support bandwidth %s" %
-                        (channel, bandwidth))
-                test_settings = {'channel': channel, 'bandwidth': bandwidth}
-                test_list.append(test_settings)
-
-        self.run_generated_testcases(self.setup_and_connect,
-                                     settings=test_list,
-                                     name_func=generate_test_name)
+        asserts.skip_if(
+            'debug_channel_performance_tests' not in self.user_params.get(
+                'channel_sweep_test_params', {}),
+            'No custom channel performance tests provided in config.')
+        base_tests = self.user_params['channel_sweep_test_params'][
+            'debug_channel_performance_tests']
+        self.run_generated_testcases(self.run_channel_performance_tests,
+                                     settings=base_tests,
+                                     name_func=get_test_name)
