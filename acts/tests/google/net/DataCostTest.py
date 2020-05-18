@@ -22,6 +22,7 @@ import time
 
 from acts import asserts
 from acts import base_test
+from acts import utils
 from acts import signals
 from acts import test_runner
 from acts.controllers import adb
@@ -176,6 +177,7 @@ class DataCostTest(base_test.BaseTestClass):
         ad = self.android_devices[0]
         self.dut = ad
         self._clear_netstats(ad)
+        utils.sync_device_time(ad)
         self.tcpdump_pid = nutils.start_tcpdump(ad, self.test_name)
 
         sub_id = str(ad.droid.telephonyGetSubscriberId())
@@ -224,6 +226,7 @@ class DataCostTest(base_test.BaseTestClass):
         ad = self.android_devices[1]
         self.dut = ad
         self._clear_netstats(ad)
+        utils.sync_device_time(ad)
         self.tcpdump_pid = nutils.start_tcpdump(ad, self.test_name)
 
         cell_network = ad.droid.connectivityGetActiveNetwork()
