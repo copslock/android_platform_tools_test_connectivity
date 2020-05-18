@@ -56,17 +56,29 @@ class BleFuchsiaTest(BaseTestClass):
     def test_fuchsia_scan_fuchsia_adv(self):
         # Initialize advertising on fuchsia dveice with name and interval
         fuchsia_name = "testADV1234"
-        adv_data = {"name": fuchsia_name}
+        adv_data = {
+            "name": fuchsia_name,
+            "appearance": None,
+            "service_data": None,
+            "tx_power_level": None,
+            "service_uuids": None,
+            "manufacturer_data": None,
+            "uris": None,
+        }
+        scan_response = None
+        connectable = True
         interval = 1000
         res = True
 
         # Start advertising
-        self.fuchsia_adv.ble_lib.bleStartBleAdvertising(adv_data, interval)
+        self.fuchsia_adv.ble_lib.bleStartBleAdvertising(
+            adv_data, scan_response, interval, connectable)
         self.log.info("Fuchsia advertising name: {}".format(fuchsia_name))
 
         # Start scan
-        scan_result = le_scan_for_device_by_name(
-            self.fuchsia_scan, self.log, fuchsia_name, self.default_timeout)
+        scan_result = le_scan_for_device_by_name(self.fuchsia_scan, self.log,
+                                                 fuchsia_name,
+                                                 self.default_timeout)
         if not scan_result:
             res = False
 
@@ -90,16 +102,28 @@ class BleFuchsiaTest(BaseTestClass):
 
         # Initialize advertising on fuchsia dveice with name and interval
         fuchsia_name = "testADV1234"
-        adv_data = {"name": fuchsia_name}
+        adv_data = {
+            "name": fuchsia_name,
+            "appearance": None,
+            "service_data": None,
+            "tx_power_level": None,
+            "service_uuids": None,
+            "manufacturer_data": None,
+            "uris": None,
+        }
+        scan_response = None
+        connectable = True
         interval = 1000
 
         # Start advertising
-        self.fuchsia_adv.ble_lib.bleStartBleAdvertising(adv_data, interval)
+        self.fuchsia_adv.ble_lib.bleStartBleAdvertising(
+            adv_data, scan_response, interval, connectable)
         self.log.info("Fuchsia advertising name: {}".format(fuchsia_name))
 
         # Start Scan
-        scan_result = le_scan_for_device_by_name(
-            self.fuchsia_scan, self.log, fuchsia_name, self.default_timeout)
+        scan_result = le_scan_for_device_by_name(self.fuchsia_scan, self.log,
+                                                 fuchsia_name,
+                                                 self.default_timeout)
         if not scan_result:
             self.fuchsia_adv.ble_lib.bleStopBleAdvertising()
             return False

@@ -127,11 +127,22 @@ class BleFuchsiaAndroidTest(BluetoothBaseTest):
     def test_fuchsia_adv_android_scan(self):
         #Initialize advertising on fuchsia device with name and interval
         fuchsia_name = "testADV123"
-        adv_data = {"name": fuchsia_name}
+        adv_data = {
+            "name": fuchsia_name,
+            "appearance": None,
+            "service_data": None,
+            "tx_power_level": None,
+            "service_uuids": None,
+            "manufacturer_data": None,
+            "uris": None,
+        }
+        scan_response = None
+        connectable = True
         interval = 1000
 
         #Start advertising
-        self.fd.ble_lib.bleStartBleAdvertising(adv_data, interval)
+        self.fd.ble_lib.bleStartBleAdvertising(adv_data, scan_response,
+                                               interval, connectable)
 
         # Initialize scan on android device which scan settings + callback
         filter_list = self.ad.droid.bleGenFilterList()
