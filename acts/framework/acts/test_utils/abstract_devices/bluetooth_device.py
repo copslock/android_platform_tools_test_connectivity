@@ -289,7 +289,8 @@ class BluetoothDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
-    def start_le_advertisement(self, adv_data, adv_interval):
+    def start_le_advertisement(self, adv_data, scan_response, adv_interval,
+                               connectable):
         """Base generic Bluetooth interface. Only called if not overridden by
         another supported device.
         """
@@ -1240,14 +1241,16 @@ class FuchsiaBluetoothDevice(BluetoothDevice):
         """
         return self.device.sdp_lib.init()
 
-    def start_le_advertisement(self, adv_data, adv_interval):
+    def start_le_advertisement(self, adv_data, scan_response, adv_interval,
+                               connectable):
         """ Starts an LE advertisement
 
         Args:
             adv_data: Advertisement data.
             adv_interval: Advertisement interval.
         """
-        self.device.ble_lib.bleStartBleAdvertising(adv_data, adv_interval)
+        self.device.ble_lib.bleStartBleAdvertising(adv_data, scan_response,
+                                                   adv_interval, connectable)
 
     def stop_le_advertisement(self):
         """ Stop active LE advertisement.

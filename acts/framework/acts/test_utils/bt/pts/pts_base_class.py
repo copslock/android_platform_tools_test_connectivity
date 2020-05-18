@@ -253,8 +253,21 @@ class PtsBaseClass(BaseTestClass):
             self.create_write_value_by_size(size))
 
     def mmi_make_iut_connectable(self):
-        adv_data = {"name": self.dut_bluetooth_local_name}
-        self.dut.start_le_advertisement(adv_data, self.ble_advertise_interval)
+        adv_data = {
+            "name": fuchsia_name,
+            "appearance": None,
+            "service_data": None,
+            "tx_power_level": None,
+            "service_uuids": None,
+            "manufacturer_data": None,
+            "uris": None,
+        }
+        scan_response = None
+        connectable = True
+        interval = 1000
+
+        self.dut.start_le_advertisement(adv_data, scan_response, interval,
+                                        connectable)
 
     def mmi_iut_enter_uuid_read_not_permitted(self):
         self.pts.extra_answers.append(

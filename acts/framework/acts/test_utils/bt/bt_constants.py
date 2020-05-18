@@ -196,11 +196,7 @@ codec_types = {
     'INVALID': 1000000
 }
 
-codec_priorities = {
-    'DISABLED': -1,
-    'DEFAULT': 0,
-    'HIGHEST': 1000000
-}
+codec_priorities = {'DISABLED': -1, 'DEFAULT': 0, 'HIGHEST': 1000000}
 
 sample_rates = {
     'NONE': 0,
@@ -212,18 +208,9 @@ sample_rates = {
     '192000': 0x1 << 5
 }
 
-bits_per_samples = {
-    'NONE': 0,
-    '16': 0x1 << 0,
-    '24': 0x1 << 1,
-    '32': 0x1 << 2
-}
+bits_per_samples = {'NONE': 0, '16': 0x1 << 0, '24': 0x1 << 1, '32': 0x1 << 2}
 
-channel_modes = {
-    'NONE': 0,
-    'MONO': 0x1 << 0,
-    'STEREO': 0x1 << 1
-}
+channel_modes = {'NONE': 0, 'MONO': 0x1 << 0, 'STEREO': 0x1 << 1}
 
 # Bluetooth HID constants.
 hid_connection_timeout = 5
@@ -318,40 +305,28 @@ ble_advertise_error_code = {
 gatt_cb_err = {
     "char_write_req_err":
     "Characteristic Write Request event not found. Expected {}",
-    "char_write_err":
-    "Characteristic Write event not found. Expected {}",
+    "char_write_err": "Characteristic Write event not found. Expected {}",
     "desc_write_req_err":
     "Descriptor Write Request event not found. Expected {}",
-    "desc_write_err":
-    "Descriptor Write event not found. Expected {}",
-    "char_read_err":
-    "Characteristic Read event not found. Expected {}",
-    "char_read_req_err":
-    "Characteristic Read Request not found. Expected {}",
-    "desc_read_err":
-    "Descriptor Read event not found. Expected {}",
+    "desc_write_err": "Descriptor Write event not found. Expected {}",
+    "char_read_err": "Characteristic Read event not found. Expected {}",
+    "char_read_req_err": "Characteristic Read Request not found. Expected {}",
+    "desc_read_err": "Descriptor Read event not found. Expected {}",
     "desc_read_req_err":
     "Descriptor Read Request event not found. Expected {}",
-    "rd_remote_rssi_err":
-    "Read Remote RSSI event not found. Expected {}",
+    "rd_remote_rssi_err": "Read Remote RSSI event not found. Expected {}",
     "gatt_serv_disc_err":
     "GATT Services Discovered event not found. Expected {}",
-    "serv_added_err":
-    "Service Added event not found. Expected {}",
-    "mtu_changed_err":
-    "MTU Changed event not found. Expected {}",
-    "mtu_serv_changed_err":
-    "MTU Server Changed event not found. Expected {}",
+    "serv_added_err": "Service Added event not found. Expected {}",
+    "mtu_changed_err": "MTU Changed event not found. Expected {}",
+    "mtu_serv_changed_err": "MTU Server Changed event not found. Expected {}",
     "gatt_conn_changed_err":
     "GATT Connection Changed event not found. Expected {}",
     "char_change_err":
     "GATT Characteristic Changed event not fond. Expected {}",
-    "phy_read_err":
-    "Phy Read event not fond. Expected {}",
-    "phy_update_err":
-    "Phy Update event not fond. Expected {}",
-    "exec_write_err":
-    "GATT Execute Write event not found. Expected {}"
+    "phy_read_err": "Phy Read event not fond. Expected {}",
+    "phy_update_err": "Phy Update event not fond. Expected {}",
+    "exec_write_err": "GATT Execute Write event not found. Expected {}"
 }
 
 # GATT callback strings as defined in GattClientFacade.java and
@@ -738,6 +713,65 @@ sig_uuid_constants = {
 
 ### End Service Discovery UUIDS ###
 
+### Begin Appearance Constants ###
+# https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.gap.appearance.xml
+sig_appearance_constants = {
+    "UNKNOWN": 0,
+    "PHONE": 64,
+    "COMPUTER": 128,
+    "WATCH": 192,
+    "WATCH_SPORTS": 193,
+    "CLOCK": 256,
+    "DISPLAY": 320,
+    "REMOTE_CONTROL": 384,
+    "EYE_GLASSES": 448,
+    "TAG": 512,
+    "KEYRING": 576,
+    "MEDIA_PLAYER": 640,
+    "BARCODE_SCANNER": 704,
+    "THERMOMETER": 768,
+    "THERMOMETER_EAR": 769,
+    "HEART_RATE_SENSOR": 832,
+    "HEART_RATE_SENSOR_BELT": 833,
+    "BLOOD_PRESSURE": 896,
+    "BLOOD_PRESSURE_ARM": 897,
+    "BLOOD_PRESSURE_WRIST": 898,
+    "HID": 960,
+    "HID_KEYBOARD": 961,
+    "HID_MOUSE": 962,
+    "HID_JOYSTICK": 963,
+    "HID_GAMEPAD": 964,
+    "HID_DIGITIZER_TABLET": 965,
+    "HID_CARD_READER": 966,
+    "HID_DIGITAL_PEN": 967,
+    "HID_BARCODE_SCANNER": 968,
+    "GLUCOSE_METER": 1024,
+    "RUNNING_WALKING_SENSOR": 1088,
+    "RUNNING_WALKING_SENSOR_IN_SHOE": 1089,
+    "RUNNING_WALKING_SENSOR_ON_SHOE": 1090,
+    "RUNNING_WALKING_SENSOR_ON_HIP": 1091,
+    "CYCLING": 1152,
+    "CYCLING_COMPUTER": 1153,
+    "CYCLING_SPEED_SENSOR": 1154,
+    "CYCLING_CADENCE_SENSOR": 1155,
+    "CYCLING_POWER_SENSOR": 1156,
+    "CYCLING_SPEED_AND_CADENCE_SENSOR": 1157,
+    "PULSE_OXIMETER": 3136,
+    "PULSE_OXIMETER_FINGERTIP": 3137,
+    "PULSE_OXIMETER_WRIST": 3138,
+    "WEIGHT_SCALE": 3200,
+    "PERSONAL_MOBILITY": 3264,
+    "PERSONAL_MOBILITY_WHEELCHAIR": 3265,
+    "PERSONAL_MOBILITY_SCOOTER": 3266,
+    "GLUCOSE_MONITOR": 3328,
+    "SPORTS_ACTIVITY": 5184,
+    "SPORTS_ACTIVITY_LOCATION_DISPLAY": 5185,
+    "SPORTS_ACTIVITY_LOCATION_AND_NAV_DISPLAY": 5186,
+    "SPORTS_ACTIVITY_LOCATION_POD": 5187,
+    "SPORTS_ACTIVITY_LOCATION_AND_NAV_POD": 5188,
+}
+
+### End Appearance Constants ###
 
 # Attribute Record values from the Bluetooth Specification
 # Version 5, Vol 3, Part B
