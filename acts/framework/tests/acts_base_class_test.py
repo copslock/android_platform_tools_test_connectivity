@@ -23,7 +23,6 @@ import mock_controller
 
 from acts import asserts
 from acts import base_test
-from acts import error
 from acts import signals
 
 from mobly import base_test as mobly_base_test
@@ -1095,6 +1094,38 @@ class ActsBaseClassTest(unittest.TestCase):
         magic_devices = base_cls.register_controller(mock_controller)
         self.assertEqual(magic_devices[0].magic, 'magic1')
         self.assertEqual(magic_devices[1].magic, 'magic2')
+
+    def test_handle_file_user_params_does_not_overwrite_existing_params(self):
+        test_run_config = self.test_run_config.copy()
+        test_run_config.user_params = {
+            'foo': ['good_value'],
+            'local_files': {
+                'foo': ['bad_value']
+            }
+        }
+        test = base_test.BaseTestClass(test_run_config)
+
+        self.assertEqual(test.user_params['foo'], ['good_value'])
+
+    def test_handle_file_user_params_dumps_files_dict(self):
+        test_run_config = self.test_run_config.copy()
+        test_run_config.user_params = {
+            'my_files': {
+                'foo': ['good_value']
+            }
+        }
+        test = base_test.BaseTestClass(test_run_config)
+
+        self.assertEqual(test.user_params['foo'], ['good_value'])
+
+    def test_handle_file_user_params_is_called_in_init(self):
+        test_run_config = self.test_run_config.copy()
+        test_run_config.user_params['files'] = {
+            'file_a': ['/some/path']
+        }
+        test = base_test.BaseTestClass(test_run_config)
+
+        self.assertEqual(test.user_params['file_a'], ['/some/path'])
 
 
 if __name__ == '__main__':

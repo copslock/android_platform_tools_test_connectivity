@@ -180,6 +180,8 @@ class BaseTestClass(MoblyBaseTest):
         """
         super().__init__(configs)
 
+        self.__handle_file_user_params()
+
         self.class_subscriptions = SubscriptionBundle()
         self.class_subscriptions.register()
         self.all_subscriptions = [self.class_subscriptions]
@@ -213,6 +215,20 @@ class BaseTestClass(MoblyBaseTest):
                                                  module_name)
                 builtin_controllers.append(module)
         return builtin_controllers
+
+    def __handle_file_user_params(self):
+        """For backwards compatibility, moves all contents of the "files" dict
+        into the root level of user_params.
+
+        This allows existing tests to run with the new Mobly-style format
+        without needing to make changes.
+        """
+        for key, value in self.user_params.items():
+            if key.endswith('files') and isinstance(value, dict):
+                new_user_params = dict(value)
+                new_user_params.update(self.user_params)
+                self.user_params = new_user_params
+                break
 
     @staticmethod
     def get_module_reference_name(a_module):
