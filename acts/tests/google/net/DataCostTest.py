@@ -94,13 +94,17 @@ class DataCostTest(base_test.BaseTestClass):
         Args:
             ad: Android device object
         """
-        out = ad.adb.shell("dumpsys connectivity | grep budget")
-        asserts.assert_true(out, "Fail to get status from dumpsys.")
+        try:
+            out = ad.adb.shell("dumpsys connectivity | grep budget")
+        except TimeoutError:
+            ad.log.warning("Fail to get status from dumpsys.")
+            out = ""
         ad.log.info("MultipathPolicyTracker: %s" % out)
-        asserts.assert_true(
-            "HANDOVER|RELIABILITY" in out,
-            "Cell multipath preference should be HANDOVER|RELIABILITY."
-        )
+        if out:
+            asserts.assert_true(
+                "HANDOVER|RELIABILITY" in out,
+                "Cell multipath preference should be HANDOVER|RELIABILITY."
+            )
 
     def _get_total_data_usage_for_device(self, ad, conn_type, sub_id):
         """ Get total data usage in MB for device
