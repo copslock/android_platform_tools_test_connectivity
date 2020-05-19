@@ -242,6 +242,24 @@ class FuchsiaGattcLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
+    def readCharacteristicByType(self, uuid):
+        """Read Characteristic value by id..
+
+        Args:
+            uuid: string, Characteristic identifier.
+
+        Returns:
+            Characteristic value if success, error string if error.
+        """
+        test_cmd = "gatt_client_facade.GattcReadCharacteristicByType"
+        test_args = {
+            "uuid": uuid,
+        }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, test_args)
+
     def readDescriptorById(self, id):
         """Read Descriptor value by id..
 
