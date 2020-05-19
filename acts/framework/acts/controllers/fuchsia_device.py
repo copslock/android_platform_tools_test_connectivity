@@ -45,6 +45,7 @@ from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
 from acts.controllers.fuchsia_lib.gpio_lib import FuchsiaGpioLib
 from acts.controllers.fuchsia_lib.hardware_power_statecontrol_lib import FuchsiaHardwarePowerStatecontrolLib
 from acts.controllers.fuchsia_lib.hwinfo_lib import FuchsiaHwinfoLib
+from acts.controllers.fuchsia_lib.i2c_lib import FuchsiaI2cLib
 from acts.controllers.fuchsia_lib.input_report_lib import FuchsiaInputReportLib
 from acts.controllers.fuchsia_lib.kernel_lib import FuchsiaKernelLib
 from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
@@ -256,6 +257,10 @@ class FuchsiaDevice:
         self.hwinfo_lib = FuchsiaHwinfoLib(self.address, self.test_counter,
                                            self.client_id)
 
+        # Grab commands from FuchsiaI2cLib
+        self.i2c_lib = FuchsiaI2cLib(self.address, self.test_counter,
+                                     self.client_id)
+
         # Grab commands from FuchsiaInputReportLib
         self.input_report_lib = FuchsiaInputReportLib(self.address,
                                                       self.test_counter,
@@ -293,11 +298,11 @@ class FuchsiaDevice:
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
                                        self.client_id)
 
-        #Grab commands from FuchsiaWlanApPolicyLib
+        # Grab commands from FuchsiaWlanApPolicyLib
         self.wlan_ap_policy_lib = FuchsiaWlanApPolicyLib(
             self.address, self.test_counter, self.client_id)
 
-        #Grab commands from FuchsiaWlanPolicyLib
+        # Grab commands from FuchsiaWlanPolicyLib
         self.wlan_policy_lib = FuchsiaWlanPolicyLib(self.address,
                                                     self.test_counter,
                                                     self.client_id)
