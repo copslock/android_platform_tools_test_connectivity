@@ -55,6 +55,7 @@ import cmd
 import pprint
 import time
 """Various Global Strings"""
+BASE_UUID = sig_uuid_constants['BASE_UUID']
 CMD_LOG = "CMD {} result: {}"
 FAILURE = "CMD {} threw exception: {}"
 BASIC_ADV_NAME = "fs_test"
@@ -1177,6 +1178,30 @@ class CommandInput(cmd.Cmd):
             id = int(line, 16)
             read_val = self.test_dut.gatt_client_read_characteristic_by_handle(
                 self.unique_mac_addr_id, id)
+            self.log.info("Characteristic Value with id {}: {}".format(
+                id, read_val))
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_gattc_read_char_by_uuid(self, characteristic_uuid):
+        """
+        Description: Read Characteristic by UUID (read by type).
+        Assumptions: Already connected to a GATT server service.
+        Input(s):
+            characteristic_uuid: The characteristic id reference on the GATT
+                service
+        Usage:
+          Examples:
+            gattc_read_char_by_id char_id
+        """
+        cmd = "Read Characteristic value by ID."
+        try:
+            short_uuid_len = 4
+            if len(characteristic_uuid) == short_uuid_len:
+                characteristic_uuid = BASE_UUID.format(characteristic_uuid)
+
+            read_val = self.test_dut.gatt_client_read_characteristic_by_uuid(
+                self.unique_mac_addr_id, characteristic_uuid)
             self.log.info("Characteristic Value with id {}: {}".format(
                 id, read_val))
         except Exception as err:
