@@ -7829,7 +7829,7 @@ def enable_privacy_usage_diagnostics(ad):
         ad.adb.shell(cmd)
     # perform the toggle
         ad.send_keycode('TAB')
-        ad.send_keycode('ENSURE')
+        ad.send_keycode('ENTER')
     except Exception:
         ad.log.info("Unable to toggle Usage and Diagnostics")
 
