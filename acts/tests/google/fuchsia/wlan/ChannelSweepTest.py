@@ -624,8 +624,9 @@ class ChannelSweepTest(WifiBaseTest):
                       'Minimum threshold (tx, rx): (%s mb/s, %s mb/s)' %
                       (tx_throughput, rx_throughput, min_tx_throughput,
                        min_rx_throughput))
-        base_message = 'Actual throughput (on channel: %s, channel bandwidth: '
-        '%s, security: %s)' % (channel, channel_bandwidth, security)
+        base_message = (
+            'Actual throughput (on channel: %s, channel bandwidth: '
+            '%s, security: %s)' % (channel, channel_bandwidth, security))
         if (tx_throughput < min_tx_throughput
                 or rx_throughput < min_rx_throughput):
             asserts.fail('%s below the minimum threshold.' % base_message)
@@ -747,7 +748,8 @@ _
                                             {}).get('min_std_dev',
                                                     DEFAULT_MAX_STD_DEV)
 
-    # Test cases
+    # Channel Performance of US Channels: 570 Test Cases
+    # 36 Test Cases
     def test_us_20mhz_open_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -759,6 +761,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 35 Test Cases
     def test_us_40mhz_open_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -770,6 +773,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 24 Test Cases
     def test_us_80mhz_open_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
@@ -780,6 +784,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 36 Test Cases
     def test_us_20mhz_wep_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -792,6 +797,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 35 Test Cases
     def test_us_40mhz_wep_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -804,6 +810,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 24 Test Cases
     def test_us_80mhz_wep_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
@@ -815,6 +822,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 36 Test Cases
     def test_us_20mhz_wpa_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -827,6 +835,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 35 Test Cases
     def test_us_40mhz_wpa_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -839,6 +848,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 24 Test Cases
     def test_us_80mhz_wpa_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
@@ -850,6 +860,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 36 Test Cases
     def test_us_20mhz_wpa2_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -862,6 +873,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 35 Test Cases
     def test_us_40mhz_wpa2_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -874,6 +886,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 24 Test Cases
     def test_us_80mhz_wpa2_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
@@ -885,6 +898,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 36 Test Cases
     def test_us_20mhz_wpa_wpa2_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -897,6 +911,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 35 Test Cases
     def test_us_40mhz_wpa_wpa2_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -909,6 +924,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 24 Test Cases
     def test_us_80mhz_wpa_wpa2_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
@@ -920,6 +936,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 36 Test Cases
     def test_us_20mhz_wpa3_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -932,6 +949,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 35 Test Cases
     def test_us_40mhz_wpa3_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_2G +
@@ -944,6 +962,7 @@ _
                  min_rx_throughput=self._get_min_rx_throughput(self.test_name),
                  max_std_dev=self._get_max_std_dev(self.test_name)))
 
+    # 24 Test Cases
     def test_us_80mhz_wpa3_channel_performance(self):
         self.run_channel_performance_tests(
             dict(test_channels=hostapd_constants.US_CHANNELS_5G[:-1],
