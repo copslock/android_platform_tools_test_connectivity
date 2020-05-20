@@ -17,7 +17,7 @@
 from acts.metrics.core import ProtoMetric
 from acts.metrics.logger import MetricLogger
 
-from acts.metrics.loggers.protos.gen import bounded_pb2
+from acts.metrics.loggers.protos.gen import metrics_pb2
 
 
 class BoundedMetricsLogger(MetricLogger):
@@ -50,7 +50,7 @@ class BoundedMetricsLogger(MetricLogger):
             upper_limit: upper bound for the metric.
             unit: optional unit to identify this metric with.
         """
-        bounded_metric = bounded_pb2.Metric()
+        bounded_metric = metrics_pb2.BoundedMetric()
         if self.get_test():
             bounded_metric.test_method = self.get_test()
         bounded_metric.test_class = self.get_class()

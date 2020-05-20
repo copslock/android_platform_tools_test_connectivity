@@ -1,11 +1,11 @@
 syntax = "proto2";
 
-package acts.metrics.bounded;
+package acts.metrics;
 
-option java_package = "com.android.acts.metrics.bounded";
+option java_package = "com.android.acts.metrics";
 
-// next id: 8
-message Metric {
+// next id: 9
+message BoundedMetric {
   // required
   optional string test_class = 1;
   optional string test_method = 2;
@@ -16,9 +16,15 @@ message Metric {
   optional DoubleValue lower_limit = 5;
   optional DoubleValue upper_limit = 6;
   optional string unit = 7;
+  repeated KeyValue extra = 8;
 }
 
 // Wrapper needed to support proto3-like style nullable values.
 message DoubleValue {
   optional double value = 1;
+}
+
+message KeyValue {
+  optional string key = 1;
+  optional string value = 2;
 }
