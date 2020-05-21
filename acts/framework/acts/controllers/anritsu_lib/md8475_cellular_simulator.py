@@ -100,8 +100,18 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         cell_file_path = ntpath.join(self.CALLBOX_CONFIG_PATH, cell_file_name)
         sim_file_path = ntpath.join(self.CALLBOX_CONFIG_PATH, sim_file_name)
 
+        # Load the simulation config file
         self.anritsu.load_simulation_paramfile(sim_file_path)
+
+        # Enable all LTE base stations. This is needed so that base settings
+        # can be applied.
+        self.anritsu.set_simulation_model(
+            *[md8475a.BtsTechnology.LTE for _ in range(self.LTE_MAX_CARRIERS)],
+            reset=False)
+
+        # Load cell settings
         self.anritsu.load_cell_paramfile(cell_file_path)
+
         self.anritsu.start_simulation()
 
         self.bts = [
