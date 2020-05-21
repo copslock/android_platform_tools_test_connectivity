@@ -39,10 +39,10 @@ class PowerTelTraffic_Modem_Test(ctpt.PowerTelTrafficTest):
         self.display_name_test_case = 'LTE5E - Cat3 B38'
         self.power_tel_traffic_test()
 
-    def test_lteca_ca_3a4a_pul_low_bw_20_20_tm_3_3_mimo_2x2_2x2_direction_dlul_phich_16_cfi_1(self):
-        self.display_name_test_case = 'LTE10E - Cat6 B3 - B4'
+    def test_lteca_ca_3a7a_pul_low_bw_20_20_tm_3_3_mimo_2x2_2x2_direction_dlul_phich_16_cfi_1(self):
+        self.display_name_test_case = 'LTE10E - Cat6 3A7A'
         self.power_tel_traffic_test()
 
-    def test_lteca_ca_3a7a20a_pul_low_bw_20_20_20_tm_3_3_3_mimo_2x2_2x2_2x2_direction_dlul_phich_16_cfi_1(self):
-        self.display_name_test_case = 'LTE21E - Cat9 B3 B7 B20'
+    def test_lteca_ca_66c2a_pul_low_bw_20_20_20_tm_3_3_3_mimo_2x2_2x2_2x2_direction_dlul_phich_16_cfi_1(self):
+        self.display_name_test_case = 'LTE21E - Cat9 66C2A'
         self.power_tel_traffic_test()
