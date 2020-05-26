@@ -455,6 +455,14 @@ class AbstractCellularSimulator:
         """ Stops transmitting data from the instrument to the DUT. """
         raise NotImplementedError()
 
+    def get_measured_pusch_power(self):
+        """ Queries PUSCH power measured at the callbox.
+
+        Returns:
+            The PUSCH power in the primary input port.
+        """
+        raise NotImplementedError()
+
 
 class CellularSimulatorError(Exception):
     """ Exceptions thrown when the cellular equipment is unreachable or it
