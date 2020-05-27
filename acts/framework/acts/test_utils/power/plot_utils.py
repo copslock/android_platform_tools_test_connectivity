@@ -217,7 +217,6 @@ def monsoon_tx_power_sweep_plot(mon_info, tag, currents, txs):
     output_file(os.path.join(mon_info.data_path, plot_title + '.html'))
 
     plot = figure(title=plot_title,
-                  y_axis_type='log',
                   y_axis_label='Average Current [mA]',
                   x_axis_label='Tx Power [dBm]',
                   background_fill_color='#fafafa')
