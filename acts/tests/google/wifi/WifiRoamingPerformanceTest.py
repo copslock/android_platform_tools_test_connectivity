@@ -75,17 +75,6 @@ class WifiRoamingPerformanceTest(base_test.BaseTestClass):
         self.log.info('Access Point Configuration: {}'.format(
             self.access_point.ap_settings))
 
-        if hasattr(self, 'bdf'):
-            self.log.info('Pushing WiFi BDF to DUT.')
-            wputils.push_bdf(self.dut, self.bdf)
-        if hasattr(self, 'firmware'):
-            self.log.info('Pushing WiFi firmware to DUT.')
-            wlanmdsp = [
-                file for file in self.firmware if "wlanmdsp.mbn" in file
-            ][0]
-            data_msc = [file for file in self.firmware
-                        if "Data.msc" in file][0]
-            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
         # Get RF connection map
         self.log.info("Getting RF connection map.")
         wutils.wifi_toggle_state(self.dut, True)

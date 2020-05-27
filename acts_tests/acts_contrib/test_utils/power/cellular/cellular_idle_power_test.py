@@ -1,1 +1,0 @@
-../../../../../acts/framework/acts/test_utils/power/cellular/cellular_idle_power_test.py

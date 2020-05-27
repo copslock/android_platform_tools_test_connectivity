@@ -550,7 +550,11 @@ class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
             iperf_result = self.get_iperf_results(self.dut, iperf_helpers)
 
             currents.append(result.average_current)
-            txs.append(tx)
+
+            # Get the actual Tx power as measured from the callbox side
+            measured_tx = self.simulation.get_measured_ul_power()
+
+            txs.append(measured_tx)
             iperf_results.append(iperf_result)
 
         self.create_power_plot(currents, txs)

@@ -134,7 +134,8 @@ def orchestrate_coc_connection(
         le_tx_data_length=default_le_data_length,
         accept_timeout_ms=default_bluetooth_socket_timeout_ms,
         le_min_ce_len=0,
-        le_max_ce_len=0):
+        le_max_ce_len=0,
+        gatt_disconnection=True):
     """Sets up the CoC connection between two Android devices.
 
     Args:
@@ -145,6 +146,8 @@ def orchestrate_coc_connection(
         le_connection_interval: LE Connection interval. 0 means use default.
         le_tx_data_length: LE Data Length used by BT Controller to transmit.
         accept_timeout_ms: timeout while waiting for incoming connection.
+        gatt_disconnection: LE GATT disconnection, default is True, False will return
+        bluetooth_gatt and gatt_callback
     Returns:
         True if connection was successful or false if unsuccessful,
         client connection ID,
@@ -283,9 +286,14 @@ def orchestrate_coc_connection(
         "orchestrate_coc_connection: client conn id={}, server conn id={}".
         format(client_conn_id, server_conn_id))
 
-    if gatt_connected:
-        disconnect_gatt_connection(client_ad, bluetooth_gatt_1,
-                                   gatt_callback_1)
-        client_ad.droid.gattClientClose(bluetooth_gatt_1)
+    if gatt_disconnection:
 
-    return True, client_conn_id, server_conn_id
+        if gatt_connected:
+            disconnect_gatt_connection(client_ad, bluetooth_gatt_1,
+                                       gatt_callback_1)
+            client_ad.droid.gattClientClose(bluetooth_gatt_1)
+
+        return True, client_conn_id, server_conn_id
+
+    else:
+        return True, client_conn_id, server_conn_id, bluetooth_gatt_1, gatt_callback_1

@@ -100,8 +100,18 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
         cell_file_path = ntpath.join(self.CALLBOX_CONFIG_PATH, cell_file_name)
         sim_file_path = ntpath.join(self.CALLBOX_CONFIG_PATH, sim_file_name)
 
+        # Load the simulation config file
         self.anritsu.load_simulation_paramfile(sim_file_path)
+
+        # Enable all LTE base stations. This is needed so that base settings
+        # can be applied.
+        self.anritsu.set_simulation_model(
+            *[md8475a.BtsTechnology.LTE for _ in range(self.LTE_MAX_CARRIERS)],
+            reset=False)
+
+        # Load cell settings
         self.anritsu.load_cell_paramfile(cell_file_path)
+
         self.anritsu.start_simulation()
 
         self.bts = [
@@ -705,6 +715,30 @@ class MD8475CellularSimulator(cc.AbstractCellularSimulator):
             # TODO (b/141962691): continue only if traffic is stopped
             self.log.warning(str(inst))
         time.sleep(2)
+
+    def get_measured_pusch_power(self):
+        """ Queries PUSCH power measured at the callbox.
+
+        Returns:
+            The PUSCH power in the primary input port.
+        """
+        # Try three times before raising an exception. This is needed because
+        # the callbox sometimes reports an active chain as 'DEACTIVE'.
+        retries_left = 3
+
+        while retries_left > 0:
+
+            ul_pusch = self.anritsu.get_measured_pusch_power().split(',')[0]
+
+            if ul_pusch != 'DEACTIVE':
+                return float(ul_pusch)
+
+            time.sleep(3)
+            retries_left -= 1
+            self.log.info('Chain shows as inactive. %d retries left.' %
+                          retries_left)
+
+        raise cc.CellularSimulatorError('Could not get measured PUSCH power.')
 
 
 class MD8475BCellularSimulator(MD8475CellularSimulator):

@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/bt/car_bt/BtCarPairedConnectDisconnectTest.py

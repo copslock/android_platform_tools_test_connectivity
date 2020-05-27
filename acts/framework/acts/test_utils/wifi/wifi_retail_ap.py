@@ -59,7 +59,8 @@ def create(configs):
 
 
 def detroy(objs):
-    return
+    for obj in objs:
+        obj.teardown()
 
 
 class BlockingBrowser(splinter.driver.webdriver.chrome.WebDriver):
@@ -209,6 +210,10 @@ class WifiRetailAP(object):
         if self.ap_settings.get('lock_ap', 0):
             self.lock_timeout = self.ap_settings.get('lock_timeout', 3600)
             self._lock_ap()
+
+    def teardown(self):
+        """Function to perform destroy operations."""
+        self._unlock_ap()
 
     def reset(self):
         """Function that resets AP.

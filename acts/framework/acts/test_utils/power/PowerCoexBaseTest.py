@@ -25,7 +25,6 @@ class PowerCoexBaseTest(PBtBT.PowerBTBaseTest, PWBT.PowerWiFiBaseTest):
 
     Inherited from the PowerBaseTest class
     """
-
     def coex_test_phone_setup(self, Screen_status, WiFi_status, WiFi_band,
                               BT_status, BLE_status, Cellular_status,
                               Celluar_band):
@@ -42,19 +41,19 @@ class PowerCoexBaseTest(PBtBT.PowerBTBaseTest, PWBT.PowerWiFiBaseTest):
                 actual band for callbox setup; 'None' when celluar is OFF
         """
         # Setup WiFi
-        if WiFi_status is 'ON':
+        if WiFi_status == 'ON':
             wutils.wifi_toggle_state(self.dut, True)
-        elif WiFi_status is 'Connected':
+        elif WiFi_status == 'Connected':
             self.setup_ap_connection(self.main_network[WiFi_band])
-        elif WiFi_status is 'Disconnected':
-            self.setup_ap_connection(
-                self.main_network[WiFi_band], connect=False)
+        elif WiFi_status == 'Disconnected':
+            self.setup_ap_connection(self.main_network[WiFi_band],
+                                     connect=False)
 
         # Setup BT/BLE
         self.phone_setup_for_BT(BT_status, BLE_status, Screen_status)
 
         # Setup Cellular
-        if Cellular_status is 'ON':
+        if Cellular_status == 'ON':
             self.dut.droid.connectivityToggleAirplaneMode(False)
             utils.set_mobile_data_always_on(self.dut, True)
 
@@ -65,9 +64,9 @@ class PowerCoexBaseTest(PBtBT.PowerBTBaseTest, PWBT.PowerWiFiBaseTest):
             WiFi_scan: 'ON', 'OFF' or 'PNO'
             BLE_scan_mode: 'balanced', 'opportunistic', 'low_power', or 'low_latency'
         """
-        if WiFi_scan is 'ON':
+        if WiFi_scan == 'ON':
             self.dut.adb.shell(wifi_scan_command)
-        if WiFi_scan is 'PNO':
+        if WiFi_scan == 'PNO':
             self.log.info(
                 'Set attenuation so device loses connection to trigger PNO scans'
             )

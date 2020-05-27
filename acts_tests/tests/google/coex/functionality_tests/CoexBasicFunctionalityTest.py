@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/coex/functionality_tests/CoexBasicFunctionalityTest.py

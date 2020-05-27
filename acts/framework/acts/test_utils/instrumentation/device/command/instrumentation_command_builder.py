@@ -15,8 +15,9 @@
 #   limitations under the License.
 
 import os
+import shlex
 
-DEFAULT_NOHUP_LOG = 'nohup.log'
+DEFAULT_INSTRUMENTATION_LOG_OUTPUT = 'instrumentation_output.txt'
 
 
 class InstrumentationCommandBuilder(object):
@@ -30,6 +31,7 @@ class InstrumentationCommandBuilder(object):
         self._nohup = False
         self._proto_path = None
         self._nohup_log_path = None
+        self._output_as_proto = False
 
     def set_manifest_package(self, test_package):
         self._manifest_package_name = test_package
@@ -40,25 +42,47 @@ class InstrumentationCommandBuilder(object):
     def add_flag(self, param):
         self._flags.append(param)
 
+    def remove_flag(self, param):
+        while self._flags.count(param):
+            self._flags.remove(param)
+
     def add_key_value_param(self, key, value):
         if isinstance(value, bool):
             value = str(value).lower()
         self._key_value_params[key] = str(value)
 
-    def set_proto_path(self, path):
+    def set_proto_path(self, path=None):
         """Sets a custom path to store result proto. Note that this path will
-        be relative to $EXTERNAL_STORAGE on device.
+        be relative to $EXTERNAL_STORAGE on device. Calling this function
+        automatically enables output as proto.
+
+        Args:
+            path: The $EXTERNAL_STORAGE subdirectory to write the result proto
+            to. If left as None, the default location will be used.
         """
+        self._output_as_proto = True
         self._proto_path = path
 
-    def set_nohup(self, log_path=DEFAULT_NOHUP_LOG):
+    def set_output_as_text(self):
+        """This is the default behaviour. It will simply output the
+        instrumentation output to the devices stdout. If the nohup option is
+        enabled the instrumentation output will be redirected to the defined
+        path or its default.
+        """
+        self._output_as_proto = False
+        self._proto_path = None
+
+    def set_nohup(self, log_path=None):
         """Enables nohup mode. This enables the instrumentation command to
         continue running after a USB disconnect.
 
         Args:
-            log_path: Path to store stdout of the process. Relative to
-                $EXTERNAL_STORAGE
+            log_path: Path to store stdout of the process. Default is:
+            $EXTERNAL_STORAGE/instrumentation_output.txt
         """
+        if log_path is None:
+            log_path = os.path.join('$EXTERNAL_STORAGE',
+                                    DEFAULT_INSTRUMENTATION_LOG_OUTPUT)
         self._nohup = True
         self._nohup_log_path = log_path
 
@@ -68,7 +92,7 @@ class InstrumentationCommandBuilder(object):
         if self._nohup:
             call = ['nohup'] + call
             call.append('>>')
-            call.append(os.path.join('$EXTERNAL_STORAGE', self._nohup_log_path))
+            call.append(self._nohup_log_path)
             call.append('2>&1')
         return " ".join(call)
 
@@ -82,15 +106,18 @@ class InstrumentationCommandBuilder(object):
             raise Exception('instrumentation call build errors: {}'
                             .format(','.join(errors)))
         call = ['am instrument']
+
         for flag in self._flags:
             call.append(flag)
-        call.append('-f')
+
+        if self._output_as_proto:
+            call.append('-f')
         if self._proto_path:
             call.append(self._proto_path)
         for key, value in self._key_value_params.items():
             call.append('-e')
             call.append(key)
-            call.append(value)
+            call.append(shlex.quote(value))
         return call
 
 
@@ -105,13 +132,11 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
     def default():
         """Default instrumentation call builder.
 
-        The flags -w, -r and --no-isolated-storage are enabled.
+        The flags -w, -r are enabled.
 
            -w  Forces am instrument to wait until the instrumentation terminates
            (needed for logging)
            -r  Outputs results in raw format.
-           --no-isolated-storage  Disables the isolated storage feature
-           introduced in Q.
            https://developer.android.com/studio/test/command-line#AMSyntax
 
         The default test runner is androidx.test.runner.AndroidJUnitRunner.
@@ -119,7 +144,6 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
         builder = InstrumentationTestCommandBuilder()
         builder.add_flag('-w')
         builder.add_flag('-r')
-        builder.add_flag('--no-isolated-storage')
         builder.set_runner('androidx.test.runner.AndroidJUnitRunner')
         return builder
 
@@ -166,6 +190,6 @@ class InstrumentationTestCommandBuilder(InstrumentationCommandBuilder):
         if self._nohup:
             call = ['nohup'] + call
             call.append('>>')
-            call.append(os.path.join('$EXTERNAL_STORAGE', self._nohup_log_path))
+            call.append(self._nohup_log_path)
             call.append('2>&1')
         return ' '.join(call)

@@ -1,1 +1,0 @@
-../../../../acts/framework/acts/test_utils/tel/tel_lookup_tables.py

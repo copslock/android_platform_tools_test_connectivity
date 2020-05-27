@@ -54,6 +54,19 @@ def create_security_profile(test_func):
         Returns:
             The original fuction that was called
         """
+        utf8_password_2g = '2𝔤_𝔊𝔬𝔬𝔤𝔩𝔢'
+        utf8_password_2g_french = 'du Feÿ Château'
+        utf8_password_2g_german = 'für Straßenatlas Rat'
+        utf8_password_2g_dutch = 'niet óúd, is níéuw! Die'
+        utf8_password_2g_swedish = 'femtioåtta Det är'
+        utf8_password_2g_norwegian = 'ØÆ Curaçao æ å å å'
+        #Danish and Norwegian has the same alphabet
+        utf8_password_2g_danish = utf8_password_2g_norwegian
+        utf8_password_2g_japanese = 'そっくりね。あな'
+        utf8_password_2g_spanish = 'á,é,í,ó,ú,ü,ñ,¿,¡ ¡No'
+        utf8_password_2g_italian = 'Pinocchio è italiano? caffè'
+        utf8_password_2g_korean = 'ㅜㅝㅞㅟㅠㅘㅙㅚㅛ'
+
         security = re.search(r'sec(.*?)ptk_(.*)', test_func.__name__)
         security_mode = security.group(1)
         ptk_type = security.group(2)
@@ -92,8 +105,32 @@ def create_security_profile(test_func):
             password = str(rand_hex_str(10)).lower()
         elif 'wep_26_hex' in test_func.__name__:
             password = str(rand_hex_str(26)).lower()
+        elif 'utf8' in test_func.__name__:
+            if 'french' in test_func.__name__:
+                password = utf8_password_2g_french
+            elif 'german' in test_func.__name__:
+                password = utf8_password_2g_german
+            elif 'dutch' in test_func.__name__:
+                password = utf8_password_2g_dutch
+            elif 'swedish' in test_func.__name__:
+                password = utf8_password_2g_swedish
+            elif 'norwegian' in test_func.__name__:
+                password = utf8_password_2g_norwegian
+            elif 'danish' in test_func.__name__:
+                password = utf8_password_2g_danish
+            elif 'japanese' in test_func.__name__:
+                password = utf8_password_2g_japanese
+            elif 'spanish' in test_func.__name__:
+                password = utf8_password_2g_spanish
+            elif 'italian' in test_func.__name__:
+                password = utf8_password_2g_italian
+            elif 'korean' in test_func.__name__:
+                password = utf8_password_2g_korean
+            else:
+                password = utf8_password_2g
         else:
             password = rand_ascii_str(hostapd_constants.MIN_WPA_PSK_LENGTH)
+
         self.security_profile = Security(security_mode=security_mode,
                                          password=password,
                                          wpa_cipher=wpa_cipher,
@@ -2502,3 +2539,136 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
             VENDOR_IE['simliar_to_wpa'],
             security=self.security_profile,
             password=self.client_password)
+
+    @create_security_profile
+    def test_associate_utf8_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_french_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_german_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_dutch_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_swedish_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_norwegian_password_11bg_sec_wpa2_psk_ptk_ccmp(
+        self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_danish_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_japanese_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_spanish_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_italian_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)
+
+    @create_security_profile
+    def test_associate_utf8_korean_password_11bg_sec_wpa2_psk_ptk_ccmp(self):
+        validate_setup_ap_and_associate(
+            access_point=self.access_point,
+            client=self.dut,
+            profile_name=AP_11ABG_PROFILE_NAME,
+            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+            ssid=self.secure_network_2g['SSID'],
+            security=self.security_profile,
+            password=self.client_password,
+            force_wmm=False)

@@ -455,8 +455,10 @@ class PowerBaseTest(base_test.BaseTestClass):
         for retry_measure in range(1, MEASUREMENT_RETRY_COUNT + 1):
             # Resets the battery status right before the test starts.
             self.dut.adb.shell(RESET_BATTERY_STATS)
-            self.log.info('Starting power measurement, attempt #{}.'.format(
-                retry_measure))
+            self.log.info('Starting power measurement. Duration: {}s. Offset: '
+                          '{}s. Voltage: {} V. attempt #{}.'.format(
+                              self.mon_info.duration, self.mon_info.offset,
+                              self.mon_voltage, retry_measure))
             # Start the power measurement using monsoon.
             self.mon_info.dut.usb(PassthroughStates.AUTO)
             result = self.mon_info.dut.measure_power(

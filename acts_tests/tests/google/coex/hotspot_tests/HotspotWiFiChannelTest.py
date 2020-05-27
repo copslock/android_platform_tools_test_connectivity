@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/coex/hotspot_tests/HotspotWiFiChannelTest.py

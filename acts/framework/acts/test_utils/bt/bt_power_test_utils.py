@@ -135,6 +135,8 @@ def start_apk_ble_scan(dut, scan_mode, scan_duration):
     """
     scan_duration = str(scan_duration) + 's'
     builder = icb.InstrumentationTestCommandBuilder.default()
+    builder.set_proto_path()
+    builder.add_flag('--no-isolated-storage')
     builder.add_test_class("com.google.android.device.power.tests.ble.BleScan")
     builder.set_manifest_package("com.google.android.device.power")
     builder.set_runner("androidx.test.runner.AndroidJUnitRunner")

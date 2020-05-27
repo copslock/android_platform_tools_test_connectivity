@@ -1,1 +1,0 @@
-../../../../../acts/framework/acts/test_utils/power/tel_simulations/GsmSimulation.py

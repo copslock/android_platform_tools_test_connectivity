@@ -1,1 +1,0 @@
-../../../../../acts/framework/acts/test_utils/bt/pts/fuchsia_pts_ics_lib.py

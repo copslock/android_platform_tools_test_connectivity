@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/tel/live/TelLiveStressCallTest.py

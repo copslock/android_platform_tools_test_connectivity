@@ -39,6 +39,7 @@ from acts.controllers.fuchsia_lib.bt.gatts_lib import FuchsiaGattsLib
 from acts.controllers.fuchsia_lib.bt.sdp_lib import FuchsiaProfileServerLib
 from acts.controllers.fuchsia_lib.hardware_power_statecontrol_lib import FuchsiaHardwarePowerStatecontrolLib
 from acts.controllers.fuchsia_lib.hwinfo_lib import FuchsiaHwinfoLib
+from acts.controllers.fuchsia_lib.input_report_lib import FuchsiaInputReportLib
 from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
@@ -46,7 +47,9 @@ from acts.controllers.fuchsia_lib.syslog_lib import FuchsiaSyslogError
 from acts.controllers.fuchsia_lib.syslog_lib import start_syslog
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 from acts.controllers.fuchsia_lib.utils_lib import SshResults
+from acts.controllers.fuchsia_lib.wlan_deprecated_configuration_lib import FuchsiaWlanDeprecatedConfigurationLib
 from acts.controllers.fuchsia_lib.wlan_lib import FuchsiaWlanLib
+from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyLib
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
 from acts.libs.proc.job import Error
 
@@ -86,6 +89,8 @@ FUCHSIA_RECONNECT_AFTER_REBOOT_TIME = 5
 ENABLE_LOG_LISTENER = True
 
 CHANNEL_OPEN_TIMEOUT = 5
+
+FUCHSIA_GET_VERSION_CMD = 'cat /config/build-info/version'
 
 
 class FuchsiaDeviceError(signals.ControllerError):
@@ -225,6 +230,11 @@ class FuchsiaDevice:
         self.hwinfo_lib = FuchsiaHwinfoLib(self.address, self.test_counter,
                                            self.client_id)
 
+        # Grab commands from FuchsiaInputReportLib
+        self.input_report_lib = FuchsiaInputReportLib(self.address,
+                                                      self.test_counter,
+                                                      self.client_id)
+
         # Grab commands from FuchsiaLoggingLib
         self.logging_lib = FuchsiaLoggingLib(self.address, self.test_counter,
                                              self.client_id)
@@ -241,9 +251,17 @@ class FuchsiaDevice:
         self.regulatory_region_lib = FuchsiaRegulatoryRegionLib(
             self.address, self.test_counter, self.client_id)
 
+        # Grabs command from FuchsiaWlanDeprecatedConfigurationLib
+        self.wlan_deprecated_configuration_lib = FuchsiaWlanDeprecatedConfigurationLib(
+            self.address, self.test_counter, self.client_id)
+
         # Grab commands from FuchsiaWlanLib
         self.wlan_lib = FuchsiaWlanLib(self.address, self.test_counter,
                                        self.client_id)
+
+        #Grab commands from FuchsiaWlanApPolicyLib
+        self.wlan_ap_policy_lib = FuchsiaWlanApPolicyLib(
+            self.address, self.test_counter, self.client_id)
 
         #Grab commands from FuchsiaWlanPolicyLib
         self.wlan_policy_lib = FuchsiaWlanPolicyLib(self.address,
@@ -734,6 +752,14 @@ class FuchsiaDevice:
 
             if not skip_sl4f:
                 self.control_daemon("sl4f.cmx", "start")
+
+            out_name = "fuchsia_device_%s_%s.txt" % (self.serial, 'fw_version')
+            full_out_path = os.path.join(self.log_path, out_name)
+            fuchsia_version = self.send_command_ssh(
+                FUCHSIA_GET_VERSION_CMD).stdout
+            fw_file = open(full_out_path, 'w')
+            fw_file.write('%s\n' % fuchsia_version)
+            fw_file.close()
 
     def stop_services(self):
         """Stops long running services on the fuchsia device.

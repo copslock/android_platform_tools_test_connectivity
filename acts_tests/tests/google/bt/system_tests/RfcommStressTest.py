@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/bt/system_tests/RfcommStressTest.py

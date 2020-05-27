@@ -28,6 +28,7 @@ from acts import asserts
 from acts.test_utils.bt.bt_constants import adv_fail
 from acts.test_utils.bt.bt_constants import adv_succ
 from acts.test_utils.bt.bt_constants import batch_scan_not_supported_list
+from acts.test_utils.bt.bt_constants import batch_scan_result
 from acts.test_utils.bt.bt_constants import bits_per_samples
 from acts.test_utils.bt.bt_constants import ble_advertise_settings_modes
 from acts.test_utils.bt.bt_constants import ble_advertise_settings_tx_powers
@@ -748,9 +749,9 @@ def get_bt_rssi(ad, duration=1, processed=True):
 
 
 def enable_bqr(
-        ad_list,
-        bqr_interval=10,
-        bqr_event_mask=15,
+    ad_list,
+    bqr_interval=10,
+    bqr_event_mask=15,
 ):
     """Sets up BQR reporting.
 
@@ -1105,10 +1106,10 @@ def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
 
 
 def orchestrate_bluetooth_socket_connection(
-        client_ad,
-        server_ad,
-        accept_timeout_ms=default_bluetooth_socket_timeout_ms,
-        uuid=None):
+    client_ad,
+    server_ad,
+    accept_timeout_ms=default_bluetooth_socket_timeout_ms,
+    uuid=None):
     """Sets up the Bluetooth Socket connection between two Android devices.
 
     Args:

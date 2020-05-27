@@ -51,9 +51,19 @@ class GattConnectionStressTest(BaseTestClass):
 
     def _orchestrate_single_connect_disconnect(self):
         adv_name = generate_id_by_size(10)
-        adv_data = {"name": adv_name}
+        adv_data = {
+            "name": adv_name,
+            "appearance": None,
+            "service_data": None,
+            "tx_power_level": None,
+            "service_uuids": None,
+            "manufacturer_data": None,
+            "uris": None,
+        }
+        scan_response = None
+        connectable = True
         self.fuchsia_server_dut.ble_lib.bleStartBleAdvertising(
-            adv_data, self.ble_advertise_interval)
+            adv_data, scan_response, self.ble_advertise_interval, connectable)
         device = le_scan_for_device_by_name(self.fuchsia_client_dut, self.log,
                                             adv_name,
                                             self.scan_timeout_seconds)

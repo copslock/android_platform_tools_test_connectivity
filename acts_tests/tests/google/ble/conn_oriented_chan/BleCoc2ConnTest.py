@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/ble/conn_oriented_chan/BleCoc2ConnTest.py

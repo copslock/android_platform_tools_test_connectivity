@@ -75,13 +75,20 @@ class LinkLayerStats():
     MODE_MAP = {'0': '11a/g', '1': '11b', '2': '11n', '3': '11ac'}
     BW_MAP = {'0': 20, '1': 40, '2': 80}
 
-    def __init__(self, dut):
+    def __init__(self, dut, llstats_enabled=True):
         self.dut = dut
+        self.llstats_enabled = llstats_enabled
         self.llstats_cumulative = self._empty_llstats()
         self.llstats_incremental = self._empty_llstats()
 
     def update_stats(self):
-        llstats_output = self.dut.adb.shell(self.LLSTATS_CMD)
+        if self.llstats_enabled:
+            try:
+                llstats_output = self.dut.adb.shell(self.LLSTATS_CMD, timeout=0.1)
+            except:
+                llstats_output = ''
+        else:
+            llstats_output = ''
         self._update_stats(llstats_output)
 
     def reset_stats(self):
@@ -399,7 +406,7 @@ class BokehFigure():
         })
         self.fig_property['num_lines'] += 1
 
-    def generate_figure(self, output_file=None):
+    def generate_figure(self, output_file=None, save_json=True):
         """Function to generate and save BokehFigure.
 
         Args:
@@ -472,7 +479,7 @@ class BokehFigure():
         self.plot.title.text_font_size = self.fig_property['title_size']
 
         if output_file is not None:
-            self.save_figure(output_file)
+            self.save_figure(output_file, save_json)
         return self.plot
 
     def load_from_json(self, file_path):
@@ -489,18 +496,20 @@ class BokehFigure():
         with open(output_file, 'w') as outfile:
             json.dump(figure_dict, outfile, indent=4)
 
-    def save_figure(self, output_file):
+    def save_figure(self, output_file, save_json=True):
         """Function to save BokehFigure.
 
         Args:
             output_file: string specifying output file path
+            save_json: flag controlling json outputs
         """
         bokeh.plotting.output_file(output_file)
         bokeh.plotting.save(self.plot)
-        self._save_figure_json(output_file)
+        if save_json:
+            self._save_figure_json(output_file)
 
     @staticmethod
-    def save_figures(figure_array, output_file_path):
+    def save_figures(figure_array, output_file_path, save_json=True):
         """Function to save list of BokehFigures in one file.
 
         Args:
@@ -509,9 +518,10 @@ class BokehFigure():
         """
         for idx, figure in enumerate(figure_array):
             figure.generate_figure()
-            json_file_path = output_file_path.replace(
-                '.html', '{}-plot_data.json'.format(idx))
-            figure._save_figure_json(json_file_path)
+            if save_json:
+                json_file_path = output_file_path.replace(
+                    '.html', '{}-plot_data.json'.format(idx))
+                figure._save_figure_json(json_file_path)
         plot_array = [figure.plot for figure in figure_array]
         all_plots = bokeh.layouts.column(children=plot_array,
                                          sizing_mode='scale_width')
@@ -1232,9 +1242,12 @@ def get_sw_signature(dut):
     fw_version = re.search(FW_REGEX, fw_output).group('firmware')
     fw_signature = fw_version.split('.')[-3:-1]
     fw_signature = float('.'.join(fw_signature))
-    serial_hash = int(hashlib.md5(dut.serial.encode()).hexdigest(),16) % 1000
-    return {'bdf_signature': bdf_signature, 'fw_signature': fw_signature,
-            'serial_hash': serial_hash}
+    serial_hash = int(hashlib.md5(dut.serial.encode()).hexdigest(), 16) % 1000
+    return {
+        'bdf_signature': bdf_signature,
+        'fw_signature': fw_signature,
+        'serial_hash': serial_hash
+    }
 
 
 def push_bdf(dut, bdf_file):

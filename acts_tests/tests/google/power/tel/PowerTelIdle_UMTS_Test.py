@@ -1,1 +1,0 @@
-../../../../../acts/tests/google/power/tel/PowerTelIdle_UMTS_Test.py
