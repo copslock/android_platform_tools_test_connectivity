@@ -1477,6 +1477,58 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def complete_btc_set_io_capabilities(self, text, line, begidx, endidx):
+        """ Provides auto-complete for btc_set_io_capabilities cmd.
+
+        See Cmd module for full description.
+        """
+        arg_completion = len(line.split(" ")) - 1
+        input_options = ['NONE', 'CONFIRMATION', 'KEYBOARD']
+        output_options = ['NONE', 'DISPLAY']
+        if arg_completion == 1:
+            if not text:
+                completions = input_options
+            else:
+                completions = [s for s in input_options if s.startswith(text)]
+            return completions
+        if arg_completion == 2:
+            if not text:
+                completions = output_options
+            else:
+                completions = [s for s in output_options if s.startswith(text)]
+            return completions
+
+    def do_btc_set_io_capabilities(self, line):
+        """
+        Description: Sets the IO capabilities during pairing
+
+        Input(s):
+            input: String - The input I/O capabilities to use
+                Available Values:
+                NONE - Input capability type None
+                CONFIRMATION - Input capability type confirmation
+                KEYBOARD - Input capability type Keyboard
+            output: String - The output I/O Capabilities to use
+                Available Values:
+                NONE - Output capability type None
+                DISPLAY - output capability type Display
+
+        Usage:
+          Examples:
+            btc_set_io_capabilities NONE DISPLAY
+            btc_set_io_capabilities NONE NONE
+            btc_set_io_capabilities KEYBOARD DISPLAY
+        """
+        cmd = "Send an outgoing pairing request."
+
+        try:
+            options = line.split(" ")
+            result = self.pri_dut.btc_lib.setIOCapabilities(
+                options[0], options[1])
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_btc_accept_pairing(self, line):
         """
         Description: Accept all incoming pairing requests.

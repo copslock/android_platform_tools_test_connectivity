@@ -247,3 +247,29 @@ class FuchsiaBtcLib(BaseLib):
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
         return self.send_command(test_id, test_cmd, test_args)
+
+    def setIOCapabilities(self, input, output):
+        """Sets the I/O capabilities during pairing.
+
+        Args:
+            input: String - The input I/O capabilities to use
+                Available Values:
+                NONE - Input capability type None
+                CONFIRMATION - Input capability type confirmation
+                KEYBOARD - Input capability type Keyboard
+            output: String - The output I/O Capabilities to use
+                Available Values:
+                NONE - Output capability type None
+                DISPLAY - output capability type Display
+
+        Returns:
+            Dictionary, None if success, error if error.
+        """
+        test_cmd = "bt_control_facade.BluetoothSetIOCapabilities"
+        test_args = {
+            "input": input,
+            "output": output,
+        }
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+        return self.send_command(test_id, test_cmd, test_args)
