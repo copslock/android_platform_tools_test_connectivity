@@ -40,7 +40,7 @@ ACTS_TESTS_DISTRO := $(ACTS_TESTS_DISTRO_DIR)/acts_tests.zip
 LOCAL_ACTS_TESTS_DIR := tools/test/connectivity/acts_tests
 LOCAL_ACTS_FRAMEWORK_DIR := tools/test/connectivity/acts/framework
 
-$(ACTS_TESTS_DISTRO): $(sort $(shell find $(LOCAL_PATH)/acts_tests))
+$(ACTS_TESTS_DISTRO): $(sort $(shell find $(LOCAL_PATH)/acts*))
 	@echo "Packaging ACTS core test suite into $(ACTS_TESTS_DISTRO)"
 	@rm -rf $(ACTS_TESTS_DISTRO_DIR)
 	# Copy over the contents of acts_tests, resolving symlinks
