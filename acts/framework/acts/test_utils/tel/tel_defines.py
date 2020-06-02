@@ -76,9 +76,17 @@ MAX_WAIT_TIME_AIRPLANEMODE_EVENT = 90
 # get "onSmsSentSuccess" event
 MAX_WAIT_TIME_SMS_SENT_SUCCESS = 60
 
+# Max time to wait after device sent an SMS and before
+# get "onSmsSentSuccess" event in case of collision.
+MAX_WAIT_TIME_SMS_SENT_SUCCESS_IN_COLLISION = 60
+
 # Max time to wait after MT SMS was sent and before device
 # actually receive this MT SMS.
 MAX_WAIT_TIME_SMS_RECEIVE = 120
+
+# Max time to wait after MT SMS was sent and before device
+# actually receive this MT SMS in case of collision.
+MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION = 1200
 
 # Max time to wait for IMS registration
 MAX_WAIT_TIME_IMS_REGISTRATION = 120
