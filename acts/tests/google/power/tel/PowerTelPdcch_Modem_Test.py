@@ -38,3 +38,11 @@ class PowerTelPdcch_Modem_Test(cppt.PowerTelPDCCHTest):
     def test_lte_band_40_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_direction_dlul_phich_16_cfi_1_tddconfig_2(self):
         self.display_name_test_case = 'LTE40E-1 - B40'
         self.power_pdcch_test()
+
+    def test_lte_band_1_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_drx_10_200_2_320_8(self):
+        self.display_name_test_case = 'CDRxS9 - B1'
+        self.power_pdcch_test()
+
+    def test_lte_band_41_pul_low_bw_20_tm_3_dlmcs_4_ulmcs_4_mimo_2x2_tddconfig_2_drx_10_200_2_320_8(self):
+        self.display_name_test_case = 'CDRxS10 - B41'
+        self.power_pdcch_test()
