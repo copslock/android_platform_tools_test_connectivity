@@ -167,8 +167,8 @@ class BaseSimulation():
         self.rrc_sc_timer = None
 
         # Set to default APN
-        log.info("Setting preferred APN to anritsu1.com.")
-        dut.droid.telephonySetAPN("anritsu1.com", "anritsu1.com")
+        log.info("Configuring APN.")
+        dut.droid.telephonySetAPN("test", "test", "default")
 
         # Enable roaming on the phone
         toggle_cell_data_roaming(self.dut, True)
