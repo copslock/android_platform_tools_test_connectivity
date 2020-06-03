@@ -56,6 +56,7 @@ from acts.test_utils.tel.tel_subscription_utils import get_default_data_sub_id
 from acts.test_utils.tel.tel_test_utils import call_reject_leave_message
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown_for_call_forwarding
+from acts.test_utils.tel.tel_test_utils import call_setup_teardown_for_call_waiting
 from acts.test_utils.tel.tel_test_utils import ensure_network_generation
 from acts.test_utils.tel.tel_test_utils import \
     ensure_network_generation_for_subscription
@@ -455,6 +456,203 @@ def three_phone_call_forwarding_short_seq(log,
                     call_forwarding_type)
 
             retry = retry - 1
+
+    return True
+
+def three_phone_call_waiting_short_seq(log,
+                             phone_a,
+                             phone_a_idle_func,
+                             phone_a_in_call_check_func,
+                             phone_b,
+                             phone_c,
+                             wait_time_in_call=WAIT_TIME_IN_CALL,
+                             call_waiting=True,
+                             scenario=None,
+                             retry=2):
+    """Short sequence of call process with call waiting.
+    Test steps:
+        1. Ensure all phones are initially in idle state.
+        2. Enable call waiting on Phone A.
+        3. Make the 1st call from Phone B to Phone A. Accept the call on Phone B.
+        4. Ensure the call is connected and in correct phone state.
+        5. Make the 2nd call from Phone C to Phone A. The call should be able to
+           income correctly. Whether or not the 2nd call should be answered by
+           Phone A depends on the scenario listed in the next step.
+        6. Following 8 scenarios will be tested:
+           - 1st call ended first by Phone B during 2nd call incoming. 2nd call
+             ended by Phone C
+           - 1st call ended first by Phone B during 2nd call incoming. 2nd call
+             ended by Phone A
+           - 1st call ended first by Phone A during 2nd call incoming. 2nd call
+             ended by Phone C
+           - 1st call ended first by Phone A during 2nd call incoming. 2nd call
+             ended by Phone A
+           - 1st call ended by Phone B. 2nd call ended by Phone C
+           - 1st call ended by Phone B. 2nd call ended by Phone A
+           - 1st call ended by Phone A. 2nd call ended by Phone C
+           - 1st call ended by Phone A. 2nd call ended by Phone A
+        7. Ensure all phones are in idle state.
+
+    Args:
+        phone_a: android object of Phone A
+        phone_a_idle_func: function to check idle state on Phone A
+        phone_a_in_call_check_func: function to check in-call state on Phone A
+        phone_b: android object of Phone B
+        phone_c: android object of Phone C
+        wait_time_in_call: time to wait in call.
+            This is optional, default is WAIT_TIME_IN_CALL
+        call_waiting: True for call waiting enabled and False for disabled
+        scenario: 1-8 for scenarios listed above
+        retry: times of retry
+
+    Returns:
+        True: if call sequence succeed.
+        False: for errors
+    """
+    ads = [phone_a, phone_b, phone_c]
+
+    sub_test_cases = [
+        {
+            "description": "1st call ended first by caller1 during 2nd call"
+                " incoming. 2nd call ended by caller2",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[1],
+                ads[2],
+                phone_a_in_call_check_func,
+                True)},
+        {
+            "description": "1st call ended first by caller1 during 2nd call"
+                " incoming. 2nd call ended by callee",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[1],
+                ads[0],
+                phone_a_in_call_check_func,
+                True)},
+        {
+            "description": "1st call ended first by callee during 2nd call"
+                " incoming. 2nd call ended by caller2",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[0],
+                ads[2],
+                phone_a_in_call_check_func,
+                True)},
+        {
+            "description": "1st call ended first by callee during 2nd call"
+                " incoming. 2nd call ended by callee",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[0],
+                ads[0],
+                phone_a_in_call_check_func,
+                True)},
+        {
+            "description": "1st call ended by caller1. 2nd call ended by"
+                " caller2",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[1],
+                ads[2],
+                phone_a_in_call_check_func,
+                False)},
+        {
+            "description": "1st call ended by caller1. 2nd call ended by callee",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[1],
+                ads[0],
+                phone_a_in_call_check_func,
+                False)},
+        {
+            "description": "1st call ended by callee. 2nd call ended by caller2",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[0],
+                ads[2],
+                phone_a_in_call_check_func,
+                False)},
+        {
+            "description": "1st call ended by callee. 2nd call ended by callee",
+            "params": (
+                ads[1],
+                ads[0],
+                ads[2],
+                ads[0],
+                ads[0],
+                phone_a_in_call_check_func,
+                False)}
+    ]
+
+    if call_waiting:
+        if not scenario:
+            test_cases = sub_test_cases
+        else:
+            test_cases = [sub_test_cases[scenario-1]]
+    else:
+        test_cases = [
+            {
+                "description": "Call waiting deactivated",
+                "params": (
+                    ads[1],
+                    ads[0],
+                    ads[2],
+                    ads[0],
+                    ads[0],
+                    phone_a_in_call_check_func,
+                    False)}
+        ]
+
+    results = []
+
+    for test_case in test_cases:
+        ensure_phones_idle(log, ads)
+        if phone_a_idle_func and not phone_a_idle_func(log, phone_a):
+            phone_a.log.error("Phone A Failed to Reselect")
+            return False
+
+        time.sleep(WAIT_TIME_BETWEEN_REG_AND_CALL)
+
+        log.info(
+            "---> %s (caller1: %s, caller2: %s, callee: %s) <---",
+            test_case["description"],
+            test_case["params"][1].serial,
+            test_case["params"][2].serial,
+            test_case["params"][0].serial)
+
+        while not call_setup_teardown_for_call_waiting(
+            log,
+            *test_case["params"],
+            wait_time_in_call=wait_time_in_call,
+            call_waiting=call_waiting) and retry >= 0:
+
+            if retry <= 0:
+                log.error("Call waiting sub-case: '%s' failed." % test_case[
+                    "description"])
+                results.append(False)
+            else:
+                log.info("RERUN the sub-case: '%s'" % test_case["description"])
+
+            retry = retry - 1
+
+    for result in results:
+        if not result:
+            return False
 
     return True
 
