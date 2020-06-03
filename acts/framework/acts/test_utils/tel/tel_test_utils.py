@@ -3002,6 +3002,510 @@ def call_setup_teardown_for_call_forwarding_for_subscription(
         verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display, dialing_number_length, video_state)
 
+def call_setup_teardown_for_call_waiting(log,
+                        ad_caller,
+                        ad_callee,
+                        ad_caller2,
+                        ad_hangup=None,
+                        ad_hangup2=None,
+                        verify_callee_func=None,
+                        end_first_call_before_answering_second_call=True,
+                        wait_time_in_call=WAIT_TIME_IN_CALL,
+                        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+                        dialing_number_length=None,
+                        video_state=None,
+                        call_waiting=True):
+    """ Call process for call waiting, including make the 1st phone call from
+    caller, answer the call by the callee, and receive the 2nd call from the
+    caller2. The call is on default voice subscription
+
+    In call process, 1st call from <ad_caller> to <ad_callee>, 2nd call from
+    <ad_caller2> to <ad_callee>, hang up the existing call or reject the
+    incoming call according to the test scenario.
+
+    Args:
+        ad_caller: Caller Android Device Object.
+        ad_callee: Callee Android Device Object.
+        ad_caller2: Caller2 Android Device Object.
+        ad_hangup: Android Device Object end the 1st phone call.
+            Optional. Default value is None, and phone call will continue.
+        ad_hangup2: Android Device Object end the 2nd phone call.
+            Optional. Default value is None, and phone call will continue.
+        verify_callee_func: func_ptr to verify callee in correct mode
+            Optional. Default is None
+        end_first_call_before_answering_second_call: If True the 2nd call will
+            be rejected on the ringing stage.
+        wait_time_in_call: the call duration of a connected call
+        incall_ui_display: after answer the call, bring in-call UI to foreground
+        or background.
+            Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
+            if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
+            if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
+            else, do nothing.
+        dialing_number_length: the number of digits used for dialing
+        video_state: video call or voice call. Default is voice call.
+        call_waiting: True to enable call waiting and False to disable.
+
+    Returns:
+        True if call process without any error.
+        False if error happened.
+
+    """
+    subid_caller = get_outgoing_voice_sub_id(ad_caller)
+    subid_callee = get_incoming_voice_sub_id(ad_callee)
+    subid_caller2 = get_incoming_voice_sub_id(ad_caller2)
+    return call_setup_teardown_for_call_waiting_for_subscription(
+        log,
+        ad_caller,
+        ad_callee,
+        ad_caller2,
+        subid_caller,
+        subid_callee,
+        subid_caller2,
+        ad_hangup, ad_hangup2,
+        verify_callee_func,
+        end_first_call_before_answering_second_call,
+        wait_time_in_call,
+        incall_ui_display,
+        dialing_number_length,
+        video_state,
+        call_waiting)
+
+def call_setup_teardown_for_call_waiting_for_subscription(
+        log,
+        ad_caller,
+        ad_callee,
+        ad_caller2,
+        subid_caller,
+        subid_callee,
+        subid_caller2,
+        ad_hangup=None,
+        ad_hangup2=None,
+        verify_callee_func=None,
+        end_first_call_before_answering_second_call=True,
+        wait_time_in_call=WAIT_TIME_IN_CALL,
+        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+        dialing_number_length=None,
+        video_state=None,
+        call_waiting=True):
+    """ Call process for call waiting, including make the 1st phone call from
+    caller, answer the call by the callee, and receive the 2nd call from the
+    caller2. The call is on specified subscription.
+
+    In call process, 1st call from <ad_caller> to <ad_callee>, 2nd call from
+    <ad_caller2> to <ad_callee>, hang up the existing call or reject the
+    incoming call according to the test scenario.
+
+    Args:
+        ad_caller: Caller Android Device Object.
+        ad_callee: Callee Android Device Object.
+        ad_caller2: Caller2 Android Device Object.
+        subid_caller: Caller subscription ID.
+        subid_callee: Callee subscription ID.
+        subid_caller2: Caller2 subscription ID.
+        ad_hangup: Android Device Object end the 1st phone call.
+            Optional. Default value is None, and phone call will continue.
+        ad_hangup2: Android Device Object end the 2nd phone call.
+            Optional. Default value is None, and phone call will continue.
+        verify_callee_func: func_ptr to verify callee in correct mode
+            Optional. Default is None
+        end_first_call_before_answering_second_call: If True the 2nd call will
+            be rejected on the ringing stage.
+        wait_time_in_call: the call duration of a connected call
+        incall_ui_display: after answer the call, bring in-call UI to foreground
+        or background. Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
+            if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
+            if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
+            else, do nothing.
+        dialing_number_length: the number of digits used for dialing
+        video_state: video call or voice call. Default is voice call.
+        call_waiting: True to enable call waiting and False to disable.
+
+    Returns:
+        True if call process without any error.
+        False if error happened.
+
+    """
+
+    CHECK_INTERVAL = 5
+    begin_time = get_current_epoch_time()
+    verify_caller_func = is_phone_in_call
+    if not verify_callee_func:
+        verify_callee_func = is_phone_in_call
+    verify_caller2_func = is_phone_in_call
+
+    caller_number = ad_caller.telephony['subscription'][subid_caller][
+        'phone_num']
+    callee_number = ad_callee.telephony['subscription'][subid_callee][
+        'phone_num']
+    caller2_number = ad_caller2.telephony['subscription'][subid_caller2][
+        'phone_num']
+    if dialing_number_length:
+        skip_test = False
+        trunc_position = 0 - int(dialing_number_length)
+        try:
+            caller_area_code = caller_number[:trunc_position]
+            callee_area_code = callee_number[:trunc_position]
+            callee_dial_number = callee_number[trunc_position:]
+        except:
+            skip_test = True
+        if caller_area_code != callee_area_code:
+            skip_test = True
+        if skip_test:
+            msg = "Cannot make call from %s to %s by %s digits" % (
+                caller_number, callee_number, dialing_number_length)
+            ad_caller.log.info(msg)
+            raise signals.TestSkip(msg)
+        else:
+            callee_number = callee_dial_number
+
+    result = True
+    msg = "Call from %s to %s" % (caller_number, callee_number)
+    if video_state:
+        msg = "Video %s" % msg
+        video = True
+    else:
+        video = False
+    if ad_hangup:
+        msg = "%s for duration of %s seconds" % (msg, wait_time_in_call)
+    ad_caller.log.info(msg)
+
+    for ad in (ad_caller, ad_callee, ad_caller2):
+        call_ids = ad.droid.telecomCallGetCallIds()
+        setattr(ad, "call_ids", call_ids)
+        if call_ids:
+            ad.log.info("Pre-exist CallId %s before making call", call_ids)
+
+    if not call_waiting:
+        set_call_waiting(log, ad_callee, enable=0)
+    else:
+        set_call_waiting(log, ad_callee, enable=1)
+
+    first_call_ids = []
+    try:
+        if not initiate_call(
+                log,
+                ad_caller,
+                callee_number,
+                incall_ui_display=incall_ui_display,
+                video=video):
+            ad_caller.log.error("Initiate call failed.")
+            if not call_waiting:
+                set_call_waiting(log, ad_callee, enable=1)
+            result = False
+            return False
+        else:
+            ad_caller.log.info("Caller initate call successfully")
+        if not wait_and_answer_call_for_subscription(
+                log,
+                ad_callee,
+                subid_callee,
+                incoming_number=caller_number,
+                caller=ad_caller,
+                incall_ui_display=incall_ui_display,
+                video_state=video_state):
+            ad_callee.log.error("Answer call fail.")
+            if not call_waiting:
+                set_call_waiting(log, ad_callee, enable=1)
+            result = False
+            return False
+        else:
+            ad_callee.log.info("Callee answered the call successfully")
+
+        for ad, subid, call_func in zip(
+            [ad_caller, ad_callee],
+            [subid_caller, subid_callee],
+            [verify_caller_func, verify_callee_func]):
+            call_ids = ad.droid.telecomCallGetCallIds()
+            new_call_ids = set(call_ids) - set(ad.call_ids)
+            if not new_call_ids:
+                ad.log.error(
+                    "No new call ids are found after call establishment")
+                ad.log.error("telecomCallGetCallIds returns %s",
+                             ad.droid.telecomCallGetCallIds())
+                result = False
+            for new_call_id in new_call_ids:
+                first_call_ids.append(new_call_id)
+                if not wait_for_in_call_active(ad, call_id=new_call_id):
+                    result = False
+                else:
+                    ad.log.info("callProperties = %s",
+                                ad.droid.telecomCallGetProperties(new_call_id))
+
+            if not ad.droid.telecomCallGetAudioState():
+                ad.log.error("Audio is not in call state")
+                result = False
+
+            if call_func(log, ad):
+                ad.log.info("Call is in %s state", call_func.__name__)
+            else:
+                ad.log.error("Call is not in %s state, voice in RAT %s",
+                             call_func.__name__,
+                             ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                result = False
+        if not result:
+            if not call_waiting:
+                set_call_waiting(log, ad_callee, enable=1)
+            return False
+
+        time.sleep(3)
+        if not call_waiting:
+            if not initiate_call(
+                    log,
+                    ad_caller2,
+                    callee_number,
+                    incall_ui_display=incall_ui_display,
+                    video=video):
+                ad_caller2.log.info("Initiate call failed.")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+            else:
+                ad_caller2.log.info("Caller 2 initate 2nd call successfully")
+
+            if not wait_and_answer_call_for_subscription(
+                    log,
+                    ad_callee,
+                    subid_callee,
+                    incoming_number=caller2_number,
+                    caller=ad_caller2,
+                    incall_ui_display=incall_ui_display,
+                    video_state=video_state):
+                ad_callee.log.info(
+                    "Answering 2nd call fail due to call waiting　deactivate.")
+            else:
+                ad_callee.log.error("Callee should not be able to answer the"
+                    " 2nd call due to call waiting deactivated.")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+
+            time.sleep(3)
+            if not hangup_call(log, ad_caller2):
+                ad_caller2.log.info("Failed to hang up the 2nd call")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+
+        else:
+
+            for ad in (ad_callee, ad_caller2):
+                call_ids = ad.droid.telecomCallGetCallIds()
+                setattr(ad, "call_ids", call_ids)
+                if call_ids:
+                    ad.log.info("Current existing CallId %s before making the"
+                        "　second call.", call_ids)
+
+            if not initiate_call(
+                    log,
+                    ad_caller2,
+                    callee_number,
+                    incall_ui_display=incall_ui_display,
+                    video=video):
+                ad_caller2.log.info("Initiate 2nd call failed.")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+            else:
+                ad_caller2.log.info("Caller 2 initate 2nd call successfully")
+
+            if end_first_call_before_answering_second_call:
+                try:
+                    if not wait_for_ringing_call_for_subscription(
+                            log,
+                            ad_callee,
+                            subid_callee,
+                            incoming_number=caller2_number,
+                            caller=ad_caller2,
+                            event_tracking_started=True):
+                        ad_callee.log.info(
+                            "2nd incoming call ringing check　failed.")
+                        if not call_waiting:
+                            set_call_waiting(log, ad_callee, enable=1)
+                        return False
+
+                    time.sleep(3)
+
+                    ad_hangup.log.info("Disconnecting first call...")
+                    for call_id in first_call_ids:
+                        disconnect_call_by_id(log, ad_hangup, call_id)
+                    time.sleep(3)
+
+                    ad_callee.log.info("Answering the 2nd ring call...")
+                    ad_callee.droid.telecomAcceptRingingCall(video_state)
+
+                    if wait_for_call_offhook_for_subscription(
+                            log,
+                            ad_callee,
+                            subid_callee,
+                            event_tracking_started=True):
+                        ad_callee.log.info(
+                            "Callee answered the 2nd call successfully.")
+                    else:
+                        ad_callee.log.error("Could not answer the 2nd call.")
+                        if not call_waiting:
+                            set_call_waiting(log, ad_callee, enable=1)
+                        return False
+                except Exception as e:
+                    log.error(e)
+                    if not call_waiting:
+                        set_call_waiting(log, ad_callee, enable=1)
+                    return False
+
+            else:
+                if not wait_and_answer_call_for_subscription(
+                        log,
+                        ad_callee,
+                        subid_callee,
+                        incoming_number=caller2_number,
+                        caller=ad_caller2,
+                        incall_ui_display=incall_ui_display,
+                        video_state=video_state):
+                    ad_callee.log.error("Failed to answer 2nd call.")
+                    if not call_waiting:
+                        set_call_waiting(log, ad_callee, enable=1)
+                    result = False
+                    return False
+                else:
+                    ad_callee.log.info(
+                        "Callee answered the 2nd call successfully.")
+
+            for ad, subid, call_func in zip(
+                [ad_callee, ad_caller2],
+                [subid_callee, subid_caller2],
+                [verify_callee_func, verify_caller2_func]):
+                call_ids = ad.droid.telecomCallGetCallIds()
+                new_call_ids = set(call_ids) - set(ad.call_ids)
+                if not new_call_ids:
+                    ad.log.error(
+                        "No new call ids are found after 2nd call establishment")
+                    ad.log.error("telecomCallGetCallIds returns %s",
+                                 ad.droid.telecomCallGetCallIds())
+                    result = False
+                for new_call_id in new_call_ids:
+                    if not wait_for_in_call_active(ad, call_id=new_call_id):
+                        result = False
+                    else:
+                        ad.log.info("callProperties = %s",
+                            ad.droid.telecomCallGetProperties(new_call_id))
+
+                if not ad.droid.telecomCallGetAudioState():
+                    ad.log.error("Audio is not in 2nd call state")
+                    result = False
+
+                if call_func(log, ad):
+                    ad.log.info("2nd call is in %s state", call_func.__name__)
+                else:
+                    ad.log.error("2nd call is not in %s state, voice in RAT %s",
+                                 call_func.__name__,
+                                 ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                    result = False
+            if not result:
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                return False
+
+        elapsed_time = 0
+        while (elapsed_time < wait_time_in_call):
+            CHECK_INTERVAL = min(CHECK_INTERVAL,
+                                 wait_time_in_call - elapsed_time)
+            time.sleep(CHECK_INTERVAL)
+            elapsed_time += CHECK_INTERVAL
+            time_message = "at <%s>/<%s> second." % (elapsed_time,
+                                                     wait_time_in_call)
+
+            if not end_first_call_before_answering_second_call or \
+                not call_waiting:
+                for ad, subid, call_func in [
+                    (ad_caller, subid_caller, verify_caller_func),
+                    (ad_callee, subid_callee, verify_callee_func)]:
+                    if not call_func(log, ad):
+                        ad.log.error(
+                            "The first call NOT in correct %s state at %s,"
+                            " voice in RAT %s",
+                            call_func.__name__, time_message,
+                            ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                        result = False
+                    else:
+                        ad.log.info("The first call in correct %s state at %s",
+                                    call_func.__name__, time_message)
+                    if not ad.droid.telecomCallGetAudioState():
+                        ad.log.error(
+                            "The first call audio is not in call state at %s",
+                            time_message)
+                        result = False
+                if not result:
+                    if not call_waiting:
+                        set_call_waiting(log, ad_callee, enable=1)
+                    return False
+
+            if call_waiting:
+                for ad, call_func in [(ad_caller2, verify_caller2_func),
+                                      (ad_callee, verify_callee_func)]:
+                    if not call_func(log, ad):
+                        ad.log.error(
+                            "The 2nd call NOT in correct %s state at %s,"
+                            " voice in RAT %s",
+                            call_func.__name__, time_message,
+                            ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                        result = False
+                    else:
+                        ad.log.info("The 2nd call in correct %s state at %s",
+                                    call_func.__name__, time_message)
+                    if not ad.droid.telecomCallGetAudioState():
+                        ad.log.error(
+                            "The 2nd call audio is not in call state at %s",
+                            time_message)
+                        result = False
+            if not result:
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                return False
+
+        if not end_first_call_before_answering_second_call or not call_waiting:
+            ad_hangup.log.info("Hanging up the first call...")
+            for call_id in first_call_ids:
+                disconnect_call_by_id(log, ad_hangup, call_id)
+            time.sleep(5)
+
+        if ad_hangup2 and call_waiting:
+            if not hangup_call(log, ad_hangup2):
+                ad_hangup2.log.info("Failed to hang up the 2nd call")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+    finally:
+        if not result:
+            for ad in (ad_caller, ad_callee, ad_caller2):
+                last_call_drop_reason(ad, begin_time)
+                try:
+                    if ad.droid.telecomIsInCall():
+                        ad.log.info("In call. End now.")
+                        ad.droid.telecomEndCall()
+                except Exception as e:
+                    log.error(str(e))
+
+        if ad_hangup or not result:
+            for ad in (ad_caller, ad_callee):
+                if not wait_for_call_id_clearing(
+                        ad, getattr(ad, "caller_ids", [])):
+                    result = False
+
+        if call_waiting:
+            if ad_hangup2 or not result:
+                for ad in (ad_caller2, ad_callee):
+                    if not wait_for_call_id_clearing(
+                            ad, getattr(ad, "caller_ids", [])):
+                        result = False
+    if not call_waiting:
+        set_call_waiting(log, ad_callee, enable=1)
+    return result
+
 def wait_for_call_id_clearing(ad,
                               previous_ids,
                               timeout=MAX_WAIT_TIME_CALL_DROP):
@@ -8925,6 +9429,51 @@ def set_call_forwarding_by_mmi(
         (call_forwarding_type, forwarded_number))
     return False
 
+def get_call_waiting_status(log, ad):
+    """ (Todo) Get call waiting status (activated or deactivated) when there is
+    any proper method available.
+    """
+    return True
+
+def set_call_waiting(log, ad, enable=1, retry=1):
+    """ Activate/deactivate call waiting by dialing MMI code.
+
+    Args:
+        log: log object.
+        ad: android object.
+        enable: 1 for activation and 0 fir deactivation
+        retry: times of retry if activation/deactivation fails
+
+    Returns:
+        True by successful activation/deactivation; otherwise False.
+    """
+    operator_name = get_operator_name(log, ad)
+
+    if operator_name in ["Verizon", "Sprint"]:
+        return True
+
+    while retry >= 0:
+        if enable:
+            ad.log.info("Activating call waiting...")
+            ad.droid.telecomDialNumber("*43#")
+        else:
+            ad.log.info("Deactivating call waiting...")
+            ad.droid.telecomDialNumber("#43#")
+
+        time.sleep(3)
+        ad.send_keycode("ENTER")
+        time.sleep(15)
+
+        ad.send_keycode("BACK")
+        time.sleep(5)
+        ad.send_keycode("BACK")
+
+        if get_call_waiting_status(log, ad):
+            return True
+        else:
+            retry = retry + 1
+
+    return False
 
 def get_rx_tx_power_levels(log, ad):
     """ Obtains Rx and Tx power levels from the MDS application.
