@@ -44,6 +44,80 @@ def test_info(predicate=None, **keyed_info):
     return test_info_decorator
 
 
+def __select_last(test_signals):
+    return test_signals[-1]
+
+
+def repeated_test(num_passes, acceptable_failures=0,
+                  result_selector=__select_last):
+    """A decorator that runs a test case multiple times.
+
+    This decorator can be used to run a test multiple times and aggregate the
+    data into a single test result. By setting `result_selector`, the user can
+    access the returned result of each run, allowing them to average results,
+    return the median, or gather and return standard deviation values.
+
+    This decorator should be used on test cases, and should not be used on
+    static or class methods.
+
+    Note that any TestSignal intended to abort or skip the test will take
+    abort or skip immediately.
+
+    Args:
+        num_passes: The number of times the test needs to pass to report the
+            test case as passing.
+        acceptable_failures: The number of failures accepted. If the failures
+            exceeds this number, the test will stop repeating. The maximum
+            number of runs is `num_passes + acceptable_failures`. If the test
+            does fail, result_selector will still be called.
+        result_selector: A lambda that takes in the list of TestSignals and
+            returns the test signal to report the test case as. Note that the
+            list also contains any uncaught exceptions from the test execution.
+    """
+    def decorator(func):
+        if not func.__name__.startswith('test_'):
+            raise ValueError('Tests must start with "test_".')
+
+        def test_wrapper(self):
+            num_failures = 0
+            num_seen_passes = 0
+            test_signals_received = []
+            for i in range(num_passes + acceptable_failures):
+                try:
+                    func(self)
+                except (signals.TestFailure, signals.TestError,
+                        AssertionError) as signal:
+                    test_signals_received.append(signal)
+                    num_failures += 1
+                except signals.TestPass as signal:
+                    test_signals_received.append(signal)
+                    num_seen_passes += 1
+                except (signals.TestSignal, KeyboardInterrupt):
+                    raise
+                except Exception as signal:
+                    test_signals_received.append(signal)
+                    num_failures += 1
+                else:
+                    num_seen_passes += 1
+                    test_signals_received.append(signals.TestPass(
+                        'Test iteration %s of %s passed without details.' % (
+                        i, func.__name__)))
+
+                if num_failures > acceptable_failures:
+                    break
+                elif num_seen_passes == num_passes:
+                    break
+                else:
+                    self.teardown_test()
+                    self.setup_test()
+
+            raise result_selector(test_signals_received)
+
+        return test_wrapper
+
+    return decorator
+
+
 def test_tracker_info(uuid, extra_environment_info=None, predicate=None):
     """Decorator for adding test tracker info to tests results.
 
