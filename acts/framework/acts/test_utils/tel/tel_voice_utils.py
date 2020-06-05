@@ -25,6 +25,7 @@ from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import GEN_2G
 from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
+from acts.test_utils.tel.tel_defines import GEN_5G
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_WFC_ENABLED
@@ -900,7 +901,7 @@ def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
         log: log object
         ad: android device object
         sub_id: subscription id
-        network_generation: network generation, e.g. GEN_2G, GEN_3G, GEN_4G
+        network_generation: network generation, e.g. GEN_2G, GEN_3G, GEN_4G, GEN_5G
 
     Returns:
         True if success, False if fail.
@@ -919,6 +920,34 @@ def phone_setup_data_for_subscription(log, ad, sub_id, network_generation):
         get_telephony_signal_strength(ad)
         return False
     return True
+
+
+def phone_setup_5g(log, ad):
+    """Setup Phone default data sub_id data to 5G.
+
+    Args:
+        log: log object
+        ad: android device object
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_5g_for_subscription(log, ad,
+                                           get_default_data_sub_id(ad))
+
+
+def phone_setup_5g_for_subscription(log, ad, sub_id):
+    """Setup Phone <sub_id> Data to 5G.
+
+    Args:
+        log: log object
+        ad: android device object
+        sub_id: subscription id
+
+    Returns:
+        True if success, False if fail.
+    """
+    return phone_setup_data_for_subscription(log, ad, sub_id, GEN_5G)
 
 
 def phone_setup_4g(log, ad):

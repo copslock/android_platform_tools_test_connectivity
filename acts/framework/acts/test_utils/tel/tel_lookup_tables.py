@@ -397,6 +397,13 @@ class _TelTables():
             'simultaneous_voice_data': True,
             'rat_family': tel_defines.RAT_FAMILY_LTE
         },
+        tel_defines.RAT_NR: {
+            'is_voice_rat': True,
+            'is_data_rat': True,
+            'generation': tel_defines.GEN_5G,
+            'simultaneous_voice_data': True,
+            'rat_family': tel_defines.RAT_FAMILY_NR
+        },
         tel_defines.RAT_EHRPD: {
             'is_voice_rat': False,
             'is_data_rat': True,
@@ -561,6 +568,10 @@ class _TelTables():
         }
     }
     default_umts_operator_network_tbl = {
+        tel_defines.GEN_5G: {
+            'rat_family': tel_defines.RAT_FAMILY_NR,
+            'network_preference': tel_defines.NETWORK_MODE_NR_LTE_GSM_WCDMA
+        },
         tel_defines.GEN_4G: {
             'rat_family': tel_defines.RAT_FAMILY_LTE,
             'network_preference':
@@ -576,6 +587,10 @@ class _TelTables():
         }
     }
     default_cdma_operator_network_tbl = {
+        tel_defines.GEN_5G: {
+            'rat_family': tel_defines.RAT_FAMILY_NR,
+            'network_preference': tel_defines.NETWORK_MODE_NR_LTE_GSM_WCDMA
+        },
         tel_defines.GEN_4G: {
             'rat_family': tel_defines.RAT_FAMILY_LTE,
             'network_preference':
