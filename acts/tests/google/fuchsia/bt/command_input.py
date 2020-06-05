@@ -1908,7 +1908,7 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
-    def do_sdp_connect_l2cap(self, psm):
+    def do_sdp_connect_l2cap(self, line):
         """
         Description: Send an l2cap connection request over an input psm value.
 
@@ -1937,16 +1937,21 @@ class CommandInput(cmd.Cmd):
                     (IPSP)
                 OTS 0x0025  See Object Transfer Service (OTS)
                 EATT    0x0027  See Bluetooth Core Specification
+            mode: String - The channel mode to connect to. Available values:
+                Basic mode: BASIC
+                Enhanced Retransmission mode: ERTM
 
         Usage:
           Examples:
-            sdp_connect_l2cap 0001
-            sdp_connect_l2cap 0015
+            sdp_connect_l2cap 0001 BASIC
+            sdp_connect_l2cap 0019 ERTM
         """
         cmd = "Connect l2cap"
         try:
+            info = line.split()
             result = self.pri_dut.sdp_lib.connectL2cap(self.unique_mac_addr_id,
-                                                       int(psm, 16))
+                                                       int(info[0], 16),
+                                                       info[1])
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
