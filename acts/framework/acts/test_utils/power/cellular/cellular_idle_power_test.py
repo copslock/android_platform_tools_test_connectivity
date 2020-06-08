@@ -46,11 +46,11 @@ class PowerTelIdleTest(PWCEL.PowerCellularLabBaseTest):
 
         # If necessary, replace the test result with the filtered metric
         if filter_results:
-            self.power_result.metric_value = self.filter_for_idle_state(
-                monsoon_result)
+            self.avg_current = self.filter_for_idle_state(monsoon_result)
+            self.power_result.metric_value = self.avg_current * self.mon_voltage
 
         # Check if power measurement is below the required value
-        self.pass_fail_check(self.power_result.metric_value)
+        self.pass_fail_check(self.avg_current)
 
     def filter_for_idle_state(self, monsoon_result):
         """ Process results and only take an average of time slots that are
