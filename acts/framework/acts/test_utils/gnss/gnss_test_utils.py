@@ -618,7 +618,7 @@ def start_gnss_by_gtw_gpstool(ad, state, type="gnss", bgdisplay=False):
     time.sleep(3)
 
 
-def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss"):
+def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss", clear_data=True):
     """Launch GTW GPSTool and Clear all GNSS aiding data
        Start GNSS tracking on GTW_GPSTool.
 
@@ -626,6 +626,8 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss"):
         ad: An AndroidDevice object.
         criteria: Criteria for current test item.
         type: Different API for location fix. Use gnss/flp/nmea
+        clear_data: True to clear GNSS aiding data. False is not to. Defalt
+        set to True.
 
     Returns:
         True: First fix TTFF are within criteria.
@@ -636,7 +638,8 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss"):
         check_location_runtime_permissions(
             ad, GNSSTOOL_PACKAGE_NAME, GNSSTOOL_PERMISSIONS)
         begin_time = get_current_epoch_time()
-        clear_aiding_data_by_gtw_gpstool(ad)
+        if clear_data:
+            clear_aiding_data_by_gtw_gpstool(ad)
         ad.log.info("Start %s on GTW_GPSTool - attempt %d" % (type.upper(),
                                                               i+1))
         start_gnss_by_gtw_gpstool(ad, True, type)
