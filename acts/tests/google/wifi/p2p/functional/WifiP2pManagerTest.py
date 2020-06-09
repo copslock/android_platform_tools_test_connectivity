@@ -77,7 +77,9 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
             go_dut = self.dut2
             gc_dut = self.dut1
 
-        wp2putils.p2p_connection_ping_test(gc_dut, p2pconsts.GO_IP_ADDRESS)
+        go_ip = wp2putils.p2p_go_ip(gc_dut)
+        wp2putils.p2p_connection_ping_test(gc_dut, go_ip)
+
         # trigger disconnect
         wp2putils.p2p_disconnect(self.dut1)
         wp2putils.check_disconnect(self.dut2)
@@ -125,7 +127,9 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
             go_dut = self.dut2
             gc_dut = self.dut1
 
-        wp2putils.p2p_connection_ping_test(gc_dut, p2pconsts.GO_IP_ADDRESS)
+        go_ip = wp2putils.p2p_go_ip(gc_dut)
+        wp2putils.p2p_connection_ping_test(gc_dut, go_ip)
+
         # trigger disconnect
         wp2putils.p2p_disconnect(self.dut1)
         wp2putils.check_disconnect(self.dut2)
@@ -173,7 +177,8 @@ class WifiP2pManagerTest(WifiP2pBaseTest):
             go_dut = self.dut2
             gc_dut = self.dut1
 
-        wp2putils.p2p_connection_ping_test(gc_dut, p2pconsts.GO_IP_ADDRESS)
+        go_ip = wp2putils.p2p_go_ip(gc_dut)
+        wp2putils.p2p_connection_ping_test(gc_dut, go_ip)
 
         # trigger disconnect
         wp2putils.p2p_disconnect(self.dut1)

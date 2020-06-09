@@ -93,6 +93,22 @@ def is_go(ad):
         return True
     return False
 
+def p2p_go_ip(ad):
+    """Get GO IP address
+
+    Args:
+        ad: The android device
+    Return:
+        GO IP address
+    """
+    ad.log.debug("p2p go ip")
+    ad.droid.wifiP2pRequestConnectionInfo()
+    ad_connect_info_event = ad.ed.pop_event(
+            p2pconsts.CONNECTION_INFO_AVAILABLE_EVENT,
+            p2pconsts.DEFAULT_TIMEOUT)
+    ad.log.debug("p2p go ip: %s" % ad_connect_info_event['data']['groupOwnerHostAddress'])
+    return ad_connect_info_event['data']['groupOwnerHostAddress']
+
 #trigger p2p connect to ad2 from ad1
 def p2p_connect(ad1, ad2, isReconnect, wpsSetup, isJoinExistingGroup=False):
     """trigger p2p connect to ad2 from ad1
