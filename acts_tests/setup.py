@@ -175,7 +175,7 @@ def main():
                      description='Android Comms Test Suite',
                      license='Apache2.0',
                      packages=packages,
-                     include_package_data=False,
+                     include_package_data=True,
                      install_requires=install_requires,
                      cmdclass={
                          'install': ActsContribInstall,

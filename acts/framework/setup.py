@@ -173,8 +173,8 @@ class ActsUninstall(cmd.Command):
 
 def main():
     scripts = [
-        os.path.join(framework_dir, 'acts', 'bin', 'act.py'),
-        os.path.join(framework_dir, 'acts', 'bin', 'monsoon.py')
+        os.path.join('acts', 'bin', 'act.py'),
+        os.path.join('acts', 'bin', 'monsoon.py')
     ]
     # cd to framework directory so the correct package namespace is found
     os.chdir(framework_dir)
@@ -183,7 +183,7 @@ def main():
                      description='Android Comms Test Suite',
                      license='Apache2.0',
                      packages=setuptools.find_packages(),
-                     include_package_data=False,
+                     include_package_data=True,
                      tests_require=['pytest'],
                      install_requires=install_requires,
                      extras_require={'dev': DEV_PACKAGES},
