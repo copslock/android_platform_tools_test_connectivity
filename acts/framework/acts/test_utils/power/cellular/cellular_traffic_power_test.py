@@ -23,6 +23,7 @@ from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power import IperfHelper as IPH
 from acts.test_utils.power import plot_utils
 import acts.test_utils.power.cellular.cellular_power_base_test as PWCEL
+from acts.test_utils.tel import tel_test_utils as telutils
 
 
 class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
@@ -72,7 +73,7 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         super().setup_class()
 
         # Unpack test parameters used in this class
-        self.unpack_userparams(tcp_window_fraction=0)
+        self.unpack_userparams(tcp_window_fraction=0, tcp_dumps=False)
 
         # Verify that at least one PacketSender controller has been initialized
         if not hasattr(self, 'packet_senders'):
@@ -199,6 +200,12 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             a dictionary containing DL/UL throughput in Mbit/s.
         """
 
+        # Pull TCP logs if enabled
+        if self.tcp_dumps:
+            self.log.info('Pulling TCP dumps.')
+            telutils.stop_adb_tcpdump(self.dut)
+            telutils.get_tcpdump_log(self.dut)
+
         throughput = {}
 
         for iph in iperf_helpers:
@@ -316,6 +323,11 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                                          traffic_direction='UL',
                                          window=ul_tcp_window,
                                          bandwidth=self.bandwidth_limit_ul))
+
+        # Enable TCP logger.
+        if self.tcp_dumps:
+            self.log.info('Enabling TCP logger.')
+            telutils.start_adb_tcpdump(self.dut)
 
         return iperf_helpers
 
