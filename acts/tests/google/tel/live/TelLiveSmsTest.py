@@ -42,6 +42,8 @@ from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
 from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
+from acts.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import setup_sim
@@ -569,6 +571,49 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
+    @test_tracker_info(uuid="f2c27463-2cc2-45eb-80f1-aea2047858d6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_mt_5g_nsa(self):
+        """Test SMS basic function between two phone. Phones in 5g NSA.
+
+        Airplane mode is off.
+        Send SMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not on 5G NSA before sending SMS.")
+            return False
+
+        if not self._sms_test_mo(ads):
+            self.log.error("Failed to send receive SMS over 5G NSA.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not on 5G NSA after sending SMS.")
+            return False
+
+        self.log.info("PASS - SMS test over 5G NSA validated")
+        return True
+
     @test_tracker_info(uuid="f2779e1e-7d09-43f0-8b5c-87eae5d146be")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_general(self):
@@ -615,6 +660,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mo(ads)
+
 
     @test_tracker_info(uuid="17fafc41-7e12-47ab-a4cc-fb9bd94e79b9")
     @TelephonyBaseTest.tel_test_wrap

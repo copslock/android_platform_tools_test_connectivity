@@ -717,6 +717,55 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         return True
 
 
+    @test_tracker_info(uuid="6add9dd3-f90e-4a96-a4e7-469e44b5caed")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_call_volte_to_3g_5g_nsa(self):
+        """ VoLTE to 3G call test
+
+        1. Make Sure PhoneA is in 5g NSA mode (with VoLTE).
+        2. Make Sure PhoneB is in 3G mode.
+        3. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneA.
+        4. Call from PhoneA to PhoneB, accept on PhoneB, hang up on PhoneB.
+        5. Verify both PhoneA gets attached back to 5g NSA
+
+        Raises:
+            TestFailure if not success.
+        """
+        ads = self.android_devices
+
+        # LTE attach
+        tasks = [(phone_setup_volte, (self.log, ads[0])),
+                 (phone_setup_voice_3g, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up in VoLTE/3G.")
+            return False
+
+        # Mode Pref
+        set_preferred_mode_for_5g(ads[0])
+
+        # Attach 5g
+        if not is_current_network_5g_nsa(ads[0])
+            ads[0].log.error("Phone not attached on 5G NSA before call.")
+            return False
+
+        # VoLTE to 3G
+        result = two_phone_call_short_seq(
+            self.log, ads[0], None, is_phone_in_call_volte, ads[1],
+            None, is_phone_in_call_3g, None,
+            WAIT_TIME_IN_CALL_FOR_IMS)
+        if not result:
+            self.log.error("Failure is VoLTE to 3G call during 5G NSA.")
+            return False
+
+        # Attach 5g
+        if not is_current_network_5g_nsa(ads[0])
+            ads[0].log.error("Phone not attached on 5G NSA after call end.")
+            return False
+
+        self.log.info("PASS - VoLTE to 3G over 5G NSA validated")
+        return True
+
+
     def _call_epdg_to_epdg_wfc(self, ads, apm_mode, wfc_mode, wifi_ssid,
                                wifi_pwd):
         """ Test epdg<->epdg call functionality.
