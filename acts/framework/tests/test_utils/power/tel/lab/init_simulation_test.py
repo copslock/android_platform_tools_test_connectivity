@@ -16,7 +16,7 @@
 
 import unittest
 import mobly.config_parser as mobly_config_parser
-import tests.test_utils.power.tel.lab.mock_bokeh
+import mock_bokeh
 from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
 from acts.test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
 from unittest import mock

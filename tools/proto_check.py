@@ -17,6 +17,7 @@
 import filecmp
 import logging
 import os
+import re
 import shutil
 import tempfile
 
@@ -24,7 +25,7 @@ from acts.libs.proc import job
 from acts.libs.proto import proto_utils
 
 COMMIT_ID_ENV_KEY = 'PREUPLOAD_COMMIT'
-GIT_FILE_NAMES_CMD = 'git diff-tree --no-commit-id --name-only -r %s'
+GIT_FILE_NAMES_CMD = 'git diff-tree --no-commit-id --name-status -r %s'
 
 
 def proto_generates_gen_file(proto_file, proto_gen_file):
@@ -101,12 +102,15 @@ def main():
     proto_files = []
     proto_gen_files = []
     git_cmd = GIT_FILE_NAMES_CMD % os.environ[COMMIT_ID_ENV_KEY]
-    files = job.run(git_cmd).stdout.splitlines()
-    for f in files:
-        if f.endswith('.proto'):
-            proto_files.append(os.path.abspath(f))
-        if f.endswith('_pb2.py'):
-            proto_gen_files.append(os.path.abspath(f))
+    lines = job.run(git_cmd).stdout.splitlines()
+    for line in lines:
+        match = re.match(r'(\S+)\s+(.*)', line)
+        status, f = match.group(1), match.group(2)
+        if status != 'D':
+            if f.endswith('.proto'):
+                proto_files.append(os.path.abspath(f))
+            if f.endswith('_pb2.py'):
+                proto_gen_files.append(os.path.abspath(f))
     exit(not verify_protos_update_generated_files(proto_files, proto_gen_files))
 
 

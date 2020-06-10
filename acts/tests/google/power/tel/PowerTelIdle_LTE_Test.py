@@ -25,12 +25,12 @@ class PowerTelIdle_LTE_Test(cipt.PowerTelIdleTest):
 
     def test_lte_idle_band_13_pul_low_bw_10_tm_1_mimo_1x1_rrcstatuschangetimer_10_1(self):
         self.display_name_test_case = 'LTE Idle - Band 13, low UL power, 10 MHz BW, TM3 1x1'
-        self.power_tel_idle_test()
+        self.power_tel_idle_test(filter_results=True)
 
     def test_lte_idle_band_41_pul_low_bw_10_tm_1_mimo_1x1_rrcstatuschangetimer_10_tddconfig_2_2(self):
         self.display_name_test_case = 'LTE Idle - Band 41, low UL power, 10 MHz BW, TM3 1x1, TDD 2'
-        self.power_tel_idle_test()
+        self.power_tel_idle_test(filter_results=True)
 
     def test_lte_idle_band_4_pul_low_bw_10_tm_1_mimo_1x1_rrcstatuschangetimer_10_tddconfig_2_3(self):
         self.display_name_test_case = 'LTE Idle - Band 4, low UL power, 10 MHz BW, TM3 1x1, TDD 2'
-        self.power_tel_idle_test()
+        self.power_tel_idle_test(filter_results=True)

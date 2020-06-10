@@ -76,9 +76,17 @@ MAX_WAIT_TIME_AIRPLANEMODE_EVENT = 90
 # get "onSmsSentSuccess" event
 MAX_WAIT_TIME_SMS_SENT_SUCCESS = 60
 
+# Max time to wait after device sent an SMS and before
+# get "onSmsSentSuccess" event in case of collision.
+MAX_WAIT_TIME_SMS_SENT_SUCCESS_IN_COLLISION = 60
+
 # Max time to wait after MT SMS was sent and before device
 # actually receive this MT SMS.
 MAX_WAIT_TIME_SMS_RECEIVE = 120
+
+# Max time to wait after MT SMS was sent and before device
+# actually receive this MT SMS in case of collision.
+MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION = 1200
 
 # Max time to wait for IMS registration
 MAX_WAIT_TIME_IMS_REGISTRATION = 120
@@ -610,6 +618,17 @@ NETWORK_MODE_LTE_TDSCDMA_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_WCDMA"
 NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA"
 NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA = "NETWORK_MODE_TDSCDMA_CDMA_EVDO_WCDMA"
 NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA"
+NETWORK_MODE_NR_LTE_GSM_WCDMA = "NETWORK_MODE_NR_LTE_GSM_WCDMA"
+NETWORK_MODE_NR_ONLY = "NETWORK_MODE_NR_ONLY"
+NETWORK_MODE_NR_LTE = "NETWORK_MODE_NR_LTE"
+NETWORK_MODE_NR_LTE_CDMA_EVDO = "NETWORK_MODE_NR_LTE_CDMA_EVDO"
+NETWORK_MODE_NR_LTE_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_NR_LTE_CDMA_EVDO_GSM_WCDMA"
+NETWORK_MODE_NR_LTE_WCDMA = "NETWORK_MODE_NR_LTE_WCDMA"
+NETWORK_MODE_NR_LTE_TDSCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA"
+NETWORK_MODE_NR_LTE_TDSCDMA_GSM = "NETWORK_MODE_NR_LTE_TDSCDMA_GSM"
+NETWORK_MODE_NR_LTE_TDSCDMA_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_WCDMA"
+NETWORK_MODE_NR_LTE_TDSCDMA_GSM_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_GSM_WCDMA"
+NETWORK_MODE_NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA = "NETWORK_MODE_NR_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA"
 
 # Carrier Config Update
 CARRIER_ID_VERSION = "3"
@@ -690,6 +709,7 @@ EventVolteServiceStateChanged = "VolteServiceStateChanged"
 EventMessageWaitingIndicatorChanged = "MessageWaitingIndicatorChanged"
 EventConnectivityChanged = "ConnectivityChanged"
 EventActiveDataSubIdChanged = "ActiveDataSubIdChanged"
+EventDisplayInfoChanged = "DisplayInfoChanged"
 
 # Constant for Packet Keep Alive Call Back
 EventPacketKeepaliveCallback = "PacketKeepaliveCallback"
@@ -741,6 +761,18 @@ class CallStateContainer:
     SUBSCRIPTION_ID = "subscriptionId"
     CALL_STATE = "callState"
 
+class DisplayInfoContainer:
+    TIME = "time"
+    NETWORK = "network"
+    OVERRIDE = "override"
+    SUBSCRIPTION_ID = "subscriptionId"
+
+class OverrideNetworkContainer:
+    OVERRIDE_NETWORK_TYPE_NONE = "NONE"
+    OVERRIDE_NETWORK_TYPE_LTE_CA = "LTE_CA"
+    OVERRIDE_NETWORK_TYPE_LTE_ADVANCED_PRO = "LTE_ADVANCED_PRO"
+    OVERRIDE_NETWORK_TYPE_NR_NSA = "NR_NSA"
+    OVERRIDE_NETWORK_TYPE_NR_MMWAVE = "NR_MMWAVE"
 
 class PreciseCallStateContainer:
     TYPE = "type"

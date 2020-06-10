@@ -19,7 +19,7 @@ import concurrent.futures
 import copy
 import datetime
 import functools
-import IPy
+import ipaddress
 import json
 import logging
 import os
@@ -1438,7 +1438,8 @@ def get_interface_ip_addresses(comm_channel, interface):
                     ipv6_address[i:i + 4]
                     for i in range(0, len(ipv6_address), 4)))
                 all_interfaces_and_addresses.append(
-                    '%s %s' % (item['name'], str(IPy.IP(ipv6_address))))
+                    '%s %s' %
+                    (item['name'], str(ipaddress.ip_address(ipv6_address))))
         all_interfaces_and_addresses = '\n'.join(all_interfaces_and_addresses)
         ifconfig_output = all_interfaces_and_addresses
     else:
@@ -1447,27 +1448,31 @@ def get_interface_ip_addresses(comm_channel, interface):
     for interface_line in all_interfaces_and_addresses.split('\n'):
         if interface != interface_line.split()[0]:
             continue
-        on_device_ip = IPy.IP(interface_line.split()[1])
-        if on_device_ip.version() is 4:
-            if on_device_ip.iptype() == 'PRIVATE':
+        on_device_ip = ipaddress.ip_address(interface_line.split()[1])
+        if on_device_ip.version == 4:
+            if on_device_ip.is_private:
                 if str(on_device_ip) in ifconfig_output:
-                    ipv4_private_local_addresses.append(
-                        on_device_ip.strNormal())
-            elif (on_device_ip.iptype() == 'PUBLIC'
-                  or on_device_ip.iptype() == 'CARRIER_GRADE_NAT'):
+                    ipv4_private_local_addresses.append(str(on_device_ip))
+            elif on_device_ip.is_global or (
+                    # Carrier private doesn't have a property, so we check if
+                    # all other values are left unset.
+                    not on_device_ip.is_reserved
+                    and not on_device_ip.is_unspecified
+                    and not on_device_ip.is_link_local
+                    and not on_device_ip.is_loopback
+                    and not on_device_ip.is_multicast):
                 if str(on_device_ip) in ifconfig_output:
-                    ipv4_public_addresses.append(on_device_ip.strNormal())
-        elif on_device_ip.version() is 6:
-            if on_device_ip.iptype() == 'LINKLOCAL':
+                    ipv4_public_addresses.append(str(on_device_ip))
+        elif on_device_ip.version == 6:
+            if on_device_ip.is_link_local:
                 if str(on_device_ip) in ifconfig_output:
-                    ipv6_link_local_addresses.append(on_device_ip.strNormal())
-            elif on_device_ip.iptype() == 'ULA':
+                    ipv6_link_local_addresses.append(str(on_device_ip))
+            elif on_device_ip.is_private:
                 if str(on_device_ip) in ifconfig_output:
-                    ipv6_private_local_addresses.append(
-                        on_device_ip.strNormal())
-            elif 'ALLOCATED' in on_device_ip.iptype():
+                    ipv6_private_local_addresses.append(str(on_device_ip))
+            elif on_device_ip.is_global:
                 if str(on_device_ip) in ifconfig_output:
-                    ipv6_public_addresses.append(on_device_ip.strNormal())
+                    ipv6_public_addresses.append(str(on_device_ip))
     return {
         'ipv4_private': ipv4_private_local_addresses,
         'ipv4_public': ipv4_public_addresses,
@@ -1545,3 +1550,52 @@ def is_pingable(ip):
 
     result = job.run(ping_cmd, timeout=10, ignore_status=True)
     return result.exit_status == 0
+
+
+def ip_in_subnet(ip, subnet):
+    """Validate that ip is in a given subnet.
+
+    Args:
+        ip: string, ip address to verify (eg. '192.168.42.158')
+        subnet: string, subnet to check (eg. '192.168.42.0/24')
+
+    Returns:
+        True, if ip in subnet, else False
+    """
+    return ipaddress.ip_address(ip) in ipaddress.ip_network(subnet)
+
+
+def mac_address_str_to_list(mac_addr_str):
+    """Converts mac address string to list of decimal octets.
+
+    Args:
+        mac_addr_string: string, mac address
+            e.g. '12:34:56:78:9a:bc'
+
+    Returns
+        list, representing mac address octets in decimal
+            e.g. [18, 52, 86, 120, 154, 188]
+    """
+    return [int(octet, 16) for octet in mac_addr_str.split(':')]
+
+
+def mac_address_list_to_str(mac_addr_list):
+    """Converts list of decimal octets represeting mac address to string.
+
+    Args:
+        mac_addr_list: list, representing mac address octets in decimal
+            e.g. [18, 52, 86, 120, 154, 188]
+
+    Returns:
+        string, mac address
+            e.g. '12:34:56:78:9a:bc'
+    """
+    hex_list = []
+    for octet in mac_addr_list:
+        hex_octet = hex(octet)[2:]
+        if octet < 16:
+            hex_list.append('0%s' % hex_octet)
+        else:
+            hex_list.append(hex_octet)
+
+    return ':'.join(hex_list)

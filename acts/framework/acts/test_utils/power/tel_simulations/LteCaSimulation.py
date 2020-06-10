@@ -61,7 +61,8 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         39: 38650,
         40: 39650,
         41: 41590,
-        42: 45590
+        42: 45590,
+        66: 66436
     }
 
     # Simulation config keywords contained in the test name
@@ -146,12 +147,12 @@ class LteCaSimulation(LteSimulation.LteSimulation):
             ca_class = ca[-1]
             band = ca[:-1]
 
-            self.bts_configs[bts_index] = band
+            self.bts_configs[bts_index].band = band
             bts_index += 1
 
             if ca_class.upper() == 'B' or ca_class.upper() == 'C':
                 # Class B and C means two carriers with the same band
-                self.bts_configs[bts_index] = band
+                self.bts_configs[bts_index].band = band
                 bts_index += 1
 
         # Count the number of carriers in the CA combination

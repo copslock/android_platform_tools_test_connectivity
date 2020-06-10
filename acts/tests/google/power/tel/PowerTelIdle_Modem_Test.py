@@ -25,12 +25,12 @@ class PowerTelIdle_Modem_Test(cipt.PowerTelIdleTest):
 
     def test_lte_band_1_pul_low_bw_20_tm_1_dlmcs_28_mimo_1x1_paging_1280_rrcstatuschangetimer_10(self):
         self.display_name_test_case = 'LS11 - B1'
-        self.power_tel_idle_test()
+        self.power_tel_idle_test(filter_results=True)
 
     def test_lte_band_13_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_paging_2560_rrcstatuschangetimer_10(self):
         self.display_name_test_case = 'LS1 - B13'
-        self.power_tel_idle_test()
+        self.power_tel_idle_test(filter_results=True)
 
     def test_lte_band_41_pul_low_bw_10_tm_3_dlmcs_28_mimo_2x2_tddconfig_1_ssf_7_paging_2560_rrcstatuschangetimer_10(self):
         self.display_name_test_case = 'LS3 - B41'
-        self.power_tel_idle_test()
+        self.power_tel_idle_test(filter_results=True)

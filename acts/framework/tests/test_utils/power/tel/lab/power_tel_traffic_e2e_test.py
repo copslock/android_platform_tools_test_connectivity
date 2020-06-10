@@ -15,7 +15,7 @@
 #   limitations under the License.
 
 import unittest
-import tests.test_utils.power.tel.lab.mock_bokeh
+import mock_bokeh
 import acts.test_utils.power.cellular.cellular_traffic_power_test as ctpt
 import mobly.config_parser as mobly_config_parser
 from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation

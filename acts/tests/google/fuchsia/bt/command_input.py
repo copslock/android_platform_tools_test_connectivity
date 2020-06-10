@@ -45,6 +45,7 @@ This is all to say this documentation pattern is expected.
 
 from acts.test_utils.abstract_devices.bluetooth_device import create_bluetooth_device
 from acts.test_utils.bt.bt_constants import bt_attribute_values
+from acts.test_utils.bt.bt_constants import sig_appearance_constants
 from acts.test_utils.bt.bt_constants import sig_uuid_constants
 from acts.test_utils.fuchsia.sdp_records import sdp_pts_record_list
 
@@ -54,13 +55,24 @@ import cmd
 import pprint
 import time
 """Various Global Strings"""
+BASE_UUID = sig_uuid_constants['BASE_UUID']
 CMD_LOG = "CMD {} result: {}"
 FAILURE = "CMD {} threw exception: {}"
 BASIC_ADV_NAME = "fs_test"
 
 
 class CommandInput(cmd.Cmd):
-    ble_advertise_interval = 1000
+    ble_adv_interval = 1000
+    ble_adv_appearance = None
+    ble_adv_data_include_tx_power_level = False
+    ble_adv_include_name = True
+    ble_adv_include_scan_response = False
+    ble_adv_name = "fs_test"
+    ble_adv_data_manufacturer_data = None
+    ble_adv_data_service_data = None
+    ble_adv_data_service_uuid_list = None
+    ble_adv_data_uris = None
+
     bt_control_ids = []
     bt_control_names = []
     bt_control_devices = []
@@ -201,29 +213,250 @@ class CommandInput(cmd.Cmd):
 
     """Begin BLE advertise wrappers"""
 
+    def complete_ble_adv_data_include_name(self, text, line, begidx, endidx):
+        roles = ["true", "false"]
+        if not text:
+            completions = roles
+        else:
+            completions = [s for s in roles if s.startswith(text)]
+        return completions
+
+    def do_ble_adv_data_include_name(self, line):
+        cmd = "Include name in the advertisement."
+        try:
+            self.ble_adv_include_name = self.str_to_bool(line)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_ble_adv_data_set_name(self, line):
+        cmd = "Set the name to be included in the advertisement."
+        try:
+            self.ble_adv_name = line
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def complete_ble_adv_data_set_appearance(self, text, line, begidx, endidx):
+        if not text:
+            completions = list(sig_appearance_constants.keys())
+        else:
+            completions = [
+                s for s in sig_appearance_constants.keys()
+                if s.startswith(text)
+            ]
+        return completions
+
+    def do_ble_adv_data_set_appearance(self, line):
+        cmd = "Set the appearance to known SIG values."
+        try:
+            self.ble_adv_appearance = line
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def complete_ble_adv_data_include_tx_power_level(self, text, line, begidx,
+                                                     endidx):
+        options = ['true', 'false']
+        if not text:
+            completions = list(options)[:]
+        else:
+            completions = [s for s in options if s.startswith(text)]
+        return completions
+
+    def do_ble_adv_data_include_tx_power_level(self, line):
+        """Include the tx_power_level in the advertising data.
+        Description: Adds tx_power_level to the advertisement data to the BLE
+            advertisement.
+        Input(s):
+            value: Required. True or False
+        Usage: ble_adv_data_include_tx_power_level bool_value
+          Examples:
+            ble_adv_data_include_tx_power_level true
+            ble_adv_data_include_tx_power_level false
+        """
+        cmd = "Include tx_power_level in advertisement."
+        try:
+            self.ble_adv_data_include_tx_power_level = self.str_to_bool(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def complete_ble_adv_include_scan_response(self, text, line, begidx,
+                                               endidx):
+        options = ['true', 'false']
+        if not text:
+            completions = list(options)[:]
+        else:
+            completions = [s for s in options if s.startswith(text)]
+        return completions
+
+    def do_ble_adv_include_scan_response(self, line):
+        """Include scan response in advertisement. inputs: [true|false]
+            Note: Currently just sets the scan response data to the
+                Advertisement data.
+        """
+        cmd = "Include tx_power_level in advertisement."
+        try:
+            self.ble_adv_include_scan_response = self.str_to_bool(line)
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_adv_data_add_manufacturer_data(self, line):
+        """Include manufacturer id and data to the advertisment
+        Description: Adds manufacturer data to the BLE advertisement.
+        Input(s):
+            id: Required. The int representing the manufacturer id.
+            data: Required. The string representing the data.
+        Usage: ble_adv_data_add_manufacturer_data id data
+          Examples:
+            ble_adv_data_add_manufacturer_data 1 test
+        """
+        cmd = "Include manufacturer id and data to the advertisment."
+        try:
+
+            info = line.split()
+            if self.ble_adv_data_manufacturer_data is None:
+                self.ble_adv_data_manufacturer_data = []
+            self.ble_adv_data_manufacturer_data.append({
+                "id": int(info[0]),
+                "data": info[1]
+            })
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_adv_data_add_service_data(self, line):
+        """Include service data to the advertisment
+        Description: Adds service data to the BLE advertisement.
+        Input(s):
+            uuid: Required. The string representing the uuid.
+            data: Required. The string representing the data.
+        Usage: ble_adv_data_add_service_data uuid data
+          Examples:
+            ble_adv_data_add_service_data 00001801-0000-1000-8000-00805f9b34fb test
+        """
+        cmd = "Include manufacturer id and data to the advertisment."
+        try:
+            info = line.split()
+            if self.ble_adv_data_service_data is None:
+                self.ble_adv_data_service_data = []
+            self.ble_adv_data_service_data.append({
+                "uuid": info[0],
+                "data": info[1]
+            })
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_adv_add_service_uuid_list(self, line):
+        """Include a list of service uuids to the advertisment:
+        Description: Adds service uuid list to the BLE advertisement.
+        Input(s):
+            uuid: Required. A list of N string UUIDs to add.
+        Usage: ble_adv_add_service_uuid_list uuid0 uuid1 ... uuidN
+          Examples:
+            ble_adv_add_service_uuid_list 00001801-0000-1000-8000-00805f9b34fb
+            ble_adv_add_service_uuid_list 00001801-0000-1000-8000-00805f9b34fb 00001802-0000-1000-8000-00805f9b34fb
+        """
+        cmd = "Include service uuid list to the advertisment data."
+        try:
+            self.ble_adv_data_service_uuid_list = line
+        except Exception as err:
+            self.log.info(FAILURE.format(cmd, err))
+
+    def do_ble_adv_data_set_uris(self, uris):
+        """Set the URIs of the LE advertisement data:
+        Description: Adds list of String UIRs
+          See (RFC 3986 1.1.2 https://tools.ietf.org/html/rfc3986)
+          Valid URI examples:
+            ftp://ftp.is.co.za/rfc/rfc1808.txt
+            http://www.ietf.org/rfc/rfc2396.txt
+            ldap://[2001:db8::7]/c=GB?objectClass?one
+            mailto:John.Doe@example.com
+            news:comp.infosystems.www.servers.unix
+            tel:+1-816-555-1212
+            telnet://192.0.2.16:80/
+            urn:oasis:names:specification:docbook:dtd:xml:4.1.2
+        Input(s):
+            uris: Required. A list of URIs to add.
+        Usage: ble_adv_data_set_uris uri0 uri1 ... uriN
+          Examples:
+            ble_adv_data_set_uris telnet://192.0.2.16:80/
+            ble_adv_data_set_uris tel:+1-816-555-1212
+        """
+        cmd = "Set the appearance to known SIG values."
+        try:
+            self.ble_adv_data_uris = uris.split()
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def start_advertisement(self, connectable):
+        """ Handle setting advertising data and the advertisement
+            Note: After advertisement is successful, clears values set for
+                * Manufacturer data
+                * Appearance information
+                * Scan Response
+                * Service UUIDs
+                * URI list
+            Args:
+                connectable: Bool of whether to start a connectable
+                    advertisement or not.
+        """
+        adv_data_name = self.ble_adv_name
+        if not self.ble_adv_include_name:
+            adv_data_name = None
+
+        manufacturer_data = self.ble_adv_data_manufacturer_data
+
+        tx_power_level = None
+        if self.ble_adv_data_include_tx_power_level:
+            tx_power_level = 1  # Not yet implemented so set to 1
+
+        scan_response = self.ble_adv_include_scan_response
+
+        adv_data = {
+            "name": adv_data_name,
+            "appearance": self.ble_adv_appearance,
+            "service_data": self.ble_adv_data_service_data,
+            "tx_power_level": tx_power_level,
+            "service_uuids": self.ble_adv_data_service_uuid_list,
+            "manufacturer_data": manufacturer_data,
+            "uris": self.ble_adv_data_uris,
+        }
+
+        if not self.ble_adv_include_scan_response:
+            scan_response = None
+        else:
+            scan_response = adv_data
+
+        result = self.pri_dut.ble_lib.bleStartBleAdvertising(
+            adv_data, scan_response, self.ble_adv_interval, connectable)
+        self.log.info("Result of starting advertisement: {}".format(result))
+        self.ble_adv_data_manufacturer_data = None
+        self.ble_adv_appearance = None
+        self.ble_adv_include_scan_response = False
+        self.ble_adv_data_service_uuid_list = None
+        self.ble_adv_data_uris = None
+        self.ble_adv_data_service_data = None
+
     def do_ble_start_generic_connectable_advertisement(self, line):
         """
         Description: Start a connectable LE advertisement
+
         Usage: ble_start_generic_connectable_advertisement
         """
         cmd = "Start a connectable LE advertisement"
         try:
-            adv_data = {"name": BASIC_ADV_NAME}
-            self.pri_dut.ble_lib.bleStartBleAdvertising(
-                adv_data, self.ble_advertise_interval)
+            connectable = True
+            self.start_advertisement(connectable)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
     def do_ble_start_generic_nonconnectable_advertisement(self, line):
         """
         Description: Start a non-connectable LE advertisement
+
         Usage: ble_start_generic_nonconnectable_advertisement
         """
         cmd = "Start a nonconnectable LE advertisement"
         try:
-            adv_data = {"name": BASIC_ADV_NAME}
-            self.pri_dut.ble_lib.bleStartBleAdvertising(
-                adv_data, self.ble_advertise_interval, False)
+            connectable = False
+            self.start_advertisement(connectable)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
@@ -791,6 +1024,77 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_gattc_write_long_char_by_id(self, line):
+        """
+        Description: Write long char by characteristic id reference.
+        Assumptions: Already connected to a GATT server service.
+        Input(s):
+            characteristic_id: The characteristic id reference on the GATT
+                service
+            offset: The offset value to use
+            size: Function will generate random bytes by input size.
+                IE: Input of 5 will send a byte array of [00, 01, 02, 03, 04]
+            reliable_mode: Optional: Reliable writes represented as bool
+        Usage:
+          Examples:
+            gattc_write_long_char_by_id char_id 0 5
+            gattc_write_long_char_by_id char_id 20 1
+            gattc_write_long_char_by_id char_id 20 1 true
+            gattc_write_long_char_by_id char_id 20 1 false
+        """
+        cmd = "Long Write to GATT server characteristic ."
+        try:
+            args = line.split()
+            if len(args) < 3:
+                self.log.info("3 Arguments required: [Id] [Offset] [Size]")
+                return
+            id = int(args[0], 16)
+            offset = int(args[1])
+            size = int(args[2])
+            reliable_mode = False
+            if len(args) > 3:
+                reliable_mode = self.str_to_bool(args[3])
+            write_value = []
+            for i in range(size):
+                write_value.append(i % 256)
+            self.test_dut.gatt_client_write_long_characteristic_by_handle(
+                self.unique_mac_addr_id, id, offset, write_value,
+                reliable_mode)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def do_gattc_write_long_desc_by_id(self, line):
+        """
+        Description: Write long char by descrioptor id reference.
+        Assumptions: Already connected to a GATT server service.
+        Input(s):
+            characteristic_id: The characteristic id reference on the GATT
+                service
+            offset: The offset value to use
+            size: Function will generate random bytes by input size.
+                IE: Input of 5 will send a byte array of [00, 01, 02, 03, 04]
+        Usage:
+          Examples:
+            gattc_write_long_desc_by_id char_id 0 5
+            gattc_write_long_desc_by_id char_id 20 1
+        """
+        cmd = "Long Write to GATT server descriptor ."
+        try:
+            args = line.split()
+            if len(args) != 3:
+                self.log.info("3 Arguments required: [Id] [Offset] [Size]")
+                return
+            id = int(args[0], 16)
+            offset = int(args[1])
+            size = int(args[2])
+            write_value = []
+            for i in range(size):
+                write_value.append(i % 256)
+            self.test_dut.gatt_client_write_long_descriptor_by_handle(
+                self.unique_mac_addr_id, id, offset, write_value)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_gattc_write_char_by_id_without_response(self, line):
         """
         Description: Write char by characteristic id reference without response.
@@ -879,6 +1183,30 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
+    def do_gattc_read_char_by_uuid(self, characteristic_uuid):
+        """
+        Description: Read Characteristic by UUID (read by type).
+        Assumptions: Already connected to a GATT server service.
+        Input(s):
+            characteristic_uuid: The characteristic id reference on the GATT
+                service
+        Usage:
+          Examples:
+            gattc_read_char_by_id char_id
+        """
+        cmd = "Read Characteristic value by ID."
+        try:
+            short_uuid_len = 4
+            if len(characteristic_uuid) == short_uuid_len:
+                characteristic_uuid = BASE_UUID.format(characteristic_uuid)
+
+            read_val = self.test_dut.gatt_client_read_characteristic_by_uuid(
+                self.unique_mac_addr_id, characteristic_uuid)
+            self.log.info("Characteristic Value with id {}: {}".format(
+                id, read_val))
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
     def do_gattc_write_desc_by_id(self, line):
         """
         Description: Write Descriptor by characteristic id reference.
@@ -952,8 +1280,8 @@ class CommandInput(cmd.Cmd):
             id = int(args[0], 16)
             offset = int(args[1])
             max_bytes = int(args[2])
-            read_val = self.pri_dut.gattc_lib.readLongCharacteristicById(
-                id, offset, max_bytes)
+            read_val = self.test_dut.gatt_client_read_long_characteristic_by_handle(
+                self.unique_mac_addr_id, id, offset, max_bytes)
             self.log.info("Characteristic Value with id {}: {}".format(
                 id, read_val['result']))
 
@@ -1145,6 +1473,58 @@ class CommandInput(cmd.Cmd):
                 non_bondable_mapping.get(options[1]),
                 transport_mapping.get(options[2]),
             )
+            self.log.info(result)
+        except Exception as err:
+            self.log.error(FAILURE.format(cmd, err))
+
+    def complete_btc_set_io_capabilities(self, text, line, begidx, endidx):
+        """ Provides auto-complete for btc_set_io_capabilities cmd.
+
+        See Cmd module for full description.
+        """
+        arg_completion = len(line.split(" ")) - 1
+        input_options = ['NONE', 'CONFIRMATION', 'KEYBOARD']
+        output_options = ['NONE', 'DISPLAY']
+        if arg_completion == 1:
+            if not text:
+                completions = input_options
+            else:
+                completions = [s for s in input_options if s.startswith(text)]
+            return completions
+        if arg_completion == 2:
+            if not text:
+                completions = output_options
+            else:
+                completions = [s for s in output_options if s.startswith(text)]
+            return completions
+
+    def do_btc_set_io_capabilities(self, line):
+        """
+        Description: Sets the IO capabilities during pairing
+
+        Input(s):
+            input: String - The input I/O capabilities to use
+                Available Values:
+                NONE - Input capability type None
+                CONFIRMATION - Input capability type confirmation
+                KEYBOARD - Input capability type Keyboard
+            output: String - The output I/O Capabilities to use
+                Available Values:
+                NONE - Output capability type None
+                DISPLAY - output capability type Display
+
+        Usage:
+          Examples:
+            btc_set_io_capabilities NONE DISPLAY
+            btc_set_io_capabilities NONE NONE
+            btc_set_io_capabilities KEYBOARD DISPLAY
+        """
+        cmd = "Send an outgoing pairing request."
+
+        try:
+            options = line.split(" ")
+            result = self.pri_dut.btc_lib.setIOCapabilities(
+                options[0], options[1])
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
@@ -1528,7 +1908,7 @@ class CommandInput(cmd.Cmd):
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))
 
-    def do_sdp_connect_l2cap(self, psm):
+    def do_sdp_connect_l2cap(self, line):
         """
         Description: Send an l2cap connection request over an input psm value.
 
@@ -1557,16 +1937,21 @@ class CommandInput(cmd.Cmd):
                     (IPSP)
                 OTS 0x0025  See Object Transfer Service (OTS)
                 EATT    0x0027  See Bluetooth Core Specification
+            mode: String - The channel mode to connect to. Available values:
+                Basic mode: BASIC
+                Enhanced Retransmission mode: ERTM
 
         Usage:
           Examples:
-            sdp_connect_l2cap 0001
-            sdp_connect_l2cap 0015
+            sdp_connect_l2cap 0001 BASIC
+            sdp_connect_l2cap 0019 ERTM
         """
         cmd = "Connect l2cap"
         try:
+            info = line.split()
             result = self.pri_dut.sdp_lib.connectL2cap(self.unique_mac_addr_id,
-                                                       int(psm, 16))
+                                                       int(info[0], 16),
+                                                       info[1])
             self.log.info(result)
         except Exception as err:
             self.log.error(FAILURE.format(cmd, err))

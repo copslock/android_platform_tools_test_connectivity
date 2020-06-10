@@ -23,7 +23,7 @@ from acts.metrics.loggers.blackbox import BlackboxMetricLogger
 from acts.test_utils.power import IperfHelper as IPH
 from acts.test_utils.power import plot_utils
 import acts.test_utils.power.cellular.cellular_power_base_test as PWCEL
-from acts.test_utils.wifi import wifi_power_test_utils as wputils
+from acts.test_utils.tel import tel_test_utils as telutils
 
 
 class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
@@ -44,9 +44,6 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
     # Iperf waiting time
     IPERF_MARGIN = 10
-
-    # Constant used to calculate the tcp window size from total throughput
-    TCP_WINDOW_FRACTION = 40
 
     def __init__(self, controllers):
         """ Class initialization.
@@ -74,6 +71,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
 
     def setup_class(self):
         super().setup_class()
+
+        # Unpack test parameters used in this class
+        self.unpack_userparams(tcp_window_fraction=0, tcp_dumps=False)
 
         # Verify that at least one PacketSender controller has been initialized
         if not hasattr(self, 'packet_senders'):
@@ -200,6 +200,12 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             a dictionary containing DL/UL throughput in Mbit/s.
         """
 
+        # Pull TCP logs if enabled
+        if self.tcp_dumps:
+            self.log.info('Pulling TCP dumps.')
+            telutils.stop_adb_tcpdump(self.dut)
+            telutils.get_tcpdump_log(self.dut)
+
         throughput = {}
 
         for iph in iperf_helpers:
@@ -278,36 +284,23 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
         # Start iPerf traffic
         iperf_helpers = []
 
-        # Calculate TCP windows as a fraction of the expected throughput
-        # Some simulation classes don't implement this method yed
-        try:
-            dl_max_throughput = self.simulation.maximum_downlink_throughput()
-            ul_max_throughput = self.simulation.maximum_uplink_throughput()
-        except NotImplementedError:
-            self.log.error("Maximum downlink/uplink throughput method not "
-                           "implemented for %s." %
-                           type(self.simulation).__name__)
-            ul_tcp_window = None
-            dl_tcp_window = None
+        # If the tcp_window_fraction parameter was set, calculate the TCP
+        # window size as a fraction of the peak throughput.
+        ul_tcp_window = None
+        dl_tcp_window = None
+        if self.tcp_window_fraction == 0:
+            self.log.info("tcp_window_fraction was not indicated. "
+                          "Disabling fixed TCP window.")
         else:
-            # Calculate the TCP window only if dl/ul max throughput was
-            # obtained. Use tcp_window_fraction if given in parameters. If
-            # tcp_window_fraction is false then send None.
-            if hasattr(self, 'tcp_window_fraction'):
-                if not self.tcp_window_fraction:
-                    ul_tcp_window = None
-                    dl_tcp_window = None
-                elif self.tcp_window_fraction > 0.0:
-                    dl_tcp_window = dl_max_throughput / self.tcp_window_fraction
-                    ul_tcp_window = ul_max_throughput / self.tcp_window_fraction
-                else:
-                    self.log.warning("tcp_window_fraction should be positive "
-                                     "int or 'false'. Disabling window")
-                    ul_tcp_window = None
-                    dl_tcp_window = None
-            else:
-                dl_tcp_window = dl_max_throughput / self.TCP_WINDOW_FRACTION
-                ul_tcp_window = ul_max_throughput / self.TCP_WINDOW_FRACTION
+            try:
+                max_dl_tput = self.simulation.maximum_downlink_throughput()
+                max_ul_tput = self.simulation.maximum_uplink_throughput()
+                dl_tcp_window = max_dl_tput / self.tcp_window_fraction
+                ul_tcp_window = max_ul_tput / self.tcp_window_fraction
+            except NotImplementedError:
+                self.log.error("Maximum downlink/uplink throughput method not "
+                               "implemented for %s." %
+                               type(self.simulation).__name__)
 
         if self.traffic_direction in [
                 self.PARAM_DIRECTION_DL, self.PARAM_DIRECTION_DL_UL
@@ -330,6 +323,11 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
                                          traffic_direction='UL',
                                          window=ul_tcp_window,
                                          bandwidth=self.bandwidth_limit_ul))
+
+        # Enable TCP logger.
+        if self.tcp_dumps:
+            self.log.info('Enabling TCP logger.')
+            telutils.start_adb_tcpdump(self.dut)
 
         return iperf_helpers
 
@@ -354,6 +352,9 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             An IperfHelper object for the started client/server pair.
         """
 
+        # Start the server locally
+        self.iperf_servers[server_idx].start()
+
         config = {
             'traffic_type': 'TCP',
             'duration':
@@ -365,19 +366,19 @@ class PowerTelTrafficTest(PWCEL.PowerCellularLabBaseTest):
             'window': window
         }
 
-        # If bandwidth is equal to zero then no bandwith requirements are set
+        # If bandwidth is equal to zero then no bandwidth requirements are set
         if bandwidth > 0:
             config['bandwidth'] = bandwidth
 
         iph = IPH.IperfHelper(config)
 
-        # Start the server locally
-        self.iperf_servers[server_idx].start()
-
         # Start the client in the android device
-        wputils.run_iperf_client_nonblocking(client_host,
-                                             self.iperf_server_address,
-                                             iph.iperf_args)
+        client_host.adb.shell_nb(
+            "nohup >/dev/null 2>&1 sh -c 'iperf3 -c {} {} "
+            "&'".format(self.iperf_server_address, iph.iperf_args))
+
+        self.log.info('{} iPerf started on port {}.'.format(
+            traffic_direction, iph.port))
 
         return iph
 
@@ -561,7 +562,11 @@ class PowerTelTxPowerSweepTest(PowerTelTrafficTest):
             iperf_result = self.get_iperf_results(self.dut, iperf_helpers)
 
             currents.append(result.average_current)
-            txs.append(tx)
+
+            # Get the actual Tx power as measured from the callbox side
+            measured_tx = self.simulation.get_measured_ul_power()
+
+            txs.append(measured_tx)
             iperf_results.append(iperf_result)
 
         self.create_power_plot(currents, txs)
