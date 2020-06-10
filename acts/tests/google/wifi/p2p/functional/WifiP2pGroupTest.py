@@ -81,7 +81,8 @@ class WifiP2pGroupTest(WifiP2pBaseTest):
         # Request the connection
         wp2putils.p2p_connect(gc_dut, go_dut, False, wps_type, True)
 
-        wp2putils.p2p_connection_ping_test(gc_dut, p2pconsts.GO_IP_ADDRESS)
+        go_ip = wp2putils.p2p_go_ip(gc_dut)
+        wp2putils.p2p_connection_ping_test(gc_dut, go_ip)
         # trigger disconnect
         wp2putils.p2p_disconnect(go_dut)
         wp2putils.check_disconnect(gc_dut)
@@ -123,7 +124,8 @@ class WifiP2pGroupTest(WifiP2pBaseTest):
                                           self.network_name, self.passphrase,
                                           self.group_band)
 
-        wp2putils.p2p_connection_ping_test(gc_dut, p2pconsts.GO_IP_ADDRESS)
+        go_ip = wp2putils.p2p_go_ip(gc_dut)
+        wp2putils.p2p_connection_ping_test(gc_dut, go_ip)
         # trigger disconnect
         wp2putils.p2p_disconnect(go_dut)
         wp2putils.check_disconnect(gc_dut)
