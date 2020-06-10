@@ -80,7 +80,8 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         self.unpack_userparams(md8475_version=None,
                                md8475a_ip_address=None,
                                cmw500_ip=None,
-                               cmw500_port=None)
+                               cmw500_port=None,
+                               qxdm_logs=None)
 
         # Load calibration tables
         filename_calibration_table = (
@@ -210,6 +211,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Wait for new params to settle
         time.sleep(5)
 
+        # Enable QXDM logger if required
+        if self.qxdm_logs:
+            self.log.info('Enabling the QXDM logger.')
+            telutils.set_qxdm_logger_command(self.dut)
+            telutils.start_qxdm_logger(self.dut)
+
         # Start the simulation. This method will raise an exception if
         # the phone is unable to attach.
         self.simulation.start()
@@ -229,6 +236,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         super().teardown_test()
 
         self.power_results[self.test_name] = self.power_result.metric_value
+
+        # If QXDM logging was enabled pull the results
+        if self.qxdm_logs:
+            self.log.info('Stopping the QXDM logger and pulling results.')
+            telutils.stop_qxdm_logger(self.dut)
+            self.dut.get_qxdm_logs()
 
     def consume_parameter(self, parameter_name, num_values=0):
         """ Parses a parameter from the test name.
