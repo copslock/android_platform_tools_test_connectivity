@@ -43,6 +43,7 @@ from acts.controllers.fuchsia_lib.gpio_lib import FuchsiaGpioLib
 from acts.controllers.fuchsia_lib.hardware_power_statecontrol_lib import FuchsiaHardwarePowerStatecontrolLib
 from acts.controllers.fuchsia_lib.hwinfo_lib import FuchsiaHwinfoLib
 from acts.controllers.fuchsia_lib.input_report_lib import FuchsiaInputReportLib
+from acts.controllers.fuchsia_lib.kernel_lib import FuchsiaKernelLib
 from acts.controllers.fuchsia_lib.location.regulatory_region_lib import FuchsiaRegulatoryRegionLib
 from acts.controllers.fuchsia_lib.logging_lib import FuchsiaLoggingLib
 from acts.controllers.fuchsia_lib.netstack.netstack_lib import FuchsiaNetstackLib
@@ -247,6 +248,10 @@ class FuchsiaDevice:
         self.input_report_lib = FuchsiaInputReportLib(self.address,
                                                       self.test_counter,
                                                       self.client_id)
+
+        # Grab commands from FuchsiaKernelLib
+        self.kernel_lib = FuchsiaKernelLib(self.address, self.test_counter,
+                                           self.client_id)
 
         # Grab commands from FuchsiaLoggingLib
         self.logging_lib = FuchsiaLoggingLib(self.address, self.test_counter,
