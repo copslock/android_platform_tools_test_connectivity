@@ -25,6 +25,14 @@ import requests
 import socket
 import time
 
+from urllib.parse import urlparse
+
+from acts import utils
+
+
+class DeviceOffline(Exception):
+    """Exception if the device is no longer reachable via the network."""
+
 
 class BaseLib():
     def __init__(self, addr, tc, client_id):
@@ -57,6 +65,9 @@ class BaseLib():
         Returns:
             Dictionary, Result of sl4f command executed.
         """
+        if not utils.is_pingable(urlparse(self.address).hostname):
+            raise DeviceOffline("Device %s is not reachable via the "
+                                "network." % urlparse(self.address).hostname)
         test_data = json.dumps({
             "jsonrpc": "2.0",
             "id": test_id,
