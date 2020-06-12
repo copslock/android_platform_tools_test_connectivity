@@ -657,6 +657,54 @@ def get_bluetooth_crash_count(android_device):
     return int(re.search("crashed(.*\d)", out).group(1))
 
 
+def read_otp(ad):
+    """Reads and parses the OTP output to return TX power backoff
+
+    Reads the OTP registers from the phone, parses them to return a
+    dict of TX power backoffs for different power levels
+
+    Args:
+        ad : android device object
+
+    Returns :
+        otp_dict : power backoff dict
+    """
+
+    ad.adb.shell('svc bluetooth disable')
+    time.sleep(2)
+    otp_output = ad.adb.shell('bluetooth_sar_test -r')
+    ad.adb.shell('svc bluetooth enable')
+    time.sleep(2)
+    otp_dict = {
+        "BDR": {
+            "10": 0,
+            "9": 0,
+            "8": 0
+        },
+        "EDR": {
+            "10": 0,
+            "9": 0,
+            "8": 0
+        },
+        "BLE": {
+            "10": 0,
+            "9": 0,
+            "8": 0
+        }
+    }
+
+    otp_regex = '\s+\[\s+PL10:([-]*\d+)\s+PL9:([-]*\d+)*\s+PL8:([-]*\d+)\s+\]'
+
+    for key in otp_dict:
+        bank_list = re.findall("{}{}".format(key, otp_regex), otp_output)
+        for bank_tuple in bank_list:
+            if ('0', '0', '0') != bank_tuple:
+                [otp_dict[key]["10"], otp_dict[key]["9"],
+                 otp_dict[key]["8"]] = bank_tuple
+
+    return otp_dict
+
+
 def get_bt_metric(ad_list, duration=1, tag="bt_metric", processed=True):
     """ Function to get the bt metric from logcat.
 
@@ -749,9 +797,9 @@ def get_bt_rssi(ad, duration=1, processed=True):
 
 
 def enable_bqr(
-    ad_list,
-    bqr_interval=10,
-    bqr_event_mask=15,
+        ad_list,
+        bqr_interval=10,
+        bqr_event_mask=15,
 ):
     """Sets up BQR reporting.
 
@@ -1106,10 +1154,10 @@ def orchestrate_and_verify_pan_connection(pan_dut, panu_dut):
 
 
 def orchestrate_bluetooth_socket_connection(
-    client_ad,
-    server_ad,
-    accept_timeout_ms=default_bluetooth_socket_timeout_ms,
-    uuid=None):
+        client_ad,
+        server_ad,
+        accept_timeout_ms=default_bluetooth_socket_timeout_ms,
+        uuid=None):
     """Sets up the Bluetooth Socket connection between two Android devices.
 
     Args:
