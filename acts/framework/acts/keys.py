@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import enum
+
 """This module has the global key values that are used across framework
 modules.
 """
@@ -87,11 +88,23 @@ class Config(enum.Enum):
 
     # Controller names packaged with ACTS.
     builtin_controller_names = [
-        key_android_device, key_bluetooth_pts_device, key_fuchsia_device,
-        key_buds_device, key_native_android_device, key_relay_device,
-        key_access_point, key_attenuator, key_iperf_server, key_iperf_client,
-        key_packet_sender, key_monsoon, key_sniffer, key_chameleon_device,
-        key_arduino_wifi_dongle, key_packet_capture, key_pdu
+        key_android_device,
+        key_bluetooth_pts_device,
+        key_fuchsia_device,
+        key_buds_device,
+        key_native_android_device,
+        key_relay_device,
+        key_access_point,
+        key_attenuator,
+        key_iperf_server,
+        key_iperf_client,
+        key_packet_sender,
+        key_monsoon,
+        key_sniffer,
+        key_chameleon_device,
+        key_arduino_wifi_dongle,
+        key_packet_capture,
+        key_pdu
     ]
 
     # Keys that are file or folder paths.
