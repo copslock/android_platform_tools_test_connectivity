@@ -285,9 +285,7 @@ class WifiPingTest(base_test.BaseTestClass):
         """
         # Prepare results dict
         llstats_obj = wputils.LinkLayerStats(
-                self.dut,
-                self.testclass_params.get('llstats_enabled', True)
-                )
+            self.dut, self.testclass_params.get('llstats_enabled', True))
         test_result = collections.OrderedDict()
         test_result['testcase_params'] = testcase_params.copy()
         test_result['test_name'] = self.current_test_name
@@ -302,7 +300,9 @@ class WifiPingTest(base_test.BaseTestClass):
         if self.testbed_params['sniffer_enable']:
             self.sniffer.start_capture(
                 testcase_params['test_network'],
-                testcase_params['ping_duration'] *
+                chan=int(testcase_params['channel']),
+                bw=int(testcase_params['mode'][3:]),
+                duration=testcase_params['ping_duration'] *
                 len(testcase_params['atten_range']) + self.TEST_TIMEOUT)
         # Run ping and sweep attenuation as needed
         zero_counter = 0

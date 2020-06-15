@@ -370,9 +370,9 @@ class WifiRvrTest(base_test.BaseTestClass):
             if self.testbed_params['sniffer_enable']:
                 self.sniffer.start_capture(
                     network=testcase_params['test_network'],
-                    duration=self.testclass_params['iperf_duration'] / 5,
                     chan=int(testcase_params['channel']),
-                    bw=int(testcase_params['mode'][3:]))
+                    bw=int(testcase_params['mode'][3:]),
+                    duration=self.testclass_params['iperf_duration'] / 5)
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
             rssi_future = wputils.get_connected_rssi_nb(
