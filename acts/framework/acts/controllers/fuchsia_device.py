@@ -31,6 +31,8 @@ from acts import logger as acts_logger
 from acts import utils
 from acts import signals
 
+from acts.controllers import pdu
+
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
 from acts.controllers.fuchsia_lib.light_lib import FuchsiaLightLib
 
@@ -96,6 +98,9 @@ ENABLE_LOG_LISTENER = True
 CHANNEL_OPEN_TIMEOUT = 5
 
 FUCHSIA_GET_VERSION_CMD = 'cat /config/build-info/version'
+
+FUCHSIA_REBOOT_TYPE_SOFT = 'soft'
+FUCHSIA_REBOOT_TYPE_HARD = 'hard'
 
 
 class FuchsiaDeviceError(signals.ControllerError):
@@ -182,6 +187,7 @@ class FuchsiaDevice:
         self.ssh_config = fd_conf_data.get("ssh_config", None)
         self.ssh_username = fd_conf_data.get("ssh_username",
                                              FUCHSIA_SSH_USERNAME)
+        self.device_pdu_config = fd_conf_data.get("PduDevice", None)
         self._persistent_ssh_conn = None
 
         self.log = acts_logger.create_tagged_trace_logger(
@@ -324,25 +330,6 @@ class FuchsiaDevice:
         """
         return self.client_id + "." + str(test_id)
 
-    def send_command_sl4f(self, test_id, test_cmd, test_args):
-        """Builds and sends a JSON command to SL4F server.
-
-        Args:
-            test_id: string, unique identifier of test command.
-            test_cmd: string, sl4f method name of command.
-            test_args: dictionary, arguments required to execute test_cmd.
-
-        Returns:
-            Dictionary, Result of sl4f command executed.
-        """
-        test_data = json.dumps({
-            "jsonrpc": "2.0",
-            "id": self.build_id(self.test_counter),
-            "method": test_cmd,
-            "params": test_args
-        })
-        return requests.get(url=self.address, data=test_data).json()
-
     def verify_ping(self, timeout=30):
         """Verify the fuchsia device can be pinged.
 
@@ -393,7 +380,9 @@ class FuchsiaDevice:
                use_ssh=False,
                unreachable_timeout=30,
                ping_timeout=30,
-               ssh_timeout=30):
+               ssh_timeout=30,
+               reboot_type=FUCHSIA_REBOOT_TYPE_SOFT,
+               testbed_pdus=None):
         """Reboot a FuchsiaDevice.
 
         Soft reboots the device, verifies it becomes unreachable, then verfifies
@@ -406,32 +395,48 @@ class FuchsiaDevice:
                 unreachable.
             ping_timeout: int, time to wait for device to respond to pings.
             ssh_timeout: int, time to wait for device to be reachable via ssh.
+            reboot_type: boolFUCHSIA_REBOOT_TYPE_SOFT or
+                FUCHSIA_REBOOT_TYPE_HARD
+            testbed_pdus: list, all testbed PDUs
 
         Raises:
             ConnectionError, if device fails to become unreachable, fails to
                 come back up, or if SL4F does not setup correctly.
         """
-        # Prepare device for reboot
-        self.log.info('Initializing reboot of FuchsiaDevice (%s) with SL4F.' %
-                      self.ip)
-
         # Call Reboot
-        if use_ssh:
-            self.log.info('Sending reboot command via SSH.')
+        if reboot_type == FUCHSIA_REBOOT_TYPE_SOFT:
+            if use_ssh:
+                self.log.info('Sending reboot command via SSH.')
+                with utils.SuppressLogOutput():
+                    self.clean_up()
+                    self.send_command_ssh(
+                        'dm reboot',
+                        timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
+                        skip_status_code_check=True)
+            else:
+                self.log.info('Initializing reboot of FuchsiaDevice (%s)'
+                              ' with SL4F.' % self.ip)
+                self.log.info('Calling SL4F reboot command.')
+                with utils.SuppressLogOutput():
+                    if self.log_process:
+                        self.log_process.stop()
+                    self.hardware_power_statecontrol_lib.suspendReboot(
+                        timeout=3)
+                    if self._persistent_ssh_conn:
+                        self._persistent_ssh_conn.close()
+                        self._persistent_ssh_conn = None
+        elif reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
+            self.log.info('Power cycling FuchsiaDevice (%s)' % self.ip)
+            device_pdu, device_pdu_port = pdu.get_pdu_port_for_device(
+                self.device_pdu_config, testbed_pdus)
             with utils.SuppressLogOutput():
-                self.clean_up()
-                self.send_command_ssh(
-                    'dm reboot',
-                    timeout=FUCHSIA_RECONNECT_AFTER_REBOOT_TIME,
-                    skip_status_code_check=True)
-        else:
-            self.log.info('Calling SL4F reboot command.')
-            with utils.SuppressLogOutput():
-                self.log_process.stop()
-                self.hardware_power_statecontrol_lib.suspendReboot(timeout=3)
+                if self.log_process:
+                    self.log_process.stop()
                 if self._persistent_ssh_conn:
                     self._persistent_ssh_conn.close()
                     self._persistent_ssh_conn = None
+            self.log.info('Killing power to FuchsiaDevice (%s)...' % self.ip)
+            device_pdu.off(str(device_pdu_port))
 
         # Wait for unreachable
         self.log.info('Verifying device is unreachable.')
@@ -440,6 +445,10 @@ class FuchsiaDevice:
             if utils.is_pingable(self.ip):
                 self.log.debug('Device is still pingable. Retrying.')
             else:
+                if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
+                    self.log.info('Restoring power to FuchsiaDevice (%s)...' %
+                                  self.ip)
+                    device_pdu.on(str(device_pdu_port))
                 break
         else:
             self.log.info('Device failed to go offline. Reintializing Sl4F.')
@@ -447,6 +456,10 @@ class FuchsiaDevice:
             self.init_server_connection()
             raise ConnectionError('Device never went down.')
         self.log.info('Device is unreachable.')
+
+        if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
+            self.log.info('Restoring power to FuchsiaDevice (%s)...' % self.ip)
+            device_pdu.on(str(device_pdu_port))
 
         self.log.info('Waiting for device to respond to pings.')
         self.verify_ping(timeout=ping_timeout)

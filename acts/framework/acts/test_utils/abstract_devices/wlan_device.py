@@ -139,6 +139,10 @@ class WlanDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
+    def hard_power_cycle(self, pdus=None):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
 
 class AndroidWlanDevice(WlanDevice):
     """Class wrapper for an Android WLAN device.
@@ -227,6 +231,9 @@ class AndroidWlanDevice(WlanDevice):
                               dest_ip=dest_ip,
                               count=count,
                               timeout=timeout)
+
+    def hard_power_cycle(self, pdus):
+        pass
 
 
 class FuchsiaWlanDevice(WlanDevice):
@@ -338,3 +345,6 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def is_connected(self, ssid=None):
         return fwutils.is_connected(self, ssid)
+
+    def hard_power_cycle(self, pdus):
+        self.device.reboot(reboot_type='hard', testbed_pdus=pdus)
