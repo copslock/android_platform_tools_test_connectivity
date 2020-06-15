@@ -1165,7 +1165,7 @@ class GnssSanityTest(BaseTestClass):
             self.ad.log.info("Iteraion %d => %s" % (test_loop, test_result))
             overall_test_result.append(test_result)
         asserts.assert_true(all(overall_test_result),
-                            "Fail to trigger SUPL after system server restart.")
+                            "SUPL fail after system server restart.")
 
     @test_tracker_info(uuid="a9a64900-9016-46d0-ad7e-cab30e8152cd")
     def test_xtra_system_server_restart(self):
@@ -1197,4 +1197,34 @@ class GnssSanityTest(BaseTestClass):
             self.ad.log.info("Iteraion %d => %s" % (test_loop, test_result))
             overall_test_result.append(test_result)
         asserts.assert_true(all(overall_test_result),
-                            "Fail to trigger XTRA after system server restart.")
+                            "XTRA fail after system server restart.")
+
+    @test_tracker_info(uuid="ab5ef9f7-0b28-48ed-a693-7f1d902ca3e1")
+    def test_gnss_init_after_reboot(self):
+        """Verify SUPL and XTRA functionality after reboot.
+
+        Steps:
+            1. Get location fixed within supl_cs_criteria.
+            2. Reboot DUT.
+            3. Get location fixed within supl_hs_criteria.
+            4. Repeat Step 2. to Step 3. for 10 times.
+
+        Expected Results:
+            Location fixed within supl_hs_criteria.
+        """
+        overall_test_result = []
+        enable_supl_mode(self.ad)
+        reboot(self.ad)
+        process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+        start_gnss_by_gtw_gpstool(self.ad, False)
+        for test_loop in range(1, 11):
+            reboot(self.ad)
+            test_result = process_gnss_by_gtw_gpstool(
+                self.ad, self.supl_hs_criteria, clear_data=False)
+            start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.log.info("Iteraion %d => %s" % (test_loop, test_result))
+            overall_test_result.append(test_result)
+        pass_rate = overall_test_result.count(True)/len(overall_test_result)
+        self.ad.log.info("TestResult Pass_rate %s" % format(pass_rate, ".0%"))
+        asserts.assert_true(all(overall_test_result),
+                            "GNSS init fail after reboot.")
