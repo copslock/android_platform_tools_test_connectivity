@@ -100,7 +100,7 @@ class BtSarBaseTest(BaseTestClass):
 
         self.sar_version_2 = False
 
-        if self.dut.adb.shell('bluetooth_sar_test -r'):
+        if 'Error' not in self.dut.adb.shell('bluetooth_sar_test -r'):
             #Flag for SAR version 2
             self.sar_version_2 = True
             phone_sku = self.dut.adb.shell('getprop ro.boot.hardware.sku')
@@ -363,12 +363,12 @@ class BtSarBaseTest(BaseTestClass):
                 'cap_tx_power', 'target_power', 'max_power'
             ]].min(axis=1)
 
-            if 'ble_rssi' in sar_df.columns:
-                sar_df['measured_tx_power'] = sar_df['ble_rssi'] + sar_df[
-                    'pathloss'] + FIXED_ATTENUATION
-            else:
+            if hasattr(self, 'pl10_atten'):
                 sar_df['measured_tx_power'] = sar_df['slave_rssi'] + sar_df[
                     'pathloss'] + self.pl10_atten - offset
+            else:
+                sar_df['measured_tx_power'] = sar_df['ble_rssi'] + sar_df[
+                    'pathloss'] + FIXED_ATTENUATION
 
         else:
 
