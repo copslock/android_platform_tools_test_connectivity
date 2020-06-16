@@ -26,6 +26,7 @@ from acts import utils
 from acts.controllers.utils_lib import ssh
 
 WifiEnums = wutils.WifiEnums
+SNIFFER_TIMEOUT = 6
 
 
 def create(configs):
@@ -332,14 +333,17 @@ class TsharkSnifferBase(OtaSnifferBase):
         self.log.info('Stopping sniffer')
 
         # while loop to kill the sniffer process
-        while True:
+        stop_time = time.time() + SNIFFER_TIMEOUT
+        while time.time() < stop_time:
+            # Wait before sending more kill signals
+            time.sleep(0.1)
             try:
                 # Returns 1 if process was killed
                 self._sniffer_server.run(
                     'ps aux| grep {} | grep -v grep'.format(
                         self.sniffer_proc_pid))
             except:
-                break
+                return
             try:
                 # Returns error if process was killed already
                 self._sniffer_server.run('sudo kill -15 {}'.format(
@@ -348,6 +352,13 @@ class TsharkSnifferBase(OtaSnifferBase):
                 # Except is hit when tshark is already dead but we will break
                 # out of the loop when confirming process is dead using ps aux
                 pass
+        self.log.warning('Could not stop sniffer. Trying with SIGKILL.')
+        try:
+            self.log.debug('Killing sniffer with SIGKILL.')
+            self._sniffer_server.run('sudo kill -9 {}'.format(
+                    str(self.sniffer_proc_pid)))
+        except:
+            self.log.debug('Sniffer process may have stopped succesfully.')
 
     def _process_tshark_dump(self, log_file):
         """ Process tshark dump for better readability.
