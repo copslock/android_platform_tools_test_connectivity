@@ -65,9 +65,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.dut = self.android_devices[-1]
         req_params = [
             'RetailAccessPoints', 'rvr_test_params', 'testbed_params',
-            'RemoteServer'
+            'RemoteServer', 'main_network'
         ]
-        opt_params = ['main_network', 'golden_files_list', 'OTASniffer']
+        opt_params = ['golden_files_list', 'OTASniffer']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.rvr_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
