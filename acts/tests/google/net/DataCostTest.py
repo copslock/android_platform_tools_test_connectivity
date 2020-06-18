@@ -70,6 +70,8 @@ class DataCostTest(base_test.BaseTestClass):
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
+        dumpsys_info=self.dut.adb.shell("dumpsys netstats --uid")
+        self.dut.log.info(dumpsys_info)
 
     """ Helper functions """
 
