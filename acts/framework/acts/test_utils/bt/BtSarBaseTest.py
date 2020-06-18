@@ -375,13 +375,17 @@ class BtSarBaseTest(BaseTestClass):
             # Adding a target power column
             sar_df['target_power'] = sar_df['pwlv'].astype(str).map(
                 self.calibration_params['target_power']['EDR']['10'])
+
             # Adding a ftm  power column
             sar_df['ftm_power'] = sar_df['pwlv'].astype(str).map(
                 self.calibration_params['ftm_power']['EDR'])
             sar_df[
                 'backoff'] = sar_df['target_power'] - sar_df['power_cap'] / 4.0
+
             sar_df[
                 'expected_tx_power'] = sar_df['ftm_power'] - sar_df['backoff']
+            sar_df['measured_tx_power'] = sar_df['slave_rssi'] + sar_df[
+                'pathloss'] + self.pl10_atten
 
         sar_df['delta'] = sar_df['expected_tx_power'] - sar_df[
             'measured_tx_power']
