@@ -26,12 +26,6 @@ from acts.metrics.loggers import usage_metadata_logger
 
 DEFAULT_ADB_TIMEOUT = 60
 DEFAULT_ADB_PULL_TIMEOUT = 180
-# Uses a regex to be backwards compatible with previous versions of ADB
-# (N and above add the serial to the error msg).
-DEVICE_NOT_FOUND_REGEX = re.compile('^error: device (?:\'.*?\' )?not found')
-DEVICE_OFFLINE_REGEX = re.compile('^error: device offline')
-# Raised when adb forward commands fail to forward a port.
-CANNOT_BIND_LISTENER_REGEX = re.compile('^error: cannot bind listener:')
 # Expected output is "Android Debug Bridge version 1.0.XX
 ADB_VERSION_REGEX = re.compile('Android Debug Bridge version 1.0.(\d+)')
 ROOT_USER_ID = '0'
@@ -50,7 +44,6 @@ def parsing_parcel_output(output):
     """
     output = ''.join(re.findall(r"'(.*)'", output))
     return re.sub(r'[.\s]', '', output)
-
 
 
 class AdbProxy(object):
@@ -150,24 +143,19 @@ class AdbProxy(object):
             The stdout of the adb command.
 
         Raises:
-            AdbError is raised if adb cannot find the device.
+            AdbError is raised if ignore_status is False and the command
+                terminated with errors.
         """
         result = job.run(cmd, ignore_status=True, timeout=timeout)
         ret, out, err = result.exit_status, result.stdout, result.stderr
 
-        if DEVICE_OFFLINE_REGEX.match(err):
-            raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
         if "Result: Parcel" in out:
             return parsing_parcel_output(out)
         if ignore_status:
             return out or err
-        if ret == 1 and (DEVICE_NOT_FOUND_REGEX.match(err)
-                         or CANNOT_BIND_LISTENER_REGEX.match(err)):
+        if ret != 0:
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
-        if ret == 2:
-            raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
-        else:
-            return out
+        return out
 
     def _exec_adb_cmd(self, name, arg_str, **kwargs):
         return self._exec_cmd(' '.join((self.adb_str, name, arg_str)),
