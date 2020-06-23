@@ -169,7 +169,7 @@ def parse_gpstool_ttfflog_to_df(filename):
         Type, Pandas DataFrame.
     """
     # Get parsed dataframe list
-    parsed_data = lputil.parse_log_to_df(
+    parsed_data = parse_log_to_df(
         filename=filename,
         configs=CONFIG_GPSTTFFLOG,
     )
@@ -200,6 +200,8 @@ def parse_gpsapilog_to_df(filename):
         Type, Pandas DataFrame.
       sv_info_df: GNSS SV info Data Frame.
         Type, Pandas DataFrame.
+      sv_stat_df: GNSS SV statistic Data Frame.
+        Type, Pandas DataFrame
       loc_info_df: Location Information Data Frame.
         Type, Pandas DataFrame.
         include Provider, Latitude, Longitude, Altitude, GNSSTime, Speed, Bearing
@@ -289,6 +291,8 @@ def parse_gpsapilog_to_df_v2(filename):
         Type, Pandas DataFrame.
       sv_info_df: GNSS SV info Data Frame.
         Type, Pandas DataFrame.
+      sv_stat_df: GNSS SV statistic Data Frame.
+        Type, Pandas DataFrame
       loc_info_df: Location Information Data Frame.
         Type, Pandas DataFrame.
         include Provider, Latitude, Longitude, Altitude, GNSSTime, Speed, Bearing
@@ -344,5 +348,28 @@ def parse_gpsapilog_to_df_v2(filename):
         lambda row: datetime.datetime.strptime(row.Date + '-' + row.Time,
                                                '%Y/%m/%d-%H:%M:%S'),
         axis=1)
+
+    # Data Conversion
+    timestamp_df['logsize'] = timestamp_df['logsize'].astype(int)
+
+    sv_info_df['SV'] = sv_info_df['SV'].astype(int)
+    sv_info_df['CNo'] = sv_info_df['CNo'].astype(float)
+    sv_info_df['Elevation'] = sv_info_df['Elevation'].astype(float)
+    sv_info_df['Azimuth'] = sv_info_df['Azimuth'].astype(float)
+    sv_info_df['Frequency'] = sv_info_df['Frequency'].astype(float)
+
+    sv_stat_df['CurrentAvgTop4CNo'] = sv_stat_df['CurrentAvgTop4CNo'].astype(
+        float)
+    sv_stat_df['CurrentAvgCNo'] = sv_stat_df['CurrentAvgCNo'].astype(float)
+    sv_stat_df['HistoryAvgTop4CNo'] = sv_stat_df['HistoryAvgTop4CNo'].astype(
+        float)
+    sv_stat_df['HistoryAvgCNo'] = sv_stat_df['HistoryAvgCNo'].astype(float)
+    sv_stat_df['L5EngagingRate'] = sv_stat_df['L5EngagingRate'].astype(float)
+
+    loc_info_df['Latitude'] = loc_info_df['Latitude'].astype(float)
+    loc_info_df['Longitude'] = loc_info_df['Longitude'].astype(float)
+    loc_info_df['Altitude'] = loc_info_df['Altitude'].astype(float)
+    loc_info_df['Speed'] = loc_info_df['Speed'].astype(float)
+    loc_info_df['Bearing'] = loc_info_df['Bearing'].astype(float)
 
     return timestamp_df, sv_info_df, sv_stat_df, loc_info_df
