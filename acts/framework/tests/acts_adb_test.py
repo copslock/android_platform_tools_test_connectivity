@@ -50,6 +50,12 @@ class ADBTest(unittest.TestCase):
             with self.assertRaises(AdbError):
                 MockAdbProxy()._exec_cmd(cmd)
 
+    def test__exec_cmd_pass_ret_1(self):
+        mock_job = MockJob(exit_status=1, stderr='error not related to adb')
+        cmd = ['adb', '-s', '"SOME_SERIAL"', 'shell', '"SOME_SHELL_CMD"']
+        with mock.patch('acts.libs.proc.job.run', return_value=mock_job):
+            MockAdbProxy()._exec_cmd(cmd)
+
     def test__exec_cmd_pass_basic(self):
         mock_job = MockJob(exit_status=0, stderr='', stdout='FEEDACAB')
         cmd = ['adb', '-s', '"SOME_SERIAL"', 'shell', '"SOME_SHELL_CMD"']
