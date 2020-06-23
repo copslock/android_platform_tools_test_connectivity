@@ -48,11 +48,7 @@ class BaseLib():
         """
         return self.client_id + "." + str(test_id)
 
-    def send_command(self,
-                     test_id,
-                     test_cmd,
-                     test_args,
-                     response_timeout=None):
+    def send_command(self, test_id, test_cmd, test_args, response_timeout=30):
         """Builds and sends a JSON command to SL4F server.
 
         Args:
@@ -66,7 +62,7 @@ class BaseLib():
             Dictionary, Result of sl4f command executed.
         """
         if not utils.is_pingable(urlparse(self.address).hostname):
-            raise DeviceOffline("Device %s is not reachable via the "
+            raise DeviceOffline("FuchsiaDevice %s is not reachable via the "
                                 "network." % urlparse(self.address).hostname)
         test_data = json.dumps({
             "jsonrpc": "2.0",
@@ -74,6 +70,17 @@ class BaseLib():
             "method": test_cmd,
             "params": test_args
         })
-        return requests.get(url=self.address,
-                            data=test_data,
-                            timeout=response_timeout).json()
+        try:
+            return requests.get(url=self.address,
+                                data=test_data,
+                                timeout=response_timeout).json()
+        except requests.exceptions.Timeout as e:
+            if not utils.is_pingable(urlparse(self.address).hostname):
+                raise DeviceOffline(
+                    "FuchsiaDevice %s is not reachable via the "
+                    "network." % urlparse(self.address).hostname)
+            else:
+                logging.debug(
+                    'FuchsiaDevice is online but SL4f call timed out.' %
+                    urlparse(self.address).hostname)
+                raise e
