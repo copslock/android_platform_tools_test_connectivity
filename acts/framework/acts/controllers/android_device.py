@@ -861,7 +861,8 @@ class AndroidDevice:
         try:
             return bool(
                 self.adb.shell(
-                    'pm list packages | grep -w "package:%s"' % package_name))
+                    '(pm list packages | grep -w "package:%s") || true' %
+                    package_name))
 
         except Exception as err:
             self.log.error(
@@ -1354,7 +1355,7 @@ class AndroidDevice:
         for cmd in dumpsys_cmd:
             output = self.adb.shell(cmd, ignore_status=True)
             if not output or "not found" in output or "Can't find" in output or (
-                    "mFocusedApp=null" in output):
+                "mFocusedApp=null" in output):
                 result = ''
             else:
                 result = output.split(' ')[-2]
