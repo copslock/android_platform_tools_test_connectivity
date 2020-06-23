@@ -806,8 +806,8 @@ class AndroidDevice:
             return
         # Disable adb log spam filter. Have to stop and clear settings first
         # because 'start' doesn't support --clear option before Android N.
-        self.adb.shell("logpersist.stop --clear", ignore_status=True)
-        self.adb.shell("logpersist.start", ignore_status=True)
+        self.adb.shell("logpersist.stop --clear")
+        self.adb.shell("logpersist.start")
         if hasattr(self, 'adb_logcat_param'):
             extra_params = self.adb_logcat_param
         else:
