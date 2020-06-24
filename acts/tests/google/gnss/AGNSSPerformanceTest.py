@@ -141,13 +141,6 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
 
         passed = True
 
-        self.ttf_metric.metric_value = \
-            results.get(contest.Contest.TTFF_KEY, None)
-        self.pos_error_metric.metric_value = \
-            results.get(contest.Contest.POS_ERROR_KEY, None)
-        self.sensitivity_metric.metric_value = \
-            results.get(contest.Contest.SENSITIVITY_KEY, None)
-
         with open(self.thresholds_file, 'r') as file:
 
             thresholds = json.load(file)
@@ -174,6 +167,14 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
                                                  thresholds[key]['min'],
                                                  thresholds[key]['max']))
                     passed = False
+
+                # Save metric to Blackbox logger
+                if key == contest.Contest.TTFF_KEY:
+                    self.ttf_metric.metric_value = metric
+                elif key == contest.Contest.POS_ERROR_KEY:
+                    self.pos_error_metric.metric_value = metric
+                elif key == contest.Contest.SENSITIVITY_KEY:
+                    self.sensitivity_metric.metric_value = metric
 
         asserts.assert_true(
             passed, 'At least one of the metrics was not '
