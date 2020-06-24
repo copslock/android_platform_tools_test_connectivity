@@ -17,7 +17,7 @@ from acts.controllers.monsoon_lib.api.hvpm.monsoon import Monsoon as HvpmMonsoon
 from acts.controllers.monsoon_lib.api.lvpm_stock.monsoon import \
     Monsoon as LvpmStockMonsoon
 
-ACTS_CONTROLLER_CONFIG_NAME = 'Monsoon'
+MOBLY_CONTROLLER_CONFIG_NAME = 'Monsoon'
 ACTS_CONTROLLER_REFERENCE_NAME = 'monsoons'
 
 

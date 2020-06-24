@@ -27,7 +27,7 @@ from acts.test_utils.wifi import wifi_power_test_utils as wputils
 # On ubuntu, sudo pip3 install scapy
 import scapy.all as scapy
 
-ACTS_CONTROLLER_CONFIG_NAME = 'PacketSender'
+MOBLY_CONTROLLER_CONFIG_NAME = 'PacketSender'
 ACTS_CONTROLLER_REFERENCE_NAME = 'packet_senders'
 
 GET_FROM_LOCAL_INTERFACE = 'get_local'

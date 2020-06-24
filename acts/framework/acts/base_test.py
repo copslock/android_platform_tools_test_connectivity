@@ -314,10 +314,7 @@ class BaseTestClass(MoblyBaseTest):
             occurred in the registration process.
         """
         module_ref_name = self.get_module_reference_name(controller_module)
-
-        # Substitute Mobly controller's module config name with the ACTS one
-        module_config_name = controller_module.ACTS_CONTROLLER_CONFIG_NAME
-        controller_module.MOBLY_CONTROLLER_CONFIG_NAME = module_config_name
+        module_config_name = controller_module.MOBLY_CONTROLLER_CONFIG_NAME
 
         # Get controller objects from Mobly's register_controller
         controllers = self._controller_manager.register_controller(

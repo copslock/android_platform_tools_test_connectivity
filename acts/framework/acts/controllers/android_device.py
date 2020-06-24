@@ -43,7 +43,7 @@ from acts.event import event_bus
 from acts.libs.proc import job
 from acts.metrics.loggers.usage_metadata_logger import record_api_usage
 
-ACTS_CONTROLLER_CONFIG_NAME = "AndroidDevice"
+MOBLY_CONTROLLER_CONFIG_NAME = "AndroidDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "android_devices"
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
