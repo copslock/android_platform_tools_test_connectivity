@@ -33,6 +33,7 @@ from acts import signals
 
 from acts.controllers import pdu
 
+from acts.controllers.fuchsia_lib.backlight_lib import FuchsiaBacklightLib
 from acts.controllers.fuchsia_lib.bt.avdtp_lib import FuchsiaAvdtpLib
 from acts.controllers.fuchsia_lib.light_lib import FuchsiaLightLib
 
@@ -224,6 +225,11 @@ class FuchsiaDevice:
         # Grab commands from FuchsiaLightLib
         self.light_lib = FuchsiaLightLib(self.address, self.test_counter,
                                          self.client_id)
+
+        # Grab commands from FuchsiaBacklightLib
+        self.backlight_lib = FuchsiaBacklightLib(self.address,
+                                                 self.test_counter,
+                                                 self.client_id)
 
         # Grab commands from FuchsiaBleLib
         self.ble_lib = FuchsiaBleLib(self.address, self.test_counter,
