@@ -30,7 +30,7 @@ install_requires = [
     # b/148695846, b/148814743
     'mock==3.0.5',
     # b/157117302: python3.5 is not supported by NumPy 1.19+
-    'numpy==1.18.1',
+    'numpy<=1.18.1',
     # b/157117302: python3.5 is not supported by SciPy 1.5.0+ (Monsoon dependency)
     'scipy==1.4.1',
     'pyserial',
