@@ -4834,13 +4834,6 @@ def _wait_for_nw_data_connection(
 
 def get_cell_data_roaming_state_by_adb(ad):
     """Get Cell Data Roaming state. True for enabled, False for disabled"""
-    adb_str = {"1": True, "0": False}
-    out = ad.adb.shell("settings get global data_roaming")
-    return adb_str[out]
-
-
-def get_cell_data_roaming_state_by_adb(ad):
-    """Get Cell Data Roaming state. True for enabled, False for disabled"""
     state_mapping = {"1": True, "0": False}
     return state_mapping[ad.adb.shell("settings get global data_roaming")]
 
@@ -5886,8 +5879,8 @@ def wait_for_matching_sms(log,
                           ad_rx,
                           phonenumber_tx,
                           text,
-                          allow_multi_part_long_sms=True,
-                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE,
+                          allow_multi_part_long_sms=True):
     """Wait for matching incoming SMS.
 
     Args:
@@ -6070,6 +6063,7 @@ def sms_send_receive_verify_for_subscription(
                     ad_rx,
                     phonenumber_tx,
                     text,
+                    max_wait_time,
                     allow_multi_part_long_sms=True):
                 ad_rx.log.error("No matching received SMS of length %s.",
                                 length)
@@ -6245,6 +6239,7 @@ def mms_send_receive_verify_for_subscription(
             except Empty:
                 ad_tx.log.warning("No %s or %s event.", EventMmsSentSuccess,
                                   EventMmsSentFailure)
+                return False
 
             if not wait_for_matching_mms(log, ad_rx, phonenumber_tx,
                                          message, max_wait_time):
@@ -6253,7 +6248,7 @@ def mms_send_receive_verify_for_subscription(
             log.error("Exception error %s", e)
             raise
         finally:
-            ad_rx.droid.smsStopTrackingIncomingMmsMessage()
+            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
             for ad in (ad_tx, ad_rx):
                 if toggle_enforce:
                     ad.send_keycode("BACK")
