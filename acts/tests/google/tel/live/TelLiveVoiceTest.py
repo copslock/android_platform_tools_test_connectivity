@@ -744,7 +744,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         set_preferred_mode_for_5g(ads[0])
 
         # Attach 5g
-        if not is_current_network_5g_nsa(ads[0])
+        if not is_current_network_5g_nsa(ads[0]):
             ads[0].log.error("Phone not attached on 5G NSA before call.")
             return False
 
@@ -758,7 +758,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             return False
 
         # Attach 5g
-        if not is_current_network_5g_nsa(ads[0])
+        if not is_current_network_5g_nsa(ads[0]):
             ads[0].log.error("Phone not attached on 5G NSA after call end.")
             return False
 
