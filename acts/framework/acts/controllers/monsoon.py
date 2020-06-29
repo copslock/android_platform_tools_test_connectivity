@@ -69,4 +69,5 @@ def create(configs):
 
 def destroy(monsoons):
     for monsoon in monsoons:
-        monsoon.release_monsoon_connection()
+        if monsoon.is_allocated():
+            monsoon.release_monsoon_connection()
