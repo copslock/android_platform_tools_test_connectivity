@@ -1,5 +1,5 @@
 {
-    "_description": "This is a test configuration file for Wi-Fi Aware tests in NON-INTERACTIVE (low-power) mode.",
+    "_description": "This is a test configuration file for Wi-Fi Aware tests in INTERACTIVE (high-power) mode.",
     "testbed":
     [
         {
@@ -9,7 +9,7 @@
         }
     ],
     "logpath": "~/logs",
-    "testpaths": ["./tools/test/connectivity/acts/tests/google/wifi"],
+    "testpaths": ["./tools/test/connectivity/acts_tests/tests/google/wifi"],
     "adb_logcat_param": "-b all",
-    "aware_default_power_mode": "NON_INTERACTIVE"
+    "aware_default_power_mode": "INTERACTIVE"
 }

@@ -14,7 +14,7 @@
     ],
     "logpath": "/tmp/ACTS_logs",
     "testpaths": [
-        "<path to acts root>/tools/test/connectivity/acts/tests/google/wifi"
+        "<path to acts root>/tools/test/connectivity/acts_tests/tests/google/wifi"
     ],
     "iot_networks": [
         {
