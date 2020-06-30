@@ -59,7 +59,7 @@ class ActsTestRunnerTest(unittest.TestCase):
         """
         mock_test_config = self.base_mock_test_config.copy()
         tb_key = keys.Config.key_testbed.value
-        mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         my_config = [{
             'serial': 'xxxx',
             'magic': 'Magic1'
@@ -102,7 +102,7 @@ class ActsTestRunnerTest(unittest.TestCase):
         """
         mock_test_config = self.base_mock_test_config.copy()
         tb_key = keys.Config.key_testbed.value
-        mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         my_config = [{
             'serial': 'xxxx',
             'magic': 'Magic1'

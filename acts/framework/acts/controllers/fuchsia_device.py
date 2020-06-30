@@ -62,7 +62,7 @@ from acts.controllers.fuchsia_lib.wlan_ap_policy_lib import FuchsiaWlanApPolicyL
 from acts.controllers.fuchsia_lib.wlan_policy_lib import FuchsiaWlanPolicyLib
 from acts.libs.proc.job import Error
 
-ACTS_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
+MOBLY_CONTROLLER_CONFIG_NAME = "FuchsiaDevice"
 ACTS_CONTROLLER_REFERENCE_NAME = "fuchsia_devices"
 
 FUCHSIA_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"

@@ -34,7 +34,7 @@ from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.libs.proc import job
 from paramiko.buffered_pipe import PipeTimeout
-ACTS_CONTROLLER_CONFIG_NAME = 'IPerfClient'
+MOBLY_CONTROLLER_CONFIG_NAME = 'IPerfClient'
 ACTS_CONTROLLER_REFERENCE_NAME = 'iperf_clients'
 
 
