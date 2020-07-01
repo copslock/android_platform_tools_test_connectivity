@@ -997,20 +997,14 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
             else:
                 ad.log.info("Bluetooth is enabled")
-
-        for client in self.clients:
-            if not (pair_pri_to_sec(self.provider, client)):
-                client.log.error("Client failed to pair with provider")
-                return False
-            else:
-                client.log.info("Client paired with provider")
+        time.sleep(5)
         self.provider.log.info("Provider enabling bluetooth tethering")
         try:
             provider.droid.bluetoothPanSetBluetoothTethering(True)
         except Exception as e:
-            provider.log.error(
-                "Faile to enable provider Bluetooth tethering with %s", e)
-            return False
+            provider.log.warning(
+                "Failed to enable provider Bluetooth tethering with %s", e)
+            provider.droid.bluetoothPanSetBluetoothTethering(True)
 
         if wait_for_state(provider.droid.bluetoothPanIsTetheringOn, True):
             provider.log.info("Provider Bluetooth tethering is enabled.")
@@ -1020,6 +1014,12 @@ class TelLiveDataTest(TelephonyBaseTest):
             provider.log.error("bluetoothPanIsTetheringOn = %s",
                                provider.droid.bluetoothPanIsTetheringOn())
             return False
+        for client in self.clients:
+            if not (pair_pri_to_sec(self.provider, client)):
+                client.log.error("Client failed to pair with provider")
+                return False
+            else:
+                client.log.info("Client paired with provider")
         time.sleep(5)
         for client in clients:
             client.droid.bluetoothConnectBonded(
