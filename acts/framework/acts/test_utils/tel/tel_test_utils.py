@@ -49,6 +49,7 @@ from acts.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE_PROVISIONING
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING
+from acts.test_utils.tel.tel_defines import CAPABILITY_HIDE_ENHANCED_4G_LTE_BOOL
 from acts.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC_MODE_CHANGE
@@ -1961,6 +1962,9 @@ def get_phone_capability(ad):
             capabilities.append(CAPABILITY_VOLTE_PROVISIONING)
         if carrier_configs[sub_id][CarrierConfigs.VOLTE_OVERRIDE_WFC_BOOL]:
             capabilities.append(CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING)
+        if carrier_configs[sub_id][CarrierConfigs.HIDE_ENHANCED_4G_LTE_BOOL]:
+            capabilities.append(CAPABILITY_HIDE_ENHANCED_4G_LTE_BOOL)
+
         ad.log.info("Capabilities of sub ID %s: %s", sub_id, capabilities)
         if not getattr(ad, 'telephony', {}):
             ad.telephony["subscription"] = {}
@@ -4933,15 +4937,37 @@ def num_active_calls(log, ad):
     return len(calls) if calls else 0
 
 
+def show_enhanced_4g_lte(ad, sub_id):
+    result = True
+    capabilities = ad.telephony["subscription"][sub_id].get("capabilities", [])
+    if capabilities:
+        if "hide_enhanced_4g_lte" in capabilities:
+            result = False
+            ad.log.info('"Enhanced 4G LTE MODE" is hidden for sub ID %s.', sub_id)
+            show_enhanced_4g_lte_mode = getattr(ad, "show_enhanced_4g_lte_mode", False)
+            if show_enhanced_4g_lte_mode in ["true", "True"]:
+                current_voice_sub_id = get_outgoing_voice_sub_id(ad)
+                if sub_id != current_voice_sub_id:
+                    set_incoming_voice_sub_id(ad, sub_id)
+
+                ad.log.info('Show "Enhanced 4G LTE MODE" forcibly for sub ID %s.', sub_id)
+                ad.adb.shell("am broadcast -a com.google.android.carrier.action.LOCAL_OVERRIDE -n com.google.android.carrier/.ConfigOverridingReceiver --ez hide_enhanced_4g_lte_bool false")
+                ad.telephony["subscription"][sub_id]["capabilities"].remove("hide_enhanced_4g_lte")
+
+                if sub_id != current_voice_sub_id:
+                    set_incoming_voice_sub_id(ad, current_voice_sub_id)
+
+                result = True
+    return result
+
+
 def toggle_volte(log, ad, new_state=None):
     """Toggle enable/disable VoLTE for default voice subscription.
-
     Args:
         ad: Android device object.
         new_state: VoLTE mode state to set to.
             True for enable, False for disable.
             If None, opposite of the current state.
-
     Raises:
         TelTestUtilsError if platform does not support VoLTE.
     """
@@ -4960,6 +4986,9 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
             If None, opposite of the current state.
 
     """
+    if not show_enhanced_4g_lte(ad, sub_id):
+        return False
+
     current_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
     if new_state is None:
         new_state = not current_state

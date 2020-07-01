@@ -1067,6 +1067,13 @@ def phone_setup_csfb_for_subscription(log, ad, sub_id):
         True if setup successfully.
         False for errors.
     """
+    capabilities = ad.telephony["subscription"][sub_id].get("capabilities", [])
+    if capabilities:
+        if "hide_enhanced_4g_lte" in capabilities:
+            show_enhanced_4g_lte_mode = getattr(ad, "show_enhanced_4g_lte_mode", False)
+            if show_enhanced_4g_lte_mode in ["false", "False", False]:
+                ad.log.warning("'VoLTE' option is hidden. Test will be skipped.")
+                raise signals.TestSkip("'VoLTE' option is hidden. Test will be skipped.")
     if not phone_setup_4g_for_subscription(log, ad, sub_id):
         ad.log.error("Failed to set to 4G data.")
         return False
