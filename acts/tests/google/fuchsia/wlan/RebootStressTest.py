@@ -24,13 +24,13 @@ import uuid
 
 from acts import asserts
 from acts.controllers.ap_lib import hostapd_constants
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import is_connected
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import disconnect
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts.test_utils.fuchsia import utils
 from acts.test_utils.tel.tel_test_utils import setup_droid_properties
 from acts.utils import rand_ascii_str
+
 
 class RebootStressTest(BaseTestClass):
     # Default number of test iterations here.
@@ -48,12 +48,11 @@ class RebootStressTest(BaseTestClass):
             self.user_params.get("reboot_stress_test_iterations",
                                  self.num_of_iterations))
 
-        setup_ap_and_associate(
-            access_point=self.ap,
-            client=self.wlan_device,
-            profile_name='whirlwind',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap_and_associate(access_point=self.ap,
+                               client=self.wlan_device,
+                               profile_name='whirlwind',
+                               channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                               ssid=self.ssid)
 
     def teardown_test(self):
         disconnect(self.wlan_device)
@@ -66,6 +65,6 @@ class RebootStressTest(BaseTestClass):
             self.fd.reboot()
 
             # Did we connect back to WiFi?
-            asserts.assert_true(
-                is_connected(self.wlan_device), 'Failed to connect.')
+            asserts.assert_true(self.wlan_device.is_connected(),
+                                'Failed to connect.')
         return True
