@@ -93,7 +93,7 @@ class FuchsiaWlanPolicyLib(BaseLib):
         self.test_counter += 1
         test_args = {
             "target_ssid": target_ssid,
-            "security_type": security_type.lower(),
+            "security_type": str(security_type).lower(),
             "target_pwd": target_pwd
         }
 
@@ -113,7 +113,7 @@ class FuchsiaWlanPolicyLib(BaseLib):
         self.test_counter += 1
         test_args = {
             "target_ssid": target_ssid,
-            "security_type": security_type.lower(),
+            "security_type": str(security_type).lower(),
             "target_pwd": target_pwd
         }
 
@@ -147,7 +147,7 @@ class FuchsiaWlanPolicyLib(BaseLib):
         self.test_counter += 1
         test_args = {
             "target_ssid": target_ssid,
-            "security_type": security_type.lower()
+            "security_type": str(security_type).lower()
         }
 
         return self.send_command(test_id, test_cmd, test_args)
