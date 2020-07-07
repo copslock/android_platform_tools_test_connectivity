@@ -40,6 +40,9 @@ from acts.test_utils.gnss.gnss_test_utils import set_attenuator_gnss_signal
 from acts.test_utils.gnss.gnss_test_utils import connect_to_wifi_network
 from acts.test_utils.gnss.gnss_test_utils import gnss_tracking_via_gtw_gpstool
 from acts.test_utils.gnss.gnss_test_utils import parse_gtw_gpstool_log
+from acts.test_utils.tel.tel_test_utils import start_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
+from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
 
 
 class FlpTtffTest(BaseTestClass):
@@ -50,7 +53,8 @@ class FlpTtffTest(BaseTestClass):
         req_params = ["pixel_lab_network", "standalone_cs_criteria",
                       "qdsp6m_path", "flp_ttff_max_threshold",
                       "pixel_lab_location", "default_gnss_signal_attenuation",
-                      "weak_gnss_signal_attenuation"]
+                      "weak_gnss_signal_attenuation", "ttff_test_cycle",
+                      "collect_logs"]
         self.unpack_userparams(req_param_names=req_params)
         self.ssid_map = {}
         for network in self.pixel_lab_network:
@@ -59,21 +63,24 @@ class FlpTtffTest(BaseTestClass):
         if int(self.ad.adb.shell("settings get global airplane_mode_on")) != 0:
             self.ad.log.info("Force airplane mode off")
             force_airplane_mode(self.ad, False)
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.default_gnss_signal_attenuation)
         _init_device(self.ad)
 
     def setup_test(self):
         get_baseband_and_gms_version(self.ad)
-        clear_logd_gnss_qxdm_log(self.ad)
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.default_gnss_signal_attenuation)
+        if self.collect_logs:
+            clear_logd_gnss_qxdm_log(self.ad)
+            set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                       self.default_gnss_signal_attenuation)
         if not verify_internet_connection(self.ad.log, self.ad, retries=3,
                                           expected_state=True):
             raise signals.TestFailure("Fail to connect to LTE network.")
 
     def teardown_test(self):
-        stop_qxdm_logger(self.ad)
+        if self.collect_logs:
+            stop_qxdm_logger(self.ad)
+            stop_adb_tcpdump(self.ad)
+            set_attenuator_gnss_signal(self.ad, self.attenuators,
+                                       self.default_gnss_signal_attenuation)
         if int(self.ad.adb.shell("settings get global mobile_data")) != 1:
             set_mobile_data(self.ad, True)
         if int(self.ad.adb.shell(
@@ -81,16 +88,18 @@ class FlpTtffTest(BaseTestClass):
             set_wifi_and_bt_scanning(self.ad, True)
         if self.ad.droid.wifiCheckState():
             wifi_toggle_state(self.ad, False)
-        set_attenuator_gnss_signal(self.ad, self.attenuators,
-                                   self.default_gnss_signal_attenuation)
 
     def on_pass(self, test_name, begin_time):
-        self.ad.take_bug_report(test_name, begin_time)
-        get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+        if self.collect_logs:
+            self.ad.take_bug_report(test_name, begin_time)
+            get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+            get_tcpdump_log(self.ad, test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
-        self.ad.take_bug_report(test_name, begin_time)
-        get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+        if self.collect_logs:
+            self.ad.take_bug_report(test_name, begin_time)
+            get_gnss_qxdm_log(self.ad, self.qdsp6m_path)
+            get_tcpdump_log(self.ad, test_name, begin_time)
 
     """ Helper Functions """
 
@@ -99,15 +108,22 @@ class FlpTtffTest(BaseTestClass):
         ttff = {"hs": "Hot Start", "cs": "Cold Start"}
         for mode in ttff.keys():
             begin_time = get_current_epoch_time()
-            process_gnss_by_gtw_gpstool(self.ad, self.standalone_cs_criteria,
-                                        type="flp")
-            start_ttff_by_gtw_gpstool(self.ad, ttff_mode=mode, iteration=10)
-            ttff_data = process_ttff_by_gtw_gpstool(self.ad, begin_time,
-                                                    location, type="flp")
+            process_gnss_by_gtw_gpstool(
+                self.ad, self.standalone_cs_criteria, type="flp")
+            start_ttff_by_gtw_gpstool(
+                self.ad, ttff_mode=mode, iteration=self.ttff_test_cycle)
+            ttff_data = process_ttff_by_gtw_gpstool(
+                self.ad, begin_time, location, type="flp")
             result = check_ttff_data(self.ad, ttff_data, ttff[mode], criteria)
             flp_results.append(result)
-        asserts.assert_true(all(flp_results),
-                            "FLP TTFF fails to reach designated criteria")
+        asserts.assert_true(
+            all(flp_results), "FLP TTFF fails to reach designated criteria")
+
+    def start_qxdm_and_tcpdump_log(self):
+        """Start QXDM and adb tcpdump if collect_logs is True."""
+        if self.collect_logs:
+            start_qxdm_logger(self.ad, get_current_epoch_time())
+            start_adb_tcpdump(self.ad)
 
     """ Test Cases """
 
@@ -122,7 +138,7 @@ class FlpTtffTest(BaseTestClass):
         Expected Results:
             DUT could finish 60 minutes test and output track data.
         """
-        start_qxdm_logger(self.ad, get_current_epoch_time())
+        self.start_qxdm_and_tcpdump_log()
         gnss_tracking_via_gtw_gpstool(self.ad, self.standalone_cs_criteria,
                                       type="flp", testtime=60)
         parse_gtw_gpstool_log(self.ad, self.pixel_lab_location, type="flp")
@@ -142,7 +158,7 @@ class FlpTtffTest(BaseTestClass):
             Both FLP TTFF Hot Start and Cold Start results should be within
             flp_ttff_max_threshold.
         """
-        start_qxdm_logger(self.ad, get_current_epoch_time())
+        self.start_qxdm_and_tcpdump_log()
         set_wifi_and_bt_scanning(self.ad, True)
         wifi_toggle_state(self.ad, True)
         connect_to_wifi_network(
@@ -165,7 +181,7 @@ class FlpTtffTest(BaseTestClass):
             Both FLP TTFF Hot Start and Cold Start results should be within
             flp_ttff_max_threshold.
         """
-        start_qxdm_logger(self.ad, get_current_epoch_time())
+        self.start_qxdm_and_tcpdump_log()
         set_wifi_and_bt_scanning(self.ad, True)
         self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
                                 self.pixel_lab_location)
@@ -184,7 +200,7 @@ class FlpTtffTest(BaseTestClass):
             Both FLP TTFF Hot Start and Cold Start results should be within
             flp_ttff_max_threshold.
         """
-        start_qxdm_logger(self.ad, get_current_epoch_time())
+        self.start_qxdm_and_tcpdump_log()
         set_wifi_and_bt_scanning(self.ad, False)
         self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
                                 self.pixel_lab_location)
@@ -207,7 +223,7 @@ class FlpTtffTest(BaseTestClass):
         """
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.weak_gnss_signal_attenuation)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
+        self.start_qxdm_and_tcpdump_log()
         set_wifi_and_bt_scanning(self.ad, True)
         wifi_toggle_state(self.ad, True)
         connect_to_wifi_network(
@@ -233,7 +249,7 @@ class FlpTtffTest(BaseTestClass):
         """
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.weak_gnss_signal_attenuation)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
+        self.start_qxdm_and_tcpdump_log()
         set_wifi_and_bt_scanning(self.ad, True)
         self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
                                 self.pixel_lab_location)
@@ -255,7 +271,7 @@ class FlpTtffTest(BaseTestClass):
         """
         set_attenuator_gnss_signal(self.ad, self.attenuators,
                                    self.weak_gnss_signal_attenuation)
-        start_qxdm_logger(self.ad, get_current_epoch_time())
+        self.start_qxdm_and_tcpdump_log()
         set_wifi_and_bt_scanning(self.ad, False)
         self.flp_ttff_hs_and_cs(self.flp_ttff_max_threshold,
                                 self.pixel_lab_location)
