@@ -1355,3 +1355,31 @@ def verify_modemconfig(ad, nvitem_dict, modemparfile):
             ad.log.error("NV Value is wrong {!r} in {!r}".format(value, result))
             raise ValueError(
                 "could not find {!r} in {!r}".format(value, result))
+
+
+def check_ttff_pe(ad, ttff_data, ttff_mode, pecriteria):
+    """Verify all TTFF results from ttff_data.
+
+    Args:
+        ad: An AndroidDevice object.
+        ttff_data: TTFF data of secs, position error and signal strength.
+        ttff_mode: TTFF Test mode for current test item.
+        criteria: Criteria for current test item.
+
+    """
+    ad.log.info("%d iterations of TTFF %s tests finished.",
+                (len(ttff_data.keys()), ttff_mode))
+    ad.log.info("%s PASS criteria is %f meters", (ttff_mode, pecriteria))
+    ad.log.debug("%s TTFF data: %s", (ttff_mode, ttff_data))
+
+    if len(ttff_data.keys()) == 0:
+        ad.log.error("GTW_GPSTool didn't process TTFF properly.")
+        raise signals.TestFailure("GTW_GPSTool didn't process TTFF properly.")
+
+    elif any(float(ttff_data[key].ttff_pe) >= pecriteria for key in
+             ttff_data.keys()):
+        ad.log.error("One or more TTFF %s are over test criteria %f meters",
+                     (ttff_mode, pecriteria))
+        raise signals.TestFailure("GTW_GPSTool didn't process TTFF properly.")
+    ad.log.info("All TTFF %s are within test criteria %f meters.",
+                (ttff_mode, pecriteria))
