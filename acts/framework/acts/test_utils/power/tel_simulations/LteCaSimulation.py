@@ -61,7 +61,8 @@ class LteCaSimulation(LteSimulation.LteSimulation):
         39: 38650,
         40: 39650,
         41: 41590,
-        42: 45590
+        42: 45590,
+        66: 66436
     }
 
     # Simulation config keywords contained in the test name

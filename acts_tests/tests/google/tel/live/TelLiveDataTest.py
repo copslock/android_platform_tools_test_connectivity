@@ -129,6 +129,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_csfb
 from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import phone_setup_4g
+from acts.test_utils.tel.tel_voice_utils import phone_setup_5g
 from acts.utils import disable_doze
 from acts.utils import enable_doze
 from acts.utils import rand_ascii_str
@@ -996,20 +997,14 @@ class TelLiveDataTest(TelephonyBaseTest):
                 return False
             else:
                 ad.log.info("Bluetooth is enabled")
-
-        for client in self.clients:
-            if not (pair_pri_to_sec(self.provider, client)):
-                client.log.error("Client failed to pair with provider")
-                return False
-            else:
-                client.log.info("Client paired with provider")
+        time.sleep(5)
         self.provider.log.info("Provider enabling bluetooth tethering")
         try:
             provider.droid.bluetoothPanSetBluetoothTethering(True)
         except Exception as e:
-            provider.log.error(
-                "Faile to enable provider Bluetooth tethering with %s", e)
-            return False
+            provider.log.warning(
+                "Failed to enable provider Bluetooth tethering with %s", e)
+            provider.droid.bluetoothPanSetBluetoothTethering(True)
 
         if wait_for_state(provider.droid.bluetoothPanIsTetheringOn, True):
             provider.log.info("Provider Bluetooth tethering is enabled.")
@@ -1019,6 +1014,12 @@ class TelLiveDataTest(TelephonyBaseTest):
             provider.log.error("bluetoothPanIsTetheringOn = %s",
                                provider.droid.bluetoothPanIsTetheringOn())
             return False
+        for client in self.clients:
+            if not (pair_pri_to_sec(self.provider, client)):
+                client.log.error("Client failed to pair with provider")
+                return False
+            else:
+                client.log.info("Client paired with provider")
         time.sleep(5)
         for client in clients:
             client.droid.bluetoothConnectBonded(
@@ -3488,6 +3489,18 @@ class TelLiveDataTest(TelephonyBaseTest):
         """
         return self._test_data_stall_detection_recovery(nw_type="cellular",
                                                 validation_type="recovery")
+
+    @test_tracker_info(uuid="cd1429e8-94d7-44de-ae48-68cf42f3246b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_browsing_5g(self):
+        ad = self.android_devices[0]
+        ad.log.info("Connect to NR and verify internet connection.")
+        if not phone_setup_5g(self.log, ad):
+            return False
+        if not verify_internet_connection(self.log, ad):
+            return False
+
+        return browsing_test(self.log, self.android_devices[0])
 
     @test_tracker_info(uuid="d705d653-c810-42eb-bd07-3313f99be2fa")
     @TelephonyBaseTest.tel_test_wrap

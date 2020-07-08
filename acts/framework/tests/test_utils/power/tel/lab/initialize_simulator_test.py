@@ -99,7 +99,8 @@ class InitializeSimulatorTest(unittest.TestCase):
         """
         self.test.unpack_userparams(md8475_version=None,
                                md8475a_ip_address=None,
-                               cmw500_ip='12345')
+                               cmw500_ip='12345',
+                               cmw500_port=None)
         with self.assertRaises(RuntimeError), mock.patch.object(
                 cmw.CMW500CellularSimulator, '__init__', return_value=None):
             self.test.initialize_simulator()

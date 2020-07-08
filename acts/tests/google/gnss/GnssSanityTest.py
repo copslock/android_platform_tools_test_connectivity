@@ -442,7 +442,7 @@ class GnssSanityTest(BaseTestClass):
             test_result = check_network_location(
                 self.ad, retries=3, location_type="cell")
             test_result_all.append(test_result)
-            self.ad.log.info("Iteraion %d => %s" % (i, test_result))
+            self.ad.log.info("Iteration %d => %s" % (i, test_result))
         set_wifi_and_bt_scanning(self.ad, True)
         asserts.assert_true(all(test_result_all),
                             "Fail to get networkLocationType=cell")
@@ -467,7 +467,7 @@ class GnssSanityTest(BaseTestClass):
             test_result = check_network_location(
                 self.ad, retries=3, location_type="wifi")
             test_result_all.append(test_result)
-            self.ad.log.info("Iteraion %d => %s" % (i, test_result))
+            self.ad.log.info("Iteration %d => %s" % (i, test_result))
         asserts.assert_true(all(test_result_all),
                             "Fail to get networkLocationType=wifi")
 
@@ -493,7 +493,7 @@ class GnssSanityTest(BaseTestClass):
             test_result = check_location_api(self.ad, retries=3)
             self.ad.send_keycode("HOME")
             test_result_all.append(test_result)
-            self.ad.log.info("Iteraion %d => %s" % (i, test_result))
+            self.ad.log.info("Iteration %d => %s" % (i, test_result))
         asserts.assert_true(all(test_result_all), "Fail to get location update")
 
     @test_tracker_info(uuid="513361d2-7d72-41b0-a944-fb259c606b81")
@@ -522,7 +522,7 @@ class GnssSanityTest(BaseTestClass):
             test_result = check_location_api(self.ad, retries=3)
             self.ad.send_keycode("HOME")
             test_result_all.append(test_result)
-            self.ad.log.info("Iteraion %d => %s" % (i, test_result))
+            self.ad.log.info("Iteration %d => %s" % (i, test_result))
         check_location_service(self.ad)
         asserts.assert_true(all(test_result_all), "Fail to get location update")
 
@@ -551,7 +551,7 @@ class GnssSanityTest(BaseTestClass):
             test_result = check_location_api(self.ad, retries=3)
             self.ad.send_keycode("HOME")
             test_result_all.append(test_result)
-            self.ad.log.info("Iteraion %d => %s" % (i, test_result))
+            self.ad.log.info("Iteration %d => %s" % (i, test_result))
         set_battery_saver_mode(self.ad, False)
         asserts.assert_true(all(test_result_all), "Fail to get location update")
 
@@ -1110,7 +1110,7 @@ class GnssSanityTest(BaseTestClass):
             start_gnss_by_gtw_gpstool(self.ad, False)
             wifi_xtra_result = check_xtra_download(self.ad, begin_time)
             wifi_xtra_result_all.append(wifi_xtra_result)
-            self.ad.log.info("Iteraion %d => %s" % (i, wifi_xtra_result))
+            self.ad.log.info("Iteration %d => %s" % (i, wifi_xtra_result))
         asserts.assert_true(all(wifi_xtra_result_all),
                             "Fail to Download XTRA file")
 
@@ -1162,10 +1162,10 @@ class GnssSanityTest(BaseTestClass):
             test_result = process_gnss_by_gtw_gpstool(self.ad,
                                                       self.supl_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
-            self.ad.log.info("Iteraion %d => %s" % (test_loop, test_result))
+            self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
             overall_test_result.append(test_result)
         asserts.assert_true(all(overall_test_result),
-                            "Fail to trigger SUPL after system server restart.")
+                            "SUPL fail after system server restart.")
 
     @test_tracker_info(uuid="a9a64900-9016-46d0-ad7e-cab30e8152cd")
     def test_xtra_system_server_restart(self):
@@ -1194,7 +1194,37 @@ class GnssSanityTest(BaseTestClass):
             test_result = process_gnss_by_gtw_gpstool(self.ad,
                                                       self.xtra_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
-            self.ad.log.info("Iteraion %d => %s" % (test_loop, test_result))
+            self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
             overall_test_result.append(test_result)
         asserts.assert_true(all(overall_test_result),
-                            "Fail to trigger XTRA after system server restart.")
+                            "XTRA fail after system server restart.")
+
+    @test_tracker_info(uuid="ab5ef9f7-0b28-48ed-a693-7f1d902ca3e1")
+    def test_gnss_init_after_reboot(self):
+        """Verify SUPL and XTRA functionality after reboot.
+
+        Steps:
+            1. Get location fixed within supl_cs_criteria.
+            2. Reboot DUT.
+            3. Get location fixed within supl_hs_criteria.
+            4. Repeat Step 2. to Step 3. for 10 times.
+
+        Expected Results:
+            Location fixed within supl_hs_criteria.
+        """
+        overall_test_result = []
+        enable_supl_mode(self.ad)
+        reboot(self.ad)
+        process_gnss_by_gtw_gpstool(self.ad, self.supl_cs_criteria)
+        start_gnss_by_gtw_gpstool(self.ad, False)
+        for test_loop in range(1, 11):
+            reboot(self.ad)
+            test_result = process_gnss_by_gtw_gpstool(
+                self.ad, self.supl_hs_criteria, clear_data=False)
+            start_gnss_by_gtw_gpstool(self.ad, False)
+            self.ad.log.info("Iteration %d => %s" % (test_loop, test_result))
+            overall_test_result.append(test_result)
+        pass_rate = overall_test_result.count(True)/len(overall_test_result)
+        self.ad.log.info("TestResult Pass_rate %s" % format(pass_rate, ".0%"))
+        asserts.assert_true(all(overall_test_result),
+                            "GNSS init fail after reboot.")

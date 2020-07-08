@@ -76,9 +76,17 @@ MAX_WAIT_TIME_AIRPLANEMODE_EVENT = 90
 # get "onSmsSentSuccess" event
 MAX_WAIT_TIME_SMS_SENT_SUCCESS = 60
 
+# Max time to wait after device sent an SMS and before
+# get "onSmsSentSuccess" event in case of collision.
+MAX_WAIT_TIME_SMS_SENT_SUCCESS_IN_COLLISION = 60
+
 # Max time to wait after MT SMS was sent and before device
 # actually receive this MT SMS.
 MAX_WAIT_TIME_SMS_RECEIVE = 120
+
+# Max time to wait after MT SMS was sent and before device
+# actually receive this MT SMS in case of collision.
+MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION = 1200
 
 # Max time to wait for IMS registration
 MAX_WAIT_TIME_IMS_REGISTRATION = 120
@@ -316,6 +324,7 @@ RAT_FAMILY_WCDMA = 'wcdma'
 RAT_FAMILY_UMTS = RAT_FAMILY_WCDMA
 RAT_FAMILY_WLAN = 'wlan'
 RAT_FAMILY_LTE = 'lte'
+RAT_FAMILY_NR = 'nr'
 RAT_FAMILY_TDSCDMA = 'tdscdma'
 RAT_FAMILY_UNKNOWN = 'unknown'
 
@@ -453,11 +462,14 @@ CALL_PRESENTATION_UNKNOWN = "UNKNOWN"
 GEN_2G = "2G"
 GEN_3G = "3G"
 GEN_4G = "4G"
+GEN_5G = "5G"
 GEN_UNKNOWN = "UNKNOWN"
 
 # Constant for Network RAT
 RAT_IWLAN = "IWLAN"
+RAT_NR = "NR"
 RAT_LTE = "LTE"
+RAT_5G = "5G"
 RAT_4G = "4G"
 RAT_3G = "3G"
 RAT_2G = "2G"

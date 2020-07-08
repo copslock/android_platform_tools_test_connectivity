@@ -53,6 +53,11 @@ class WifiPerformancePreflightTest(base_test.BaseTestClass):
                         if "Data.msc" in file][0]
             wputils.push_firmware(self.dut, wlanmdsp, data_msc)
 
+        for ad in self.android_devices:
+            ad.droid.wifiEnableVerboseLogging(1)
+            ad.adb.shell("wpa_cli -i wlan0 -p -g@android:wpa_wlan0 IFNAME="
+                         "wlan0 log_level EXCESSIVE")
+
     def test_wifi_sw_signature(self):
         sw_signature = wputils.get_sw_signature(self.dut)
         self.testcase_metric_logger.add_metric('bdf_signature',

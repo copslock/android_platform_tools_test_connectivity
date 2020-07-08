@@ -34,7 +34,7 @@ from acts.event.event import TestClassBeginEvent
 from acts.event.event import TestClassEndEvent
 from acts.libs.proc import job
 
-ACTS_CONTROLLER_CONFIG_NAME = 'IPerfServer'
+MOBLY_CONTROLLER_CONFIG_NAME = 'IPerfServer'
 ACTS_CONTROLLER_REFERENCE_NAME = 'iperf_servers'
 KILOBITS = 1024
 MEGABITS = KILOBITS * 1024

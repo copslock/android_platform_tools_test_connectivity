@@ -22,6 +22,7 @@ from acts import base_test
 from acts.controllers import iperf_server as ipf
 from acts.controllers import iperf_client as ipc
 from acts.metrics.loggers.blackbox import BlackboxMappedMetricLogger
+from acts.test_utils.wifi import ota_sniffer
 from acts.test_utils.wifi import wifi_test_utils as wutils
 from acts.test_utils.wifi import wifi_performance_test_utils as wputils
 from WifiRvrTest import WifiRvrTest
@@ -48,8 +49,8 @@ class WifiSoftApRvrTest(WifiRvrTest):
         common to all tests in this class.
         """
         self.dut = self.android_devices[-1]
-        req_params = ['sap_test_params', 'testbed_params', 'AndroidDevice']
-        opt_params = ['main_network', 'golden_files_list']
+        req_params = ['sap_test_params', 'testbed_params']
+        opt_params = ['golden_files_list', 'OTASniffer']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.sap_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
@@ -65,26 +66,22 @@ class WifiSoftApRvrTest(WifiRvrTest):
             'port':
             '5201'
         }])[0]
+        if hasattr(self,
+                   'OTASniffer') and self.testbed_params['sniffer_enable']:
+            self.sniffer = ota_sniffer.create(self.OTASniffer)[0]
 
         self.log_path = os.path.join(logging.log_path, 'results')
         os.makedirs(self.log_path, exist_ok=True)
         if not hasattr(self, 'golden_files_list'):
-            self.golden_files_list = [
-                os.path.join(self.testbed_params['golden_results_path'], file)
-                for file in os.listdir(
-                    self.testbed_params['golden_results_path'])
-            ]
-        if hasattr(self, 'bdf'):
-            self.log.info('Pushing WiFi BDF to DUT.')
-            wputils.push_bdf(self.dut, self.bdf)
-        if hasattr(self, 'firmware'):
-            self.log.info('Pushing WiFi firmware to DUT.')
-            wlanmdsp = [
-                file for file in self.firmware if 'wlanmdsp.mbn' in file
-            ][0]
-            data_msc = [file for file in self.firmware
-                        if 'Data.msc' in file][0]
-            wputils.push_firmware(self.dut, wlanmdsp, data_msc)
+            if 'golden_results_path' in self.testbed_params:
+                self.golden_files_list = [
+                    os.path.join(self.testbed_params['golden_results_path'],
+                                 file) for file in
+                    os.listdir(self.testbed_params['golden_results_path'])
+                ]
+            else:
+                self.log.warning('No golden files found.')
+                self.golden_files_list = []
         self.testclass_results = []
 
         # Turn WiFi ON
@@ -99,6 +96,7 @@ class WifiSoftApRvrTest(WifiRvrTest):
         self.process_testclass_results()
 
     def teardown_test(self):
+        self.iperf_server.stop()
         wutils.stop_wifi_tethering(self.android_devices[0])
 
     def get_sap_connection_info(self):
@@ -124,6 +122,7 @@ class WifiSoftApRvrTest(WifiRvrTest):
                 asserts.skip('DUT health check failed. Skipping test.')
         # Reset WiFi on all devices
         for dev in self.android_devices:
+            self.dut.go_to_sleep()
             wutils.reset_wifi(dev)
             wutils.set_wifi_country_code(dev, wutils.WifiEnums.CountryCode.US)
 
@@ -135,14 +134,15 @@ class WifiSoftApRvrTest(WifiRvrTest):
                                     sap_config[wutils.WifiEnums.PWD_KEY],
                                     testcase_params['sap_band_enum'])
         # Set attenuator to 0 dB
-        [self.attenuators[i].set_atten(0) for i in range(self.num_atten)]
+        for attenuator in self.attenuators:
+            attenuator.set_atten(0, strict=False)
         # Connect DUT to Network
-        network = {
+        testcase_params['test_network'] = {
             'SSID': sap_config[wutils.WifiEnums.SSID_KEY],
             'password': sap_config[wutils.WifiEnums.PWD_KEY]
         }
         wutils.wifi_connect(self.android_devices[1],
-                            network,
+                            testcase_params['test_network'],
                             num_of_tries=5,
                             check_connectivity=False)
         # Compile meta data
@@ -150,6 +150,8 @@ class WifiSoftApRvrTest(WifiRvrTest):
         testcase_params['connection_info'] = self.get_sap_connection_info()
         testcase_params['channel'] = testcase_params['connection_info'][
             'channel']
+        testcase_params['test_network']['channel'] = testcase_params[
+            'connection_info']['channel']
         if testcase_params['channel'] < 13:
             testcase_params['mode'] = 'VHT20'
         else:

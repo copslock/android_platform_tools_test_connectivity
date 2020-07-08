@@ -63,6 +63,7 @@ from acts.test_utils.tel.tel_voice_utils import phone_setup_voice_general
 from acts.test_utils.tel.tel_voice_utils import phone_setup_volte
 from acts.test_utils.tel.tel_voice_utils import swap_calls
 from acts.test_utils.tel.tel_voice_utils import three_phone_call_forwarding_short_seq
+from acts.test_utils.tel.tel_voice_utils import three_phone_call_waiting_short_seq
 
 
 class TelLiveVoiceConfTest(TelephonyBaseTest):
@@ -10845,5 +10846,227 @@ class TelLiveVoiceConfTest(TelephonyBaseTest):
             ads[1],
             ads[2],
             call_forwarding_type="not_reachable")
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="e9a6027b-7dd1-4dca-a700-e4d42c9c947d")
+    def test_call_waiting_scenario_1(self):
+        """ Call waiting scenario 1: 1st call ended first by caller1 during 2nd
+        call incoming. 2nd call ended by caller2.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=True,
+            scenario=1)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="3fe02cb7-68d7-4762-882a-02bff8ce32f9")
+    def test_call_waiting_scenario_2(self):
+        """ Call waiting scenario 2: 1st call ended first by caller1 during 2nd
+        call incoming. 2nd call ended by callee.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=True,
+            scenario=2)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="bf5eb9ad-1fa2-468d-99dc-3cbcee8c89f8")
+    def test_call_waiting_scenario_3(self):
+        """ Call waiting scenario 3: 1st call ended first by callee during 2nd
+        call incoming. 2nd call ended by caller2.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=True,
+            scenario=3)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f2e4b6a9-6a6f-466c-884c-c0ef79d6ff01")
+    def test_call_waiting_scenario_4(self):
+        """Call waiting scenario 4: 1st call ended first by callee during 2nd
+        call incoming. 2nd call ended by callee.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=True,
+            scenario=4)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f2d36f45-63f6-4e01-9844-6fa53c26def7")
+    def test_call_waiting_scenario_5(self):
+        """ Call waiting scenario 5: 1st call ended by caller1. 2nd call ended
+        by caller2.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=True,
+            scenario=5)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="7eb2a89d-30ad-4a34-8e63-87d0181b91aa")
+    def test_call_waiting_scenario_6(self):
+        """Call waiting scenario 6: 1st call ended by caller1. 2nd call ended by
+        callee.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=True,
+            scenario=6)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="c63882e5-5b72-4ca6-8e36-260c50f42028")
+    def test_call_waiting_scenario_7(self):
+        """ Call waiting scenario 7: 1st call ended by callee. 2nd call ended by
+        caller2.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=True,
+            scenario=7)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="f9be652f-a307-4fa5-9b30-ea78404110bd")
+    def test_call_waiting_scenario_8(self):
+        """Call waiting scenario 8: 1st call ended by callee. 2nd call ended by
+        callee.
+        """
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=True,
+            scenario=8)
+
+    @TelephonyBaseTest.tel_test_wrap
+    @test_tracker_info(uuid="b2e816b5-8e8f-4863-981c-47847d9527e0")
+    def test_call_waiting_deactivated(self):
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_voice_general, (self.log, ads[0])),
+                 (phone_setup_voice_general, (self.log, ads[1])),
+                 (phone_setup_voice_general, (self.log, ads[2]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+
+        return three_phone_call_waiting_short_seq(
+            self.log,
+            ads[0],
+            None,
+            None,
+            ads[1],
+            ads[2],
+            call_waiting=False)
 
     """ Tests End """

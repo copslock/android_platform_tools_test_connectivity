@@ -930,9 +930,9 @@ class LteSimulation(BaseSimulation):
         if bts_config.mimo_mode == MimoMode.MIMO_1x1:
             streams = 1
         elif bts_config.mimo_mode == MimoMode.MIMO_2x2:
-            streams = 1
+            streams = 2
         elif bts_config.mimo_mode == MimoMode.MIMO_4x4:
-            streams = 1
+            streams = 4
         else:
             raise ValueError('Unable to calculate maximum downlink throughput '
                              'because the MIMO mode has not been set.')

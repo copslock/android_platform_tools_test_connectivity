@@ -540,7 +540,14 @@ def browsing_test(log, ad, wifi_ssid=None, pass_threshold_in_mb = 1.0):
         "http://www.accuweather.com",
         "https://www.flickr.com",
         "http://world.taobao.com",
-        "http://www.theguardian.com"]
+        "http://www.theguardian.com",
+        "http://www.abc.net.au",
+        "http://www.gumtree.com.au",
+        "http://www.commbank.com.au",
+        "http://www.news.com.au",
+        "http://rakuten.co.jp",
+        "http://livedoor.jp",
+        "http://yahoo.co.jp"]
 
     wifi_connected = False
     if wifi_ssid and check_is_wifi_connected(ad.log, ad, wifi_ssid):

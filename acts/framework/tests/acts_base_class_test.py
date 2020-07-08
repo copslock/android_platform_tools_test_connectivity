@@ -1007,7 +1007,7 @@ class ActsBaseClassTest(unittest.TestCase):
         registered twice.
         """
         mock_test_config = self.test_run_config.copy()
-        mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_test_config.controller_configs[mock_ctrlr_config_name] = [
             'magic1', 'magic2'
         ]
@@ -1029,7 +1029,7 @@ class ActsBaseClassTest(unittest.TestCase):
         is registered twice.
         """
         mock_test_config = self.test_run_config.copy()
-        mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_test_config.controller_configs[mock_ctrlr_config_name] = [
             'magic1', 'magic2'
         ]
@@ -1044,7 +1044,7 @@ class ActsBaseClassTest(unittest.TestCase):
         this is for a builtin controller module.
         """
         mock_test_config = self.test_run_config.copy()
-        mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_ref_name = 'haha'
         setattr(mock_controller, 'ACTS_CONTROLLER_REFERENCE_NAME',
                 mock_ref_name)
@@ -1070,7 +1070,7 @@ class ActsBaseClassTest(unittest.TestCase):
 
     def test_register_controller_no_get_info(self):
         mock_test_config = self.test_run_config.copy()
-        mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_ref_name = 'haha'
         get_info = getattr(mock_controller, 'get_info')
         delattr(mock_controller, 'get_info')
@@ -1086,7 +1086,7 @@ class ActsBaseClassTest(unittest.TestCase):
 
     def test_register_controller_return_value(self):
         mock_test_config = self.test_run_config.copy()
-        mock_ctrlr_config_name = mock_controller.ACTS_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_test_config.controller_configs[mock_ctrlr_config_name] = [
             'magic1', 'magic2'
         ]

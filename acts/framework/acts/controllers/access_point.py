@@ -34,7 +34,7 @@ from acts.controllers.utils_lib.ssh import connection
 from acts.controllers.utils_lib.ssh import settings
 from acts.libs.proc import job
 
-ACTS_CONTROLLER_CONFIG_NAME = 'AccessPoint'
+MOBLY_CONTROLLER_CONFIG_NAME = 'AccessPoint'
 ACTS_CONTROLLER_REFERENCE_NAME = 'access_points'
 _BRCTL = 'brctl'
 

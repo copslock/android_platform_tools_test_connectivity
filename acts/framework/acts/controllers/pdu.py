@@ -19,7 +19,7 @@ import logging
 
 from acts import tracelogger
 
-ACTS_CONTROLLER_CONFIG_NAME = 'PduDevice'
+MOBLY_CONTROLLER_CONFIG_NAME = 'PduDevice'
 ACTS_CONTROLLER_REFERENCE_NAME = 'pdu_devices'
 
 

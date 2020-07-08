@@ -20,6 +20,7 @@ import json
 import logging
 import numpy
 import os
+import time
 from acts import asserts
 from acts import base_test
 from acts import context
@@ -158,18 +159,16 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         std_deviation_check = std_dev_percent < self.testclass_params[
             'std_deviation_threshold']
 
-        if min_throughput_check and std_deviation_check:
-            asserts.explicit_pass(
-                'Test Passed. Atten: {0:.2f}dB, RSSI: {1:.2f}dB. '
-                'Throughput (Mean: {2:.2f}, Std. Dev:{3:.2f}%, Min: {4:.2f} Mbps).'
-                .format(test_result_dict['attenuation'],
-                        test_result_dict['rssi'], avg_throughput,
-                        std_dev_percent, min_throughput))
-        asserts.fail(
-            'Test Failed. Atten: {0:.2f}dB, RSSI: {1:.2f}dB. '
+        test_message = (
+            'Atten: {0:.2f}dB, RSSI: {1:.2f}dB. '
             'Throughput (Mean: {2:.2f}, Std. Dev:{3:.2f}%, Min: {4:.2f} Mbps).'
-            .format(test_result_dict['attenuation'], test_result_dict['rssi'],
-                    avg_throughput, std_dev_percent, min_throughput))
+            'LLStats : {5}'.format(test_result_dict['attenuation'],
+                                   test_result_dict['rssi'], avg_throughput,
+                                   std_dev_percent, min_throughput,
+                                   test_result_dict['llstats']))
+        if min_throughput_check and std_deviation_check:
+            asserts.explicit_pass('Test Passed.' + test_message)
+        asserts.fail('Test Failed. ' + test_message)
 
     def post_process_results(self, test_result):
         """Extracts results and saves plots and JSON formatted results.
@@ -190,24 +189,30 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         test_result_dict['attenuation'] = test_result['attenuation']
         test_result_dict['rssi'] = test_result['rssi_result'][
             'signal_poll_rssi']['mean']
+        test_result_dict['llstats'] = (
+            'TX MCS = {0} ({1:.1f}%). '
+            'RX MCS = {2} ({3:.1f}%)'.format(
+                test_result['llstats']['summary']['common_tx_mcs'],
+                test_result['llstats']['summary']['common_tx_mcs_freq'] * 100,
+                test_result['llstats']['summary']['common_rx_mcs'],
+                test_result['llstats']['summary']['common_rx_mcs_freq'] * 100))
         if test_result['iperf_result'].instantaneous_rates:
             instantaneous_rates_Mbps = [
                 rate * 8 * (1.024**2)
                 for rate in test_result['iperf_result'].instantaneous_rates[
                     self.testclass_params['iperf_ignored_interval']:-1]
             ]
+            tput_standard_deviation = test_result[
+                'iperf_result'].get_std_deviation(
+                    self.testclass_params['iperf_ignored_interval']) * 8
         else:
             instantaneous_rates_Mbps = float('nan')
+            tput_standard_deviation = float('nan')
         test_result_dict['iperf_results'] = {
-            'instantaneous_rates':
-            instantaneous_rates_Mbps,
-            'avg_throughput':
-            numpy.mean(instantaneous_rates_Mbps),
-            'std_deviation':
-            test_result['iperf_result'].get_std_deviation(
-                self.testclass_params['iperf_ignored_interval']) * 8,
-            'min_throughput':
-            min(instantaneous_rates_Mbps)
+            'instantaneous_rates': instantaneous_rates_Mbps,
+            'avg_throughput': numpy.mean(instantaneous_rates_Mbps),
+            'std_deviation': tput_standard_deviation,
+            'min_throughput': min(instantaneous_rates_Mbps)
         }
         with open(results_file_path, 'w') as results_file:
             json.dump(test_result_dict, results_file)
@@ -286,9 +291,14 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         self.setup_ap(testcase_params)
         # Reset, configure, and connect DUT
         self.setup_dut(testcase_params)
+        # Wait before running the first wifi test
+        first_test_delay = self.testclass_params.get('first_test_delay', 600)
+        if first_test_delay > 0 and len(self.testclass_results) == 0:
+            self.log.info('Waiting before the first test.')
+            time.sleep(first_test_delay)
+            self.setup_dut(testcase_params)
         # Get and set attenuation levels for test
-        testcase_params['atten_level'] = self.get_target_atten(
-            testcase_params)
+        testcase_params['atten_level'] = self.get_target_atten(testcase_params)
         self.log.info('Setting attenuation to {} dB'.format(
             testcase_params['atten_level']))
         for attenuator in self.attenuators:
@@ -315,6 +325,8 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
         # Run test and log result
         # Start iperf session
         self.log.info('Starting iperf test.')
+        llstats_obj = wputils.LinkLayerStats(self.dut)
+        llstats_obj.update_stats()
         self.iperf_server.start(tag=str(testcase_params['atten_level']))
         current_rssi = wputils.get_connected_rssi_nb(
             dut=self.dut,
@@ -341,12 +353,15 @@ class WifiThroughputStabilityTest(base_test.BaseTestClass):
             iperf_result = ipf.IPerfResult(iperf_file)
         except:
             asserts.fail('Cannot get iperf result.')
+        llstats_obj.update_stats()
+        curr_llstats = llstats_obj.llstats_incremental.copy()
         test_result = collections.OrderedDict()
         test_result['testcase_params'] = testcase_params.copy()
         test_result['ap_settings'] = self.access_point.ap_settings.copy()
         test_result['attenuation'] = testcase_params['atten_level']
         test_result['iperf_result'] = iperf_result
         test_result['rssi_result'] = current_rssi
+        test_result['llstats'] = curr_llstats
         self.testclass_results.append(test_result)
         return test_result
 

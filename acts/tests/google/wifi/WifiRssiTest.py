@@ -480,6 +480,10 @@ class WifiRssiTest(base_test.BaseTestClass):
             thread_future = wputils.get_ping_stats_nb(
                 self.remote_server, self.dut_ip,
                 testcase_params['traffic_timeout'], 0.02, 64)
+        else:
+            thread_future = wputils.get_ping_stats_nb(
+                self.remote_server, self.dut_ip,
+                testcase_params['traffic_timeout'], 0.5, 64)
         for atten in testcase_params['rssi_atten_range']:
             # Set Attenuation
             self.log.info('Setting attenuation to {} dB'.format(atten))
@@ -506,10 +510,10 @@ class WifiRssiTest(base_test.BaseTestClass):
         # Stop iperf traffic if needed
         for attenuator in self.attenuators:
             attenuator.set_atten(0)
-        if testcase_params['active_traffic']:
-            thread_future.result()
-            if testcase_params['traffic_type'] == 'iperf':
-                self.iperf_server.stop()
+        thread_future.result()
+        if testcase_params['active_traffic'] and testcase_params[
+                'traffic_type'] == 'iperf':
+            self.iperf_server.stop()
         return rssi_result
 
     def setup_ap(self, testcase_params):

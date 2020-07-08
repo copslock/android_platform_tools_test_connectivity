@@ -30,7 +30,9 @@ install_requires = [
     # b/148695846, b/148814743
     'mock==3.0.5',
     # b/157117302: python3.5 is not supported by NumPy 1.19+
-    'numpy==1.18.1',
+    'numpy<=1.18.1',
+    # b/157117302: python3.5 is not supported by SciPy 1.5.0+ (Monsoon dependency)
+    'scipy==1.4.1',
     'pyserial',
     'pyyaml>=5.1',
     'protobuf>=3.11.3',
@@ -171,8 +173,8 @@ class ActsUninstall(cmd.Command):
 
 def main():
     scripts = [
-        os.path.join(framework_dir, 'acts', 'bin', 'act.py'),
-        os.path.join(framework_dir, 'acts', 'bin', 'monsoon.py')
+        os.path.join('acts', 'bin', 'act.py'),
+        os.path.join('acts', 'bin', 'monsoon.py')
     ]
     # cd to framework directory so the correct package namespace is found
     os.chdir(framework_dir)
@@ -180,8 +182,8 @@ def main():
                      version='0.9',
                      description='Android Comms Test Suite',
                      license='Apache2.0',
-                     packages=setuptools.find_packages(exclude=('tests*',)),
-                     include_package_data=False,
+                     packages=setuptools.find_packages(),
+                     include_package_data=True,
                      tests_require=['pytest'],
                      install_requires=install_requires,
                      extras_require={'dev': DEV_PACKAGES},

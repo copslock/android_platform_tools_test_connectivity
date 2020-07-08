@@ -160,7 +160,8 @@ class TelLiveImsSettingsTest(TelephonyBaseTest):
         if wifi_enabled:
             if not ensure_wifi_connected(self.log, self.dut,
                                          self.wifi_network_ssid,
-                                         self.wifi_network_pass):
+                                         self.wifi_network_pass,
+                                         apm=airplane_mode):
                 self.dut.log.error("Fail to connected to WiFi")
                 result = False
         else:

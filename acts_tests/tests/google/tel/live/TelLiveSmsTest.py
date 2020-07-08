@@ -42,11 +42,17 @@ from acts.test_utils.tel.tel_test_utils import remove_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import mms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import mms_receive_verify_after_call_hangup
 from acts.test_utils.tel.tel_test_utils import multithread_func
+from acts.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
+from acts.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
 from acts.test_utils.tel.tel_test_utils import set_call_state_listen_level
 from acts.test_utils.tel.tel_test_utils import set_mobile_data_usage_limit
 from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import sms_send_receive_verify
 from acts.test_utils.tel.tel_test_utils import set_wfc_mode
+from acts.test_utils.tel.tel_test_utils import \
+    sms_in_collision_send_receive_verify
+from acts.test_utils.tel.tel_test_utils import \
+    sms_rx_power_off_multiple_send_receive_verify
 from acts.test_utils.tel.tel_video_utils import phone_setup_video
 from acts.test_utils.tel.tel_video_utils import is_phone_in_call_video_bidirectional
 from acts.test_utils.tel.tel_video_utils import video_call_setup_teardown
@@ -445,6 +451,55 @@ class TelLiveSmsTest(TelephonyBaseTest):
         else:
             return self._mms_test_mt_after_call_hangup(ads)
 
+    def _sms_in_collision_test(self, ads):
+        for length in self.message_lengths:
+            message_array = [rand_ascii_str(length)]
+            message_array2 = [rand_ascii_str(length)]
+            if not sms_in_collision_send_receive_verify(
+                self.log,
+                ads[0],
+                ads[0],
+                ads[1],
+                ads[2],
+                message_array,
+                message_array2):
+                ads[0].log.warning(
+                    "Test of SMS collision with length %s failed", length)
+                return False
+            else:
+                ads[0].log.info(
+                    "Test of SMS collision with length %s succeeded", length)
+        self.log.info(
+            "Test of SMS collision with lengths %s characters succeeded.",
+            self.message_lengths)
+        return True
+
+    def _sms_in_collision_when_power_off_test(self, ads):
+        for length in self.message_lengths:
+            if not sms_rx_power_off_multiple_send_receive_verify(
+                self.log,
+                ads[0],
+                ads[1],
+                ads[2],
+                length,
+                length,
+                5,
+                5):
+                ads[0].log.warning(
+                    "Test of SMS collision when power off with length %s failed",
+                    length)
+                return False
+            else:
+                ads[0].log.info(
+                    "Test of SMS collision when power off with length %s "
+                    "succeeded",
+                    length)
+        self.log.info(
+            "Test of SMS collision when power offwith lengths %s characters "
+            "succeeded.",
+            self.message_lengths)
+        return True
+
     @test_tracker_info(uuid="480b6ba2-1e5f-4a58-9d88-9b75c8fab1b6")
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_general(self):
@@ -516,6 +571,49 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mo(ads)
 
+    @test_tracker_info(uuid="f2c27463-2cc2-45eb-80f1-aea2047858d6")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_mt_5g_nsa(self):
+        """Test SMS basic function between two phone. Phones in 5g NSA.
+
+        Airplane mode is off.
+        Send SMS from PhoneA to PhoneB.
+        Verify received message on PhoneB is correct.
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        ads = self.android_devices
+
+        # Mode Pref
+        tasks = [(set_preferred_mode_for_5g, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Failed to set preferred network mode.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not on 5G NSA before sending SMS.")
+            return False
+
+        if not self._sms_test_mo(ads):
+            self.log.error("Failed to send receive SMS over 5G NSA.")
+            return False
+
+        # Attach 5g
+        tasks = [(is_current_network_5g_nsa, [ad])
+                 for ad in self.android_devices]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone not on 5G NSA after sending SMS.")
+            return False
+
+        self.log.info("PASS - SMS test over 5G NSA validated")
+        return True
+
     @test_tracker_info(uuid="f2779e1e-7d09-43f0-8b5c-87eae5d146be")
     @TelephonyBaseTest.tel_test_wrap
     def test_mms_mt_general(self):
@@ -562,6 +660,7 @@ class TelLiveSmsTest(TelephonyBaseTest):
         time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
 
         return self._sms_test_mo(ads)
+
 
     @test_tracker_info(uuid="17fafc41-7e12-47ab-a4cc-fb9bd94e79b9")
     @TelephonyBaseTest.tel_test_wrap
@@ -2946,3 +3045,55 @@ class TelLiveSmsTest(TelephonyBaseTest):
                 return True
         finally:
             remove_mobile_data_usage_limit(ads[0], subscriber_id)
+
+    @test_tracker_info(uuid="65808f80-9859-44e9-888d-9e5ca8665667")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mt_in_collision_general(self):
+        """Test of reception of 2 simultaneous incoming MT SMS'.
+        Test step:
+            1. Send a SMS from both of the secondary and the third DUT to the
+               primary DUT simultaneously.
+            2. Wait for reception of both SMS' on the primary DUT and verify the
+               content and sender of both SMS'.
+
+        Returns:
+            True if success. Otherwise False.
+        """
+        ads = self.android_devices
+
+        tasks = [(ensure_phone_default_state, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        return self._sms_in_collision_test(ads)
+
+    @test_tracker_info(uuid="2a78efcc-bec4-4e2d-8e8c-5e75be93a78e")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mt_in_collision_when_power_off_general(self):
+        """Test of reception of 2 simultaneous incoming MT SMS' sent as DUT was
+           powered off.
+        Test step:
+            1. Toggle on airplane mode and reboot the primary DUT.
+            2. During the reboot procedure send a SMS from both of the secondary
+               and the third DUT to the primary DUT simultaneously.
+            3. Wait for reboot complete on the primary DUT and then toggle off
+               airplane mode.
+            4. Wait for reception of both SMS' on the primary DUT and verify the
+               content and sender of both SMS'.
+
+        Returns:
+            True if success. Otherwise False.
+        """
+        ads = self.android_devices
+
+        tasks = [(ensure_phone_default_state, (self.log, ads[0])),
+                 (ensure_phone_default_state, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        return self._sms_in_collision_when_power_off_test(ads)

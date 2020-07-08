@@ -556,6 +556,7 @@ def timeout(sec):
     Raises:
         TimeoutError is raised when time out happens.
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -1287,6 +1288,7 @@ class SuppressLogOutput(object):
     """Context manager used to suppress all logging output for the specified
     logger and level(s).
     """
+
     def __init__(self, logger=logging.getLogger(), log_levels=None):
         """Create a SuppressLogOutput context manager
 
@@ -1319,6 +1321,7 @@ class BlockingTimer(object):
     """Context manager used to block until a specified amount of time has
      elapsed.
      """
+
     def __init__(self, secs):
         """Initializes a BlockingTimer
 
@@ -1532,21 +1535,26 @@ def is_pingable(ip):
     Returns:
         True if ping was successful, else False
     """
-    os_type = platform.system()
-    if os_type == 'Darwin':
-        timeout_flag = '-t'
-    elif os_type == 'Linux':
-        timeout_flag = '-W'
-    else:
-        raise ValueError('Invalid OS.  Only Linux and MacOS are supported.')
-
     if is_valid_ipv4_address(ip):
         ping_binary = 'ping'
     elif is_valid_ipv6_address(ip):
         ping_binary = 'ping6'
     else:
         raise ValueError('Invalid ip addr: %s' % ip)
-    ping_cmd = [ping_binary, timeout_flag, '1', '-c', '1', ip]
+
+    os_type = platform.system()
+    if os_type == 'Darwin':
+        if is_valid_ipv6_address(ip):
+            # ping6 on MacOS doesn't support timeout
+            timeout_flag = []
+        else:
+            timeout_flag = ['-t', '1']
+    elif os_type == 'Linux':
+        timeout_flag = ['-W', '1']
+    else:
+        raise ValueError('Invalid OS.  Only Linux and MacOS are supported.')
+
+    ping_cmd = [ping_binary, *timeout_flag, '-c', '1', ip]
 
     result = job.run(ping_cmd, timeout=10, ignore_status=True)
     return result.exit_status == 0

@@ -20,6 +20,8 @@ from acts import base_test
 from acts import asserts
 from acts.controllers.rohdeschwarz_lib import contest
 from acts.test_utils.tel import tel_test_utils
+from acts.metrics.loggers import blackbox
+
 import json
 
 
@@ -45,6 +47,13 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
         self.contest = None
         self.testplan = None
         self.thresholds_file = None
+
+        self.ttf_metric = blackbox.BlackboxMetricLogger.for_test_case(
+            metric_name='ttf')
+        self.pos_error_metric = blackbox.BlackboxMetricLogger.for_test_case(
+            metric_name='pos_error')
+        self.sensitivity_metric = blackbox.BlackboxMetricLogger.for_test_case(
+            metric_name='sensitivity')
 
     def setup_class(self):
         """ Executed before any test case is started. Initializes the Contest
@@ -158,6 +167,14 @@ class AGNSSPerformanceTest(base_test.BaseTestClass):
                                                  thresholds[key]['min'],
                                                  thresholds[key]['max']))
                     passed = False
+
+                # Save metric to Blackbox logger
+                if key == contest.Contest.TTFF_KEY:
+                    self.ttf_metric.metric_value = metric
+                elif key == contest.Contest.POS_ERROR_KEY:
+                    self.pos_error_metric.metric_value = metric
+                elif key == contest.Contest.SENSITIVITY_KEY:
+                    self.sensitivity_metric.metric_value = metric
 
         asserts.assert_true(
             passed, 'At least one of the metrics was not '

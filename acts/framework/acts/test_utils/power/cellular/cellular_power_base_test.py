@@ -20,6 +20,7 @@ import acts.test_utils.power.PowerBaseTest as PBT
 import acts.controllers.cellular_simulator as simulator
 from acts.controllers.anritsu_lib import md8475_cellular_simulator as anritsu
 from acts.controllers.rohdeschwarz_lib import cmw500_cellular_simulator as cmw
+from acts.controllers.rohdeschwarz_lib import cmx500_cellular_simulator as cmx
 from acts.test_utils.power.tel_simulations.GsmSimulation import GsmSimulation
 from acts.test_utils.power.tel_simulations.LteSimulation import LteSimulation
 from acts.test_utils.power.tel_simulations.UmtsSimulation import UmtsSimulation
@@ -80,7 +81,10 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         self.unpack_userparams(md8475_version=None,
                                md8475a_ip_address=None,
                                cmw500_ip=None,
-                               cmw500_port=None)
+                               cmw500_port=None,
+                               cmx500_ip=None,
+                               cmx500_port=None,
+                               qxdm_logs=None)
 
         # Load calibration tables
         filename_calibration_table = (
@@ -141,13 +145,22 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         elif self.cmw500_ip or self.cmw500_port:
 
             for key in ['cmw500_ip', 'cmw500_port']:
-                if not hasattr(self, key):
+                if not getattr(self, key):
                     raise RuntimeError('The CMW500 cellular simulator '
                                        'requires %s to be set in the '
                                        'config file.' % key)
 
             return cmw.CMW500CellularSimulator(self.cmw500_ip,
                                                self.cmw500_port)
+        elif self.cmx500_ip or self.cmx500_port:
+            for key in ['cmx500_ip', 'cmx500_port']:
+                if not getattr(self, key):
+                    raise RuntimeError('The CMX500 cellular simulator '
+                                       'requires %s to be set in the '
+                                       'config file.' % key)
+
+            return cmx.CMX500CellularSimulator(self.cmx500_ip,
+                                               self.cmx500_port)
 
         else:
             raise RuntimeError(
@@ -210,6 +223,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         # Wait for new params to settle
         time.sleep(5)
 
+        # Enable QXDM logger if required
+        if self.qxdm_logs:
+            self.log.info('Enabling the QXDM logger.')
+            telutils.set_qxdm_logger_command(self.dut)
+            telutils.start_qxdm_logger(self.dut)
+
         # Start the simulation. This method will raise an exception if
         # the phone is unable to attach.
         self.simulation.start()
@@ -229,6 +248,12 @@ class PowerCellularLabBaseTest(PBT.PowerBaseTest):
         super().teardown_test()
 
         self.power_results[self.test_name] = self.power_result.metric_value
+
+        # If QXDM logging was enabled pull the results
+        if self.qxdm_logs:
+            self.log.info('Stopping the QXDM logger and pulling results.')
+            telutils.stop_qxdm_logger(self.dut)
+            self.dut.get_qxdm_logs()
 
     def consume_parameter(self, parameter_name, num_values=0):
         """ Parses a parameter from the test name.

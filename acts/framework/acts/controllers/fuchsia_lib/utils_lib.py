@@ -21,7 +21,15 @@ import paramiko
 import socket
 import time
 
+from acts import utils
+from acts.controllers.fuchsia_lib.base_lib import DeviceOffline
+
 logging.getLogger("paramiko").setLevel(logging.WARNING)
+# paramiko-ng will throw INFO messages when things get disconnect or cannot
+# connect perfectly the first time.  In this library those are all handled by
+# either retrying and/or throwing an exception for the appropriate case.
+# Therefore, in order to reduce confusion in the logs the log level is set to
+# WARNING.
 
 
 def get_private_key(ip_address, ssh_config):
@@ -63,7 +71,9 @@ def get_private_key(ip_address, ssh_config):
 def create_ssh_connection(ip_address,
                           ssh_username,
                           ssh_config,
-                          connect_timeout=30):
+                          connect_timeout=10,
+                          auth_timeout=10,
+                          banner_timeout=10):
     """Creates and ssh connection to a Fuchsia device
 
     Args:
@@ -71,10 +81,15 @@ def create_ssh_connection(ip_address,
         ssh_username: Username for ssh server.
         ssh_config: ssh_config location for the ssh server.
         connect_timeout: Timeout value for connecting to ssh_server.
+        auth_timeout: Timeout value to wait for authentication.
+        banner_timeout: Timeout to wait for ssh banner.
 
     Returns:
         A paramiko ssh object
     """
+    if not utils.is_pingable(ip_address):
+        raise DeviceOffline("Device %s is not reachable via "
+                            "the network." % ip_address)
     ssh_key = get_private_key(ip_address=ip_address, ssh_config=ssh_config)
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -83,7 +98,8 @@ def create_ssh_connection(ip_address,
                        allow_agent=False,
                        pkey=ssh_key,
                        timeout=connect_timeout,
-                       banner_timeout=200)
+                       auth_timeout=auth_timeout,
+                       banner_timeout=banner_timeout)
     ssh_client.get_transport().set_keepalive(1)
     return ssh_client
 

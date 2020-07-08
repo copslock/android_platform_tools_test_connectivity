@@ -65,9 +65,9 @@ class WifiRvrTest(base_test.BaseTestClass):
         self.dut = self.android_devices[-1]
         req_params = [
             'RetailAccessPoints', 'rvr_test_params', 'testbed_params',
-            'RemoteServer'
+            'RemoteServer', 'main_network'
         ]
-        opt_params = ['main_network', 'golden_files_list', 'OTASniffer']
+        opt_params = ['golden_files_list', 'OTASniffer']
         self.unpack_userparams(req_params, opt_params)
         self.testclass_params = self.rvr_test_params
         self.num_atten = self.attenuators[0].instrument.num_atten
@@ -370,9 +370,9 @@ class WifiRvrTest(base_test.BaseTestClass):
             if self.testbed_params['sniffer_enable']:
                 self.sniffer.start_capture(
                     network=testcase_params['test_network'],
-                    duration=self.testclass_params['iperf_duration'] / 5,
                     chan=int(testcase_params['channel']),
-                    bw=int(testcase_params['mode'][3:]))
+                    bw=int(testcase_params['mode'][3:]),
+                    duration=self.testclass_params['iperf_duration'] / 5)
             # Start iperf session
             self.iperf_server.start(tag=str(atten))
             rssi_future = wputils.get_connected_rssi_nb(

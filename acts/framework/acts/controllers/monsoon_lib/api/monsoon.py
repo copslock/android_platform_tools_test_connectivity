@@ -152,6 +152,8 @@ class BaseMonsoon(object):
                                    'seconds.' % time_limit_seconds)
             self._set_usb_passthrough_mode(expected_state)
             time.sleep(1)
+        self._log.info('Monsoon usbPassthroughMode is now "%s"',
+                       state)
 
         if expected_state in [PassthroughStates.ON]:
             self._on_reconnect()
@@ -261,10 +263,10 @@ class BaseMonsoon(object):
             TimeoutError upon failure to reconnect over USB.
         """
         self._log.info('Reconnecting dut.')
-        # Wait for one second to ensure that the relay is ready, then
+        # Wait for two seconds to ensure that the device is ready, then
         # attempt to reconnect. If reconnect times out, reset the passthrough
         # state and try again.
-        time.sleep(1)
+        time.sleep(2)
         try:
             self.on_reconnect()
         except TimeoutError as err:
@@ -280,6 +282,10 @@ class BaseMonsoon(object):
 
     def reconnect_monsoon(self):
         """Reconnects the Monsoon Serial/USB connection."""
+        raise NotImplementedError()
+
+    def is_allocated(self):
+        """Whether the resource is locked."""
         raise NotImplementedError()
 
     def release_monsoon_connection(self):

@@ -24,6 +24,12 @@ from acts.libs.logging.log_stream import LogStyles
 from acts.controllers.android_lib.logcat import TimestampTracker
 from acts.controllers.fuchsia_lib.utils_lib import create_ssh_connection
 
+# paramiko-ng has a log line, line number in 1982 in paramiko/transport.py that
+# presents a ERROR log message that is innocuous but could confuse the user.
+# Therefore by setting the log level to CRITICAL the message is not displayed
+# and everything is recovered as expected.
+logging.getLogger("paramiko").setLevel(logging.CRITICAL)
+
 
 def _log_line_func(log, timestamp_tracker):
     """Returns a lambda that logs a message to the given logger."""

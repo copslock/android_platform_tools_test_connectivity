@@ -49,6 +49,7 @@ from acts.test_utils.tel.tel_defines import CAPABILITY_CONFERENCE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE_PROVISIONING
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING
+from acts.test_utils.tel.tel_defines import CAPABILITY_HIDE_ENHANCED_4G_LTE_BOOL
 from acts.test_utils.tel.tel_defines import CAPABILITY_VT
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC_MODE_CHANGE
@@ -77,7 +78,9 @@ from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_DATA_SUB_CHANGE
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_CALL_IDLE_EVENT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_NW_SELECTION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_SENT_SUCCESS
+from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_SMS_SENT_SUCCESS_IN_COLLISION
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_TELECOM_RINGING
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOICE_MAIL_COUNT
 from acts.test_utils.tel.tel_defines import MAX_WAIT_TIME_VOLTE_ENABLED
@@ -154,6 +157,7 @@ from acts.test_utils.tel.tel_defines import NetworkCallbackContainer
 from acts.test_utils.tel.tel_defines import ServiceStateContainer
 from acts.test_utils.tel.tel_defines import DisplayInfoContainer
 from acts.test_utils.tel.tel_defines import OverrideNetworkContainer
+from acts.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import CARRIER_VZW, CARRIER_ATT, \
     CARRIER_BELL, CARRIER_ROGERS, CARRIER_KOODO, CARRIER_VIDEOTRON, CARRIER_TELUS
 from acts.test_utils.tel.tel_lookup_tables import connection_type_from_type_string
@@ -175,6 +179,8 @@ from acts.test_utils.tel.tel_subscription_utils import get_outgoing_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_incoming_voice_sub_id
 from acts.test_utils.tel.tel_subscription_utils import get_incoming_message_sub_id
 from acts.test_utils.tel.tel_subscription_utils import set_subid_for_outgoing_call
+from acts.test_utils.tel.tel_subscription_utils import set_subid_for_message
+from acts.test_utils.tel.tel_subscription_utils import get_subid_on_same_network_of_host_ad
 from acts.test_utils.wifi import wifi_test_utils
 from acts.test_utils.wifi import wifi_constants
 from acts.utils import adb_shell_ping
@@ -185,6 +191,7 @@ from acts.logger import epoch_to_log_line_timestamp
 from acts.logger import normalize_log_line_timestamp
 from acts.utils import get_current_epoch_time
 from acts.utils import exe_cmd
+from acts.utils import rand_ascii_str
 
 
 WIFI_SSID_KEY = wifi_test_utils.WifiEnums.SSID_KEY
@@ -1955,6 +1962,9 @@ def get_phone_capability(ad):
             capabilities.append(CAPABILITY_VOLTE_PROVISIONING)
         if carrier_configs[sub_id][CarrierConfigs.VOLTE_OVERRIDE_WFC_BOOL]:
             capabilities.append(CAPABILITY_VOLTE_OVERRIDE_WFC_PROVISIONING)
+        if carrier_configs[sub_id][CarrierConfigs.HIDE_ENHANCED_4G_LTE_BOOL]:
+            capabilities.append(CAPABILITY_HIDE_ENHANCED_4G_LTE_BOOL)
+
         ad.log.info("Capabilities of sub ID %s: %s", sub_id, capabilities)
         if not getattr(ad, 'telephony', {}):
             ad.telephony["subscription"] = {}
@@ -2995,6 +3005,510 @@ def call_setup_teardown_for_call_forwarding_for_subscription(
         log, ad_caller, ad_callee, subid_caller, subid_callee, ad_caller,
         verify_caller_func, verify_callee_func, wait_time_in_call,
         incall_ui_display, dialing_number_length, video_state)
+
+def call_setup_teardown_for_call_waiting(log,
+                        ad_caller,
+                        ad_callee,
+                        ad_caller2,
+                        ad_hangup=None,
+                        ad_hangup2=None,
+                        verify_callee_func=None,
+                        end_first_call_before_answering_second_call=True,
+                        wait_time_in_call=WAIT_TIME_IN_CALL,
+                        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+                        dialing_number_length=None,
+                        video_state=None,
+                        call_waiting=True):
+    """ Call process for call waiting, including make the 1st phone call from
+    caller, answer the call by the callee, and receive the 2nd call from the
+    caller2. The call is on default voice subscription
+
+    In call process, 1st call from <ad_caller> to <ad_callee>, 2nd call from
+    <ad_caller2> to <ad_callee>, hang up the existing call or reject the
+    incoming call according to the test scenario.
+
+    Args:
+        ad_caller: Caller Android Device Object.
+        ad_callee: Callee Android Device Object.
+        ad_caller2: Caller2 Android Device Object.
+        ad_hangup: Android Device Object end the 1st phone call.
+            Optional. Default value is None, and phone call will continue.
+        ad_hangup2: Android Device Object end the 2nd phone call.
+            Optional. Default value is None, and phone call will continue.
+        verify_callee_func: func_ptr to verify callee in correct mode
+            Optional. Default is None
+        end_first_call_before_answering_second_call: If True the 2nd call will
+            be rejected on the ringing stage.
+        wait_time_in_call: the call duration of a connected call
+        incall_ui_display: after answer the call, bring in-call UI to foreground
+        or background.
+            Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
+            if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
+            if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
+            else, do nothing.
+        dialing_number_length: the number of digits used for dialing
+        video_state: video call or voice call. Default is voice call.
+        call_waiting: True to enable call waiting and False to disable.
+
+    Returns:
+        True if call process without any error.
+        False if error happened.
+
+    """
+    subid_caller = get_outgoing_voice_sub_id(ad_caller)
+    subid_callee = get_incoming_voice_sub_id(ad_callee)
+    subid_caller2 = get_incoming_voice_sub_id(ad_caller2)
+    return call_setup_teardown_for_call_waiting_for_subscription(
+        log,
+        ad_caller,
+        ad_callee,
+        ad_caller2,
+        subid_caller,
+        subid_callee,
+        subid_caller2,
+        ad_hangup, ad_hangup2,
+        verify_callee_func,
+        end_first_call_before_answering_second_call,
+        wait_time_in_call,
+        incall_ui_display,
+        dialing_number_length,
+        video_state,
+        call_waiting)
+
+def call_setup_teardown_for_call_waiting_for_subscription(
+        log,
+        ad_caller,
+        ad_callee,
+        ad_caller2,
+        subid_caller,
+        subid_callee,
+        subid_caller2,
+        ad_hangup=None,
+        ad_hangup2=None,
+        verify_callee_func=None,
+        end_first_call_before_answering_second_call=True,
+        wait_time_in_call=WAIT_TIME_IN_CALL,
+        incall_ui_display=INCALL_UI_DISPLAY_FOREGROUND,
+        dialing_number_length=None,
+        video_state=None,
+        call_waiting=True):
+    """ Call process for call waiting, including make the 1st phone call from
+    caller, answer the call by the callee, and receive the 2nd call from the
+    caller2. The call is on specified subscription.
+
+    In call process, 1st call from <ad_caller> to <ad_callee>, 2nd call from
+    <ad_caller2> to <ad_callee>, hang up the existing call or reject the
+    incoming call according to the test scenario.
+
+    Args:
+        ad_caller: Caller Android Device Object.
+        ad_callee: Callee Android Device Object.
+        ad_caller2: Caller2 Android Device Object.
+        subid_caller: Caller subscription ID.
+        subid_callee: Callee subscription ID.
+        subid_caller2: Caller2 subscription ID.
+        ad_hangup: Android Device Object end the 1st phone call.
+            Optional. Default value is None, and phone call will continue.
+        ad_hangup2: Android Device Object end the 2nd phone call.
+            Optional. Default value is None, and phone call will continue.
+        verify_callee_func: func_ptr to verify callee in correct mode
+            Optional. Default is None
+        end_first_call_before_answering_second_call: If True the 2nd call will
+            be rejected on the ringing stage.
+        wait_time_in_call: the call duration of a connected call
+        incall_ui_display: after answer the call, bring in-call UI to foreground
+        or background. Optional, default value is INCALL_UI_DISPLAY_FOREGROUND.
+            if = INCALL_UI_DISPLAY_FOREGROUND, bring in-call UI to foreground.
+            if = INCALL_UI_DISPLAY_BACKGROUND, bring in-call UI to background.
+            else, do nothing.
+        dialing_number_length: the number of digits used for dialing
+        video_state: video call or voice call. Default is voice call.
+        call_waiting: True to enable call waiting and False to disable.
+
+    Returns:
+        True if call process without any error.
+        False if error happened.
+
+    """
+
+    CHECK_INTERVAL = 5
+    begin_time = get_current_epoch_time()
+    verify_caller_func = is_phone_in_call
+    if not verify_callee_func:
+        verify_callee_func = is_phone_in_call
+    verify_caller2_func = is_phone_in_call
+
+    caller_number = ad_caller.telephony['subscription'][subid_caller][
+        'phone_num']
+    callee_number = ad_callee.telephony['subscription'][subid_callee][
+        'phone_num']
+    caller2_number = ad_caller2.telephony['subscription'][subid_caller2][
+        'phone_num']
+    if dialing_number_length:
+        skip_test = False
+        trunc_position = 0 - int(dialing_number_length)
+        try:
+            caller_area_code = caller_number[:trunc_position]
+            callee_area_code = callee_number[:trunc_position]
+            callee_dial_number = callee_number[trunc_position:]
+        except:
+            skip_test = True
+        if caller_area_code != callee_area_code:
+            skip_test = True
+        if skip_test:
+            msg = "Cannot make call from %s to %s by %s digits" % (
+                caller_number, callee_number, dialing_number_length)
+            ad_caller.log.info(msg)
+            raise signals.TestSkip(msg)
+        else:
+            callee_number = callee_dial_number
+
+    result = True
+    msg = "Call from %s to %s" % (caller_number, callee_number)
+    if video_state:
+        msg = "Video %s" % msg
+        video = True
+    else:
+        video = False
+    if ad_hangup:
+        msg = "%s for duration of %s seconds" % (msg, wait_time_in_call)
+    ad_caller.log.info(msg)
+
+    for ad in (ad_caller, ad_callee, ad_caller2):
+        call_ids = ad.droid.telecomCallGetCallIds()
+        setattr(ad, "call_ids", call_ids)
+        if call_ids:
+            ad.log.info("Pre-exist CallId %s before making call", call_ids)
+
+    if not call_waiting:
+        set_call_waiting(log, ad_callee, enable=0)
+    else:
+        set_call_waiting(log, ad_callee, enable=1)
+
+    first_call_ids = []
+    try:
+        if not initiate_call(
+                log,
+                ad_caller,
+                callee_number,
+                incall_ui_display=incall_ui_display,
+                video=video):
+            ad_caller.log.error("Initiate call failed.")
+            if not call_waiting:
+                set_call_waiting(log, ad_callee, enable=1)
+            result = False
+            return False
+        else:
+            ad_caller.log.info("Caller initate call successfully")
+        if not wait_and_answer_call_for_subscription(
+                log,
+                ad_callee,
+                subid_callee,
+                incoming_number=caller_number,
+                caller=ad_caller,
+                incall_ui_display=incall_ui_display,
+                video_state=video_state):
+            ad_callee.log.error("Answer call fail.")
+            if not call_waiting:
+                set_call_waiting(log, ad_callee, enable=1)
+            result = False
+            return False
+        else:
+            ad_callee.log.info("Callee answered the call successfully")
+
+        for ad, subid, call_func in zip(
+            [ad_caller, ad_callee],
+            [subid_caller, subid_callee],
+            [verify_caller_func, verify_callee_func]):
+            call_ids = ad.droid.telecomCallGetCallIds()
+            new_call_ids = set(call_ids) - set(ad.call_ids)
+            if not new_call_ids:
+                ad.log.error(
+                    "No new call ids are found after call establishment")
+                ad.log.error("telecomCallGetCallIds returns %s",
+                             ad.droid.telecomCallGetCallIds())
+                result = False
+            for new_call_id in new_call_ids:
+                first_call_ids.append(new_call_id)
+                if not wait_for_in_call_active(ad, call_id=new_call_id):
+                    result = False
+                else:
+                    ad.log.info("callProperties = %s",
+                                ad.droid.telecomCallGetProperties(new_call_id))
+
+            if not ad.droid.telecomCallGetAudioState():
+                ad.log.error("Audio is not in call state")
+                result = False
+
+            if call_func(log, ad):
+                ad.log.info("Call is in %s state", call_func.__name__)
+            else:
+                ad.log.error("Call is not in %s state, voice in RAT %s",
+                             call_func.__name__,
+                             ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                result = False
+        if not result:
+            if not call_waiting:
+                set_call_waiting(log, ad_callee, enable=1)
+            return False
+
+        time.sleep(3)
+        if not call_waiting:
+            if not initiate_call(
+                    log,
+                    ad_caller2,
+                    callee_number,
+                    incall_ui_display=incall_ui_display,
+                    video=video):
+                ad_caller2.log.info("Initiate call failed.")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+            else:
+                ad_caller2.log.info("Caller 2 initate 2nd call successfully")
+
+            if not wait_and_answer_call_for_subscription(
+                    log,
+                    ad_callee,
+                    subid_callee,
+                    incoming_number=caller2_number,
+                    caller=ad_caller2,
+                    incall_ui_display=incall_ui_display,
+                    video_state=video_state):
+                ad_callee.log.info(
+                    "Answering 2nd call fail due to call waiting　deactivate.")
+            else:
+                ad_callee.log.error("Callee should not be able to answer the"
+                    " 2nd call due to call waiting deactivated.")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+
+            time.sleep(3)
+            if not hangup_call(log, ad_caller2):
+                ad_caller2.log.info("Failed to hang up the 2nd call")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+
+        else:
+
+            for ad in (ad_callee, ad_caller2):
+                call_ids = ad.droid.telecomCallGetCallIds()
+                setattr(ad, "call_ids", call_ids)
+                if call_ids:
+                    ad.log.info("Current existing CallId %s before making the"
+                        "　second call.", call_ids)
+
+            if not initiate_call(
+                    log,
+                    ad_caller2,
+                    callee_number,
+                    incall_ui_display=incall_ui_display,
+                    video=video):
+                ad_caller2.log.info("Initiate 2nd call failed.")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+            else:
+                ad_caller2.log.info("Caller 2 initate 2nd call successfully")
+
+            if end_first_call_before_answering_second_call:
+                try:
+                    if not wait_for_ringing_call_for_subscription(
+                            log,
+                            ad_callee,
+                            subid_callee,
+                            incoming_number=caller2_number,
+                            caller=ad_caller2,
+                            event_tracking_started=True):
+                        ad_callee.log.info(
+                            "2nd incoming call ringing check　failed.")
+                        if not call_waiting:
+                            set_call_waiting(log, ad_callee, enable=1)
+                        return False
+
+                    time.sleep(3)
+
+                    ad_hangup.log.info("Disconnecting first call...")
+                    for call_id in first_call_ids:
+                        disconnect_call_by_id(log, ad_hangup, call_id)
+                    time.sleep(3)
+
+                    ad_callee.log.info("Answering the 2nd ring call...")
+                    ad_callee.droid.telecomAcceptRingingCall(video_state)
+
+                    if wait_for_call_offhook_for_subscription(
+                            log,
+                            ad_callee,
+                            subid_callee,
+                            event_tracking_started=True):
+                        ad_callee.log.info(
+                            "Callee answered the 2nd call successfully.")
+                    else:
+                        ad_callee.log.error("Could not answer the 2nd call.")
+                        if not call_waiting:
+                            set_call_waiting(log, ad_callee, enable=1)
+                        return False
+                except Exception as e:
+                    log.error(e)
+                    if not call_waiting:
+                        set_call_waiting(log, ad_callee, enable=1)
+                    return False
+
+            else:
+                if not wait_and_answer_call_for_subscription(
+                        log,
+                        ad_callee,
+                        subid_callee,
+                        incoming_number=caller2_number,
+                        caller=ad_caller2,
+                        incall_ui_display=incall_ui_display,
+                        video_state=video_state):
+                    ad_callee.log.error("Failed to answer 2nd call.")
+                    if not call_waiting:
+                        set_call_waiting(log, ad_callee, enable=1)
+                    result = False
+                    return False
+                else:
+                    ad_callee.log.info(
+                        "Callee answered the 2nd call successfully.")
+
+            for ad, subid, call_func in zip(
+                [ad_callee, ad_caller2],
+                [subid_callee, subid_caller2],
+                [verify_callee_func, verify_caller2_func]):
+                call_ids = ad.droid.telecomCallGetCallIds()
+                new_call_ids = set(call_ids) - set(ad.call_ids)
+                if not new_call_ids:
+                    ad.log.error(
+                        "No new call ids are found after 2nd call establishment")
+                    ad.log.error("telecomCallGetCallIds returns %s",
+                                 ad.droid.telecomCallGetCallIds())
+                    result = False
+                for new_call_id in new_call_ids:
+                    if not wait_for_in_call_active(ad, call_id=new_call_id):
+                        result = False
+                    else:
+                        ad.log.info("callProperties = %s",
+                            ad.droid.telecomCallGetProperties(new_call_id))
+
+                if not ad.droid.telecomCallGetAudioState():
+                    ad.log.error("Audio is not in 2nd call state")
+                    result = False
+
+                if call_func(log, ad):
+                    ad.log.info("2nd call is in %s state", call_func.__name__)
+                else:
+                    ad.log.error("2nd call is not in %s state, voice in RAT %s",
+                                 call_func.__name__,
+                                 ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                    result = False
+            if not result:
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                return False
+
+        elapsed_time = 0
+        while (elapsed_time < wait_time_in_call):
+            CHECK_INTERVAL = min(CHECK_INTERVAL,
+                                 wait_time_in_call - elapsed_time)
+            time.sleep(CHECK_INTERVAL)
+            elapsed_time += CHECK_INTERVAL
+            time_message = "at <%s>/<%s> second." % (elapsed_time,
+                                                     wait_time_in_call)
+
+            if not end_first_call_before_answering_second_call or \
+                not call_waiting:
+                for ad, subid, call_func in [
+                    (ad_caller, subid_caller, verify_caller_func),
+                    (ad_callee, subid_callee, verify_callee_func)]:
+                    if not call_func(log, ad):
+                        ad.log.error(
+                            "The first call NOT in correct %s state at %s,"
+                            " voice in RAT %s",
+                            call_func.__name__, time_message,
+                            ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                        result = False
+                    else:
+                        ad.log.info("The first call in correct %s state at %s",
+                                    call_func.__name__, time_message)
+                    if not ad.droid.telecomCallGetAudioState():
+                        ad.log.error(
+                            "The first call audio is not in call state at %s",
+                            time_message)
+                        result = False
+                if not result:
+                    if not call_waiting:
+                        set_call_waiting(log, ad_callee, enable=1)
+                    return False
+
+            if call_waiting:
+                for ad, call_func in [(ad_caller2, verify_caller2_func),
+                                      (ad_callee, verify_callee_func)]:
+                    if not call_func(log, ad):
+                        ad.log.error(
+                            "The 2nd call NOT in correct %s state at %s,"
+                            " voice in RAT %s",
+                            call_func.__name__, time_message,
+                            ad.droid.telephonyGetCurrentVoiceNetworkTypeForSubscription(subid))
+                        result = False
+                    else:
+                        ad.log.info("The 2nd call in correct %s state at %s",
+                                    call_func.__name__, time_message)
+                    if not ad.droid.telecomCallGetAudioState():
+                        ad.log.error(
+                            "The 2nd call audio is not in call state at %s",
+                            time_message)
+                        result = False
+            if not result:
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                return False
+
+        if not end_first_call_before_answering_second_call or not call_waiting:
+            ad_hangup.log.info("Hanging up the first call...")
+            for call_id in first_call_ids:
+                disconnect_call_by_id(log, ad_hangup, call_id)
+            time.sleep(5)
+
+        if ad_hangup2 and call_waiting:
+            if not hangup_call(log, ad_hangup2):
+                ad_hangup2.log.info("Failed to hang up the 2nd call")
+                if not call_waiting:
+                    set_call_waiting(log, ad_callee, enable=1)
+                result = False
+                return False
+    finally:
+        if not result:
+            for ad in (ad_caller, ad_callee, ad_caller2):
+                last_call_drop_reason(ad, begin_time)
+                try:
+                    if ad.droid.telecomIsInCall():
+                        ad.log.info("In call. End now.")
+                        ad.droid.telecomEndCall()
+                except Exception as e:
+                    log.error(str(e))
+
+        if ad_hangup or not result:
+            for ad in (ad_caller, ad_callee):
+                if not wait_for_call_id_clearing(
+                        ad, getattr(ad, "caller_ids", [])):
+                    result = False
+
+        if call_waiting:
+            if ad_hangup2 or not result:
+                for ad in (ad_caller2, ad_callee):
+                    if not wait_for_call_id_clearing(
+                            ad, getattr(ad, "caller_ids", [])):
+                        result = False
+    if not call_waiting:
+        set_call_waiting(log, ad_callee, enable=1)
+    return result
 
 def wait_for_call_id_clearing(ad,
                               previous_ids,
@@ -4324,13 +4838,6 @@ def _wait_for_nw_data_connection(
 
 def get_cell_data_roaming_state_by_adb(ad):
     """Get Cell Data Roaming state. True for enabled, False for disabled"""
-    adb_str = {"1": True, "0": False}
-    out = ad.adb.shell("settings get global data_roaming")
-    return adb_str[out]
-
-
-def get_cell_data_roaming_state_by_adb(ad):
-    """Get Cell Data Roaming state. True for enabled, False for disabled"""
     state_mapping = {"1": True, "0": False}
     return state_mapping[ad.adb.shell("settings get global data_roaming")]
 
@@ -4430,15 +4937,37 @@ def num_active_calls(log, ad):
     return len(calls) if calls else 0
 
 
+def show_enhanced_4g_lte(ad, sub_id):
+    result = True
+    capabilities = ad.telephony["subscription"][sub_id].get("capabilities", [])
+    if capabilities:
+        if "hide_enhanced_4g_lte" in capabilities:
+            result = False
+            ad.log.info('"Enhanced 4G LTE MODE" is hidden for sub ID %s.', sub_id)
+            show_enhanced_4g_lte_mode = getattr(ad, "show_enhanced_4g_lte_mode", False)
+            if show_enhanced_4g_lte_mode in ["true", "True"]:
+                current_voice_sub_id = get_outgoing_voice_sub_id(ad)
+                if sub_id != current_voice_sub_id:
+                    set_incoming_voice_sub_id(ad, sub_id)
+
+                ad.log.info('Show "Enhanced 4G LTE MODE" forcibly for sub ID %s.', sub_id)
+                ad.adb.shell("am broadcast -a com.google.android.carrier.action.LOCAL_OVERRIDE -n com.google.android.carrier/.ConfigOverridingReceiver --ez hide_enhanced_4g_lte_bool false")
+                ad.telephony["subscription"][sub_id]["capabilities"].remove("hide_enhanced_4g_lte")
+
+                if sub_id != current_voice_sub_id:
+                    set_incoming_voice_sub_id(ad, current_voice_sub_id)
+
+                result = True
+    return result
+
+
 def toggle_volte(log, ad, new_state=None):
     """Toggle enable/disable VoLTE for default voice subscription.
-
     Args:
         ad: Android device object.
         new_state: VoLTE mode state to set to.
             True for enable, False for disable.
             If None, opposite of the current state.
-
     Raises:
         TelTestUtilsError if platform does not support VoLTE.
     """
@@ -4457,6 +4986,9 @@ def toggle_volte_for_subscription(log, ad, sub_id, new_state=None):
             If None, opposite of the current state.
 
     """
+    if not show_enhanced_4g_lte(ad, sub_id):
+        return False
+
     current_state = ad.droid.imsMmTelIsAdvancedCallingEnabled(sub_id)
     if new_state is None:
         new_state = not current_state
@@ -5376,8 +5908,8 @@ def wait_for_matching_sms(log,
                           ad_rx,
                           phonenumber_tx,
                           text,
-                          allow_multi_part_long_sms=True,
-                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE,
+                          allow_multi_part_long_sms=True):
     """Wait for matching incoming SMS.
 
     Args:
@@ -5560,6 +6092,7 @@ def sms_send_receive_verify_for_subscription(
                     ad_rx,
                     phonenumber_tx,
                     text,
+                    max_wait_time,
                     allow_multi_part_long_sms=True):
                 ad_rx.log.error("No matching received SMS of length %s.",
                                 length)
@@ -5735,6 +6268,7 @@ def mms_send_receive_verify_for_subscription(
             except Empty:
                 ad_tx.log.warning("No %s or %s event.", EventMmsSentSuccess,
                                   EventMmsSentFailure)
+                return False
 
             if not wait_for_matching_mms(log, ad_rx, phonenumber_tx,
                                          message, max_wait_time):
@@ -5743,7 +6277,7 @@ def mms_send_receive_verify_for_subscription(
             log.error("Exception error %s", e)
             raise
         finally:
-            ad_rx.droid.smsStopTrackingIncomingMmsMessage()
+            ad_rx.messaging_droid.smsStopTrackingIncomingMmsMessage()
             for ad in (ad_tx, ad_rx):
                 if toggle_enforce:
                     ad.send_keycode("BACK")
@@ -6851,6 +7385,21 @@ def set_preferred_network_mode_pref(log,
             error_msg = "%s due to %s" % (error_msg, log_message)
     ad.log.error(error_msg)
     return False
+
+
+def set_preferred_mode_for_5g(ad, sub_id=None, mode=None):
+    """Set Preferred Network Mode for 5G NSA
+    Args:
+        ad: Android device object.
+        sub_id: Subscription ID.
+        mode: 5G Network Mode Type
+    """
+    if sub_id is None:
+        sub_id = ad.droid.subscriptionGetDefaultSubId()
+    if mode is None:
+        mode = NETWORK_MODE_NR_LTE_GSM_WCDMA
+    return set_preferred_network_mode_pref(ad.log, ad, sub_id, mode)
+
 
 
 def set_preferred_subid_for_sms(log, ad, sub_id):
@@ -8904,6 +9453,51 @@ def set_call_forwarding_by_mmi(
         (call_forwarding_type, forwarded_number))
     return False
 
+def get_call_waiting_status(log, ad):
+    """ (Todo) Get call waiting status (activated or deactivated) when there is
+    any proper method available.
+    """
+    return True
+
+def set_call_waiting(log, ad, enable=1, retry=1):
+    """ Activate/deactivate call waiting by dialing MMI code.
+
+    Args:
+        log: log object.
+        ad: android object.
+        enable: 1 for activation and 0 fir deactivation
+        retry: times of retry if activation/deactivation fails
+
+    Returns:
+        True by successful activation/deactivation; otherwise False.
+    """
+    operator_name = get_operator_name(log, ad)
+
+    if operator_name in ["Verizon", "Sprint"]:
+        return True
+
+    while retry >= 0:
+        if enable:
+            ad.log.info("Activating call waiting...")
+            ad.droid.telecomDialNumber("*43#")
+        else:
+            ad.log.info("Deactivating call waiting...")
+            ad.droid.telecomDialNumber("#43#")
+
+        time.sleep(3)
+        ad.send_keycode("ENTER")
+        time.sleep(15)
+
+        ad.send_keycode("BACK")
+        time.sleep(5)
+        ad.send_keycode("BACK")
+
+        if get_call_waiting_status(log, ad):
+            return True
+        else:
+            retry = retry + 1
+
+    return False
 
 def get_rx_tx_power_levels(log, ad):
     """ Obtains Rx and Tx power levels from the MDS application.
@@ -8970,3 +9564,792 @@ def get_rx_tx_power_levels(log, ad):
         tx_power = None
 
     return rx_power, tx_power
+
+def sms_in_collision_send_receive_verify(
+        log,
+        ad_rx,
+        ad_rx2,
+        ad_tx,
+        ad_tx2,
+        array_message,
+        array_message2,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION):
+    """Send 2 SMS', receive both SMS', and verify content and sender's number of
+       each SMS.
+
+        Send 2 SMS'. One from ad_tx to ad_rx and the other from ad_tx2 to ad_rx2.
+        When ad_rx is identical to ad_rx2, the scenario of SMS' in collision can
+        be tested.
+        Verify both SMS' are sent, delivered and received.
+        Verify received content and sender's number of each SMS is correct.
+
+    Args:
+        log: Log object.
+        ad_tx: Sender's Android Device Object..
+        ad_rx: Receiver's Android Device Object.
+        ad_tx2: 2nd sender's Android Device Object..
+        ad_rx2: 2nd receiver's Android Device Object.
+        array_message: the array of message to send/receive from ad_tx to ad_rx
+        array_message2: the array of message to send/receive from ad_tx2 to
+        ad_rx2
+        max_wait_time: Max time to wait for reception of SMS
+    """
+
+    rx_sub_id = get_outgoing_message_sub_id(ad_rx)
+    rx2_sub_id = get_outgoing_message_sub_id(ad_rx2)
+
+    _, tx_sub_id, _ = get_subid_on_same_network_of_host_ad(
+        [ad_rx, ad_tx, ad_tx2],
+        host_sub_id=rx_sub_id)
+    set_subid_for_message(ad_tx, tx_sub_id)
+
+    _, _, tx2_sub_id = get_subid_on_same_network_of_host_ad(
+        [ad_rx2, ad_tx, ad_tx2],
+        host_sub_id=rx2_sub_id)
+    set_subid_for_message(ad_tx2, tx2_sub_id)
+
+    if not sms_in_collision_send_receive_verify_for_subscription(
+        log,
+        ad_tx,
+        ad_tx2,
+        ad_rx,
+        ad_rx2,
+        tx_sub_id,
+        tx2_sub_id,
+        rx_sub_id,
+        rx_sub_id,
+        array_message,
+        array_message2,
+        max_wait_time):
+        log_messaging_screen_shot(
+            ad_rx, test_name="sms rx subid: %s" % rx_sub_id)
+        log_messaging_screen_shot(
+            ad_rx2, test_name="sms rx2 subid: %s" % rx2_sub_id)
+        log_messaging_screen_shot(
+            ad_tx, test_name="sms tx subid: %s" % tx_sub_id)
+        log_messaging_screen_shot(
+            ad_tx2, test_name="sms tx subid: %s" % tx2_sub_id)
+        return False
+    return True
+
+def sms_in_collision_send_receive_verify_for_subscription(
+        log,
+        ad_tx,
+        ad_tx2,
+        ad_rx,
+        ad_rx2,
+        subid_tx,
+        subid_tx2,
+        subid_rx,
+        subid_rx2,
+        array_message,
+        array_message2,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION):
+    """Send 2 SMS', receive both SMS', and verify content and sender's number of
+       each SMS.
+
+        Send 2 SMS'. One from ad_tx to ad_rx and the other from ad_tx2 to ad_rx2.
+        When ad_rx is identical to ad_rx2, the scenario of SMS' in collision can
+        be tested.
+        Verify both SMS' are sent, delivered and received.
+        Verify received content and sender's number of each SMS is correct.
+
+    Args:
+        log: Log object.
+        ad_tx: Sender's Android Device Object..
+        ad_rx: Receiver's Android Device Object.
+        ad_tx2: 2nd sender's Android Device Object..
+        ad_rx2: 2nd receiver's Android Device Object.
+        subid_tx: Sub ID of ad_tx as default Sub ID for outgoing SMS
+        subid_tx2: Sub ID of ad_tx2 as default Sub ID for outgoing SMS
+        subid_rx: Sub ID of ad_rx as default Sub ID for incoming SMS
+        subid_rx2: Sub ID of ad_rx2 as default Sub ID for incoming SMS
+        array_message: the array of message to send/receive from ad_tx to ad_rx
+        array_message2: the array of message to send/receive from ad_tx2 to
+        ad_rx2
+        max_wait_time: Max time to wait for reception of SMS
+    """
+
+    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
+    phonenumber_tx2 = ad_tx2.telephony['subscription'][subid_tx2]['phone_num']
+    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
+    phonenumber_rx2 = ad_rx2.telephony['subscription'][subid_rx2]['phone_num']
+
+    for ad in (ad_tx, ad_tx2, ad_rx, ad_rx2):
+        ad.send_keycode("BACK")
+        if not getattr(ad, "messaging_droid", None):
+            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+            ad.messaging_ed.start()
+        else:
+            try:
+                if not ad.messaging_droid.is_live:
+                    ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                    ad.messaging_ed.start()
+                else:
+                    ad.messaging_ed.clear_all_events()
+                ad.messaging_droid.logI(
+                    "Start sms_send_receive_verify_for_subscription test")
+            except Exception:
+                ad.log.info("Create new sl4a session for messaging")
+                ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                ad.messaging_ed.start()
+
+    for text, text2 in zip(array_message, array_message2):
+        length = len(text)
+        length2 = len(text2)
+        ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
+                       phonenumber_tx, phonenumber_rx, length, text)
+        ad_tx2.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
+                       phonenumber_tx2, phonenumber_rx2, length2, text2)
+
+        try:
+            ad_rx.messaging_ed.clear_events(EventSmsReceived)
+            ad_rx2.messaging_ed.clear_events(EventSmsReceived)
+            ad_tx.messaging_ed.clear_events(EventSmsSentSuccess)
+            ad_tx.messaging_ed.clear_events(EventSmsSentFailure)
+            ad_tx2.messaging_ed.clear_events(EventSmsSentSuccess)
+            ad_tx2.messaging_ed.clear_events(EventSmsSentFailure)
+            ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
+            if ad_rx2 != ad_rx:
+                ad_rx2.messaging_droid.smsStartTrackingIncomingSmsMessage()
+            time.sleep(1)
+            ad_tx.messaging_droid.logI("Sending SMS of length %s" % length)
+            ad_tx2.messaging_droid.logI("Sending SMS of length %s" % length2)
+            ad_rx.messaging_droid.logI(
+                "Expecting SMS of length %s from %s" % (length, ad_tx.serial))
+            ad_rx2.messaging_droid.logI(
+                "Expecting SMS of length %s from %s" % (length2, ad_tx2.serial))
+
+            tasks = [
+                (ad_tx.messaging_droid.smsSendTextMessage,
+                (phonenumber_rx, text, True)),
+                (ad_tx2.messaging_droid.smsSendTextMessage,
+                (phonenumber_rx2, text2, True))]
+            multithread_func(log, tasks)
+            try:
+                tasks = [
+                    (ad_tx.messaging_ed.pop_events, ("(%s|%s|%s|%s)" % (
+                        EventSmsSentSuccess,
+                        EventSmsSentFailure,
+                        EventSmsDeliverSuccess,
+                        EventSmsDeliverFailure), max_wait_time)),
+                    (ad_tx2.messaging_ed.pop_events, ("(%s|%s|%s|%s)" % (
+                        EventSmsSentSuccess,
+                        EventSmsSentFailure,
+                        EventSmsDeliverSuccess,
+                        EventSmsDeliverFailure), max_wait_time))
+                ]
+                results = run_multithread_func(log, tasks)
+                res = True
+                _ad = ad_tx
+                for ad, events in [(ad_tx, results[0]),(ad_tx2, results[1])]:
+                    _ad = ad
+                    for event in events:
+                        ad.log.info("Got event %s", event["name"])
+                        if event["name"] == EventSmsSentFailure or \
+                            event["name"] == EventSmsDeliverFailure:
+                            if event.get("data") and event["data"].get("Reason"):
+                                ad.log.error("%s with reason: %s",
+                                                event["name"],
+                                                event["data"]["Reason"])
+                            res = False
+                        elif event["name"] == EventSmsSentSuccess or \
+                            event["name"] == EventSmsDeliverSuccess:
+                            break
+                if not res:
+                    return False
+            except Empty:
+                _ad.log.error("No %s or %s event for SMS of length %s.",
+                                EventSmsSentSuccess, EventSmsSentFailure,
+                                length)
+                return False
+            if ad_rx == ad_rx2:
+                if not wait_for_matching_mt_sms_in_collision(
+                    log,
+                    ad_rx,
+                    phonenumber_tx,
+                    phonenumber_tx2,
+                    text,
+                    text2,
+                    max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION):
+
+                    ad_rx.log.error(
+                        "No matching received SMS of length %s from %s.",
+                        length,
+                        ad_rx.serial)
+                    return False
+            else:
+                if not wait_for_matching_mt_sms_in_collision_with_mo_sms(
+                    log,
+                    ad_rx,
+                    ad_rx2,
+                    phonenumber_tx,
+                    phonenumber_tx2,
+                    text,
+                    text2,
+                    max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION):
+                    return False
+        except Exception as e:
+            log.error("Exception error %s", e)
+            raise
+        finally:
+            ad_rx.messaging_droid.smsStopTrackingIncomingSmsMessage()
+            ad_rx2.messaging_droid.smsStopTrackingIncomingSmsMessage()
+    return True
+
+
+def sms_rx_power_off_multiple_send_receive_verify(
+        log,
+        ad_rx,
+        ad_tx,
+        ad_tx2,
+        array_message_length,
+        array_message2_length,
+        num_array_message,
+        num_array_message2,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION):
+
+    rx_sub_id = get_outgoing_message_sub_id(ad_rx)
+
+    _, tx_sub_id, _ = get_subid_on_same_network_of_host_ad(
+        [ad_rx, ad_tx, ad_tx2],
+        host_sub_id=rx_sub_id)
+    set_subid_for_message(ad_tx, tx_sub_id)
+
+    _, _, tx2_sub_id = get_subid_on_same_network_of_host_ad(
+        [ad_rx, ad_tx, ad_tx2],
+        host_sub_id=rx_sub_id)
+    set_subid_for_message(ad_tx2, tx2_sub_id)
+
+    if not sms_rx_power_off_multiple_send_receive_verify_for_subscription(
+        log,
+        ad_tx,
+        ad_tx2,
+        ad_rx,
+        tx_sub_id,
+        tx2_sub_id,
+        rx_sub_id,
+        rx_sub_id,
+        array_message_length,
+        array_message2_length,
+        num_array_message,
+        num_array_message2):
+        log_messaging_screen_shot(
+            ad_rx, test_name="sms rx subid: %s" % rx_sub_id)
+        log_messaging_screen_shot(
+            ad_tx, test_name="sms tx subid: %s" % tx_sub_id)
+        log_messaging_screen_shot(
+            ad_tx2, test_name="sms tx subid: %s" % tx2_sub_id)
+        return False
+    return True
+
+
+def sms_rx_power_off_multiple_send_receive_verify_for_subscription(
+        log,
+        ad_tx,
+        ad_tx2,
+        ad_rx,
+        subid_tx,
+        subid_tx2,
+        subid_rx,
+        subid_rx2,
+        array_message_length,
+        array_message2_length,
+        num_array_message,
+        num_array_message2,
+        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION):
+
+    phonenumber_tx = ad_tx.telephony['subscription'][subid_tx]['phone_num']
+    phonenumber_tx2 = ad_tx2.telephony['subscription'][subid_tx2]['phone_num']
+    phonenumber_rx = ad_rx.telephony['subscription'][subid_rx]['phone_num']
+    phonenumber_rx2 = ad_rx.telephony['subscription'][subid_rx2]['phone_num']
+
+    if not toggle_airplane_mode(log, ad_rx, True):
+        ad_rx.log.error("Failed to enable Airplane Mode")
+        return False
+    ad_rx.stop_services()
+    ad_rx.log.info("Rebooting......")
+    ad_rx.adb.reboot()
+
+    message_dict = {phonenumber_tx: [], phonenumber_tx2: []}
+    for index in range(max(num_array_message, num_array_message2)):
+        array_message = [rand_ascii_str(array_message_length)]
+        array_message2 = [rand_ascii_str(array_message2_length)]
+        for text, text2 in zip(array_message, array_message2):
+            message_dict[phonenumber_tx].append(text)
+            message_dict[phonenumber_tx2].append(text2)
+            length = len(text)
+            length2 = len(text2)
+
+            ad_tx.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
+                           phonenumber_tx, phonenumber_rx, length, text)
+            ad_tx2.log.info("Sending SMS from %s to %s, len: %s, content: %s.",
+                           phonenumber_tx2, phonenumber_rx2, length2, text2)
+
+            try:
+                for ad in (ad_tx, ad_tx2):
+                    ad.send_keycode("BACK")
+                    if not getattr(ad, "messaging_droid", None):
+                        ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                        ad.messaging_ed.start()
+                    else:
+                        try:
+                            if not ad.messaging_droid.is_live:
+                                ad.messaging_droid, ad.messaging_ed = \
+                                    ad.get_droid()
+                                ad.messaging_ed.start()
+                            else:
+                                ad.messaging_ed.clear_all_events()
+                            ad.messaging_droid.logI(
+                                "Start sms_send_receive_verify_for_subscription"
+                                " test")
+                        except Exception:
+                            ad.log.info("Create new sl4a session for messaging")
+                            ad.messaging_droid, ad.messaging_ed = ad.get_droid()
+                            ad.messaging_ed.start()
+
+                ad_tx.messaging_ed.clear_events(EventSmsSentSuccess)
+                ad_tx.messaging_ed.clear_events(EventSmsSentFailure)
+                ad_tx2.messaging_ed.clear_events(EventSmsSentSuccess)
+                ad_tx2.messaging_ed.clear_events(EventSmsSentFailure)
+
+                if index < num_array_message and index < num_array_message2:
+                    ad_tx.messaging_droid.logI(
+                        "Sending SMS of length %s" % length)
+                    ad_tx2.messaging_droid.logI(
+                        "Sending SMS of length %s" % length2)
+                    tasks = [
+                        (ad_tx.messaging_droid.smsSendTextMessage,
+                        (phonenumber_rx, text, True)),
+                        (ad_tx2.messaging_droid.smsSendTextMessage,
+                        (phonenumber_rx2, text2, True))]
+                    multithread_func(log, tasks)
+                else:
+                    if index < num_array_message:
+                        ad_tx.messaging_droid.logI(
+                            "Sending SMS of length %s" % length)
+                        ad_tx.messaging_droid.smsSendTextMessage(
+                            phonenumber_rx, text, True)
+                    if index < num_array_message2:
+                        ad_tx2.messaging_droid.logI(
+                            "Sending SMS of length %s" % length2)
+                        ad_tx2.messaging_droid.smsSendTextMessage(
+                            phonenumber_rx2, text2, True)
+
+                try:
+                    if index < num_array_message and index < num_array_message2:
+                        tasks = [
+                            (ad_tx.messaging_ed.pop_events, ("(%s|%s|%s|%s)" % (
+                                EventSmsSentSuccess,
+                                EventSmsSentFailure,
+                                EventSmsDeliverSuccess,
+                                EventSmsDeliverFailure),
+                                max_wait_time)),
+                            (ad_tx2.messaging_ed.pop_events, ("(%s|%s|%s|%s)" % (
+                                EventSmsSentSuccess,
+                                EventSmsSentFailure,
+                                EventSmsDeliverSuccess,
+                                EventSmsDeliverFailure),
+                                max_wait_time))
+                        ]
+                        results = run_multithread_func(log, tasks)
+                        res = True
+                        _ad = ad_tx
+                        for ad, events in [
+                            (ad_tx, results[0]), (ad_tx2, results[1])]:
+                            _ad = ad
+                            for event in events:
+                                ad.log.info("Got event %s", event["name"])
+                                if event["name"] == EventSmsSentFailure or \
+                                    event["name"] == EventSmsDeliverFailure:
+                                    if event.get("data") and \
+                                        event["data"].get("Reason"):
+                                        ad.log.error("%s with reason: %s",
+                                                        event["name"],
+                                                        event["data"]["Reason"])
+                                    res = False
+                                elif event["name"] == EventSmsSentSuccess or \
+                                    event["name"] == EventSmsDeliverSuccess:
+                                    break
+                        if not res:
+                            return False
+                    else:
+                        if index < num_array_message:
+                            result = ad_tx.messaging_ed.pop_events(
+                                "(%s|%s|%s|%s)" % (
+                                    EventSmsSentSuccess,
+                                    EventSmsSentFailure,
+                                    EventSmsDeliverSuccess,
+                                    EventSmsDeliverFailure),
+                                max_wait_time)
+                            res = True
+                            _ad = ad_tx
+                            for ad, events in [(ad_tx, result)]:
+                                _ad = ad
+                                for event in events:
+                                    ad.log.info("Got event %s", event["name"])
+                                    if event["name"] == EventSmsSentFailure or \
+                                        event["name"] == EventSmsDeliverFailure:
+                                        if event.get("data") and \
+                                            event["data"].get("Reason"):
+                                            ad.log.error(
+                                                "%s with reason: %s",
+                                                event["name"],
+                                                event["data"]["Reason"])
+                                        res = False
+                                    elif event["name"] == EventSmsSentSuccess \
+                                        or event["name"] == EventSmsDeliverSuccess:
+                                        break
+                            if not res:
+                                return False
+                        if index < num_array_message2:
+                            result = ad_tx2.messaging_ed.pop_events(
+                                "(%s|%s|%s|%s)" % (
+                                    EventSmsSentSuccess,
+                                    EventSmsSentFailure,
+                                    EventSmsDeliverSuccess,
+                                    EventSmsDeliverFailure),
+                                max_wait_time)
+                            res = True
+                            _ad = ad_tx2
+                            for ad, events in [(ad_tx2, result)]:
+                                _ad = ad
+                                for event in events:
+                                    ad.log.info("Got event %s", event["name"])
+                                    if event["name"] == EventSmsSentFailure or \
+                                        event["name"] == EventSmsDeliverFailure:
+                                        if event.get("data") and \
+                                            event["data"].get("Reason"):
+                                            ad.log.error(
+                                                "%s with reason: %s",
+                                                event["name"],
+                                                event["data"]["Reason"])
+                                        res = False
+                                    elif event["name"] == EventSmsSentSuccess \
+                                        or event["name"] == EventSmsDeliverSuccess:
+                                        break
+                            if not res:
+                                return False
+
+
+                except Empty:
+                    _ad.log.error("No %s or %s event for SMS of length %s.",
+                                    EventSmsSentSuccess, EventSmsSentFailure,
+                                    length)
+                    return False
+
+            except Exception as e:
+                log.error("Exception error %s", e)
+                raise
+
+    ad_rx.wait_for_boot_completion()
+    ad_rx.root_adb()
+    ad_rx.start_services(skip_setup_wizard=False)
+
+    output = ad_rx.adb.logcat("-t 1")
+    match = re.search(r"\d+-\d+\s\d+:\d+:\d+.\d+", output)
+    if match:
+        ad_rx.test_log_begin_time = match.group(0)
+
+    ad_rx.messaging_droid, ad_rx.messaging_ed = ad_rx.get_droid()
+    ad_rx.messaging_ed.start()
+    ad_rx.messaging_droid.smsStartTrackingIncomingSmsMessage()
+    time.sleep(1)  #sleep 100ms after starting event tracking
+
+    if not toggle_airplane_mode(log, ad_rx, False):
+        ad_rx.log.error("Failed to disable Airplane Mode")
+        return False
+
+    res = True
+    try:
+        if not wait_for_matching_multiple_sms(log,
+                ad_rx,
+                phonenumber_tx,
+                phonenumber_tx2,
+                messages=message_dict,
+                max_wait_time=max_wait_time):
+            res =  False
+    except Exception as e:
+        log.error("Exception error %s", e)
+        raise
+    finally:
+        ad_rx.messaging_droid.smsStopTrackingIncomingSmsMessage()
+
+    return res
+
+def wait_for_matching_mt_sms_in_collision(log,
+                          ad_rx,
+                          phonenumber_tx,
+                          phonenumber_tx2,
+                          text,
+                          text2,
+                          allow_multi_part_long_sms=True,
+                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION):
+
+    if not allow_multi_part_long_sms:
+        try:
+            ad_rx.messaging_ed.wait_for_event(
+                EventSmsReceived,
+                is_sms_in_collision_match,
+                max_wait_time,
+                phonenumber_tx,
+                phonenumber_tx2,
+                text,
+                text2)
+            ad_rx.log.info("Got event %s", EventSmsReceived)
+            return True
+        except Empty:
+            ad_rx.log.error("No matched SMS received event.")
+            return False
+    else:
+        try:
+            received_sms = ''
+            received_sms2 = ''
+            remaining_text = text
+            remaining_text2 = text2
+            while (remaining_text != '' or remaining_text2 != ''):
+                event = ad_rx.messaging_ed.wait_for_event(
+                    EventSmsReceived,
+                    is_sms_in_collision_partial_match,
+                    max_wait_time,
+                    phonenumber_tx,
+                    phonenumber_tx2,
+                    remaining_text,
+                    remaining_text2)
+                event_text = event['data']['Text'].split(")")[-1].strip()
+                event_text_length = len(event_text)
+
+                if event_text in remaining_text:
+                    ad_rx.log.info("Got event %s of text length %s from %s",
+                                   EventSmsReceived, event_text_length,
+                                   phonenumber_tx)
+                    remaining_text = remaining_text[event_text_length:]
+                    received_sms += event_text
+                elif event_text in remaining_text2:
+                    ad_rx.log.info("Got event %s of text length %s from %s",
+                                   EventSmsReceived, event_text_length,
+                                   phonenumber_tx2)
+                    remaining_text2 = remaining_text2[event_text_length:]
+                    received_sms2 += event_text
+
+            ad_rx.log.info("Received SMS of length %s", len(received_sms))
+            ad_rx.log.info("Received SMS of length %s", len(received_sms2))
+            return True
+        except Empty:
+            ad_rx.log.error(
+                "Missing SMS received event.")
+            if received_sms != '':
+                ad_rx.log.error(
+                    "Only received partial matched SMS of length %s from %s",
+                    len(received_sms), phonenumber_tx)
+            if received_sms2 != '':
+                ad_rx.log.error(
+                    "Only received partial matched SMS of length %s from %s",
+                    len(received_sms2), phonenumber_tx2)
+            return False
+
+def wait_for_matching_mt_sms_in_collision_with_mo_sms(log,
+                          ad_rx,
+                          ad_rx2,
+                          phonenumber_tx,
+                          phonenumber_tx2,
+                          text,
+                          text2,
+                          allow_multi_part_long_sms=True,
+                          max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE_IN_COLLISION):
+
+    if not allow_multi_part_long_sms:
+        result = True
+        try:
+            ad_rx.messaging_ed.wait_for_call_offhook_event(
+                EventSmsReceived,
+                is_sms_match,
+                max_wait_time,
+                phonenumber_tx,
+                text)
+            ad_rx.log.info("Got event %s", EventSmsReceived)
+        except Empty:
+            ad_rx.log.error("No matched SMS received event.")
+            result = False
+
+        try:
+            ad_rx2.messaging_ed.wait_for_call_offhook_event(
+                EventSmsReceived,
+                is_sms_match,
+                max_wait_time,
+                phonenumber_tx2,
+                text2)
+            ad_rx2.log.info("Got event %s", EventSmsReceived)
+        except Empty:
+            ad_rx2.log.error("No matched SMS received event.")
+            result = False
+
+        return result
+    else:
+        result = True
+        try:
+            received_sms = ''
+            remaining_text = text
+            while remaining_text != '':
+                event = ad_rx.messaging_ed.wait_for_event(
+                    EventSmsReceived, is_sms_partial_match, max_wait_time,
+                    phonenumber_tx, remaining_text)
+                event_text = event['data']['Text'].split(")")[-1].strip()
+                event_text_length = len(event_text)
+
+                if event_text in remaining_text:
+                    ad_rx.log.info("Got event %s of text length %s from %s",
+                                   EventSmsReceived, event_text_length,
+                                   phonenumber_tx)
+                    remaining_text = remaining_text[event_text_length:]
+                    received_sms += event_text
+
+            ad_rx.log.info("Received SMS of length %s", len(received_sms))
+        except Empty:
+            ad_rx.log.error(
+                "Missing SMS received event.")
+            if received_sms != '':
+                ad_rx.log.error(
+                    "Only received partial matched SMS of length %s from %s",
+                    len(received_sms), phonenumber_tx)
+            result = False
+
+        try:
+            received_sms2 = ''
+            remaining_text2 = text2
+            while remaining_text2 != '':
+                event2 = ad_rx2.messaging_ed.wait_for_event(
+                    EventSmsReceived, is_sms_partial_match, max_wait_time,
+                    phonenumber_tx2, remaining_text2)
+                event_text2 = event2['data']['Text'].split(")")[-1].strip()
+                event_text_length2 = len(event_text2)
+
+                if event_text2 in remaining_text2:
+                    ad_rx2.log.info("Got event %s of text length %s from %s",
+                                   EventSmsReceived, event_text_length2,
+                                   phonenumber_tx2)
+                    remaining_text2 = remaining_text2[event_text_length2:]
+                    received_sms2 += event_text2
+
+            ad_rx2.log.info("Received SMS of length %s", len(received_sms2))
+        except Empty:
+            ad_rx2.log.error(
+                "Missing SMS received event.")
+            if received_sms2 != '':
+                ad_rx2.log.error(
+                    "Only received partial matched SMS of length %s from %s",
+                    len(received_sms2), phonenumber_tx2)
+            result = False
+
+        return result
+
+def wait_for_matching_multiple_sms(log,
+                        ad_rx,
+                        phonenumber_tx,
+                        phonenumber_tx2,
+                        messages={},
+                        allow_multi_part_long_sms=True,
+                        max_wait_time=MAX_WAIT_TIME_SMS_RECEIVE):
+
+    if not allow_multi_part_long_sms:
+        try:
+            ad_rx.messaging_ed.wait_for_event(
+                EventSmsReceived,
+                is_sms_match_among_multiple_sms,
+                max_wait_time,
+                phonenumber_tx,
+                phonenumber_tx2,
+                messages[phonenumber_tx],
+                messages[phonenumber_tx2])
+            ad_rx.log.info("Got event %s", EventSmsReceived)
+            return True
+        except Empty:
+            ad_rx.log.error("No matched SMS received event.")
+            return False
+    else:
+        all_msgs = []
+        for tx, msgs in messages.items():
+            for msg in msgs:
+                all_msgs.append([tx, msg, msg, ''])
+
+        all_msgs_copy = all_msgs.copy()
+
+        try:
+            while (all_msgs != []):
+                event = ad_rx.messaging_ed.wait_for_event(
+                    EventSmsReceived,
+                    is_sms_partial_match_among_multiple_sms,
+                    max_wait_time,
+                    phonenumber_tx,
+                    phonenumber_tx2,
+                    messages[phonenumber_tx],
+                    messages[phonenumber_tx2])
+                event_text = event['data']['Text'].split(")")[-1].strip()
+                event_text_length = len(event_text)
+
+                for msg in all_msgs_copy:
+                    if event_text in msg[2]:
+                        ad_rx.log.info("Got event %s of text length %s from %s",
+                                       EventSmsReceived, event_text_length,
+                                       msg[0])
+                        msg[2] = msg[2][event_text_length:]
+                        msg[3] += event_text
+
+                        if msg[2] == "":
+                            all_msgs.remove(msg)
+
+            ad_rx.log.info("Received all SMS' sent when power-off.")
+        except Empty:
+            ad_rx.log.error(
+                "Missing SMS received event.")
+
+            for msg in all_msgs_copy:
+                if msg[3] != '':
+                    ad_rx.log.error(
+                        "Only received partial matched SMS of length %s from %s",
+                        len(msg[3]), msg[0])
+            return False
+
+        return True
+
+def is_sms_in_collision_match(event, phonenumber_tx, phonenumber_tx2, text, text2):
+    event_text = event['data']['Text'].strip()
+    if event_text.startswith("("):
+        event_text = event_text.split(")")[-1]
+
+    for phonenumber, txt in [[phonenumber_tx, text], [phonenumber_tx2, text2]]:
+        if check_phone_number_match(event['data']['Sender'], phonenumber) and txt.startswith(event_text):
+            return True
+    return False
+
+def is_sms_in_collision_partial_match(event, phonenumber_tx, phonenumber_tx2, text, text2):
+    for phonenumber, txt in [[phonenumber_tx, text], [phonenumber_tx2, text2]]:
+        if check_phone_number_match(event['data']['Sender'], phonenumber) and event['data']['Text'].strip() == txt:
+            return True
+    return False
+
+def is_sms_match_among_multiple_sms(event, phonenumber_tx, phonenumber_tx2, texts=[], texts2=[]):
+    for txt in texts:
+        if check_phone_number_match(event['data']['Sender'], phonenumber_tx) and event['data']['Text'].strip() == txt:
+                return True
+
+    for txt in texts2:
+        if check_phone_number_match(event['data']['Sender'], phonenumber_tx2) and event['data']['Text'].strip() == txt:
+                return True
+
+    return False
+
+def is_sms_partial_match_among_multiple_sms(event, phonenumber_tx, phonenumber_tx2, texts=[], texts2=[]):
+    event_text = event['data']['Text'].strip()
+    if event_text.startswith("("):
+        event_text = event_text.split(")")[-1]
+
+    for txt in texts:
+        if check_phone_number_match(event['data']['Sender'], phonenumber_tx) and txt.startswith(event_text):
+                return True
+
+    for txt in texts2:
+        if check_phone_number_match(event['data']['Sender'], phonenumber_tx2) and txt.startswith(event_text):
+                return True
+
+    return False

@@ -29,7 +29,7 @@ from acts import signals
 from acts import utils
 from acts.test_utils.wifi import wifi_test_utils as wutils
 
-ACTS_CONTROLLER_CONFIG_NAME = 'ArduinoWifiDongle'
+MOBLY_CONTROLLER_CONFIG_NAME = 'ArduinoWifiDongle'
 ACTS_CONTROLLER_REFERENCE_NAME = 'arduino_wifi_dongles'
 
 WIFI_DONGLE_EMPTY_CONFIG_MSG = 'Configuration is empty, abort!'
