@@ -31,7 +31,6 @@ from acts import signals
 from acts.base_test import BaseTestClass
 from acts.controllers.ap_lib import hostapd_constants
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import disconnect
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import is_connected
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap_and_associate
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
@@ -67,6 +66,7 @@ class RebootAPStressTest(BaseTestClass):
         self.wait_to_connect_after_ap_reboot_s = int(
             self.user_params.get("wait_to_connect_after_ap_reboot_s",
                                  self.wait_to_connect_after_ap_reboot_s))
+
     def teardown_test(self):
         disconnect(self.wlan_device)
         self.wlan_device.reset_wifi()
@@ -74,20 +74,19 @@ class RebootAPStressTest(BaseTestClass):
 
     def setup_ap(self):
         setup_ap(access_point=self.ap,
-            profile_name='whirlwind',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+                 profile_name='whirlwind',
+                 channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                 ssid=self.ssid)
 
     def test_reboot_AP_stress(self):
-        setup_ap_and_associate(
-            access_point=self.ap,
-            client=self.wlan_device,
-            profile_name='whirlwind',
-            channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-            ssid=self.ssid)
+        setup_ap_and_associate(access_point=self.ap,
+                               client=self.wlan_device,
+                               profile_name='whirlwind',
+                               channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
+                               ssid=self.ssid)
 
-        asserts.assert_true(is_connected(self.wlan_device),
-                        'Failed to connect.')
+        asserts.assert_true(self.wlan_device.is_connected(),
+                            'Failed to connect.')
 
         for _ in range(0, self.num_of_iterations):
             # Stop AP
@@ -95,8 +94,8 @@ class RebootAPStressTest(BaseTestClass):
             time.sleep(self.wait_after_ap_reboot_s)
 
             # Did we disconnect from AP?
-            asserts.assert_false(is_connected(self.wlan_device),
-                        'Failed to disconnect.')
+            asserts.assert_false(self.wlan_device.is_connected(),
+                                 'Failed to disconnect.')
 
             # Start AP
             self.setup_ap()
@@ -105,7 +104,7 @@ class RebootAPStressTest(BaseTestClass):
             time.sleep(self.wait_to_connect_after_ap_reboot_s)
 
             # Did we connect back to WiFi?
-            asserts.assert_true(is_connected(self.wlan_device),
-                        'Failed to connect back.')
+            asserts.assert_true(self.wlan_device.is_connected(),
+                                'Failed to connect back.')
 
         return True
