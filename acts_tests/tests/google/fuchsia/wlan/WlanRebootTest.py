@@ -14,18 +14,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import itertools
 import os
 import re
 import time
+
 from multiprocessing import Process
-import itertools
 
 from acts import asserts
 from acts import context
 from acts import utils
-from acts.controllers import pdu
 from acts.controllers import iperf_client
 from acts.controllers import iperf_server
+from acts.controllers import pdu
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.radvd import Radvd
 from acts.controllers.ap_lib import radvd_constants
@@ -33,8 +34,6 @@ from acts.controllers.ap_lib.radvd_config import RadvdConfig
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
 from acts.test_utils.abstract_devices.utils_lib import wlan_utils
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
-
-# TODO(46633): Add in policy layer stuff once its implemented (see SetupTest)
 
 # Constants, for readibility
 AP = 'ap'
@@ -57,6 +56,9 @@ IP_VERSIONS = [{
     IPV6: True
 }]
 INTERRUPTS = [True, False]
+
+DUT_NETWORK_CONNECTION_TIMEOUT = 60
+DUT_IP_ADDRESS_TIMEOUT = 15
 
 
 def get_test_name(settings):
@@ -91,6 +93,7 @@ class WlanRebootTest(WifiBaseTest):
     Testbed Requirement:
     * One ACTS compatible device (dut)
     * One Whirlwind Access Point (will also serve as iperf server)
+    * One PduDevice
     """
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
@@ -105,6 +108,10 @@ class WlanRebootTest(WifiBaseTest):
 
     def setup_class(self):
         super().setup_class()
+
+        self.android_devices = getattr(self, 'android_devices', [])
+        self.fuchsia_devices = getattr(self, 'fuchsia_devices', [])
+
         if 'dut' in self.user_params:
             if self.user_params['dut'] == 'fuchsia_devices':
                 self.dut = create_wlan_device(self.fuchsia_devices[0])
@@ -117,85 +124,59 @@ class WlanRebootTest(WifiBaseTest):
             # Default is an android device, just like the other tests
             self.dut = create_wlan_device(self.android_devices[0])
 
-        self.android_devices = getattr(self, 'android_devices', [])
-        self.fuchsia_devices = getattr(self, 'fuchsia_devices', [])
-
         self.access_point = self.access_points[0]
-        self.pdus = self.register_controller(pdu)
 
         # IPerf Server is run on the AP and setup in the tests
-        self.iperf_server = None
-        self.iperf_client = self.iperf_clients[0]
+        self.iperf_server_on_ap = None
+        self.iperf_client_on_dut = self.iperf_clients[0]
 
         self.router_adv_daemon = None
 
-        # Times (in seconds) to retry different stages of the reboot/reconnect
-        # processes.
-        wlan_reboot_params = self.user_params.get('wlan_reboot_params', None)
-        if wlan_reboot_params:
-            self.timeout_for_unreachable_ap = wlan_reboot_params.get(
-                'timeout_for_unreachable_ap', 3)
-            self.timeout_for_pingable_ap = wlan_reboot_params.get(
-                'timeout_for_pingable_ap', 30)
-            self.timeout_for_sshable_ap = wlan_reboot_params.get(
-                'timeout_for_sshable_ap', 30)
-            self.timeout_for_unreachable_dut = wlan_reboot_params.get(
-                'timeout_for_unreachable_dut', 3)
-            self.timeout_for_pingable_dut = wlan_reboot_params.get(
-                'timeout_for_pingable_dut', 30)
-            self.timeout_for_dut_network_connection = wlan_reboot_params.get(
-                'timeout_for_dut_network_connection', 60)
-            self.timeout_for_dut_can_ping = wlan_reboot_params.get(
-                'timeout_for_dut_can_ping', 3)
-            self.timeout_for_ip_address = wlan_reboot_params.get(
-                'timeout_for_ip_address', 15)
-            self.timeout_for_reinitialize_services = wlan_reboot_params.get(
-                'timeout_for_reinitialize_services', 3)
-        else:
-            self.timeout_for_unreachable_ap = 3
-            self.timeout_for_pingable_ap = 60
-            self.timeout_for_sshable_ap = 30
-            self.timeout_for_unreachable_dut = 3
-            self.timeout_for_pingable_dut = 30
-            self.timeout_for_dut_network_connection = 60
-            self.timeout_for_dut_can_ping = 3
-            self.timeout_for_ip_address = 15
-            self.timeout_for_reinitialize_services = 3
+        # Times (in seconds) to wait for DUT network connection and assigning an
+        # ip address to the wlan interface.
+        wlan_reboot_params = self.user_params.get('wlan_reboot_params', {})
+        self.dut_network_connection_timeout = wlan_reboot_params.get(
+            'dut_network_connection_timeout', DUT_NETWORK_CONNECTION_TIMEOUT)
+        self.dut_ip_address_timeout = wlan_reboot_params.get(
+            'dut_ip_address_timeout', DUT_IP_ADDRESS_TIMEOUT)
 
     def setup_test(self):
         self.access_point.stop_all_aps()
         if self.router_adv_daemon:
             self.router_adv_daemon.stop()
+        self.dut.wifi_toggle_state(True)
         for ad in self.android_devices:
             ad.droid.wakeLockAcquireBright()
             ad.droid.wakeUpNow()
-        self.dut.wifi_toggle_state(True)
+        for fd in self.fuchsia_devices:
+            fd.wlan_policy_lib.wlanCreateClientController()
+            fd.wlan_policy_lib.wlanStartClientConnections()
+        self.dut.clear_saved_networks()
         self.dut.disconnect()
         self.router_adv_daemon = None
-        if self.user_params['dut'] == 'fuchsia_devices':
-            self.dut.device.wlan_policy_lib.wlanCreateClientController()
-            # TODO(52319): Clear the saved networks list once
-            # removeSavedNetwork and clearSavedNetworks are implemented.
-            self.dut.device.wlan_policy_lib.wlanStartClientConnections()
         self.ssid = utils.rand_ascii_str(hostapd_constants.AP_SSID_LENGTH_2G)
 
     def teardown_test(self):
+        self.access_point.stop_all_aps()
+        self.dut.clear_saved_networks()
+        for fd in self.fuchsia_devices:
+            fd.wlan_policy_lib.wlanStopClientConnections()
+        self.dut.disconnect()
         for ad in self.android_devices:
             ad.droid.wakeLockRelease()
             ad.droid.goToSleepNow()
         self.dut.turn_location_off_and_scan_toggle_off()
-        self.dut.disconnect()
         self.dut.reset_wifi()
-        self.access_point.stop_all_aps()
 
     def on_fail(self, test_name, begin_time):
         self.dut.take_bug_report(test_name, begin_time)
         self.dut.get_log(test_name, begin_time)
 
-    def setup_ap(self, band, ipv4=True, ipv6=False):
+    def setup_ap(self, ssid, band, ipv4=True, ipv6=False):
         """Setup ap with basic config.
 
         Args:
+            ssid: string, ssid to setup on ap
             band: string ('2g' or '5g') of band to setup.
             ipv4: True if using ipv4 (dhcp), else False.
             ipv6: True if using ipv6 (radvd), else False.
@@ -204,12 +185,12 @@ class WlanRebootTest(WifiBaseTest):
             wlan_utils.setup_ap(access_point=self.access_point,
                                 profile_name='whirlwind',
                                 channel=11,
-                                ssid=self.ssid)
+                                ssid=ssid)
         elif band == BAND_5G:
             wlan_utils.setup_ap(access_point=self.access_point,
                                 profile_name='whirlwind',
                                 channel=36,
-                                ssid=self.ssid)
+                                ssid=ssid)
 
         if not ipv4:
             self.access_point.stop_dhcp()
@@ -228,36 +209,45 @@ class WlanRebootTest(WifiBaseTest):
                                                self.access_point.wlan_5g)
             self.router_adv_daemon.start(radvd_config)
 
-        self.log.info('Network (SSID: %s) is up.' % self.ssid)
+        self.log.info('Network (SSID: %s) is up.' % ssid)
 
-    def associate_and_save(self):
+    def save_and_connect(self, ssid):
         """Associates the dut with the network running on the AP and saves
         network to device.
-        """
-        wlan_utils.associate(client=self.dut, ssid=self.ssid)
-        if self.user_params['dut'] == 'fuchsia_devices':
-            response = self.dut.device.wlan_policy_lib.wlanSaveNetwork(
-                self.ssid, 'None')
-            if response.get('error'):
-                raise EnvironmentError(
-                    'Failed to save network %s for FuchsiaDevice %s: %s' %
-                    (self.ssid, self.dut.device.ip, response.get('error')))
-
-    def setup_ap_associate_and_save(self, band, ipv4=True, ipv6=False):
-        """Setup ap with basic config and associates the dut with the network
-        running on the AP and saves network.
 
         Args:
+            ssid: string, ssid to connect DUT to
+
+        Raises:
+            EnvironmentError, if saving network fails
+            ConnectionError, if device fails to connect to network
+        """
+        self.dut.save_network(self.ssid)
+        self.dut.associate(self.ssid)
+
+    def setup_save_and_connect_to_network(self,
+                                          ssid,
+                                          band,
+                                          ipv4=True,
+                                          ipv6=False):
+        """Setup ap with passed params, saves network, and connects the dut with
+        the network running on the AP and saves network.
+
+        Args:
+            ssid: string, ssid to setup and connect to
             band: string ('2g' or '5g') of band to setup.
             ipv4: True if using ipv4 (dhcp), else False.
             ipv6: True if using ipv6 (radvd), else False.
         """
-        self.setup_ap(band, ipv4, ipv6)
-        self.associate_and_save()
+        self.setup_ap(ssid, band, ipv4, ipv6)
+        self.save_and_connect(ssid)
 
-    def wait_until_dut_gets_ipv4_addr(self):
+    def wait_until_dut_gets_ipv4_addr(self, interface):
         """Checks if device has an ipv4 private address. Sleeps 1 second between
         retries.
+
+        Args:
+            interface: string, name of interface from which to get ipv4 address.
 
         Raises:
             ConnectionError, if DUT does not have an ipv4 address after all
@@ -265,11 +255,11 @@ class WlanRebootTest(WifiBaseTest):
         """
         self.log.info(
             'Checking if DUT has received an ipv4 addr. Will retry for %s '
-            'seconds.' % self.timeout_for_ip_address)
-        timeout = time.time() + self.timeout_for_ip_address
+            'seconds.' % self.dut_ip_address_timeout)
+        timeout = time.time() + self.dut_ip_address_timeout
         while time.time() < timeout:
-            ip_addrs = self.dut.get_interface_ip_addresses(
-                self.iperf_client.test_interface)
+            ip_addrs = self.dut.get_interface_ip_addresses(interface)
+
             if len(ip_addrs['ipv4_private']) > 0:
                 self.log.info('DUT has an ipv4 address: %s' %
                               ip_addrs['ipv4_private'][0])
@@ -282,9 +272,12 @@ class WlanRebootTest(WifiBaseTest):
         else:
             raise ConnectionError('DUT failed to get an ipv4 address.')
 
-    def wait_until_dut_gets_ipv6_addr(self):
+    def wait_until_dut_gets_ipv6_addr(self, interface):
         """Checks if device has an ipv6 private local address. Sleeps 1 second
         between retries.
+
+        Args:
+            interface: string, name of interface from which to get ipv6 address.
 
         Raises:
             ConnectionError, if DUT does not have an ipv6 address after all
@@ -292,11 +285,10 @@ class WlanRebootTest(WifiBaseTest):
         """
         self.log.info(
             'Checking if DUT has received an ipv6 addr. Will retry for %s '
-            'seconds.' % self.timeout_for_ip_address)
-        timeout = time.time() + self.timeout_for_ip_address
+            'seconds.' % self.dut_ip_address_timeout)
+        timeout = time.time() + self.dut_ip_address_timeout
         while time.time() < timeout:
-            ip_addrs = self.dut.get_interface_ip_addresses(
-                self.iperf_client.test_interface)
+            ip_addrs = self.dut.get_interface_ip_addresses(interface)
             if len(ip_addrs['ipv6_private_local']) > 0:
                 self.log.info('DUT has an ipv6 private local address: %s' %
                               ip_addrs['ipv6_private_local'][0])
@@ -309,36 +301,35 @@ class WlanRebootTest(WifiBaseTest):
         else:
             raise ConnectionError('DUT failed to get an ipv6 address.')
 
-    def setup_iperf_server(self, band):
+    def setup_iperf_server_on_ap(self, band):
         """Configures iperf server based on the tests band.
 
         Args:
             band: string ('2g' or '5g') of band to setup.
         """
-        if self.iperf_server and self.iperf_server.started:
-            self.iperf_server.stop()
         if band == BAND_2G:
-            self.iperf_server = iperf_server.IPerfServerOverSsh(
+            return iperf_server.IPerfServerOverSsh(
                 self.user_params['AccessPoint'][0]['ssh_config'],
                 5201,
                 test_interface=self.access_point.wlan_2g)
         elif band == BAND_5G:
-            self.iperf_server = iperf_server.IPerfServerOverSsh(
+            return iperf_server.IPerfServerOverSsh(
                 self.user_params['AccessPoint'][0]['ssh_config'],
                 5201,
                 test_interface=self.access_point.wlan_5g)
 
-    def get_iperf_server_address(self, ip_version):
+    def get_iperf_server_address(self, iperf_server_on_ap, ip_version):
         """Retrieves the ip address of the iperf server.
 
         Args:
+            iperf_server_on_ap: IPerfServer object, linked to AP
             ip_version: string, the ip version (ipv4 or ipv6)
 
         Returns:
             String, the ip address of the iperf_server
         """
-        iperf_server_addresses = self.iperf_server.get_interface_ip_addresses(
-            self.iperf_server.test_interface)
+        iperf_server_addresses = iperf_server_on_ap.get_interface_ip_addresses(
+            iperf_server_on_ap.test_interface)
         if ip_version == IPV4:
             iperf_server_ip_address = (
                 iperf_server_addresses['ipv4_private'][0])
@@ -349,18 +340,23 @@ class WlanRebootTest(WifiBaseTest):
             else:
                 iperf_server_ip_address = (
                     '%s%%%s' % (iperf_server_addresses['ipv6_link_local'][0],
-                                self.iperf_client.test_interface))
+                                self.iperf_client_on_dut.test_interface))
         else:
             raise ValueError('Invalid IP version: %s' % ip_version)
 
         return iperf_server_ip_address
 
-    def verify_traffic(self, ip_version=IPV4):
+    def verify_traffic_between_dut_and_ap(self,
+                                          iperf_server_on_ap,
+                                          iperf_client_on_dut,
+                                          ip_version=IPV4):
         """Runs IPerf traffic from the iperf client (dut) and the iperf
         server (and vice versa) and verifies traffic was able to pass
         successfully.
 
         Args:
+            iperf_server_on_ap: IPerfServer object, linked to AP
+            iperf_client_on_dut: IPerfClient object, linked to DUT
             ip_version: string, the ip version (ipv4 or ipv6)
 
         Raises:
@@ -369,15 +365,16 @@ class WlanRebootTest(WifiBaseTest):
                 directions.
         """
         dut_ip_addresses = self.dut.get_interface_ip_addresses(
-            self.iperf_client.test_interface)
+            iperf_client_on_dut.test_interface)
 
-        iperf_server_ip_address = self.get_iperf_server_address(ip_version)
+        iperf_server_ip_address = self.get_iperf_server_address(
+            iperf_server_on_ap, ip_version)
 
         self.log.info(
             'Attempting to pass traffic from DUT to IPerf server (%s).' %
             iperf_server_ip_address)
-        tx_file = self.iperf_client.start(iperf_server_ip_address,
-                                          '-i 1 -t 10 -J', 'reboot_tx')
+        tx_file = iperf_client_on_dut.start(iperf_server_ip_address,
+                                            '-i 1 -t 10 -J', 'reboot_tx')
         tx_results = iperf_server.IPerfResult(tx_file)
         if not tx_results.avg_receive_rate or tx_results.avg_receive_rate == 0:
             raise ConnectionError(
@@ -391,8 +388,8 @@ class WlanRebootTest(WifiBaseTest):
         self.log.info(
             'Attempting to pass traffic from IPerf server (%s) to DUT.' %
             iperf_server_ip_address)
-        rx_file = self.iperf_client.start(iperf_server_ip_address,
-                                          '-i 1 -t 10 -R -J', 'reboot_rx')
+        rx_file = iperf_client_on_dut.start(iperf_server_ip_address,
+                                            '-i 1 -t 10 -R -J', 'reboot_rx')
         rx_results = iperf_server.IPerfResult(rx_file)
         if not rx_results.avg_receive_rate or rx_results.avg_receive_rate == 0:
             raise ConnectionError(
@@ -404,16 +401,18 @@ class WlanRebootTest(WifiBaseTest):
                 'Success: Traffic passed from IPerf server (%s) to DUT.' %
                 iperf_server_ip_address)
 
-    def start_dut_ping_process(self, ip_version=IPV4):
+    def start_dut_ping_process(self, iperf_server_on_ap, ip_version=IPV4):
         """Creates a  process that pings the AP from the DUT.
 
         Runs in parallel for 15 seconds, so it can be interrupted by a reboot.
         Sleeps for a few seconds to ensure pings have started.
 
         Args:
+            iperf_server_on_ap: IPerfServer object, linked to AP
             ip_version: string, the ip version (ipv4 or ipv6)
         """
-        ap_address = self.get_iperf_server_address(ip_version)
+        ap_address = self.get_iperf_server_address(iperf_server_on_ap,
+                                                   ip_version)
         if ap_address:
             self.log.info(
                 'Starting ping process to %s in parallel. Logs from this '
@@ -430,223 +429,6 @@ class WlanRebootTest(WifiBaseTest):
         else:
             raise ConnectionError('Failed to retrieve APs iperf address.')
 
-    def wait_for_unreachable_dut(self):
-        """Checks if DUT is unreachable. Sleeps 1 second between retries.
-
-        Raises:
-            ConnectionError, if DUT is still pingable after all timeout.
-        """
-        self.log.info('Expecting unreachable DUT. Will retry for %s seconds.' %
-                      self.timeout_for_unreachable_dut)
-        timeout = time.time() + self.timeout_for_unreachable_dut
-        while time.time() < timeout:
-            if not utils.is_pingable(self.dut.device.ip):
-                self.log.info('Success: DUT is unreachable.')
-                break
-            else:
-                self.log.debug('DUT still pingable...retrying in 1 second.')
-                time.sleep(1)
-        else:
-            raise ConnectionError('AP is still reachable.')
-
-    def wait_for_pingable_dut(self):
-        """Checks if DUT is pingable. Sleeps 1 second between retries.
-
-        Raises:
-            ConnectionError, if DUT is not pingable after all timeout.
-        """
-        self.log.info('Attempting to ping DUT. Will retry for %s seconds.' %
-                      self.timeout_for_pingable_dut)
-        timeout = time.time() + self.timeout_for_pingable_dut
-        while time.time() < timeout:
-            if utils.is_pingable(self.dut.device.ip):
-                self.log.info('Success: DUT is pingable.')
-                break
-            else:
-                self.log.debug('Could not ping DUT...retrying in 1 second.')
-                time.sleep(1)
-        else:
-            raise ConnectionError('Failed to ping DUT.')
-
-    def prepare_dut_object_after_hard_reboot(self):
-        """Prepares DUT objects after a hard reboot has occurred.
-
-        This essentially reinitializes SL4* on the DUT after it has been hard
-        rebooted and ensures the device wifi is on. This may require some device
-        specific logic.
-        """
-        # start_services has a backoff loop, but not long enough to accommodate
-        # for a full boot time, so the additional loop is necessary.
-        timeout = time.time() + self.timeout_for_reinitialize_services
-        while time.time() < timeout:
-            try:
-                self.dut.device.reinitialize_services()
-            except Exception as err:
-                self.log.debug(
-                    'Failed to reinitialize services. Retrying. Error: %s' %
-                    err)
-            else:
-                self.log.info('Services successfully reinitialized.')
-                break
-        else:
-            raise ConnectionError('Failed to reinitialize services, exiting.')
-
-        self.dut.wifi_toggle_state(True)
-
-    def prepare_dut_object_for_hard_reboot(self):
-        """Prepares DUT objects for hard reboot.
-
-        This is not to be confused with clean, soft reboot functionality, and
-        should not prepare the device in any way, but can be used to clean up
-        device objects so ACTS behaves with the upcoming reboot. This may
-        require to have device specific logic.
-        """
-        if self.user_params['dut'] == 'fuchsia_devices':
-            self.iperf_client.close_ssh()
-            self.dut.device.clean_up()
-
-    def hard_reboot_dut(self):
-        """Hard reboots the DUT.
-            - prepares the DUT object (not the hardware itself) for the reboot.
-            - suppresses logs during reboot to allow for expected errors
-            - abruptly kills power to the DUT
-            - verifies the DUT is unreachable
-            - restores power to the DUT
-            - verifies the DUT comes back online
-
-        If successful, prepare DUT object (i.e. reinitialize SL4*).
-
-        If an exception occurs, still attempt to reinitialize SL4* so other
-        tests can continue. This is only possible if the exception occurred
-        before the power is killed. Otherwise, log that SL4* could not be reset.
-        """
-        # Clean up *Device controllers (not the devices themselves)
-        self.prepare_dut_object_for_hard_reboot()
-        # Suppress logs so that disconnect errors don't fail the test.
-        self.log.info('Hard rebooting DUT, log output will be suppressed.')
-        with utils.SuppressLogOutput():
-            try:
-                # Get PDU device and port for DUT
-                dut_pdu_config = self.dut.device.conf_data['PduDevice']
-                dut_pdu, dut_pdu_port = pdu.get_pdu_port_for_device(
-                    dut_pdu_config, self.pdus)
-
-                # Kill power to DUT
-                self.log.info('Killing power to DUT...')
-                dut_pdu.off(str(dut_pdu_port))
-
-                # Verify DUT is unreachable
-                self.wait_for_unreachable_dut()
-
-                # Restore power to DUT
-                self.log.info('Restoring power to DUT...')
-                dut_pdu.on(str(dut_pdu_port))
-
-                # Verify DUT is back online
-                self.wait_for_pingable_dut()
-
-            finally:
-                # If something fails, attempt to restart services things so
-                # tests can continue.
-                try:
-                    self.prepare_dut_object_after_hard_reboot()
-                except:
-                    self.log.info('Failed to restart services.')
-
-        self.log.info('DUT is back up.')
-
-    def wait_for_unreachable_ap(self):
-        """Checks if AP is unreachable. Sleeps 1 second between retries.
-
-        Raises:
-            ConnectionError, if AP is still reachable after all timeout.
-        """
-        self.log.info('Expecting unreachable AP. Will retry for %s seconds.' %
-                      self.timeout_for_unreachable_ap)
-        timeout = time.time() + self.timeout_for_unreachable_ap
-        while time.time() < timeout:
-            if not self.access_point.is_pingable():
-                self.log.info('Success: AP is unreachable.')
-                break
-            else:
-                self.log.debug('AP is still pingable...retrying in 1 second.')
-                time.sleep(1)
-        else:
-            raise ConnectionError('AP is still reachable.')
-
-    def wait_for_pingable_ap(self):
-        """Checks if AP is pingable. Sleeps 1 second between retries.
-
-        Raises:
-            ConnectionError, if AP is not pingable after all timeout.
-        """
-        self.log.info('Attempting to ping AP. Will retry for %s seconds.' %
-                      self.timeout_for_pingable_ap)
-        timeout = time.time() + self.timeout_for_pingable_ap
-        while time.time() < timeout:
-            if self.access_point.is_pingable():
-                self.log.info('Success: AP is pingable.')
-                break
-            else:
-                self.log.debug('Could not ping AP...retrying in 1 second.')
-                time.sleep(1)
-        else:
-            raise ConnectionError('Failed to ping AP.')
-
-    def wait_for_sshable_ap(self):
-        """Checks if AP is sshable. Sleeps 1 second between retries.
-
-        Raises:
-            ConnectionError, if could not ssh to AP after all timeout.
-        """
-        self.log.info('Attempting to ssh to AP. Will retry for %s seconds.' %
-                      self.timeout_for_sshable_ap)
-        timeout = time.time() + self.timeout_for_sshable_ap
-        while time.time() < timeout:
-            if self.access_point.is_sshable():
-                self.log.info('Success: AP is online.')
-                break
-            else:
-                self.log.debug('Could not ssh to AP...retrying in 1 second.')
-                time.sleep(1)
-        else:
-            raise ConnectionError('Failed to ssh to AP.')
-
-    def hard_reboot_ap(self):
-        """Hard reboot of AP.
-            - abruptly kills the power to AP
-            - verifies AP is unreachable
-            - restores power to the AP
-            - verifies AP comes back online
-        """
-        # Get PDU device and port for AP
-        ap_pdu_config = self.user_params['AccessPoint'][0]['PduDevice']
-        ap_pdu, ap_pdu_port = pdu.get_pdu_port_for_device(
-            ap_pdu_config, self.pdus)
-
-        # Stop iperf server
-        self.iperf_server.close_ssh()
-
-        # Kill power to AP
-        self.log.info('Killing power to AP...')
-        ap_pdu.off(str(ap_pdu_port))
-        self.wait_for_unreachable_ap()
-
-        # Clear AP settings
-        self.access_point._aps.clear()
-
-        # Restore power to AP
-        self.log.info('Restoring power to AP...')
-        ap_pdu.on(str(ap_pdu_port))
-        self.wait_for_pingable_ap()
-        self.wait_for_sshable_ap()
-
-        # Restart hostapd stuff
-        # Allow 5 seconds for OS to get set up.
-        time.sleep(5)
-        self.access_point._initial_ap()
-        self.log.info('AP reboot successful.')
-
     def prepare_dut_for_reconnection(self):
         """Perform any actions to ready DUT for reconnection.
 
@@ -657,6 +439,8 @@ class WlanRebootTest(WifiBaseTest):
         self.dut.wifi_toggle_state(True)
         for ad in self.android_devices:
             ad.droid.wakeUpNow()
+        for fd in self.fuchsia_devices:
+            fd.wlan_policy_lib.wlanCreateClientController()
 
     def wait_for_dut_network_connection(self, ssid):
         """Checks if device is connected to given network. Sleeps 1 second
@@ -669,13 +453,13 @@ class WlanRebootTest(WifiBaseTest):
         """
         self.log.info(
             'Checking if DUT is connected to %s network. Will retry for %s '
-            'seconds.' % (ssid, self.timeout_for_dut_network_connection))
-        timeout = time.time() + self.timeout_for_dut_network_connection
+            'seconds.' % (ssid, self.dut_network_connection_timeout))
+        timeout = time.time() + self.dut_network_connection_timeout
         while time.time() < timeout:
             try:
                 is_connected = self.dut.is_connected(ssid=ssid)
             except Exception as err:
-                self.log.info('SL4* call failed. Retrying in 1 second.')
+                self.log.debug('SL4* call failed. Retrying in 1 second.')
                 is_connected = False
             finally:
                 if is_connected:
@@ -712,7 +496,8 @@ class WlanRebootTest(WifiBaseTest):
         Args:
             time_to_reconnect: the time from when the rebooted device came back
                 ip to when reassociation occurred.
-            run: the run number in a looped stress tested.
+            run: the run number in a looped stress tested.,
+            error: string, error message to log before continuing with the test
         """
         if error:
             self.log.info(
@@ -730,7 +515,7 @@ class WlanRebootTest(WifiBaseTest):
 
     def run_reboot_test(self, settings):
         """Runs a reboot test based on a given config.
-            1. Setups up a network and associates the dut.
+            1. Setups up a network, associates the dut, and saves the network.
             2. Verifies the dut receives ip address(es).
             3. Verifies traffic between DUT and AP (IPerf client and server).
             4. Reboots (hard or soft) the device (dut or ap).
@@ -785,20 +570,28 @@ class WlanRebootTest(WifiBaseTest):
         if band != BAND_2G and band != BAND_5G:
             raise ValueError('Invalid band: %s' % band)
 
-        self.setup_ap_associate_and_save(band, ipv4=ipv4, ipv6=ipv6)
+        self.setup_save_and_connect_to_network(self.ssid,
+                                               band,
+                                               ipv4=ipv4,
+                                               ipv6=ipv6)
+        self.wait_for_dut_network_connection(self.ssid)
+
+        dut_test_interface = self.iperf_client_on_dut.test_interface
+        if ipv4:
+            self.wait_until_dut_gets_ipv4_addr(dut_test_interface)
+        if ipv6:
+            self.wait_until_dut_gets_ipv6_addr(dut_test_interface)
+
+        self.iperf_server_on_ap = self.setup_iperf_server_on_ap(band)
+        self.iperf_server_on_ap.start()
 
         if ipv4:
-            self.wait_until_dut_gets_ipv4_addr()
+            self.verify_traffic_between_dut_and_ap(self.iperf_server_on_ap,
+                                                   self.iperf_client_on_dut)
         if ipv6:
-            self.wait_until_dut_gets_ipv6_addr()
-
-        self.setup_iperf_server(band)
-        self.iperf_server.start()
-
-        if ipv4:
-            self.verify_traffic()
-        if ipv6:
-            self.verify_traffic(ip_version=IPV6)
+            self.verify_traffic_between_dut_and_ap(self.iperf_server_on_ap,
+                                                   self.iperf_client_on_dut,
+                                                   ip_version=IPV6)
 
         # Looping reboots for stress testing
         for run in range(loops):
@@ -808,18 +601,20 @@ class WlanRebootTest(WifiBaseTest):
             # Ping from DUT to AP during AP reboot
             if interrupt:
                 if ipv4:
-                    self.start_dut_ping_process()
+                    self.start_dut_ping_process(self.iperf_server_on_ap)
                 if ipv6:
-                    self.start_dut_ping_process(ip_version=IPV6)
+                    self.start_dut_ping_process(self.iperf_server_on_ap,
+                                                ip_version=IPV6)
 
             # DUT reboots
             if reboot_device == DUT:
-                if type(self.iperf_client) == iperf_client.IPerfClientOverSsh:
-                    self.iperf_client.close_ssh()
+                if type(self.iperf_client_on_dut
+                        ) == iperf_client.IPerfClientOverSsh:
+                    self.iperf_client_on_dut.close_ssh()
                 if reboot_type == SOFT:
                     self.dut.device.reboot()
                 elif reboot_type == HARD:
-                    self.hard_reboot_dut()
+                    self.dut.hard_power_cycle(self.pdu_devices)
 
             # AP reboots
             elif reboot_device == AP:
@@ -827,8 +622,9 @@ class WlanRebootTest(WifiBaseTest):
                     self.log.info('Cleanly stopping ap.')
                     self.access_point.stop_all_aps()
                 elif reboot_type == HARD:
-                    self.hard_reboot_ap()
-                self.setup_ap(band, ipv4=ipv4, ipv6=ipv6)
+                    self.iperf_server_on_ap.close_ssh()
+                    self.access_point.hard_power_cycle(self.pdu_devices)
+                self.setup_ap(self.ssid, band, ipv4=ipv4, ipv6=ipv6)
 
             self.prepare_dut_for_reconnection()
             uptime = time.time()
@@ -836,18 +632,25 @@ class WlanRebootTest(WifiBaseTest):
                 self.wait_for_dut_network_connection(self.ssid)
                 time_to_reconnect = time.time() - uptime
                 if ipv4:
-                    self.wait_until_dut_gets_ipv4_addr()
+                    self.wait_until_dut_gets_ipv4_addr(dut_test_interface)
                 if ipv6:
-                    self.wait_until_dut_gets_ipv6_addr()
-                self.iperf_server.start()
+                    self.wait_until_dut_gets_ipv6_addr(dut_test_interface)
+                self.iperf_server_on_ap.start()
+
                 if ipv4:
-                    self.verify_traffic()
+                    self.verify_traffic_between_dut_and_ap(
+                        self.iperf_server_on_ap, self.iperf_client_on_dut)
                 if ipv6:
-                    self.verify_traffic(ip_version=IPV6)
+                    self.verify_traffic_between_dut_and_ap(
+                        self.iperf_server_on_ap,
+                        self.iperf_client_on_dut,
+                        ip_version=IPV6)
+
             except ConnectionError as err:
                 self.log_and_continue(run, error=err)
-            passed_count += 1
-            self.log_and_continue(run, time_to_reconnect=time_to_reconnect)
+            else:
+                passed_count += 1
+                self.log_and_continue(run, time_to_reconnect=time_to_reconnect)
 
         if passed_count == loops:
             asserts.explicit_pass(
@@ -856,9 +659,8 @@ class WlanRebootTest(WifiBaseTest):
 
         else:
             asserts.fail(
-                'Test Summary: device failed stress test. Reconnected to '
-                'network %s %s/%s times.' %
-                (self.ssid, loops - passed_count, loops))
+                'Test Summary: device failed reconnection test. Reconnected to '
+                'network %s %s/%s times.' % (self.ssid, passed_count, loops))
 
     # 12 test cases
     def test_soft_reboot_ap_ipv4_ipv6_2g_5g(self):
