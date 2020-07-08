@@ -189,6 +189,8 @@ class FuchsiaDevice:
         self.ssh_config = fd_conf_data.get("ssh_config", None)
         self.ssh_username = fd_conf_data.get("ssh_username",
                                              FUCHSIA_SSH_USERNAME)
+        self.hard_reboot_on_fail = fd_conf_data.get("hard_reboot_on_fail",
+                                                    False)
         self.device_pdu_config = fd_conf_data.get("PduDevice", None)
         self._persistent_ssh_conn = None
 
@@ -466,7 +468,7 @@ class FuchsiaDevice:
             self.start_services()
             self.init_server_connection()
             raise ConnectionError('Device never went down.')
-        self.log.info('Device is unreachable.')
+        self.log.info('Device is unreachable as expected.')
 
         if reboot_type == FUCHSIA_REBOOT_TYPE_HARD:
             self.log.info('Restoring power to FuchsiaDevice (%s)...' % self.ip)
