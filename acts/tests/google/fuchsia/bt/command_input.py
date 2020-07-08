@@ -211,6 +211,17 @@ class CommandInput(cmd.Cmd):
         self.log.info("Setting target_device_name to: {}".format(line))
         self.target_device_name = line
 
+    def do_tool_set_unique_mac_addr_id(self, line):
+        """
+        Description: Sets the unique mac address id (Specific to Fuchsia)
+        Input(s):
+            device_id: Required. The id to set the unique mac address id to
+        Usage: tool_set_unique_mac_addr_id device_id
+          Examples:
+            tool_set_unique_mac_addr_id 7fb2cae53aad9e0d
+        """
+        self.unique_mac_addr_id = line
+
     """Begin BLE advertise wrappers"""
 
     def complete_ble_adv_data_include_name(self, text, line, begidx, endidx):
