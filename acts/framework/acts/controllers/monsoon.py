@@ -71,3 +71,7 @@ def destroy(monsoons):
     for monsoon in monsoons:
         if monsoon.is_allocated():
             monsoon.release_monsoon_connection()
+
+
+def get_info(monsoons):
+    return [{'serial': monsoon.serial} for monsoon in monsoons]
