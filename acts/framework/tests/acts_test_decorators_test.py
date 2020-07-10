@@ -15,6 +15,7 @@
 import shutil
 import tempfile
 import unittest
+import mock
 
 from mobly import config_parser as mobly_config_parser
 
@@ -226,6 +227,88 @@ class TestDecoratorIntegrationTests(unittest.TestCase):
         self._run_with_test_logic(raise_generic)
         self._validate_results_has_extra(self.test_runner.results, UUID_KEY,
                                          TEST_TRACKER_UUID)
+
+
+class RepeatedTestTests(unittest.TestCase):
+    def test_all_error_types_count_toward_failures(self):
+        def result_selector(results):
+            self.assertIsInstance(results[0], AssertionError)
+            self.assertIsInstance(results[1], signals.TestFailure)
+            self.assertIsInstance(results[2], signals.TestError)
+            self.assertIsInstance(results[3], IndexError)
+            raise signals.TestPass('Expected failures occurred')
+
+        call_count = 0
+        @test_decorators.repeated_test(1, 3, result_selector)
+        def test_case(_):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise AssertionError()
+            elif call_count == 2:
+                raise signals.TestFailure('Failed')
+            elif call_count == 3:
+                raise signals.TestError('Error')
+            else:
+                # Note that any Exception that does not fall into another bucket
+                # is also considered a failure
+                raise IndexError('Bad index')
+
+        with self.assertRaises(signals.TestPass):
+            test_case(mock.Mock())
+
+    def test_passes_stop_repeating_the_test_case(self):
+        def result_selector(results):
+            self.assertEqual(len(results), 3)
+            for result in results:
+                self.assertIsInstance(result, signals.TestPass)
+            raise signals.TestPass('Expected passes occurred')
+
+        @test_decorators.repeated_test(3, 0, result_selector)
+        def test_case(_):
+            raise signals.TestPass('Passed')
+
+        with self.assertRaises(signals.TestPass):
+            test_case(mock.Mock())
+
+    def test_abort_signals_are_uncaught(self):
+        @test_decorators.repeated_test(3, 0)
+        def test_case(_):
+            raise signals.TestAbortClass('Abort All')
+
+        with self.assertRaises(signals.TestAbortClass):
+            test_case(mock.Mock())
+
+    def test_keyboard_interrupt_is_uncaught(self):
+        @test_decorators.repeated_test(3, 0)
+        def test_case(_):
+            raise KeyboardInterrupt()
+
+        with self.assertRaises(KeyboardInterrupt):
+            test_case(mock.Mock())
+
+    def test_teardown_and_setup_are_called_between_test_cases(self):
+        mock_test_class = mock.Mock()
+        @test_decorators.repeated_test(1, 1)
+        def test_case(_):
+            raise signals.TestFailure('Failed')
+
+        with self.assertRaises(signals.TestFailure):
+            test_case(mock_test_class)
+
+        self.assertTrue(mock_test_class.setup_test.called)
+        self.assertTrue(mock_test_class.teardown_test.called)
+
+    def test_result_selector_returned_value_gets_raised(self):
+        def result_selector(_):
+            return signals.TestPass('Expect this to be raised.')
+
+        @test_decorators.repeated_test(3, 0, result_selector=result_selector)
+        def test_case(_):
+            raise signals.TestFailure('Result selector ignores this.')
+
+        with self.assertRaises(signals.TestPass):
+            test_case(mock.Mock())
 
 
 if __name__ == '__main__':
