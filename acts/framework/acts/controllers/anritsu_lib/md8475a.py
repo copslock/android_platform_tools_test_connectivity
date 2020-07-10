@@ -1658,7 +1658,7 @@ class _AnritsuTestCases(object):
         Returns:
             None
         """
-        if not isinstance(direction, tuple) or len(direction) is not 2:
+        if not isinstance(direction, tuple) or len(direction) != 2:
             raise ValueError("Pass a tuple with two items")
         from_bts, to_bts = direction
         if (isinstance(from_bts, BtsNumber) and isinstance(to_bts, BtsNumber)):
