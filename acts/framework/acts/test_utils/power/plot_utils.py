@@ -19,7 +19,7 @@ import logging
 import numpy
 import math
 
-from bokeh.layouts import column, layout
+from bokeh.layouts import layout
 from bokeh.models import CustomJS, ColumnDataSource
 from bokeh.models import tools as bokeh_tools
 from bokeh.models.widgets import DataTable, TableColumn
@@ -76,20 +76,20 @@ def monsoon_data_plot(mon_info, monsoon_results, tag=''):
 
     # Preparing the data and source link for bokehn java callback
     source = ColumnDataSource(
-        data=dict(x0=time_relative, y0=current_data, color=color))
+        data=dict(x=time_relative, y=current_data, color=color))
     s2 = ColumnDataSource(
-        data=dict(z0=[mon_info.duration],
-                  y0=[round(avg_current, 2)],
-                  x0=[round(avg_current * voltage, 2)],
-                  z1=[round(avg_current * voltage * mon_info.duration, 2)],
-                  z2=[round(avg_current * mon_info.duration, 2)]))
+        data=dict(a=[mon_info.duration],
+                  b=[round(avg_current, 2)],
+                  c=[round(avg_current * voltage, 2)],
+                  d=[round(avg_current * voltage * mon_info.duration, 2)],
+                  e=[round(avg_current * mon_info.duration, 2)]))
     # Setting up data table for the output
     columns = [
-        TableColumn(field='z0', title='Total Duration (s)'),
-        TableColumn(field='y0', title='Average Current (mA)'),
-        TableColumn(field='x0', title='Average Power (4.2v) (mW)'),
-        TableColumn(field='z1', title='Average Energy (mW*s)'),
-        TableColumn(field='z2', title='Normalized Average Energy (mA*s)')
+        TableColumn(field='a', title='Total Duration (s)'),
+        TableColumn(field='b', title='Average Current (mA)'),
+        TableColumn(field='c', title='Average Power (4.2v) (mW)'),
+        TableColumn(field='d', title='Average Energy (mW*s)'),
+        TableColumn(field='e', title='Normalized Average Energy (mA*s)')
     ]
     dt = DataTable(source=s2,
                    columns=columns,
@@ -105,12 +105,11 @@ def monsoon_data_plot(mon_info, monsoon_results, tag=''):
     plot = figure(plot_width=1300,
                   plot_height=700,
                   title=plot_title,
-                  tools=tools,
-                  output_backend='webgl')
+                  tools=tools)
     plot.add_tools(bokeh_tools.WheelZoomTool(dimensions='width'))
     plot.add_tools(bokeh_tools.WheelZoomTool(dimensions='height'))
-    plot.line('x0', 'y0', source=source, line_width=2)
-    plot.circle('x0', 'y0', source=source, size=0.5, fill_color='color')
+    plot.line('x', 'y', source=source, line_width=2)
+    plot.circle('x', 'y', source=source, size=0.5, fill_color='color')
     plot.xaxis.axis_label = 'Time (s)'
     plot.yaxis.axis_label = 'Current (mA)'
     plot.title.text_font_size = {'value': '15pt'}
@@ -120,39 +119,36 @@ def monsoon_data_plot(mon_info, monsoon_results, tag=''):
         "indices",
         CustomJS(args=dict(source=source, mytable=dt),
                  code="""
-    var inds = cb_obj.indices;
-    var d1 = source.data;
-    var d2 = mytable.source.data;
-    ym = 0
-    ts = 0
-    d2['x0'] = []
-    d2['y0'] = []
-    d2['z1'] = []
-    d2['z2'] = []
-    d2['z0'] = []
-    min=max=d1['x0'][inds[0]]
-    if (inds.length==0) {return;}
-    for (i = 0; i < inds.length; i++) {
-    ym += d1['y0'][inds[i]]
-    d1['color'][inds[i]] = "red"
-    if (d1['x0'][inds[i]] < min) {
-      min = d1['x0'][inds[i]]}
-    if (d1['x0'][inds[i]] > max) {
-      max = d1['x0'][inds[i]]}
-    }
-    ym /= inds.length
-    ts = max - min
-    dx0 = Math.round(ym*4.2*100.0)/100.0
-    dy0 = Math.round(ym*100.0)/100.0
-    dz1 = Math.round(ym*4.2*ts*100.0)/100.0
-    dz2 = Math.round(ym*ts*100.0)/100.0
-    dz0 = Math.round(ts*1000.0)/1000.0
-    d2['z0'].push(dz0)
-    d2['x0'].push(dx0)
-    d2['y0'].push(dy0)
-    d2['z1'].push(dz1)
-    d2['z2'].push(dz2)
-    mytable.change.emit();
+        const inds = source.selected.indices;
+        const d1 = source.data;
+        const d2 = mytable.source.data;
+        var ym = 0
+        var ts = 0
+        var min=d1['x'][inds[0]]
+        var max=d1['x'][inds[0]]
+        d2['a'] = []
+        d2['b'] = []
+        d2['c'] = []
+        d2['d'] = []
+        d2['e'] = []
+        if (inds.length==0) {return;}
+        for (var i = 0; i < inds.length; i++) {
+        ym += d1['y'][inds[i]]
+        d1['color'][inds[i]] = "red"
+        if (d1['x'][inds[i]] < min) {
+          min = d1['x'][inds[i]]}
+        if (d1['x'][inds[i]] > max) {
+          max = d1['x'][inds[i]]}
+        }
+        ym /= inds.length
+        ts = max - min
+        d2['a'].push(Math.round(ts*1000.0)/1000.0)
+        d2['b'].push(Math.round(ym*100.0)/100.0)
+        d2['c'].push(Math.round(ym*4.2*100.0)/100.0)
+        d2['d'].push(Math.round(ym*4.2*ts*100.0)/100.0)
+        d2['e'].push(Math.round(ym*ts*100.0)/100.0)
+        source.change.emit();
+        mytable.change.emit();
     """))
 
     # Layout the plot and the datatable bar
