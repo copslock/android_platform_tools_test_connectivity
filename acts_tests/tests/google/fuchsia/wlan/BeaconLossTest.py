@@ -35,10 +35,11 @@ from acts.test_utils.abstract_devices.utils_lib.wlan_utils import disconnect
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import associate
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts.utils import rand_ascii_str
 
 
-class BeaconLossTest(BaseTestClass):
+class BeaconLossTest(AbstractDeviceWlanDeviceBaseTest):
     # Default number of test iterations here.
     # Override using parameter in config file.
     # Eg: "beacon_loss_test_iterations": "10"
@@ -73,6 +74,10 @@ class BeaconLossTest(BaseTestClass):
         # ensure radio is on, in case the test failed while the radio was off
         self.ap.iwconfig.ap_iwconfig(self.in_use_interface, "txpower on")
         self.ap.stop_all_aps()
+
+    def on_fail(self, test_name, begin_time):
+        super().on_fail(test_name, begin_time)
+        self.access_point.stop_all_aps()
 
     def beacon_loss(self, channel):
         setup_ap(access_point=self.ap,

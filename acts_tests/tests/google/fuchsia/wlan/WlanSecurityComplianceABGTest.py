@@ -20,6 +20,7 @@ from functools import wraps
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib.hostapd_security import Security
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
@@ -141,7 +142,7 @@ def create_security_profile(test_func):
     return security_profile_generator
 
 
-class WlanSecurityComplianceABGTest(WifiBaseTest):
+class WlanSecurityComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
     """Tests for validating 11a, 11b, and 11g PHYS.
 
     Test Bed Requirement:
@@ -191,8 +192,8 @@ class WlanSecurityComplianceABGTest(WifiBaseTest):
         self.access_point.stop_all_aps()
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.get_log(test_name, begin_time)
+        super().on_fail(test_name, begin_time)
+        self.access_point.stop_all_aps()
 
     @create_security_profile
     def test_associate_11a_sec_open_wep_5_chars_ptk_none(self):

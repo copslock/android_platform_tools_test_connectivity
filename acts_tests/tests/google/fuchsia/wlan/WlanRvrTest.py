@@ -27,6 +27,7 @@ from acts.controllers.iperf_server import IPerfResult
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import associate
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
 
@@ -98,7 +99,7 @@ def write_csv_rvr_data(test_name, csv_path, csv_data):
                                           throughput[csv_loop_counter]))
 
 
-class WlanRvrTest(WifiBaseTest):
+class WlanRvrTest(AbstractDeviceWlanDeviceBaseTest):
     """Tests running WLAN RvR.
 
     Test Bed Requirement:
@@ -219,8 +220,8 @@ class WlanRvrTest(WifiBaseTest):
             self.log.info(e)
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.get_log(test_name, begin_time)
+        super().on_fail(test_name, begin_time)
+        self.access_point.stop_all_aps()
 
     def run_rvr(self,
                 ssid,
