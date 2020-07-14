@@ -42,6 +42,7 @@ from acts.test_utils.tel.tel_defines import NETWORK_SERVICE_VOICE
 from acts.test_utils.tel.tel_defines import RAT_2G
 from acts.test_utils.tel.tel_defines import RAT_3G
 from acts.test_utils.tel.tel_defines import RAT_4G
+from acts.test_utils.tel.tel_defines import RAT_5G
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_WCDMA_ONLY
 from acts.test_utils.tel.tel_defines import NETWORK_MODE_NR_LTE_GSM_WCDMA
 from acts.test_utils.tel.tel_defines import RAT_FAMILY_LTE
@@ -88,6 +89,7 @@ from acts.test_utils.tel.tel_test_utils import setup_sim
 from acts.test_utils.tel.tel_test_utils import stop_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import start_wifi_tethering
 from acts.test_utils.tel.tel_test_utils import is_current_network_5g_nsa
+from acts.test_utils.tel.tel_test_utils import set_preferred_mode_for_5g
 from acts.test_utils.tel.tel_test_utils import get_current_override_network_type
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode
 from acts.test_utils.tel.tel_test_utils import toggle_airplane_mode_by_adb
@@ -944,13 +946,21 @@ class TelLiveDataTest(TelephonyBaseTest):
         self.number_of_devices = None
         ensure_phones_idle(self.log, self.android_devices)
         wifi_toggle_state(self.log, self.provider, False)
-        if network_generation:
+        if network_generation == RAT_5G:
+            # Attach 5g
+            set_preferred_mode_for_5g(self.provider)
+            if not is_current_network_5g_nsa(self.provider):
+                self.provider.log.error("Provider not attached on 5G NSA")
+                return False
+        elif network_generation:
             if not ensure_network_generation(
                     self.log, self.provider, network_generation,
                     MAX_WAIT_TIME_NW_SELECTION, NETWORK_SERVICE_DATA):
                 self.provider.log.error("Provider failed to connect to %s.",
                                         network_generation)
                 return False
+        else:
+            self.log.debug("Skipping network generation since it is None")
 
         self.provider.log.info(
             "Set provider Airplane Off, Wifi Off, Bluetooth Off, Data On.")
@@ -1509,6 +1519,61 @@ class TelLiveDataTest(TelephonyBaseTest):
             ap_band=WIFI_CONFIG_APBAND_5G,
             check_interval=10,
             check_iteration=10)
+
+
+    @test_tracker_info(uuid="5f2c6cb3-c32c-4f96-a2f4-7b901bb9a328")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_5g_nsa_to_5gwifi(self):
+        """WiFi Tethering test: 5G NSA to WiFI 5G Tethering
+
+        1. DUT in 5G NSA mode, attached.
+        2. DUT start 5G WiFi Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not self._test_setup_tethering(RAT_5G):
+            self.log.error("Verify 5G NSA Internet access failed.")
+            return False
+
+        return wifi_tethering_setup_teardown(
+            self.log,
+            self.provider,
+            self.clients,
+            ap_band=WIFI_CONFIG_APBAND_5G,
+            check_interval=10,
+            check_iteration=10)
+
+
+    @test_tracker_info(uuid="0e38f30e-08f3-4be1-af61-c07c37c93b70")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_tethering_5g_nsa_to_2gwifi(self):
+        """WiFi Tethering test: 5G NSA to WiFI 2G Tethering
+
+        1. DUT in 5G NSA mode, attached.
+        2. DUT start 5G WiFi Tethering
+        3. PhoneB disable data, connect to DUT's softAP
+        4. Verify Internet access on DUT and PhoneB
+
+        Returns:
+            True if success.
+            False if failed.
+        """
+        if not self._test_setup_tethering(RAT_5G):
+            self.log.error("Verify 5G NSA Internet access failed.")
+            return False
+
+        return wifi_tethering_setup_teardown(
+            self.log,
+            self.provider,
+            self.clients,
+            ap_band=WIFI_CONFIG_APBAND_2G,
+            check_interval=10,
+            check_iteration=10)
+
 
     @test_tracker_info(uuid="c1a16464-3800-40d3-ba63-35db784e0383")
     @TelephonyBaseTest.tel_test_wrap
