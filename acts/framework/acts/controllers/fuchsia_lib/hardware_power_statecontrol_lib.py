@@ -18,12 +18,12 @@ import datetime
 import http
 import requests
 
-from acts.controllers.fuchsia_lib.base_lib import BaseLib
+import acts.controllers.fuchsia_lib.base_lib as base_lib
 
 HW_PWR_STATE_CONTROL_TIMEOUT = 5
 
 
-class FuchsiaHardwarePowerStatecontrolLib(BaseLib):
+class FuchsiaHardwarePowerStatecontrolLib(base_lib.BaseLib):
     def __init__(self, addr, tc, client_id):
         self.address = addr
         self.test_counter = tc
@@ -45,7 +45,7 @@ class FuchsiaHardwarePowerStatecontrolLib(BaseLib):
                                          test_args,
                                          response_timeout=timeout)
         except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected) as err:
+                http.client.RemoteDisconnected, base_lib.DeviceOffline):
             return
         return response
 
@@ -65,7 +65,7 @@ class FuchsiaHardwarePowerStatecontrolLib(BaseLib):
                                          test_args,
                                          response_timeout=timeout)
         except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected):
+                http.client.RemoteDisconnected, base_lib.DeviceOffline):
             return
         return response
 
@@ -85,7 +85,7 @@ class FuchsiaHardwarePowerStatecontrolLib(BaseLib):
                                          test_args,
                                          response_timeout=timeout)
         except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected):
+                http.client.RemoteDisconnected, base_lib.DeviceOffline):
             return
         return response
 
@@ -105,7 +105,7 @@ class FuchsiaHardwarePowerStatecontrolLib(BaseLib):
                                          test_args,
                                          response_timeout=timeout)
         except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected):
+                http.client.RemoteDisconnected, base_lib.DeviceOffline):
             return
         return response
 
@@ -125,6 +125,6 @@ class FuchsiaHardwarePowerStatecontrolLib(BaseLib):
                                          test_args,
                                          response_timeout=timeout)
         except (requests.exceptions.ReadTimeout,
-                http.client.RemoteDisconnected):
+                http.client.RemoteDisconnected, base_lib.DeviceOffline):
             return
         return response

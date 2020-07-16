@@ -85,5 +85,5 @@
 			 "rtt_std_deviation_threshold": 5
     },
     "logpath": "<path to logs>",
-    "testpaths": ["<path to ACTS root folder>/tools/test/connectivity/acts/tests/google/wifi"]
+    "testpaths": ["<path to ACTS root folder>/tools/test/connectivity/acts_tests/tests/google/wifi"]
 }

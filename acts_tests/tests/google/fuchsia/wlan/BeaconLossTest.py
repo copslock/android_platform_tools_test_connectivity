@@ -32,14 +32,14 @@ from acts import utils
 from acts.base_test import BaseTestClass
 from acts.controllers.ap_lib import hostapd_constants
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import disconnect
-from acts.test_utils.abstract_devices.utils_lib.wlan_utils import is_connected
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import setup_ap
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import associate
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts.utils import rand_ascii_str
 
 
-class BeaconLossTest(BaseTestClass):
+class BeaconLossTest(AbstractDeviceWlanDeviceBaseTest):
     # Default number of test iterations here.
     # Override using parameter in config file.
     # Eg: "beacon_loss_test_iterations": "10"
@@ -75,12 +75,15 @@ class BeaconLossTest(BaseTestClass):
         self.ap.iwconfig.ap_iwconfig(self.in_use_interface, "txpower on")
         self.ap.stop_all_aps()
 
+    def on_fail(self, test_name, begin_time):
+        super().on_fail(test_name, begin_time)
+        self.access_point.stop_all_aps()
+
     def beacon_loss(self, channel):
-        setup_ap(
-            access_point=self.ap,
-            profile_name='whirlwind',
-            channel=channel,
-            ssid=self.ssid)
+        setup_ap(access_point=self.ap,
+                 profile_name='whirlwind',
+                 channel=channel,
+                 ssid=self.ssid)
         time.sleep(self.wait_ap_startup_s)
         if channel > 14:
             self.in_use_interface = self.ap.wlan_5g
@@ -92,8 +95,8 @@ class BeaconLossTest(BaseTestClass):
         self.log.info("sending associate command for ssid %s", self.ssid)
         associate(client=self.wlan_device, ssid=self.ssid)
 
-        asserts.assert_true(
-            is_connected(self.wlan_device), 'Failed to connect.')
+        asserts.assert_true(self.wlan_device.is_connected(),
+                            'Failed to connect.')
 
         time.sleep(self.wait_client_connection_setup_s)
 
@@ -104,8 +107,8 @@ class BeaconLossTest(BaseTestClass):
             time.sleep(self.wait_after_ap_txoff_s)
 
             # Did we disconnect from AP?
-            asserts.assert_false(
-                is_connected(self.wlan_device), 'Failed to disconnect.')
+            asserts.assert_false(self.wlan_device.is_connected(),
+                                 'Failed to disconnect.')
 
             # Turn on AP radio
             self.log.info("turning on radio")
@@ -118,8 +121,8 @@ class BeaconLossTest(BaseTestClass):
             time.sleep(self.wait_client_connection_setup_s)
 
             # Did we connect back to WiFi?
-            asserts.assert_true(
-                is_connected(self.wlan_device), 'Failed to connect back.')
+            asserts.assert_true(self.wlan_device.is_connected(),
+                                'Failed to connect back.')
 
         return True
 

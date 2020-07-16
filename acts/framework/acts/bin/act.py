@@ -210,7 +210,7 @@ def main():
                 or test_run_config.controller_configs[testpath_key] is None):
             test_run_config.controller_configs[testpath_key] = utils.abs_path(
                 utils.os.path.join(os.path.dirname(__file__),
-                                   '../../../tests/'))
+                                   '../../../../acts_tests/tests/'))
 
         # TODO(markdr): Find a way to merge this with the validation done in
         # Mobly's load_test_config_file.

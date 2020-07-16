@@ -17,9 +17,12 @@
 import collections
 import ipaddress
 import os
+import time
 
 from acts import logger
 from acts import utils
+
+from acts.controllers import pdu
 from acts.controllers.ap_lib import ap_get_interface
 from acts.controllers.ap_lib import ap_iwconfig
 from acts.controllers.ap_lib import bridge_interface
@@ -27,6 +30,7 @@ from acts.controllers.ap_lib import dhcp_config
 from acts.controllers.ap_lib import dhcp_server
 from acts.controllers.ap_lib import hostapd
 from acts.controllers.ap_lib import hostapd_constants
+from acts.controllers.ap_lib import hostapd_config
 from acts.controllers.utils_lib.commands import ip
 from acts.controllers.utils_lib.commands import route
 from acts.controllers.utils_lib.commands import shell
@@ -115,6 +119,7 @@ class AccessPoint(object):
         self.ssh_settings = settings.from_config(configs['ssh_config'])
         self.log = logger.create_logger(lambda msg: '[Access Point|%s] %s' %
                                         (self.ssh_settings.hostname, msg))
+        self.device_pdu_config = configs.get('PduDevice', None)
 
         if 'ap_subnet' in configs:
             self._AP_2G_SUBNET_STR = configs['ap_subnet']['2g']
@@ -587,3 +592,122 @@ class AccessPoint(object):
         except connection.Error:
             return False
         return True
+
+    def hard_power_cycle(self,
+                         pdus,
+                         unreachable_timeout=30,
+                         ping_timeout=60,
+                         ssh_timeout=30,
+                         hostapd_configs=None):
+        """Kills, then restores power to AccessPoint, verifying it goes down and
+        comes back online cleanly.
+
+        Args:
+            pdus: list, PduDevices in the testbed
+            unreachable_timeout: int, time to wait for AccessPoint to become
+                unreachable
+            ping_timeout: int, time to wait for AccessPoint to responsd to pings
+            ssh_timeout: int, time to wait for AccessPoint to allow SSH
+            hostapd_configs (optional): list, containing hostapd settings. If 
+                present, these networks will be spun up after the AP has
+                rebooted. This list can either contain HostapdConfig objects, or
+                    dictionaries with the start_ap params 
+                    (i.e  { 'hostapd_config': <HostapdConfig>, 
+                            'setup_bridge': <bool>, 
+                            'additional_parameters': <dict> } ).
+        Raise:
+            Error, if no PduDevice is provided in AccessPoint config.
+            ConnectionError, if AccessPoint fails to go offline or come back.
+        """
+        if not self.device_pdu_config:
+            raise Error('No PduDevice provided in AccessPoint config.')
+
+        if hostapd_configs is None:
+            hostapd_configs = []
+
+        self.log.info('Power cycling AccessPoint (%s)' %
+                      self.ssh_settings.hostname)
+        ap_pdu, ap_pdu_port = pdu.get_pdu_port_for_device(
+            self.device_pdu_config, pdus)
+
+        self.log.info('Killing power to AccessPoint (%s)' %
+                      self.ssh_settings.hostname)
+        ap_pdu.off(str(ap_pdu_port))
+
+        self.log.info('Verifying AccessPoint is unreachable.')
+        timeout = time.time() + unreachable_timeout
+        while time.time() < timeout:
+            if not self.is_pingable():
+                self.log.info('AccessPoint is unreachable as expected.')
+                break
+            else:
+                self.log.debug(
+                    'AccessPoint is still responding to pings. Retrying in 1 '
+                    'second.')
+                time.sleep(1)
+        else:
+            raise ConnectionError('Failed to bring down AccessPoint (%s)' %
+                                  self.ssh_settings.hostname)
+        self._aps.clear()
+
+        self.log.info('Restoring power to AccessPoint (%s)' %
+                      self.ssh_settings.hostname)
+        ap_pdu.on(str(ap_pdu_port))
+
+        self.log.info('Waiting for AccessPoint to respond to pings.')
+        timeout = time.time() + ping_timeout
+        while time.time() < timeout:
+            if self.is_pingable():
+                self.log.info('AccessPoint responded to pings.')
+                break
+            else:
+                self.log.debug('AccessPoint is not responding to pings. '
+                               'Retrying in 1 second.')
+                time.sleep(1)
+        else:
+            raise ConnectionError('Timed out waiting for AccessPoint (%s) to '
+                                  'respond to pings.' %
+                                  self.ssh_settings.hostname)
+
+        self.log.info('Waiting for AccessPoint to allow ssh connection.')
+        timeout = time.time() + ssh_timeout
+        while time.time() < timeout:
+            if self.is_sshable():
+                self.log.info('AccessPoint available via ssh.')
+                break
+            else:
+                self.log.debug('AccessPoint is not allowing ssh connection. '
+                               'Retrying in 1 second.')
+                time.sleep(1)
+        else:
+            raise ConnectionError('Timed out waiting for AccessPoint (%s) to '
+                                  'allow ssh connection.' %
+                                  self.ssh_settings.hostname)
+
+        # Allow 5 seconds for OS to finish getting set up
+        time.sleep(5)
+        self._initial_ap()
+        self.log.info('AccessPoint (%s) power cycled successfully.' %
+                      self.ssh_settings.hostname)
+
+        for settings in hostapd_configs:
+            if type(settings) == hostapd_config.HostapdConfig:
+                config = settings
+                setup_bridge = False
+                additional_parameters = None
+
+            elif type(settings) == dict:
+                config = settings['hostapd_config']
+                setup_bridge = settings.get('setup_bridge', False)
+                additional_parameters = settings.get('additional_parameters',
+                                                     None)
+            else:
+                raise TypeError(
+                    'Items in hostapd_configs list must either be '
+                    'hostapd.HostapdConfig objects or dictionaries.')
+
+            self.log.info('Restarting network (%s) on AccessPoint.' %
+                          config.ssid)
+            self.start_ap(config,
+                          setup_bridge=setup_bridge,
+                          additional_parameters=additional_parameters)

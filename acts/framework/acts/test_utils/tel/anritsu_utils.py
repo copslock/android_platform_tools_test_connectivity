@@ -1333,9 +1333,9 @@ def wait_for_bts_state(log, btsnumber, state, timeout=30):
     sleep_interval = 1
     wait_time = timeout
 
-    if state is "IN":
+    if state == "IN":
         service_state = BtsServiceState.SERVICE_STATE_IN
-    elif state is "OUT":
+    elif state == "OUT":
         service_state = BtsServiceState.SERVICE_STATE_OUT
     else:
         log.info("wrong state value")

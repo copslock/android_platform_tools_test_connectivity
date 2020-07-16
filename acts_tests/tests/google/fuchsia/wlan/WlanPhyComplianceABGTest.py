@@ -19,11 +19,12 @@ from acts import utils
 from acts.controllers.ap_lib import hostapd_ap_preset
 from acts.controllers.ap_lib import hostapd_constants
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 
 
-class WlanPhyComplianceABGTest(WifiBaseTest):
+class WlanPhyComplianceABGTest(AbstractDeviceWlanDeviceBaseTest):
     """Tests for validating 11a, 11b, and 11g PHYS.
 
     Test Bed Requirement:
@@ -123,8 +124,8 @@ class WlanPhyComplianceABGTest(WifiBaseTest):
         self.access_point.stop_all_aps()
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.get_log(test_name, begin_time)
+        super().on_fail(test_name, begin_time)
+        self.access_point.stop_all_aps()
 
     def test_associate_11b_only_long_preamble(self):
         validate_setup_ap_and_associate(

@@ -344,7 +344,32 @@ class FuchsiaWlanDevice(WlanDevice):
         return get_interface_ip_addresses(self.device, interface)
 
     def is_connected(self, ssid=None):
-        return fwutils.is_connected(self, ssid)
+        """ Determines if wlan_device is connected to wlan network.
+        
+        Args:
+            ssid (optional): string, to check if device is connect to a specific
+                network.
+
+        Returns:
+            True, if connected to a network or to the correct network when SSID
+                is provided.
+            False, if not connected or connect to incorrect network when SSID is
+                provided.
+        """
+        response = self.status()
+        if response.get('error'):
+            raise ConnectionError(
+                'Failed to get client network connection status')
+
+        status = response.get('result')
+        if status and status.get('connected_to'):
+            if ssid:
+                connected_ssid = ''.join(
+                    chr(i) for i in status['connected_to']['ssid'])
+                if ssid != connected_ssid:
+                    return False
+            return True
+        return False
 
     def hard_power_cycle(self, pdus):
         self.device.reboot(reboot_type='hard', testbed_pdus=pdus)

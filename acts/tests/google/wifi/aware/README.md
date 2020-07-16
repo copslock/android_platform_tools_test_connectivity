@@ -33,7 +33,7 @@ group sub-directories contains a file with the same name as that of the
 directory which lists all tests in the directory. E.g. to execute all functional
 tests execute:
 
-`act.py -c <config> -tf ./tools/test/connectivity/acts/tests/google/wifi/aware/functional/functional`
+`act.py -c <config> -tf ./tools/test/connectivity/acts_tests/tests/google/wifi/aware/functional/functional`
 
 ## Test Configurations
 The test configurations, the `<config>` in the commands above, are stored in

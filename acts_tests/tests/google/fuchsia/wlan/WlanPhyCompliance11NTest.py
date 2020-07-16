@@ -22,6 +22,7 @@ from acts.controllers.ap_lib.hostapd_security import Security
 from acts.controllers.ap_lib import hostapd_constants
 from acts.controllers.ap_lib import hostapd_config
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 from acts.test_utils.abstract_devices.utils_lib.wlan_utils import validate_setup_ap_and_associate
 from acts.test_utils.wifi.WifiBaseTest import WifiBaseTest
 from acts.utils import rand_ascii_str
@@ -61,7 +62,7 @@ def generate_test_name(settings):
                             settings['security'], ''.join(ret))
 
 
-class WlanPhyCompliance11NTest(WifiBaseTest):
+class WlanPhyCompliance11NTest(AbstractDeviceWlanDeviceBaseTest):
     """Tests for validating 11n PHYS.
 
     Test Bed Requirement:
@@ -122,8 +123,8 @@ class WlanPhyCompliance11NTest(WifiBaseTest):
         self.access_point.stop_all_aps()
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.get_log(test_name, begin_time)
+        super().on_fail(test_name, begin_time)
+        self.access_point.stop_all_aps()
 
     def setup_and_connect(self, ap_settings):
         """Generates a hostapd config, setups up the AP with that config, then
