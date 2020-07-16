@@ -23,6 +23,7 @@ from acts.test_decorators import test_tracker_info
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import WFC_MODE_WIFI_PREFERRED
 from acts.test_utils.tel.tel_defines import VT_STATE_BIDIRECTIONAL
+from acts.test_utils.tel.tel_defines import WAIT_TIME_IN_CALL
 from acts.test_utils.tel.tel_test_utils import call_setup_teardown
 from acts.test_utils.tel.tel_test_utils import ensure_phone_subscription
 from acts.test_utils.tel.tel_test_utils import ensure_phones_idle
@@ -158,7 +159,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             ad.log.info("RAT 2G is enabled successfully.")
         return True
 
-    def _setup_phone_call(self, test_video):
+    def _setup_phone_call(self, test_video, phone_call_duration=WAIT_TIME_IN_CALL):
         if test_video:
             if not video_call_setup(
                     self.log,
@@ -169,7 +170,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
                 return False
         else:
             if not call_setup_teardown(
-                    self.log, self.caller, self.callee, ad_hangup=None):
+                    self.log, self.caller, self.callee, ad_hangup=None, wait_time_in_call=phone_call_duration):
                 self.log.error("Setup Call failed.")
                 return False
         self.log.info("Setup call successfully.")
@@ -200,7 +201,7 @@ class TelLiveStressCallTest(TelephonyBaseTest):
             iteration_result = True
             ensure_phones_idle(self.log, self.android_devices)
 
-            if not self._setup_phone_call(test_video):
+            if not self._setup_phone_call(test_video, phone_call_duration=self.phone_call_duration):
                 fail_count["dialing"] += 1
                 iteration_result = False
                 self.log.error("%s call dialing failure.", msg)
@@ -219,8 +220,6 @@ class TelLiveStressCallTest(TelephonyBaseTest):
                     last_call_drop_reason(self.callee, begin_time)
                     iteration_result = False
                     self.log.error("%s network check failure.", msg)
-
-                time.sleep(self.phone_call_duration)
 
                 if not verify_incall_state(self.log,
                                            [self.caller, self.callee], True):
