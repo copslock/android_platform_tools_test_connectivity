@@ -28,7 +28,6 @@ class ShellCommand(object):
 
     Note: At the moment this only works with the ssh runner.
     """
-
     def __init__(self, runner, working_dir=None):
         """Creates a new shell command invoker.
 
@@ -40,7 +39,7 @@ class ShellCommand(object):
         self._runner = runner
         self._working_dir = working_dir
 
-    def run(self, command, timeout=3600):
+    def run(self, command, timeout=60):
         """Runs a generic command through the runner.
 
         Takes the command and prepares it to be run in the target shell using
@@ -129,8 +128,7 @@ class ShellCommand(object):
             True if the string or pattern was found, False otherwise.
         """
         try:
-            self.run('grep %s %s' % (shlex.quote(search_string),
-                                     file_name))
+            self.run('grep %s %s' % (shlex.quote(search_string), file_name))
             return True
         except job.Error:
             return False
