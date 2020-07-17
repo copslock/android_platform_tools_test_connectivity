@@ -25,49 +25,83 @@ from acts import logger
 # GPS API Log Reading Config
 CONFIG_GPSAPILOG = {
     'phone_time':
-    r'(?P<date>\d+\/\d+\/\d+)\s+(?P<time>\d+:\d+:\d+)\s+'
+    r'^(?P<date>\d+\/\d+\/\d+)\s+(?P<time>\d+:\d+:\d+)\s+'
     r'Read:\s+(?P<logsize>\d+)\s+bytes',
     'SpaceVehicle':
-    r'Fix:\s+(?P<Fix>\w+)\s+Type:\s+(?P<Type>\w+)\s+'
+    r'^Fix:\s+(?P<Fix>\w+)\s+Type:\s+(?P<Type>\w+)\s+'
     r'SV:\s+(?P<SV>\d+)\s+C\/No:\s+(?P<CNo>\d+\.\d+)\s+'
     r'Elevation:\s+(?P<Elevation>\d+\.\d+)\s+'
     r'Azimuth:\s+(?P<Azimuth>\d+\.\d+)\s+'
     r'Signal:\s+(?P<Signal>\w+)\s+'
     r'Frequency:\s+(?P<Frequency>\d+\.\d+)\s+'
     r'EPH:\s+(?P<EPH>\w+)\s+ALM:\s+(?P<ALM>\w+)',
+    'SpaceVehicle_wBB':
+    r'^Fix:\s+(?P<Fix>\w+)\s+Type:\s+(?P<Type>\w+)\s+'
+    r'SV:\s+(?P<SV>\d+)\s+C\/No:\s+(?P<AntCNo>\d+\.\d+),\s+'
+    r'(?P<BbCNo>\d+\.\d+)\s+'
+    r'Elevation:\s+(?P<Elevation>\d+\.\d+)\s+'
+    r'Azimuth:\s+(?P<Azimuth>\d+\.\d+)\s+'
+    r'Signal:\s+(?P<Signal>\w+)\s+'
+    r'Frequency:\s+(?P<Frequency>\d+\.\d+)\s+'
+    r'EPH:\s+(?P<EPH>\w+)\s+ALM:\s+(?P<ALM>\w+)',
     'HistoryAvgTop4CNo':
-    r'History\s+Avg\s+Top4\s+:\s+(?P<HistoryAvgTop4CNo>\d+\.\d+)',
+    r'^History\s+Avg\s+Top4\s+:\s+(?P<HistoryAvgTop4CNo>\d+\.\d+)',
     'CurrentAvgTop4CNo':
-    r'Current\s+Avg\s+Top4\s+:\s+(?P<CurrentAvgTop4CNo>\d+\.\d+)',
+    r'^Current\s+Avg\s+Top4\s+:\s+(?P<CurrentAvgTop4CNo>\d+\.\d+)',
     'HistoryAvgCNo':
-    r'History\s+Avg\s+:\s+(?P<HistoryAvgCNo>\d+\.\d+)',
+    r'^History\s+Avg\s+:\s+(?P<HistoryAvgCNo>\d+\.\d+)',
     'CurrentAvgCNo':
-    r'Current\s+Avg\s+:\s+(?P<CurrentAvgCNo>\d+\.\d+)',
+    r'^Current\s+Avg\s+:\s+(?P<CurrentAvgCNo>\d+\.\d+)',
+    'AntennaHistoryAvgTop4CNo':
+    r'^Antenna_History\s+Avg\s+Top4\s+:\s+(?P<AntennaHistoryAvgTop4CNo>\d+\.\d+)',
+    'AntennaCurrentAvgTop4CNo':
+    r'^Antenna_Current\s+Avg\s+Top4\s+:\s+(?P<AntennaCurrentAvgTop4CNo>\d+\.\d+)',
+    'AntennaHistoryAvgCNo':
+    r'^Antenna_History\s+Avg\s+:\s+(?P<AntennaHistoryAvgCNo>\d+\.\d+)',
+    'AntennaCurrentAvgCNo':
+    r'^Antenna_Current\s+Avg\s+:\s+(?P<AntennaCurrentAvgCNo>\d+\.\d+)',
+    'BasebandHistoryAvgTop4CNo':
+    r'^Baseband_History\s+Avg\s+Top4\s+:\s+(?P<BasebandHistoryAvgTop4CNo>\d+\.\d+)',
+    'BasebandCurrentAvgTop4CNo':
+    r'^Baseband_Current\s+Avg\s+Top4\s+:\s+(?P<BasebandCurrentAvgTop4CNo>\d+\.\d+)',
+    'BasebandHistoryAvgCNo':
+    r'^Baseband_History\s+Avg\s+:\s+(?P<BasebandHistoryAvgCNo>\d+\.\d+)',
+    'BasebandCurrentAvgCNo':
+    r'^Baseband_Current\s+Avg\s+:\s+(?P<BasebandCurrentAvgCNo>\d+\.\d+)',
     'L5inFix':
-    r'L5\s+used\s+in\s+fix:\s+(?P<L5inFix>\w+)',
+    r'^L5\s+used\s+in\s+fix:\s+(?P<L5inFix>\w+)',
     'L5EngagingRate':
-    r'L5\s+engaging\s+rate:\s+(?P<L5EngagingRate>\d+.\d+)%',
+    r'^L5\s+engaging\s+rate:\s+(?P<L5EngagingRate>\d+.\d+)%',
     'Provider':
-    r'Provider:\s+(?P<Provider>\w+)',
+    r'^Provider:\s+(?P<Provider>\w+)',
     'Latitude':
-    r'Latitude:\s+(?P<Latitude>-?\d+.\d+)',
+    r'^Latitude:\s+(?P<Latitude>-?\d+.\d+)',
     'Longitude':
-    r'Longitude:\s+(?P<Longitude>-?\d+.\d+)',
+    r'^Longitude:\s+(?P<Longitude>-?\d+.\d+)',
     'Altitude':
-    r'Altitude:\s+(?P<Altitude>-?\d+.\d+)',
+    r'^Altitude:\s+(?P<Altitude>-?\d+.\d+)',
     'GNSSTime':
-    r'Time:\s+(?P<Date>\d+\/\d+\/\d+)\s+'
+    r'^Time:\s+(?P<Date>\d+\/\d+\/\d+)\s+'
     r'(?P<Time>\d+:\d+:\d+)',
     'Speed':
-    r'Speed:\s+(?P<Speed>\d+.\d+)',
+    r'^Speed:\s+(?P<Speed>\d+.\d+)',
     'Bearing':
-    r'Bearing:\s+(?P<Bearing>\d+.\d+)',
+    r'^Bearing:\s+(?P<Bearing>\d+.\d+)',
 }
 
 # Space Vehicle Statistics Dataframe List
+# Handle the pre GPSTool 2.12.24 case
 LIST_SVSTAT = [
     'HistoryAvgTop4CNo', 'CurrentAvgTop4CNo', 'HistoryAvgCNo', 'CurrentAvgCNo',
     'L5inFix', 'L5EngagingRate'
+]
+# Handle the post GPSTool 2.12.24 case with baseband CNo
+LIST_SVSTAT_WBB = [
+    'AntennaHistoryAvgTop4CNo', 'AntennaCurrentAvgTop4CNo',
+    'AntennaHistoryAvgCNo', 'AntennaCurrentAvgCNo',
+    'BasebandHistoryAvgTop4CNo', 'BasebandCurrentAvgTop4CNo',
+    'BasebandHistoryAvgCNo', 'BasebandCurrentAvgCNo', 'L5inFix',
+    'L5EngagingRate'
 ]
 
 # Location Fix Info Dataframe List
@@ -150,7 +184,7 @@ def parse_log_to_df(filename, configs, index_rownum=True):
         if index_rownum and not parsed_data[key].empty:
             parsed_data[key].set_index('rownumber', inplace=True)
         elif parsed_data[key].empty:
-            LOGPARSE_UTIL_LOGGER.warning(
+            LOGPARSE_UTIL_LOGGER.debug(
                 'The parsed dataframe of "%s" is empty.', key)
 
     # Return parsed data list
@@ -315,24 +349,43 @@ def parse_gpsapilog_to_df_v2(filename):
 
     # Add phone_time from timestamp dataframe by row number
     for key in parsed_data:
-        if key != 'phone_time':
+        if (key != 'phone_time') and (not parsed_data[key].empty):
             parsed_data[key] = pds.merge_asof(parsed_data[key],
                                               parsed_data['phone_time'],
                                               left_index=True,
                                               right_index=True)
 
     # Get space vehicle info dataframe
-    sv_info_df = parsed_data['SpaceVehicle']
+    # Handle the pre GPSTool 2.12.24 case
+    if not parsed_data['SpaceVehicle'].empty:
+        sv_info_df = parsed_data['SpaceVehicle']
+
+    # Handle the post GPSTool 2.12.24 case with baseband CNo
+    elif not parsed_data['SpaceVehicle_wBB'].empty:
+        sv_info_df = parsed_data['SpaceVehicle_wBB']
 
     # Get space vehicle statistics dataframe
-    # First merge all dataframe from LIST_SVSTAT[1:],
-    sv_stat_df = fts.reduce(
-        lambda item1, item2: pds.merge(item1, item2, on='phone_time'),
-        [parsed_data[key] for key in LIST_SVSTAT[1:]])
-    # Then merge with LIST_SVSTAT[0]
-    sv_stat_df = pds.merge(sv_stat_df,
-                           parsed_data[LIST_SVSTAT[0]],
-                           on='phone_time')
+    # Handle the pre GPSTool 2.12.24 case
+    if not parsed_data['HistoryAvgTop4CNo'].empty:
+        # First merge all dataframe from LIST_SVSTAT[1:],
+        sv_stat_df = fts.reduce(
+            lambda item1, item2: pds.merge(item1, item2, on='phone_time'),
+            [parsed_data[key] for key in LIST_SVSTAT[1:]])
+        # Then merge with LIST_SVSTAT[0]
+        sv_stat_df = pds.merge(sv_stat_df,
+                               parsed_data[LIST_SVSTAT[0]],
+                               on='phone_time')
+
+    # Handle the post GPSTool 2.12.24 case with baseband CNo
+    elif not parsed_data['AntennaHistoryAvgTop4CNo'].empty:
+        # First merge all dataframe from LIST_SVSTAT[1:],
+        sv_stat_df = fts.reduce(
+            lambda item1, item2: pds.merge(item1, item2, on='phone_time'),
+            [parsed_data[key] for key in LIST_SVSTAT_WBB[1:]])
+        # Then merge with LIST_SVSTAT[0]
+        sv_stat_df = pds.merge(sv_stat_df,
+                               parsed_data[LIST_SVSTAT_WBB[0]],
+                               on='phone_time')
 
     # Get location fix information dataframe
     # First merge all dataframe from LIST_LOCINFO[1:],
@@ -353,17 +406,53 @@ def parse_gpsapilog_to_df_v2(filename):
     timestamp_df['logsize'] = timestamp_df['logsize'].astype(int)
 
     sv_info_df['SV'] = sv_info_df['SV'].astype(int)
-    sv_info_df['CNo'] = sv_info_df['CNo'].astype(float)
     sv_info_df['Elevation'] = sv_info_df['Elevation'].astype(float)
     sv_info_df['Azimuth'] = sv_info_df['Azimuth'].astype(float)
     sv_info_df['Frequency'] = sv_info_df['Frequency'].astype(float)
 
-    sv_stat_df['CurrentAvgTop4CNo'] = sv_stat_df['CurrentAvgTop4CNo'].astype(
-        float)
-    sv_stat_df['CurrentAvgCNo'] = sv_stat_df['CurrentAvgCNo'].astype(float)
-    sv_stat_df['HistoryAvgTop4CNo'] = sv_stat_df['HistoryAvgTop4CNo'].astype(
-        float)
-    sv_stat_df['HistoryAvgCNo'] = sv_stat_df['HistoryAvgCNo'].astype(float)
+    if 'CNo' in list(sv_info_df.columns):
+        sv_info_df['CNo'] = sv_info_df['CNo'].astype(float)
+        sv_info_df['AntCNo'] = sv_info_df['CNo']
+    elif 'AntCNo' in list(sv_info_df.columns):
+        sv_info_df['AntCNo'] = sv_info_df['AntCNo'].astype(float)
+        sv_info_df['BbCNo'] = sv_info_df['BbCNo'].astype(float)
+
+    if 'CurrentAvgTop4CNo' in list(sv_stat_df.columns):
+        sv_stat_df['CurrentAvgTop4CNo'] = sv_stat_df[
+            'CurrentAvgTop4CNo'].astype(float)
+        sv_stat_df['CurrentAvgCNo'] = sv_stat_df['CurrentAvgCNo'].astype(float)
+        sv_stat_df['HistoryAvgTop4CNo'] = sv_stat_df[
+            'HistoryAvgTop4CNo'].astype(float)
+        sv_stat_df['HistoryAvgCNo'] = sv_stat_df['HistoryAvgCNo'].astype(float)
+        sv_stat_df['AntennaCurrentAvgTop4CNo'] = sv_stat_df[
+            'CurrentAvgTop4CNo']
+        sv_stat_df['AntennaCurrentAvgCNo'] = sv_stat_df['CurrentAvgCNo']
+        sv_stat_df['AntennaHistoryAvgTop4CNo'] = sv_stat_df[
+            'HistoryAvgTop4CNo']
+        sv_stat_df['AntennaHistoryAvgCNo'] = sv_stat_df['HistoryAvgCNo']
+        sv_stat_df['BasebandCurrentAvgTop4CNo'] = npy.nan
+        sv_stat_df['BasebandCurrentAvgCNo'] = npy.nan
+        sv_stat_df['BasebandHistoryAvgTop4CNo'] = npy.nan
+        sv_stat_df['BasebandHistoryAvgCNo'] = npy.nan
+
+    elif 'AntennaCurrentAvgTop4CNo' in list(sv_stat_df.columns):
+        sv_stat_df['AntennaCurrentAvgTop4CNo'] = sv_stat_df[
+            'AntennaCurrentAvgTop4CNo'].astype(float)
+        sv_stat_df['AntennaCurrentAvgCNo'] = sv_stat_df[
+            'AntennaCurrentAvgCNo'].astype(float)
+        sv_stat_df['AntennaHistoryAvgTop4CNo'] = sv_stat_df[
+            'AntennaHistoryAvgTop4CNo'].astype(float)
+        sv_stat_df['AntennaHistoryAvgCNo'] = sv_stat_df[
+            'AntennaHistoryAvgCNo'].astype(float)
+        sv_stat_df['BasebandCurrentAvgTop4CNo'] = sv_stat_df[
+            'BasebandCurrentAvgTop4CNo'].astype(float)
+        sv_stat_df['BasebandCurrentAvgCNo'] = sv_stat_df[
+            'BasebandCurrentAvgCNo'].astype(float)
+        sv_stat_df['BasebandHistoryAvgTop4CNo'] = sv_stat_df[
+            'BasebandHistoryAvgTop4CNo'].astype(float)
+        sv_stat_df['BasebandHistoryAvgCNo'] = sv_stat_df[
+            'BasebandHistoryAvgCNo'].astype(float)
+
     sv_stat_df['L5EngagingRate'] = sv_stat_df['L5EngagingRate'].astype(float)
 
     loc_info_df['Latitude'] = loc_info_df['Latitude'].astype(float)
