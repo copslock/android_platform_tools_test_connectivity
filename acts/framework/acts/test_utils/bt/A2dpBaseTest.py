@@ -27,6 +27,7 @@ from acts.test_utils.bt.BluetoothBaseTest import BluetoothBaseTest
 
 PHONE_MUSIC_FILE_DIRECTORY = '/sdcard/Music'
 INIT_ATTEN = 0
+WAIT_TIME = 1
 
 
 class A2dpBaseTest(BluetoothBaseTest):
@@ -124,7 +125,7 @@ class A2dpBaseTest(BluetoothBaseTest):
         self.log.info('Play and record audio for {} second'.format(duration))
         self.media.play()
         self.audio_device.start()
-        time.sleep(duration)
+        time.sleep(duration + WAIT_TIME)
         audio_captured = self.audio_device.stop()
         self.media.stop()
         self.log.info('Audio play and record stopped')
