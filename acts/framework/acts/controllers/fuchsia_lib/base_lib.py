@@ -81,6 +81,6 @@ class BaseLib():
                     "network." % urlparse(self.address).hostname)
             else:
                 logging.debug(
-                    'FuchsiaDevice is online but SL4f call timed out.' %
+                    'FuchsiaDevice %s is online but SL4f call timed out.' %
                     urlparse(self.address).hostname)
                 raise e
