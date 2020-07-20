@@ -43,6 +43,9 @@ def create_wlan_device(hardware_device):
                          type(hardware_device))
 
 
+FUCHSIA_VALID_SECURITY_TYPES = {"none", "wep", "wpa", "wpa2", "wpa3"}
+
+
 class WlanDevice(object):
     """Class representing a generic WLAN device.
 
@@ -143,6 +146,14 @@ class WlanDevice(object):
         raise NotImplementedError("{} must be defined.".format(
             inspect.currentframe().f_code.co_name))
 
+    def save_network(self, ssid):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
+    def clear_saved_networks(self):
+        raise NotImplementedError("{} must be defined.".format(
+            inspect.currentframe().f_code.co_name))
+
 
 class AndroidWlanDevice(WlanDevice):
     """Class wrapper for an Android WLAN device.
@@ -233,6 +244,12 @@ class AndroidWlanDevice(WlanDevice):
                               timeout=timeout)
 
     def hard_power_cycle(self, pdus):
+        pass
+
+    def save_network(self, ssid):
+        pass
+
+    def clear_saved_networks(self):
         pass
 
 
@@ -373,3 +390,25 @@ class FuchsiaWlanDevice(WlanDevice):
 
     def hard_power_cycle(self, pdus):
         self.device.reboot(reboot_type='hard', testbed_pdus=pdus)
+
+    def save_network(self, target_ssid, security_type=None, target_pwd=None):
+        if security_type and security_type not in FUCHSIA_VALID_SECURITY_TYPES:
+            raise TypeError('Invalid security type: %s' % security_type)
+        response = self.device.wlan_policy_lib.wlanSaveNetwork(
+            target_ssid, security_type, target_pwd=target_pwd)
+        if response.get('error'):
+            raise EnvironmentError('Failed to save network %s. Err: %s' %
+                                   (target_ssid, response.get('error')))
+
+    def clear_saved_networks(self):
+        # TODO(fxb/55852): Replace with WlanPolicyLib command once its implemented.
+        response = self.device.wlan_policy_lib.wlanGetSavedNetworks()
+        if response.get('error'):
+            raise ConnectionError('Failed to get saved networks: %s' %
+                                  response.get('error'))
+        for ssid in response.get('result'):
+            delete_response = self.device.wlan_policy_lib.wlanRemoveNetwork(
+                ssid, None)
+            if delete_response.get('error'):
+                raise EnvironmentError('Failed to delete network %s: %s' %
+                                       (ssid, delete_response.get('error')))

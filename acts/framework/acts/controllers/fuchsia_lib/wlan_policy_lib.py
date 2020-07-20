@@ -76,7 +76,7 @@ class FuchsiaWlanPolicyLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, {})
 
-    def wlanSaveNetwork(self, target_ssid, security_type, target_pwd=""):
+    def wlanSaveNetwork(self, target_ssid, security_type, target_pwd=None):
         """ Saveds a network to the device for future connections
                 Args:
                     target_ssid: the network to attempt a connection to
@@ -87,7 +87,8 @@ class FuchsiaWlanPolicyLib(BaseLib):
                 Returns:
                     boolean indicating if the connection was successful
         """
-
+        if not target_pwd:
+            target_pwd = ''
         test_cmd = COMMAND_SAVE_NETWORK
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
@@ -99,7 +100,7 @@ class FuchsiaWlanPolicyLib(BaseLib):
 
         return self.send_command(test_id, test_cmd, test_args)
 
-    def wlanRemoveNetwork(self, target_ssid, security_type, target_pwd=""):
+    def wlanRemoveNetwork(self, target_ssid, security_type, target_pwd=None):
         """ Removes or "forgets" a network from saved networks
                 Args:
                     target_ssid: the network to attempt a connection to
@@ -107,7 +108,8 @@ class FuchsiaWlanPolicyLib(BaseLib):
                     target_pwd: (optional) credential of the network to remove. No password and
                                 empty string are equivalent.
         """
-
+        if not target_pwd:
+            target_pwd = ''
         test_cmd = COMMAND_REMOVE_NETWORK
         test_id = self.build_id(self.test_counter)
         self.test_counter += 1
