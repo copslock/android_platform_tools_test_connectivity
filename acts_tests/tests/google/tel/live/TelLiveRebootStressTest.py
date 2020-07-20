@@ -123,6 +123,10 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
             if not func():
                 self.log.error("%s failed", method)
                 failed_tests.append(method)
+            self.log.info("Wait 5s before each function check.")
+            time.sleep(5)
+        self.log.info("Wait 30s before NW mode switch.")
+        time.sleep(30)
         for method in args:
             func = getattr(self, method)
             try:
