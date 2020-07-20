@@ -827,13 +827,11 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                                     "message in logcat. Abort test.")
         if not ad.is_adb_logcat_on:
             ad.start_adb_logcat()
-        logcat_results = ad.search_logcat("write TTFF log", begin_time)
+        logcat_results = ad.search_logcat("write TTFF log", ttff_loop_time)
         if logcat_results:
+            ttff_loop_time = get_current_epoch_time()
             ttff_log = logcat_results[-1]["log_message"].split()
             ttff_loop = int(ttff_log[8].split(":")[-1])
-            if ttff_loop in ttff_data.keys():
-                continue
-            ttff_loop_time = get_current_epoch_time()
             ttff_sec = float(ttff_log[11])
             if ttff_sec != 0.0:
                 ttff_ant_cn = float(ttff_log[18].strip("]"))
