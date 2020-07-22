@@ -27,6 +27,7 @@ from acts.test_utils.wifi import wifi_test_utils as wutils
 import random
 
 WLAN = "wlan0"
+WAIT_FOR_IP = 15
 
 
 class IpSecTest(base_test.BaseTestClass):
@@ -39,12 +40,9 @@ class IpSecTest(base_test.BaseTestClass):
 
         req_params = ("wifi_network",)
         self.unpack_userparams(req_params)
-        wutils.start_wifi_connection_scan_and_ensure_network_found(
-            self.dut_a, self.wifi_network['SSID'])
-        wutils.wifi_connect(self.dut_a, self.wifi_network)
-        wutils.start_wifi_connection_scan_and_ensure_network_found(
-            self.dut_b, self.wifi_network['SSID'])
-        wutils.wifi_connect(self.dut_b, self.wifi_network)
+        wutils.connect_to_wifi_network(self.dut_a, self.wifi_network)
+        wutils.connect_to_wifi_network(self.dut_b, self.wifi_network)
+        time.sleep(WAIT_FOR_IP)
 
         self.ipv4_dut_a = self.dut_a.droid.connectivityGetIPv4Addresses(WLAN)[0]
         self.ipv4_dut_b = self.dut_b.droid.connectivityGetIPv4Addresses(WLAN)[0]
