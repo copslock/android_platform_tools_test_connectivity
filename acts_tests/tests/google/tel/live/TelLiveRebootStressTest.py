@@ -940,7 +940,7 @@ class TelLiveRebootStressTest(TelephonyBaseTest):
         Returns:
             True is pass, False if fail.
         """
-        return self._crash_recovery_test("qtidataservice",
+        return self._crash_recovery_test(".qtidataservices",
                                          *self.default_testing_func_names)
 
     @test_tracker_info(uuid="fa34f994-bc49-4444-9187-87691c94b4f4")
