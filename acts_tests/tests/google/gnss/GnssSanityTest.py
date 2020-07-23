@@ -1156,9 +1156,6 @@ class GnssSanityTest(BaseTestClass):
             start_gnss_by_gtw_gpstool(self.ad, False)
             self.ad.restart_runtime()
             self.ad.unlock_screen(password=None)
-            # in case restart android runtime and adb logcat didn't restart.
-            if not self.ad.is_adb_logcat_on:
-                self.ad.start_adb_logcat()
             test_result = process_gnss_by_gtw_gpstool(self.ad,
                                                       self.supl_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)
@@ -1188,9 +1185,6 @@ class GnssSanityTest(BaseTestClass):
             start_gnss_by_gtw_gpstool(self.ad, False)
             self.ad.restart_runtime()
             self.ad.unlock_screen(password=None)
-            # in case restart android runtime and adb logcat didn't restart.
-            if not self.ad.is_adb_logcat_on:
-                self.ad.start_adb_logcat()
             test_result = process_gnss_by_gtw_gpstool(self.ad,
                                                       self.xtra_cs_criteria)
             start_gnss_by_gtw_gpstool(self.ad, False)

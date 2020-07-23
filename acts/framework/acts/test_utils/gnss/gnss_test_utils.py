@@ -638,6 +638,9 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss", clear_data=True):
     """
     retries = 3
     for i in range(retries):
+        if not ad.is_adb_logcat_on:
+            ad.start_adb_logcat()
+        check_adblog_functionality(ad)
         check_location_runtime_permissions(
             ad, GNSSTOOL_PACKAGE_NAME, GNSSTOOL_PERMISSIONS)
         begin_time = get_current_epoch_time()
@@ -660,8 +663,6 @@ def process_gnss_by_gtw_gpstool(ad, criteria, type="gnss", clear_data=True):
                                           "within %d seconds criteria."
                                           % (type.upper(), criteria))
             time.sleep(1)
-        if not ad.is_adb_logcat_on:
-            ad.start_adb_logcat()
         check_currrent_focus_app(ad)
         start_gnss_by_gtw_gpstool(ad, False, type)
     raise signals.TestFailure("Fail to get %s location fixed within %d "
@@ -1381,3 +1382,26 @@ def check_ttff_pe(ad, ttff_data, ttff_mode, pecriteria):
         raise signals.TestFailure("GTW_GPSTool didn't process TTFF properly.")
     ad.log.info("All TTFF %s are within test criteria %f meters.",
                 (ttff_mode, pecriteria))
+
+
+def check_adblog_functionality(ad):
+    """Restart adb logcat if system can't write logs into file after checking
+    adblog file size.
+
+    Args:
+        ad: An AndroidDevice object.
+    """
+    logcat_path = os.path.join(ad.device_log_path, "adblog_%s_debug.txt" %
+                               ad.serial)
+    if not os.path.exists(logcat_path):
+        raise signals.TestError("Logcat file %s does not exist." % logcat_path)
+    original_log_size = os.path.getsize(logcat_path)
+    ad.log.debug("Original adblog size is %d" % original_log_size)
+    time.sleep(.5)
+    current_log_size = os.path.getsize(logcat_path)
+    ad.log.debug("Current adblog size is %d" % current_log_size)
+    if current_log_size == original_log_size:
+        ad.log.warn("System can't write logs into file. Restart adb "
+                    "logcat process now.")
+        ad.stop_adb_logcat()
+        ad.start_adb_logcat()
