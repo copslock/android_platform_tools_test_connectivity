@@ -103,12 +103,10 @@ class BtSarBaseTest(BaseTestClass):
         if 'Error' not in self.dut.adb.shell('bluetooth_sar_test -r'):
             #Flag for SAR version 2
             self.sar_version_2 = True
-            phone_sku = self.dut.adb.shell('getprop ro.boot.hardware.sku')
             self.power_column = 'BluetoothEDRPower'
             self.power_file_paths[0] = os.path.join(
                 os.path.dirname(self.power_file_paths[0]),
-                'bluetooth_power_limits_{}_{}.csv'.format(
-                    phone_sku, self.reg_domain))
+                'bluetooth_power_limits_{}.csv'.format(self.reg_domain))
             self.sar_file_name = os.path.basename(self.power_file_paths[0])
 
         self.sar_file_path = self.power_file_paths[0]
@@ -284,18 +282,21 @@ class BtSarBaseTest(BaseTestClass):
 
                 processed_bqr_results = bt_utils.get_bt_metric(
                     self.android_devices, self.duration)
-                sar_df.loc[scenario, 'slave_rssi'] = processed_bqr_results[
-                    'rssi'][self.bt_device_controller.serial]
-                sar_df.loc[scenario, 'master_rssi'] = processed_bqr_results[
-                    'rssi'][self.dut.serial]
+                sar_df.loc[scenario,
+                           'slave_rssi'] = processed_bqr_results['rssi'][
+                               self.bt_device_controller.serial]
+                sar_df.loc[scenario,
+                           'master_rssi'] = processed_bqr_results['rssi'][
+                               self.dut.serial]
                 sar_df.loc[scenario, 'pwlv'] = processed_bqr_results['pwlv'][
                     self.dut.serial]
                 self.log.info(
                     'scenario:{}, power_cap:{},  s_rssi:{}, m_rssi:{}, m_pwlv:{}'
                     .format(scenario, sar_df.loc[scenario, 'power_cap'],
                             sar_df.loc[scenario, 'slave_rssi'],
-                            sar_df.loc[scenario, 'master_rssi'],
-                            sar_df.loc[scenario, 'pwlv']))
+                            sar_df.loc[scenario,
+                                       'master_rssi'], sar_df.loc[scenario,
+                                                                  'pwlv']))
 
         self.log.info('BT SAR Table swept')
 
@@ -327,9 +328,9 @@ class BtSarBaseTest(BaseTestClass):
             self.otp = bt_utils.read_otp(self.dut)
 
             #OTP backoff
-            edr_otp = min(0, float(self.otp['EDR']['10']) / 4.0)
-            bdr_otp = min(0, float(self.otp['BDR']['10']) / 4.0)
-            ble_otp = min(0, float(self.otp['BLE']['10']) / 4.0)
+            edr_otp = min(0, float(self.otp['EDR']['10']))
+            bdr_otp = min(0, float(self.otp['BR']['10']))
+            ble_otp = min(0, float(self.otp['BLE']['10']))
 
             # EDR TX Power for PL10
             edr_tx_power_pl10 = self.calibration_params['target_power']['EDR'][
@@ -516,7 +517,7 @@ class BtSarBaseTest(BaseTestClass):
     def get_country_code(self, ad, begin_time):
         """Returns the enforced regulatory domain since begin_time
 
-        Returns the enforced regulatory domain since begin_time by parsing logcat.
+        Returns enforced regulatory domain since begin_time by parsing logcat.
         Function should follow a function call to set a country code
 
         Args:

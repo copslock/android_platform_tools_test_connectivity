@@ -676,7 +676,7 @@ def read_otp(ad):
     ad.adb.shell('svc bluetooth enable')
     time.sleep(2)
     otp_dict = {
-        "BDR": {
+        "BR": {
             "10": 0,
             "9": 0,
             "8": 0
@@ -693,7 +693,7 @@ def read_otp(ad):
         }
     }
 
-    otp_regex = '\s+\[\s+PL10:([-]*\d+)\s+PL9:([-]*\d+)*\s+PL8:([-]*\d+)\s+\]'
+    otp_regex = '\s+\[\s+PL10:\s+(\d+)\s+PL9:\s+(\d+)*\s+PL8:\s+(\d+)\s+\]'
 
     for key in otp_dict:
         bank_list = re.findall("{}{}".format(key, otp_regex), otp_output)
@@ -701,7 +701,6 @@ def read_otp(ad):
             if ('0', '0', '0') != bank_tuple:
                 [otp_dict[key]["10"], otp_dict[key]["9"],
                  otp_dict[key]["8"]] = bank_tuple
-
     return otp_dict
 
 
@@ -723,8 +722,12 @@ def get_bt_metric(ad_list, duration=1, tag="bt_metric", processed=True):
     """
 
     # Defining bqr quantitites and their regex to extract
-    regex_dict = {"pwlv": "PwLv:\s(\S+)", "rssi": "RSSI:\s[-](\d+)"}
-    metrics_dict = {"rssi": {}, "pwlv": {}}
+    regex_dict = {
+        "vsp_txpl": "VSP_TxPL:\s(\S+)",
+        "pwlv": "PwLv:\s(\S+)",
+        "rssi": "RSSI:\s[-](\d+)"
+    }
+    metrics_dict = {"rssi": {}, "pwlv": {}, "vsp_txpl": {}}
 
     # Converting a single android device object to list
     if not isinstance(ad_list, list):
@@ -741,7 +744,7 @@ def get_bt_metric(ad_list, duration=1, tag="bt_metric", processed=True):
 
     for ad in ad_list:
         bt_rssi_log = ad.cat_adb_log(tag, begin_time, end_time)
-        bqr_tag = "Monitoring , Handle:"
+        bqr_tag = "Handle:"
 
         # Extracting supporting bqr quantities
         for metric, regex in regex_dict.items():
@@ -753,6 +756,11 @@ def get_bt_metric(ad_list, duration=1, tag="bt_metric", processed=True):
                         m = re.findall(regex, line)[0].strip(",")
                         bqr_metric.append(m)
             metrics_dict[metric][ad.serial] = bqr_metric
+
+        # Ensures back-compatibility for vsp_txpl enabled DUTs
+        if metrics_dict["vsp_txpl"][ad.serial]:
+            metrics_dict["pwlv"][ad.serial] = metrics_dict["vsp_txpl"][
+                ad.serial]
 
         # Formatting the raw data
         metrics_dict["rssi"][ad.serial] = [
@@ -797,9 +805,9 @@ def get_bt_rssi(ad, duration=1, processed=True):
 
 
 def enable_bqr(
-        ad_list,
-        bqr_interval=10,
-        bqr_event_mask=15,
+    ad_list,
+    bqr_interval=10,
+    bqr_event_mask=15,
 ):
     """Sets up BQR reporting.
 
