@@ -777,8 +777,9 @@ def get_bt_metric(ad_list, duration=1, tag="bt_metric", processed=True):
                 sum(metrics_dict["rssi"][ad.serial]) /
                 len(metrics_dict["rssi"][ad.serial]), 2)
             # Returns last noted value for power level
-            metrics_dict["pwlv"][ad.serial] = metrics_dict["pwlv"][
-                ad.serial][-1]
+            metrics_dict["pwlv"][ad.serial] = float(
+                sum(metrics_dict["pwlv"][ad.serial]) /
+                len(metrics_dict["pwlv"][ad.serial]))
 
     return metrics_dict
 
