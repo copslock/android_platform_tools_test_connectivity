@@ -386,8 +386,6 @@ class PowerBaseTest(base_test.BaseTestClass):
         Returns:
             mon_info: Dictionary with the monsoon packet config
         """
-        if self.iperf_duration:
-            self.mon_duration = self.iperf_duration - 10
         mon_info = ObjNew(dut=self.mon,
                           freq=self.mon_freq,
                           duration=self.mon_duration,
