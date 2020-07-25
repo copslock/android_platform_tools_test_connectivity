@@ -27,7 +27,8 @@ PHONE_MUSIC_FILE_DIRECTORY = '/sdcard/Music'
 INIT_ATTEN = [0]
 
 
-def ramp_attenuation(obj_atten, attenuation_target):
+def ramp_attenuation(obj_atten, attenuation_target, attenuation_step_max=20,
+                    time_wait_in_between=5 ):
     """Ramp the attenuation up or down for BT tests.
 
     Ramp the attenuation slowly so it won't have dramatic signal drop to affect
@@ -36,15 +37,16 @@ def ramp_attenuation(obj_atten, attenuation_target):
     Args:
         obj_atten: attenuator object, a single port attenuator
         attenuation_target: target attenuation level to reach to.
+        attenuation_step_max: max step for attenuation set
+        time_wait_in_between: wait time between attenuation changes
     """
-    attenuation_step_max = 20
     sign = lambda x: copysign(1, x)
     attenuation_delta = obj_atten.get_atten() - attenuation_target
     while abs(attenuation_delta) > attenuation_step_max:
         attenuation_intermediate = obj_atten.get_atten(
         ) - sign(attenuation_delta) * attenuation_step_max
         obj_atten.set_atten(attenuation_intermediate)
-        time.sleep(5)
+        time.sleep(time_wait_in_between)
         attenuation_delta = obj_atten.get_atten() - attenuation_target
     obj_atten.set_atten(attenuation_target)
 

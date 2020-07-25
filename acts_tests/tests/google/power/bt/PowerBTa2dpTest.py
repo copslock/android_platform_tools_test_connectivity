@@ -60,18 +60,20 @@ class PowerBTa2dpTest(PBtBT.PowerBTBaseTest):
         else:
             self.log.info('Current Codec is {}, no need to change'.format(
                 current_codec_type))
+        # Start music playing
+        self.media.play()
+        time.sleep(EXTRA_PLAY_TIME)
 
         # Set attenuation so BT tx at desired power level
         self.log.info('Current Attenuation {} dB'.format(
             self.attenuator.get_atten()))
         tpl = 'PL' + str(tpl)
-        PBtBT.ramp_attenuation(self.attenuator, self.atten_pl_settings[tpl][0])
+        PBtBT.ramp_attenuation(self.attenuator, self.atten_pl_settings[tpl][0],
+                               attenuation_step_max=1, time_wait_in_between=1)
         self.log.info('Setting Attenuator to {} dB'.format(
             self.atten_pl_settings[tpl][0]))
 
-        self.media.play()
         self.log.info('Running A2DP with codec {} at {}'.format(
             codec_config['codec_type'], tpl))
         self.dut.droid.goToSleepNow()
-        time.sleep(EXTRA_PLAY_TIME)
         self.measure_power_and_validate()

@@ -52,14 +52,17 @@ class PowerBTcalibrationTest(PBtBT.PowerBTBaseTest):
 
         # Loop through attenuation in 1 dB step until reaching at PL10
         self.log.info('Starting Calibration Process')
+        pl10_count = 0
         for i in range(int(self.attenuator.get_max_atten())):
 
             self.attenuator.set_atten(i)
             bt_metrics_dict = btutils.get_bt_metric(self.dut)
-            pwl = int(bt_metrics_dict['pwlv'][self.dut.serial])
+            pwl = bt_metrics_dict['pwlv'][self.dut.serial]
             self.log.info('Reach PW {} at attenuation {} dB'.format(pwl, i))
             self.cal_matrix.append([i, pwl])
             if pwl == 10:
+                pl10_count += 1
+            if pl10_count > 5:
                 break
 
         # Write cal results to csv
