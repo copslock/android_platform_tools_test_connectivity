@@ -59,7 +59,7 @@ class BtSarSanityTest(BtSarBaseTest):
                 try:
                     propagated_value = int(
                         re.findall(key_regex, device_state)[0])
-                except TypeError:
+                except IndexError:
                     propagated_value = 'NA'
 
                 if enforced_state[key] == propagated_value:
@@ -116,17 +116,16 @@ class BtSarSanityTest(BtSarBaseTest):
                 scenario_power_cap = self.get_current_power_cap(self.dut,
                                                                 start_time,
                                                                 type=type)
-                sar_df.loc[scenario, '{}_power_cap'.
-                           format(type)] = scenario_power_cap
-                self.log.info(
-                    'scenario: {}, '
-                    'sar_power: {}, power_cap:{}'.format(
-                        scenario, sar_df.loc[scenario, column_name],
-                        sar_df.loc[scenario, '{}_power_cap'.format(type)]))
+                sar_df.loc[scenario,
+                           '{}_power_cap'.format(type)] = scenario_power_cap
+                self.log.info('scenario: {}, '
+                              'sar_power: {}, power_cap:{}'.format(
+                                  scenario, sar_df.loc[scenario, column_name],
+                                  sar_df.loc[scenario,
+                                             '{}_power_cap'.format(type)]))
 
-                if not sar_df['{}_power_cap'.format(type)].equals(
-                        sar_df[column_name]):
-                    power_cap_error = True
+        if not sar_df['{}_power_cap'.format(type)].equals(sar_df[column_name]):
+            power_cap_error = True
 
         results_file_path = os.path.join(
             self.log_path, '{}.csv'.format(self.current_test_name))
@@ -134,7 +133,7 @@ class BtSarSanityTest(BtSarBaseTest):
 
         # Comparing read device power cap to expected device power cap
         if power_cap_error:
-            asserts.fail("Power Caps didn't match powers in the {} table")
+            asserts.fail("Power Caps didn't match powers in the SAR table")
         else:
             asserts.explicit_pass('Power Caps were set according to the table')
 

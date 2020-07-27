@@ -454,7 +454,7 @@ class BtSarBaseTest(BaseTestClass):
         }
 
         if 'BTHotspot' in signal_dict.keys():
-            device_state_dict[('BT Tethering',
+            device_state_dict[('Bluetooth tethering',
                                'bt_tethering')] = signal_dict['BTHotspot']
 
         enforced_state = {}
