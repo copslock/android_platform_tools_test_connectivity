@@ -20,39 +20,37 @@ import acts.test_utils.bt.bt_power_test_utils as btputils
 import acts.test_utils.power.PowerBTBaseTest as PBtBT
 
 BLE_LOCATION_SCAN_ENABLE = 'settings put secure location_mode 3'
-EXTRA_SCAN_TIME = 10
-MONSOON_TAIL_CUT = 5
+EXTRA_SCAN_TIME = 3
+SCAN_TAIL = 5
 
 
 class PowerBLEscanTest(PBtBT.PowerBTBaseTest):
     def __init__(self, configs):
         super().__init__(configs)
-        req_params = ['scan_modes', 'scan_duration']
+        req_params = ['scan_modes']
         self.unpack_userparams(req_params)
 
         for scan_mode in self.scan_modes:
-            self.generate_test_case_no_devices_around(scan_mode,
-                                                      self.scan_duration)
+            self.generate_test_case_no_devices_around(scan_mode)
 
     def setup_class(self):
 
         super().setup_class()
         self.dut.adb.shell(BLE_LOCATION_SCAN_ENABLE)
         # Make sure during power measurement, scan is always on
-        self.mon_info.duration = (self.scan_duration - self.mon_offset -
-                                  EXTRA_SCAN_TIME - MONSOON_TAIL_CUT)
+        self.scan_duration = self.mon_info.duration + self.mon_offset + SCAN_TAIL + EXTRA_SCAN_TIME
 
-    def generate_test_case_no_devices_around(self, scan_mode, scan_duration):
+    def generate_test_case_no_devices_around(self, scan_mode):
         def test_case_fn():
 
-            self.measure_ble_scan_power(scan_mode, scan_duration)
+            self.measure_ble_scan_power(scan_mode)
 
         test_case_name = ('test_BLE_{}_no_advertisers'.format(
             bleenum.ScanSettingsScanMode(scan_mode).name))
         setattr(self, test_case_name, test_case_fn)
 
-    def measure_ble_scan_power(self, scan_mode, scan_duration):
+    def measure_ble_scan_power(self, scan_mode):
 
-        btputils.start_apk_ble_scan(self.dut, scan_mode, scan_duration)
+        btputils.start_apk_ble_scan(self.dut, scan_mode, self.scan_duration)
         time.sleep(EXTRA_SCAN_TIME)
         self.measure_power_and_validate()

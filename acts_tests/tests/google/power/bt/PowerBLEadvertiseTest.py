@@ -20,34 +20,31 @@ import acts.test_utils.bt.bt_power_test_utils as btputils
 import acts.test_utils.power.PowerBTBaseTest as PBtBT
 
 BLE_LOCATION_SCAN_ENABLE = 'settings put secure location_mode 3'
-EXTRA_ADV_TIME = 10
-MONSOON_TAIL_CUT = 5
+EXTRA_ADV_TIME = 3
+ADV_TAIL = 5
 
 
 class PowerBLEadvertiseTest(PBtBT.PowerBTBaseTest):
     def __init__(self, configs):
         super().__init__(configs)
-        req_params = ['adv_modes', 'adv_power_levels', 'adv_duration']
+        req_params = ['adv_modes', 'adv_power_levels']
         self.unpack_userparams(req_params)
         # Loop all advertise modes and power levels
         for adv_mode in self.adv_modes:
             for adv_power_level in self.adv_power_levels:
-                self.generate_test_case(adv_mode, adv_power_level,
-                                        self.adv_duration)
+                self.generate_test_case(adv_mode, adv_power_level)
 
     def setup_class(self):
 
         super().setup_class()
         self.dut.adb.shell(BLE_LOCATION_SCAN_ENABLE)
         # Make sure during power measurement, advertisement is always on
-        self.mon_info.duration = (self.adv_duration - self.mon_offset -
-                                  EXTRA_ADV_TIME - MONSOON_TAIL_CUT)
+        self.adv_duration = self.mon_info.duration + self.mon_offset + ADV_TAIL + EXTRA_ADV_TIME
 
-    def generate_test_case(self, adv_mode, adv_power_level, adv_duration):
+    def generate_test_case(self, adv_mode, adv_power_level):
         def test_case_fn():
 
-            self.measure_ble_advertise_power(adv_mode, adv_power_level,
-                                             adv_duration)
+            self.measure_ble_advertise_power(adv_mode, adv_power_level)
 
         adv_mode_str = bleenum.AdvertiseSettingsAdvertiseMode(adv_mode).name
         adv_txpl_str = bleenum.AdvertiseSettingsAdvertiseTxPower(
@@ -55,10 +52,9 @@ class PowerBLEadvertiseTest(PBtBT.PowerBTBaseTest):
         test_case_name = ('test_BLE_{}_{}'.format(adv_mode_str, adv_txpl_str))
         setattr(self, test_case_name, test_case_fn)
 
-    def measure_ble_advertise_power(self, adv_mode, adv_power_level,
-                                    adv_duration):
+    def measure_ble_advertise_power(self, adv_mode, adv_power_level):
 
         btputils.start_apk_ble_adv(self.dut, adv_mode, adv_power_level,
-                                   adv_duration)
+                                   self.adv_duration)
         time.sleep(EXTRA_ADV_TIME)
         self.measure_power_and_validate()
