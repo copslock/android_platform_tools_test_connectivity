@@ -896,6 +896,8 @@ def process_ttff_by_gtw_gpstool(ad, begin_time, true_position, type="gnss"):
                                         begin_time)
         if crash_result:
             raise signals.TestError("GPSTool crashed. Abort test.")
+        # wait 10 seconds to avoid logs not writing into logcat yet
+        time.sleep(10)
     return ttff_data
 
 

@@ -78,8 +78,8 @@ from acts.test_utils.tel.tel_test_utils import stop_adb_tcpdump
 from acts.test_utils.tel.tel_test_utils import get_tcpdump_log
 
 
-class GnssSanityTest(BaseTestClass):
-    """ GNSS Function Sanity Tests"""
+class GnssFunctionTest(BaseTestClass):
+    """ GNSS Function Tests"""
     def setup_class(self):
         super().setup_class()
         self.ad = self.android_devices[0]
@@ -97,7 +97,7 @@ class GnssSanityTest(BaseTestClass):
                       "default_gnss_signal_attenuation",
                       "weak_gnss_signal_attenuation",
                       "no_gnss_signal_attenuation", "gnss_init_error_list",
-                      "gnss_init_error_whitelist", "pixel_lab_location",
+                      "gnss_init_error_allowlist", "pixel_lab_location",
                       "legacy_wifi_xtra_cs_criteria", "legacy_projects",
                       "qdsp6m_path", "supl_capabilities", "ttff_test_cycle",
                       "collect_logs"]
@@ -203,9 +203,9 @@ class GnssSanityTest(BaseTestClass):
                     self.ad.log.info("There is no mcfg.version before push, "
                                      "unmatching device")
                     return False
-            except:
+            except Exception as e:
                 self.ad.log.info("There is no mcfg.version before push, "
-                                 "unmatching device")
+                                 "unmatching device %s" % e)
                 return False
             get_baseband_and_gms_version(self.ad, "Before push mcfg")
             try:
@@ -371,11 +371,11 @@ class GnssSanityTest(BaseTestClass):
         for attr in self.gnss_init_error_list:
             error = self.ad.adb.shell("logcat -d | grep -E '%s'" % attr)
             if error:
-                for whitelist in self.gnss_init_error_whitelist:
-                    if whitelist in error:
-                        error = re.sub(".*"+whitelist+".*\n?", "", error)
-                        self.ad.log.info("\"%s\" is white-listed and removed "
-                                         "from error." % whitelist)
+                for allowlist in self.gnss_init_error_allowlist:
+                    if allowlist in error:
+                        error = re.sub(".*"+allowlist+".*\n?", "", error)
+                        self.ad.log.info("\"%s\" is in allow-list and removed "
+                                         "from error." % allowlist)
                 if error:
                     error_mismatch = False
                     self.ad.log.error("\n%s" % error)
