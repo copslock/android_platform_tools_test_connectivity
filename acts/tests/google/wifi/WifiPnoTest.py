@@ -115,17 +115,17 @@ class WifiPnoTest(WifiBaseTest):
         finally:
             pass
 
-    def add_and_enable_dummy_networks(self, num_networks):
-        """Add some dummy networks to the device and enable them.
+    def add_and_enable_test_networks(self, num_networks):
+        """Add some test networks to the device and enable them.
 
         Args:
             num_networks: Number of networks to add.
         """
-        ssid_name_base = "pno_dummy_network_"
+        ssid_name_base = "pno_test_network_"
         for i in range(0, num_networks):
             network = {}
             network[WifiEnums.SSID_KEY] = ssid_name_base + str(i)
-            network[WifiEnums.PWD_KEY] = "pno_dummy"
+            network[WifiEnums.PWD_KEY] = "pno_test"
             self.add_network_and_enable(network)
 
     def add_network_and_enable(self, network):
@@ -178,13 +178,13 @@ class WifiPnoTest(WifiBaseTest):
 
         16 is the max list size of PNO watch list for most devices. The device
         should automatically pick the 16 latest added networks in the list.
-        So add 16 dummy networks and then add 2 valid networks.
+        So add 16 test networks and then add 2 valid networks.
 
         Steps:
-        1. Save 16 dummy network configurations in the device.
+        1. Save 16 test network configurations in the device.
         2. Run the simple pno test.
         """
-        self.add_and_enable_dummy_networks(16)
+        self.add_and_enable_test_networks(16)
         self.add_network_and_enable(self.pno_network_a)
         self.add_network_and_enable(self.pno_network_b)
         # Force single scan so that both networks become preferred before PNO.

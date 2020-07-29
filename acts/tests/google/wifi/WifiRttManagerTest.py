@@ -405,7 +405,7 @@ class WifiRttManagerTest(acts.base_test.BaseTestClass):
     """Tests"""
 
     def test_invalid_params(self):
-        """Tests the sanity check function in RttManager.
+        """Tests the check function in RttManager.
         """
         param_list = [{
             RttParam.device_type: 3

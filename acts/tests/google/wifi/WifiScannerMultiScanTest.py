@@ -296,7 +296,7 @@ class WifiScannerMultiScanTest(WifiBaseTest):
         return idx, wait_time, scan_channels
 
     def validate_scan_results(self, scan_results_dict):
-        # Sanity check to make sure the dict is not empty
+        # Check to make sure the dict is not empty
         asserts.assert_true(scan_results_dict, "Scan result dict is empty.")
         for scan_result_obj in scan_results_dict.values():
             # Validate the results received for each scan setting
