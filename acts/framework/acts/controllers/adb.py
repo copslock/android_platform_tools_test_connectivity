@@ -19,6 +19,7 @@ from builtins import str
 import logging
 import re
 import shlex
+import shutil
 
 from acts.controllers.adb_lib.error import AdbError
 from acts.libs.proc import job
@@ -73,7 +74,7 @@ class AdbProxy(object):
         """
         self.serial = serial
         self._server_local_port = None
-        adb_path = job.run("which adb").stdout
+        adb_path = shutil.which('adb')
         adb_cmd = [shlex.quote(adb_path)]
         if serial:
             adb_cmd.append("-s %s" % serial)
