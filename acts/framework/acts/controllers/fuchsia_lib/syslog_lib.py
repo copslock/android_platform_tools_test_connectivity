@@ -102,8 +102,9 @@ class FuchsiaSyslogProcess(object):
     def start(self):
         """Starts reading the data from the syslog ssh connection."""
         if self._started:
-            raise FuchsiaSyslogError('Syslog has already started for '
-                                     'FuchsiaDevice (%s).' % self.ip_address)
+            logging.info('Syslog has already started for FuchsiaDevice (%s).' %
+                         self.ip_address)
+            return None
         self._started = True
 
         self._listening_thread = Thread(target=self._exec_loop)
@@ -122,8 +123,9 @@ class FuchsiaSyslogProcess(object):
         threads.
         """
         if self._stopped:
-            raise FuchsiaSyslogError('Syslog is already being stopped for '
-                                     'FuchsiaDevice (%s).' % self.ip_address)
+            logging.info('Syslog is already stopped for FuchsiaDevice (%s).' %
+                         self.ip_address)
+            return None
         self._stopped = True
 
         try:
