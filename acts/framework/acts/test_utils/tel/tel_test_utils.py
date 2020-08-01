@@ -3747,6 +3747,7 @@ def active_file_download_task(log, ad, file_name="5MB", method="curl"):
     }
     url_map = {
         "1MB": [
+            "http://146.148.91.8/download/1MB.zip",
             "http://ipv4.download.thinkbroadband.com/1MB.zip"
         ],
         "5MB": [

@@ -103,6 +103,7 @@ from acts.utils import rand_ascii_str
 
 EXCEPTION_TOLERANCE = 5
 BINDER_LOGS = ["/sys/kernel/debug/binder"]
+DEFAULT_FILE_DOWNLOADS = ["1MB", "5MB", "10MB", "20MB", "50MB"]
 
 
 class TelLiveStressTest(TelephonyBaseTest):
@@ -158,6 +159,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut_capabilities = telephony_info.get("capabilities", [])
         self.dut_wfc_modes = telephony_info.get("wfc_modes", [])
         self.gps_log_file = self.user_params.get("gps_log_file", None)
+        self.file_name_list = self.user_params.get("file_downloads", DEFAULT_FILE_DOWNLOADS)
         return True
 
     def setup_test(self):
@@ -770,7 +772,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         else:
             return True
 
-    def _data_download(self, file_names=["5MB", "10MB", "20MB", "50MB"]):
+    def _data_download(self, file_names=[]):
         begin_time = get_current_epoch_time()
         slot_id = random.randint(0,1)
         if self.dsds_esim:
@@ -831,11 +833,7 @@ class TelLiveStressTest(TelephonyBaseTest):
     def data_test(self):
         while time.time() < self.finishing_time:
             try:
-                operator_name = self.dut.adb.getprop("gsm.sim.operator.alpha")
-                if CARRIER_SING in operator_name:
-                    self._data_download(file_names=["1MB", "5MB"])
-                else:
-                    self._data_download()
+                self._data_download(self.file_name_list)
             except Exception as e:
                 self.log.error("Exception error %s", str(e))
                 self.result_info["Exception Errors"] += 1
