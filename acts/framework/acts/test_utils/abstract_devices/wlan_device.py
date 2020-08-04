@@ -401,14 +401,7 @@ class FuchsiaWlanDevice(WlanDevice):
                                    (target_ssid, response.get('error')))
 
     def clear_saved_networks(self):
-        # TODO(fxb/55852): Replace with WlanPolicyLib command once its implemented.
-        response = self.device.wlan_policy_lib.wlanGetSavedNetworks()
+        response = self.device.wlan_policy_lib.wlanRemoveAllNetworks()
         if response.get('error'):
-            raise ConnectionError('Failed to get saved networks: %s' %
-                                  response.get('error'))
-        for ssid in response.get('result'):
-            delete_response = self.device.wlan_policy_lib.wlanRemoveNetwork(
-                ssid, None)
-            if delete_response.get('error'):
-                raise EnvironmentError('Failed to delete network %s: %s' %
-                                       (ssid, delete_response.get('error')))
+            raise EnvironmentError('Failed to clear saved networks: %s' %
+                                   response.get('error'))

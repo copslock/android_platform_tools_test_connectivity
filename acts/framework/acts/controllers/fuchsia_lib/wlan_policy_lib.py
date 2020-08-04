@@ -25,6 +25,7 @@ COMMAND_STOP_CLIENT_CONNECTIONS = "wlan_policy.stop_client_connections"
 COMMAND_SCAN_FOR_NETWORKS = "wlan_policy.scan_for_networks"
 COMMAND_SAVE_NETWORK = "wlan_policy.save_network"
 COMMAND_REMOVE_NETWORK = "wlan_policy.remove_network"
+COMMAND_REMOVE_ALL_NETWORKS = "wlan_policy.remove_all_networks"
 COMMAND_GET_SAVED_NETWORKS = "wlan_policy.get_saved_networks"
 COMMAND_CONNECT = "wlan_policy.connect"
 COMMAND_CREATE_CLIENT_CONTROLLER = "wlan_policy.create_client_controller"
@@ -120,6 +121,18 @@ class FuchsiaWlanPolicyLib(BaseLib):
         }
 
         return self.send_command(test_id, test_cmd, test_args)
+
+    def wlanRemoveAllNetworks(self):
+        """ Removes or "forgets" all networks from saved networks
+                Returns:
+                    A boolean indicating if the action was successful
+        """
+
+        test_cmd = COMMAND_REMOVE_ALL_NETWORKS
+        test_id = self.build_id(self.test_counter)
+        self.test_counter += 1
+
+        return self.send_command(test_id, test_cmd, {})
 
     def wlanGetSavedNetworks(self):
         """ Gets networks saved on device
