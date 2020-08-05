@@ -66,6 +66,8 @@ TIME_TO_SLEEP_BETWEEN_RETRIES = 1
 TIME_TO_WAIT_FOR_COUNTRY_CODE = 10
 WEP_HEX_STRING_LENGTH = 10
 
+MEGABITS_PER_SECOND = 'Mbps'
+
 
 def get_test_name(settings):
     """Retrieves the test_name value from test_settings"""
@@ -326,7 +328,8 @@ class ChannelSweepTest(WifiBaseTest):
             iperf_results_file = self.iperf_client.start(
                 iperf_server_address, '-i 1 -t 10 -J', 'channel_sweep_tx')
         if iperf_results_file:
-            iperf_results = IPerfResult(iperf_results_file)
+            iperf_results = IPerfResult(
+                iperf_results_file, reporting_speed_units=MEGABITS_PER_SECOND)
             return iperf_results.avg_send_rate
         else:
             return IPERF_NO_THROUGHPUT_VALUE
@@ -423,13 +426,13 @@ class ChannelSweepTest(WifiBaseTest):
 
         Args:
             max_std_dev: float, max standard deviation of throughput for a test
-                to pass (in mb/s)
+                to pass (in Mb/s)
 
         Raises:
             TestFailure, if standard deviation of throughput exceeds max_std_dev
         """
         self.log.info('Verifying standard deviation across channels does not '
-                      'exceed max standard deviation of %s mb/s' % max_std_dev)
+                      'exceed max standard deviation of %s Mb/s' % max_std_dev)
         tx_values = []
         rx_values = []
         for channel in self.throughput_data['results']:
@@ -446,14 +449,14 @@ class ChannelSweepTest(WifiBaseTest):
         if tx_std_dev > max_std_dev or rx_std_dev > max_std_dev:
             asserts.fail(
                 'With %smhz channel bandwidth, throughput standard '
-                'deviation (tx: %s mb/s, rx: %s mb/s) exceeds max standard '
-                'deviation (%s mb/s).' %
+                'deviation (tx: %s Mb/s, rx: %s Mb/s) exceeds max standard '
+                'deviation (%s Mb/s).' %
                 (self.throughput_data['channel_bandwidth'], tx_std_dev,
                  rx_std_dev, max_std_dev))
         else:
             asserts.explicit_pass(
-                'Throughput standard deviation (tx: %s mb/s, rx: %s mb/s) '
-                'with %smhz channel bandwidth does not exceed maximum (%s mb/s).'
+                'Throughput standard deviation (tx: %s Mb/s, rx: %s Mb/s) '
+                'with %smhz channel bandwidth does not exceed maximum (%s Mb/s).'
                 % (tx_std_dev, rx_std_dev,
                    self.throughput_data['channel_bandwidth'], max_std_dev))
 
@@ -470,13 +473,13 @@ class ChannelSweepTest(WifiBaseTest):
                 test_security (optional): string, security type to use for test.
                 min_tx_throughput (optional, default: 0): float, minimum tx
                     throughput threshold to pass individual channel tests
-                    (in mb/s).
+                    (in Mb/s).
                 min_rx_throughput (optional, default: 0): float, minimum rx
                     throughput threshold to pass individual channel tests
-                    (in mb/s).
+                    (in Mb/s).
                 max_std_dev (optional, default: 1): float, maximum standard
                     deviation of throughput across all test channels to pass
-                    test (in mb/s).
+                    test (in Mb/s).
                 base_test_name (optional): string, test name prefix to use with
                     generated subtests.
                 country_name (optional): string, country name from
@@ -511,7 +514,7 @@ class ChannelSweepTest(WifiBaseTest):
         """
         test_channels = settings['test_channels']
         test_channel_bandwidth = settings['test_channel_bandwidth']
-        test_security = settings.get('test_security')
+        test_security = settings.get('test_security', None)
         test_name = settings.get('test_name', self.test_name)
         base_test_name = settings.get('base_test_name', 'test')
         min_tx_throughput = settings.get('min_tx_throughput',
@@ -538,9 +541,10 @@ class ChannelSweepTest(WifiBaseTest):
         }
         test_list = []
         for channel in test_channels:
-            sub_test_name = '%schannel_%s_%smhz_performance' % (
+            sub_test_name = 'test_%schannel_%s_%smhz_%s_performance' % (
                 '%s_' % country_label if country_label else '', channel,
-                test_channel_bandwidth)
+                test_channel_bandwidth,
+                test_security if test_security else 'open')
             test_list.append({
                 'test_name': sub_test_name,
                 'channel': int(channel),
@@ -564,7 +568,7 @@ class ChannelSweepTest(WifiBaseTest):
         1. Sets up network with test settings
         2. Associates DUT
         3. Runs traffic between DUT and iperf server (both directions)
-        4. Logs channel, tx_throughput (mb/s), and rx_throughput (mb/s) to
+        4. Logs channel, tx_throughput (Mb/s), and rx_throughput (Mb/s) to
            log file and throughput data.
         5. Checks throughput values against minimum throughput thresholds.
 
@@ -620,8 +624,8 @@ class ChannelSweepTest(WifiBaseTest):
                                                   reverse=True)
         self.log_to_file_and_throughput_data(channel, channel_bandwidth,
                                              tx_throughput, rx_throughput)
-        self.log.info('Throughput (tx, rx): (%s mb/s, %s mb/s), '
-                      'Minimum threshold (tx, rx): (%s mb/s, %s mb/s)' %
+        self.log.info('Throughput (tx, rx): (%s Mb/s, %s Mb/s), '
+                      'Minimum threshold (tx, rx): (%s Mb/s, %s Mb/s)' %
                       (tx_throughput, rx_throughput, min_tx_throughput,
                        min_rx_throughput))
         base_message = (
@@ -674,9 +678,9 @@ class ChannelSweepTest(WifiBaseTest):
             for channel_bandwidth in test_channels[channel]:
                 sub_test_name = '%s_channel_%s_%smhz' % (
                     base_test_name, channel, channel_bandwidth)
-                should_associate = (
-                    channel in allowed_channels
-                    and channel_bandwidth in allowed_channels[channel])
+                should_associate = (channel in allowed_channels
+                                    and channel_bandwidth
+                                    in allowed_channels[channel])
                 # Note: these int conversions because when these tests are
                 # imported via JSON, they may be strings since the channels
                 # will be keys. This makes the json/list test_channels param
@@ -996,8 +1000,8 @@ _
 
         """
         asserts.skip_if(
-            'debug_channel_performance_tests' not in self.user_params.get(
-                'channel_sweep_test_params', {}),
+            'debug_channel_performance_tests'
+            not in self.user_params.get('channel_sweep_test_params', {}),
             'No custom channel performance tests provided in config.')
         base_tests = self.user_params['channel_sweep_test_params'][
             'debug_channel_performance_tests']
@@ -1029,8 +1033,8 @@ _
         }
         """
         asserts.skip_if(
-            'regulatory_compliance_tests' not in self.user_params.get(
-                'channel_sweep_test_params', {}),
+            'regulatory_compliance_tests'
+            not in self.user_params.get('channel_sweep_test_params', {}),
             'No custom regulatory compliance tests provided in config.')
         base_tests = self.user_params['channel_sweep_test_params'][
             'regulatory_compliance_tests']
