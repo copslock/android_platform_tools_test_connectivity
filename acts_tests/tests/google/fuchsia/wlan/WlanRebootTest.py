@@ -98,10 +98,10 @@ class WlanRebootTest(WifiBaseTest):
     def __init__(self, controllers):
         WifiBaseTest.__init__(self, controllers)
         self.tests = [
-            'test_soft_reboot_ap_ipv4_ipv6_2g_5g',
-            'test_hard_reboot_ap_ipv4_ipv6_2g_5g',
             'test_soft_reboot_dut_ipv4_ipv6_2g_5g',
-            'test_hard_reboot_dut_ipv4_ipv6_2g_5g'
+            'test_hard_reboot_dut_ipv4_ipv6_2g_5g',
+            'test_soft_reboot_ap_ipv4_ipv6_2g_5g',
+            'test_hard_reboot_ap_ipv4_ipv6_2g_5g'
         ]
         if 'reboot_stress_tests' in self.user_params:
             self.tests.append('test_reboot_stress')
@@ -374,7 +374,7 @@ class WlanRebootTest(WifiBaseTest):
             'Attempting to pass traffic from DUT to IPerf server (%s).' %
             iperf_server_ip_address)
         tx_file = iperf_client_on_dut.start(iperf_server_ip_address,
-                                            '-i 1 -t 10 -J', 'reboot_tx')
+                                            '-i 1 -t 3 -J', 'reboot_tx')
         tx_results = iperf_server.IPerfResult(tx_file)
         if not tx_results.avg_receive_rate or tx_results.avg_receive_rate == 0:
             raise ConnectionError(
@@ -389,7 +389,7 @@ class WlanRebootTest(WifiBaseTest):
             'Attempting to pass traffic from IPerf server (%s) to DUT.' %
             iperf_server_ip_address)
         rx_file = iperf_client_on_dut.start(iperf_server_ip_address,
-                                            '-i 1 -t 10 -R -J', 'reboot_rx')
+                                            '-i 1 -t 3 -R -J', 'reboot_rx')
         rx_results = iperf_server.IPerfResult(rx_file)
         if not rx_results.avg_receive_rate or rx_results.avg_receive_rate == 0:
             raise ConnectionError(
