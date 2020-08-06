@@ -40,12 +40,7 @@ class BtSarTpcTest(BtSarBaseTest):
     def setup_class(self):
         super().setup_class()
 
-        # Pushing custom table
-        self.backup_sar_path = os.path.join(self.dut.device_log_path,
-                                            self.BACKUP_BT_SAR_TABLE_NAME)
-        self.dut.adb.pull(self.sar_file_path, self.backup_sar_path)
         self.push_table(self.dut, self.custom_sar_path)
-
         self.attenuator.set_atten(self.atten_min)
         self.pathloss = int(self.calibration_params['pathloss'])
 
@@ -69,13 +64,8 @@ class BtSarTpcTest(BtSarBaseTest):
             primary_y_label='Tx Power(dB)')
 
     def teardown_class(self):
+        self.dut.adb.shell('rm {}'.format(self.power_file_paths[1]))
         super().teardown_class()
-        result_file_name = '{}.csv'.format(self.__class__.__name__)
-        result_file_path = os.path.join(self.log_path, result_file_name)
-        self.sar_df.to_csv(result_file_path)
-
-        # Pushing default table back
-        self.push_table(self.dut, self.backup_sar_path)
 
     def generate_test_cases(self):
         """Function to generate test cases.
@@ -108,14 +98,24 @@ class BtSarTpcTest(BtSarBaseTest):
         tpc_verdict = 'FAIL'
 
         # Locating power level changes in the sweep
-        pwlv_derivative_bool = list(np.diff([pwlv_list[0]] + pwlv_list) == 1)
+        pwlv_derivative_bool = list(
+            np.diff([pwlv_list[0]] + np.rint(pwlv_list)) == 1)
 
         # Diff-ing the list to get derivative of the list
         tx_power_derivative = np.diff([tx_power_list[0]] + tx_power_list)
 
         # Checking for negative peaks
-        if tx_power_derivative.min() < self.tpc_threshold['negative']:
-            return [tpc_verdict, tx_power_derivative]
+        negative_peaks = tx_power_derivative[np.where(
+            tx_power_derivative < self.tpc_threshold['negative'])]
+        for negative_peak in negative_peaks:
+            dip_index = list(tx_power_derivative).index(negative_peak)
+            # Compensating for TPC algo quirk
+            if (pwlv_list[dip_index - 2]
+                    == 8.0) & (pwlv_list[dip_index - 1] >
+                               8.0) & (pwlv_list[dip_index] == 8.0):
+                pass
+            else:
+                return [tpc_verdict, tx_power_derivative]
 
         # Locating legitimate tx power changes
         tx_power_derivative_bool = [
