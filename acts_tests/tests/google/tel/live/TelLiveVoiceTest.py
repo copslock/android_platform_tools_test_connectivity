@@ -113,6 +113,8 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             "long_duration_call_total_duration",
             DEFAULT_LONG_DURATION_CALL_TOTAL_DURATION)
         self.number_of_devices = 2
+        self.call_server_number = self.user_params.get(
+                "call_server_number", STORY_LINE)
         self.tel_logger = TelephonyMetricLogger.for_test_case()
 
 
@@ -139,7 +141,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
         for iteration in range(3):
             result = True
             ad.log.info("Attempt %d", iteration + 1)
-            if not initiate_call(ad.log, ad, STORY_LINE):
+            if not initiate_call(ad.log, ad, self.call_server_number):
                 ad.log.error("Call Failed to Initiate")
                 result = False
                 continue
