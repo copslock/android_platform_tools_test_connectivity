@@ -54,7 +54,8 @@ class PingStressTest(BaseTestClass):
                                client=self.wlan_device,
                                profile_name='whirlwind',
                                channel=hostapd_constants.AP_DEFAULT_CHANNEL_2G,
-                               ssid=self.ssid)
+                               ssid=self.ssid,
+                               setup_bridge=True)
 
     def teardown_test(self):
         self.wlan_device.disconnect()
