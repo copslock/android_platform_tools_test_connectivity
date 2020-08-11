@@ -1096,6 +1096,68 @@ class TelLiveStressTest(TelephonyBaseTest):
         ad.log.info("Phone WIFI is connected successfully.")
         return True
 
+    def performance_tests(self, setup_func=None, call_verification_func=None):
+        self.log.info(self._get_result_message())
+        if setup_func and not setup_func():
+            msg = "%s setup %s failed" % (self.test_name, setup_func.__name__)
+            self.log.error(msg)
+            self._take_bug_report("%s%s" % (self.test_name,
+                                            setup_func.__name__),
+                                  self.begin_time)
+            return False
+        if not call_verification_func:
+            call_verification_func = is_phone_in_call
+        self.finishing_time = time.time() + self.max_run_time
+
+        self.log.info(
+            "==== Start voice stress test ====")
+        self.perf_data["testing method"] = "parallel"
+        results = (self.call_performance_test, [call_verification_func])
+
+        result_message = self._get_result_message()
+        self.log.info(result_message)
+        self._update_perf_json()
+        self.result_detail = result_message
+        total_call = self.result_info["Call Total"]
+        success_call = self.result_info["Call Success Total"]
+        call_fail = total_call - success_call
+        if call_fail != 0:
+            call_fail_rate = ( call_fail / total_call ) * 100
+        else:
+            call_fail_rate = 0
+        call_success_rate = (success_call / total_call) * 100
+
+        self.log.info("Call Success Rate is %s", call_success_rate)
+        self.log.info("Call Drop Rate is %s", call_success_rate)
+
+        return all(results)
+
+    def _update_initiate_call_fail_count(self):
+        self.result_info["Call Initiate Fail"] += 1
+
+    def call_performance_test(self, call_verification_func=None):
+        while time.time() < self.finishing_time:
+            time.sleep(
+                random.randrange(self.min_sleep_time, self.max_sleep_time))
+            try:
+                self._make_phone_call(call_verification_func)
+            except Exception as e:
+                self.log.exception("Exception error %s", str(e))
+                self.result_info["Exception Errors"] += 1
+            if self.result_info["Exception Errors"] >= EXCEPTION_TOLERANCE:
+                self.log.error("Too many exception errors, quit test")
+                return False
+            self.log.info("%s", dict(self.result_info))
+        if any([
+                self.result_info["Call Setup Failure"],
+                self.result_info["Call Maintenance Failure"],
+                self.result_info["Call Teardown Failure"]
+        ]):
+            return False
+        else:
+            self.result_info["Call Success Total"] += 1
+            return True
+
     """ Tests Begin """
 
     @test_tracker_info(uuid="d035e5b9-476a-4e3d-b4e9-6fd86c51a68d")
@@ -1181,5 +1243,11 @@ class TelLiveStressTest(TelephonyBaseTest):
         self._update_perf_json()
         self.result_detail = result_message
         return all(results)
+
+    @test_tracker_info(uuid="4212d0e0-fb87-47e5-ba48-9df9a4a6bb9b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_voice_performance_stress(self):
+        """ Vocie Performance stress test"""
+        return self.performance_tests()
 
     """ Tests End """
