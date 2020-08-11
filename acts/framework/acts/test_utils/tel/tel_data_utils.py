@@ -581,8 +581,8 @@ def browsing_test(log, ad, wifi_ssid=None, pass_threshold_in_mb = 1.0):
             ad.droid.goToSleepNow()
             time.sleep(rest_idle_time)
             ad.log.info("Wake up device.")
-            ad.droid.wakeLockAcquireBright()
-            ad.droid.wakeUpNow()
+            ad.wakeup_screen()
+            ad.adb.shell("input keyevent 82")
             time.sleep(3)
         else:
             time.sleep(idle_time)
