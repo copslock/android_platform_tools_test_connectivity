@@ -183,6 +183,53 @@ class TelLiveDataTest(TelephonyBaseTest):
         ad.log.info("Data Browsing test FAIL for all 3 iterations")
         return False
 
+    @test_tracker_info(uuid="7f9fee99-40ec-4770-9eb4-00befca9696d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_5g_nsa_data_browsing(self):
+        """ Verifying connectivity of internet and  browsing websites on 5G NSA network.
+
+        Ensure
+            1. ping to IP of websites is successful.
+            2. http ping to IP of websites is successful.
+            3. browsing websites is successful.
+        Returns:
+            True if pass; False if fail.
+        """
+        ad = self.android_devices[0]
+        wifi_toggle_state(ad.log, ad, False)
+        sub_id = ad.droid.subscriptionGetDefaultSubId()
+        if not set_preferred_network_mode_pref(ad.log, ad, sub_id,
+                                               NETWORK_MODE_NR_LTE_GSM_WCDMA):
+            ad.log.error("Failed to set network mode to NSA")
+            return False
+        ad.log.info("Set network mode to NSA successfully")
+        ad.log.info("Waiting for 5g NSA attach for 60 secs")
+        if is_current_network_5g_nsa(ad, timeout=60):
+            ad.log.info("Success! attached on 5g NSA")
+        else:
+            ad.log.error("Failure - expected NR_NSA, current %s",
+                         get_current_override_network_type(ad))
+            # Can't attach 5g NSA, exit test!
+            return False
+        for iteration in range(3):
+            connectivity = False
+            browsing = False
+            ad.log.info("Attempt %d", iteration + 1)
+            if not verify_internet_connection(self.log, ad):
+                ad.log.error("Failed to connect to internet!")
+            else:
+                ad.log.info("Connect to internet successfully!")
+                connectivity = True
+            if not browsing_test(ad.log, ad):
+                ad.log.error("Failed to browse websites!")
+            else:
+                ad.log.info("Successful to browse websites!")
+                browsing = True
+            if connectivity and browsing:
+                return True
+            time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+        ad.log.error("5G NSA Connectivity and Data Browsing test FAIL for all 3 iterations")
+        return False
 
     @test_tracker_info(uuid="0679214b-9002-476d-83a7-3532b3cca209")
     @TelephonyBaseTest.tel_test_wrap
