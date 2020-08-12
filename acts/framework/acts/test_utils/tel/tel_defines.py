@@ -213,7 +213,10 @@ POWER_LEVEL_OUT_OF_SERVICE = -100
 # Callbox Power level which will ensure full service on device
 POWER_LEVEL_FULL_SERVICE = -20
 
-
+# set a fake time to test time recovering from network
+FAKE_DATE_TIME = "010203042019.05"
+FAKE_YEAR = "2019"
+WAIT_TIME_SYNC_DATE_TIME_FROM_NETWORK = 2
 
 # These are used in phone_number_formatter
 PHONE_NUMBER_STRING_FORMAT_7_DIGIT = 7

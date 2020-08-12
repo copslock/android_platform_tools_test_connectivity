@@ -34,6 +34,8 @@ from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_ORIGINATED
 from acts.test_utils.tel.tel_defines import DIRECTION_MOBILE_TERMINATED
 from acts.test_utils.tel.tel_defines import DATA_STATE_CONNECTED
+from acts.test_utils.tel.tel_defines import FAKE_DATE_TIME
+from acts.test_utils.tel.tel_defines import FAKE_YEAR
 from acts.test_utils.tel.tel_defines import GEN_2G
 from acts.test_utils.tel.tel_defines import GEN_3G
 from acts.test_utils.tel.tel_defines import GEN_4G
@@ -123,6 +125,8 @@ from acts.test_utils.tel.tel_test_utils import \
     test_data_browsing_success_using_sl4a
 from acts.test_utils.tel.tel_test_utils import \
     test_data_browsing_failure_using_sl4a
+from acts.test_utils.tel.tel_test_utils import set_time_sync_from_network
+from acts.test_utils.tel.tel_test_utils import datetime_handle
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_3g
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_csfb
 from acts.test_utils.tel.tel_voice_utils import is_phone_in_call_volte
@@ -3593,5 +3597,88 @@ class TelLiveDataTest(TelephonyBaseTest):
             return False
 
         return browsing_test(self.log, self.android_devices[0], wifi_ssid=self.wifi_network_ssid)
+
+    def _test_sync_time_from_network(self, ad, data_on=True):
+        """ Verifies time recovered by nitz service
+
+        1. Toggle mobile data
+        2. Toggle off network time synchronization
+        3. Change device time to FAKE_DATE_TIME: Jan,2,2019 03:04:05
+        4. Toggle on network time synchronization
+        5. Verify the year is changed back.
+        6. Recover mobile data
+
+        Args:
+            ad: android device object
+            data_on: conditional mobile data on or off
+
+        Returns:
+            True if pass; False if fail.
+        """
+        if not(data_on):
+            ad.log.info("Disable mobile data.")
+            ad.droid.telephonyToggleDataConnection(False)
+        set_time_sync_from_network(ad, "disable")
+        ad.log.info("Set device time to Jan,2,2019 03:04:05")
+        datetime_handle(ad, 'set', set_datetime_value = FAKE_DATE_TIME)
+        datetime_before_sync = datetime_handle(ad, 'get')
+        ad.log.info("Got before sync datetime from device: %s",
+                        datetime_before_sync)
+        device_year = datetime_handle(ad, 'get', get_year = True)
+
+        if (device_year != FAKE_YEAR):
+            raise signals.TestSkip("Set device time failed, skip test.")
+        set_time_sync_from_network(ad, "enable")
+        datetime_after_sync = datetime_handle(ad, "get")
+        ad.log.info("Got after sync datetime from device: %s",
+                        datetime_after_sync)
+        device_year = datetime_handle(ad, "get", get_year = True)
+
+        if not(data_on):
+            ad.log.info("Enabling mobile data.")
+            ad.droid.telephonyToggleDataConnection(True)
+
+        if (device_year != FAKE_YEAR):
+            self.record_data({
+                "Test Name": "test_sync_time_from_network",
+                "sponge_properties": {
+                    "result": "pass",
+                },
+            })
+            return True
+        else:
+            return False
+
+    @test_tracker_info(uuid="1017b655-5d79-44d2-86ff-675c69aec26b")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sync_time_from_network(self):
+        """ Test device time recovered by nitz service
+
+        1. Toggle off network time synchronization
+        2. Change device time to FAKE_DATE_TIME.
+        3. Toggle on network time synchronization
+        4. Verify the year is changed back.
+
+        """
+        ad = self.android_devices[0]
+        wifi_toggle_state(ad.log, ad, False)
+        return self._test_sync_time_from_network(ad)
+
+    @test_tracker_info(uuid="46d170c6-a632-4124-889b-96caa0e641da")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sync_time_from_network_data_off(self):
+        """ Test device time recovered by nitz service
+
+        1. Toggle off mobile data
+        2. Toggle off network time synchronization
+        3. Change device time to FAKE_DATE_TIME.
+        4. Toggle on network time synchronization
+        5. Verify the year is changed back.
+
+        """
+        ad = self.android_devices[0]
+        wifi_toggle_state(ad.log, ad, False)
+        return self._test_sync_time_from_network(ad, data_on=False)
+
 
     """ Tests End """
