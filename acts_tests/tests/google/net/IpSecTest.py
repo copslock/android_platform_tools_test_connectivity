@@ -44,10 +44,17 @@ class IpSecTest(base_test.BaseTestClass):
         wutils.connect_to_wifi_network(self.dut_b, self.wifi_network)
         time.sleep(WAIT_FOR_IP)
 
-        self.ipv4_dut_a = self.dut_a.droid.connectivityGetIPv4Addresses(WLAN)[0]
-        self.ipv4_dut_b = self.dut_b.droid.connectivityGetIPv4Addresses(WLAN)[0]
-        self.ipv6_dut_a = self.dut_a.droid.connectivityGetIPv6Addresses(WLAN)[0]
-        self.ipv6_dut_b = self.dut_b.droid.connectivityGetIPv6Addresses(WLAN)[0]
+        try:
+            self.ipv4_dut_a = self.dut_a.droid.connectivityGetIPv4Addresses(
+                WLAN)[0]
+            self.ipv4_dut_b = self.dut_b.droid.connectivityGetIPv4Addresses(
+                WLAN)[0]
+            self.ipv6_dut_a = self.dut_a.droid.connectivityGetIPv6Addresses(
+                WLAN)[0]
+            self.ipv6_dut_b = self.dut_b.droid.connectivityGetIPv6Addresses(
+                WLAN)[0]
+        except Exception as e:
+            asserts.abort_class("Failed to get IPv4/IPv6 address: %s" % e)
 
         self.crypt_auth_combos = iutils.generate_random_crypt_auth_combo()
 
