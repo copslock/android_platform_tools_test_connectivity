@@ -229,21 +229,33 @@ def connect_phone_to_headset(android,
     # If already connected, skip pair and connect attempt.
     while not connected and (time.time() - start_time < timeout):
         bonded_info = android.droid.bluetoothGetBondedDevices()
+        connected_info = android.droid.bluetoothGetConnectedDevices()
         if headset.mac_address not in [
                 info["address"] for info in bonded_info
         ]:
             # Use SL4A to pair and connect with headset.
             headset.enter_pairing_mode()
             android.droid.bluetoothDiscoverAndBond(headset_mac_address)
-        else:  # Device is bonded but not connected
+        elif headset.mac_address not in [
+                info["address"] for info in connected_info
+        ]:
+            #Device is bonded but not connected
             android.droid.bluetoothConnectBonded(headset_mac_address)
+        else:
+            #Headset is connected, but A2DP profile is not
+            android.droid.bluetoothFactoryReset()
+            headset.reset()
+            headset.power_on()
+            enable_bluetooth(android.droid, android.ed)
+            headset.enter_pairing_mode()
+            android.droid.bluetoothStartPairingHelper()
+            android.droid.bluetoothDiscoverAndBond(headset_mac_address)
         log.info('Waiting for connection...')
         time.sleep(connection_check_period)
         # Check for connection.
         connected = is_a2dp_src_device_connected(android, headset_mac_address)
     log.info('Devices connected after pair attempt: %s' % connected)
     return connected
-
 
 def connect_pri_to_sec(pri_ad, sec_ad, profiles_set, attempts=2):
     """Connects pri droid to secondary droid.
