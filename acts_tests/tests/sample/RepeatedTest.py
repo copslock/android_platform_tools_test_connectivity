@@ -40,18 +40,14 @@ def get_median_current(test_results):
 
 
 class RepeatedTest(BaseTestClass):
-    def __init__(self, controllers):
-        super().__init__(controllers)
-        self.count_for_passing_testcase = 0
-        self.count_for_failing_testcase = 0
 
     @repeated_test(num_passes=3, acceptable_failures=0)
-    def test_repeated_case(self):
+    def test_repeated_case(self, _):
         self.log.info('This logic executes three times.')
 
     @repeated_test(num_passes=3, acceptable_failures=2,
                    result_selector=get_median_current)
-    def test_repeated_case_pass(self):
+    def test_repeated_case_pass(self, attempt_number):
         """The end result of this test is a pass with current=3.5"""
         returned_results = [
             signals.TestPass('0Pass msg!', extras={'current': 3.5}),
@@ -59,13 +55,11 @@ class RepeatedTest(BaseTestClass):
             signals.TestPass('1Pass msg!', extras={'current': 3.2}),
             signals.TestPass('2Pass msg!', extras={'current': 3.6})
         ]
-        # Every time this function runs, we return a different signal.
-        self.count_for_passing_testcase += 1
-        raise returned_results[self.count_for_passing_testcase - 1]
+        raise returned_results[attempt_number - 1]
 
     @repeated_test(num_passes=3, acceptable_failures=2,
                    result_selector=get_median_current)
-    def test_repeated_case_with_failures(self):
+    def test_repeated_case_with_failures(self, attempt_number):
         """The end result of this test is the last failure to occur."""
         returned_results = [
             signals.TestPass('Pass msg!', extras={'current': 3.5}),
@@ -73,6 +67,4 @@ class RepeatedTest(BaseTestClass):
             signals.TestFailure('Fail msg!', extras={'current': 58.1}),
             signals.TestFailure('Fail msg!', extras={'current': 74.2}),
         ]
-        # Every time this function runs, we return a different signal.
-        self.count_for_failing_testcase += 1
-        raise returned_results[(self.count_for_failing_testcase - 1) % 4]
+        raise returned_results[(attempt_number - 1) % 4]
