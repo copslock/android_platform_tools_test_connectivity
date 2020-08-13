@@ -27,11 +27,25 @@ class WlanStatusTest(BaseTestClass):
     Test Bed Requirements:
     * One or more Fuchsia devices with WLAN client capabilities.
     """
-
     def setup_class(self):
         super().setup_class()
         for fd in self.fuchsia_devices:
             fd.wlan_policy_lib.wlanCreateClientController()
+
+    def on_fail(self, test_name, begin_time):
+        for fd in self.fuchsia_devices:
+            try:
+                fd.take_bug_report(test_name, begin_time)
+                fd.get_log(test_name, begin_time)
+            except Exception:
+                pass
+
+            try:
+                if fd.device.hard_reboot_on_fail:
+                    fd.hard_power_cycle(self.pdu_devices)
+                    fd.wlan_policy_lib.wlanCreateClientController()
+            except AttributeError:
+                pass
 
     def test_wlan_stopped_client_status(self):
         """Queries WLAN status on DUTs with no WLAN ifaces.

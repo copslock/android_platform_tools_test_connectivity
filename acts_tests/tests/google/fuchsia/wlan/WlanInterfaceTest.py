@@ -18,21 +18,27 @@ from acts import signals
 
 from acts.base_test import BaseTestClass
 from acts.test_utils.abstract_devices.wlan_device import create_wlan_device
+from acts.test_utils.abstract_devices.wlan_device_lib.AbstractDeviceWlanDeviceBaseTest import AbstractDeviceWlanDeviceBaseTest
 
 
-class WlanInterfaceTest(BaseTestClass):
+class WlanInterfaceTest(AbstractDeviceWlanDeviceBaseTest):
     def setup_class(self):
+        super().setup_class()
         dut = self.user_params.get('dut', None)
         if dut:
-          if dut == 'fuchsia_devices':
-             self.dut = create_wlan_device(self.fuchsia_devices[0])
-          elif dut == 'android_devices':
-             self.dut = create_wlan_device(self.android_devices[0])
-          else:
-             raise ValueError('Invalid DUT specified in config. (%s)' % self.user_params['dut'])
+            if dut == 'fuchsia_devices':
+                self.dut = create_wlan_device(self.fuchsia_devices[0])
+            elif dut == 'android_devices':
+                self.dut = create_wlan_device(self.android_devices[0])
+            else:
+                raise ValueError('Invalid DUT specified in config. (%s)' %
+                                 self.user_params['dut'])
         else:
             # Default is an Fuchsia device
             self.dut = create_wlan_device(self.fuchsia_devices[0])
+
+    def on_fail(self, test_name, begin_time):
+        super().on_fail(test_name, begin_time)
 
     def test_destroy_iface(self):
         """Test that we don't error out when destroying the WLAN interface.

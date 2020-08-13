@@ -31,7 +31,6 @@ class PolicyScanTest(WifiBaseTest):
     * One or more Fuchsia devices
     * One Whirlwind Access Point
     """
-
     def setup_class(self):
         super().setup_class()
         if len(self.fuchsia_devices) < 1:
@@ -39,7 +38,6 @@ class PolicyScanTest(WifiBaseTest):
         for fd in self.fuchsia_devices:
             # Initialize the Policy client controller for each Fuchsia device
             fd.wlan_policy_lib.wlanCreateClientController()
-
         if len(self.access_points) < 1:
             raise signals.TestFailure("No access points found.")
         # Prepare the AP
@@ -103,6 +101,20 @@ class PolicyScanTest(WifiBaseTest):
 
     def teardown_class(self):
         pass
+
+    def on_fail(self, test_name, begin_time):
+        for fd in self.fuchsia_devices:
+            try:
+                fd.take_bug_report(test_name, begin_time)
+                fd.get_log(test_name, begin_time)
+            except Exception:
+                pass
+
+            try:
+                if fd.device.hard_reboot_on_fail:
+                    fd.hard_power_cycle(self.pdu_devices)
+            except AttributeError:
+                pass
 
     """Helper Functions"""
 

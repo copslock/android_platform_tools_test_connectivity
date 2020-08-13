@@ -40,6 +40,20 @@ class WlanDeprecatedConfigurationTest(BaseTestClass):
     def teardown_test(self):
         self._stop_soft_aps()
 
+    def on_fail(self, test_name, begin_time):
+        for fd in self.fuchsia_devices:
+            try:
+                fd.take_bug_report(test_name, begin_time)
+                fd.get_log(test_name, begin_time)
+            except Exception:
+                pass
+
+            try:
+                if fd.device.hard_reboot_on_fail:
+                    fd.hard_power_cycle(self.pdu_devices)
+            except AttributeError:
+                pass
+
     def _get_ap_interface_mac_address(self):
         """Retrieves mac address from wlan interface with role ap
 

@@ -21,8 +21,11 @@ class AbstractDeviceWlanDeviceBaseTest(WifiBaseTest):
         super().setup_class()
 
     def on_fail(self, test_name, begin_time):
-        self.dut.take_bug_report(test_name, begin_time)
-        self.dut.get_log(test_name, begin_time)
+        try:
+            self.dut.take_bug_report(test_name, begin_time)
+            self.dut.get_log(test_name, begin_time)
+        except Exception:
+            pass
 
         try:
             if self.dut.device.hard_reboot_on_fail:

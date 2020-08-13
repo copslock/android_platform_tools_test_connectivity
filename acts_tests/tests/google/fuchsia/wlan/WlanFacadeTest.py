@@ -29,6 +29,20 @@ class WlanFacadeTest(BaseTestClass):
                 "Sorry, please try verifying FuchsiaDevice is in your "
                 "config file and try again.")
 
+    def on_fail(self, test_name, begin_time):
+        for fd in self.fuchsia_devices:
+            try:
+                fd.take_bug_report(test_name, begin_time)
+                fd.get_log(test_name, begin_time)
+            except Exception:
+                pass
+
+            try:
+                if fd.device.hard_reboot_on_fail:
+                    fd.hard_power_cycle(self.pdu_devices)
+            except AttributeError:
+                pass
+
     def test_get_phy_id_list(self):
         result = self.fuchsia_devices[0].wlan_lib.wlanPhyIdList()
         error = result['error']
