@@ -47,7 +47,7 @@ else:
 
 PY_FILE_REGEX = re.compile('.+\.py$')
 
-BLACKLIST = [
+DENYLIST = [
     'acts/controllers/rohdeschwarz_lib/contest.py',
     'acts/controllers/native.py',
     'acts/controllers/native_android_device.py',
@@ -60,8 +60,6 @@ BLACKLIST = [
     'acts/test_utils/bt/bt_power_test_utils.py',
     'acts/test_utils/coex/coex_test_utils.py',
     'acts/test_utils/tel/twilio_client.py',
-    'acts/test_utils/bt/A2dpBaseTest.py',
-    'acts/test_utils/bt/BtSarBaseTest.py',
     'tests/google/ble/beacon_tests/BeaconSwarmTest.py',
     'tests/google/bt/pts/BtCmdLineTest.py',
     'tests/google/bt/headphone_automation/SineWaveQualityTest.py',
@@ -87,11 +85,12 @@ BLACKLIST = [
     'acts/test_utils/gnss/gnss_testlog_utils.py',
 ]
 
-BLACKLIST_DIRECTORIES = [
+DENYLIST_DIRECTORIES = [
     'acts/controllers/buds_lib',
     'acts/test_utils/audio_analysis_lib/',
     'acts/test_utils/coex/',
     'acts/test_utils/power/',
+    'acts/test_utils/bt/',
     'tests/google/coex/',
     'tests/google/gnss/',
     'tests/google/power/',
@@ -125,9 +124,9 @@ class ActsImportUnitTest(unittest.TestCase):
             for root, _, files in os.walk(base_dir):
                 for f in files:
                     full_path = os.path.join(root, f)
-                    if (any(full_path.endswith(e) for e in BLACKLIST)
+                    if (any(full_path.endswith(e) for e in DENYLIST)
                             or any(e in full_path
-                                   for e in BLACKLIST_DIRECTORIES)):
+                                   for e in DENYLIST_DIRECTORIES)):
                         continue
 
                     path = os.path.relpath(os.path.join(root, f), os.getcwd())
