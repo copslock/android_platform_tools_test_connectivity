@@ -58,7 +58,9 @@ def repeated_test(num_passes, acceptable_failures=0,
     return the median, or gather and return standard deviation values.
 
     This decorator should be used on test cases, and should not be used on
-    static or class methods.
+    static or class methods. The test case must take in an additional argument,
+    `attempt_number`, which returns the current attempt number, starting from
+    1.
 
     Note that any TestSignal intended to abort or skip the test will take
     abort or skip immediately.
@@ -84,7 +86,7 @@ def repeated_test(num_passes, acceptable_failures=0,
             test_signals_received = []
             for i in range(num_passes + acceptable_failures):
                 try:
-                    func(self)
+                    func(self, i + 1)
                 except (signals.TestFailure, signals.TestError,
                         AssertionError) as signal:
                     test_signals_received.append(signal)

@@ -238,16 +238,13 @@ class RepeatedTestTests(unittest.TestCase):
             self.assertIsInstance(results[3], IndexError)
             raise signals.TestPass('Expected failures occurred')
 
-        call_count = 0
         @test_decorators.repeated_test(1, 3, result_selector)
-        def test_case(_):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
+        def test_case(_, attempt_number):
+            if attempt_number == 1:
                 raise AssertionError()
-            elif call_count == 2:
+            elif attempt_number == 2:
                 raise signals.TestFailure('Failed')
-            elif call_count == 3:
+            elif attempt_number == 3:
                 raise signals.TestError('Error')
             else:
                 # Note that any Exception that does not fall into another bucket
@@ -265,7 +262,7 @@ class RepeatedTestTests(unittest.TestCase):
             raise signals.TestPass('Expected passes occurred')
 
         @test_decorators.repeated_test(3, 0, result_selector)
-        def test_case(_):
+        def test_case(*_):
             raise signals.TestPass('Passed')
 
         with self.assertRaises(signals.TestPass):
@@ -273,7 +270,7 @@ class RepeatedTestTests(unittest.TestCase):
 
     def test_abort_signals_are_uncaught(self):
         @test_decorators.repeated_test(3, 0)
-        def test_case(_):
+        def test_case(*_):
             raise signals.TestAbortClass('Abort All')
 
         with self.assertRaises(signals.TestAbortClass):
@@ -281,7 +278,7 @@ class RepeatedTestTests(unittest.TestCase):
 
     def test_keyboard_interrupt_is_uncaught(self):
         @test_decorators.repeated_test(3, 0)
-        def test_case(_):
+        def test_case(*_):
             raise KeyboardInterrupt()
 
         with self.assertRaises(KeyboardInterrupt):
@@ -290,7 +287,7 @@ class RepeatedTestTests(unittest.TestCase):
     def test_teardown_and_setup_are_called_between_test_cases(self):
         mock_test_class = mock.Mock()
         @test_decorators.repeated_test(1, 1)
-        def test_case(_):
+        def test_case(*_):
             raise signals.TestFailure('Failed')
 
         with self.assertRaises(signals.TestFailure):
@@ -300,11 +297,11 @@ class RepeatedTestTests(unittest.TestCase):
         self.assertTrue(mock_test_class.teardown_test.called)
 
     def test_result_selector_returned_value_gets_raised(self):
-        def result_selector(_):
+        def result_selector(*_):
             return signals.TestPass('Expect this to be raised.')
 
         @test_decorators.repeated_test(3, 0, result_selector=result_selector)
-        def test_case(_):
+        def test_case(*_):
             raise signals.TestFailure('Result selector ignores this.')
 
         with self.assertRaises(signals.TestPass):
