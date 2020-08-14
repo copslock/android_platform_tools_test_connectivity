@@ -2827,6 +2827,158 @@ class TelLiveSmsTest(TelephonyBaseTest):
 
         return self._mms_test_mt(ads)
 
+    @test_tracker_info(uuid="029e05cd-df6b-4a82-8402-77fc6eadf66f")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mo_in_call_iwlan_cellular(self):
+        """ Test MO SMS, Phone in APM, WiFi connected, Cellular Preferred mode.
+
+        Make sure PhoneA APM, WiFi connected, Cellular preferred mode.
+        Make sure PhoneA report iwlan as data rat.
+        Make sure PhoneB is able to make/receive call/sms.
+        Call from PhoneA to PhoneB, accept on PhoneB.
+        Send SMS on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_iwlan_cellular_preferred,
+                  (self.log, ads[0],
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        self.log.info("Begin In Call SMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
+            return False
+
+        return self._sms_test_mo(ads)
+
+    @test_tracker_info(uuid="c3c47a68-a839-4470-87f6-e85496cfab23")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_sms_mt_in_call_iwlan_cellular(self):
+        """ Test MT SMS, Phone in APM, WiFi connected, Cellular Preferred mode.
+
+        Make sure PhoneA APM, WiFi connected, Cellular Preferred mode.
+        Make sure PhoneA report iwlan as data rat.
+        Make sure PhoneB is able to make/receive call/sms.
+        Call from PhoneA to PhoneB, accept on PhoneB.
+        Receive SMS on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_iwlan_cellular_preferred,
+                  (self.log, ads[0],
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        self.log.info("Begin In Call SMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
+            return False
+
+        return self._sms_test_mt(ads)
+
+    @test_tracker_info(uuid="4c6cd913-4aca-4f2b-b33b-1efe0a7dc11d")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mo_in_call_iwlan_cellular(self):
+        """ Test MO MMS, Phone in APM, WiFi connected, Cellular Preferred mode.
+
+        Make sure PhoneA APM, WiFi connected, Cellular mode.
+        Make sure PhoneA report iwlan as data rat.
+        Make sure PhoneB is able to make/receive call/sms.
+        Call from PhoneA to PhoneB, accept on PhoneB.
+        Send MMS on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_iwlan_cellular_preferred,
+                  (self.log, ads[0],
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        self.log.info("Begin In Call MMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
+            return False
+
+        return self._mms_test_mo(ads)
+
+    @test_tracker_info(uuid="5b667ca1-cafd-47d4-86dc-8b87232ddcfa")
+    @TelephonyBaseTest.tel_test_wrap
+    def test_mms_mt_in_call_iwlan_cellular(self):
+        """ Test MT MMS, Phone in APM, WiFi connected, Cellular Preferred mode.
+
+        Make sure PhoneA APM, WiFi connected, Cellular preferred mode.
+        Make sure PhoneA report iwlan as data rat.
+        Make sure PhoneB is able to make/receive call/sms.
+        Call from PhoneA to PhoneB, accept on PhoneB.
+        Receive MMS on PhoneA.
+
+        Returns:
+            True if pass; False if fail.
+        """
+
+        ads = self.android_devices
+
+        tasks = [(phone_setup_iwlan_cellular_preferred,
+                  (self.log, ads[0],
+                   self.wifi_network_ssid, self.wifi_network_pass)),
+                 (phone_setup_voice_general, (self.log, ads[1]))]
+        if not multithread_func(self.log, tasks):
+            self.log.error("Phone Failed to Set Up Properly.")
+            return False
+        time.sleep(WAIT_TIME_ANDROID_STATE_SETTLING)
+
+        self.log.info("Begin In Call MMS Test.")
+        if not call_setup_teardown(
+                self.log,
+                ads[0],
+                ads[1],
+                ad_hangup=None,
+                verify_caller_func=is_phone_in_call_iwlan,
+                verify_callee_func=None):
+            return False
+
+        return self._mms_test_mt(ads)
+
     @test_tracker_info(uuid="9f1933bb-c4cb-4655-8655-327c1f38e8ee")
     @TelephonyBaseTest.tel_test_wrap
     def test_sms_mo_in_call_vt(self):
