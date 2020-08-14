@@ -27,6 +27,7 @@ from acts import context
 from acts import signals
 from acts.libs.proc import job
 from acts.test_decorators import test_tracker_info
+from acts.test_utils.tel.loggers.telephony_metric_logger import TelephonyMetricLogger
 from acts.test_utils.tel.TelephonyBaseTest import TelephonyBaseTest
 from acts.test_utils.tel.tel_defines import CAPABILITY_VOLTE
 from acts.test_utils.tel.tel_defines import CAPABILITY_WFC
@@ -160,6 +161,7 @@ class TelLiveStressTest(TelephonyBaseTest):
         self.dut_wfc_modes = telephony_info.get("wfc_modes", [])
         self.gps_log_file = self.user_params.get("gps_log_file", None)
         self.file_name_list = self.user_params.get("file_downloads", DEFAULT_FILE_DOWNLOADS)
+        self.tel_logger = TelephonyMetricLogger.for_test_case()
         return True
 
     def setup_test(self):
@@ -438,6 +440,8 @@ class TelLiveStressTest(TelephonyBaseTest):
                 wait_time_in_call=0,
                 incall_ui_display=INCALL_UI_DISPLAY_BACKGROUND,
                 slot_id_callee=slot_id_callee)
+
+            self.tel_logger.set_result(call_setup_result.result_value)
         if not call_setup_result:
             get_telephony_signal_strength(ads[0])
             if not self.single_phone_test:
