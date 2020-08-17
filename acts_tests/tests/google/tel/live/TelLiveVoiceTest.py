@@ -309,7 +309,7 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             self.log.error("Phone Failed to Set Up Properly.")
             return False
 
-        return call_setup_teardown(
+        if not call_setup_teardown(
             self.log,
             ads[0],
             ads[1],
@@ -317,7 +317,10 @@ class TelLiveVoiceTest(TelephonyBaseTest):
             is_phone_in_call_volte,
             is_phone_in_call_volte,
             WAIT_TIME_IN_CALL_FOR_IMS,
-            dialing_number_length=10)
+            dialing_number_length=10):
+            return False
+
+        return True
 
     @test_tracker_info(uuid="4fd3aa62-2398-4cee-994e-7fc5cadbcbc1")
     @TelephonyBaseTest.tel_test_wrap
